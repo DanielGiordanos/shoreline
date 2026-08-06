@@ -2346,8 +2346,19 @@ const Backend = {
     catch(e){ showLogin(); return; }
     await Backend.loadAndSubscribe();
   },
+  loadShifts: async function(){
+    try{
+      const res = await SB.from('shift_assignments').select('assignments').eq('tenant_id', TENANT_ID).maybeSingle();
+      if(!res.error && res.data && res.data.assignments && typeof shiftAssign!=='undefined'){
+        Object.keys(shiftAssign).forEach(function(k){ shiftAssign[k]=null; });
+        Object.assign(shiftAssign, res.data.assignments);
+        if(typeof applyShiftColors==='function') applyShiftColors();
+      }
+    }catch(e){}
+  },
   loadAndSubscribe: async function(){
     await Backend.refetch();
+    await Backend.loadShifts();
     if(Backend.channel){ try{ SB.removeChannel(Backend.channel); }catch(e){} }
     Backend.channel = SB.channel('pv-'+TENANT_ID)
       .on('postgres_changes', { event:'*', schema:'public', table:'patient_visits', filter:'tenant_id=eq.'+TENANT_ID }, function(){ Backend.refetch(); })
@@ -2356,6 +2367,19 @@ const Backend = {
         else if(status==='CHANNEL_ERROR' || status==='TIMED_OUT') Backend.setConn('reconnecting');
         else if(status==='CLOSED') Backend.setConn(navigator.onLine===false ? 'offline' : 'reconnecting');
       });
+    if(Backend.shiftChannel){ try{ SB.removeChannel(Backend.shiftChannel); }catch(e){} }
+    Backend.shiftChannel = SB.channel('shifts-'+TENANT_ID)
+      .on('postgres_changes', { event:'*', schema:'public', table:'shift_assignments', filter:'tenant_id=eq.'+TENANT_ID }, function(payload){
+        if(_shiftModalOpen) return;   // NEVER reset an active editor; only sync when idle
+        try{ const a = payload.new && payload.new.assignments;
+          if(a && typeof shiftAssign!=='undefined'){
+            Object.keys(shiftAssign).forEach(function(k){ shiftAssign[k]=null; });
+            Object.assign(shiftAssign, a);
+            if(typeof applyShiftColors==='function') applyShiftColors();
+            if(typeof renderAll==='function') renderAll();
+          }
+        }catch(e){}
+      }).subscribe();
   },
   refetch: async function(){
     _persistLock = true;
@@ -4166,6 +4190,7 @@ const SHIFTS = (window.Pravix && Pravix.getShifts) ? Pravix.getShifts() : [
 const shiftColor = key => (SHIFTS.find(s=>s.key===key)||{}).color;
 let shiftAssign = {morning:null, critical:null, swing:null, overnight:null};  // committed
 let shiftDraft = null, shiftDDs = {};
+let _shiftModalOpen = false;   // true while the user is editing the modal (guards realtime)
 const RELIEF = {id:'relief', name:'Relief Doctor', initials:'RD', color:'#7A9BB5'};
 const NO_DOC  = {id:'unassigned', name:'Unassigned', initials:'—', color:'#A9C0D4'};
 
@@ -4177,7 +4202,8 @@ function applyShiftColors(){
   SHIFTS.forEach(s=>{ const did=shiftAssign[s.key]; if(did && did!=='unassigned' && did!=='relief'){ const d=DOCTORS.find(x=>x.id===did); if(d) d.color=s.color; } });
 }
 function openShiftSetup(){
-  shiftDraft = Object.assign({}, shiftAssign);
+  _shiftModalOpen = true;
+  shiftDraft = Object.assign({}, shiftAssign);   // init temp state ONCE from committed
   shiftDDs = {};
   const grid=document.getElementById('shiftGrid'); grid.innerHTML='';
   SHIFTS.forEach(s=>{
@@ -4199,16 +4225,30 @@ function openShiftSetup(){
   document.getElementById('shiftModal').classList.add('open');
 }
 function closeShiftSetup(){
+  _shiftModalOpen = false;
   document.getElementById('shiftScrim').classList.remove('open');
   document.getElementById('shiftModal').classList.remove('open');
 }
-function saveShiftSetup(){
-  shiftAssign = Object.assign({}, shiftDraft);
+async function saveShiftSetup(){
+  const draft = Object.assign({}, shiftDraft);          // save the FULL set, not just the last change
+  const btn = document.getElementById('shiftSave');
+  if(btn) btn.disabled = true;
+  // Persist to the shared production DB (staff + online). Close ONLY after success.
+  if(typeof SB!=='undefined' && SB && Backend.mode==='staff'){
+    try{
+      const res = await SB.from('shift_assignments').upsert(
+        { tenant_id: TENANT_ID, assignments: draft, updated_at: new Date().toISOString() },
+        { onConflict:'tenant_id' });
+      if(res.error){ if(btn) btn.disabled=false; toast('Could not save shift assignments — check connection'); return; }
+    }catch(e){ if(btn) btn.disabled=false; toast('Could not save shift assignments — check connection'); return; }
+  }
+  shiftAssign = draft;                                  // commit only after a successful save
   applyShiftColors();
+  if(btn) btn.disabled = false;
   closeShiftSetup();
   renderAll();
   const n=SHIFTS.filter(s=>shiftAssign[s.key]).length;
-  notify('Shift assignments saved', n+' of '+SHIFTS.length+' shifts staffed · colors updated', {icon:'doctor', color:'var(--accent)'});
+  notify('Shift assignments saved', n+' of '+SHIFTS.length+' shifts staffed · synced to all devices', {icon:'doctor', color:'var(--accent)'});
 }
 
 /* ============================================================
@@ -4474,7 +4514,7 @@ switchView('dashboard');
    and this maps the path <-> the in-app view so refresh/deep-links work.
    ============================================================ */
 (function(){
-  return; /* clean-URL router disabled for subdomain-root deploy */
+  return; /* router disabled for subdomain-root */
   const ROUTE_VIEW={'/':'dashboard','/command':'dashboard','/patients':'list','/flow':'flow','/rooms':'rooms','/client-display':'client'};
   const VIEW_ROUTE={dashboard:'/command',list:'/patients',flow:'/flow',rooms:'/rooms',client:'/client-display'};
   const curPath=()=>(location.pathname||'/').replace(/index\.html$/,'').replace(/\/+$/,'')||'/';
