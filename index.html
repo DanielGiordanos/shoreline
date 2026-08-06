@@ -1406,7 +1406,7 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
           <h1>Command Center</h1>
           <p id="dashDate">Emergency Service • Hospital Operations</p>
         </div>
-        <span class="livepill"><span class="dot"></span>Live · Real-Time Updates</span>
+        <span class="livepill" id="connBadge"><span class="dot"></span>Live · Real-Time Updates</span>
       </div>
 
       <div class="kpis" id="kpiRow"></div>
@@ -1518,7 +1518,7 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
           <div class="cl-clockwrap">
             <div class="cl-date" id="clDate">—</div>
             <div class="cl-clock" id="clClock">—</div>
-            <span class="cl-livebadge"><span class="dot"></span>Live · Updating</span>
+            <span class="cl-livebadge" id="connBadgeCl"><span class="dot"></span>Live · Updating</span>
           </div>
         </header>
         <div class="cl-body">
@@ -1831,6 +1831,7 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
 </div>
 
 <!-- ═══ Pravix multi-tenant foundation — active hospital resolves before the app boots ═══ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* inlined: shoreline.config.js */
 /* =============================================================================
@@ -2252,7 +2253,7 @@ let SEQ = 100;
 function patient(o){
   const n = SEQ++;
   return Object.assign({
-    id:'PT'+n, hid:'SH-'+(1042+(n-100)), tenant:TENANT_ID, tags:[], liaison:null, timeline:[], intake:null
+    id:(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('pt-'+Date.now().toString(36)+'-'+n), hid:'SH-'+(1042+(n-100)), tenant:TENANT_ID, tags:[], liaison:null, timeline:[], intake:null
   }, o);
 }
 
@@ -2262,57 +2263,176 @@ function tl(label, minAgo, meta){return {label, at:mAgo(minAgo), meta:meta||''};
 let PATIENTS = [];   // PRODUCTION: starts empty — patients enter only via the check-in workflow.
 
 /* ============================================================
-   PERSISTENCE — tenant-scoped production data store (localStorage)
-   Every patient/visit record is namespaced under the active tenant so
-   future hospitals can never read or write Shoreline's data. No demo seeding,
-   no fallback patients: if nothing is stored, the hospital starts at zero.
+   BACKEND — Supabase shared production data store (multi-device, realtime)
+   Patient data lives in Postgres (tenant-scoped + RLS). Every authorized
+   device reads/writes the SAME list; changes broadcast live to all clients
+   and the lobby display. localStorage is NOT the source of truth.
    ============================================================ */
 const TENANT_ID = (function(){ try{ return (window.Pravix && Pravix.getCurrentHospital) ? (Pravix.getCurrentHospital().id||'shoreline') : 'shoreline'; }catch(e){ return 'shoreline'; } })();
-const STORE_KEY = 'pravix:'+TENANT_ID+':patients:v1';
-const STORE_SEQ = 'pravix:'+TENANT_ID+':seq:v1';
-const MIGRATED  = 'pravix:'+TENANT_ID+':migrated:v1';
-const _DATE_FIELDS = ['arrival','completedAt','dischargedAt','admittedAt','euthanizedAt','roomSince'];
-function _reviveDates(p){
-  _DATE_FIELDS.forEach(f=>{ if(p[f]) p[f]=new Date(p[f]); });
-  if(Array.isArray(p.timeline)) p.timeline.forEach(e=>{ if(e && e.at) e.at=new Date(e.at); });
-  if(!p.tenant) p.tenant=TENANT_ID;
-  return p;
+
+const SB_URL = 'https://uxslpcymtasjwvwnugmz.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4c2xwY3ltdGFzand2d251Z216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NzM3NjAsImV4cCI6MjEwMTU0OTc2MH0.DYpBelNcJ-EFIrzkOZu4ZTxk9ZrWjXbw_zAYp6qvgV0';
+const SB_LOGIN_EMAIL = 'au733@vca.com';   // fixed shared-login identifier; staff type only the passcode
+const SB = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:true, autoRefreshToken:true } })
+  : null;
+
+let _persistLock = false;   // true while applying remote data (prevents echo writes)
+
+function _toISO(d){ return d ? (d instanceof Date ? d.toISOString() : d) : null; }
+function mapToDb(p){
+  return {
+    id: p.id, tenant_id: TENANT_ID, visit_code: p.hid || null,
+    patient_name: ((p.name||'') + ' ' + (p.last||'')).trim(),
+    owner_name: p.owner || null, phone_number: p.ownerPhone || null,
+    species: p.species || null, breed: p.breed || null, age: p.age || null,
+    weight: p.weight || null, sex: p.sex || null, arrival_type: p.arrivalType || null,
+    priority: p.prio || 3, status: p.status || 'Waiting', room_id: p.room || null,
+    doctor_id: (p.doctor && p.doctor !== 'unassigned') ? p.doctor : null,
+    liaison_id: p.liaison || null, reason_for_visit: p.reason || null,
+    referring_hospital: p.referringHospital || null, triage: p.triage || null, intake: p.intake || null,
+    timeline: (p.timeline||[]).map(function(e){ return { label:e.label, at:_toISO(e.at), meta:e.meta||'' }; }),
+    arrival_time: _toISO(p.arrival) || new Date().toISOString(),
+    discharged_at: _toISO(p.completedAt),
+    is_active: !(p.completed===true || p.active===false || p.status==='Discharged' || p.status==='Admitted' || p.status==='Euthanized')
+  };
 }
-// One-time safe migration: clears only THIS tenant's legacy/demo keys. Never touches
-// other keys on the origin (intern portals, settings, etc.).
-function purgeLegacyDemo(){
-  try{
-    if(localStorage.getItem(MIGRATED)) return;
-    ['pravix:'+TENANT_ID+':patients','pravix:'+TENANT_ID+':demo'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
-    localStorage.setItem(MIGRATED,'1');
-  }catch(e){}
+function mapToApp(r){
+  const full=(r.patient_name||'').trim();
+  const arrival = r.arrival_time ? new Date(r.arrival_time) : new Date();
+  const completedAt = r.discharged_at ? new Date(r.discharged_at) : null;
+  return {
+    id:r.id, hid:r.visit_code || ('SH-'+String(r.id).slice(0,4)), tenant:r.tenant_id,
+    name: full.split(/\s+/)[0]||'', last: full.split(/\s+/).slice(1).join(' '),
+    owner:r.owner_name||'', ownerPhone:r.phone_number||'',
+    species:r.species||'', breed:r.breed||'', age:r.age||'', weight:r.weight||'', sex:r.sex||'',
+    arrivalType:r.arrival_type||'', prio:r.priority||3, status:r.status||'Waiting',
+    room:r.room_id||'Lobby', doctor:r.doctor_id||'unassigned', liaison:r.liaison_id||null,
+    reason:r.reason_for_visit||'', referringHospital:r.referring_hospital||'',
+    triage:r.triage||null, intake:r.intake||null,
+    timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new Date(e.at): new Date(), meta:e.meta||'' }; }),
+    arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt,
+    totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, tags:[]
+  };
 }
-let _persistLock=false;
-function loadState(){
-  try{
-    purgeLegacyDemo();
-    const raw=localStorage.getItem(STORE_KEY);
-    let arr = raw ? JSON.parse(raw) : [];
-    if(!Array.isArray(arr)) arr=[];
-    PATIENTS = arr.map(_reviveDates);
-    let maxN=99; PATIENTS.forEach(p=>{ const m=/PT(\d+)/.exec(p.id||''); if(m) maxN=Math.max(maxN,+m[1]); });
-    const seq=parseInt(localStorage.getItem(STORE_SEQ),10);
-    SEQ = Math.max(isNaN(seq)?100:seq, maxN+1);
-  }catch(e){ PATIENTS=[]; }
+function mapSafeToApp(r){
+  const full=(r.patient_name||'').trim();
+  return { id:r.id, name: full.split(/\s+/)[0]||'', last: full.split(/\s+/).slice(1).join(' '),
+    species:r.species||'', breed:r.breed||'', age:r.age||'', prio:r.priority||3, status:r.status||'Waiting',
+    room:r.room_id||'Lobby', doctor:r.doctor_id||'unassigned', liaison:null,
+    arrival:r.arrival_time? new Date(r.arrival_time): new Date(), active:true, completed:false, timeline:[], tags:[] };
 }
+
+const Backend = {
+  mode:'staff', channel:null, conn:'connecting', _poll:null, _lastRows:null,
+  setConn:function(state){
+    Backend.conn = state;
+    const map = { live:['Live','var(--s-admitted)'], connecting:['Connecting…','var(--s-admitted)'],
+      reconnecting:['Reconnecting…','#E8A830'], offline:['Offline','#8A8FA0'], error:['Sync error','#E4342B'] };
+    const cfg = map[state] || map.live;
+    ['connBadge','connBadgeCl'].forEach(function(id){
+      const el=document.getElementById(id); if(!el) return;
+      const label = (id==='connBadgeCl' && state==='live') ? 'Live · Updating' : cfg[0];
+      el.innerHTML = '<span class="dot"></span>'+label; el.style.color = cfg[1];
+      const dot=el.querySelector('.dot'); if(dot){ dot.style.background=cfg[1]; dot.style.boxShadow='0 0 10px '+cfg[1]; }
+    });
+  },
+  init: async function(){
+    Backend.mode = /[?&](display|tv|lobby)=?/.test(location.search) ? 'lobby' : 'staff';
+    if(!SB){ Backend.setConn('error'); return; }
+    Backend.setConn('connecting');
+    if(Backend.mode==='lobby'){ return Backend.lobbyStart(); }
+    try{ const s = await SB.auth.getSession(); if(!s || !s.data || !s.data.session){ showLogin(); return; } }
+    catch(e){ showLogin(); return; }
+    await Backend.loadAndSubscribe();
+  },
+  loadAndSubscribe: async function(){
+    await Backend.refetch();
+    if(Backend.channel){ try{ SB.removeChannel(Backend.channel); }catch(e){} }
+    Backend.channel = SB.channel('pv-'+TENANT_ID)
+      .on('postgres_changes', { event:'*', schema:'public', table:'patient_visits', filter:'tenant_id=eq.'+TENANT_ID }, function(){ Backend.refetch(); })
+      .subscribe(function(status){
+        if(status==='SUBSCRIBED') Backend.setConn('live');
+        else if(status==='CHANNEL_ERROR' || status==='TIMED_OUT') Backend.setConn('reconnecting');
+        else if(status==='CLOSED') Backend.setConn(navigator.onLine===false ? 'offline' : 'reconnecting');
+      });
+  },
+  refetch: async function(){
+    _persistLock = true;
+    try{
+      const res = await SB.from('patient_visits').select('*').eq('tenant_id', TENANT_ID);
+      if(res.error){ Backend.setConn('error'); }
+      else if(res.data){ PATIENTS = res.data.map(mapToApp); Backend._lastRows = PATIENTS.map(mapToDb); if(Backend.conn!=='live') Backend.setConn('live'); }
+    }catch(e){ Backend.setConn('error'); }
+    try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
+    _persistLock = false;
+    try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){}
+  },
+  lobbyStart: async function(){
+    await Backend.lobbyLoad();
+    if(Backend._poll) clearInterval(Backend._poll);
+    Backend._poll = setInterval(Backend.lobbyLoad, 7000);
+    try{ if(typeof switchView==='function') switchView('client'); }catch(e){}
+  },
+  lobbyLoad: async function(){
+    try{
+      const res = await SB.from('client_display_visits').select('*').eq('tenant_id', TENANT_ID);
+      if(res.error){ Backend.setConn('error'); return; }
+      _persistLock = true; PATIENTS = (res.data||[]).map(mapSafeToApp); _persistLock = false;
+      if(typeof renderClient==='function') renderClient(); else if(typeof renderAll==='function') renderAll();
+      Backend.setConn('live');
+    }catch(e){ Backend.setConn('error'); }
+  }
+};
+
+// Boot entry (called from the init sequence): kicks off connect/auth/load.
+function loadState(){ try{ Backend.init(); }catch(e){ if(SB) Backend.setConn('error'); } }
+
+// Persist local changes to the shared DB (staff only). Upserts ONLY changed rows.
 function persist(){
-  if(_persistLock) return;
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(PATIENTS)); localStorage.setItem(STORE_SEQ, String(SEQ)); }catch(e){}
+  if(_persistLock || Backend.mode!=='staff' || !SB) return;
+  const rows = PATIENTS.map(mapToDb);
+  const prev = {}; (Backend._lastRows||[]).forEach(function(r){ prev[r.id]=JSON.stringify(r); });
+  const changed = rows.filter(function(r){ return prev[r.id] !== JSON.stringify(r); });
+  if(!changed.length) return;
+  clearTimeout(persist._t);
+  persist._t = setTimeout(async function(){
+    try{
+      const res = await SB.from('patient_visits').upsert(changed, { onConflict:'id' });
+      if(res.error){ Backend.setConn('error'); }
+      else { Backend._lastRows = PATIENTS.map(mapToDb); if(Backend.conn!=='live') Backend.setConn('live'); }
+    }catch(e){ Backend.setConn('error'); }
+  }, 250);
 }
-// Live sync across open tabs and the lobby display.
-if(typeof window!=='undefined' && window.addEventListener){
-  window.addEventListener('storage', function(e){
-    if(e.key!==STORE_KEY) return;
-    _persistLock=true;
-    try{ const arr=JSON.parse(e.newValue||'[]'); PATIENTS = Array.isArray(arr)? arr.map(_reviveDates) : []; }catch(err){}
-    try{ if(typeof renderAll==='function') renderAll(); }catch(err){}
-    _persistLock=false;
+
+// Passcode login overlay (staff). Fixed shared email + typed passcode.
+function showLogin(msg){
+  if(document.getElementById('sbLogin')){ if(msg){ const e=document.getElementById('sbLoginErr'); if(e) e.textContent=msg; } return; }
+  const ov=document.createElement('div'); ov.id='sbLogin';
+  ov.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(6,12,26,.72);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);';
+  ov.innerHTML='<form id="sbLoginForm" style="width:min(92vw,380px);background:rgba(18,26,46,.92);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:30px 28px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);text-align:center;font-family:inherit">'
+    +'<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px;color:#fff">VCA Shoreline · Patient Flow</div>'
+    +'<div style="font-size:13px;color:#9AA4B8;margin-bottom:20px">Enter the front-desk passcode to continue</div>'
+    +'<input id="sbPass" type="password" autocomplete="current-password" placeholder="Passcode" style="width:100%;box-sizing:border-box;padding:13px 15px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;font-size:15px;outline:none;margin-bottom:10px" />'
+    +'<div id="sbLoginErr" style="min-height:16px;color:#E4342B;font-size:12.5px;margin-bottom:8px"></div>'
+    +'<button id="sbLoginBtn" type="submit" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(180deg,#38BDD2,#2CA3B8);color:#04121a;font-size:15px;font-weight:800;cursor:pointer">Unlock</button></form>';
+  document.body.appendChild(ov);
+  const pass=ov.querySelector('#sbPass'), btn=ov.querySelector('#sbLoginBtn');
+  setTimeout(function(){ try{ pass.focus(); }catch(e){} }, 60);
+  ov.querySelector('#sbLoginForm').addEventListener('submit', async function(e){
+    e.preventDefault(); const code=pass.value; if(!code) return;
+    btn.disabled=true; btn.textContent='Unlocking…';
+    try{
+      const res = await SB.auth.signInWithPassword({ email: SB_LOGIN_EMAIL, password: code });
+      if(res.error){ ov.querySelector('#sbLoginErr').textContent='Incorrect passcode. Please try again.'; btn.disabled=false; btn.textContent='Unlock'; try{pass.select();}catch(e2){} return; }
+    }catch(err){ ov.querySelector('#sbLoginErr').textContent='Connection problem. Try again.'; btn.disabled=false; btn.textContent='Unlock'; return; }
+    ov.remove(); await Backend.loadAndSubscribe();
   });
+}
+
+if(typeof window!=='undefined' && window.addEventListener){
+  window.addEventListener('offline', function(){ Backend.setConn('offline'); });
+  window.addEventListener('online',  function(){ if(Backend.mode==='staff'){ Backend.setConn('reconnecting'); Backend.refetch(); } });
 }
 
 /* ============================================================
@@ -4233,7 +4353,7 @@ document.getElementById('copySummary').onclick=()=>toast('Patient summary copied
 /* Theme toggle + logout — identical behavior to the portal */
 function toggleDark(){document.body.classList.toggle('dark');
   if(!document.body.classList.contains('dark')){const m=document.getElementById('mesh');if(m)m.style.transform='none';}}
-function logout(){toast('Logged out of Shoreline Flow');}
+function logout(){ try{ if(typeof SB!=='undefined'&&SB) SB.auth.signOut(); }catch(e){} try{ if(Backend.channel) SB.removeChannel(Backend.channel); }catch(e){} PATIENTS=[]; try{ if(typeof renderAll==='function') renderAll(); }catch(e){} try{ showLogin(); }catch(e){} toast('Signed out'); }
 
 /* ── Universal Spotlight search ── */
 const searchEl=document.getElementById('globalSearch');
@@ -4354,7 +4474,7 @@ switchView('dashboard');
    and this maps the path <-> the in-app view so refresh/deep-links work.
    ============================================================ */
 (function(){
-  return; /* clean-URL router disabled for /shoreline subpath deploy */
+  return; /* clean-URL router disabled for subdomain-root deploy */
   const ROUTE_VIEW={'/':'dashboard','/command':'dashboard','/patients':'list','/flow':'flow','/rooms':'rooms','/client-display':'client'};
   const VIEW_ROUTE={dashboard:'/command',list:'/patients',flow:'/flow',rooms:'/rooms',client:'/client-display'};
   const curPath=()=>(location.pathname||'/').replace(/index\.html$/,'').replace(/\/+$/,'')||'/';
