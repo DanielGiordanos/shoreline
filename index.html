@@ -1187,8 +1187,8 @@ body.dark .cl-hero-title{color:#fff;-webkit-text-fill-color:#fff;}
 .cl-hero-sub{font-size:clamp(10px,.8vw,15px);color:var(--ink-400);font-weight:600;letter-spacing:.06em;margin-top:8px;text-transform:uppercase;opacity:.9;}
 
 /* ===== HOSPITAL ALERT / DIVERSION ===== */
-.cl-hero{min-height:clamp(80px,10.5vh,140px);display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.cl-alert-hero{display:flex;align-items:center;gap:clamp(14px,1.6vw,26px);width:min(94%,1040px);margin:0 auto;padding:clamp(12px,1.3vw,18px) clamp(18px,2vw,28px);border-radius:18px;text-align:left;
+.cl-hero{height:clamp(64px,8.4vh,108px);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+.cl-alert-hero{display:flex;align-items:center;gap:clamp(11px,1.3vw,20px);width:min(94%,1040px);max-height:100%;box-sizing:border-box;margin:0 auto;padding:clamp(7px,0.8vw,11px) clamp(16px,1.8vw,26px);border-radius:16px;text-align:left;
   background:linear-gradient(180deg,rgba(120,20,24,.34),rgba(58,10,16,.44));border:1px solid rgba(228,52,43,.55);box-shadow:0 0 0 1px rgba(228,52,43,.1),0 14px 42px -14px rgba(150,20,24,.5),inset 0 1px 0 rgba(255,255,255,.05);
   backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);}
 .cl-alert-hero.amber{background:linear-gradient(180deg,rgba(150,96,16,.32),rgba(78,50,8,.44));border-color:rgba(232,168,48,.6);box-shadow:0 0 0 1px rgba(232,168,48,.1),0 14px 42px -14px rgba(150,100,20,.45),inset 0 1px 0 rgba(255,255,255,.05);}
@@ -1196,7 +1196,7 @@ body.dark .cl-hero-title{color:#fff;-webkit-text-fill-color:#fff;}
 body:not(.dark) .cl-alert-hero{background:linear-gradient(180deg,rgba(255,236,236,.9),rgba(255,224,224,.92));border-color:rgba(228,52,43,.4);}
 body:not(.dark) .cl-alert-hero.amber{background:linear-gradient(180deg,rgba(255,246,224,.92),rgba(255,238,206,.94));border-color:rgba(232,168,48,.45);}
 body:not(.dark) .cl-alert-hero.neutral{background:linear-gradient(180deg,rgba(232,244,250,.92),rgba(220,238,248,.94));border-color:rgba(56,189,210,.4);}
-.cl-alert-ic{flex:0 0 auto;width:clamp(40px,3.2vw,56px);height:clamp(40px,3.2vw,56px);border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(228,52,43,.2);color:#FF6A5E;}
+.cl-alert-ic{flex:0 0 auto;width:clamp(32px,2.5vw,44px);height:clamp(32px,2.5vw,44px);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(228,52,43,.2);color:#FF6A5E;}
 .cl-alert-hero.amber .cl-alert-ic{background:rgba(232,168,48,.22);color:#F5B942;}
 .cl-alert-hero.neutral .cl-alert-ic{background:rgba(56,189,210,.2);color:#5FD0DE;}
 body:not(.dark) .cl-alert-ic{color:#C42920;}
@@ -1204,12 +1204,12 @@ body:not(.dark) .cl-alert-hero.amber .cl-alert-ic{color:#A9741A;}
 body:not(.dark) .cl-alert-hero.neutral .cl-alert-ic{color:#1E7C90;}
 .cl-alert-ic svg{width:58%;height:58%;}
 .cl-alert-body{flex:1;min-width:0;}
-.cl-alert-title{font-size:clamp(15px,1.5vw,26px);font-weight:800;letter-spacing:.03em;color:#fff;text-transform:uppercase;line-height:1.12;}
+.cl-alert-title{font-size:clamp(13px,1.3vw,21px);font-weight:800;letter-spacing:.03em;color:#fff;text-transform:uppercase;line-height:1.1;}
 body:not(.dark) .cl-alert-title{color:#3a0d0d;}
 .cl-alert-hero.amber .cl-alert-title{color:#fff;} body:not(.dark) .cl-alert-hero.amber .cl-alert-title{color:#4a3208;}
 .cl-alert-hero.neutral .cl-alert-title{color:#fff;} body:not(.dark) .cl-alert-hero.neutral .cl-alert-title{color:#0d2c3a;}
-.cl-alert-msg-wrap{overflow:hidden;margin-top:6px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
-.cl-alert-msg{font-size:clamp(11px,1vw,16px);font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap;display:inline-block;}
+.cl-alert-msg-wrap{overflow:hidden;margin-top:3px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
+.cl-alert-msg{font-size:clamp(10px,0.9vw,15px);font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap;display:inline-block;}
 body:not(.dark) .cl-alert-msg{color:rgba(40,10,10,.85);}
 .cl-alert-msg.scroll{animation:clAlertTicker 24s linear infinite;}
 @keyframes clAlertTicker{0%{transform:translateX(6%);}100%{transform:translateX(-100%);}}
