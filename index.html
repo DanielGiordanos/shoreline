@@ -1073,7 +1073,8 @@ select.ap-select option{color:var(--ink-900);background:var(--surface-0);}
   transition:border-color .2s var(--ease),box-shadow .2s var(--ease),background .2s var(--ease);}
 .dd-search input::placeholder{color:var(--ink-400);}
 .dd-search input:focus{outline:none;border-color:rgba(77,200,224,.55);background:var(--surface-0);box-shadow:0 0 0 3px rgba(56,189,210,.15);}
-.dd-list{max-height:220px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;pointer-events:auto;touch-action:pan-y;padding:6px;scrollbar-width:thin;}
+.dd-list{max-height:220px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:6px;scrollbar-width:thin;}
+.dd-panel.open .dd-list{pointer-events:auto;}   /* options are interactive ONLY while the panel is open; a closed (invisible) panel must never intercept clicks on controls beneath it */
 .dd-list::-webkit-scrollbar{width:6px;}
 .dd-list::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:20px;}
 .dd-opt{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer;
