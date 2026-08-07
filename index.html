@@ -1185,6 +1185,68 @@ body.client-mode #fabAdd{display:none;}
   color:#000;-webkit-text-fill-color:#000;}
 body.dark .cl-hero-title{color:#fff;-webkit-text-fill-color:#fff;}
 .cl-hero-sub{font-size:clamp(10px,.8vw,15px);color:var(--ink-400);font-weight:600;letter-spacing:.06em;margin-top:8px;text-transform:uppercase;opacity:.9;}
+
+/* ===== HOSPITAL ALERT / DIVERSION ===== */
+.cl-hero{min-height:clamp(80px,10.5vh,140px);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.cl-alert-hero{display:flex;align-items:center;gap:clamp(14px,1.6vw,26px);width:min(94%,1040px);margin:0 auto;padding:clamp(12px,1.3vw,18px) clamp(18px,2vw,28px);border-radius:18px;text-align:left;
+  background:linear-gradient(180deg,rgba(120,20,24,.34),rgba(58,10,16,.44));border:1px solid rgba(228,52,43,.55);box-shadow:0 0 0 1px rgba(228,52,43,.1),0 14px 42px -14px rgba(150,20,24,.5),inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);}
+.cl-alert-hero.amber{background:linear-gradient(180deg,rgba(150,96,16,.32),rgba(78,50,8,.44));border-color:rgba(232,168,48,.6);box-shadow:0 0 0 1px rgba(232,168,48,.1),0 14px 42px -14px rgba(150,100,20,.45),inset 0 1px 0 rgba(255,255,255,.05);}
+.cl-alert-hero.neutral{background:linear-gradient(180deg,rgba(20,42,72,.36),rgba(12,24,44,.46));border-color:rgba(56,189,210,.5);box-shadow:0 0 0 1px rgba(56,189,210,.1),0 14px 42px -14px rgba(20,60,90,.4),inset 0 1px 0 rgba(255,255,255,.05);}
+body:not(.dark) .cl-alert-hero{background:linear-gradient(180deg,rgba(255,236,236,.9),rgba(255,224,224,.92));border-color:rgba(228,52,43,.4);}
+body:not(.dark) .cl-alert-hero.amber{background:linear-gradient(180deg,rgba(255,246,224,.92),rgba(255,238,206,.94));border-color:rgba(232,168,48,.45);}
+body:not(.dark) .cl-alert-hero.neutral{background:linear-gradient(180deg,rgba(232,244,250,.92),rgba(220,238,248,.94));border-color:rgba(56,189,210,.4);}
+.cl-alert-ic{flex:0 0 auto;width:clamp(40px,3.2vw,56px);height:clamp(40px,3.2vw,56px);border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(228,52,43,.2);color:#FF6A5E;}
+.cl-alert-hero.amber .cl-alert-ic{background:rgba(232,168,48,.22);color:#F5B942;}
+.cl-alert-hero.neutral .cl-alert-ic{background:rgba(56,189,210,.2);color:#5FD0DE;}
+body:not(.dark) .cl-alert-ic{color:#C42920;}
+body:not(.dark) .cl-alert-hero.amber .cl-alert-ic{color:#A9741A;}
+body:not(.dark) .cl-alert-hero.neutral .cl-alert-ic{color:#1E7C90;}
+.cl-alert-ic svg{width:58%;height:58%;}
+.cl-alert-body{flex:1;min-width:0;}
+.cl-alert-title{font-size:clamp(15px,1.5vw,26px);font-weight:800;letter-spacing:.03em;color:#fff;text-transform:uppercase;line-height:1.12;}
+body:not(.dark) .cl-alert-title{color:#3a0d0d;}
+.cl-alert-hero.amber .cl-alert-title{color:#fff;} body:not(.dark) .cl-alert-hero.amber .cl-alert-title{color:#4a3208;}
+.cl-alert-hero.neutral .cl-alert-title{color:#fff;} body:not(.dark) .cl-alert-hero.neutral .cl-alert-title{color:#0d2c3a;}
+.cl-alert-msg-wrap{overflow:hidden;margin-top:6px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
+.cl-alert-msg{font-size:clamp(11px,1vw,16px);font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap;display:inline-block;}
+body:not(.dark) .cl-alert-msg{color:rgba(40,10,10,.85);}
+.cl-alert-msg.scroll{animation:clAlertTicker 24s linear infinite;}
+@keyframes clAlertTicker{0%{transform:translateX(6%);}100%{transform:translateX(-100%);}}
+@media (prefers-reduced-motion: reduce){ .cl-alert-msg.scroll{animation:none;white-space:normal;} .cl-alert-msg-wrap{-webkit-mask-image:none;mask-image:none;} }
+/* Staff alert strip */
+.alert-strip{display:none;align-items:center;gap:12px;padding:9px 32px;font-size:12.5px;background:linear-gradient(90deg,rgba(228,52,43,.18),rgba(228,52,43,.05));border-bottom:1px solid rgba(228,52,43,.35);color:var(--ink-900);}
+.alert-strip.show{display:flex;}
+.alert-strip.amber{background:linear-gradient(90deg,rgba(232,168,48,.18),rgba(232,168,48,.05));border-bottom-color:rgba(232,168,48,.4);}
+.alert-strip.neutral{background:linear-gradient(90deg,rgba(56,189,210,.16),rgba(56,189,210,.05));border-bottom-color:rgba(56,189,210,.35);}
+.alert-strip .as-dot{width:9px;height:9px;border-radius:50%;background:#E4342B;box-shadow:0 0 8px #E4342B;flex:0 0 auto;}
+.alert-strip.amber .as-dot{background:#E8A830;box-shadow:0 0 8px #E8A830;}
+.alert-strip.neutral .as-dot{background:#38BDD2;box-shadow:0 0 8px #38BDD2;}
+.alert-strip .as-label{font-weight:800;letter-spacing:.03em;text-transform:uppercase;}
+.alert-strip .as-meta{color:var(--ink-400);font-weight:600;}
+.alert-strip .as-manage{margin-left:auto;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;background:none;border:none;padding:6px 11px;border-radius:8px;}
+.alert-strip .as-manage:hover{background:rgba(56,189,210,.12);}
+/* Hospital Alert modal */
+.alert-types{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.alert-type{display:flex;align-items:flex-start;gap:10px;padding:12px 13px;border-radius:14px;border:1px solid var(--glass-hairline);background:var(--fill-soft);cursor:pointer;transition:border-color .15s,background .15s;text-align:left;}
+.alert-type:hover{border-color:rgba(56,189,210,.4);}
+.alert-type.sel{border-color:var(--accent);background:rgba(56,189,210,.1);}
+.alert-type .at-dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;margin-top:3px;}
+.alert-type .at-t{font-size:13px;font-weight:700;color:var(--ink-900);display:block;}
+.alert-type .at-s{font-size:11px;color:var(--ink-400);margin-top:2px;line-height:1.3;display:block;}
+.alert-field{margin-bottom:12px;}
+.alert-field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-700);margin-bottom:5px;letter-spacing:.02em;}
+.alert-field input[type=text],.alert-field textarea,.alert-field input[type=datetime-local]{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:11px;border:1px solid var(--glass-hairline);background:var(--fill-soft);color:var(--ink-900);font-family:var(--font);font-size:13px;}
+.alert-field textarea{min-height:58px;resize:vertical;}
+.alert-toggles{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:6px;}
+.alert-toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink-700);cursor:pointer;}
+.alert-active-card{padding:14px 15px;border-radius:14px;border:1px solid rgba(228,52,43,.4);background:rgba(228,52,43,.08);margin-bottom:6px;}
+.alert-active-card.amber{border-color:rgba(232,168,48,.4);background:rgba(232,168,48,.08);}
+.alert-active-card.neutral{border-color:rgba(56,189,210,.4);background:rgba(56,189,210,.08);}
+.alert-active-card .aac-t{font-size:14px;font-weight:800;color:var(--ink-900);letter-spacing:.02em;text-transform:uppercase;}
+.alert-active-card .aac-m{font-size:12.5px;color:var(--ink-700);margin-top:6px;line-height:1.4;}
+.alert-active-card .aac-meta{font-size:11.5px;color:var(--ink-400);margin-top:8px;}
+
 .cl-clockwrap{justify-self:end;text-align:right;}
 .cl-date{font-size:clamp(10px,.8vw,15px);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
 .cl-clock{font-size:clamp(30px,3vw,60px);font-weight:800;letter-spacing:-.02em;color:var(--ink-900);line-height:1;font-variant-numeric:tabular-nums;}
@@ -1397,6 +1459,8 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
       <div class="search-results" id="searchResults"></div>
     </div>
   </div>
+
+  <div class="alert-strip" id="alertStrip"></div>
 
   <!-- STAGE -->
   <main class="stage" id="stage">
@@ -1713,6 +1777,20 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
     <button class="btn ghost" id="shiftCancel">Cancel</button>
     <button class="btn primary" id="shiftSave">Save Assignments</button>
   </div>
+</div>
+
+<!-- HOSPITAL ALERT MODAL -->
+<div class="addpt-scrim" id="alertScrim"></div>
+<div class="addpt-modal" id="alertModal" role="dialog" aria-modal="true" aria-label="Hospital Alert" style="width:560px;max-width:92vw">
+  <div class="addpt-head">
+    <div class="aph-title">
+      <span class="aph-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+      <div><div class="aph-t">Hospital Alert</div><div class="aph-sub" id="alertSub">Set the hospital's public and staff alert status.</div></div>
+    </div>
+    <button class="close" id="alertClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="addpt-body" id="alertBody"></div>
+  <div class="addpt-foot" id="alertFoot"></div>
 </div>
 
 <!-- EDIT TRIAGE MODAL -->
@@ -2357,9 +2435,24 @@ const Backend = {
       }
     }catch(e){}
   },
+  loadAlert: async function(){
+    try{
+      const res = await SB.from('hospital_alerts').select('*').eq('tenant_id', TENANT_ID).eq('active', true).order('created_at',{ascending:false}).limit(1);
+      currentAlert = (!res.error && res.data && res.data.length) ? res.data[0] : null;
+    }catch(e){}
+    try{ if(typeof renderAlert==='function') renderAlert(); }catch(e){}
+  },
+  lobbyLoadAlert: async function(){
+    try{
+      const res = await SB.from('active_alert').select('*').eq('tenant_id', TENANT_ID).limit(1);
+      const row = (!res.error && res.data && res.data.length) ? res.data[0] : null;
+      currentAlert = (row && row.show_client!==false) ? row : null;
+    }catch(e){}
+  },
   loadAndSubscribe: async function(){
     await Backend.refetch();
     await Backend.loadShifts();
+    await Backend.loadAlert();
     if(Backend.channel){ try{ SB.removeChannel(Backend.channel); }catch(e){} }
     Backend.channel = SB.channel('pv-'+TENANT_ID)
       .on('postgres_changes', { event:'*', schema:'public', table:'patient_visits', filter:'tenant_id=eq.'+TENANT_ID }, function(){ Backend.refetch(); })
@@ -2381,6 +2474,10 @@ const Backend = {
           }
         }catch(e){}
       }).subscribe();
+    if(Backend.alertChannel){ try{ SB.removeChannel(Backend.alertChannel); }catch(e){} }
+    Backend.alertChannel = SB.channel('alerts-'+TENANT_ID)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hospital_alerts', filter:'tenant_id=eq.'+TENANT_ID }, function(){ Backend.loadAlert(); })
+      .subscribe();
   },
   refetch: async function(){
     _persistLock = true;
@@ -2404,7 +2501,9 @@ const Backend = {
       const res = await SB.from('client_display_visits').select('*').eq('tenant_id', TENANT_ID);
       if(res.error){ Backend.setConn('error'); return; }
       _persistLock = true; PATIENTS = (res.data||[]).map(mapSafeToApp); _persistLock = false;
+      await Backend.lobbyLoadAlert();
       if(typeof renderClient==='function') renderClient(); else if(typeof renderAll==='function') renderAll();
+      try{ if(typeof renderAlert==='function') renderAlert(); }catch(e){}
       Backend.setConn('live');
     }catch(e){ Backend.setConn('error'); }
   }
@@ -3852,6 +3951,7 @@ function renderAll(){
   renderFilterBar();renderTable();renderBoard();renderRooms();renderComplete();
   if(currentView==='client') renderClient();
   if(activeLoc) renderLocDrawer();     // keep the open location panel in sync after moves
+  try{ renderAlert(); }catch(e){}
   persist();                           // save the production data store after every change
 }
 
@@ -4170,11 +4270,171 @@ function opsMenuClose(){
   const fab=document.getElementById('fabAdd'); fab.classList.remove('open'); fab.setAttribute('aria-expanded','false');
 }
 function opsMenuToggle(){ document.getElementById('opsMenu').classList.contains('open') ? opsMenuClose() : opsMenuOpen(); }
+
+/* ============================================================
+   HOSPITAL ALERT / DIVERSION — shared, realtime, tenant-scoped.
+   ============================================================ */
+const ALERT_WARN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+const ALERT_TYPES = {
+  normal:    { label:"Normal Operations",        color:"neutral", dot:"#48B888", desc:"Clears any active alert and restores the normal Client Display.", headline:"", message:"" },
+  limited:   { label:"Limited Emergency Intake", color:"amber",   dot:"#E8A830", desc:"High volume; new arrivals may be redirected after assessment.", headline:"Limited Emergency Intake", message:"We are currently experiencing exceptionally high patient volume. New arrivals may be redirected after medical assessment. Please speak with our Client Service team." },
+  diversion: { label:"Emergency Service Diversion", color:"red",  dot:"#E4342B", desc:"Not accepting additional emergency patients.", headline:"Emergency Service Diversion", message:"We are currently unable to accept additional emergency patients. Please contact the front desk for assistance locating another emergency hospital." },
+  custom:    { label:"Custom Announcement",      color:"neutral", dot:"#38BDD2", desc:"Your own headline and message.", headline:"", message:"" }
+};
+let currentAlert = null;
+let alertDraftType = "diversion";
+let alertModalMode = "new";
+function _alertColorClass(type){ const c=(ALERT_TYPES[type]||{}).color; return c==="amber"?"amber":(c==="red"?"red":"neutral"); }
+function _heroColorClass(type){ const c=(ALERT_TYPES[type]||{}).color; return c==="amber"?"amber":(c==="red"?"":"neutral"); }
+function fmtAlertWhen(v){ if(!v) return ""; try{ const d=new Date(v); return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" · "+fmtTime(d); }catch(e){ return ""; } }
+function toLocalInput(v){ try{ const d=new Date(v); const p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes()); }catch(e){ return ""; } }
+
+/* Render the active alert into the Client Display hero + staff strip. */
+function renderAlert(){
+  const a = currentAlert;
+  const isAlert = !!(a && a.type && a.type!=="normal");
+  const hero = document.querySelector("#view-client .cl-hero");
+  if(hero){
+    if(isAlert && a.show_client!==false){
+      const head = bcEsc(a.headline || (ALERT_TYPES[a.type]||{}).headline || (ALERT_TYPES[a.type]||{}).label || "Hospital Alert");
+      const msg  = bcEsc(a.message  || (ALERT_TYPES[a.type]||{}).message  || "");
+      hero.innerHTML = '<div class="cl-alert-hero '+_heroColorClass(a.type)+'">'
+        + '<div class="cl-alert-ic">'+ALERT_WARN_SVG+'</div>'
+        + '<div class="cl-alert-body"><div class="cl-alert-title">'+head+'</div>'
+        + '<div class="cl-alert-msg-wrap"><span class="cl-alert-msg scroll">'+msg+'</span></div></div></div>';
+    } else {
+      hero.innerHTML = '<div class="cl-hero-title">'+"We're here for them. You're in good hands."+'</div><div class="cl-hero-sub">'+"Thank you for trusting us with your pet's care."+'</div>';
+    }
+  }
+  const strip = document.getElementById("alertStrip");
+  if(strip){
+    const lobby = (typeof Backend!=="undefined" && Backend.mode==="lobby");
+    if(isAlert && a.show_staff!==false && !lobby){
+      const t = ALERT_TYPES[a.type] || ALERT_TYPES.custom;
+      strip.className = "alert-strip show " + _alertColorClass(a.type).replace("red","");
+      strip.innerHTML = '<span class="as-dot"></span><span class="as-label">'+bcEsc(t.label)+'</span>'
+        + '<span class="as-meta">Active since '+fmtAlertWhen(a.effective_at || a.created_at)+'</span>'
+        + '<button class="as-manage" id="alertStripManage">Manage</button>';
+      const mb=document.getElementById("alertStripManage"); if(mb) mb.onclick=openAlertModal;
+    } else { strip.className="alert-strip"; strip.innerHTML=""; }
+  }
+}
+
+function openAlertModal(){
+  alertModalMode = currentAlert ? "view" : "new";
+  alertDraftType = currentAlert ? currentAlert.type : "diversion";
+  renderAlertModal();
+  document.getElementById("alertScrim").classList.add("open");
+  document.getElementById("alertModal").classList.add("open");
+}
+function closeAlertModal(){
+  const c=document.getElementById("alertConfirm"); if(c) c.remove();
+  document.getElementById("alertScrim").classList.remove("open");
+  document.getElementById("alertModal").classList.remove("open");
+}
+function renderAlertModal(){
+  const body=document.getElementById("alertBody"), foot=document.getElementById("alertFoot");
+  if(alertModalMode==="view" && currentAlert){
+    const t = ALERT_TYPES[currentAlert.type] || ALERT_TYPES.custom;
+    body.innerHTML = '<div class="alert-active-card '+_alertColorClass(currentAlert.type)+'">'
+      + '<div class="aac-t">'+bcEsc(t.label)+'</div>'
+      + '<div class="aac-m">'+bcEsc(currentAlert.message || t.message || "")+'</div>'
+      + '<div class="aac-meta">Active since '+fmtAlertWhen(currentAlert.effective_at || currentAlert.created_at)
+      + (currentAlert.review_at ? '  ·  Review by '+fmtAlertWhen(currentAlert.review_at) : '')
+      + (currentAlert.internal_note ? '<br>Note: '+bcEsc(currentAlert.internal_note) : '') + '</div></div>';
+    foot.innerHTML = '<button class="btn ghost" id="alertEditBtn">Edit Alert</button><button class="btn danger" id="alertEndBtn">End Alert</button>';
+    document.getElementById("alertEditBtn").onclick = function(){ alertModalMode="edit"; alertDraftType=currentAlert.type; renderAlertModal(); };
+    document.getElementById("alertEndBtn").onclick = function(){ confirmAlert("end"); };
+    return;
+  }
+  const cards = Object.keys(ALERT_TYPES).map(function(k){ const t=ALERT_TYPES[k];
+    return '<button type="button" class="alert-type'+(alertDraftType===k?" sel":"")+'" data-atype="'+k+'"><span class="at-dot" style="background:'+t.dot+'"></span><span><span class="at-t">'+t.label+'</span><span class="at-s">'+t.desc+'</span></span></button>';
+  }).join("");
+  const pre = (currentAlert && currentAlert.type===alertDraftType) ? currentAlert : null;
+  const t = ALERT_TYPES[alertDraftType];
+  let form="";
+  if(alertDraftType==="normal"){
+    form = '<div class="alert-field" style="color:var(--ink-400);font-size:12.5px;line-height:1.45">Selecting Normal Operations clears any active alert and restores the normal Client Display and staff pages.</div>';
+  } else {
+    form = '<div class="alert-field"><label>Public headline</label><input type="text" id="alertHeadline" value="'+bcEsc((pre&&pre.headline)||t.headline||"")+'" /></div>'
+      + '<div class="alert-field"><label>Public message</label><textarea id="alertMessage">'+bcEsc((pre&&pre.message)||t.message||"")+'</textarea></div>'
+      + '<div class="alert-field"><label>Internal staff note (never shown publicly)</label><textarea id="alertNote">'+bcEsc((pre&&pre.internal_note)||"")+'</textarea></div>'
+      + '<div class="alert-field"><label>Expected review time (optional)</label><input type="datetime-local" id="alertReview" value="'+((pre&&pre.review_at)?toLocalInput(pre.review_at):"")+'" /></div>'
+      + '<div class="alert-toggles"><label class="alert-toggle"><input type="checkbox" id="alertShowClient" '+((!pre||pre.show_client!==false)?"checked":"")+' /> Show on Client Display</label>'
+      + '<label class="alert-toggle"><input type="checkbox" id="alertShowStaff" '+((!pre||pre.show_staff!==false)?"checked":"")+' /> Show on staff pages</label></div>';
+  }
+  body.innerHTML = '<div class="alert-types">'+cards+'</div>'+form;
+  body.querySelectorAll(".alert-type").forEach(function(el){ el.onclick=function(){ alertDraftType=el.dataset.atype; renderAlertModal(); }; });
+  const label = alertDraftType==="normal" ? "Restore Normal" : "Activate Alert";
+  foot.innerHTML = '<button class="btn ghost" id="alertCancelBtn">Cancel</button><button class="btn primary" id="alertActivateBtn">'+label+'</button>';
+  document.getElementById("alertCancelBtn").onclick = closeAlertModal;
+  document.getElementById("alertActivateBtn").onclick = function(){
+    if(alertDraftType==="diversion") confirmAlert("activate");
+    else if(alertDraftType==="normal") endAlert(false);
+    else activateAlert();
+  };
+}
+function confirmAlert(kind){
+  if(document.getElementById("alertConfirm")) return;
+  const isEnd = kind==="end";
+  const title = isEnd ? "End Emergency Service Diversion?" : "Activate Emergency Service Diversion?";
+  const msg = isEnd ? "This will restore the normal Client Display message and remove the alert from staff pages."
+                    : "This will immediately replace the normal Client Display message and show a persistent alert throughout Shoreline Flow.";
+  const go = isEnd ? "End Diversion" : "Activate Diversion";
+  const ov=document.createElement("div"); ov.id="alertConfirm";
+  ov.style.cssText="position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(6,12,26,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:inherit;";
+  ov.innerHTML='<div style="width:86%;max-width:420px;background:rgba(20,28,48,.97);border:1px solid rgba(228,52,43,.5);border-radius:18px;padding:24px;text-align:center;box-shadow:0 24px 60px -18px rgba(0,0,0,.6)">'
+    +'<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:9px">'+title+'</div>'
+    +'<div style="font-size:13px;color:#9AA4B8;margin-bottom:20px;line-height:1.45">'+msg+'</div>'
+    +'<div style="display:flex;gap:10px;justify-content:center"><button class="btn ghost" id="alertConfirmNo">Cancel</button><button class="btn danger" id="alertConfirmYes">'+go+'</button></div></div>';
+  document.getElementById("alertModal").appendChild(ov);
+  document.getElementById("alertConfirmNo").onclick=function(){ ov.remove(); };
+  document.getElementById("alertConfirmYes").onclick=function(){ ov.remove(); if(isEnd) endAlert(false); else activateAlert(); };
+}
+function _alertVal(id){ const el=document.getElementById(id); return el?el.value.trim():""; }
+function _alertChecked(id){ const el=document.getElementById(id); return el?el.checked:true; }
+async function activateAlert(){
+  const type = alertDraftType;
+  const by = (typeof SB_LOGIN_EMAIL!=="undefined" ? SB_LOGIN_EMAIL : "Front Desk");
+  const t = ALERT_TYPES[type] || ALERT_TYPES.custom;
+  const payload = {
+    tenant_id: TENANT_ID, type: type,
+    headline: _alertVal("alertHeadline") || t.headline || t.label,
+    message: _alertVal("alertMessage") || t.message || "",
+    internal_note: _alertVal("alertNote") || null,
+    show_client: _alertChecked("alertShowClient"),
+    show_staff: _alertChecked("alertShowStaff"),
+    review_at: _alertVal("alertReview") || null,
+    effective_at: new Date().toISOString(),
+    active: true, created_by: by
+  };
+  if(typeof SB!=="undefined" && SB && Backend.mode==="staff"){
+    try{
+      await SB.from("hospital_alerts").update({ active:false, ended_at:new Date().toISOString(), ended_by:by }).eq("tenant_id",TENANT_ID).eq("active",true);
+      const res = await SB.from("hospital_alerts").insert(payload);
+      if(res.error){ toast("Could not activate alert — check connection"); return; }
+    }catch(e){ toast("Could not activate alert — check connection"); return; }
+    await Backend.loadAlert();
+  } else { currentAlert = payload; renderAlert(); }
+  closeAlertModal();
+  notify("Hospital alert activated", t.label, { icon:"info", color: type==="diversion"?"#E4342B":(type==="limited"?"#E8A830":"var(--accent)") });
+}
+async function endAlert(silent){
+  const by = (typeof SB_LOGIN_EMAIL!=="undefined" ? SB_LOGIN_EMAIL : "Front Desk");
+  if(typeof SB!=="undefined" && SB && Backend.mode==="staff" && currentAlert && currentAlert.id){
+    try{ await SB.from("hospital_alerts").update({ active:false, ended_at:new Date().toISOString(), ended_by:by }).eq("id",currentAlert.id); }catch(e){}
+    currentAlert = null; await Backend.loadAlert();
+  } else { currentAlert = null; }
+  renderAlert(); closeAlertModal();
+  if(!silent) notify("Alert ended", "Normal operations restored", { icon:"check", color:"var(--s-admitted)" });
+}
+
 function opsAction(op){
   opsMenuClose();
   if(op==='new') setTimeout(openAddPatient,120);
   else if(op==='shift') setTimeout(openShiftSetup,120);
-  // 'alert' and 'settings' have no functionality yet — just close.
+  else if(op==='alert') setTimeout(openAlertModal,120);
+  // 'settings' has no functionality yet — just close.
 }
 
 /* ============================================================
@@ -4330,6 +4590,8 @@ document.getElementById('shiftClose').onclick=closeShiftSetup;
 document.getElementById('shiftScrim').onclick=closeShiftSetup;
 document.getElementById('shiftCancel').onclick=closeShiftSetup;
 document.getElementById('shiftSave').onclick=saveShiftSetup;
+document.getElementById('alertClose').onclick=closeAlertModal;
+document.getElementById('alertScrim').onclick=closeAlertModal;
 document.getElementById('apClose').onclick=closeAddPatient;
 document.getElementById('apCancel').onclick=closeAddPatient;
 document.getElementById('apScrim').onclick=closeAddPatient;
