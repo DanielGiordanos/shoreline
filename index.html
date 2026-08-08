@@ -101,6 +101,12 @@ body{
 .stars-large{width:2.5px;height:2.5px;box-shadow:947px 1722px #CFE0FF,1837px 1873px #CFE0FF,1532px 83px #CFE0FF,1203px 477px #CFE0FF,489px 104px #CFE0FF,777px 1230px #CFE0FF,2389px 398px #CFE0FF,308px 763px #CFE0FF,2100px 1774px #CFE0FF,729px 920px #CFE0FF,2471px 533px #CFE0FF,26px 217px #CFE0FF,2442px 1454px #CFE0FF,2540px 717px #CFE0FF,892px 77px #CFE0FF,1511px 697px #CFE0FF,580px 91px #CFE0FF,836px 523px #CFE0FF,157px 1228px #CFE0FF,834px 1669px #CFE0FF,47px 1677px #CFE0FF,1341px 838px #CFE0FF,1523px 380px #CFE0FF,2544px 640px #CFE0FF,320px 417px #CFE0FF,129px 1629px #CFE0FF,2031px 1123px #CFE0FF,1981px 130px #CFE0FF,1672px 208px #CFE0FF,1620px 1360px #CFE0FF,2254px 317px #CFE0FF,2188px 187px #CFE0FF,671px 815px #CFE0FF,1111px 840px #CFE0FF,1161px 1368px #CFE0FF,1260px 856px #CFE0FF,211px 640px #CFE0FF,2321px 1810px #CFE0FF,1464px 849px #CFE0FF,1706px 38px #CFE0FF,1491px 1320px #CFE0FF,808px 801px #CFE0FF,1659px 418px #CFE0FF,25px 890px #CFE0FF,642px 868px #CFE0FF,466px 1681px #CFE0FF,371px 832px #CFE0FF,2367px 1809px #CFE0FF,1494px 944px #CFE0FF,666px 267px #CFE0FF,61px 106px #CFE0FF,2260px 292px #CFE0FF,1625px 183px #CFE0FF,2347px 1275px #CFE0FF,1519px 1510px #CFE0FF,2067px 352px #CFE0FF,598px 713px #CFE0FF,1161px 332px #CFE0FF,2135px 352px #CFE0FF,275px 223px #CFE0FF,1572px 1005px #CFE0FF,809px 618px #CFE0FF,519px 1715px #CFE0FF,179px 1998px #CFE0FF,1978px 645px #CFE0FF,219px 1245px #CFE0FF,1589px 177px #CFE0FF,2541px 1410px #CFE0FF,657px 1312px #CFE0FF,910px 1272px #CFE0FF;animation:animStar 270s linear infinite;opacity:.36;}
 .stars-large::after{content:"";position:absolute;top:2000px;left:0;width:2.5px;height:2.5px;box-shadow:947px 1722px #CFE0FF,1837px 1873px #CFE0FF,1532px 83px #CFE0FF,1203px 477px #CFE0FF,489px 104px #CFE0FF,777px 1230px #CFE0FF,2389px 398px #CFE0FF,308px 763px #CFE0FF,2100px 1774px #CFE0FF,729px 920px #CFE0FF,2471px 533px #CFE0FF,26px 217px #CFE0FF,2442px 1454px #CFE0FF,2540px 717px #CFE0FF,892px 77px #CFE0FF,1511px 697px #CFE0FF,580px 91px #CFE0FF,836px 523px #CFE0FF,157px 1228px #CFE0FF,834px 1669px #CFE0FF,47px 1677px #CFE0FF,1341px 838px #CFE0FF,1523px 380px #CFE0FF,2544px 640px #CFE0FF,320px 417px #CFE0FF,129px 1629px #CFE0FF,2031px 1123px #CFE0FF,1981px 130px #CFE0FF,1672px 208px #CFE0FF,1620px 1360px #CFE0FF,2254px 317px #CFE0FF,2188px 187px #CFE0FF,671px 815px #CFE0FF,1111px 840px #CFE0FF,1161px 1368px #CFE0FF,1260px 856px #CFE0FF,211px 640px #CFE0FF,2321px 1810px #CFE0FF,1464px 849px #CFE0FF,1706px 38px #CFE0FF,1491px 1320px #CFE0FF,808px 801px #CFE0FF,1659px 418px #CFE0FF,25px 890px #CFE0FF,642px 868px #CFE0FF,466px 1681px #CFE0FF,371px 832px #CFE0FF,2367px 1809px #CFE0FF,1494px 944px #CFE0FF,666px 267px #CFE0FF,61px 106px #CFE0FF,2260px 292px #CFE0FF,1625px 183px #CFE0FF,2347px 1275px #CFE0FF,1519px 1510px #CFE0FF,2067px 352px #CFE0FF,598px 713px #CFE0FF,1161px 332px #CFE0FF,2135px 352px #CFE0FF,275px 223px #CFE0FF,1572px 1005px #CFE0FF,809px 618px #CFE0FF,519px 1715px #CFE0FF,179px 1998px #CFE0FF,1978px 645px #CFE0FF,219px 1245px #CFE0FF,1589px 177px #CFE0FF,2541px 1410px #CFE0FF,657px 1312px #CFE0FF,910px 1272px #CFE0FF;}
 @keyframes animStar{from{transform:translateY(0)}to{transform:translateY(-2000px)}}
+/* Client Display / lobby-TV night mode reuses the SAME global star-field (#starfield),
+   with a slightly higher opacity so the identical field reads across a large, distant screen.
+   Same size/density/pattern/glow/animation — dark mode only, still very subtle. */
+body.dark.client-mode .stars-small,body.dark.tv-mode .stars-small{opacity:.62;}
+body.dark.client-mode .stars-medium,body.dark.tv-mode .stars-medium{opacity:.52;}
+body.dark.client-mode .stars-large,body.dark.tv-mode .stars-large{opacity:.46;}
 @media (prefers-reduced-motion: reduce){.stars-small,.stars-medium,.stars-large{animation:none;}}
 
 /* App layout */
@@ -466,6 +472,24 @@ body.dark .prio-3{box-shadow:0 0 12px -2px rgba(92,199,90,.6);}
 body:not(.dark) .prio-1{box-shadow:0 3px 10px -3px rgba(228,52,43,.5);}
 body:not(.dark) .prio-2{box-shadow:0 3px 10px -3px rgba(242,199,68,.55);}
 body:not(.dark) .prio-3{box-shadow:0 3px 10px -3px rgba(92,199,90,.5);}
+/* Resuscitation preference badge — compact, beside patient name (never on lobby Client Display) */
+.resus-badge{display:inline-flex;align-items:center;justify-content:center;padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:800;letter-spacing:.05em;vertical-align:middle;margin-left:5px;line-height:1.55;white-space:nowrap;}
+.resus-badge.cpr{color:#ecffff;background:rgba(56,189,210,.22);border:1px solid rgba(56,189,210,.55);}
+.resus-badge.dnr{color:#ffe7e2;background:rgba(214,86,74,.22);border:1px solid rgba(214,86,74,.55);}
+body.dark .resus-badge.cpr{box-shadow:0 0 10px -3px rgba(56,189,210,.7);}
+body.dark .resus-badge.dnr{box-shadow:0 0 10px -3px rgba(214,86,74,.6);}
+.d-name-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.d-name-wrap .sub{flex-basis:100%;}
+.resus-badge.big{font-size:11px;padding:2px 9px;margin-left:0;}
+/* ===== ResuscitationStatus — shared premium pill (identical to Care Connect client portal) ===== */
+.resus-cap{position:relative;display:flex;align-items:center;justify-content:center;width:fit-content;min-width:150px;padding:9px 16px;border-radius:12px;font-size:13px;font-weight:750;letter-spacing:.1em;white-space:nowrap;}
+.resus-cap svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:15px;height:15px;opacity:.85;}
+/* light (default) — very pale semantic tint, subtle border, no shadow */
+.resus-cap.cpr{color:#1f8fa8;background:rgba(30,143,168,0.07);border:1px solid rgba(30,143,168,0.20);}
+.resus-cap.dnr{color:#b0574a;background:rgba(176,87,74,0.07);border:1px solid rgba(176,87,74,0.20);}
+/* dark — subtle translucent surface, restrained color, no glow */
+body.dark .resus-cap.cpr{color:#5cc4d6;background:rgba(56,189,210,0.08);border-color:rgba(56,189,210,0.24);}
+body.dark .resus-cap.dnr{color:#d19a8f;background:rgba(224,112,96,0.08);border-color:rgba(224,112,96,0.24);}
 
 .wait{font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;}
 .wait.warn{color:var(--s-waiting);}
@@ -1246,6 +1270,42 @@ body:not(.dark) .cl-alert-msg{color:rgba(40,10,10,.85);}
 .alert-active-card .aac-t{font-size:14px;font-weight:800;color:var(--ink-900);letter-spacing:.02em;text-transform:uppercase;}
 .alert-active-card .aac-m{font-size:12.5px;color:var(--ink-700);margin-top:6px;line-height:1.4;}
 .alert-active-card .aac-meta{font-size:11.5px;color:var(--ink-400);margin-top:8px;}
+/* ===== STAFF MESSAGES (patient drawer) ===== */
+.msg-sect{margin-top:22px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--glass-hairline);}
+.comm-head{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:0;padding:0;margin:0 0 14px;cursor:pointer;text-align:left;font:inherit;}
+.comm-head .sect-title{margin:0;}
+.comm-chev{width:16px;height:16px;flex:0 0 auto;color:var(--ink-400);transition:transform .2s ease;}
+.comm-head[aria-expanded="false"] .comm-chev{transform:rotate(180deg);}
+.comm-body{overflow:hidden;max-height:1200px;opacity:1;transition:max-height .2s ease,opacity .2s ease;}
+.comm-body.collapsed{max-height:0;opacity:0;pointer-events:none;}
+.comm-headwrap{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.comm-meta{font-size:11px;font-weight:600;color:var(--ink-400);white-space:nowrap;}
+.comm-meta.unread{color:var(--brand-cyan);display:inline-flex;align-items:center;gap:5px;}
+.comm-meta .comm-dot{width:7px;height:7px;border-radius:50%;background:var(--brand-cyan);box-shadow:0 0 8px var(--brand-cyan);}
+.msg-track{display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px;background:var(--fill-soft);border:1px solid var(--glass-hairline);margin-bottom:12px;}
+.msg-track .mqr{width:78px;height:78px;flex:0 0 auto;background:#fff;border-radius:9px;padding:5px;line-height:0;}
+.msg-track .mqr svg{width:100%;height:100%;display:block;}
+.msg-track .mt-main{min-width:0;}
+.msg-track .mt-code{font-size:12px;color:var(--ink-400);font-weight:600;}
+.msg-track .mt-code b{font-size:16px;color:var(--ink-900);letter-spacing:.14em;font-weight:800;display:block;margin-top:2px;}
+.msg-track .mt-copy{margin-top:8px;font-size:11.5px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--ctl-border);padding:6px 11px;border-radius:9px;cursor:pointer;}
+.msg-track .mt-copy:hover{background:rgba(56,189,210,.1);}
+.msg-thread{max-height:300px;overflow-y:auto;padding:6px 2px;display:flex;flex-direction:column;gap:3px;}
+.msg-empty{color:var(--ink-400);font-size:12.5px;text-align:center;padding:18px 12px;line-height:1.5;}
+.msg-row{display:flex;}
+.msg-row.staff{justify-content:flex-end;}
+.msg-row.client{justify-content:flex-start;}
+.msg-b{max-width:76%;padding:8px 13px;border-radius:17px;font-size:13.5px;line-height:1.35;white-space:pre-wrap;word-wrap:break-word;}
+.msg-row.staff .msg-b{background:linear-gradient(180deg,#0A84FF,#0066E6);color:#fff;border-bottom-right-radius:5px;}
+.msg-row.client .msg-b{background:var(--fill-track);color:var(--ink-900);border-bottom-left-radius:5px;}
+.msg-compose{display:flex;gap:8px;align-items:flex-end;margin-top:6px;}
+.msg-compose textarea{flex:1;resize:none;min-height:38px;max-height:110px;border:1px solid var(--ctl-border);border-radius:13px;background:var(--fill-soft);color:var(--ink-900);font-family:var(--font);font-size:13.5px;line-height:1.35;padding:9px 13px;outline:none;}
+.msg-send{width:38px;height:38px;border-radius:50%;border:none;flex:0 0 auto;background:#0A84FF;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s;}
+.msg-send:disabled{background:var(--ctl-border);}
+.msg-send:active{transform:scale(.92);}
+.msg-send svg{width:18px;height:18px;}
+.msg-badge{display:inline-block;width:9px;height:9px;border-radius:50%;background:#0A84FF;box-shadow:0 0 7px rgba(10,132,255,.7);margin-left:7px;vertical-align:middle;}
+
 
 .cl-clockwrap{justify-self:end;text-align:right;white-space:nowrap;min-width:max-content;}
 /* ===== FULL SCREEN / TV SIGNAGE MODE ===== */
@@ -1683,7 +1743,7 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
     <button class="close" id="drawerClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="dh-top">
       <div class="pt-emoji" id="dEmoji"></div>
-      <div><h2 id="dName">—</h2><div class="sub" id="dSub">—</div></div>
+      <div class="d-name-wrap"><h2 id="dName">—</h2><span id="dResus"></span><div class="sub" id="dSub">—</div></div>
     </div>
     <div class="dh-tags" id="dTags"></div>
   </div>
@@ -1697,6 +1757,7 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
     <div id="recordsMount"></div>
     <div id="triageMount"></div>
     <div id="intakeCardMount"></div>
+    <div id="messagesMount"></div>
     <p class="sect-title">Move to stage</p>
     <div class="adv" id="dAdv"></div>
     <p class="sect-title" style="margin-top:24px;">Timeline · auto-logged</p>
@@ -1931,6 +1992,7 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
 
 <!-- ═══ Pravix multi-tenant foundation — active hospital resolves before the app boots ═══ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
 /* inlined: shoreline.config.js */
 /* =============================================================================
@@ -2411,7 +2473,8 @@ function mapToApp(r){
     triage:r.triage||null, intake:r.intake||null,
     timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new Date(e.at): new Date(), meta:e.meta||'' }; }),
     arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt,
-    totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, tags:[]
+    totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null,
+    resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
   };
 }
 function mapSafeToApp(r){
@@ -2498,6 +2561,22 @@ const Backend = {
     Backend.alertChannel = SB.channel('alerts-'+TENANT_ID)
       .on('postgres_changes', { event:'*', schema:'public', table:'hospital_alerts', filter:'tenant_id=eq.'+TENANT_ID }, function(){ Backend.loadAlert(); })
       .subscribe();
+    if(Backend.msgChannel){ try{ SB.removeChannel(Backend.msgChannel); }catch(e){} }
+    Backend.msgChannel = SB.channel('msgs-'+TENANT_ID)
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'visit_messages', filter:'tenant_id=eq.'+TENANT_ID }, function(payload){
+        const m=payload.new; if(!m) return;
+        const dr=document.getElementById('drawer'); const open = dr && dr.classList.contains('open');
+        if(activePatient && m.visit_id===activePatient && open){
+          const p=PATIENTS.find(function(x){return x.id===activePatient;});
+          // if the Messages section is collapsed, a new client message counts as unread until expanded
+          if(p && m.sender==='client' && !_commOpen){ _unreadMsgs.add(p.id); }
+          if(p) loadThread(p);
+          return;
+        }
+        if(m.sender==='client'){ _unreadMsgs.add(m.visit_id); const p=PATIENTS.find(function(x){return x.id===m.visit_id;});
+          try{ notify('New message from family', (p?(p.name+' '+(p.last||'')).trim():'A patient')+' · open to reply', {icon:'info', color:'#0A84FF'}); }catch(e){}
+          try{ renderTable(); renderBoard(); }catch(e){} }
+      }).subscribe();
   },
   refetch: async function(){
     _persistLock = true;
@@ -3066,7 +3145,7 @@ function renderTable(){
     const w=waitMinutes(p);const wc=w>120?'crit':w>45?'warn':'';
     return `<tr data-pid="${p.id}">
       <td><div class="pt-cell">${mono(p)}
-        <div class="nm"><b>${p.name} ${p.last}${recBadge(p)}</b><span>${p.species} · ${p.age}</span></div></div></td>
+        <div class="nm"><b>${p.name} ${p.last}${resusBadge(p)}${recBadge(p)}${msgBadge(p)}</b><span>${p.species} · ${p.age}</span></div></div></td>
       <td><div class="reason" title="${p.reason}">${p.reason}</div></td>
       <td>${p.doctor==='unassigned'?'<span class="muted">Unassigned</span>':`<span class="doctag">${docAv(p.doctor)}${doc(p.doctor).name}</span>`}</td>
       <td><span class="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${p.room}</span></td>
@@ -3107,7 +3186,7 @@ function cardHTML(p){
   const w=waitMinutes(p);const wc=w>120?'crit':w>45?'warn':'';
   return `<div class="card" draggable="true" data-pid="${p.id}">
     <span class="edge" style="background:${PRIO[p.prio].c}"></span>
-    <div class="c-top">${mono(p)}<b>${p.name} ${p.last}</b>
+    <div class="c-top">${mono(p)}<b>${p.name} ${p.last}${resusBadge(p)}${msgBadge(p)}</b>
       <span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:10px">${PRIO[p.prio].l}</span></div>
     <div class="c-reason">${p.reason}</div>
     <div class="c-meta"><div class="l">${p.doctor==='unassigned'?'<span class="muted" style="font-size:11.5px">No doctor</span>':docAv(p.doctor)}${p.liaison?liaAv(p.liaison):''}
@@ -3284,7 +3363,7 @@ function renderRooms(){
       <div class="room-accent" style="background:${STATUSES[p.status].color}"></div>
       <div class="r-top"><div><div class="r-name">${rm}</div>${spec?`<div class="r-spec">${spec}</div>`:'<div class="r-spec">&nbsp;</div>'}</div>
         <span class="r-state busy">In use</span></div>
-      <div class="r-pt">${mono(p)}<div class="info"><b>${p.name} ${p.last}</b><span>${p.species} · ${p.reason.slice(0,26)}${p.reason.length>26?'…':''}</span></div></div>
+      <div class="r-pt">${mono(p)}<div class="info"><b>${p.name} ${p.last}${resusBadge(p)}</b><span>${p.species} · ${p.reason.slice(0,26)}${p.reason.length>26?'…':''}</span></div></div>
       <div class="r-foot"><div class="dctr">${p.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(p.doctor)+doc(p.doctor).name}</div>
         <div class="r-right"><span class="r-timer ${rcls}" title="Time in ${rm}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(p.status)}</div></div>
     </div>`;
@@ -3316,7 +3395,7 @@ function treatmentCard(){
   const lead=occ[0], rmin=roomMinutes(lead);
   const rows = occ.slice(1,4).map(p=>`
       <div class="r-pt r-drag" draggable="true" data-pid="${p.id}" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--glass-hairline)">
-        ${mono(p)}<div class="info"><b>${p.name} ${p.last}</b><span>${p.species} · ${p.status}</span></div></div>`).join('');
+        ${mono(p)}<div class="info"><b>${p.name} ${p.last}${resusBadge(p)}</b><span>${p.species} · ${p.status}</span></div></div>`).join('');
   const more = occ.length>4 ? `<div class="muted" style="font-size:11.5px;margin-top:6px">+${occ.length-4} more in treatment</div>` : '';
   return `<div class="room occupied" data-room-name="Treatment">
       <div class="room-accent" style="background:#2FB6B9"></div>
@@ -3372,7 +3451,7 @@ function wireRoomDnD(){
    ============================================================ */
 function openDrawer(pid){
   const p=PATIENTS.find(x=>x.id===pid); if(!p) return;
-  activePatient=pid; triExpanded=false; recExpanded=false; fillDrawer(p);
+  activePatient=pid; triExpanded=false; recExpanded=false; _commOpen=false; fillDrawer(p);
   document.getElementById('scrim').classList.add('open');
   document.getElementById('drawer').classList.add('open');
 }
@@ -3463,6 +3542,23 @@ function setRecordStatus(p, status){
   const r=getRecords(p); if(r.status===status) return;
   r.status=status; r.history.push({status, by:CURRENT_USER, at:new Date(now.getTime())});
   renderAll(); if(activePatient===p.id) fillDrawer(p);
+}
+function resusBadge(p, big){
+  if(!p.resusPref) return '';
+  const cls=p.resusPref==='CPR'?'cpr':'dnr';
+  const conf = p.resusStatus==='confirmed' ? 'Confirmed by staff' : 'Client preference recorded';
+  const when = p.resusRecordedAt?fmtTime(p.resusRecordedAt):'';
+  const title=`Resuscitation: ${p.resusPref} · ${conf}${when?' · '+when:''}`;
+  return `<span class="resus-badge ${cls}${big?' big':''}" title="${title.replace(/"/g,'&quot;')}">${p.resusPref}</span>`;
+}
+const RESUS_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 8-6-16-3 8H2"/></svg>';
+/* Shared premium pill (same component as Care Connect) — used in the drawer header */
+function resusPill(p){
+  if(!p.resusPref) return '';
+  const cls=p.resusPref==='CPR'?'cpr':'dnr';
+  const conf = p.resusStatus==='confirmed' ? 'Confirmed by staff' : 'Client preference recorded';
+  const title=`Resuscitation: ${p.resusPref} · ${conf}`;
+  return `<span class="resus-cap ${cls}" title="${title.replace(/"/g,'&quot;')}">${RESUS_ICON}${p.resusPref}</span>`;
 }
 function recBadge(p){
   const r=p.records; if(!r || r.status==='not_requested') return '';
@@ -3622,6 +3718,7 @@ function fillDrawer(p){
   de.innerHTML=initials(p)+`<span class="sp-tag">${spTag(p)}</span>`;
   const nameEl=document.getElementById('dName');
   nameEl.textContent=`${p.name} ${p.last}`.trim();
+  const dResus=document.getElementById('dResus'); if(dResus) dResus.innerHTML=resusPill(p);
   nameEl.classList.add('editable-hint');
   nameEl.title='Click to edit name';
   makeEditable(nameEl, val=>{
@@ -3695,6 +3792,7 @@ function fillDrawer(p){
     <div class="tc-chev"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
   </div>`;
   document.getElementById('intakeCard').onclick=()=>openIntake(p);
+  try{ renderMessages(p); }catch(e){}
   // advance buttons
   document.getElementById('dAdv').innerHTML=STAGE_ORDER.filter(s=>s!==p.status).map(s=>
     `<button data-s="${s}">${s}</button>`).join('');
@@ -3914,7 +4012,7 @@ function renderClient(animate){
   renderClientPager();
   renderClientStats(animate);
   updateClientClock();
-  const qr=document.getElementById('clQr'); if(qr && !qr.innerHTML) qr.innerHTML=clQrSvg();
+  const qr=document.getElementById('clQr'); if(qr && !qr.innerHTML) qr.innerHTML='<div style="background:#fff;padding:5px;border-radius:6px;line-height:0">'+(typeof makeQR==='function'?makeQR('https://shoreline.pravix.app/track.html'):clQrSvg())+'</div>';
 }
 function renderClientPager(){
   const pager=document.getElementById('clPager'); if(!pager) return;
@@ -4503,6 +4601,75 @@ if(typeof document!=='undefined' && document.addEventListener){
   ['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){ document.addEventListener(ev,_onFsChange); });
   document.addEventListener('mousemove', function(){ if(document.body.classList.contains('fs-mode')) fsPokeExit(); });
   document.addEventListener('keydown', function(e){ if(e.key==='f' && document.body.classList.contains('client-mode') && !/input|textarea/i.test((e.target&&e.target.tagName)||'')){ /* quick f = fullscreen when on client tab */ } });
+}
+
+
+/* ============================================================
+   FAMILY MESSAGES — two-way, realtime, token-scoped (staff side).
+   ============================================================ */
+const _unreadMsgs = new Set();
+let _commOpen = false;  // Messages start COLLAPSED on every drawer open (reset in openDrawer)
+function updateCommMeta(p, count){
+  const m=document.getElementById('commMeta'); if(!m) return;
+  if(_unreadMsgs.has(p.id)){ m.className='comm-meta unread'; m.innerHTML='<span class="comm-dot"></span>New'; }
+  else if(typeof count==='number' && count>0){ m.className='comm-meta'; m.textContent=count+(count===1?' message':' messages'); }
+  else { m.className='comm-meta'; m.textContent=''; }
+}
+function msgBadge(p){ return _unreadMsgs.has(p.id) ? '<span class="msg-badge" title="New family message"></span>' : ''; }
+function makeQR(text){ try{ const qr=qrcode(0,'M'); qr.addData(text); qr.make(); return qr.createSvgTag({cellSize:4,margin:0,scalable:true}); }catch(e){ return ''; } }
+function trackUrlFor(p){ return 'https://shoreline.pravix.app/track.html?t=' + (p.publicToken||''); }
+
+function renderMessages(p){
+  const mount=document.getElementById('messagesMount'); if(!mount) return;
+  const url=trackUrlFor(p);
+  mount.innerHTML =
+    '<div class="msg-sect">'
+    + '<button class="comm-head" id="commHead" aria-expanded="'+(_commOpen?'true':'false')+'"><span class="comm-headwrap"><span class="sect-title">Messages</span><span class="comm-meta" id="commMeta"></span></span>'
+    +   '<svg class="comm-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>'
+    + '<div class="comm-body'+(_commOpen?'':' collapsed')+'" id="commBody">'
+    + '<div class="msg-track"><div class="mqr">'+(p.publicToken?makeQR(url):'')+'</div>'
+    +   '<div class="mt-main"><div class="mt-code">Check-in code<b>'+bcEsc(p.trackCode||'—')+'</b></div>'
+    +   '<button class="mt-copy" id="msgCopyLink">Copy tracker link</button></div></div>'
+    + '<div class="msg-thread" id="msgThread"><div class="msg-empty">Loading…</div></div>'
+    + '<div class="msg-compose"><textarea id="msgBox" rows="1" placeholder="Message"></textarea>'
+    +   '<button class="msg-send" id="msgSendBtn" disabled aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></svg></button></div>'
+    + '</div></div>';
+  const commHead=document.getElementById('commHead'), commBody=document.getElementById('commBody');
+  commHead.onclick=function(){
+    _commOpen=!_commOpen;
+    commHead.setAttribute('aria-expanded', _commOpen?'true':'false');
+    commBody.classList.toggle('collapsed', !_commOpen);
+    if(_commOpen && _unreadMsgs.has(p.id)){ _unreadMsgs.delete(p.id); updateCommMeta(p); try{ renderTable(); renderBoard(); }catch(e){} }
+  };
+  updateCommMeta(p);
+  const copyBtn=document.getElementById('msgCopyLink');
+  copyBtn.onclick=function(){ try{ navigator.clipboard.writeText(url); toast('Tracker link copied'); }catch(e){ toast('Link: '+url); } };
+  const box=document.getElementById('msgBox'), sbtn=document.getElementById('msgSendBtn');
+  box.addEventListener('input',function(){ box.style.height='auto'; box.style.height=Math.min(box.scrollHeight,110)+'px'; sbtn.disabled=!box.value.trim(); });
+  box.addEventListener('keydown',function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); if(box.value.trim()) sendStaffMsg(p, box.value.trim()); } });
+  sbtn.onclick=function(){ if(box.value.trim()) sendStaffMsg(p, box.value.trim()); };
+  loadThread(p);
+}
+async function loadThread(p){
+  const el=document.getElementById('msgThread'); if(!el || typeof SB==='undefined' || !SB) return;
+  const r=await SB.from('visit_messages').select('*').eq('visit_id', p.id).order('created_at',{ascending:true});
+  if(r.error){ el.innerHTML='<div class="msg-empty">Could not load messages.</div>'; return; }
+  const msgs=r.data||[];
+  updateCommMeta(p, msgs.length);
+  if(!msgs.length){ el.innerHTML='<div class="msg-empty">No messages yet. Share the tracker link or QR above, or send the family a note.</div>'; return; }
+  el.innerHTML=msgs.map(function(m){ const staff=m.sender==='staff';
+    return '<div class="msg-row '+(staff?'staff':'client')+'"><div class="msg-b">'+bcEsc(m.body)+'</div></div>'; }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+async function sendStaffMsg(p, body){
+  if(!body) return;
+  const box=document.getElementById('msgBox'); if(box){ box.value=''; box.style.height='auto'; }
+  const sbtn=document.getElementById('msgSendBtn'); if(sbtn) sbtn.disabled=true;
+  if(typeof SB!=='undefined' && SB && Backend.mode==='staff'){
+    const r=await SB.from('visit_messages').insert({ tenant_id:TENANT_ID, visit_id:p.id, sender:'staff', body:body, staff_name:CURRENT_USER });
+    if(r.error){ toast('Could not send message'); if(sbtn) sbtn.disabled=false; return; }
+  }
+  loadThread(p);
 }
 
 function opsAction(op){
