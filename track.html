@@ -6,6 +6,9 @@
 <meta name="theme-color" content="#05060b">
 <title>Your Pet's Visit · VCA Shoreline</title>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<!-- Firebase (loads from Google's gstatic.com — trusted by hospital proxies) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script>/* Automatic theme by HOSPITAL local time — no client toggle. Light 06:00–17:59, Dark 18:00–05:59. */
 window.HOSPITAL_TZ='America/New_York';  /* per-hospital config; future: America/Chicago, America/Denver, America/Los_Angeles */
 (function(){try{
@@ -377,8 +380,23 @@ html:not(.dark) .resus-cap.dnr{color:#b0574a;background:rgba(176,87,74,0.07);bor
 <div class="toast" id="toast"></div>
 
 <script>
-const SB_URL='https://uxslpcymtasjwvwnugmz.supabase.co';
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4c2xwY3ltdGFzand2d251Z216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NzM3NjAsImV4cCI6MjEwMTU0OTc2MH0.DYpBelNcJ-EFIrzkOZu4ZTxk9ZrWjXbw_zAYp6qvgV0';
+/* ============================================================
+   BACKEND — Firebase Firestore (client tracker, no auth needed).
+   Firestore serves from *.googleapis.com / gstatic.com, which hospital
+   SSL-inspection proxies already trust — so this loads fast on-site.
+   The public `rpc(fn,body)` shim keeps the same call sites as before;
+   only the transport changed (Supabase RPC -> Firestore reads/writes).
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE',
+  authDomain: 'shoreline-flow.firebaseapp.com',
+  projectId: 'shoreline-flow',
+  storageBucket: 'shoreline-flow.firebasestorage.app',
+  messagingSenderId: '237404385636',
+  appId: '1:237404385636:web:1ee3ba27f22c946f748a71'
+};
+try{ if(window.firebase && !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); }catch(e){}
+const DB = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
 const TRACK_BASE='https://shoreline.pravix.app/track.html';
 
 /* ---------- helpers ---------- */
@@ -389,9 +407,42 @@ function fmtTime(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d)) r
 function initials(name){ if(!name) return '•'; const p=name.trim().split(/\s+/); return ((p[0]||'')[0]||'').toUpperCase()+((p[1]||'')[0]||'').toUpperCase(); }
 function makeQR(text){ try{ const q=qrcode(0,'M'); q.addData(text); q.make(); return q.createSvgTag({cellSize:4,margin:0,scalable:true}); }catch(e){ return ''; } }
 let _toastT; function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove('on'),2600); }
-async function rpc(fn,body){ const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',
-  headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body||{})});
-  if(!r.ok) throw new Error(await r.text()); const t=await r.text(); return t?JSON.parse(t):null; }
+/* Firestore-backed RPC shim. Same names/return shapes the page already
+   expects, so no downstream render code changed. */
+function _iso(v){ if(!v) return null; if(typeof v==='string') return v; if(v && v.toDate) try{ return v.toDate().toISOString(); }catch(e){} return v; }
+async function rpc(fn,body){
+  body = body || {};
+  if(!DB) throw new Error('offline');
+  if(fn==='track_resolve'){
+    const code=String(body.p_code||'').trim().toUpperCase(); if(!code) return null;
+    const snap=await DB.collection('codes').doc(code).get();
+    if(!snap.exists) return null; const d=snap.data();
+    if(d.is_active===false) return null; return d.public_token||null;
+  }
+  if(fn==='track_overview'){
+    const snap=await DB.collection('pub').doc(body.p_token).get();
+    if(!snap.exists) return null; const d=snap.data();
+    // normalize any Firestore Timestamps to ISO strings the UI parses
+    d.arrival_time=_iso(d.arrival_time); d.discharged_at=_iso(d.discharged_at);
+    d.resus_recorded_at=_iso(d.resus_recorded_at);
+    d.timeline=(d.timeline||[]).map(function(e){ return {label:e.label, at:_iso(e.at), meta:e.meta||''}; });
+    return d;
+  }
+  if(fn==='track_messages'){
+    const q=await DB.collection('messages').doc(body.p_token).collection('items').orderBy('created_at','asc').get();
+    return q.docs.map(function(x){ const m=x.data(); return {id:x.id, sender:m.sender, body:m.body, staff_name:m.staff_name||null, created_at:_iso(m.created_at)}; });
+  }
+  if(fn==='track_send'){
+    const text=String(body.p_body||'').trim().slice(0,1000); if(!text) throw new Error('empty');
+    await DB.collection('messages').doc(body.p_token).collection('items').add({ sender:'client', body:text, created_at:new Date().toISOString() });
+    return true;
+  }
+  if(fn==='track_resus_set'){
+    await DB.collection('pub').doc(body.p_token).set({ resus_pref:body.p_pref, resus_status:'client_selected', resus_recorded_at:new Date().toISOString() }, {merge:true});
+    return true;
+  }
+  throw new Error('unknown rpc '+fn);
+}
 
 /* ---------- automatic theme by hospital local time (no client override) ----------
    One centralized rule: LIGHT 06:00–17:59, DARK 18:00–05:59, in the hospital's timezone. */

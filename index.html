@@ -1991,7 +1991,11 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
 </div>
 
 <!-- ═══ Pravix multi-tenant foundation — active hospital resolves before the app boots ═══ -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Firebase (Firestore + Auth) — served from Google's gstatic.com, which
+     hospital SSL-inspection proxies already trust, so it loads fast on-site. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
 /* inlined: shoreline.config.js */
@@ -2431,16 +2435,48 @@ let PATIENTS = [];   // PRODUCTION: starts empty — patients enter only via the
    ============================================================ */
 const TENANT_ID = (function(){ try{ return (window.Pravix && Pravix.getCurrentHospital) ? (Pravix.getCurrentHospital().id||'shoreline') : 'shoreline'; }catch(e){ return 'shoreline'; } })();
 
-const SB_URL = 'https://uxslpcymtasjwvwnugmz.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4c2xwY3ltdGFzand2d251Z216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NzM3NjAsImV4cCI6MjEwMTU0OTc2MH0.DYpBelNcJ-EFIrzkOZu4ZTxk9ZrWjXbw_zAYp6qvgV0';
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE',
+  authDomain: 'shoreline-flow.firebaseapp.com',
+  projectId: 'shoreline-flow',
+  storageBucket: 'shoreline-flow.firebasestorage.app',
+  messagingSenderId: '237404385636',
+  appId: '1:237404385636:web:1ee3ba27f22c946f748a71'
+};
 const SB_LOGIN_EMAIL = 'au733@vca.com';   // fixed shared-login identifier; staff type only the passcode
-const SB = (window.supabase && window.supabase.createClient)
-  ? window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:true, autoRefreshToken:true } })
-  : null;
+try{ if(window.firebase && !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); }catch(e){}
+const DB   = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
+const AUTH = (window.firebase && firebase.auth)      ? firebase.auth()      : null;
+const SB   = DB;   // legacy truthiness guard: many call sites test `if(SB)`
 
 let _persistLock = false;   // true while applying remote data (prevents echo writes)
 
 function _toISO(d){ return d ? (d instanceof Date ? d.toISOString() : d) : null; }
+function _fromTS(v){ if(!v) return null; if(v instanceof Date) return v; if(typeof v==='string') return new Date(v); if(v && v.toDate) try{ return v.toDate(); }catch(e){} return null; }
+// short, unambiguous check-in code (no 0/O/1/I), client-generated
+function genTrackCode(){ const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<6;i++) s+=A[Math.floor(Math.random()*A.length)]; return s; }
+function genToken(){ try{ return crypto.randomUUID(); }catch(e){ return 'tok-'+Date.now()+'-'+Math.random().toString(36).slice(2,10); } }
+// Lobby-safe projection written to pub/{public_token}. Excludes resus_* on
+// purpose — those are owned by the client (or the staff resus control) and
+// merge in separately, so a routine mirror never clobbers a family's choice.
+function safeProjection(p){
+  const docName = (p.doctor && p.doctor!=='unassigned') ? (doc(p.doctor).name||null) : null;
+  const liaName = p.liaison ? ((liaison(p.liaison)||{}).name||null) : null;
+  return {
+    tenant_id: TENANT_ID,
+    patient_name: ((p.name||'')+' '+(p.last||'')).trim(),
+    species: p.species||null, breed: p.breed||null, age: p.age||null, sex: p.sex||null,
+    status: p.status||'Waiting', room_id: p.room||null,
+    doctor: docName, liaison: liaName,
+    doctor_id: (p.doctor && p.doctor!=='unassigned') ? p.doctor : null,
+    prio: p.prio||3, priority: p.prio||3, is_active: !p.completed,
+    arrival_time: _toISO(p.arrival) || new Date().toISOString(),
+    discharged_at: _toISO(p.completedAt),
+    track_code: p.trackCode||null,
+    timeline: (p.timeline||[]).map(function(e){ return { label:e.label, at:_toISO(e.at) }; }),
+    updated_at: new Date().toISOString()
+  };
+}
 function mapToDb(p){
   return {
     id: p.id, tenant_id: TENANT_ID, visit_code: p.hid || null,
@@ -2455,6 +2491,7 @@ function mapToDb(p){
     timeline: (p.timeline||[]).map(function(e){ return { label:e.label, at:_toISO(e.at), meta:e.meta||'' }; }),
     arrival_time: _toISO(p.arrival) || new Date().toISOString(),
     discharged_at: _toISO(p.completedAt),
+    public_token: p.publicToken || null, track_code: p.trackCode || null,
     is_active: !(p.completed===true || p.active===false || p.status==='Discharged' || p.status==='Admitted' || p.status==='Euthanized')
   };
 }
@@ -2479,10 +2516,11 @@ function mapToApp(r){
 }
 function mapSafeToApp(r){
   const full=(r.patient_name||'').trim();
-  return { id:r.id, name: full.split(/\s+/)[0]||'', last: full.split(/\s+/).slice(1).join(' '),
-    species:r.species||'', breed:r.breed||'', age:r.age||'', prio:r.priority||3, status:r.status||'Waiting',
+  return { id:r.id||r.public_token, name: full.split(/\s+/)[0]||'', last: full.split(/\s+/).slice(1).join(' '),
+    species:r.species||'', breed:r.breed||'', age:r.age||'', prio:r.prio||r.priority||3, status:r.status||'Waiting',
     room:r.room_id||'Lobby', doctor:r.doctor_id||'unassigned', liaison:null,
-    arrival:r.arrival_time? new Date(r.arrival_time): new Date(), active:true, completed:false, timeline:[], tags:[] };
+    arrival:r.arrival_time? new Date(r.arrival_time): new Date(), active:r.is_active!==false, completed:r.is_active===false,
+    timeline:(r.timeline||[]).map(function(e){ return {label:e.label, at:e.at?new Date(e.at):new Date(), meta:''}; }), tags:[] };
 }
 
 const Backend = {
@@ -2501,90 +2539,126 @@ const Backend = {
   },
   init: async function(){
     Backend.mode = /[?&](display|tv|lobby)=?/.test(location.search) ? 'lobby' : 'staff';
-    if(!SB){ Backend.setConn('error'); return; }
+    if(!DB){ Backend.setConn('error'); return; }
     Backend.setConn('connecting');
     if(Backend.mode==='lobby'){ return Backend.lobbyStart(); }
-    try{ const s = await SB.auth.getSession(); if(!s || !s.data || !s.data.session){ showLogin(); return; } }
-    catch(e){ showLogin(); return; }
-    await Backend.loadAndSubscribe();
+    // Firebase restores the shared staff session asynchronously; wait for the
+    // first auth state, then either boot the app or show the passcode overlay.
+    if(!AUTH){ showLogin(); return; }
+    if(Backend._authWired) return;
+    Backend._authWired = true;
+    AUTH.onAuthStateChanged(function(user){
+      if(user){ const ov=document.getElementById('sbLogin'); if(ov) ov.remove(); Backend.loadAndSubscribe(); }
+      else { showLogin(); }
+    });
   },
   loadShifts: async function(){
     try{
-      const res = await SB.from('shift_assignments').select('assignments').eq('tenant_id', TENANT_ID).maybeSingle();
-      if(!res.error && res.data && res.data.assignments && typeof shiftAssign!=='undefined'){
+      const snap = await DB.collection('shifts').doc(TENANT_ID).get();
+      const a = snap.exists ? snap.data().assignments : null;
+      if(a && typeof shiftAssign!=='undefined'){
         Object.keys(shiftAssign).forEach(function(k){ shiftAssign[k]=null; });
-        Object.assign(shiftAssign, res.data.assignments);
+        Object.assign(shiftAssign, a);
         if(typeof applyShiftColors==='function') applyShiftColors();
       }
     }catch(e){}
   },
   loadAlert: async function(){
     try{
-      const res = await SB.from('hospital_alerts').select('*').eq('tenant_id', TENANT_ID).eq('active', true).order('created_at',{ascending:false}).limit(1);
-      currentAlert = (!res.error && res.data && res.data.length) ? res.data[0] : null;
+      const snap = await DB.collection('alerts').doc(TENANT_ID).get();
+      const row = snap.exists ? snap.data() : null;
+      currentAlert = (row && row.active) ? row : null;
     }catch(e){}
     try{ if(typeof renderAlert==='function') renderAlert(); }catch(e){}
   },
   lobbyLoadAlert: async function(){
     try{
-      const res = await SB.from('active_alert').select('*').eq('tenant_id', TENANT_ID).limit(1);
-      const row = (!res.error && res.data && res.data.length) ? res.data[0] : null;
-      currentAlert = (row && row.show_client!==false) ? row : null;
+      const snap = await DB.collection('alerts').doc(TENANT_ID).get();
+      const row = snap.exists ? snap.data() : null;
+      currentAlert = (row && row.active && row.show_client!==false) ? row : null;
     }catch(e){}
   },
   loadAndSubscribe: async function(){
-    // Fire the three independent initial queries in PARALLEL, not sequentially, so on a
-    // high-latency network (e.g. a corporate SSL-inspection proxy) we pay the round-trip once,
-    // not three times. On a fast network the effect is negligible; on VCA's proxy it's large.
     await Promise.all([ Backend.refetch(), Backend.loadShifts(), Backend.loadAlert() ]);
-    if(Backend.channel){ try{ SB.removeChannel(Backend.channel); }catch(e){} }
-    Backend.channel = SB.channel('pv-'+TENANT_ID)
-      .on('postgres_changes', { event:'*', schema:'public', table:'patient_visits', filter:'tenant_id=eq.'+TENANT_ID }, function(){ Backend.refetch(); })
-      .subscribe(function(status){
-        if(status==='SUBSCRIBED') Backend.setConn('live');
-        else if(status==='CHANNEL_ERROR' || status==='TIMED_OUT') Backend.setConn('reconnecting');
-        else if(status==='CLOSED') Backend.setConn(navigator.onLine===false ? 'offline' : 'reconnecting');
-      });
-    if(Backend.shiftChannel){ try{ SB.removeChannel(Backend.shiftChannel); }catch(e){} }
-    Backend.shiftChannel = SB.channel('shifts-'+TENANT_ID)
-      .on('postgres_changes', { event:'*', schema:'public', table:'shift_assignments', filter:'tenant_id=eq.'+TENANT_ID }, function(payload){
-        if(_shiftModalOpen) return;   // NEVER reset an active editor; only sync when idle
-        try{ const a = payload.new && payload.new.assignments;
-          if(a && typeof shiftAssign!=='undefined'){
-            Object.keys(shiftAssign).forEach(function(k){ shiftAssign[k]=null; });
-            Object.assign(shiftAssign, a);
-            if(typeof applyShiftColors==='function') applyShiftColors();
-            if(typeof renderAll==='function') renderAll();
-          }
-        }catch(e){}
-      }).subscribe();
-    if(Backend.alertChannel){ try{ SB.removeChannel(Backend.alertChannel); }catch(e){} }
-    Backend.alertChannel = SB.channel('alerts-'+TENANT_ID)
-      .on('postgres_changes', { event:'*', schema:'public', table:'hospital_alerts', filter:'tenant_id=eq.'+TENANT_ID }, function(){ Backend.loadAlert(); })
-      .subscribe();
-    if(Backend.msgChannel){ try{ SB.removeChannel(Backend.msgChannel); }catch(e){} }
-    Backend.msgChannel = SB.channel('msgs-'+TENANT_ID)
-      .on('postgres_changes', { event:'INSERT', schema:'public', table:'visit_messages', filter:'tenant_id=eq.'+TENANT_ID }, function(payload){
-        const m=payload.new; if(!m) return;
-        const dr=document.getElementById('drawer'); const open = dr && dr.classList.contains('open');
-        if(activePatient && m.visit_id===activePatient && open){
-          const p=PATIENTS.find(function(x){return x.id===activePatient;});
-          // if the Messages section is collapsed, a new client message counts as unread until expanded
-          if(p && m.sender==='client' && !_commOpen){ _unreadMsgs.add(p.id); }
-          if(p) loadThread(p);
-          return;
+    // ---- live: patient records (visits) -> rebuild + render -----------------
+    if(Backend.unsubVisits){ try{ Backend.unsubVisits(); }catch(e){} }
+    Backend.unsubVisits = DB.collection('visits').where('tenant_id','==',TENANT_ID)
+      .onSnapshot(function(snap){
+        _persistLock = true;
+        PATIENTS = snap.docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); });
+        Backend._mergeResus();
+        Backend._lastRows = PATIENTS.map(mapToDb);
+        _persistLock = false;
+        Backend.setConn('live');
+        try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
+        try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){}
+      }, function(){ Backend.setConn('reconnecting'); });
+    // ---- live: client-owned resus preferences (pub) -------------------------
+    if(Backend.unsubPub){ try{ Backend.unsubPub(); }catch(e){} }
+    Backend.unsubPub = DB.collection('pub').where('tenant_id','==',TENANT_ID)
+      .onSnapshot(function(snap){
+        Backend._pubResus = {};
+        snap.docs.forEach(function(d){ const v=d.data(); if(v.resus_pref) Backend._pubResus[d.id]={ pref:v.resus_pref, status:v.resus_status||'client_selected', at:v.resus_recorded_at||null }; });
+        Backend._mergeResus();
+        try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
+        try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){}
+      }, function(){});
+    // ---- live: shift assignments -------------------------------------------
+    if(Backend.unsubShifts){ try{ Backend.unsubShifts(); }catch(e){} }
+    Backend.unsubShifts = DB.collection('shifts').doc(TENANT_ID)
+      .onSnapshot(function(d){
+        if(_shiftModalOpen) return;   // never reset an active editor; sync only when idle
+        const a = d.exists ? d.data().assignments : null;
+        if(a && typeof shiftAssign!=='undefined'){
+          Object.keys(shiftAssign).forEach(function(k){ shiftAssign[k]=null; });
+          Object.assign(shiftAssign, a);
+          if(typeof applyShiftColors==='function') applyShiftColors();
+          if(typeof renderAll==='function') renderAll();
         }
-        if(m.sender==='client'){ _unreadMsgs.add(m.visit_id); const p=PATIENTS.find(function(x){return x.id===m.visit_id;});
-          try{ notify('New message from family', (p?(p.name+' '+(p.last||'')).trim():'A patient')+' · open to reply', {icon:'info', color:'#0A84FF'}); }catch(e){}
-          try{ renderTable(); renderBoard(); }catch(e){} }
-      }).subscribe();
+      }, function(){});
+    // ---- live: hospital alert ----------------------------------------------
+    if(Backend.unsubAlert){ try{ Backend.unsubAlert(); }catch(e){} }
+    Backend.unsubAlert = DB.collection('alerts').doc(TENANT_ID)
+      .onSnapshot(function(d){ const row=d.exists?d.data():null; currentAlert=(row&&row.active)?row:null; try{ if(typeof renderAlert==='function') renderAlert(); }catch(e){} }, function(){});
+    // ---- live: family messages (any thread) --------------------------------
+    if(Backend.unsubMsgs){ try{ Backend.unsubMsgs(); }catch(e){} }
+    Backend.unsubMsgs = DB.collectionGroup('items')
+      .onSnapshot(function(snap){
+        snap.docChanges().forEach(function(ch){
+          if(ch.type!=='added') return;
+          const m=ch.doc.data(); if(!m || m.sender!=='client') return;
+          if(Backend._msgSeen[ch.doc.id]) return; Backend._msgSeen[ch.doc.id]=1;
+          if(Backend._msgWarm){ return; }   // ignore the initial backfill snapshot
+          const token = ch.doc.ref.parent.parent ? ch.doc.ref.parent.parent.id : null;
+          const p = PATIENTS.find(function(x){ return x.publicToken===token; });
+          const dr=document.getElementById('drawer'); const open = dr && dr.classList.contains('open');
+          if(p && activePatient===p.id && open){
+            if(!_commOpen) _unreadMsgs.add(p.id);
+            loadThread(p); return;
+          }
+          if(p){ _unreadMsgs.add(p.id);
+            try{ notify('New message from family', (p.name+' '+(p.last||'')).trim()+' · open to reply', {icon:'info', color:'#0A84FF'}); }catch(e){}
+            try{ renderTable(); renderBoard(); }catch(e){} }
+        });
+        Backend._msgWarm = false;   // subsequent snapshots are real-time inserts
+      }, function(){});
+  },
+  _pubResus:{}, _msgSeen:{}, _msgWarm:true,
+  _mergeResus: function(){
+    try{ PATIENTS.forEach(function(p){ const r=Backend._pubResus[p.publicToken]; if(r){ p.resusPref=r.pref; p.resusStatus=r.status; p.resusRecordedAt=r.at?new Date(r.at):null; } }); }catch(e){}
   },
   refetch: async function(){
     _persistLock = true;
     try{
-      const res = await SB.from('patient_visits').select('*').eq('tenant_id', TENANT_ID);
-      if(res.error){ Backend.setConn('error'); }
-      else if(res.data){ PATIENTS = res.data.map(mapToApp); Backend._lastRows = PATIENTS.map(mapToDb); if(Backend.conn!=='live') Backend.setConn('live'); }
+      const snap = await DB.collection('visits').where('tenant_id','==',TENANT_ID).get();
+      PATIENTS = snap.docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); });
+      // pull current resus prefs so a cold load shows them immediately
+      const pub = await DB.collection('pub').where('tenant_id','==',TENANT_ID).get();
+      Backend._pubResus = {};
+      pub.docs.forEach(function(d){ const v=d.data(); if(v.resus_pref) Backend._pubResus[d.id]={ pref:v.resus_pref, status:v.resus_status||'client_selected', at:v.resus_recorded_at||null }; });
+      Backend._mergeResus();
+      Backend._lastRows = PATIENTS.map(mapToDb);
+      if(Backend.conn!=='live') Backend.setConn('live');
     }catch(e){ Backend.setConn('error'); }
     try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
     _persistLock = false;
@@ -2592,41 +2666,51 @@ const Backend = {
   },
   lobbyStart: async function(){
     document.body.classList.add('tv-mode');   // dedicated lobby-display URL hides all staff chrome
-    await Backend.lobbyLoad();
-    if(Backend._poll) clearInterval(Backend._poll);
-    Backend._poll = setInterval(Backend.lobbyLoad, 7000);
+    // live pub feed (safe fields only) — no auth required
+    if(Backend.unsubPubLobby){ try{ Backend.unsubPubLobby(); }catch(e){} }
+    Backend.unsubPubLobby = DB.collection('pub').where('tenant_id','==',TENANT_ID)
+      .onSnapshot(async function(snap){
+        _persistLock = true;
+        PATIENTS = snap.docs.map(function(d){ return mapSafeToApp(Object.assign({ id:d.id }, d.data())); })
+                             .filter(function(p){ return p.active; });
+        _persistLock = false;
+        await Backend.lobbyLoadAlert();
+        if(typeof renderClient==='function') renderClient(); else if(typeof renderAll==='function') renderAll();
+        try{ if(typeof renderAlert==='function') renderAlert(); }catch(e){}
+        Backend.setConn('live');
+      }, function(){ Backend.setConn('error'); });
     try{ if(typeof switchView==='function') switchView('client'); }catch(e){}
     try{ lobbyArmFullscreen(); }catch(e){}
   },
-  lobbyLoad: async function(){
-    try{
-      const res = await SB.from('client_display_visits').select('*').eq('tenant_id', TENANT_ID);
-      if(res.error){ Backend.setConn('error'); return; }
-      _persistLock = true; PATIENTS = (res.data||[]).map(mapSafeToApp); _persistLock = false;
-      await Backend.lobbyLoadAlert();
-      if(typeof renderClient==='function') renderClient(); else if(typeof renderAll==='function') renderAll();
-      try{ if(typeof renderAlert==='function') renderAlert(); }catch(e){}
-      Backend.setConn('live');
-    }catch(e){ Backend.setConn('error'); }
-  }
+  lobbyLoad: async function(){ /* superseded by realtime pub listener in lobbyStart */ }
 };
 
 // Boot entry (called from the init sequence): kicks off connect/auth/load.
 function loadState(){ try{ Backend.init(); }catch(e){ if(SB) Backend.setConn('error'); } }
 
-// Persist local changes to the shared DB (staff only). Upserts ONLY changed rows.
+// Persist local changes to Firestore (staff only). Writes ONLY changed docs,
+// and mirrors a lobby-safe projection + check-in code so the family tracker
+// and waiting-room display stay in sync.
 function persist(){
-  if(_persistLock || Backend.mode!=='staff' || !SB) return;
+  if(_persistLock || Backend.mode!=='staff' || !DB) return;
+  // ensure every patient has a stable public token + typed check-in code
+  PATIENTS.forEach(function(p){ if(!p.publicToken) p.publicToken=genToken(); if(!p.trackCode) p.trackCode=genTrackCode(); });
   const rows = PATIENTS.map(mapToDb);
   const prev = {}; (Backend._lastRows||[]).forEach(function(r){ prev[r.id]=JSON.stringify(r); });
-  const changed = rows.filter(function(r){ return prev[r.id] !== JSON.stringify(r); });
+  const changed = PATIENTS.filter(function(p,i){ return prev[rows[i].id] !== JSON.stringify(rows[i]); });
   if(!changed.length) return;
   clearTimeout(persist._t);
   persist._t = setTimeout(async function(){
     try{
-      const res = await SB.from('patient_visits').upsert(changed, { onConflict:'id' });
-      if(res.error){ Backend.setConn('error'); }
-      else { Backend._lastRows = PATIENTS.map(mapToDb); if(Backend.conn!=='live') Backend.setConn('live'); }
+      const batch = DB.batch();
+      changed.forEach(function(p){
+        batch.set(DB.collection('visits').doc(String(p.id)), mapToDb(p));
+        batch.set(DB.collection('pub').doc(p.publicToken), safeProjection(p), { merge:true });
+        batch.set(DB.collection('codes').doc(String(p.trackCode).toUpperCase()), { public_token:p.publicToken, tenant_id:TENANT_ID, is_active:!p.completed }, { merge:true });
+      });
+      await batch.commit();
+      Backend._lastRows = PATIENTS.map(mapToDb);
+      if(Backend.conn!=='live') Backend.setConn('live');
     }catch(e){ Backend.setConn('error'); }
   }, 250);
 }
@@ -2649,10 +2733,13 @@ function showLogin(msg){
     e.preventDefault(); const code=pass.value; if(!code) return;
     btn.disabled=true; btn.textContent='Unlocking…';
     try{
-      const res = await SB.auth.signInWithPassword({ email: SB_LOGIN_EMAIL, password: code });
-      if(res.error){ ov.querySelector('#sbLoginErr').textContent='Incorrect passcode. Please try again.'; btn.disabled=false; btn.textContent='Unlock'; try{pass.select();}catch(e2){} return; }
-    }catch(err){ ov.querySelector('#sbLoginErr').textContent='Connection problem. Try again.'; btn.disabled=false; btn.textContent='Unlock'; return; }
-    ov.remove(); await Backend.loadAndSubscribe();
+      await AUTH.signInWithEmailAndPassword(SB_LOGIN_EMAIL, code);
+      // onAuthStateChanged removes the overlay and calls loadAndSubscribe()
+    }catch(err){
+      const wrong = err && (err.code==='auth/wrong-password' || err.code==='auth/invalid-credential' || err.code==='auth/user-not-found' || err.code==='auth/invalid-login-credentials');
+      ov.querySelector('#sbLoginErr').textContent = wrong ? 'Incorrect passcode. Please try again.' : 'Connection problem. Try again.';
+      btn.disabled=false; btn.textContent='Unlock'; try{pass.select();}catch(e2){} return;
+    }
   });
 }
 
@@ -4531,22 +4618,21 @@ async function activateAlert(){
     effective_at: new Date().toISOString(),
     active: true, created_by: by
   };
-  if(typeof SB!=="undefined" && SB && Backend.mode==="staff"){
+  if(DB && Backend.mode==="staff"){
     try{
-      await SB.from("hospital_alerts").update({ active:false, ended_at:new Date().toISOString(), ended_by:by }).eq("tenant_id",TENANT_ID).eq("active",true);
-      const res = await SB.from("hospital_alerts").insert(payload);
-      if(res.error){ toast("Could not activate alert — check connection"); return; }
+      await DB.collection("alerts").doc(TENANT_ID).set(payload);
+      currentAlert = payload;
     }catch(e){ toast("Could not activate alert — check connection"); return; }
-    await Backend.loadAlert();
-  } else { currentAlert = payload; renderAlert(); }
+  } else { currentAlert = payload; }
+  renderAlert();
   closeAlertModal();
   notify("Hospital alert activated", t.label, { icon:"info", color: type==="diversion"?"#E4342B":(type==="limited"?"#E8A830":"var(--accent)") });
 }
 async function endAlert(silent){
   const by = (typeof SB_LOGIN_EMAIL!=="undefined" ? SB_LOGIN_EMAIL : "Front Desk");
-  if(typeof SB!=="undefined" && SB && Backend.mode==="staff" && currentAlert && currentAlert.id){
-    try{ await SB.from("hospital_alerts").update({ active:false, ended_at:new Date().toISOString(), ended_by:by }).eq("id",currentAlert.id); }catch(e){}
-    currentAlert = null; await Backend.loadAlert();
+  if(DB && Backend.mode==="staff"){
+    try{ await DB.collection("alerts").doc(TENANT_ID).set({ active:false, ended_at:new Date().toISOString(), ended_by:by }, { merge:true }); }catch(e){}
+    currentAlert = null;
   } else { currentAlert = null; }
   renderAlert(); closeAlertModal();
   if(!silent) notify("Alert ended", "Normal operations restored", { icon:"check", color:"var(--s-admitted)" });
@@ -4652,10 +4738,13 @@ function renderMessages(p){
   loadThread(p);
 }
 async function loadThread(p){
-  const el=document.getElementById('msgThread'); if(!el || typeof SB==='undefined' || !SB) return;
-  const r=await SB.from('visit_messages').select('*').eq('visit_id', p.id).order('created_at',{ascending:true});
-  if(r.error){ el.innerHTML='<div class="msg-empty">Could not load messages.</div>'; return; }
-  const msgs=r.data||[];
+  const el=document.getElementById('msgThread'); if(!el || !DB) return;
+  if(!p.publicToken){ updateCommMeta(p, 0); el.innerHTML='<div class="msg-empty">No messages yet. Share the tracker link or QR above, or send the family a note.</div>'; return; }
+  let msgs=[];
+  try{
+    const q=await DB.collection('messages').doc(p.publicToken).collection('items').orderBy('created_at','asc').get();
+    msgs=q.docs.map(function(d){ const m=d.data(); return { sender:m.sender, body:m.body, staff_name:m.staff_name||null }; });
+  }catch(e){ el.innerHTML='<div class="msg-empty">Could not load messages.</div>'; return; }
   updateCommMeta(p, msgs.length);
   if(!msgs.length){ el.innerHTML='<div class="msg-empty">No messages yet. Share the tracker link or QR above, or send the family a note.</div>'; return; }
   el.innerHTML=msgs.map(function(m){ const staff=m.sender==='staff';
@@ -4666,9 +4755,11 @@ async function sendStaffMsg(p, body){
   if(!body) return;
   const box=document.getElementById('msgBox'); if(box){ box.value=''; box.style.height='auto'; }
   const sbtn=document.getElementById('msgSendBtn'); if(sbtn) sbtn.disabled=true;
-  if(typeof SB!=='undefined' && SB && Backend.mode==='staff'){
-    const r=await SB.from('visit_messages').insert({ tenant_id:TENANT_ID, visit_id:p.id, sender:'staff', body:body, staff_name:CURRENT_USER });
-    if(r.error){ toast('Could not send message'); if(sbtn) sbtn.disabled=false; return; }
+  if(DB && Backend.mode==='staff'){
+    if(!p.publicToken){ p.publicToken=genToken(); if(!p.trackCode) p.trackCode=genTrackCode(); persist(); }
+    try{
+      await DB.collection('messages').doc(p.publicToken).collection('items').add({ tenant_id:TENANT_ID, visit_id:String(p.id), sender:'staff', body:body, staff_name:CURRENT_USER, created_at:new Date().toISOString() });
+    }catch(e){ toast('Could not send message'); if(sbtn) sbtn.disabled=false; return; }
   }
   loadThread(p);
 }
@@ -4739,12 +4830,10 @@ async function saveShiftSetup(){
   const btn = document.getElementById('shiftSave');
   if(btn) btn.disabled = true;
   // Persist to the shared production DB (staff + online). Close ONLY after success.
-  if(typeof SB!=='undefined' && SB && Backend.mode==='staff'){
+  if(DB && Backend.mode==='staff'){
     try{
-      const res = await SB.from('shift_assignments').upsert(
-        { tenant_id: TENANT_ID, assignments: draft, updated_at: new Date().toISOString() },
-        { onConflict:'tenant_id' });
-      if(res.error){ if(btn) btn.disabled=false; toast('Could not save shift assignments — check connection'); return; }
+      await DB.collection('shifts').doc(TENANT_ID).set(
+        { tenant_id: TENANT_ID, assignments: draft, updated_at: new Date().toISOString() }, { merge:true });
     }catch(e){ if(btn) btn.disabled=false; toast('Could not save shift assignments — check connection'); return; }
   }
   shiftAssign = draft;                                  // commit only after a successful save
@@ -4901,7 +4990,12 @@ document.getElementById('copySummary').onclick=()=>toast('Patient summary copied
 /* Theme toggle + logout — identical behavior to the portal */
 function toggleDark(){document.body.classList.toggle('dark');
   if(!document.body.classList.contains('dark')){const m=document.getElementById('mesh');if(m)m.style.transform='none';}}
-function logout(){ try{ if(typeof SB!=='undefined'&&SB) SB.auth.signOut(); }catch(e){} try{ if(Backend.channel) SB.removeChannel(Backend.channel); }catch(e){} PATIENTS=[]; try{ if(typeof renderAll==='function') renderAll(); }catch(e){} try{ showLogin(); }catch(e){} toast('Signed out'); }
+function logout(){
+  try{ ['unsubVisits','unsubPub','unsubShifts','unsubAlert','unsubMsgs','unsubPubLobby'].forEach(function(k){ if(Backend[k]){ try{ Backend[k](); }catch(e){} Backend[k]=null; } }); }catch(e){}
+  try{ if(AUTH) AUTH.signOut(); }catch(e){}
+  PATIENTS=[]; try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
+  try{ showLogin(); }catch(e){} toast('Signed out');
+}
 
 /* ── Universal Spotlight search ── */
 const searchEl=document.getElementById('globalSearch');
