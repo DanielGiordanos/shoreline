@@ -2533,9 +2533,10 @@ const Backend = {
     }catch(e){}
   },
   loadAndSubscribe: async function(){
-    await Backend.refetch();
-    await Backend.loadShifts();
-    await Backend.loadAlert();
+    // Fire the three independent initial queries in PARALLEL, not sequentially, so on a
+    // high-latency network (e.g. a corporate SSL-inspection proxy) we pay the round-trip once,
+    // not three times. On a fast network the effect is negligible; on VCA's proxy it's large.
+    await Promise.all([ Backend.refetch(), Backend.loadShifts(), Backend.loadAlert() ]);
     if(Backend.channel){ try{ SB.removeChannel(Backend.channel); }catch(e){} }
     Backend.channel = SB.channel('pv-'+TENANT_ID)
       .on('postgres_changes', { event:'*', schema:'public', table:'patient_visits', filter:'tenant_id=eq.'+TENANT_ID }, function(){ Backend.refetch(); })
