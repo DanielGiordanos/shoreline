@@ -848,6 +848,7 @@ body.dark .fab-add{box-shadow:0 14px 36px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,
 .ops-item[data-op="shift"] .ops-ic{background:rgba(139,77,181,.12);color:#8B4DB5;}
 .ops-item[data-op="alert"] .ops-ic{background:rgba(232,168,48,.13);color:#D9962A;}
 .ops-item[data-op="settings"] .ops-ic{background:rgba(120,140,165,.14);color:#7C8CA5;}
+.ops-item[data-op="perf"] .ops-ic{background:rgba(72,184,136,.13);color:#48B888;}
 .ops-txt{flex:1;min-width:0;display:flex;flex-direction:column;}
 .ops-t{font-size:15px;font-weight:700;color:var(--ink-900);letter-spacing:-.01em;line-height:1.1;}
 .ops-s{font-size:12.5px;color:var(--ink-400);margin-top:7px;line-height:1.1;transition:color .2s var(--ease);}
@@ -1000,6 +1001,17 @@ body:not(.dark) .hv-pill.hv-mix{color:var(--accent-ink);}
 .hv-sel-change{flex:0 0 auto;font-family:var(--font);font-size:12px;font-weight:600;color:var(--accent-ink);
   background:rgba(56,189,210,.12);border:1px solid rgba(56,189,210,.28);border-radius:8px;padding:6px 12px;cursor:pointer;transition:background .15s;}
 .hv-sel-change:hover{background:rgba(56,189,210,.2);}
+/* ==== PERFORMANCE MODE (html.perf) — strips GPU-heavy blur + ambient
+   animation for older/low-power computers. Toggled from the ops menu and
+   remembered per device. Full glass look remains the default. ==== */
+html.perf *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
+html.perf .mesh{display:none!important;}
+html.perf body{background:var(--page-bg)!important;}
+html.perf body.dark{--glass:#131e34;--glass-strong:#172440;--nav-bg:#0d1730;}
+html.perf body:not(.dark){--glass:#ffffff;--glass-strong:#f4f6fb;}
+html.perf body.dark .topnav{background:#0d1730!important;} html.perf body.dark .subnav{background:#101a32!important;}
+html.perf .addpt-scrim{background:rgba(9,15,28,.55)!important;}
+html.perf .livepill .dot,html.perf .cl-livebadge .dot,html.perf .tl-item.current .tl-node{animation:none!important;}
 /* segmented arrival control */
 .ap-seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .ap-seg-btn{display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--font);
@@ -1551,6 +1563,17 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
 .cl-foot-c{text-align:center;}
 .cl-foot-r{text-align:right;color:var(--ink-500);}
 </style>
+<script>
+/* Performance mode — decide BEFORE first paint (no flash). Uses the saved
+   per-device choice if present; otherwise auto-enables on clearly low-power
+   hardware. Manual toggle lives in the ops menu (Performance Mode). */
+(function(){ try{
+  var saved = localStorage.getItem('flow.perfMode');
+  var on = (saved==='1') ? true : (saved==='0') ? false
+         : (((navigator.hardwareConcurrency||8) <= 4) || ((navigator.deviceMemory||8) <= 4));
+  if(on) document.documentElement.classList.add('perf');
+}catch(e){} })();
+</script>
 </head>
 <body class="dark">
 <div class="mesh" id="mesh"><div class="bg-orb-1"></div><div class="bg-orb-2"></div><div class="bg-bloom"></div><div id="starfield"><div class="stars-small"></div><div class="stars-medium"></div><div class="stars-large"></div></div></div>
@@ -1909,9 +1932,9 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
     <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
     <span class="ops-txt"><span class="ops-t">Hospital Alert</span><span class="ops-s">Send announcement</span></span>
   </button>
-  <button class="ops-item" data-op="settings" role="menuitem">
-    <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
-    <span class="ops-txt"><span class="ops-t">Settings</span></span>
+  <button class="ops-item" data-op="perf" role="menuitem">
+    <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L20 10h-7z"/></svg></span>
+    <span class="ops-txt"><span class="ops-t">Performance Mode</span><span class="ops-s" id="perfState">Off · full glass</span></span>
   </button>
 </div>
 
@@ -4783,6 +4806,7 @@ function sxKey(e){
    OPERATIONS MENU — the FAB expands into a central menu.
    ============================================================ */
 function opsMenuOpen(){
+  if(typeof updatePerfState==='function') updatePerfState();   // keep the Performance Mode label current
   document.getElementById('opsScrim').classList.add('open');
   document.getElementById('opsMenu').classList.add('open');
   const fab=document.getElementById('fabAdd'); fab.classList.add('open'); fab.setAttribute('aria-expanded','true');
@@ -5080,11 +5104,33 @@ async function sendStaffMsg(p, body){
 }
 
 function opsAction(op){
+  if(op==='perf'){ togglePerfMode(); opsMenuClose(); return; }
   opsMenuClose();
   if(op==='new') setTimeout(openAddPatient,120);
   else if(op==='shift') setTimeout(openShiftSetup,120);
   else if(op==='alert') setTimeout(openAlertModal,120);
-  // 'settings' has no functionality yet — just close.
+}
+
+/* ============================================================
+   PERFORMANCE MODE — turns off blur + ambient animation for
+   low-power computers. Remembered per device (localStorage), auto-on
+   for clearly weak hardware. Applied as html.perf (set pre-paint by a
+   small head script; toggled live here).
+   ============================================================ */
+function perfIsOn(){ return document.documentElement.classList.contains('perf'); }
+function updatePerfState(){
+  const el=document.getElementById('perfState');
+  if(el) el.textContent = perfIsOn() ? 'On · faster on this computer' : 'Off · full glass';
+}
+function applyPerfMode(on){
+  document.documentElement.classList.toggle('perf', !!on);
+  updatePerfState();
+}
+function togglePerfMode(){
+  const on=!perfIsOn();
+  applyPerfMode(on);
+  try{ localStorage.setItem('flow.perfMode', on?'1':'0'); }catch(e){}
+  toast(on ? 'Performance mode on — faster, lighter visuals' : 'Performance mode off — full glass restored');
 }
 
 /* ============================================================
