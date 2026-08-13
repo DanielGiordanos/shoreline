@@ -502,7 +502,10 @@ body.dark .resus-cap.dnr{color:#d19a8f;background:rgba(224,112,96,0.08);border-c
 .dav.lav{background:transparent;border:1.5px solid;font-weight:800;}
 
 /* ---------- Flow (kanban) ---------- */
-.board{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;min-height:52vh;transition:opacity .3s var(--ease),filter .3s var(--ease);}
+.board{display:flex;gap:14px;overflow-x:auto;overflow-y:visible;padding-bottom:10px;min-height:52vh;scroll-padding-right:40px;transition:opacity .3s var(--ease),filter .3s var(--ease);}
+/* Trailing spacer so the rightmost stage (Procedure) always scrolls fully into
+   view with breathing room — flex scroll containers drop padding-right at the end. */
+.board:not(.board-empty)::after{content:"";flex:0 0 40px;align-self:stretch;}
 .board::-webkit-scrollbar{height:9px;}
 .board::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:20px;}
 .board.board-dim{opacity:.5;filter:saturate(.7);}
