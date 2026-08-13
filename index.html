@@ -1328,12 +1328,18 @@ body:not(.dark) .cl-alert-hero.neutral .cl-alert-ic{color:#1E7C90;}
 body:not(.dark) .cl-alert-title{color:#3a0d0d;}
 .cl-alert-hero.amber .cl-alert-title{color:#fff;} body:not(.dark) .cl-alert-hero.amber .cl-alert-title{color:#4a3208;}
 .cl-alert-hero.neutral .cl-alert-title{color:#fff;} body:not(.dark) .cl-alert-hero.neutral .cl-alert-title{color:#0d2c3a;}
-.cl-alert-msg-wrap{overflow:hidden;margin-top:3px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
-.cl-alert-msg{font-size:clamp(10px,0.9vw,15px);font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap;display:inline-block;}
-body:not(.dark) .cl-alert-msg{color:rgba(40,10,10,.85);}
-.cl-alert-msg.scroll{animation:clAlertTicker 24s linear infinite;}
-@keyframes clAlertTicker{0%{transform:translateX(6%);}100%{transform:translateX(-100%);}}
-@media (prefers-reduced-motion: reduce){ .cl-alert-msg.scroll{animation:none;white-space:normal;} .cl-alert-msg-wrap{-webkit-mask-image:none;mask-image:none;} }
+/* Announcement marquee — duplicated track, transform-animated, GPU-accelerated.
+   Robust and identical across Safari/Chrome. JS enables .marquee only when the
+   text overflows and sets --cl-dur for a consistent px/sec speed at any size. */
+.cl-alert-msg-wrap{overflow:hidden;white-space:nowrap;margin-top:3px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
+.cl-alert-track{display:inline-flex;flex-wrap:nowrap;width:max-content;will-change:transform;}
+.cl-alert-track.marquee{animation:clAlertMarquee var(--cl-dur,32s) linear infinite;}
+.cl-alert-track:not(.marquee) .cl-alert-copy[aria-hidden]{display:none;}          /* one copy when it fits */
+.cl-alert-track.marquee .cl-alert-copy{padding-right:clamp(48px,7vw,120px);}      /* seamless gap only while scrolling */
+.cl-alert-msg,.cl-alert-copy{font-size:clamp(10px,0.9vw,15px);font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap;}
+body:not(.dark) .cl-alert-msg,body:not(.dark) .cl-alert-copy{color:rgba(40,10,10,.85);}
+@keyframes clAlertMarquee{from{transform:translate3d(0,0,0);}to{transform:translate3d(-50%,0,0);}}
+@media (prefers-reduced-motion: reduce){ .cl-alert-track{--cl-dur:48s;} }        /* slower — never disabled */
 /* Staff alert strip */
 .alert-strip{display:none;align-items:center;gap:12px;padding:9px 32px;font-size:12.5px;background:linear-gradient(90deg,rgba(228,52,43,.18),rgba(228,52,43,.05));border-bottom:1px solid rgba(228,52,43,.35);color:var(--ink-900);}
 .alert-strip.show{display:flex;}
@@ -5097,6 +5103,59 @@ function fmtAlertWhen(v){ if(!v) return ""; try{ const d=new Date(v); return d.t
 function toLocalInput(v){ try{ const d=new Date(v); const p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes()); }catch(e){ return ""; } }
 
 /* Render the active alert into the Client Display hero + staff strip. */
+/* ============================================================
+   Announcement marquee controller — only scrolls when the text
+   overflows, recalculates on resize / fullscreen / font load, and
+   falls back to requestAnimationFrame if the CSS animation isn't
+   actually running. Consistent on every browser and computer.
+   ============================================================ */
+let _clMarqueeRO=null, _clFsHooked=false;
+function _clStopFallback(track){ if(!track) return; if(track._raf){ cancelAnimationFrame(track._raf); track._raf=null; } if(track._fbT){ clearTimeout(track._fbT); track._fbT=null; } }
+function _clMarqueeMeasure(){
+  const wrap=document.querySelector('#view-client .cl-alert-msg-wrap'); if(!wrap) return;
+  const track=wrap.querySelector('.cl-alert-track'); if(!track) return;
+  const copy=track.querySelector('.cl-alert-copy'); if(!copy) return;
+  if(wrap.clientWidth===0) return;                                  // hidden (not on the client view yet)
+  const overflow = copy.scrollWidth > wrap.clientWidth + 2;         // real rendered width, not a char count
+  if(overflow){
+    const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    track.classList.add('marquee');
+    const W = track.scrollWidth/2;                                  // distance of one -50% step (one copy + gap)
+    const speed = reduce ? 55 : 95;                                 // px/sec — same readable pace on any screen
+    const dur = Math.max(16, Math.round(W/speed));
+    track.style.setProperty('--cl-dur', dur+'s');
+    track.style.animation='none'; void track.offsetWidth; track.style.animation='';   // clean restart, no stale width
+    _clMarqueeFallback(track, W, dur);
+  } else {
+    _clStopFallback(track);
+    track.classList.remove('marquee');
+    track.style.removeProperty('--cl-dur'); track.style.animation=''; track.style.transform='';
+  }
+}
+function _clMarqueeFallback(track, W, dur){
+  _clStopFallback(track);
+  track._fbT=setTimeout(function(){                                 // give CSS a moment, then check it's actually moving
+    const a=getComputedStyle(track).transform;
+    track._fbT=setTimeout(function(){
+      const b=getComputedStyle(track).transform;
+      if(a===b && track.classList.contains('marquee')){            // CSS animation not progressing → JS fallback (single system)
+        track.style.animation='none';
+        const pxms=W/(dur*1000); let t0=null;
+        (function step(ts){ if(!track.classList.contains('marquee')) return; if(t0==null)t0=ts; const x=((ts-t0)*pxms)%W; track.style.transform='translate3d('+(-x)+'px,0,0)'; track._raf=requestAnimationFrame(step); })(performance.now());
+      }
+    },170);
+  },130);
+}
+function setupAlertMarquee(){
+  if(_clMarqueeRO){ try{ _clMarqueeRO.disconnect(); }catch(e){} _clMarqueeRO=null; }
+  const wrap=document.querySelector('#view-client .cl-alert-msg-wrap'); if(!wrap) return;
+  _clMarqueeMeasure();
+  if(typeof ResizeObserver!=='undefined'){ _clMarqueeRO=new ResizeObserver(function(){ _clMarqueeMeasure(); }); try{ _clMarqueeRO.observe(wrap); }catch(e){} }
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(function(){ _clMarqueeMeasure(); }).catch(function(){}); }
+  if(!_clFsHooked){ _clFsHooked=true;
+    document.addEventListener('fullscreenchange', function(){ setTimeout(_clMarqueeMeasure,60); });
+    window.addEventListener('resize', function(){ _clMarqueeMeasure(); }); }
+}
 function renderAlert(){
   const a = currentAlert;
   const isAlert = !!(a && a.type && a.type!=="normal");
@@ -5108,9 +5167,14 @@ function renderAlert(){
       hero.innerHTML = '<div class="cl-alert-hero '+_heroColorClass(a.type)+'">'
         + '<div class="cl-alert-ic">'+ALERT_WARN_SVG+'</div>'
         + '<div class="cl-alert-body"><div class="cl-alert-title">'+head+'</div>'
-        + '<div class="cl-alert-msg-wrap"><span class="cl-alert-msg scroll">'+msg+'</span></div></div></div>';
+        + '<div class="cl-alert-msg-wrap"><div class="cl-alert-track">'
+        +   '<span class="cl-alert-msg cl-alert-copy">'+msg+'</span>'
+        +   '<span class="cl-alert-msg cl-alert-copy" aria-hidden="true">'+msg+'</span>'
+        + '</div></div></div></div>';
+      try{ setupAlertMarquee(); }catch(e){}   // enable/measure the marquee for THIS message
     } else {
       hero.innerHTML = '<div class="cl-hero-title">'+"We're here for them. You're in good hands."+'</div><div class="cl-hero-sub">'+"Thank you for trusting us with your pet's care."+'</div>';
+      try{ if(_clMarqueeRO){ _clMarqueeRO.disconnect(); _clMarqueeRO=null; } }catch(e){}
     }
   }
   const strip = document.getElementById("alertStrip");
