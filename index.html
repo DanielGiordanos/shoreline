@@ -2608,7 +2608,7 @@ function mapToDb(p){
     doctor_id: (p.doctor && p.doctor !== 'unassigned') ? p.doctor : null,
     liaison_id: p.liaison || null, reason_for_visit: p.reason || null,
     reason_id: p.reasonId || null, reason_category: p.reasonCategory || null,
-    reason_problems: Array.isArray(p.reasonProblems) ? p.reasonProblems.map(function(x){ return { id:x.id||null, label:x.label||'', category:x.category||null, durationValue:(x.durationValue==null?null:x.durationValue), durationUnit:x.durationUnit||null, durationText:x.durationText||null, originalInput:x.originalInput||'' }; }) : [],
+    reason_problems: Array.isArray(p.reasonProblems) ? p.reasonProblems.map(function(x){ return { id:x.id||null, label:x.label||'', category:x.category||null, durationValue:(x.durationValue==null?null:x.durationValue), durationUnit:x.durationUnit||null, durationText:x.durationText||null, frequencyCount:(x.frequencyCount==null?null:x.frequencyCount), frequencyLabel:x.frequencyLabel||null, frequencyText:x.frequencyText||null, onsetText:x.onsetText||null, originalInput:x.originalInput||'' }; }) : [],
     referring_hospital: p.referringHospital || null, referring_hospital_info: p.referringHospitalInfo || null,
     triage: p.triage || null, intake: p.intake || null, records: recToDb(p.records),
     timeline: (p.timeline||[]).map(function(e){ return { label:e.label, at:_toISO(e.at), meta:e.meta||'' }; }),
@@ -4016,7 +4016,7 @@ function fillDrawer(p){
   // Reason for visit — inline editable; each line or ; becomes a separate problem
   makeEditable(document.getElementById('dReason'), val=>{
     val=val.trim(); if(!val){ fillDrawer(p); return; }
-    const probs = val.split(/[;\n]+/).map(s=>s.trim()).filter(Boolean).map(parseProblem);
+    const probs=[]; val.split(/\n+/).forEach(function(line){ splitComplaints(line).forEach(function(seg){ if(seg.trim()) probs.push(parseProblem(seg)); }); });
     p.reasonProblems = probs;
     p.reason = probs.length ? problemsToString(probs) : val;
     p.reasonId = probs.length ? (probs[0].id||null) : null;
@@ -4636,15 +4636,41 @@ const _rn = s => String(s||'').toLowerCase().replace(/['’]/g,'');
       REASON_VISIT_DATA.push({ id:'hyporexia', rank:4.5, label:'Hyporexia', category:'General & Systemic',
         keywords:['barely eating','eating less','poor appetite','reduced appetite','decreased appetite','picky','not eating much','eating a little','hyporexia'],
         description:'Reduced or partial appetite — eating less than normal' });
+    const vo=REASON_VISIT_DATA.find(x=>x.id==='vomiting'); if(vo){ ['vomited','threw up','puked','vomits','throwing up'].forEach(function(k){ if(vo.keywords.indexOf(k)<0) vo.keywords.push(k); }); }
+    const co=REASON_VISIT_DATA.find(x=>x.id==='persistent-cough'); if(co){ ['cough','coughs','coughed'].forEach(function(k){ if(co.keywords.indexOf(k)<0) co.keywords.push(k); }); }
+    const an=REASON_VISIT_DATA.find(x=>x.id==='anorexia'); if(an){ ['will not eat','has not eaten','refuses food','food refusal','not touching food','no interest in food','no interest in treats','wont take treats','not taking treats','didnt eat','off food','off feed','inappetence','anorexic','loss of appetite'].forEach(function(k){ if(an.keywords.indexOf(k)<0) an.keywords.push(k); }); }
+    // Blood in Urine → Hematuria (merge into the existing entry, don't duplicate)
+    const bu=REASON_VISIT_DATA.find(x=>x.id==='blood-in-urine'); if(bu){ bu.id='hematuria'; bu.label='Hematuria';
+      ['bloody urine','blood in urine','blood when peeing','blood when urinating','peeing blood','urinating blood','red urine','pink urine','urine looks bloody','blood from urine','hematuria','haematuria'].forEach(function(k){ if(bu.keywords.indexOf(k)<0) bu.keywords.push(k); }); }
+    function _addReason(o){ if(!REASON_VISIT_DATA.some(x=>x.id===o.id)) REASON_VISIT_DATA.push(o); }
+    _addReason({ id:'bleeding-ruptured-mass', rank:79.5, label:'Bleeding / Ruptured Mass', category:'Dermatologic / Mass',
+      keywords:['mass on head popped','mass popped','popped lump','popped tumor','mass burst','mass ruptured','ruptured mass','ruptured lump','bleeding mass','mass bleeding','growth bleeding','bleeding growth','tumor bleeding','bleeding tumor','lump bleeding','bleeding lump','mass opened','mass broke open','growth opened','tumor opened','ulcerated mass','open mass'],
+      description:'A mass, lump, growth, or tumor that has ruptured, opened, ulcerated, or is actively bleeding' });
+    _addReason({ id:'urinary-tract-signs', rank:25.5, label:'Urinary Tract Signs', category:'Urinary',
+      keywords:['poss uti','possible uti','uti','urinary infection','possible urinary infection','urinary issue','urinary problem','urinary symptoms','frequent urination','peeing frequently','peeing a lot','peeing','urinating','urinating frequently','straining to urinate','straining to pee','difficulty urinating','difficulty peeing','painful urination','pain when urinating','urinary accidents','peeing in house','urinating in house','small amounts of urine','frequent small urinations','urinary discomfort'],
+      description:'Urinary signs such as straining, frequency, inappropriate urination, discomfort, or suspected urinary tract disease' });
+    _addReason({ id:'suspected-toxin-exposure', rank:16.5, label:'Suspected Toxin Exposure', category:'Toxicology',
+      keywords:['toxicity','toxin','toxic exposure','possible toxin','suspected toxin','poison','poisoning','poisoned','possible poisoning','ate something toxic','ingested toxin','toxin ingestion','toxic ingestion','possible ingestion','got into something','got into medication','ate medication','ate poison','chemical exposure','toxic substance','possible toxic substance'],
+      description:'Known or suspected exposure to a potentially toxic substance' });
   }catch(e){}
 })();
+// Complaints where a numeric count reads more clinically as "episodes" than "times".
+const EPISODE_LABEL_IDS=new Set(['seizures','collapse-fainting','diarrhea','bloody-diarrhea','tremors-shaking','fall-from-height']);
 // Clinical normalizations (checked before the dataset match). Hyporexia first so
 // "not eating much" resolves to reduced-appetite rather than complete anorexia.
 const REASON_NORMALIZE=[
   { id:'hyporexia', label:'Hyporexia', category:'General & Systemic',
     re:[/barely (eating|eaten)/,/eating less/,/eats less/,/poor appetite/,/reduced appetite/,/decreased appetite/,/low appetite/,/\bpicky/,/not eating much/,/eating a little/,/hardly eating/,/eating poorly/,/hyporexi/] },
   { id:'anorexia', label:'Anorexia', category:'General & Systemic',
-    re:[/not eating/,/not eaten/,/not been eating/,/wont eat/,/will not eat/,/no appetite/,/hasnt eaten/,/has not eaten/,/stopped eating/,/quit eating/,/refus\w* (to )?eat/,/wont touch food/,/anorexi/] }
+    re:[/not eating/,/not eaten/,/not been eating/,/wont eat/,/will not eat/,/no appetite/,/hasnt eaten/,/has not eaten/,/stopped eating/,/quit eating/,/refus\w* (to )?eat/,/wont touch food/,/anorexi/,/loss of appetite/,/off (his |her |their )?(food|feed)/,/inappeten/] },
+  // A mass/tumour/growth/lump that is bleeding, ruptured, popped, opened, or ulcerated.
+  { id:'bleeding-ruptured-mass', label:'Bleeding / Ruptured Mass', category:'Dermatologic / Mass',
+    re:[/(mass|tumou?r|growth|lump|nodule)\b[\s\S]*(bleed|ruptur|popp|burst|broke open|broke|opened|open|ulcerat|drain)/,
+        /(bleed|ruptur|popp|burst|ulcerat)[\s\S]*(mass|tumou?r|growth|lump|nodule)/] },
+  // Standalone generic toxin wording → broad fallback (specific templates like Chocolate
+  // Ingestion still win because they match their own keywords first via search).
+  { id:'suspected-toxin-exposure', label:'Suspected Toxin Exposure', category:'Toxicology',
+    re:[/^toxicity$/,/^toxin$/,/^toxic exposure$/,/^possible toxin$/,/^suspected toxin$/,/^poison$/,/^poisoned$/,/^poisoning$/,/^possible poisoning$/,/^chemical exposure$/,/^ate something toxic$/,/^got into something$/,/^toxic substance$/] }
 ];
 function normalizeReason(sym){ const t=_rn(sym); for(const r of REASON_NORMALIZE){ if(r.re.some(rx=>rx.test(t))) return r; } return null; }
 function _durUnit(u){ u=u.toLowerCase();
@@ -4656,20 +4682,41 @@ function _durUnit(u){ u=u.toLowerCase();
   if(/^(y|yr|yrs|year|years)$/.test(u)) return 'years';
   return u; }
 function _durText(v,u){ const sing={hours:'hour',days:'day',weeks:'week',minutes:'minute',months:'month',years:'year'}[u]||u; return v+' '+(v===1? sing : u); }
-// Extract a duration expression; return the value/unit/text + the leftover symptom text.
-function parseDuration(raw){
-  const s=String(raw||''); const low=s.toLowerCase();
-  let durationText=null, durationValue=null, durationUnit=null, matched=null;
-  let m=low.match(/\bsince\s+(this (?:morning|afternoon|evening|night)|last (?:night|week|weekend|month)|yesterday|tonight|midnight|noon|monday|tuesday|wednesday|thursday|friday|saturday|sunday|[a-z]+day)\b/);
-  if(m){ matched=m[0]; const idx=low.indexOf(matched); durationText=s.slice(idx, idx+matched.length); }
-  if(!matched){ m=low.match(/\b(?:for\s+)?a few\s+(minutes|mins|hours|hrs|days|weeks|months)\b/);
-    if(m){ const u=_durUnit(m[1]); durationUnit=u; durationText='a few '+u; matched=m[0]; } }
-  if(!matched){ m=low.match(/\b(?:for\s+|x)?(\d+)\s*(h|hr|hrs|hour|hours|d|day|days|w|wk|wks|week|weeks|min|mins|minute|minutes|mo|mos|month|months|y|yr|yrs|year|years)\b/);
-    if(m){ durationValue=parseInt(m[1],10); durationUnit=_durUnit(m[2]); durationText=_durText(durationValue,durationUnit); matched=m[0]; } }
-  let remaining=s;
-  if(matched){ const idx=low.indexOf(matched); remaining=s.slice(0,idx)+' '+s.slice(idx+matched.length); }
-  remaining=remaining.replace(/\s+/g,' ').replace(/^[\s,;:-]+/,'').replace(/[\s,;:-]+$/,'').trim();
-  return { durationText, durationValue, durationUnit, remaining };
+const _WORDNUM={once:1,twice:2,thrice:3,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+// Extract duration + frequency/episode count + onset; return them plus the leftover symptom text.
+// Conservative: only reports what was actually written.
+function parseModifiers(raw){
+  const orig=String(raw||''); let w=orig.toLowerCase(); const ranges=[];
+  function take(re){ const m=w.match(re); if(m){ const i=m.index; ranges.push([i,i+m[0].length]); w=w.slice(0,i)+' '.repeat(m[0].length)+w.slice(i+m[0].length); } return m; }
+  let durationValue=null,durationUnit=null,durationText=null, freqCount=null,freqText=null, onsetText=null, m;
+  // ---- onset (since… / today / overnight / all day) ----
+  m=take(/\bsince\s+(?:this (?:morning|afternoon|evening|night)|last (?:night|week|weekend|month)|yesterday|tonight|midnight|noon|monday|tuesday|wednesday|thursday|friday|saturday|sunday|[a-z]+day)\b/);
+  if(!m) m=take(/\b(?:overnight|last night|this (?:morning|afternoon|evening)|today|tonight|all day|all night|all morning|this week)\b/);
+  if(m) onsetText=orig.slice(m.index, m.index+m[0].length).trim();
+  // ---- frequency / episode count ----
+  m=take(/\b(\d+)\s*(?:x\b|times\b|time\b|episodes?\b|bouts?\b|epis\b)/);
+  if(m){ freqCount=parseInt(m[1],10); }
+  if(freqCount==null){ m=take(/\bx\s*(\d+)(?!\s*(?:h|hr|hrs|hour|hours|d|day|days|w|wk|wks|week|weeks|mo|month|months|y|yr|year|years|min|minute|minutes)\b)/); if(m) freqCount=parseInt(m[1],10); }
+  if(freqCount==null){ m=take(/\b(once|twice|thrice)\b/); if(m) freqCount=_WORDNUM[m[1]]; }
+  if(freqCount==null){ m=take(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\s+times?\b/); if(m) freqCount=_WORDNUM[m[1]]; }
+  if(freqCount==null){ m=take(/\b(several|multiple|many|numerous|a few|a couple|couple)\s+times?\b/); if(m) freqText=(m[1]+' times'); }
+  // ---- duration ----
+  m=take(/\b(?:for\s+|x)?(\d+)\s*(h|hr|hrs|hour|hours|d|day|days|w|wk|wks|week|weeks|min|mins|minute|minutes|mo|mos|month|months|y|yr|yrs|year|years)\b/);
+  if(m){ durationValue=parseInt(m[1],10); durationUnit=_durUnit(m[2]); durationText=_durText(durationValue,durationUnit); }
+  if(durationText==null){ m=take(/\b(?:for\s+)?a few\s+(minutes|mins|hours|hrs|days|weeks|months)\b/); if(m){ const u=_durUnit(m[1]); durationUnit=u; durationText='a few '+u; } }
+  // ---- leftover symptom text (original casing, matched spans removed) ----
+  ranges.sort((a,b)=>a[0]-b[0]); let rem='', idx=0;
+  ranges.forEach(function(r){ if(r[0]>idx) rem+=orig.slice(idx,r[0]); idx=Math.max(idx,r[1]); });
+  rem+=orig.slice(idx);
+  rem=rem.replace(/\s+/g,' ').replace(/\b(for|x)\b\s*$/i,'').replace(/^[\s,;:-]+/,'').replace(/[\s,;:-]+$/,'').trim();
+  return { durationValue, durationUnit, durationText, freqCount, freqText, onsetText, remaining:rem };
+}
+function _freqUnit(id){ return EPISODE_LABEL_IDS.has(id) ? 'episodes' : 'times'; }
+function makeProblem(id,label,category,mods,original){
+  return { id:id||null, label:label, category:category||null,
+    durationValue:mods.durationValue, durationUnit:mods.durationUnit, durationText:mods.durationText,
+    frequencyCount:(mods.freqCount==null?null:mods.freqCount), frequencyLabel:(mods.freqCount==null?null:_freqUnit(id)),
+    frequencyText:mods.freqText||null, onsetText:mods.onsetText||null, originalInput:original };
 }
 function isConfidentReason(sym, item){
   const q=_rn(String(sym).trim()); if(!q) return false; const lab=_rn(item.label);
@@ -4681,22 +4728,70 @@ function isConfidentReason(sym, item){
   }
   return false;
 }
-// raw text → one structured problem {id,label,category,duration*,originalInput}
+// Longest alias/keyword that appears as a whole bounded phrase inside the symptom text.
+function matchByAlias(sym){
+  const q=' '+_rn(sym).replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim()+' ';
+  let best=null, bestLen=0;
+  for(const it of REASON_VISIT_DATA){
+    const cands=[it.label].concat(it.keywords||[]);
+    for(const c of cands){ const cc=_rn(c).replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+      if(cc.length<3) continue;
+      if(q.indexOf(' '+cc+' ')>=0 && cc.length>bestLen){ best=it; bestLen=cc.length; } }
+  }
+  return best ? { item:best, len:bestLen } : null;
+}
+// raw text → one structured problem {id,label,category,duration*,frequency*,onset*,originalInput}
 function parseProblem(raw){
   const original=String(raw).trim();
-  const dur=parseDuration(original);
-  const sym=(dur.remaining||original).trim();
-  const base={ durationValue:dur.durationValue, durationUnit:dur.durationUnit, durationText:dur.durationText, originalInput:original };
+  const mods=parseModifiers(original);
+  const sym=(mods.remaining||original).trim();
   const norm=normalizeReason(sym);
-  if(norm) return Object.assign({ id:norm.id, label:norm.label, category:norm.category }, base);
+  if(norm) return makeProblem(norm.id,norm.label,norm.category,mods,original);
   const res=ReasonVisitAutocomplete.search(sym);
-  if(res.length && isConfidentReason(sym, res[0])){ const it=res[0]; return Object.assign({ id:it.id, label:it.label, category:it.category }, base); }
-  return Object.assign({ id:null, label:(sym||original), category:null }, base);  // free text
+  if(res.length && isConfidentReason(sym, res[0])){ const it=res[0]; return makeProblem(it.id,it.label,it.category,mods,original); }
+  // alias contained inside a longer phrase (e.g., "mass on head popped and bleeding");
+  // accept when it covers most of the phrase or the phrase is short — avoid tagging long narratives.
+  const am=matchByAlias(sym);
+  if(am){ const symN=_rn(sym); const cov=am.len/Math.max(1,symN.length); const words=symN.split(/\s+/).filter(Boolean).length;
+    if(cov>=0.5 || words<=4){ const it=am.item; return makeProblem(it.id,it.label,it.category,mods,original); } }
+  return makeProblem(null,(sym||original),null,mods,original);   // free text
 }
-function formatProblem(pr){ return pr.durationText ? (pr.label+' · '+pr.durationText) : pr.label; }
+// Split one intake phrase into multiple complaints when intent is clear
+// ("V+ bloody urine" → Vomiting + Hematuria). Conservative: won't split a single
+// complaint that legitimately contains "and" (e.g., "mass popped and bleeding").
+const _SPLIT_STOP=new Set(['bleeding','bloody','painful','pain','lethargic','weak','swollen','hot','red','open','ruptured','popped','draining','oozing','sore','itchy','limping','worse','worsening']);
+function splitComplaints(raw){
+  const s=String(raw||'').replace(/\bv\s*\+/gi,' ; vomiting ; ').replace(/\s+&\s+/g,' ; ');
+  const base=s.split(/\s*;\s*/).map(x=>x.trim()).filter(Boolean);
+  const out=[];
+  base.forEach(function(seg){
+    const parts=seg.split(/\s+\b(?:and|plus)\b\s+/i);
+    if(parts.length>1){
+      const bad=parts.some(function(p){ const r=parseModifiers(p).remaining.trim(); if(!r) return true; const words=r.toLowerCase().split(/\s+/).filter(Boolean); return words.length===1 && _SPLIT_STOP.has(words[0]); });
+      if(bad) out.push(seg); else parts.forEach(function(p){ if(p.trim()) out.push(p.trim()); });
+    } else out.push(seg);
+  });
+  return out.length?out:[String(raw).trim()];
+}
+// Display: Complaint · Frequency · Duration/Onset — only the parts actually entered.
+function formatProblem(pr){
+  const parts=[pr.label];
+  if(pr.frequencyCount!=null){ const u=pr.frequencyLabel||'times'; parts.push(pr.frequencyCount+' '+(pr.frequencyCount===1? u.replace(/s$/,'') : u)); }
+  else if(pr.frequencyText){ parts.push(pr.frequencyText); }
+  if(pr.durationText) parts.push(pr.durationText);
+  if(pr.onsetText) parts.push(pr.onsetText);
+  return parts.join(' · ');
+}
 function problemsToString(arr){ return (arr||[]).map(formatProblem).join('; '); }
-function shortDur(pr){ if(pr.durationValue && pr.durationUnit){ const sh={hours:'h',days:'d',weeks:'w',minutes:'m',months:'mo',years:'y'}[pr.durationUnit]||''; if(sh) return pr.durationValue+sh; } return pr.durationText||''; }
-function compactProblems(p){ const a=p&&p.reasonProblems; if(!a||!a.length) return (p&&p.reason)||''; const f=a[0]; let s=f.label+(f.durationText?(' · '+shortDur(f)):''); if(a.length>1) s+=' +'+(a.length-1); return s; }
+function compactMod(pr){
+  if(pr.frequencyCount!=null) return pr.frequencyCount+(pr.frequencyLabel==='episodes'?'ep':'×');
+  if(pr.durationValue && pr.durationUnit){ const sh={hours:'h',days:'d',weeks:'w',minutes:'m',months:'mo',years:'y'}[pr.durationUnit]; if(sh) return pr.durationValue+sh; }
+  if(pr.durationText) return pr.durationText;
+  if(pr.frequencyText) return pr.frequencyText;
+  if(pr.onsetText) return pr.onsetText;
+  return '';
+}
+function compactProblems(p){ const a=p&&p.reasonProblems; if(!a||!a.length) return (p&&p.reason)||''; const f=a[0]; const mod=compactMod(f); let s=f.label+(mod?(' · '+mod):''); if(a.length>1) s+=' +'+(a.length-1); return s; }
 
 /* ---- Add-New-Patient Reason token field (chips + input + autocomplete) ---- */
 let apProblems=[], _rvCtrl=null, _rpBackspaceArmed=false, _rpLastRaw='';
@@ -4716,9 +4811,8 @@ function addProblem(item){
   // on suggestion-select the input is already the label, so use the last typed text for duration
   const raw = item ? (_rpLastRaw || input.value.trim()) : input.value.trim();
   let prob;
-  if(item){ const dur=parseDuration(raw); prob={ id:item.id, label:item.label, category:item.category, durationValue:dur.durationValue, durationUnit:dur.durationUnit, durationText:dur.durationText, originalInput:raw||item.label }; }
-  else { if(!raw) return; prob=parseProblem(raw); }
-  apProblems.push(prob);
+  if(item){ const mods=parseModifiers(raw); apProblems.push(makeProblem(item.id,item.label,item.category,mods,raw||item.label)); }
+  else { if(!raw) return; splitComplaints(raw).forEach(function(seg){ apProblems.push(parseProblem(seg)); }); }
   input.value=''; _rpLastRaw=''; _rpBackspaceArmed=false;
   if(_rvCtrl) _rvCtrl.close();
   renderProblemChips(); focusReasonInput();
@@ -4785,7 +4879,7 @@ function createPatient(){
   const arrivalLabel = apArrivalType==='transfer' ? 'ER transfer' : (apArrivalType==='hospitalized' ? 'Direct admit' : 'Walk-in');
   const at=new Date(now.getTime());
   // flush any problem still typed in the box, then build from the structured list
-  { const rin=document.getElementById('apReason'); if(rin && rin.value.trim()){ apProblems.push(parseProblem(rin.value.trim())); rin.value=''; } }
+  { const rin=document.getElementById('apReason'); if(rin && rin.value.trim()){ splitComplaints(rin.value.trim()).forEach(function(seg){ apProblems.push(parseProblem(seg)); }); rin.value=''; } }
   const reasonStr = apProblems.length ? problemsToString(apProblems) : 'Reason not specified';
   const p = patient({
     name:first, last:last, species:val('apSpecies')||'—', age:val('apAge')||'—',
