@@ -905,6 +905,15 @@ body.dark .fab-add{box-shadow:0 14px 36px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,
 .ap-hint{font-size:11px;font-weight:500;color:#E4655C;letter-spacing:.01em;margin-top:5px;height:0;overflow:hidden;opacity:0;transition:opacity .15s var(--ease),height .15s var(--ease);}
 .ap-hint.show{height:15px;opacity:.9;}
 body:not(.dark) .ap-hint{color:#C7362C;}
+/* Reason for Visit — multi-problem token chips */
+.rvp-chips{display:none;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.rvp-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 5px 5px 11px;border-radius:9px;font-size:12.5px;font-weight:600;
+  background:rgba(56,189,210,0.10);color:var(--ink-900);border:1px solid rgba(56,189,210,0.24);transition:box-shadow .15s,background .15s;}
+.rvp-chip.armed{background:rgba(56,189,210,0.20);border-color:rgba(56,189,210,0.5);box-shadow:0 0 0 2px rgba(56,189,210,0.18);}
+.rvp-chip-t{white-space:nowrap;letter-spacing:-.01em;}
+.rvp-chip-x{border:none;background:none;cursor:pointer;color:var(--ink-400);font-size:15px;line-height:1;padding:0 3px;border-radius:6px;transition:color .15s,background .15s;}
+.rvp-chip-x:hover{color:var(--ink-900);background:rgba(56,189,210,0.14);}
+.drsn-line{font-size:13px;font-weight:600;line-height:1.5;}
 .ap-input:focus{outline:none;border-color:rgba(56,189,210,.55);background:var(--surface-0);box-shadow:0 0 0 3px rgba(56,189,210,.15);}
 /* ---------- Reason for Visit autocomplete (combobox) — Flow glass, dark+light ---------- */
 .rv-combo{position:relative;}
@@ -1569,8 +1578,7 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
    hardware. Manual toggle lives in the ops menu (Performance Mode). */
 (function(){ try{
   var saved = localStorage.getItem('flow.perfMode');
-  var on = (saved==='1') ? true : (saved==='0') ? false
-         : (((navigator.hardwareConcurrency||8) <= 4) || ((navigator.deviceMemory||8) <= 4));
+  var on = (saved==='0') ? false : true;   // ON by default; only OFF if the user explicitly turned it off
   if(on) document.documentElement.classList.add('perf');
 }catch(e){} })();
 </script>
@@ -1934,7 +1942,7 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
   </button>
   <button class="ops-item" data-op="perf" role="menuitem">
     <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L20 10h-7z"/></svg></span>
-    <span class="ops-txt"><span class="ops-t">Performance Mode</span><span class="ops-s" id="perfState">Off · full glass</span></span>
+    <span class="ops-txt"><span class="ops-t">Performance Mode</span><span class="ops-s" id="perfState">On · faster on this computer</span></span>
   </button>
 </div>
 
@@ -2068,11 +2076,14 @@ body:not(.dark) .cl-doc{color:rgba(20,30,55,.62);}
 
     <div class="ap-sect">
       <h4>Reason for Visit</h4>
-      <div class="ap-field"><div class="rv-combo">
-        <input class="ap-input" id="apReason" placeholder="e.g. Vomiting, difficulty breathing, HBC, collapse, seizure…"
-               autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rvList">
-        <ul class="rv-list" id="rvList" role="listbox" aria-label="Reason suggestions"></ul>
-      </div></div>
+      <div class="ap-field">
+        <div class="rvp-chips" id="apProblemsChips"></div>
+        <div class="rv-combo">
+          <input class="ap-input" id="apReason" placeholder="Add a problem — e.g. not eating for 3 days, then Enter"
+                 autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rvList">
+          <ul class="rv-list" id="rvList" role="listbox" aria-label="Reason suggestions"></ul>
+        </div>
+      </div>
     </div>
 
     <div class="ap-sect">
@@ -2597,11 +2608,14 @@ function mapToDb(p){
     doctor_id: (p.doctor && p.doctor !== 'unassigned') ? p.doctor : null,
     liaison_id: p.liaison || null, reason_for_visit: p.reason || null,
     reason_id: p.reasonId || null, reason_category: p.reasonCategory || null,
+    reason_problems: Array.isArray(p.reasonProblems) ? p.reasonProblems.map(function(x){ return { id:x.id||null, label:x.label||'', category:x.category||null, durationValue:(x.durationValue==null?null:x.durationValue), durationUnit:x.durationUnit||null, durationText:x.durationText||null, originalInput:x.originalInput||'' }; }) : [],
     referring_hospital: p.referringHospital || null, referring_hospital_info: p.referringHospitalInfo || null,
     triage: p.triage || null, intake: p.intake || null, records: recToDb(p.records),
     timeline: (p.timeline||[]).map(function(e){ return { label:e.label, at:_toISO(e.at), meta:e.meta||'' }; }),
     arrival_time: _toISO(p.arrival) || new Date().toISOString(),
     discharged_at: _toISO(p.completedAt),
+    exam_started_at: _toISO(p.examStartedAt), exam_started_by: p.examStartedByDoctorId || null,
+    exam_wait_min: (typeof p.examWaitMinutes==='number' ? p.examWaitMinutes : null),
     public_token: p.publicToken || null, track_code: p.trackCode || null,
     is_active: !(p.completed===true || p.active===false || p.status==='Discharged' || p.status==='Admitted' || p.status==='Euthanized')
   };
@@ -2617,10 +2631,11 @@ function mapToApp(r){
     species:r.species||'', breed:r.breed||'', age:r.age||'', weight:r.weight||'', weightKg:(typeof r.weight_kg==='number'?r.weight_kg:null), sex:r.sex||'',
     arrivalType:r.arrival_type||'', prio:r.priority||3, status:r.status||'Waiting',
     room:r.room_id||'Lobby', doctor:r.doctor_id||'unassigned', liaison:r.liaison_id||null,
-    reason:r.reason_for_visit||'', reasonId:r.reason_id||null, reasonCategory:r.reason_category||null, referringHospital:r.referring_hospital||'', referringHospitalInfo:r.referring_hospital_info||null,
+    reason:r.reason_for_visit||'', reasonId:r.reason_id||null, reasonCategory:r.reason_category||null, reasonProblems: Array.isArray(r.reason_problems)? r.reason_problems : [], referringHospital:r.referring_hospital||'', referringHospitalInfo:r.referring_hospital_info||null,
     triage:r.triage||null, intake:r.intake||null, records:recToApp(r.records),
     timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new Date(e.at): new Date(), meta:e.meta||'' }; }),
     arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt,
+    examStartedAt: r.exam_started_at? new Date(r.exam_started_at): null, examStartedByDoctorId: r.exam_started_by||null, examWaitMinutes: (typeof r.exam_wait_min==='number'? r.exam_wait_min : null),
     totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null,
     resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
   };
@@ -2905,7 +2920,7 @@ function roomSince(p){
   return p.arrival;
 }
 function roomMinutes(p){return Math.max(0, Math.round((now - roomSince(p))/60000));}
-function fmtWait(min){ if(min<60) return min+'m'; const h=Math.floor(min/60),m=min%60; return h+'h '+ (m? m+'m':''); }
+function fmtWait(min){ min=Math.max(0,Math.round(min)); if(min<60) return min+'m'; const h=Math.floor(min/60),m=min%60; return m? h+'h '+m+'m' : h+'h'; }
 function fmtTime(d){let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+String(m).padStart(2,'0')+' '+ap;}
 function docAv(id){const d=doc(id);return `<span class="dav" style="background:${d.color}">${d.initials}</span>`;}
 function liaAv(id){const l=liaison(id);return l?`<span class="dav lav" style="color:${l.color};border-color:${l.color}">${l.initials}</span>`:'';}
@@ -3106,19 +3121,24 @@ function filtered(){
 /* ============================================================
    DASHBOARD
    ============================================================ */
+// Pickup metrics — a "pickup" is a patient's first Exam transition. examWaitMinutes
+// (check-in → exam) is finalized at that moment and stored, so these read from real
+// timestamps, are timezone-correct, reset at hospital midnight, and sync across devices.
+function examPickupsToday(){ return PATIENTS.filter(p=>p.examStartedAt && typeof p.examWaitMinutes==='number' && isTodayHosp(p.examStartedAt)); }
+function avgExamWaitToday(){ const w=examPickupsToday().map(p=>p.examWaitMinutes); return w.length? Math.round(w.reduce((a,b)=>a+b,0)/w.length) : null; }
 function computeKPIs(){
   const active = PATIENTS.filter(isActive);
   const waiting = active.filter(p=>p.status==='Waiting');
   const waits = active.map(waitMinutes);
-  const avg = waits.length? Math.round(waits.reduce((a,b)=>a+b,0)/waits.length):0;
   const longest = active.length? Math.max(...waits):0;
   const longestP = active.find(p=>waitMinutes(p)===longest);
   const countBy = s=>active.filter(p=>p.status===s).length;
   const num = String; // formatter for plain counts
+  const awToday = avgExamWaitToday();   // avg check-in → exam across all pickups today
   return [
     {feature:true, lab:'On Floor', raw:active.length, fmt:num, sub:'Patients', wash:WASH.cyan},
     {lab:'Waiting', raw:waiting.length, fmt:num, sub:'Awaiting assignment', wash:WASH.amber},
-    {lab:'Avg Wait', raw: active.length? avg : '—', fmt: active.length? fmtWait : String, sub:'Current average', wash:WASH.amber},
+    {lab:'Avg Wait', raw: awToday==null? '—' : awToday, fmt: awToday==null? String : fmtWait, sub:'Check-in → exam · today', wash:WASH.amber},
     {lab:'Longest', raw: active.length? longest : '—', fmt: active.length? fmtWait : String, sub: longestP? (longestP.name+(longestP.last?' '+longestP.last:'')) : '—', wash:WASH.red},
     {lab:'Exam', raw:countBy('Exam'), fmt:num, sub:'In exam', wash:WASH.cyan},
     {lab:'Diagnostics', raw:countBy('Diagnostics'), fmt:num, sub:'Lab & Imaging', wash:WASH.lavender},
@@ -3249,12 +3269,22 @@ function execMetrics(){
   const byCount=[...working].sort((a,b)=>b.n-a.n);
   const clin=ROOMS.filter(r=>r!=='Lobby');
   const inUse=clin.filter(r=>active.some(p=>p.room===r)).length;
+  // Current Wait by Doctor = avg check-in→exam of each doctor's pickups TODAY.
+  const pickups=examPickupsToday();
+  const byDoc={};
+  pickups.forEach(p=>{ const id=p.examStartedByDoctorId; if(!id||id==='unassigned') return; (byDoc[id]=byDoc[id]||[]).push(p.examWaitMinutes); });
+  const showIds=new Set(Object.keys(byDoc));                       // doctors with pickups today
+  DOCTORS.forEach(d=>{ if(active.some(p=>p.doctor===d.id)) showIds.add(d.id); });   // + currently working
+  const waitByDoc=[...showIds].map(id=>{ const ws=byDoc[id]||[];
+    const avg=ws.length? Math.round(ws.reduce((a,b)=>a+b,0)/ws.length) : null;      // null = no pickups today → show "—"
+    return { d:doc(id), n:ws.length, avg };
+  }).sort((a,b)=> ((b.avg==null?-1:b.avg)-(a.avg==null?-1:a.avg)) || (b.n-a.n) || a.d.name.localeCompare(b.d.name));
   return {
     working, doctorsWorking:working.length,
     avgPerDoc: working.length? (assigned/working.length):0,
     highest: byCount[0], lowest: byCount[byCount.length-1],
     inUse, totalRooms:clin.length, util: clin.length? Math.round(inUse/clin.length*100):0,
-    waitByDoc:[...working].sort((a,b)=>b.avg-a.avg),
+    waitByDoc, casesToday: pickups.length,
     discharged: completedTodayCount('Discharged'), admitted: completedTodayCount('Admitted'), euthanized: completedTodayCount('Euthanized'), completed: completedTodayCount('Discharged')+completedTodayCount('Admitted')+completedTodayCount('Euthanized')
   };
 }
@@ -3280,20 +3310,21 @@ function renderOps(animate){
     <div class="pd-row"><span class="k">Least busy</span><span class="v">${lo?docAv(lo.d.id):''} ${lo?docShort(lo.d.id):'—'} · ${lo?lo.n:0} patient${lo&&lo.n===1?'':'s'}</span></div>
     <div class="pd-balance"><span class="pd-dot bal-${bal.c}"></span>${bal.t}</div>`;
   // average wait by doctor — thin relative bars (Apple Health style)
-  document.getElementById('wdCount').textContent = m.waitByDoc.length+' active';
-  const maxWait = m.waitByDoc.length ? (m.waitByDoc[0].avg||1) : 1;
+  document.getElementById('wdCount').textContent = m.casesToday + (m.casesToday===1?' case today':' cases today');
+  const maxWait = Math.max(1, ...m.waitByDoc.map(x=>x.avg||0));
   const wl=document.getElementById('opsWaitList');
   wl.innerHTML = m.waitByDoc.length ? m.waitByDoc.map(x=>{
-    const cls=x.avg>120?'crit':x.avg>60?'warn':'';
-    const col=x.avg>120?'#E8644A':(x.avg>60?'var(--s-waiting)':'var(--accent)');
-    const pct=Math.max(5, Math.round((x.avg/maxWait)*100));
+    const has = x.avg!=null;
+    const cls = !has?'':(x.avg>120?'crit':x.avg>60?'warn':'');
+    const col = !has?'var(--ink-300)':(x.avg>120?'#E8644A':(x.avg>60?'var(--s-waiting)':'var(--accent)'));
+    const pct = has? Math.max(5, Math.round((x.avg/maxWait)*100)) : 0;
     return `<div class="wd-row">${docAv(x.d.id)}
       <div class="wd-main">
         <div class="wd-top"><span class="wd-name">${docShort(x.d.id)}</span><span class="wd-count">${x.n} patient${x.n===1?'':'s'}</span></div>
         <div class="wd-track"><div class="wd-bar" data-w="${pct}" style="width:${(animate&&RAF)?0:pct}%;background:${col}"></div></div>
       </div>
-      <span class="wd-wait ${cls}">${fmtWait(x.avg)}</span></div>`;
-  }).join('') : `<div class="empty-mini"><div class="ico">${EMPTY_ICON}</div><b>No active caseloads</b></div>`;
+      <span class="wd-wait ${cls}">${has? fmtWait(x.avg) : '—'}</span></div>`;
+  }).join('') : `<div class="empty-mini"><div class="ico">${EMPTY_ICON}</div><b>No cases picked up yet today</b></div>`;
   if(animate && RAF){ RAF(()=>RAF(()=>{ wl.querySelectorAll('.wd-bar').forEach(b=>{ b.style.width=b.dataset.w+'%'; }); })); }
 }
 
@@ -3359,7 +3390,7 @@ function renderTable(){
     return `<tr data-pid="${p.id}">
       <td><div class="pt-cell">${mono(p)}
         <div class="nm"><b>${p.name} ${p.last}${resusBadge(p)}${recBadge(p)}${msgBadge(p)}</b><span>${p.species} · ${p.age}</span></div></div></td>
-      <td><div class="reason" title="${p.reason}">${p.reason}</div></td>
+      <td><div class="reason" title="${bcEsc((p.reasonProblems&&p.reasonProblems.length)?problemsToString(p.reasonProblems):(p.reason||''))}">${bcEsc(compactProblems(p))}</div></td>
       <td>${p.doctor==='unassigned'?'<span class="muted">Unassigned</span>':`<span class="doctag">${docAv(p.doctor)}${doc(p.doctor).name}</span>`}</td>
       <td><span class="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${p.room}</span></td>
       <td>${statusPill(p.status)}</td>
@@ -3401,7 +3432,7 @@ function cardHTML(p){
     <span class="edge" style="background:${PRIO[p.prio].c}"></span>
     <div class="c-top">${mono(p)}<b>${p.name} ${p.last}${resusBadge(p)}${msgBadge(p)}</b>
       <span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:10px">${PRIO[p.prio].l}</span></div>
-    <div class="c-reason">${p.reason}</div>
+    <div class="c-reason">${bcEsc(compactProblems(p))}</div>
     <div class="c-meta"><div class="l">${p.doctor==='unassigned'?'<span class="muted" style="font-size:11.5px">No doctor</span>':docAv(p.doctor)}${p.liaison?liaAv(p.liaison):''}
       <span class="loc" style="font-size:11.5px">${p.room}</span></div>
       <span class="wait ${wc}" style="font-size:12px">${fmtWait(w)}</span></div>
@@ -3437,8 +3468,16 @@ function wireDnD(){
 function moveStatus(p,newStatus){
   if(newStatus==='Discharged'||newStatus==='Admitted') return completePatient(p,newStatus);
   const old=p.status;
+  const at=new Date();                                   // real transition time (not page-load)
   p.status=newStatus;
-  p.timeline.push({label:`${newStatus} started`, at:new Date(now.getTime()), meta:`Moved from ${old}`});
+  // PICKUP EVENT: the first time a patient enters Exam, finalize their check-in→exam
+  // wait and attribute it to the doctor assigned at that moment. Recorded once per encounter.
+  if(newStatus==='Exam' && !p.examStartedAt){
+    p.examStartedAt = at;
+    p.examStartedByDoctorId = (p.doctor && p.doctor!=='unassigned') ? p.doctor : null;
+    p.examWaitMinutes = Math.max(0, Math.round((at - (p.arrival||at))/60000));
+  }
+  p.timeline.push({label:`${newStatus} started`, at:at, meta:`Moved from ${old}`});
   const done = ['Diagnostics','Ultrasound','Procedure'].includes(old) ? `${old} completed` : `Moved to ${newStatus}`;
   notify(done, `${p.name} · now in ${p.room}`, {icon:'move', color:STATUSES[newStatus].color});
   renderAll();
@@ -3579,7 +3618,7 @@ function renderRooms(){
       <div class="room-accent" style="background:${STATUSES[p.status].color}"></div>
       <div class="r-top"><div><div class="r-name">${rm}</div>${spec?`<div class="r-spec">${spec}</div>`:'<div class="r-spec">&nbsp;</div>'}</div>
         <span class="r-state busy">In use</span></div>
-      <div class="r-pt">${mono(p)}<div class="info"><b>${p.name} ${p.last}${resusBadge(p)}</b><span>${p.species} · ${p.reason.slice(0,26)}${p.reason.length>26?'…':''}</span></div></div>
+      <div class="r-pt">${mono(p)}<div class="info"><b>${p.name} ${p.last}${resusBadge(p)}</b><span>${p.species} · ${bcEsc(compactProblems(p).slice(0,26))}${compactProblems(p).length>26?'…':''}</span></div></div>
       <div class="r-foot"><div class="dctr">${p.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(p.doctor)+doc(p.doctor).name}</div>
         <div class="r-right"><span class="r-timer ${rcls}" title="Time in ${rm}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(p.status)}</div></div>
     </div>`;
@@ -3617,7 +3656,7 @@ function treatmentCard(){
       <div class="room-accent" style="background:#2FB6B9"></div>
       <div class="r-top"><div><div class="r-name">Treatment</div><div class="r-spec">ICU • Treatment • Wards</div></div>
         <span class="r-state busy">In use</span></div>
-      <div class="r-pt r-drag" draggable="true" data-pid="${lead.id}">${mono(lead)}<div class="info"><b>${lead.name} ${lead.last}</b><span>${lead.species} · ${lead.reason.slice(0,26)}${lead.reason.length>26?'…':''}</span></div></div>
+      <div class="r-pt r-drag" draggable="true" data-pid="${lead.id}">${mono(lead)}<div class="info"><b>${lead.name} ${lead.last}</b><span>${lead.species} · ${bcEsc(compactProblems(lead).slice(0,26))}${compactProblems(lead).length>26?'…':''}</span></div></div>
       ${rows}${more}
       <div class="r-foot"><div class="dctr">${lead.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(lead.doctor)+doc(lead.doctor).name}</div>
         <div class="r-right"><span class="r-timer" title="Time in Treatment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(lead.status)}</div></div>
@@ -3966,7 +4005,7 @@ function fillDrawer(p){
     <div class="d-cell"><div class="k">Priority</div><div id="prioMount" style="margin-top:5px"></div></div>
     <div class="d-cell"><div class="k">Arrival</div><div class="v">${fmtTime(p.arrival)}</div></div>
     <div class="d-cell"><div class="k">Time in hospital</div><div class="v">${fmtWait(w)}</div></div>
-    <div class="d-cell editable-hint" style="grid-column:1/3"><div class="k">Reason for visit</div><div class="v" id="dReason" style="font-size:13px;font-weight:600;line-height:1.4">${p.reason}</div></div>`;
+    <div class="d-cell editable-hint" style="grid-column:1/3"><div class="k">Reason for visit</div><div class="v" id="dReason" style="font-size:13px;font-weight:600;line-height:1.5;white-space:pre-line">${bcEsc((p.reasonProblems&&p.reasonProblems.length)? p.reasonProblems.map(formatProblem).join('\n') : (p.reason||''))}</div></div>`;
   // Priority — editable dropdown (same component as doctor/liaison)
   const prMount=document.getElementById('prioMount');
   prMount.appendChild(createDropdown({
@@ -3974,12 +4013,14 @@ function fillDrawer(p){
     selectedId: String(p.prio), variant:'compact', placeholder:'Set priority', searchPlaceholder:'Priority…',
     onSelect: id => setPriority(p, +id)
   }));
-  // Reason for visit — inline editable
+  // Reason for visit — inline editable; each line or ; becomes a separate problem
   makeEditable(document.getElementById('dReason'), val=>{
-    val=val.trim(); if(!val){ document.getElementById('dReason').textContent=p.reason; return; }
-    // free-text edit: drop any structured reason link unless it still matches a dataset label exactly
-    const hit = (typeof REASON_VISIT_DATA!=='undefined') ? REASON_VISIT_DATA.find(x=>x.label.toLowerCase()===val.toLowerCase()) : null;
-    p.reason=val; p.reasonId = hit?hit.id:null; p.reasonCategory = hit?hit.category:null;
+    val=val.trim(); if(!val){ fillDrawer(p); return; }
+    const probs = val.split(/[;\n]+/).map(s=>s.trim()).filter(Boolean).map(parseProblem);
+    p.reasonProblems = probs;
+    p.reason = probs.length ? problemsToString(probs) : val;
+    p.reasonId = probs.length ? (probs[0].id||null) : null;
+    p.reasonCategory = probs.length ? (probs[0].category||null) : null;
     renderAll(); if(activePatient===p.id) fillDrawer(p);
   });
   // Owner — inline editable
@@ -4576,24 +4617,142 @@ const ReasonVisitAutocomplete = (function(){
   return { search:search, attach:attach };
 })();
 
-// Structured selection captured alongside the free-text reason (null when free text).
-let apReasonId=null, apReasonCategory=null, _rvCtrl=null;
 let apWeightKg=null;   // normalized kg from the Weight field (null until a valid entry)
+
+/* ============================================================
+   REASON FOR VISIT — multi-problem parser. Turns natural phrases
+   ("not eating for 3 days") into a structured problem
+   ({label:'Anorexia', durationText:'3 days'}). Extends (not replaces)
+   the autocomplete dataset with clinical normalizations, keeps free text.
+   ============================================================ */
+const _rn = s => String(s||'').toLowerCase().replace(/['’]/g,'');
+// Extend the searchable dataset: relabel "Not Eating" → Anorexia, add Hyporexia.
+(function(){
+  try{
+    const ne=REASON_VISIT_DATA.find(x=>x.id==='not-eating');
+    if(ne){ ne.id='anorexia'; ne.label='Anorexia';
+      ne.keywords=['not eating','wont eat','no appetite','hasnt eaten','stopped eating','refusing food','anorexia','not eaten'].concat(ne.keywords||[]); }
+    if(!REASON_VISIT_DATA.some(x=>x.id==='hyporexia'))
+      REASON_VISIT_DATA.push({ id:'hyporexia', rank:4.5, label:'Hyporexia', category:'General & Systemic',
+        keywords:['barely eating','eating less','poor appetite','reduced appetite','decreased appetite','picky','not eating much','eating a little','hyporexia'],
+        description:'Reduced or partial appetite — eating less than normal' });
+  }catch(e){}
+})();
+// Clinical normalizations (checked before the dataset match). Hyporexia first so
+// "not eating much" resolves to reduced-appetite rather than complete anorexia.
+const REASON_NORMALIZE=[
+  { id:'hyporexia', label:'Hyporexia', category:'General & Systemic',
+    re:[/barely (eating|eaten)/,/eating less/,/eats less/,/poor appetite/,/reduced appetite/,/decreased appetite/,/low appetite/,/\bpicky/,/not eating much/,/eating a little/,/hardly eating/,/eating poorly/,/hyporexi/] },
+  { id:'anorexia', label:'Anorexia', category:'General & Systemic',
+    re:[/not eating/,/not eaten/,/not been eating/,/wont eat/,/will not eat/,/no appetite/,/hasnt eaten/,/has not eaten/,/stopped eating/,/quit eating/,/refus\w* (to )?eat/,/wont touch food/,/anorexi/] }
+];
+function normalizeReason(sym){ const t=_rn(sym); for(const r of REASON_NORMALIZE){ if(r.re.some(rx=>rx.test(t))) return r; } return null; }
+function _durUnit(u){ u=u.toLowerCase();
+  if(/^(h|hr|hrs|hour|hours)$/.test(u)) return 'hours';
+  if(/^(d|day|days)$/.test(u)) return 'days';
+  if(/^(w|wk|wks|week|weeks)$/.test(u)) return 'weeks';
+  if(/^(min|mins|minute|minutes)$/.test(u)) return 'minutes';
+  if(/^(mo|mos|month|months)$/.test(u)) return 'months';
+  if(/^(y|yr|yrs|year|years)$/.test(u)) return 'years';
+  return u; }
+function _durText(v,u){ const sing={hours:'hour',days:'day',weeks:'week',minutes:'minute',months:'month',years:'year'}[u]||u; return v+' '+(v===1? sing : u); }
+// Extract a duration expression; return the value/unit/text + the leftover symptom text.
+function parseDuration(raw){
+  const s=String(raw||''); const low=s.toLowerCase();
+  let durationText=null, durationValue=null, durationUnit=null, matched=null;
+  let m=low.match(/\bsince\s+(this (?:morning|afternoon|evening|night)|last (?:night|week|weekend|month)|yesterday|tonight|midnight|noon|monday|tuesday|wednesday|thursday|friday|saturday|sunday|[a-z]+day)\b/);
+  if(m){ matched=m[0]; const idx=low.indexOf(matched); durationText=s.slice(idx, idx+matched.length); }
+  if(!matched){ m=low.match(/\b(?:for\s+)?a few\s+(minutes|mins|hours|hrs|days|weeks|months)\b/);
+    if(m){ const u=_durUnit(m[1]); durationUnit=u; durationText='a few '+u; matched=m[0]; } }
+  if(!matched){ m=low.match(/\b(?:for\s+|x)?(\d+)\s*(h|hr|hrs|hour|hours|d|day|days|w|wk|wks|week|weeks|min|mins|minute|minutes|mo|mos|month|months|y|yr|yrs|year|years)\b/);
+    if(m){ durationValue=parseInt(m[1],10); durationUnit=_durUnit(m[2]); durationText=_durText(durationValue,durationUnit); matched=m[0]; } }
+  let remaining=s;
+  if(matched){ const idx=low.indexOf(matched); remaining=s.slice(0,idx)+' '+s.slice(idx+matched.length); }
+  remaining=remaining.replace(/\s+/g,' ').replace(/^[\s,;:-]+/,'').replace(/[\s,;:-]+$/,'').trim();
+  return { durationText, durationValue, durationUnit, remaining };
+}
+function isConfidentReason(sym, item){
+  const q=_rn(String(sym).trim()); if(!q) return false; const lab=_rn(item.label);
+  if(lab===q || lab.startsWith(q) || q.startsWith(lab)) return true;
+  if((item.keywords||[]).some(k=>_rn(k)===q)) return true;
+  if(q.split(/\s+/).length<=3){
+    if(lab.includes(q)) return true;
+    if((item.keywords||[]).some(k=>{const kk=_rn(k); return kk.startsWith(q)||q.startsWith(kk);})) return true;
+  }
+  return false;
+}
+// raw text → one structured problem {id,label,category,duration*,originalInput}
+function parseProblem(raw){
+  const original=String(raw).trim();
+  const dur=parseDuration(original);
+  const sym=(dur.remaining||original).trim();
+  const base={ durationValue:dur.durationValue, durationUnit:dur.durationUnit, durationText:dur.durationText, originalInput:original };
+  const norm=normalizeReason(sym);
+  if(norm) return Object.assign({ id:norm.id, label:norm.label, category:norm.category }, base);
+  const res=ReasonVisitAutocomplete.search(sym);
+  if(res.length && isConfidentReason(sym, res[0])){ const it=res[0]; return Object.assign({ id:it.id, label:it.label, category:it.category }, base); }
+  return Object.assign({ id:null, label:(sym||original), category:null }, base);  // free text
+}
+function formatProblem(pr){ return pr.durationText ? (pr.label+' · '+pr.durationText) : pr.label; }
+function problemsToString(arr){ return (arr||[]).map(formatProblem).join('; '); }
+function shortDur(pr){ if(pr.durationValue && pr.durationUnit){ const sh={hours:'h',days:'d',weeks:'w',minutes:'m',months:'mo',years:'y'}[pr.durationUnit]||''; if(sh) return pr.durationValue+sh; } return pr.durationText||''; }
+function compactProblems(p){ const a=p&&p.reasonProblems; if(!a||!a.length) return (p&&p.reason)||''; const f=a[0]; let s=f.label+(f.durationText?(' · '+shortDur(f)):''); if(a.length>1) s+=' +'+(a.length-1); return s; }
+
+/* ---- Add-New-Patient Reason token field (chips + input + autocomplete) ---- */
+let apProblems=[], _rvCtrl=null, _rpBackspaceArmed=false, _rpLastRaw='';
+function focusReasonInput(){ const i=document.getElementById('apReason'); if(i) try{ i.focus(); }catch(e){} }
+function renderProblemChips(){
+  const wrap=document.getElementById('apProblemsChips'); if(!wrap) return;
+  wrap.innerHTML = apProblems.map(function(pr,i){
+    const armed=(i===apProblems.length-1 && _rpBackspaceArmed) ? ' armed' : '';
+    return '<span class="rvp-chip'+armed+'"><span class="rvp-chip-t">'+bcEsc(formatProblem(pr))+'</span>'
+      +'<button type="button" class="rvp-chip-x" data-i="'+i+'" aria-label="Remove problem">&times;</button></span>';
+  }).join('');
+  wrap.querySelectorAll('.rvp-chip-x').forEach(function(b){ b.onclick=function(){ apProblems.splice(+b.dataset.i,1); _rpBackspaceArmed=false; renderProblemChips(); focusReasonInput(); }; });
+  wrap.style.display = apProblems.length ? 'flex' : 'none';
+}
+function addProblem(item){
+  const input=document.getElementById('apReason'); if(!input) return;
+  // on suggestion-select the input is already the label, so use the last typed text for duration
+  const raw = item ? (_rpLastRaw || input.value.trim()) : input.value.trim();
+  let prob;
+  if(item){ const dur=parseDuration(raw); prob={ id:item.id, label:item.label, category:item.category, durationValue:dur.durationValue, durationUnit:dur.durationUnit, durationText:dur.durationText, originalInput:raw||item.label }; }
+  else { if(!raw) return; prob=parseProblem(raw); }
+  apProblems.push(prob);
+  input.value=''; _rpLastRaw=''; _rpBackspaceArmed=false;
+  if(_rvCtrl) _rvCtrl.close();
+  renderProblemChips(); focusReasonInput();
+}
 function ensureReasonAutocomplete(){
   if(_rvCtrl) return;
   const input=document.getElementById('apReason'), listEl=document.getElementById('rvList');
   if(!input || !listEl) return;
   _rvCtrl=ReasonVisitAutocomplete.attach(input, listEl, {
-    onSelect:function(it){ apReasonId=it.id; apReasonCategory=it.category; },
-    onInput:function(){ apReasonId=null; apReasonCategory=null; }   // editing after a pick reverts to free text
+    onSelect:function(it){ addProblem(it); },        // choosing a suggestion completes a chip (duration preserved)
+    onInput:function(v){ _rpBackspaceArmed=false; _rpLastRaw=v; }
+  });
+  // Enter / ';' complete a chip from raw text; Backspace on empty edits chips (Apple token style).
+  input.addEventListener('keydown', function(e){
+    if((e.key==='Enter' || e.key===';') && !e.defaultPrevented){   // defaultPrevented => autocomplete already chose a highlighted item
+      if(input.value.trim()){ e.preventDefault(); addProblem(null); }
+      return;
+    }
+    if(e.key==='Backspace' && input.value===''){
+      if(!apProblems.length) return; e.preventDefault();
+      if(!_rpBackspaceArmed){ _rpBackspaceArmed=true; renderProblemChips(); }
+      else { apProblems.pop(); _rpBackspaceArmed=false; renderProblemChips(); }
+      return;
+    }
+    if(e.key!=='Backspace') _rpBackspaceArmed=false;
   });
 }
 
 function openAddPatient(){
   apArrivalType='walkin'; apPrio=2; apDoctorId='unassigned'; apLocation='Lobby';
-  apReasonId=null; apReasonCategory=null;               // reset structured reason selection
-  ensureReasonAutocomplete();                            // attach the Reason autocomplete (idempotent)
+  apProblems=[]; _rpBackspaceArmed=false;               // reset the Reason problem chips
+  ensureReasonAutocomplete();                            // attach the Reason token field (idempotent)
   if(_rvCtrl) _rvCtrl.close();
+  renderProblemChips();
   apRefHospObj=null; ensureHospitalAutocompletes();     // reset + attach the Referring Hospital autocomplete
   apWeightKg=null; { const wh=document.getElementById('apWeightHint'); if(wh) wh.classList.remove('show'); }
   ['apName','apSpecies','apBreed','apAge','apSex','apWeight','apOwner','apPhone','apReason','apRefHosp','apTransferNotes']
@@ -4625,13 +4784,17 @@ function createPatient(){
   else { room = apLocation || 'Lobby'; status='Waiting'; }
   const arrivalLabel = apArrivalType==='transfer' ? 'ER transfer' : (apArrivalType==='hospitalized' ? 'Direct admit' : 'Walk-in');
   const at=new Date(now.getTime());
+  // flush any problem still typed in the box, then build from the structured list
+  { const rin=document.getElementById('apReason'); if(rin && rin.value.trim()){ apProblems.push(parseProblem(rin.value.trim())); rin.value=''; } }
+  const reasonStr = apProblems.length ? problemsToString(apProblems) : 'Reason not specified';
   const p = patient({
     name:first, last:last, species:val('apSpecies')||'—', age:val('apAge')||'—',
     breed:val('apBreed')||'—', owner:val('apOwner')||'—', ownerPhone:val('apPhone'),
     sex:val('apSex'), weight:val('apWeight'), weightKg:(parseWeightInput(val('apWeight')).kg||null),
-    reason:val('apReason')||'Reason not specified',
-    reasonId: (val('apReason') && apReasonId) ? apReasonId : null,
-    reasonCategory: (val('apReason') && apReasonCategory) ? apReasonCategory : null,
+    reason: reasonStr,
+    reasonProblems: apProblems.slice(),
+    reasonId: apProblems.length ? (apProblems[0].id||null) : null,
+    reasonCategory: apProblems.length ? (apProblems[0].category||null) : null,
     doctor:apDoctorId, liaison:null,
     room:room, status:status, prio:apPrio, arrival:at, arrivalType:apArrivalType,
     referringHospital: apArrivalType==='transfer'?val('apRefHosp'):'',
