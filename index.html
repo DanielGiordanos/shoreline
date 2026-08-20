@@ -1971,21 +1971,22 @@ body.dark #view-client .cl-vstep2::before{background:rgba(150,185,220,.10);}
 .cl-msg-ic{display:inline-grid;place-items:center;width:26px;height:26px;color:var(--brand-purple);vertical-align:-6px;margin-right:6px;}
 .cl-msg-ic svg{width:22px;height:22px;}
 .cl-qr{display:flex;align-items:center;gap:14px;padding:clamp(12px,1vw,18px);border-radius:clamp(14px,1vw,20px);background:var(--glass);border:1px solid var(--glass-border);box-shadow:var(--panel-shadow);}
+.cl-qr-games{margin-bottom:clamp(6px,.5vw,10px);}
 .cl-qr-box{width:clamp(64px,5vw,92px);height:clamp(64px,5vw,92px);flex:0 0 auto;border-radius:12px;background:#fff;padding:7px;}
 .cl-qr-box svg{width:100%;height:100%;display:block;}
 .cl-qr-title{font-size:clamp(13px,1vw,18px);font-weight:800;color:var(--accent);}
 .cl-qr-text{font-size:clamp(11px,.8vw,14px);color:var(--ink-500);margin-top:2px;line-height:1.4;}
 /* rotating information carousel (QR stays fixed below it) */
-.cl-carousel{position:relative;flex:1;min-height:0;}
+.cl-carousel{position:relative;flex:1;min-height:0;overflow:hidden;}
 .cl-slide{position:absolute;inset:0;display:flex;flex-direction:column;gap:clamp(10px,.9vw,16px);opacity:0;pointer-events:none;transition:opacity .5s var(--ease);}
 .cl-slide.active{opacity:1;pointer-events:auto;}
 /* priority education */
-.cl-prio-cards{display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(9px,.8vw,14px);margin-bottom:clamp(2px,.4vw,8px);}
-.cl-pcard{display:flex;align-items:center;gap:14px;padding:clamp(12px,1vw,17px);border-radius:clamp(13px,1vw,18px);background:rgba(var(--pcrgb),.10);border:1px solid rgba(var(--pcrgb),.32);}
+.cl-prio-cards{display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(6px,.55vw,10px);margin-bottom:clamp(2px,.3vw,5px);}
+.cl-pcard{display:flex;align-items:center;gap:14px;padding:clamp(9px,.75vw,13px);border-radius:clamp(13px,1vw,18px);background:rgba(var(--pcrgb),.10);border:1px solid rgba(var(--pcrgb),.32);}
 .cl-pbadge{width:clamp(38px,3vw,52px);height:clamp(38px,3vw,52px);border-radius:12px;display:grid;place-items:center;flex:0 0 auto;font-size:clamp(15px,1.2vw,22px);font-weight:800;color:#fff;box-shadow:0 5px 16px -5px rgba(var(--pcrgb),.7);}
 .cl-ptitle{font-size:clamp(14px,1.05vw,20px);font-weight:800;color:var(--ink-900);}
 .cl-pdesc{font-size:clamp(11px,.82vw,15px);color:var(--ink-500);margin-top:2px;line-height:1.35;}
-.cl-pnote{font-size:clamp(12px,.9vw,16px);font-weight:600;color:var(--accent);text-align:center;line-height:1.5;padding:clamp(10px,.9vw,14px);background:rgba(56,189,210,.08);border:1px solid rgba(56,189,210,.2);border-radius:14px;}
+.cl-pnote{font-size:clamp(11px,.8vw,14px);font-weight:600;color:var(--accent);text-align:center;line-height:1.4;padding:clamp(7px,.6vw,10px);background:rgba(56,189,210,.08);border:1px solid rgba(56,189,210,.2);border-radius:14px;}
 /* your visit today — vertical journey with a thin glowing line */
 .cl-visit{flex:1;display:flex;flex-direction:column;justify-content:space-between;position:relative;padding:clamp(6px,.6vw,12px) 0;}
 .cl-visit::before{content:'';position:absolute;left:clamp(19px,1.5vw,26px);top:clamp(24px,2vw,34px);bottom:clamp(24px,2vw,34px);width:2px;background:linear-gradient(180deg,var(--accent),var(--brand-purple),var(--s-admitted));opacity:.45;box-shadow:0 0 10px rgba(56,189,210,.4);}
@@ -3414,6 +3415,10 @@ body:not(.dark) .umt-acting{border-radius:999px;letter-spacing:.08em;font-weight
                   <p>Thank you for placing your trust in VCA Shoreline.</p>
                 </div>
               </div>
+            </div>
+            <div class="cl-qr cl-qr-games">
+              <div class="cl-qr-box" id="clGamesQr"></div>
+              <div><div class="cl-qr-title">Play While You Wait</div><div class="cl-qr-text">Scan to play games on your phone.</div></div>
             </div>
             <div class="cl-qr">
               <div class="cl-qr-box" id="clQr"></div>
@@ -7354,7 +7359,6 @@ function renderClientStats(animate){
   const stats=[
     {ic:CL_ICONS.users, sc:'56,189,210',  raw:active,           l:'Pets Receiving Care',   s:'On floor now',   fmt:'num'},
     {ic:CL_ICONS.steth, sc:'72,184,136',  raw:m.doctorsWorking, l:'Doctors On Duty',       s:'Caring for pets',fmt:'num'},
-    {ic:CL_ICONS.clock, sc:'168,136,224', raw:avgVal,           l:'Average Wait',          s:'For doctor exam',fmt:'wait'},
     {ic:CL_ICONS.check, sc:'72,184,136',  raw:m.discharged,     l:'Pets Discharged Today', s:'Home & happy',   fmt:'num'}
   ];
   const _disp=s=> s.fmt==='wait' ? (typeof s.raw==='number'?fmtWait(s.raw):'—') : String(s.raw);
@@ -7389,6 +7393,7 @@ function renderClient(animate){
   renderClientStats(animate);
   updateClientClock();
   const qr=document.getElementById('clQr'); if(qr && !qr.innerHTML) qr.innerHTML='<div style="background:#fff;padding:5px;border-radius:6px;line-height:0">'+(typeof makeQR==='function'?makeQR('https://shoreline.pravix.app/track.html'):clQrSvg())+'</div>';
+  const gq=document.getElementById('clGamesQr'); if(gq && !gq.innerHTML) gq.innerHTML='<div style="background:#fff;padding:5px;border-radius:6px;line-height:0">'+(typeof makeQR==='function'?makeQR('https://shoreline.pravix.app/games.html'):'')+'</div>';
 }
 function renderClientPager(){
   const pager=document.getElementById('clPager'); if(!pager) return;
