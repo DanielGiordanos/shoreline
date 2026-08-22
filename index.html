@@ -584,18 +584,99 @@ body.dark .command-kpi{
 .util-bar{flex:1;height:6px;border-radius:6px;background:var(--fill-track);overflow:hidden;}
 .util-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#38BDD2,#4DC8E0);transition:width .9s var(--ease);}
 .util-pct{font-size:12px;font-weight:700;color:var(--ink-500);font-variant-numeric:tabular-nums;}
-/* average wait by doctor */
-.wd-row{display:flex;align-items:center;gap:11px;padding:9px 18px;border-bottom:1px solid var(--glass-hairline);
-  transition:background .2s var(--ease);}
-.wd-row:last-child{border-bottom:none;}
-.wd-main{flex:1;min-width:0;}
-.wd-top{display:flex;align-items:baseline;gap:7px;}
-.wd-name{font-size:13px;font-weight:600;}
-.wd-count{font-size:11px;color:var(--ink-400);font-weight:500;}
-.wd-track{height:3px;border-radius:3px;background:var(--fill-track);overflow:hidden;margin-top:5px;}
-.wd-bar{height:100%;border-radius:3px;transition:width .9s var(--ease);}
-.wd-wait{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink-500);flex:0 0 auto;}
-.wd-wait.warn{color:var(--s-waiting);} .wd-wait.crit{color:#E8644A;}
+/* Current Wait by Doctor — compact workload-balancing control */
+.wd-panel{overflow:hidden;}
+.wd-panel .panel-head{padding:14px 18px 12px;}
+.wd-head-right{display:flex;align-items:center;gap:10px;}
+.wd-balance{
+  display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;
+  border:1px solid rgba(120,145,170,.11);background:rgba(255,255,255,.014);
+  color:var(--ink-400);font-size:9px;font-weight:700;letter-spacing:.015em;
+}
+.wd-list{padding:4px 12px 8px;}
+.wd-row{
+  position:relative;display:grid;grid-template-columns:42px minmax(0,1fr) 188px;
+  align-items:center;gap:12px;min-height:60px;padding:8px 8px 8px 4px;
+  border-radius:12px;cursor:pointer;transition:background .15s var(--ease);
+}
+.wd-row::after{
+  content:"";position:absolute;left:54px;right:198px;bottom:0;height:1px;
+  background:rgba(93,127,162,.13);
+}
+.wd-row:last-child::after{display:none;}
+.wd-row:hover{background:rgba(120,150,175,.045);}
+.wd-avatar{
+  --wd-accent:var(--accent);
+  width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  color:var(--ink-900);font-size:10.5px;font-weight:760;letter-spacing:-.015em;
+  background:
+    radial-gradient(circle at 45% 38%,color-mix(in srgb,var(--wd-accent) 14%,transparent),transparent 58%),
+    color-mix(in srgb,var(--wd-accent) 8%,var(--surface-1));
+  border:1px solid color-mix(in srgb,var(--wd-accent) 28%,transparent);
+  transition:border-color .15s var(--ease),background .15s var(--ease),opacity .15s var(--ease);
+}
+body.dark .wd-avatar{color:#F6F9FC;background:
+  radial-gradient(circle at 45% 38%,color-mix(in srgb,var(--wd-accent) 16%,transparent),transparent 58%),
+  color-mix(in srgb,var(--wd-accent) 8%,#142138);}
+.wd-row:hover .wd-avatar{
+  border-color:color-mix(in srgb,var(--wd-accent) 46%,transparent);
+  background:
+    radial-gradient(circle at 45% 38%,color-mix(in srgb,var(--wd-accent) 19%,transparent),transparent 58%),
+    color-mix(in srgb,var(--wd-accent) 11%,var(--surface-1));
+}
+body.dark .wd-row:hover .wd-avatar{background:
+  radial-gradient(circle at 45% 38%,color-mix(in srgb,var(--wd-accent) 20%,transparent),transparent 58%),
+  color-mix(in srgb,var(--wd-accent) 12%,#142138);}
+.wd-main{min-width:0;}
+.wd-top{display:flex;align-items:baseline;gap:8px;min-width:0;}
+.wd-name{font-size:13.5px;font-weight:660;color:var(--ink-900);letter-spacing:-.012em;white-space:nowrap;}
+.wd-count{font-size:10.5px;color:var(--ink-400);font-weight:540;white-space:nowrap;}
+.wd-subline{margin-top:4px;display:flex;align-items:center;gap:12px;min-width:0;
+  color:var(--ink-400);font-size:9.7px;font-weight:530;}
+.wd-longest{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wd-state{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;
+  font-size:8.4px;font-weight:700;letter-spacing:.015em;white-space:nowrap;
+  border:1px solid rgba(120,145,170,.11);color:var(--ink-400);
+  background:rgba(120,145,170,.04);
+}
+.wd-state.high{color:var(--s-waiting);border-color:rgba(232,168,48,.20);background:rgba(232,168,48,.06);}
+.wd-state.available{color:var(--s-admitted);border-color:rgba(72,184,136,.22);background:rgba(72,184,136,.07);}
+.wd-metrics{
+  position:relative;display:flex;align-items:center;justify-content:flex-end;gap:14px;
+  min-width:188px;padding-left:18px;
+}
+.wd-metrics::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:1px;background:rgba(93,127,162,.07);}
+.wd-trend{width:44px;min-width:44px;text-align:right;font-size:9px;font-weight:650;color:var(--ink-400);}
+.wd-trend.up{color:#D99B5D}.wd-trend.down{color:#63B8A2}
+.wd-wait-stack{display:flex;flex-direction:column;align-items:flex-end;}
+.wd-wait{
+  min-width:42px;text-align:right;font-size:15.5px;font-weight:610;letter-spacing:-.02em;
+  color:var(--ink-900);font-variant-numeric:tabular-nums;
+}
+.wd-wait.warn{color:var(--s-waiting)} .wd-wait.crit{color:var(--priority-p1)}
+.wd-wait-label{margin-top:1px;color:var(--ink-400);font-size:8px;font-weight:700;letter-spacing:.055em;text-transform:uppercase;}
+.wd-action{
+  width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+  border:1px solid rgba(104,137,170,.12);color:var(--ink-400);
+  background:rgba(255,255,255,.014);font-size:14px;line-height:1;
+  opacity:0;transform:translateX(3px);
+  transition:opacity .15s var(--ease),transform .15s var(--ease),background .15s var(--ease),color .15s var(--ease);
+}
+.wd-row:hover .wd-action{opacity:1;transform:none;}
+.wd-action:hover{background:rgba(56,189,210,.08);color:var(--accent);}
+.wd-row.is-idle .wd-avatar{opacity:.68;}
+.wd-row.is-idle .wd-count{opacity:.72;}
+@media(max-width:700px){
+  .wd-row{grid-template-columns:42px minmax(0,1fr) auto;}
+  .wd-subline .wd-state{display:none;}
+  .wd-trend{display:none;}
+  .wd-metrics{min-width:auto;padding-left:10px;}
+  .wd-metrics::before{display:none;}
+  .wd-action{display:none;}
+  .wd-row::after{right:8px;}
+}
+
 
 /* ---------- Filter bar ---------- */
 .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
@@ -701,8 +782,19 @@ body.dark .resus-cap.dnr{color:#d19a8f;background:rgba(224,112,96,0.08);border-c
 .wait.warn{color:var(--s-waiting);}
 .wait.crit{color:var(--p1);}
 .doctag{display:inline-flex;align-items:center;gap:7px;}
-.dav{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:9.5px;font-weight:700;
-  color:#fff;flex:0 0 auto;vertical-align:middle;letter-spacing:.02em;}
+.dav{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:9.5px;font-weight:730;
+  flex:0 0 auto;vertical-align:middle;letter-spacing:-.01em;}
+/* Doctor avatar — same accent-tinted treatment as the Current Wait by Doctor panel (.wd-avatar),
+   theme-aware, driven by --dav-accent (the doctor's identity color). Liaison ghost variant (.lav) opts out. */
+.dav:not(.lav){color:var(--ink-900);
+  background:
+    radial-gradient(circle at 45% 38%,color-mix(in srgb,var(--dav-accent,var(--accent)) 15%,transparent),transparent 58%),
+    color-mix(in srgb,var(--dav-accent,var(--accent)) 9%,var(--surface-1));
+  border:1px solid color-mix(in srgb,var(--dav-accent,var(--accent)) 30%,transparent);}
+body.dark .dav:not(.lav){color:#F6F9FC;
+  background:
+    radial-gradient(circle at 45% 38%,color-mix(in srgb,var(--dav-accent,var(--accent)) 16%,transparent),transparent 58%),
+    color-mix(in srgb,var(--dav-accent,var(--accent)) 8%,#142138);}
 .doctag .dav{width:24px;height:24px;font-size:10.5px;}
 /* Liaison avatar — outlined ghost variant to distinguish from filled doctor avatar */
 .dav.lav{background:transparent;border:1.5px solid;font-weight:800;}
@@ -1970,7 +2062,19 @@ body.dark #view-client .cl-vstep2::before{background:rgba(150,185,220,.10);}
   font-size:clamp(11px,.8vw,12px);font-weight:700;letter-spacing:.01em;
   padding:5px 10px;border-radius:12px;color:var(--gc);background:rgba(var(--gcrgb),.15);border:1px solid rgba(var(--gcrgb),.35);white-space:nowrap;}
 .cl-badge-dot{width:clamp(7px,.6vw,8px);height:clamp(7px,.6vw,8px);border-radius:50%;flex:0 0 auto;background:var(--gc);box-shadow:0 0 7px var(--gc);}
-.cl-badge-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.cl-badge-txt{overflow:hidden;white-space:nowrap;min-width:0;}
+/* Long status labels gently reveal by scrolling left (measured in JS; only when overflowing).
+   Slow, eased, with pauses at both ends — never truncated. */
+.cl-badge-inner{display:inline-block;white-space:nowrap;will-change:transform;}
+.cl-badge-inner.scroll{animation:clBadgeScroll var(--scroll-dur,8s) ease-in-out infinite;}
+@keyframes clBadgeScroll{
+  0%,15%{transform:translateX(0)}
+  50%,65%{transform:translateX(var(--scroll-dist,0))}
+  100%{transform:translateX(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  .cl-badge-inner.scroll{animation-duration:calc(var(--scroll-dur,8s) * 1.8);}
+}
 .cl-time-inline{margin-top:0;white-space:nowrap;flex:0 0 auto;}
 @keyframes clCardIn{to{opacity:1;transform:none;}}
 @keyframes clNode{0%,100%{box-shadow:0 0 0 4px rgba(var(--gcrgb),.28);}50%{box-shadow:0 0 0 9px rgba(var(--gcrgb),.05);}}
@@ -3120,13 +3224,11 @@ html.perf .rd-glow{opacity:.5;}
 .rd-actor:hover{border-color:var(--rc-line);}
 .rd-save{font-size:11.5px;font-weight:650;color:var(--ink-400);opacity:0;transition:opacity .3s var(--ease);min-width:52px;text-align:right;}
 .rd-save.on{opacity:1;}
-.rd-searchwrap{position:relative;display:flex;align-items:center;}
-.rd-searchwrap svg{position:absolute;left:11px;width:14px;height:14px;color:var(--ink-400);pointer-events:none;}
-#rdSearch{width:210px;padding:8px 12px 8px 32px;border-radius:11px;border:1px solid var(--ctl-border);
-  background:var(--fill-soft);color:var(--ink-900);font-size:12.5px;outline:none;font-family:inherit;
-  transition:border-color .2s var(--ease),box-shadow .2s var(--ease),width .25s var(--ease);}
-#rdSearch:focus{border-color:rgba(56,189,210,.55);box-shadow:0 0 0 3px rgba(56,189,210,.15);width:250px;}
-#rdSearch::placeholder{color:var(--ink-400);}
+/* Rounds search now reuses the global .search component (see #pvxSearch); sized for the toolbar.
+   Its orb carries its OWN clip def (#lunaCatClip2) so the cat stays clipped even when the global
+   search isn't in the DOM on this view — the ::after rim must point at that clip too. */
+.search.rd-search{width:270px;max-width:40vw;}
+.rd-search .luna-search-orb .welcome-orb::after{clip-path:url(#lunaCatClip2);-webkit-clip-path:url(#lunaCatClip2);}
 
 /* ── header ── */
 .rd-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px;}
@@ -4462,6 +4564,200 @@ html.perf body.dark #sbLogin .card{backdrop-filter:blur(36px) saturate(1.28)!imp
 html.perf body.dark #sbLogin .continue{backdrop-filter:blur(20px) saturate(1.25)!important;-webkit-backdrop-filter:blur(20px) saturate(1.25)!important;}
 
 </style>
+
+<style id="pvxSearch">
+/* Global search — prototype two-layer construction (shell + inner field), theme-aware */
+:root{
+  --search-shell-bg:rgba(232,237,246,.92); --search-shell-border:rgba(120,140,170,.55);
+  --search-bg:#FFFFFF; --search-focus-bg:#FFFFFF; --search-border:rgba(120,138,168,.55);
+  --search-border-focus:rgba(52,183,207,.34); --search-focus-ring:rgba(52,183,207,.08);
+  --search-text:#44505F; --search-ph:#7B8796; --search-ico:#657181;
+}
+body.dark{
+  --search-shell-bg:rgba(20,31,52,.60); --search-shell-border:rgba(120,150,185,.16);
+  --search-bg:#17233A; --search-focus-bg:#19253C; --search-border:rgba(150,185,220,.18);
+  --search-border-focus:rgba(77,200,224,.42); --search-focus-ring:rgba(56,189,210,.10);
+  --search-text:#D1D9E5; --search-ph:#8190A6; --search-ico:#8190A6;
+}
+.search{width:310px;max-width:32vw;position:relative;flex:0 0 auto;}
+/* outer shell */
+.search .search-wrap{padding:5px;border-radius:15px;background:var(--search-shell-bg);border:1px solid var(--search-shell-border);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10);backdrop-filter:none!important;transition:border-color .16s ease,background .16s ease;}
+.search .search-wrap:focus-within{border-color:var(--search-border-focus);}
+/* inner field */
+.search .search-bar{display:flex;align-items:center;gap:9px;height:40px;padding:0 9px 0 13px;border-radius:11px;
+  background:var(--search-bg)!important;border:1px solid var(--search-border)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important;
+  transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;backdrop-filter:none!important;}
+.search .search-bar:focus-within{border-color:var(--search-border-focus)!important;background:var(--search-focus-bg)!important;box-shadow:0 0 0 2px var(--search-focus-ring)!important;}
+/* Light mode only: lift the control off the near-white header with a soft shadow so it no longer
+   blends in (dark mode keeps its flat glass look). */
+body:not(.dark) .search .search-wrap{box-shadow:0 2px 10px rgba(60,80,120,.12),inset 0 1px 0 rgba(255,255,255,.6);}
+body:not(.dark) .search .search-bar{box-shadow:0 1px 3px rgba(60,80,120,.10),inset 0 1px 0 rgba(255,255,255,.9)!important;}
+body:not(.dark) .search .search-bar:focus-within{box-shadow:0 1px 3px rgba(60,80,120,.10),0 0 0 2px var(--search-focus-ring)!important;}
+/* prototype CSS-drawn magnifier icon (scaled), themed */
+.search .search-icon{position:relative;width:20px;height:20px;flex:0 0 20px;}
+.search .search-icon::before{content:"";position:absolute;left:1px;top:1px;width:13px;height:13px;border:2px solid var(--search-ico);border-radius:50%;}
+.search .search-icon::after{content:"";position:absolute;width:8px;height:2px;background:var(--search-ico);transform:rotate(45deg);transform-origin:left center;left:14px;top:15px;border-radius:999px;}
+.search input.search-input{flex:1;min-width:0;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;
+  color:var(--search-text)!important;font-size:13.5px;font-weight:460;letter-spacing:-.012em;padding:0!important;height:auto!important;}
+.search input.search-input::placeholder{color:var(--search-ph)!important;opacity:1;font-weight:450;transition:opacity .14s ease,color .14s ease;}
+.search input.search-input:focus::placeholder{opacity:0!important;color:transparent!important;}
+/* Suppress Safari/WebKit native search-field decorations (crescent/X/results controls) — keeps type="search" semantics */
+.search input.search-input::-webkit-search-cancel-button,
+.search input.search-input::-webkit-search-decoration,
+.search input.search-input::-webkit-search-results-button,
+.search input.search-input::-webkit-search-results-decoration{
+  -webkit-appearance:none;appearance:none;display:none;
+}
+/* Premium idle caret — luminous ice-blue pill shown only when the field is focused AND empty.
+   Positioned where the first character begins (after the 13px pad + 20px icon + 9px gap = 42px);
+   stationary (opacity-only breathing). Native caret is hidden via .custom-caret-active. */
+.search .premium-search-caret{
+  position:absolute;left:42px;top:50%;margin-top:-8.5px;width:2px;height:17px;border-radius:999px;
+  background:rgba(220,242,255,.95);
+  box-shadow:0 0 4px rgba(115,200,235,.45),0 0 8px rgba(115,200,235,.18);
+  display:none;opacity:0;pointer-events:none;z-index:2;
+}
+.search .search-bar.caret-active .premium-search-caret{
+  display:block;
+  animation:premiumCaret 1.35s ease-in-out infinite;
+}
+.search input.search-input.custom-caret-active{caret-color:transparent;}
+/* Light mode: darker cyan caret so the pill is visible on the white field (ice-blue would vanish). */
+body:not(.dark) .search .premium-search-caret{
+  background:rgba(48,150,190,.95);
+  box-shadow:0 0 4px rgba(70,175,210,.35),0 0 8px rgba(70,175,210,.14);
+}
+@keyframes premiumCaret{0%,100%{opacity:.45}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+  .search .search-bar.caret-active .premium-search-caret{animation:none;opacity:.9;}
+}
+.search .actions{display:flex;align-items:center;flex:0 0 auto;}
+/* Siri-style active glow — approved from pravix-search-bar-siri-glow-no-spin.html (colors, blur,
+   opacity, breathing unchanged). Placed on the OUTER wrapper, BEHIND the field (z-index:-1), so it
+   blooms outside/around the control. The opaque .search-bar surface (z-index:1) sits above it and
+   fully occludes it over the interior — the input never gets tinted. Scale-only breathing (no
+   rotation/spin), no perimeter line; border, focus ring, orb, dropdown, typography, theming intact. */
+.search .search-wrap{position:relative;isolation:isolate;overflow:visible;}
+.search .search-bar{position:relative;z-index:1;}
+.search .search-wrap::before{
+  content:"";
+  position:absolute;
+  inset:-4px;
+  border-radius:inherit;
+  background:conic-gradient(from 20deg,
+    rgba(122,92,255,.55),
+    rgba(79,125,255,.48),
+    rgba(54,213,255,.46),
+    rgba(184,77,255,.5),
+    rgba(255,60,134,.5),
+    rgba(255,139,61,.42),
+    rgba(122,92,255,.55));
+  filter:blur(9px);
+  opacity:0;
+  transition:opacity .24s ease;
+  pointer-events:none;
+  z-index:-1;
+}
+.search .search-wrap:focus-within::before{
+  opacity:.525;
+  animation:siriGlowBreathe 2.8s ease-in-out infinite;
+}
+@keyframes siriGlowBreathe{
+  0%,100%{opacity:.350;transform:scale(.985)}
+  50%{opacity:.569;transform:scale(1.015)}
+}
+@media(prefers-reduced-motion:reduce){
+  .search .search-wrap:focus-within::before{animation:none;}
+}
+/* L.U.N.A. — orbiting-blob orb clipped to a living, morphing cat-head silhouette (from
+   luna-orb-standalone.html). Rendered at natural 132x128 then vector-scaled into the ~30px
+   search slot; everything is namespaced under .luna-search-orb and uses the #lunaCatClip id. */
+.luna-search-orb{position:relative;width:30px;height:30px;flex:0 0 30px;margin-right:-3px;cursor:pointer;
+  transition:transform .16s ease,filter .16s ease;}
+.luna-search-orb:hover{transform:scale(1.06);filter:saturate(1.08) brightness(1.05);}
+.search .search-wrap:focus-within .luna-search-orb{filter:saturate(1.08) brightness(1.06);}
+.luna-orb-scale{position:absolute;top:50%;left:50%;width:132px;height:128px;
+  transform:translate(-50%,-50%) scale(.205);transform-origin:center;pointer-events:none;}
+/* Dark mode: keep the glowing orb (no inversion / no dark center) but lift the cat body to a
+   lighter blue so the silhouette — ears included — separates from the dark navy UI, plus a
+   brighter halo and a soft light edge. Light mode is untouched. */
+body.dark .luna-search-orb .welcome-orb{
+  background:radial-gradient(circle at 50% 45%,#4d629a 0%,#2d3c66 64%,#212d52 100%);
+  filter:drop-shadow(0 0 var(--glow-a,10px) rgba(150,190,255,.50))
+         drop-shadow(0 0 var(--glow-b,22px) rgba(165,140,225,.34))
+         drop-shadow(0 0 26px rgba(54,213,255,.16))
+         drop-shadow(0 0 34px rgba(184,77,255,.14))
+         drop-shadow(0 0 40px rgba(255,90,150,.12));}
+body.dark .luna-search-orb .welcome-orb::after{box-shadow:inset 0 0 0 4px rgba(184,212,255,.30);}
+.luna-search-orb .welcome-orb{display:block;width:132px;height:128px;position:relative;
+  background:radial-gradient(circle at 50% 47%,#1b2a4d 0%,#0d1834 68%,#0a1124 100%);
+  clip-path:url(#lunaCatClip);-webkit-clip-path:url(#lunaCatClip);
+  transform:translate3d(var(--orb-x,0px),var(--orb-y,0px),0) scale(var(--orb-sx,1),var(--orb-sy,1));
+  filter:drop-shadow(0 0 var(--glow-a,10px) rgba(96,156,224,var(--glow-alpha-a,.20)))
+         drop-shadow(0 0 var(--glow-b,22px) rgba(168,128,214,var(--glow-alpha-b,.12)))
+         drop-shadow(0 0 26px rgba(54,213,255,.12))
+         drop-shadow(0 0 34px rgba(184,77,255,.11))
+         drop-shadow(0 0 40px rgba(255,90,150,.10));
+  will-change:transform,filter;}
+.luna-search-orb .orb-clip{position:absolute;inset:0;overflow:hidden;
+  clip-path:url(#lunaCatClip);-webkit-clip-path:url(#lunaCatClip);
+  transform:translate3d(var(--inner-x,0px),var(--inner-y,0px),0) scale(var(--inner-scale,1));
+  will-change:transform;}
+.luna-search-orb .orb-blob{position:absolute;top:50%;left:50%;border-radius:50%;filter:blur(13px);mix-blend-mode:screen;}
+.luna-search-orb .orb-blob.ob1{width:94px;height:94px;margin:-47px 0 0 -47px;background:radial-gradient(circle,#8FEDE6,#34b6c8 55%,transparent 72%);animation:lunaOrbit1 19s linear infinite;}
+.luna-search-orb .orb-blob.ob2{width:88px;height:88px;margin:-44px 0 0 -44px;background:radial-gradient(circle,#A6BDFF,#5a7be0 55%,transparent 72%);animation:lunaOrbit2 24s linear infinite;}
+.luna-search-orb .orb-blob.ob3{width:84px;height:84px;margin:-42px 0 0 -42px;background:radial-gradient(circle,#E8AEDA,#bd6fb4 55%,transparent 72%);animation:lunaOrbit3 22s linear infinite reverse;}
+.luna-search-orb .orb-blob.ob4{width:78px;height:78px;margin:-39px 0 0 -39px;background:radial-gradient(circle,#F2BECB,#d98aa8 55%,transparent 72%);animation:lunaOrbit4 28s linear infinite;}
+.luna-search-orb .orb-bloom{position:absolute;top:51%;left:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.82) 0%,rgba(220,232,255,.44) 34%,rgba(143,224,235,.16) 52%,transparent 72%);
+  filter:blur(4px);opacity:var(--bloom-opacity,.72);transform:scale(var(--bloom-scale,1));will-change:transform,opacity;}
+.luna-search-orb .welcome-orb::after{content:"";position:absolute;inset:1px;pointer-events:none;
+  clip-path:url(#lunaCatClip);-webkit-clip-path:url(#lunaCatClip);box-shadow:inset 0 0 0 1px rgba(220,229,255,.18);}
+@keyframes lunaOrbit1{from{transform:rotate(0deg) translate(11px)}to{transform:rotate(360deg) translate(11px)}}
+@keyframes lunaOrbit2{from{transform:rotate(40deg) translate(13px)}to{transform:rotate(400deg) translate(13px)}}
+@keyframes lunaOrbit3{from{transform:rotate(120deg) translate(10px)}to{transform:rotate(480deg) translate(10px)}}
+@keyframes lunaOrbit4{from{transform:rotate(220deg) translate(14px)}to{transform:rotate(580deg) translate(14px)}}
+@media(prefers-reduced-motion:reduce){.luna-search-orb .orb-blob{animation:none}}
+@media(max-width:1160px){.search{width:250px;}}
+</style>
+
+<style id="pvxSearch2">
+/* Search dropdown — theme-aware (portal to body, fixed positioning kept) */
+:root{
+  --sr-panel-bg:rgba(245,247,251,.97); --sr-panel-border:rgba(135,150,170,.20); --sr-panel-shadow:0 14px 34px rgba(60,80,110,.16);
+  --sr-inner-bg:#F8F9FB; --sr-inner-border:rgba(120,135,155,.12);
+  --sr-t:#394454; --sr-s:#7B8796; --sr-label:#8A95A3; --sr-sep:rgba(120,135,155,.11);
+  --sr-hover:rgba(73,150,190,.07); --sr-kind:#8A95A3; --sr-scroll:rgba(120,135,155,.30);
+}
+body.dark{
+  --sr-panel-bg:#142137; --sr-panel-border:rgba(100,145,185,.24); --sr-panel-shadow:0 12px 28px rgba(0,0,0,.28);
+  --sr-inner-bg:#18263E; --sr-inner-border:rgba(100,140,180,.10);
+  --sr-t:#D1D9E5; --sr-s:#8190A6; --sr-label:#7A98B8; --sr-sep:rgba(100,130,165,.08);
+  --sr-hover:rgba(86,145,190,.09); --sr-kind:#7A98B8; --sr-scroll:rgba(150,185,220,.22);
+}
+#searchResults{position:fixed;z-index:9000;padding:8px;border-radius:19px;
+  background:var(--sr-panel-bg)!important;border:1px solid var(--sr-panel-border)!important;box-shadow:var(--sr-panel-shadow)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overflow-y:auto;
+  opacity:0;transform:translateY(-6px);transform-origin:top center;pointer-events:none;
+  transition:opacity .18s ease,transform .2s cubic-bezier(.2,.8,.2,1);}
+#searchResults.open{opacity:1;transform:translateY(0);pointer-events:auto;}
+#searchResults .sr-inner{border-radius:15px;overflow:hidden;background:var(--sr-inner-bg);border:1px solid var(--sr-inner-border);}
+#searchResults .sr-group{padding:0;}
+#searchResults .sr-label{font-size:10px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--sr-label);padding:12px 14px 6px;}
+#searchResults .sr-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:11px;align-items:center;min-height:56px;padding:6px 15px;cursor:pointer;border-bottom:1px solid var(--sr-sep);transition:background .14s ease;}
+#searchResults .sr-item:last-child{border-bottom:0;}
+#searchResults .sr-item:hover,#searchResults .sr-item.hl{background:var(--sr-hover)!important;}
+#searchResults .sr-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#fff;position:static;flex:0 0 auto;}
+#searchResults .sr-ic svg{width:15px;height:15px;stroke:#fff;color:#fff;position:static;left:auto;top:auto;transform:none;}
+#searchResults .sr-main{min-width:0;}
+#searchResults .sr-t{font-size:13.5px;font-weight:550;color:var(--sr-t);line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#searchResults .sr-s{font-size:11px;color:var(--sr-s);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;}
+#searchResults .sr-kind{font-size:10px;color:var(--sr-kind);font-weight:600;white-space:nowrap;padding-left:6px;}
+#searchResults .sr-none{padding:22px 16px;text-align:center;color:var(--sr-s);font-size:12.5px;}
+#searchResults::-webkit-scrollbar{width:8px;}
+#searchResults::-webkit-scrollbar-thumb{background:var(--sr-scroll);border-radius:20px;border:2px solid transparent;background-clip:content-box;}
+</style>
 </head>
 <body class="dark">
 <div class="mesh" id="mesh"><div class="bg-orb-1"></div><div class="bg-orb-2"></div><div class="bg-bloom"></div><div id="starfield"><div class="stars-small"></div><div class="stars-medium"></div><div class="stars-large"></div></div></div>
@@ -4530,9 +4826,14 @@ html.perf body.dark #sbLogin .continue{backdrop-filter:blur(20px) saturate(1.25)
     <div class="spacer"></div>
     <button class="fs-btn" id="fsBtn" title="Display on lobby TV" aria-label="Full Screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>Full Screen</button>
     <div class="search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="globalSearch" placeholder="Search anything…" autocomplete="off"/>
-      <button class="search-paw" id="searchPaw" type="button" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="10.5" r="1.7"/><circle cx="9.7" cy="6.8" r="1.7"/><circle cx="14.3" cy="6.8" r="1.7"/><circle cx="18" cy="10.5" r="1.7"/><path d="M12 11.5c-3 0-5 2.2-5 4.5 0 1.9 1.6 2.8 3.2 2.4.8-.2 1.2-.4 1.8-.4s1 .2 1.8.4c1.6.4 3.2-.5 3.2-2.4 0-2.3-2-4.5-5-4.5z"/></svg></button>
+      <div class="search-wrap">
+        <div class="search-bar">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input id="globalSearch" class="search-input" placeholder="Search anything…" autocomplete="off"/>
+          <span class="premium-search-caret" aria-hidden="true"></span>
+          <div class="actions"><span class="luna-search-orb" id="searchLuna" title="L.U.N.A." role="button" aria-label="L.U.N.A. assistant"><svg class="svg-defs" width="0" height="0" viewBox="0 0 132 128" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden;"><defs><clipPath id="lunaCatClip" clipPathUnits="userSpaceOnUse"><path id="lunaCatPath" class="luna-cat-path" d="M 15 43 C 14 35 15 26 17 18 C 18 13 20 10 23 11 C 29 13 36 18 43 24 C 49 28 54 23 61 21 C 64 20 68 20 71 21 C 78 23 83 28 89 24 C 96 18 103 13 109 11 C 112 10 114 13 115 18 C 117 26 118 35 117 43 C 123 52 126 64 124 77 C 122 93 112 107 97 116 C 88 121 77 124 66 124 C 55 124 44 121 35 116 C 20 107 10 93 8 77 C 6 64 9 52 15 43 Z"/></clipPath></defs></svg><span class="luna-orb-scale"><span class="welcome-orb" aria-hidden="true"><span class="orb-clip"><span class="orb-blob ob1"></span><span class="orb-blob ob2"></span><span class="orb-blob ob3"></span><span class="orb-blob ob4"></span><span class="orb-bloom"></span></span></span></span></span></div>
+        </div>
+      </div>
       <div class="search-results" id="searchResults"></div>
     </div>
   </div>
@@ -4578,9 +4879,15 @@ html.perf body.dark #sbLogin .continue{backdrop-filter:blur(20px) saturate(1.25)
     <div class="rd-subright">
       <span class="rd-save" id="rdSaveState">Saved</span>
       <button class="rd-actor" id="rdActor">Rounding as <b>Care Team</b></button>
-      <div class="rd-searchwrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="rdSearch" placeholder="Search rounds &mdash; press /" autocomplete="off"/>
+      <div class="search rd-search">
+        <div class="search-wrap">
+          <div class="search-bar">
+            <span class="search-icon" aria-hidden="true"></span>
+            <input id="rdSearch" class="search-input" placeholder="Search rounds…" autocomplete="off"/>
+            <span class="premium-search-caret" aria-hidden="true"></span>
+            <div class="actions"><span class="luna-search-orb" id="rdSearchLuna" title="L.U.N.A." role="button" aria-label="L.U.N.A. assistant"><svg class="svg-defs" width="0" height="0" viewBox="0 0 132 128" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden;"><defs><clipPath id="lunaCatClip2" clipPathUnits="userSpaceOnUse"><path id="lunaCatPath2" class="luna-cat-path" d="M 15 43 C 14 35 15 26 17 18 C 18 13 20 10 23 11 C 29 13 36 18 43 24 C 49 28 54 23 61 21 C 64 20 68 20 71 21 C 78 23 83 28 89 24 C 96 18 103 13 109 11 C 112 10 114 13 115 18 C 117 26 118 35 117 43 C 123 52 126 64 124 77 C 122 93 112 107 97 116 C 88 121 77 124 66 124 C 55 124 44 121 35 116 C 20 107 10 93 8 77 C 6 64 9 52 15 43 Z"/></clipPath></defs></svg><span class="luna-orb-scale"><span class="welcome-orb" aria-hidden="true" style="clip-path:url(#lunaCatClip2);-webkit-clip-path:url(#lunaCatClip2);"><span class="orb-clip" style="clip-path:url(#lunaCatClip2);-webkit-clip-path:url(#lunaCatClip2);"><span class="orb-blob ob1"></span><span class="orb-blob ob2"></span><span class="orb-blob ob3"></span><span class="orb-blob ob4"></span><span class="orb-bloom"></span></span></span></span></span></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -4621,9 +4928,15 @@ html.perf body.dark #sbLogin .continue{backdrop-filter:blur(20px) saturate(1.25)
       <!-- Executive / operations metrics -->
       <div class="ops-grid" id="opsGrid"></div>
 
-      <div class="panel">
-        <div class="panel-head"><h3>Current Wait by Doctor</h3><span class="count" id="wdCount">—</span></div>
-        <div id="opsWaitList"></div>
+      <div class="panel wd-panel">
+        <div class="panel-head">
+          <h3>Current Wait by Doctor</h3>
+          <div class="wd-head-right">
+            <span class="count" id="wdCount">—</span>
+            <span class="wd-balance" id="wdBalance">Balanced</span>
+          </div>
+        </div>
+        <div class="wd-list" id="opsWaitList"></div>
       </div>
     </section>
 
@@ -4631,7 +4944,6 @@ html.perf body.dark #sbLogin .continue{backdrop-filter:blur(20px) saturate(1.25)
     <section class="view hidden" id="view-list">
       <div class="view-head">
         <div><h1>Patients</h1><p>Every patient in the building, readable at a glance</p></div>
-        <span class="livepill"><span class="dot"></span><span id="listLive">— on floor</span></span>
       </div>
 
       <div class="toolbar" id="filterBar"></div>
@@ -6057,7 +6369,7 @@ function roomSince(p){
 function roomMinutes(p){return Math.max(0, Math.round((now - roomSince(p))/60000));}
 function fmtWait(min){ min=Math.max(0,Math.round(min)); if(min<60) return min+'m'; const h=Math.floor(min/60),m=min%60; return m? h+'h '+m+'m' : h+'h'; }
 function fmtTime(d){let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+String(m).padStart(2,'0')+' '+ap;}
-function docAv(id){const d=doc(id);return `<span class="dav" style="background:${d.color}">${d.initials}</span>`;}
+function docAv(id){const d=doc(id);return `<span class="dav" style="--dav-accent:${d.color}">${d.initials}</span>`;}
 function liaAv(id){const l=liaison(id);return l?`<span class="dav lav" style="color:${l.color};border-color:${l.color}">${l.initials}</span>`:'';}
 function statusPill(s){return `<span class="pill st-${s.toLowerCase()}"><span class="d"></span>${s}</span>`;}
 function eventColor(label){
@@ -6500,9 +6812,16 @@ function execMetrics(){
   const showIds=new Set(Object.keys(byDoc));                       // doctors with pickups today
   DOCTORS.forEach(d=>{ if(active.some(p=>p.doctor===d.id)) showIds.add(d.id); });   // + currently working
   const waitByDoc=[...showIds].map(id=>{ const ws=byDoc[id]||[];
-    const avg=ws.length? Math.round(ws.reduce((a,b)=>a+b,0)/ws.length) : null;      // null = no pickups today → show "—"
-    return { d:doc(id), n:ws.length, avg };
-  }).sort((a,b)=> ((b.avg==null?-1:b.avg)-(a.avg==null?-1:a.avg)) || (b.n-a.n) || a.d.name.localeCompare(b.d.name));
+    const activePts=active.filter(p=>p.doctor===id);
+    // Avg Wait = mean of this doctor's CURRENT active patients' waits (per the doctor prototype:
+    // a real value while they hold patients, "—" when they have none). This replaces the old
+    // today-pickup log, which stayed empty unless a doctor was assigned at the exact Exam transition.
+    const avg=activePts.length? Math.round(activePts.reduce((a,p)=>a+waitMinutes(p),0)/activePts.length) : null;
+    const longest=activePts.length
+      ? [...activePts].sort((a,b)=>waitMinutes(b)-waitMinutes(a))[0]
+      : null;
+    return { d:doc(id), n:ws.length, avg, activePts, load:activePts.length, longest };
+  }).sort((a,b)=> ((b.avg==null?-1:b.avg)-(a.avg==null?-1:a.avg)) || (b.load-a.load) || a.d.name.localeCompare(b.d.name));
   return {
     working, doctorsWorking:working.length,
     avgPerDoc: working.length? (assigned/working.length):0,
@@ -6511,6 +6830,51 @@ function execMetrics(){
     waitByDoc, casesToday: pickups.length,
     discharged: completedTodayCount('Discharged'), admitted: completedTodayCount('Admitted'), euthanized: completedTodayCount('Euthanized'), completed: completedTodayCount('Discharged')+completedTodayCount('Admitted')+completedTodayCount('Euthanized')
   };
+}
+/* ---- Current Wait by Doctor: assignment-availability logic ----
+   Kept as dedicated helpers so future signals (manual "Not Accepting Cases", in surgery/procedure,
+   on break, off floor, nearing end of shift, max patient capacity, department restrictions) can be
+   added by reading new fields on the doctor record — WITHOUT rewriting the renderer. Today the
+   doctor model only has identity fields, so we derive "on service" from real activity and treat the
+   optional eligibility/capacity flags as safe defaults until the data model adds them. */
+function pickedUpToday(doctorId){ return examPickupsToday().some(p=>p.examStartedByDoctorId===doctorId); }
+function isDoctorBlocked(doctorId){
+  const d=doc(doctorId), wf=d.workflowState;
+  return d.unavailable===true || d.blocked===true ||
+         (typeof wf==='string' && ['in-surgery','in-procedure','on-break','off-floor','unavailable'].indexOf(wf)>=0);
+}
+function isDoctorAvailableForAssignment(doctorId, activePatients){
+  const d=doc(doctorId);
+  const activeForDoctor=(activePatients||PATIENTS.filter(isActive)).filter(p=>p.doctor===doctorId);
+  const isOnService = (typeof d.onService==='boolean') ? d.onService
+                      : (activeForDoctor.length>0 || pickedUpToday(doctorId));   // real on-service signal
+  const acceptsCases = d.acceptsCases!==false;         // real field if present, else eligible
+  const manuallyUnavailable = d.unavailable===true;    // real field if present, else false
+  const blocked = isDoctorBlocked(doctorId);           // workflow-state block if present, else false
+  const cap = (typeof d.maxCapacity==='number') ? d.maxCapacity : 1;   // real capacity if present; else 1 (free = 0 active)
+  const hasCapacity = activeForDoctor.length < cap;
+  return isOnService && acceptsCases && !manuallyUnavailable && !blocked && hasCapacity;
+}
+/* Avg-wait trend arrows: compare each doctor's current avg wait to a rolling baseline (persisted),
+   so ↑ (waits rising = amber) / ↓ (falling = green) reflect real movement over a short window.
+   Baseline advances every WD_TREND_WINDOW so the delta always spans a meaningful interval. */
+const WD_TREND_KEY='wd_trend_v1', WD_TREND_WINDOW=8*60*1000;
+function wdComputeTrends(rows){
+  let store; try{store=JSON.parse(localStorage.getItem(WD_TREND_KEY))||{};}catch(e){store={};}
+  const now=Date.now(), out={}; let changed=false;
+  rows.forEach(x=>{
+    const id=x.d.id, avg=x.avg;
+    if(avg==null){ if(store[id]){ delete store[id]; changed=true; } out[id]={cls:'',text:'—'}; return; }
+    const e=store[id];
+    if(!e){ store[id]={base:avg,ts:now}; changed=true; out[id]={cls:'',text:'—'}; return; }
+    const delta=avg-e.base;
+    if(now-e.ts>WD_TREND_WINDOW){ store[id]={base:avg,ts:now}; changed=true; }
+    out[id]= delta>=1 ? {cls:'up',text:'↑ '+delta+'m'}
+           : delta<=-1 ? {cls:'down',text:'↓ '+Math.abs(delta)+'m'}
+           : {cls:'',text:'—'};
+  });
+  if(changed){ try{localStorage.setItem(WD_TREND_KEY,JSON.stringify(store)); }catch(e){} }
+  return out;
 }
 function renderOps(animate){
   const m=execMetrics();
@@ -6547,29 +6911,85 @@ function renderOps(animate){
         ? `<div class="command-kpi__rail">${o.rail>0?`<i style="width:${Math.min(100,o.rail)}%"></i>`:''}</div>`
         : ckpiSpark('ops',o.lab)}
     </article>`).join('');
-  // (Patient Distribution per-doctor card removed — single Status Distribution card only)
-  // average wait by doctor — thin relative bars (Apple Health style)
-  document.getElementById('wdCount').textContent = m.casesToday + (m.casesToday===1?' case today':' cases today');
-  const maxWait = Math.max(1, ...m.waitByDoc.map(x=>x.avg||0));
+  // Current Wait by Doctor — live workload-balancing control.
+  document.getElementById('wdCount').textContent = m.waitByDoc.length + (m.waitByDoc.length===1?' doctor on service':' doctors on service');
+
+  const loads=m.waitByDoc.map(x=>x.load||0);
+  const maxLoad=loads.length?Math.max(...loads):0;
+  const minLoad=loads.length?Math.min(...loads):0;
+  const balance=(maxLoad-minLoad<=1)?'Balanced':'Needs Balancing';
+  const balEl=document.getElementById('wdBalance');
+  balEl.textContent=balance;
+  balEl.style.color=balance==='Balanced'?'var(--ink-400)':'var(--s-waiting)';
+  balEl.style.borderColor=balance==='Balanced'?'rgba(120,145,170,.11)':'rgba(232,168,48,.20)';
+  balEl.style.background=balance==='Balanced'?'rgba(255,255,255,.014)':'rgba(232,168,48,.06)';
+
+  const activeLoads=m.waitByDoc.filter(x=>x.load>0).map(x=>x.load);
+  const avgLoad=activeLoads.length ? activeLoads.reduce((a,b)=>a+b,0)/activeLoads.length : 0;
   const wl=document.getElementById('opsWaitList');
+  const activeAll=PATIENTS.filter(isActive);
+  const wdTrends=wdComputeTrends(m.waitByDoc);
+
   wl.innerHTML = m.waitByDoc.length ? m.waitByDoc.map(x=>{
-    const has = x.avg!=null;
-    const cls = !has?'':(x.avg>120?'crit':x.avg>60?'warn':'');
-    const col = !has?'var(--ink-300)':(x.avg>120?'#E8644A':(x.avg>60?'var(--s-waiting)':'var(--accent)'));
-    const pct = has? Math.max(5, Math.round((x.avg/maxWait)*100)) : 0;
-    return `<div class="wd-row">${docAv(x.d.id)}
+    const has=x.avg!=null;
+    const waitCls=!has?'':(x.avg>120?'crit':x.avg>60?'warn':'');
+    // Status priority: blocked/unavailable → Available for Assignment → High Load → Accepting Cases.
+    // "Available" is no longer just "zero patients" — the doctor must be eligible to receive a case.
+    const state = isDoctorBlocked(x.d.id)
+      ? {label:'Unavailable', cls:''}
+      : isDoctorAvailableForAssignment(x.d.id, activeAll)
+        ? {label:'Available for Assignment', cls:'available'}
+        : (x.load>Math.max(1,Math.ceil(avgLoad)))
+          ? {label:'High Load', cls:'high'}
+          : {label:'Accepting Cases', cls:''};
+
+    const longest=x.longest
+      ? `Longest: ${x.longest.name} · ${fmtWait(waitMinutes(x.longest))}`
+      : 'No active cases';
+
+    return `<div class="wd-row ${x.load===0?'is-idle':''}" data-doctor="${x.d.id}" title="View ${docShort(x.d.id)}">
+      <span class="wd-avatar" style="--wd-accent:${x.d.color}">${x.d.initials}</span>
       <div class="wd-main">
-        <div class="wd-top"><span class="wd-name">${docShort(x.d.id)}</span><span class="wd-count">${x.n} patient${x.n===1?'':'s'}</span></div>
-        <div class="wd-track"><div class="wd-bar" data-w="${pct}" style="width:${(animate&&RAF)?0:pct}%;background:${col}"></div></div>
+        <div class="wd-top">
+          <span class="wd-name">${docShort(x.d.id)}</span>
+          <span class="wd-count">${x.load} active patient${x.load===1?'':'s'}</span>
+        </div>
+        <div class="wd-subline">
+          <span class="wd-longest">${longest}</span>
+          <span class="wd-state ${state.cls}">${state.label}</span>
+        </div>
       </div>
-      <span class="wd-wait ${cls}">${has? fmtWait(x.avg) : '—'}</span></div>`;
-  }).join('') : `<div class="empty-mini"><div class="ico">${EMPTY_ICON}</div><b>No cases picked up yet today</b></div>`;
-  if(animate && RAF){ RAF(()=>RAF(()=>{ wl.querySelectorAll('.wd-bar').forEach(b=>{ b.style.width=b.dataset.w+'%'; }); })); }
+      <div class="wd-metrics">
+        <span class="wd-trend ${wdTrends[x.d.id].cls}">${wdTrends[x.d.id].text}</span>
+        <span class="wd-wait-stack">
+          <span class="wd-wait ${waitCls}">${has?fmtWait(x.avg):'—'}</span>
+          <span class="wd-wait-label">Avg Wait</span>
+        </span>
+        <span class="wd-action" aria-hidden="true">›</span>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty-mini"><div class="ico">${EMPTY_ICON}</div><b>No doctors on service</b></div>`;
 }
 
 /* ============================================================
    PATIENT LIST
    ============================================================ */
+// Current Wait by Doctor: clicking a row reuses the existing doctor filter
+// and opens the Patients view.
+document.addEventListener('click',e=>{
+  const row=e.target.closest('.wd-row[data-doctor]');
+  if(!row) return;
+  const id=row.dataset.doctor;
+  if(!id) return;
+  filters.doctor=id;
+  const listSeg=document.querySelector('.seg[data-view="list"]');
+  if(listSeg) listSeg.click();
+  else{
+    renderFilterBar();
+    renderTable();
+  }
+});
+
 function renderFilterBar(){
   const active=PATIENTS.filter(isActive);
   const statusChips=FLOW_COLS.map(s=>{
@@ -6614,7 +7034,6 @@ function renderFilterBar(){
 
 function renderTable(){
   const rows=filtered().filter(isActive);            // Patients is an active view — exclude completed
-  document.getElementById('listLive').textContent=PATIENTS.filter(isActive).length+' on floor';
   const rc=document.getElementById('resCount'); if(rc) rc.textContent=rows.length+' shown';
   const body=document.getElementById('tableBody');
   document.getElementById('tableEmpty').classList.toggle('hidden',rows.length>0);
@@ -8812,7 +9231,7 @@ function clientSegments(p){
   return `<div class="cl-segs" style="--gc:${cs.color};--gcrgb:${cs.rgb}">`+
     CLIENT_STEPS.map((_,i)=>`<span class="cl-seg ${i<cur?'done':(i===cur?'current':'')}"></span>`).join('')+`</div>`;
 }
-function clientBadge(p){ const cs=clientStage(p); return `<span class="cl-badge" style="--gc:${cs.color};--gcrgb:${cs.rgb}"><span class="cl-badge-dot"></span><span class="cl-badge-txt">${cs.label}</span></span>`; }
+function clientBadge(p){ const cs=clientStage(p); return `<span class="cl-badge" style="--gc:${cs.color};--gcrgb:${cs.rgb}"><span class="cl-badge-dot"></span><span class="cl-badge-txt"><span class="cl-badge-inner">${cs.label}</span></span></span>`; }
 // Vertical patient-journey timeline (right side of each card).
 function clientVJourney(p){
   const cs=clientStage(p), cur=cs.step;
@@ -8898,7 +9317,32 @@ function renderClient(animate){
   updateClientClock();
   const qr=document.getElementById('clQr'); if(qr && !qr.innerHTML) qr.innerHTML='<div style="background:#fff;padding:5px;border-radius:6px;line-height:0">'+(typeof makeQR==='function'?makeQR('https://shoreline.pravix.app/track.html'):clQrSvg())+'</div>';
   const gq=document.getElementById('clGamesQr'); if(gq && !gq.innerHTML) gq.innerHTML='<div style="background:#fff;padding:5px;border-radius:6px;line-height:0">'+(typeof makeQR==='function'?makeQR('https://shoreline.pravix.app/arcade'):'')+'</div>';
+  fitClientBadges();
+  requestAnimationFrame(fitClientBadges);   // re-measure once layout/fonts settle
 }
+/* Enable the slow reveal-scroll only on status pills whose text overflows the pill; leave the rest
+   perfectly static. Recomputed on every render and on resize / fullscreen changes. */
+function fitClientBadges(){
+  var grid=document.getElementById('clGrid'); if(!grid) return;
+  grid.querySelectorAll('.cl-badge-txt').forEach(function(txt){
+    var inner=txt.querySelector('.cl-badge-inner'); if(!inner) return;
+    inner.classList.remove('scroll'); inner.style.removeProperty('--scroll-dist'); inner.style.removeProperty('--scroll-dur');
+    var over=inner.scrollWidth - txt.clientWidth;
+    if(over>1){
+      var dist=Math.ceil(over);
+      var dur=Math.min(14, Math.max(5, over/10 + 4));   // slow + premium, proportional to length
+      inner.style.setProperty('--scroll-dist', (-dist)+'px');
+      inner.style.setProperty('--scroll-dur', dur.toFixed(2)+'s');
+      inner.classList.add('scroll');
+    }
+  });
+}
+(function(){
+  var reflow=function(){ if(typeof currentView!=='undefined' && currentView==='client') fitClientBadges(); };
+  window.addEventListener('resize',reflow);
+  document.addEventListener('fullscreenchange',reflow);
+  document.addEventListener('webkitfullscreenchange',reflow);
+})();
 function renderClientPager(){
   const pager=document.getElementById('clPager'); if(!pager) return;
   if(clPages<=1){ pager.innerHTML=''; pager.style.visibility='hidden'; return; }
@@ -10209,7 +10653,98 @@ window.addEventListener('scroll',()=>{ if(pvShown) hidePreview(); }, true);
 
 // events
 document.getElementById('switcher').addEventListener('click',e=>{const b=e.target.closest('.seg');if(b)switchView(b.dataset.view);});
-document.getElementById('searchPaw').onclick=()=>document.getElementById('globalSearch').focus();
+var _sl=document.getElementById('searchLuna'); if(_sl) _sl.onclick=()=>document.getElementById('globalSearch').focus();
+var _rsl=document.getElementById('rdSearchLuna'); if(_rsl) _rsl.onclick=()=>{var r=document.getElementById('rdSearch'); if(r) r.focus();};
+/* Premium idle caret — show the luminous pill (and hide the native caret) only while a search
+   field is focused AND empty. Applied to every .search-input (global + rounds). Event-driven. */
+(function(){
+  function attachCaret(si){
+    var bar=si?si.closest('.search-bar'):null; if(!si||!bar) return;
+    function updCaret(){
+      var active = si.matches(':focus') && si.value.length===0;
+      bar.classList.toggle('caret-active',active);
+      si.classList.toggle('custom-caret-active',active);
+    }
+    si.addEventListener('focus',updCaret);
+    si.addEventListener('blur',updCaret);
+    si.addEventListener('input',updCaret);
+  }
+  document.querySelectorAll('.search .search-input').forEach(attachCaret);
+})();
+/* L.U.N.A. orb — orbiting-blob cat orb (luna-orb-standalone.html): morphs the clip-path
+   silhouette + drives whole-orb breathing/glow via CSS vars. Guarded against duplicate RAF
+   loops; pauses while the tab is hidden; respects prefers-reduced-motion. */
+function initLunaSearchOrb(){
+  var orbs=document.querySelectorAll('.luna-search-orb .welcome-orb');
+  var paths=document.querySelectorAll('.luna-cat-path');
+  if(!orbs.length||!paths.length) return;
+  var prev=window.__lunaOrb;
+  if(prev){ if(prev.raf) cancelAnimationFrame(prev.raf);
+    if(prev.onVis) document.removeEventListener('visibilitychange',prev.onVis);
+    if(prev.mq&&prev.onMq&&prev.mq.removeEventListener) prev.mq.removeEventListener('change',prev.onMq); }
+  var state=window.__lunaOrb={raf:0,onVis:null,onMq:null,mq:null};
+  var reduced=window.matchMedia('(prefers-reduced-motion: reduce)'); state.mq=reduced;
+  function setPath(t){
+    var earL=Math.sin(t*0.33)*1.05+Math.sin(t*0.17+1.2)*0.45;
+    var earR=Math.sin(t*0.31+1.4)*1.00+Math.sin(t*0.19+2.1)*0.40;
+    var crown=Math.sin(t*0.25+.4)*.65;
+    var cheekL=Math.sin(t*0.29+2.3)*.55;
+    var cheekR=Math.sin(t*0.27+.9)*.55;
+    var chin=Math.sin(t*0.21+1.7)*.40;
+    var d='M '+(15+cheekL*.10)+' '+(43+crown*.12)
+      +' C '+(14+earL*.08)+' '+(35+earL*.22)+' '+(15+earL*.10)+' '+(26+earL*.45)+' '+(17+earL*.16)+' '+(18+earL*.72)
+      +' C '+(18+earL*.12)+' '+(13+earL*.66)+' '+(20+earL*.18)+' '+(10+earL*.54)+' '+(23+earL*.20)+' '+(11+earL*.42)
+      +' C '+(29+earL*.45)+' '+(13+earL*.34)+' '+(36+earL*.40)+' '+(18+earL*.18)+' '+(43+earL*.25)+' '+(24+crown*.18)
+      +' C '+(49+crown*.10)+' '+(28+crown*.25)+' '+(54+crown*.20)+' '+(23+crown*.14)+' '+(61+crown*.12)+' '+(21+crown*.24)
+      +' C '+(64)+' '+(20+crown*.24)+' '+(68)+' '+(20+crown*.24)+' '+(71+crown*.10)+' '+(21+crown*.24)
+      +' C '+(78+crown*.12)+' '+(23+crown*.14)+' '+(83+crown*.08)+' '+(28+crown*.25)+' '+(89+earR*.25)+' '+(24+crown*.18)
+      +' C '+(96+earR*.40)+' '+(18+earR*.18)+' '+(103+earR*.45)+' '+(13+earR*.34)+' '+(109+earR*.20)+' '+(11+earR*.42)
+      +' C '+(112+earR*.18)+' '+(10+earR*.54)+' '+(114+earR*.12)+' '+(13+earR*.66)+' '+(115+earR*.16)+' '+(18+earR*.72)
+      +' C '+(117+earR*.10)+' '+(26+earR*.45)+' '+(118+earR*.08)+' '+(35+earR*.22)+' '+(117+cheekR*.10)+' '+(43+crown*.12)
+      +' C '+(123+cheekR*.35)+' '+(52+cheekR*.12)+' '+(126+cheekR*.45)+' '+(64+cheekR*.18)+' '+(124+cheekR*.50)+' '+(77+cheekR*.20)
+      +' C '+(122+cheekR*.42)+' '+(93+cheekR*.20)+' '+(112+cheekR*.30)+' '+(107+cheekR*.15)+' '+(97+cheekR*.18)+' '+(116+chin*.10)
+      +' C '+(88+chin*.20)+' '+(121+chin*.18)+' '+(77+chin*.15)+' '+(124+chin*.35)+' '+(66)+' '+(124+chin*.42)
+      +' C '+(55+chin*.15)+' '+(124+chin*.35)+' '+(44+chin*.20)+' '+(121+chin*.18)+' '+(35+cheekL*.18)+' '+(116+chin*.10)
+      +' C '+(20+cheekL*.30)+' '+(107+cheekL*.15)+' '+(10+cheekL*.42)+' '+(93+cheekL*.20)+' '+(8+cheekL*.50)+' '+(77+cheekL*.20)
+      +' C '+(6+cheekL*.45)+' '+(64+cheekL*.18)+' '+(9+cheekL*.35)+' '+(52+cheekL*.12)+' '+(15+cheekL*.10)+' '+(43+crown*.12)+' Z';
+    for(var pi=0;pi<paths.length;pi++) paths[pi].setAttribute('d',d);
+  }
+  function frame(ms){
+    var t=ms/1000; setPath(t);
+    var x=Math.sin(t*0.22)*.32+Math.sin(t*0.11+1.1)*.16;
+    var y=Math.sin(t*0.18+.8)*.38;
+    var sx=1+Math.sin(t*0.20)*.0045+Math.sin(t*0.09+.7)*.0020;
+    var sy=1+Math.cos(t*0.19+.35)*.0050;
+    var innerX=Math.sin(t*0.16+1.3)*.42;
+    var innerY=Math.cos(t*0.14+.4)*.34;
+    var innerScale=1+Math.sin(t*0.17+2.1)*.004;
+    var bloomWave=(Math.sin(t*0.30-.6)+1)*.5;
+    var bloomScale=.965+bloomWave*.045, bloomOpacity=.60+bloomWave*.20;
+    var glowWave=(Math.sin(t*0.18)+1)*.5;
+    var glowA=10+glowWave*4, glowB=22+glowWave*7;
+    var glowAlphaA=.20+glowWave*.08, glowAlphaB=.12+glowWave*.05;
+    for(var oi=0;oi<orbs.length;oi++){ var s=orbs[oi].style;
+      s.setProperty('--orb-x',x.toFixed(3)+'px'); s.setProperty('--orb-y',y.toFixed(3)+'px');
+      s.setProperty('--orb-sx',sx.toFixed(5)); s.setProperty('--orb-sy',sy.toFixed(5));
+      s.setProperty('--inner-x',innerX.toFixed(3)+'px'); s.setProperty('--inner-y',innerY.toFixed(3)+'px');
+      s.setProperty('--inner-scale',innerScale.toFixed(5));
+      s.setProperty('--bloom-scale',bloomScale.toFixed(5)); s.setProperty('--bloom-opacity',bloomOpacity.toFixed(4));
+      s.setProperty('--glow-a',glowA.toFixed(2)+'px'); s.setProperty('--glow-b',glowB.toFixed(2)+'px');
+      s.setProperty('--glow-alpha-a',glowAlphaA.toFixed(4)); s.setProperty('--glow-alpha-b',glowAlphaB.toFixed(4)); }
+    state.raf=requestAnimationFrame(frame);
+  }
+  function start(){
+    cancelAnimationFrame(state.raf); state.raf=0;
+    if(reduced.matches){ setPath(0); return; }
+    if(!document.hidden) state.raf=requestAnimationFrame(frame);
+  }
+  state.onMq=start;
+  if(reduced.addEventListener) reduced.addEventListener('change',start);
+  state.onVis=function(){ if(document.hidden){ if(state.raf){cancelAnimationFrame(state.raf);state.raf=0;} } else start(); };
+  document.addEventListener('visibilitychange',state.onVis);
+  start();
+}
+initLunaSearchOrb();
 document.getElementById('fabAdd').onclick=opsMenuToggle;
 document.getElementById('opsScrim').onclick=opsMenuClose;
 document.getElementById('opsMenu').addEventListener('click',e=>{const b=e.target.closest('.ops-item'); if(b) opsAction(b.dataset.op);});
@@ -10330,7 +10865,7 @@ function renderSearch(q){
   const box=document.getElementById('searchResults');
   if(!q.trim()){ closeSearch(); return; }
   const all=searchIndex(q);
-  if(!all.length){ box.innerHTML=`<div class="sr-none">No matches for “${q}”</div>`; box.classList.add('open'); searchFlat=[]; return; }
+  if(!all.length){ box.innerHTML=`<div class="sr-inner"><div class="sr-none">No matches for “${q}”</div></div>`; box.classList.add('open'); positionSearchResults(); searchFlat=[]; return; }
   const ql=q.trim().toLowerCase();
   let kinds=['Patient','Doctor','Liaison','Room'];
   if(/^(room|lobby|comfort)/.test(ql) || ROOMS.some(r=>r.toLowerCase()===ql)) kinds=['Room','Patient','Doctor','Liaison'];
@@ -10345,7 +10880,7 @@ function renderSearch(q){
     });
     html+='</div>';
   });
-  box.innerHTML=html; box.classList.add('open');
+  box.innerHTML='<div class="sr-inner">'+html+'</div>'; box.classList.add('open'); positionSearchResults();
   box.querySelectorAll('.sr-item').forEach(n=>n.onclick=()=>searchFlat[+n.dataset.i].act());
 }
 function highlightSearch(){document.querySelectorAll('#searchResults .sr-item').forEach((n,i)=>n.classList.toggle('hl',i===searchHl));
@@ -10357,7 +10892,25 @@ searchEl.addEventListener('keydown',e=>{
   else if(e.key==='Enter'){e.preventDefault();const r=searchFlat[searchHl>=0?searchHl:0];if(r)r.act();}
   else if(e.key==='Escape'){e.preventDefault();searchEl.value='';searchQ='';closeSearch();renderTable();renderBoard();searchEl.blur();}
 });
-document.addEventListener('click',e=>{ if(!e.target.closest('.search')) closeSearch(); });
+document.addEventListener('click',e=>{ if(!e.target.closest('.search') && !e.target.closest('#searchResults')) closeSearch(); });
+(function(){var _sr=document.getElementById('searchResults'); if(_sr && _sr.parentNode!==document.body) document.body.appendChild(_sr);})();
+/* The results dropdown is shared by every .search instance; anchor it to whichever field is focused. */
+var activeSearchWrap=null;
+document.querySelectorAll('.search .search-input').forEach(function(inp){ inp.addEventListener('focus',function(){ activeSearchWrap=inp.closest('.search-wrap'); }); });
+function positionSearchResults(){var box=document.getElementById('searchResults'); if(!box||!box.classList.contains('open'))return; var bar=activeSearchWrap||document.querySelector('.search .search-wrap'); if(!bar)return; var r=bar.getBoundingClientRect(); box.style.top=(r.bottom+8)+'px'; box.style.left=r.left+'px'; box.style.width=r.width+'px'; box.style.maxHeight=Math.max(140,Math.min(520, window.innerHeight-r.bottom-24))+'px';}
+window.addEventListener('resize',positionSearchResults); window.addEventListener('scroll',positionSearchResults,true);
+/* Rounds search = BOTH: it already filters the rounds census (wired in the Rounds init); here we
+   also drive the shared global results dropdown + keyboard nav from the same input. */
+(function(){
+  var r=document.getElementById('rdSearch'); if(!r) return;
+  r.addEventListener('input',function(e){ renderSearch(e.target.value); });
+  r.addEventListener('keydown',function(e){
+    if(e.key==='ArrowDown'){e.preventDefault();searchHl=Math.min(searchFlat.length-1,searchHl+1);highlightSearch();}
+    else if(e.key==='ArrowUp'){e.preventDefault();searchHl=Math.max(0,searchHl-1);highlightSearch();}
+    else if(e.key==='Enter'){ if(searchFlat.length){ e.preventDefault(); var res=searchFlat[searchHl>=0?searchHl:0]; if(res) res.act(); } }
+    else if(e.key==='Escape'){ closeSearch(); }
+  });
+})();
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();searchEl.focus();}
   if(e.key==='Escape' && document.activeElement!==searchEl){ if(document.getElementById('opsMenu').classList.contains('open')){ opsMenuClose(); return; } if(document.getElementById('triEditModal').classList.contains('open')){ closeTriageEdit(); return; } if(document.getElementById('shiftModal').classList.contains('open')){ closeShiftSetup(); return; } if(document.getElementById('apModal').classList.contains('open')){ closeAddPatient(); return; } if(document.getElementById('intakeModal').classList.contains('open')){ closeIntake(); return; } closeDrawer(); closeLocDrawer(); }
