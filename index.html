@@ -6087,20 +6087,40 @@ const TENANT_ID = (function(){ try{ return (window.Pravix && Pravix.getCurrentHo
    backend (WoofWare/Firestore) later and no UI code changes. Do not call localStorage elsewhere.
    ============================================================ */
 const FlowIntakeStore=(function(){
-  const KEY='pravix_client_intakes';
+  const KEY='pravix_client_intakes';       // local mirror (offline + same-device cross-tab)
+  const COL='client_intakes';              // Firestore collection — the cross-DEVICE source of truth
   const listeners=new Set();
+  let _db=null, _unsub=null, _bound=false;
   function _all(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]')||[]; }catch(e){ return []; } }
-  function _saveAll(arr){ try{ localStorage.setItem(KEY, JSON.stringify(arr)); }catch(e){} _emit(); }
+  function _writeMirror(arr){ try{ localStorage.setItem(KEY, JSON.stringify(arr)); }catch(e){} }
+  function _saveAll(arr){ _writeMirror(arr); _emit(); }
   function _emit(){ listeners.forEach(fn=>{ try{ fn(); }catch(e){} }); }
   try{ window.addEventListener('storage', e=>{ if(e.key===KEY) _emit(); }); }catch(e){}   // another tab wrote → refresh
+  // Bind the Firestore backend once staff auth is live. onSnapshot rebuilds the local mirror
+  // from the shared collection so intakes created on ANY device appear in Flow in realtime.
+  function _attach(db){
+    if(_bound || !db) return; _bound=true; _db=db;
+    try{
+      _unsub = db.collection(COL).where('tenant_id','==',TENANT_ID).onSnapshot(function(snap){
+        const arr=[];
+        snap.forEach(function(d){ const v=d.data()||{}; const rec=(v && v.record)?v.record:v; if(rec && rec.id) arr.push(rec); });
+        arr.sort(function(a,b){ return String((b&&b.submittedAt)||'').localeCompare(String((a&&a.submittedAt)||'')); });
+        _writeMirror(arr); _emit();
+      }, function(err){ /* stay on the localStorage mirror if the listener errors */ });
+    }catch(e){}
+  }
+  function _push(id, rec, extra){
+    if(!_db) return;
+    try{ _db.collection(COL).doc(id).set(Object.assign({ tenant_id:TENANT_ID, id:id, record:rec }, extra||{}), {merge:true}); }catch(e){}
+  }
   return {
     getPendingIntakes(){ return _all().filter(r=> r && r.status!=='completed' && r.status!=='dismissed'); },
     getIntake(id){ return _all().find(r=> r && r.id===id) || null; },
-    submitClientIntake(rec){ const q=_all(); q.unshift(rec); _saveAll(q); return rec; },
-    updateIntake(id,patch){ const q=_all(); const i=q.findIndex(r=>r&&r.id===id); if(i<0) return null; q[i]=Object.assign({},q[i],patch); _saveAll(q); return q[i]; },
-    completeIntake(id){ _saveAll(_all().filter(r=> !(r&&r.id===id) )); },
+    submitClientIntake(rec){ const q=_all(); q.unshift(rec); _saveAll(q); _push(rec.id, rec, { submittedAt: rec.submittedAt||new Date().toISOString() }); return rec; },
+    updateIntake(id,patch){ const q=_all(); const i=q.findIndex(r=>r&&r.id===id); let merged=null; if(i>=0){ merged=Object.assign({},q[i],patch); q[i]=merged; _saveAll(q); } _push(id, merged||patch); return merged; },
+    completeIntake(id){ const q=_all().map(r=> (r&&r.id===id)?Object.assign({},r,{status:'completed'}):r ); _saveAll(q); _push(id, {status:'completed'}); },
     onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); },
-    _all:_all, _saveAll:_saveAll
+    _attach:_attach, _all:_all, _saveAll:_saveAll
   };
 })();
 
@@ -6287,6 +6307,7 @@ const Backend = {
   },
   loadAndSubscribe: async function(){
     await Promise.all([ Backend.refetch(), Backend.loadShifts(), Backend.loadAlert() ]);
+    try{ FlowIntakeStore._attach(DB); }catch(e){}   // realtime client-intake queue (cross-device)
     // ---- live: patient records (visits) -> rebuild + render -----------------
     if(Backend.unsubVisits){ try{ Backend.unsubVisits(); }catch(e){} }
     Backend.unsubVisits = DB.collection('visits').where('tenant_id','==',TENANT_ID)
