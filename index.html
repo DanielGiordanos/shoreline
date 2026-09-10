@@ -6662,7 +6662,7 @@ const Backend = {
     if(Backend._authWired) return;
     Backend._authWired = true;
     AUTH.onAuthStateChanged(function(user){
-      if(user){ const ov=document.getElementById('sbLogin'); if(ov){ sbFinishLogin(ov); } Backend.loadAndSubscribe(); }
+      if(user){ try{ CURRENT_USER = userDisplayName(user); }catch(e){} const ov=document.getElementById('sbLogin'); if(ov){ sbFinishLogin(ov); } Backend.loadAndSubscribe(); }
       else { showLogin(); }
     });
   },
@@ -9511,7 +9511,8 @@ function renderLocDrawer(){
 /* ============================================================
    pDVM RECORDS — administrative request/track workflow.
    ============================================================ */
-const CURRENT_USER='Daniel Giordano';
+let CURRENT_USER='Daniel Giordano';
+function userDisplayName(u){ if(!u) return CURRENT_USER; if(u.displayName && u.displayName.trim()) return u.displayName.trim(); var lp=((u.email||'').split('@')[0]||''); if(lp.indexOf('.')>-1||lp.indexOf('_')>-1){ return lp.split(/[._]+/).filter(Boolean).map(function(w){return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();}).join(' '); } return 'Front Desk'; }
 const RECORDS_STATUS={
   not_requested:{label:'Not requested', color:'#86868b'},
   requested:{label:'Requested', color:'#3B82C4'},
