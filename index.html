@@ -4602,11 +4602,7 @@ body.rd-display .rd-kpi .n{font-size:26px;}
 /* Performance mode — decide BEFORE first paint (no flash). Uses the saved
    per-device choice if present; otherwise auto-enables on clearly low-power
    hardware. Manual toggle lives in the ops menu (Performance Mode). */
-(function(){ try{
-  var saved = localStorage.getItem('flow.perfMode');
-  var on = (saved==='0') ? false : true;   // ON by default; only OFF if the user explicitly turned it off
-  if(on) document.documentElement.classList.add('perf');
-}catch(e){} })();
+/* Performance mode removed — the app always renders in full mode. */
 </script>
 
 <style>
@@ -5249,7 +5245,7 @@ body.dark{
 </style>
 </head>
 <body class="dark">
-<div class="mesh" id="mesh"><div class="bg-orb-1"></div><div class="bg-orb-2"></div><div class="bg-bloom"></div><div id="starfield"><div class="stars-small"></div><div class="stars-medium"></div><div class="stars-large"></div></div></div>
+<div class="mesh" id="mesh"><div class="bg-orb-1"></div><div class="bg-orb-2"></div><div class="bg-bloom"></div></div>
 
 <div class="app">
   <!-- ═══ GLOBAL PORTAL NAV (identical to Profile Dashboard.html) ═══ -->
@@ -5842,10 +5838,6 @@ body.dark{
   <button class="ops-item" data-op="alert" role="menuitem">
     <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
     <span class="ops-txt"><span class="ops-t">Hospital Alert</span><span class="ops-s">Send announcement</span></span>
-  </button>
-  <button class="ops-item" data-op="perf" role="menuitem">
-    <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L20 10h-7z"/></svg></span>
-    <span class="ops-txt"><span class="ops-t">Performance Mode</span><span class="ops-s" id="perfState">On · faster on this computer</span></span>
   </button>
 </div>
 
@@ -9579,12 +9571,6 @@ var CprEcg=(function(){
     try{ len=live.getTotalLength(); }catch(e){ len=0; }
     if(!len){ live=null; return; }
     live.style.strokeDasharray=len;
-    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-    if(reduce){                                    // static full ECG, dot resting at the end
-      live.style.strokeDashoffset=0;
-      var pe=live.getPointAtLength(len); dot.setAttribute('cx', pe.x.toFixed(2)); dot.setAttribute('cy', pe.y.toFixed(2));
-      return;
-    }
     live.style.strokeDashoffset=len;
     raf=requestAnimationFrame(frame);
   }
