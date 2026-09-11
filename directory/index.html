@@ -1823,6 +1823,20 @@ const EMPLOYEES = [
     "ext": "009"
   },
   {
+    "id": 100,
+    "name": "Brian Reynoso",
+    "title": "Liaison",
+    "dept": "Emergency Medicine",
+    "phone": "",
+    "email": "Brian.Reynoso@vca.com",
+    "initials": "BR",
+    "specialty": "",
+    "bio": "",
+    "education": "",
+    "certs": "",
+    "reportsTo": ""
+  },
+  {
     "id": 19,
     "name": "Carly Kudola",
     "title": "CVT, Technician",
@@ -2289,7 +2303,7 @@ const EMPLOYEES = [
     "initials": "KH2",
     "specialty": "",
     "bio": "",
-    "education": "",
+    "education": "B.A., Mount Holyoke College; VMD, University of Pennsylvania School of Veterinary Medicine",
     "certs": "",
     "reportsTo": "Heather Galano",
     "ext": "301"
@@ -2355,8 +2369,8 @@ const EMPLOYEES = [
   {
     "id": 56,
     "name": "Lauren Francione",
-    "title": "Technician Assistant",
-    "dept": "Emergency Medicine",
+    "title": "Technician",
+    "dept": "Intensive Care Unit",
     "phone": "(203) 917-1517",
     "email": "Lauren.Francione@vca.com",
     "initials": "LF",
@@ -2383,8 +2397,8 @@ const EMPLOYEES = [
   {
     "id": 58,
     "name": "Leah Bamford",
-    "title": "Client Service Representative",
-    "dept": "Client Services",
+    "title": "Liaison",
+    "dept": "Emergency Medicine",
     "phone": "(203) 913-3717",
     "email": "Leah.Bamford@vca.com",
     "initials": "LB",
@@ -2560,7 +2574,7 @@ const EMPLOYEES = [
     "initials": "MM",
     "specialty": "Emergency Medicine",
     "bio": "",
-    "education": "",
+    "education": "DVM, Purdue University School of Veterinary Medicine (2007)",
     "certs": "",
     "reportsTo": "Heather Galano",
     "ext": "301"
@@ -3401,7 +3415,7 @@ function saveEmployees() {
 }
 // Bump this whenever the baked EMPLOYEES roster changes — a mismatch clears the
 // stale browser cache so the new list always shows (old edits are discarded).
-const EMPLOYEES_VERSION = '2026-07-15-pinDaniel';
+const EMPLOYEES_VERSION = '2026-09-11-rosterUpdate';
 function saveEmployeesVersion() {
   try { localStorage.setItem('dir_employees_v', EMPLOYEES_VERSION); } catch(e){}
 }
@@ -3717,13 +3731,13 @@ var DIR_SCHEDULES = {
   'Genesis Veloz':         { days:[0,1,2,3], start:420, end:900 },
   'Jordain Williams':      { days:[4,5,6], start:720, end:1440 },
   'Kimberly Hulme':        { days:[2,3,4,5], start:450, end:1050 },
-  'Lauren Francione':      { days:[0,1,5], start:480, end:1080 },
+  'Lauren Francione':      { week: [{"off": false, "start": 360, "end": 1080}, {"off": false, "start": 840, "end": 1440}, {"off": true}, {"off": true}, {"off": false, "start": 480, "end": 1080}, {"off": false, "start": 480, "end": 1080}, {"off": true}] },
   'Lauren Whitney':        { days:[1,2,3,6], start:480, end:1080 },
-  'Leah Bamford':          { days:[1], start:840, end:1440 },
+  'Leah Bamford':          { week: [{"off": false, "start": 480, "end": 1080}, {"off": true}, {"off": false, "start": 480, "end": 1080}, {"off": true}, {"off": false, "start": 840, "end": 1440}, {"off": false, "start": 840, "end": 1440}, {"off": true}] },
   'Malachi Quinones':      { days:[1,2], start:1080, end:1680 },
   'Malyssa Kubik':         { days:[2,3,4,5,6], start:840, end:1440 },
   'Myranda May':           { days:[3,4,5], start:480, end:1080 },
-  'Paola Velazquez':       { days:[4,5], start:720, end:1440 },
+  'Paola Velazquez':       { days:[4,5,6], start:720, end:1440 },
   'Rachel Pieger':         { days:[2,3], start:360, end:960 },
   'Rhiannon Cappannelli':  { days:[3,4,5,6], start:480, end:1080 },
   'Sara Devitto':          { days:[0,3,4], start:885, end:1350 },
@@ -3731,6 +3745,8 @@ var DIR_SCHEDULES = {
   'Stacey Smith':          { days:[3,4,5], start:480, end:1080 },
   'Stephanie Cseh':        { days:[0,1], start:600, end:1080 },
   'Tanneil Buchanan':      { days:[3,4], start:480, end:840 },
+  'Delahla Rosario':       { days:[4,5,6], start:1080, end:1800 },
+  'Brian Reynoso':         { week: [{"off": true}, {"off": true}, {"off": true}, {"off": false, "start": 480, "end": 1080}, {"off": false, "start": 480, "end": 1080}, {"off": false, "start": 480, "end": 1080}, {"off": false, "start": 840, "end": 1440}] },
 };
 var _DAYNAME=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function _fmtT(m){ m=((m%1440)+1440)%1440; var h=Math.floor(m/60), mm=m%60, ap=h>=12?'PM':'AM', hh=h%12; if(hh===0)hh=12; return hh+':'+(mm<10?'0'+mm:mm)+' '+ap; }
