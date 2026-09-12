@@ -7320,7 +7320,7 @@ function day(v){const d=new Date(v);if(!Number.isFinite(+d))return null;return n
 function add(k,n){return new Date(Date.parse(k+'T12:00:00Z')+n*86400000).toISOString().slice(0,10);}
 function bounds(period,now=new Date()){const today=day(now);if(period==='today')return [today,add(today,1)];if(period==='week'){const dow=new Date(today+'T12:00:00Z').getUTCDay();return [add(today,-((dow+6)%7)),add(today,1)];}if(period==='month')return [today.slice(0,7)+'-01',add(today,1)];return [null,null];}
 function aliases(staff){return new Set([staff.staffId,...(staff.flowIds||[])].filter(Boolean));}
-function assignments(v){return (v.care_team?.assignments||[]).map(a=>({...a,staff_id:a.staff_id?.replace(/^manual:/,'')}));}
+function assignments(v){const ct=(v.care_team?.assignments||[]).map(a=>({...a,staff_id:a.staff_id?.replace(/^manual:/,'')}));if(ct.length)return ct;const st=v.discharged_at?'ended':(v.is_active?'current':'ended');const out=[];if(v.doctor_id)out.push({staff_id:String(v.doctor_id).replace(/^manual:/,''),role:'primary',status:st,start_at:v.arrival_time||null,end_at:v.discharged_at||null});if(v.liaison_id)out.push({staff_id:String(v.liaison_id).replace(/^manual:/,''),role:'liaison',status:st,start_at:v.arrival_time||null,end_at:v.discharged_at||null});return out;}
 function match(v,staff,period='active',role='',now=new Date()){
  if(v._demo||v.tenant_id&&v.tenant_id!=='shoreline')return false;
  const ids=aliases(staff),[from,to]=bounds(period,now);
