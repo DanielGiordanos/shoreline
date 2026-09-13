@@ -7368,7 +7368,40 @@ paint();refreshActivity();const count=document.getElementById('chip-all');if(cou
 try{if(window.firebase){if(!firebase.apps.length)firebase.initializeApp(X.firebase);db=firebase.firestore();auth=firebase.auth();auth.onAuthStateChanged(connect);}}catch(e){state='Firebase unavailable; using local directory.';paint();}
 window.PVDirectory={getVisits:()=>visits,refreshActivity};
 })();
-</script></body>
+</script><style id="az-index-css">
+.az-bar{position:fixed;right:8px;top:50%;transform:translateY(-50%);z-index:45;
+  display:flex;flex-direction:column;align-items:center;gap:0;padding:7px 3px;border-radius:16px;
+  background:color-mix(in srgb,var(--surface-1,#F4F9FC) 84%,transparent);
+  box-shadow:0 6px 20px rgba(4,20,40,.12),0 0 0 1px rgba(56,189,210,.10);}
+body.dark .az-bar{background:color-mix(in srgb,#0e1b30 80%,transparent);box-shadow:0 6px 20px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.05);}
+.az-let{appearance:none;border:0;background:none;cursor:pointer;
+  font:700 10px/1 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  letter-spacing:.02em;color:var(--ink-400,#7A9BB5);
+  width:18px;height:15.5px;display:flex;align-items:center;justify-content:center;border-radius:5px;
+  transition:color .12s ease,transform .12s ease;}
+.az-let:hover{color:var(--brand-cyan,#38BDD2);transform:scale(1.3);}
+.az-let:active{transform:scale(1.08);}
+.az-let.az-empty{opacity:.28;pointer-events:none;}
+.emp-card.az-flash{outline:2px solid var(--brand-cyan,#38BDD2);outline-offset:3px;}
+body:has(.drawer-overlay.open) .az-bar{opacity:0;pointer-events:none;}
+@media (max-width:860px){.az-bar{display:none;}}
+</style>
+<script id="az-index-js">
+(function(){
+  var LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  var bar=document.createElement('nav'); bar.className='az-bar'; bar.setAttribute('aria-label','Jump to letter');
+  LETTERS.forEach(function(L){var b=document.createElement('button');b.type='button';b.className='az-let';b.textContent=L;b.dataset.letter=L;b.setAttribute('aria-label','Jump to '+L);bar.appendChild(b);});
+  document.body.appendChild(bar);
+  function cards(){return Array.prototype.slice.call(document.querySelectorAll('#empGrid .emp-card, #favGrid .emp-card'));}
+  function nameOf(c){var n=c.querySelector('.emp-name');return n?(n.textContent||'').trim():'';}
+  function firstFor(L){var cs=cards();for(var i=0;i<cs.length;i++){if(nameOf(cs[i]).charAt(0).toUpperCase()===L)return cs[i];}return null;}
+  bar.addEventListener('click',function(e){var b=e.target.closest('.az-let');if(!b)return;var c=firstFor(b.dataset.letter);if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('az-flash');setTimeout(function(){c.classList.remove('az-flash');},900);}});
+  function update(){var present={};cards().forEach(function(c){var ch=nameOf(c).charAt(0).toUpperCase();if(ch)present[ch]=1;});Array.prototype.forEach.call(bar.querySelectorAll('.az-let'),function(b){b.classList.toggle('az-empty',!present[b.dataset.letter]);});}
+  if(typeof render==='function'){var _r=render;render=function(){_r.apply(this,arguments);try{update();}catch(e){}};}
+  update();
+})();
+</script>
+</body>
 </html>
 
 <style id="directory-filter-control-fix">
