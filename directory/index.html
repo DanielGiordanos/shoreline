@@ -7369,21 +7369,23 @@ try{if(window.firebase){if(!firebase.apps.length)firebase.initializeApp(X.fireba
 window.PVDirectory={getVisits:()=>visits,refreshActivity};
 })();
 </script><style id="az-index-css">
-.az-bar{position:fixed;right:8px;top:50%;transform:translateY(-50%);z-index:45;
+.az-bar{position:fixed;left:8px;top:50%;transform:translateY(-50%);z-index:45;
   display:flex;flex-direction:column;align-items:center;gap:0;padding:7px 3px;border-radius:16px;
   background:color-mix(in srgb,var(--surface-1,#F4F9FC) 84%,transparent);
-  box-shadow:0 6px 20px rgba(4,20,40,.12),0 0 0 1px rgba(56,189,210,.10);}
+  box-shadow:0 6px 20px rgba(4,20,40,.12),0 0 0 1px rgba(56,189,210,.10);
+  transition:padding .2s ease,gap .2s ease,box-shadow .2s ease;}
+.az-bar:hover{padding:10px 7px;gap:1px;box-shadow:0 10px 28px rgba(4,20,40,.18),0 0 0 1px rgba(56,189,210,.18);}
+.az-bar:hover .az-let{width:26px;height:21px;font-size:12.5px;}
 body.dark .az-bar{background:color-mix(in srgb,#0e1b30 80%,transparent);box-shadow:0 6px 20px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.05);}
 .az-let{appearance:none;border:0;background:none;cursor:pointer;
   font:700 10px/1 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
   letter-spacing:.02em;color:var(--ink-400,#7A9BB5);
   width:18px;height:15.5px;display:flex;align-items:center;justify-content:center;border-radius:5px;
-  transition:color .12s ease,transform .12s ease;}
-.az-let:hover{color:var(--brand-cyan,#38BDD2);transform:scale(1.3);}
+  transition:color .12s ease,transform .16s ease,width .18s ease,height .18s ease,font-size .18s ease;}
+.az-let:hover{color:var(--brand-cyan,#38BDD2);transform:scale(1.55);}
 .az-let:active{transform:scale(1.08);}
 .az-let.az-empty{opacity:.28;pointer-events:none;}
 .emp-card.az-flash{outline:2px solid var(--brand-cyan,#38BDD2);outline-offset:3px;}
-body:has(.drawer-overlay.open) .az-bar{opacity:0;pointer-events:none;}
 @media (max-width:860px){.az-bar{display:none;}}
 </style>
 <script id="az-index-js">
