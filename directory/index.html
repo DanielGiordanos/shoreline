@@ -317,15 +317,15 @@ body.dark .drawer{background:rgba(10,18,34,0.92);border-left-color:rgba(77,200,2
 body.dark .drawer-hero{background:linear-gradient(135deg,#0A1222,#0E1E3A);}
 .drawer-avatar-ring{
   width:80px;height:80px;border-radius:50%;
-  background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));
-  padding:3px;flex-shrink:0;
-  box-shadow:0 0 0 4px rgba(77,200,224,0.15),0 8px 24px rgba(0,0,0,0.3);
+  background:linear-gradient(135deg,var(--accent-2),color-mix(in srgb,var(--card-accent) 72%,var(--accent)));
+  padding:1.5px;flex-shrink:0;
+  box-shadow:0 5px 16px rgba(0,0,0,.12),0 0 0 1px rgba(56,189,210,.10);
 }
 .drawer-avatar{
   width:100%;height:100%;border-radius:50%;
-  background:linear-gradient(135deg,#1A3A60,#0E2448);
+  background:#10243D;
   display:flex;align-items:center;justify-content:center;
-  font-size:26px;font-weight:800;color:var(--brand-cyan);
+  font-size:26px;font-weight:800;color:#E8F5FB;
   overflow:hidden;
 }
 .drawer-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
@@ -1256,9 +1256,9 @@ body.dark .emp-visual::before{background:radial-gradient(120% 100% at 0 0,rgba(2
 .emp-visual::after{display:none;}
 
 .emp-visual .emp-avatar-wrap{left:18px;bottom:15px;}
-.emp-visual .emp-avatar-ring{width:78px!important;height:78px!important;padding:3px;background:linear-gradient(135deg,#4DC8E0,#8B4DB5);box-shadow:0 8px 22px rgba(4,20,40,.30),0 0 0 1px rgba(255,255,255,.10);}
+.emp-visual .emp-avatar-ring{width:78px!important;height:78px!important;padding:1.5px;background:linear-gradient(135deg,var(--accent-2),color-mix(in srgb,var(--card-accent) 72%,var(--accent)));box-shadow:0 5px 16px rgba(0,0,0,.12),0 0 0 1px rgba(56,189,210,.10);}
 .emp-visual .emp-avatar{font-size:20px!important;background:var(--surface-0);color:var(--ink-900);}
-body.dark .emp-visual .emp-avatar{background:linear-gradient(135deg,#1a3a60,#0e2448);color:#4DC8E0;}
+body.dark .emp-visual .emp-avatar{background:#10243D;color:#E8F5FB;}
 .emp-visual .emp-status-dot{border-color:var(--surface-1);}
 body.dark .emp-visual .emp-status-dot{border-color:#102037;}
 .emp-visual-meta{left:108px;right:40px;bottom:18px;color:var(--ink-900);}
