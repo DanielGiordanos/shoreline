@@ -1635,6 +1635,7 @@ body.dark .pv-btn,body.dark .pv-metric,body.dark .pv-input{background:#0e1628;co
 body.dark .pv-log a{color:#70d8eb;}
 </style></head>
 <body>
+<script>/* Apply saved theme BEFORE first paint so the logo (and everything else) renders in the correct theme immediately — no light→dark flash on refresh. Mirrors Flow's paint-correct-on-first-frame behavior. */(function(){try{var s=localStorage.getItem('darkMode');if(s==='1'||s==='payroll_1')document.body.classList.add('dark');}catch(e){}})();</script>
 
 <div class="bg-orb-1"></div>
 <div class="bg-orb-2"></div>
