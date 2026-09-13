@@ -129,6 +129,48 @@ body.dark .dir-header{background:linear-gradient(135deg,#0A1222 0%,#0E1E3A 60%,#
 .search-clear:hover{background:var(--border-subtle);color:var(--text-secondary);}
 .search-clear.visible{display:block;}
 
+/* ===== Flow-style search bar (ported from Flow, resized for Directory's full-width hero) ===== */
+.fs-search{
+  --fs-shell-bg:rgba(232,237,246,.92); --fs-shell-border:rgba(120,140,170,.55);
+  --fs-bg:#FFFFFF; --fs-focus-bg:#FFFFFF; --fs-border:rgba(120,138,168,.55);
+  --fs-border-focus:rgba(52,183,207,.34); --fs-focus-ring:rgba(52,183,207,.08);
+  --fs-text:#44505F; --fs-ph:#7B8796; --fs-ico:#657181;
+  position:relative;width:100%;margin-bottom:12px;
+}
+body.dark .fs-search{
+  --fs-shell-bg:rgba(20,31,52,.60); --fs-shell-border:rgba(120,150,185,.16);
+  --fs-bg:#17233A; --fs-focus-bg:#19253C; --fs-border:rgba(150,185,220,.18);
+  --fs-border-focus:rgba(77,200,224,.42); --fs-focus-ring:rgba(56,189,210,.10);
+  --fs-text:#D1D9E5; --fs-ph:#8190A6; --fs-ico:#8190A6;
+}
+.fs-search .fs-shell{padding:5px;border-radius:16px;background:var(--fs-shell-bg);border:1px solid var(--fs-shell-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.10);transition:border-color .16s ease,background .16s ease;}
+.fs-search .fs-shell:focus-within{border-color:var(--fs-border-focus);}
+.fs-search .fs-bar{position:relative;display:flex;align-items:center;gap:11px;height:46px;padding:0 12px 0 15px;border-radius:12px;background:var(--fs-bg);border:1px solid var(--fs-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.04);transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;}
+.fs-search .fs-bar:focus-within{border-color:var(--fs-border-focus);background:var(--fs-focus-bg);box-shadow:0 0 0 2px var(--fs-focus-ring);}
+body:not(.dark) .fs-search .fs-shell{box-shadow:0 2px 10px rgba(60,80,120,.12),inset 0 1px 0 rgba(255,255,255,.6);}
+body:not(.dark) .fs-search .fs-bar{box-shadow:0 1px 3px rgba(60,80,120,.10),inset 0 1px 0 rgba(255,255,255,.9);}
+body:not(.dark) .fs-search .fs-bar:focus-within{box-shadow:0 1px 3px rgba(60,80,120,.10),0 0 0 2px var(--fs-focus-ring);}
+/* CSS-drawn magnifier (scaled up for the taller bar), themed */
+.fs-search .fs-icon{position:relative;width:22px;height:22px;flex:0 0 22px;}
+.fs-search .fs-icon::before{content:"";position:absolute;left:1px;top:1px;width:14px;height:14px;border:2px solid var(--fs-ico);border-radius:50%;}
+.fs-search .fs-icon::after{content:"";position:absolute;width:9px;height:2px;background:var(--fs-ico);transform:rotate(45deg);transform-origin:left center;left:15px;top:16px;border-radius:999px;}
+.fs-search input.fs-input{flex:1;min-width:0;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;color:var(--fs-text)!important;font-size:15px;font-weight:500;letter-spacing:-.012em;padding:0!important;height:auto!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-radius:0!important;font-family:'SF Pro Display','Inter',-apple-system,sans-serif;}
+.fs-search input.fs-input::placeholder{color:var(--fs-ph)!important;opacity:1;font-weight:500;transition:opacity .14s ease,color .14s ease;}
+.fs-search input.fs-input:focus::placeholder{opacity:0!important;color:transparent!important;}
+.fs-search input.fs-input::-webkit-search-cancel-button,
+.fs-search input.fs-input::-webkit-search-decoration,
+.fs-search input.fs-input::-webkit-search-results-button,
+.fs-search input.fs-input::-webkit-search-results-decoration{-webkit-appearance:none;appearance:none;display:none;}
+/* Premium idle caret — luminous ice-blue pill shown only when focused AND empty */
+.fs-search .fs-caret{position:absolute;left:48px;top:50%;margin-top:-9px;width:2px;height:18px;border-radius:999px;background:rgba(220,242,255,.95);box-shadow:0 0 4px rgba(115,200,235,.45),0 0 8px rgba(115,200,235,.18);display:none;opacity:0;pointer-events:none;z-index:2;}
+.fs-search .fs-bar.caret-active .fs-caret{display:block;animation:fsCaret 1.35s ease-in-out infinite;}
+.fs-search input.fs-input.custom-caret-active{caret-color:transparent;}
+@keyframes fsCaret{0%,100%{opacity:.45}50%{opacity:1}}
+/* Clear button, moved inside the bar */
+.fs-search .fs-clear{flex:0 0 auto;margin-left:2px;background:none;border:none;color:var(--fs-ph);cursor:pointer;font-size:15px;line-height:1;padding:5px;border-radius:50%;transition:background .18s,color .18s;display:none;}
+.fs-search .fs-clear:hover{background:rgba(120,140,170,.16);color:var(--fs-text);}
+.fs-search .fs-clear.visible{display:block;}
+
 /* Filter chips */
 .filter-chips{display:flex;gap:8px;flex-wrap:wrap;}
 .chip{
@@ -1697,10 +1739,15 @@ body.dark .pv-log a{color:#70d8eb;}
 
   <!-- SEARCH + FILTERS -->
   <div class="search-wrap apple-search-wrap">
-    <div class="search-input-wrap">
-      <svg class="search-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7.5"/><line x1="20.5" y1="20.5" x2="16.4" y2="16.4"/></svg>
-      <input class="search-input" id="searchInput" type="text" placeholder="Search people" oninput="onSearch(this.value)">
-      <button class="search-clear" id="searchClear" onclick="clearSearch()" aria-label="Clear search">✕</button>
+    <div class="fs-search">
+      <div class="fs-shell">
+        <div class="fs-bar">
+          <span class="fs-icon" aria-hidden="true"></span>
+          <input class="fs-input" id="searchInput" type="search" placeholder="Search people" autocomplete="off" oninput="onSearch(this.value)">
+          <span class="fs-caret" aria-hidden="true"></span>
+          <button class="fs-clear" id="searchClear" onclick="clearSearch()" aria-label="Clear search">✕</button>
+        </div>
+      </div>
     </div>
     <div class="filter-chips apple-filters" id="filterChips">
       <div class="chip active" data-filter="all" onclick="setFilter('all',this)">All <span class="chip-count" id="chip-all">99</span></div>
@@ -3848,6 +3895,18 @@ function deleteContact(id, e) {
 (function(){
   const s = localStorage.getItem('darkMode');
   if(s==='1'||s==='payroll_1') document.body.classList.add('dark');
+})();
+
+// ── Premium idle search caret (ported from Flow) — luminous pill + hidden native
+//    caret, shown only while the search field is focused AND empty. Event-driven.
+(function(){
+  var si = document.getElementById('searchInput');
+  var bar = si ? si.closest('.fs-bar') : null;
+  if(!si || !bar) return;
+  function upd(){ var a = si.matches(':focus') && si.value.length === 0; bar.classList.toggle('caret-active', a); si.classList.toggle('custom-caret-active', a); }
+  si.addEventListener('focus', upd);
+  si.addEventListener('blur', upd);
+  si.addEventListener('input', upd);
 })();
 function toggleDark() {
   document.body.classList.toggle('dark');
