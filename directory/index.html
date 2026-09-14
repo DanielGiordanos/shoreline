@@ -1926,6 +1926,8 @@ body.dark .pv-log a{color:#70d8eb;}
 <div class="toast" id="toast"></div>
 
 <script>
+function countsAsEmployee(emp){ return emp.name !== 'Joe Beck'; }
+function employeeTotal(){ return EMPLOYEES.filter(countsAsEmployee).length; }
 const EMPLOYEES = [
   {
     "id": 1,
@@ -1960,7 +1962,7 @@ const EMPLOYEES = [
   {
     "id": 3,
     "name": "Alexa Marucci",
-    "title": "Client Service Supervisor",
+    "title": "Liaison",
     "dept": "Administration",
     "phone": "(203) 706-0408",
     "email": "Alexa.Marucci@vca.com",
@@ -2085,7 +2087,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 12,
@@ -2113,7 +2120,10 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Rachel Pieger"
+    "reportsTo": "Rachel Pieger",
+    "managerIds": [
+      77
+    ]
   },
   {
     "id": 14,
@@ -2127,7 +2137,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 15,
@@ -2141,8 +2156,13 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano",
-    "ext": "304"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "ext": "304",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 16,
@@ -2256,7 +2276,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 23,
@@ -2327,7 +2352,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 28,
@@ -2341,7 +2371,10 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Rachel Pieger"
+    "reportsTo": "Nelson Diaz",
+    "managerIds": [
+      74
+    ]
   },
   {
     "id": 29,
@@ -2369,7 +2402,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 31,
@@ -2398,8 +2436,13 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano",
-    "ext": "523"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "ext": "523",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 33,
@@ -2441,7 +2484,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 36,
@@ -2584,7 +2632,10 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Gregory Lalka"
+    "reportsTo": "Joe Beck",
+    "managerIds": [
+      103
+    ]
   },
   {
     "id": 46,
@@ -2598,8 +2649,13 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano",
-    "ext": "522"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "ext": "522",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 47,
@@ -2627,8 +2683,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Gregory Lalka",
-    "ext": "408"
+    "reportsTo": "Kristina Staff & Gregory Lalka",
+    "ext": "408",
+    "managerIds": [
+      54,
+      42
+    ]
   },
   {
     "id": 49,
@@ -2642,7 +2702,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 50,
@@ -2656,12 +2721,17 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 51,
     "name": "Kelley Harpin",
-    "title": "Emergency Veterinarian",
+    "title": "Veterinarian Lead",
     "dept": "Administration",
     "phone": "(860) 459-4512",
     "email": "Kelley.Harpin@vca.com",
@@ -2670,8 +2740,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "B.A., Mount Holyoke College; VMD, University of Pennsylvania School of Veterinary Medicine",
     "certs": "",
-    "reportsTo": "Heather Galano",
-    "ext": "301"
+    "reportsTo": "Gregory Lalka & Heather Galano",
+    "ext": "301",
+    "managerIds": [
+      42,
+      1
+    ]
   },
   {
     "id": 52,
@@ -2700,7 +2774,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 54,
@@ -2729,7 +2808,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 56,
@@ -2842,12 +2926,17 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 64,
     "name": "Malachi Quinones",
-    "title": "Technician Assistant",
+    "title": "Technician Assistant Lead",
     "dept": "Emergency Medicine",
     "phone": "(646) 460-2408",
     "email": "Malachi.Quinones@vca.com",
@@ -2884,8 +2973,13 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano",
-    "ext": "302"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "ext": "302",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 67,
@@ -2899,7 +2993,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 68,
@@ -2941,8 +3040,13 @@ const EMPLOYEES = [
     "bio": "",
     "education": "DVM, Purdue University School of Veterinary Medicine (2007)",
     "certs": "",
-    "reportsTo": "Heather Galano",
-    "ext": "301"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "ext": "301",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 71,
@@ -2956,7 +3060,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 72,
@@ -2970,7 +3079,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 73,
@@ -2989,8 +3103,8 @@ const EMPLOYEES = [
   {
     "id": 74,
     "name": "Nelson Diaz",
-    "title": "Hospital Assistant",
-    "dept": "Client Services",
+    "title": "Facility Manager",
+    "dept": "Administration",
     "phone": "(475) 731-9407",
     "email": "Nelson.Diaz@vca.com",
     "initials": "ND",
@@ -2998,8 +3112,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Rachel Pieger",
-    "ext": "606"
+    "reportsTo": "Gregory Lalka & Kristina Staff",
+    "ext": "606",
+    "managerIds": [
+      42,
+      54
+    ]
   },
   {
     "id": 75,
@@ -3084,7 +3202,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 81,
@@ -3113,8 +3236,13 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano",
-    "ext": "303"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "ext": "303",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 83,
@@ -3128,8 +3256,13 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano",
-    "ext": "302"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "ext": "302",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 84,
@@ -3177,7 +3310,7 @@ const EMPLOYEES = [
   {
     "id": 87,
     "name": "Stephanie Cseh",
-    "title": "Head Purchaser",
+    "title": "Head Purchaser · Technician",
     "dept": "Administration",
     "phone": "(475) 306-2821",
     "email": "Stephanie.Cseh@vca.com",
@@ -3186,8 +3319,14 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Gregory Lalka",
-    "ext": "410"
+    "reportsTo": "Gregory Lalka & Kristina Staff & Brandy Fellin & Kimberly Hulme",
+    "ext": "410",
+    "managerIds": [
+      42,
+      54,
+      18,
+      52
+    ]
   },
   {
     "id": 88,
@@ -3230,7 +3369,12 @@ const EMPLOYEES = [
     "bio": "",
     "education": "",
     "certs": "",
-    "reportsTo": "Heather Galano"
+    "reportsTo": "Gregory Lalka & Heather Galano & Kelley Harpin",
+    "managerIds": [
+      42,
+      1,
+      51
+    ]
   },
   {
     "id": 91,
@@ -3358,6 +3502,71 @@ const EMPLOYEES = [
     "education": "",
     "certs": "",
     "reportsTo": "Heather Galano & Daniel Giordano"
+  },
+  {
+    "id": 101,
+    "dept": "",
+    "email": "",
+    "specialty": "",
+    "bio": "",
+    "education": "",
+    "certs": "",
+    "name": "Gloria Rios",
+    "title": "Hospital Assistant",
+    "phone": "",
+    "reportsTo": "Nelson Diaz",
+    "initials": "GR",
+    "managerIds": [
+      74
+    ]
+  },
+  {
+    "id": 102,
+    "name": "Jonathan Maces",
+    "initials": "JM",
+    "email": "",
+    "specialty": "",
+    "bio": "",
+    "education": "",
+    "certs": "",
+    "title": "Client Service Representative",
+    "dept": "Client Services",
+    "phone": "(475) 731-7603",
+    "reportsTo": "Elizabeth DeLauri",
+    "managerIds": [
+      36
+    ]
+  },
+  {
+    "id": 103,
+    "name": "Joe Beck",
+    "email": "Joe.Beck@vca.com",
+    "phone": "(845) 325-2935",
+    "specialty": "",
+    "bio": "",
+    "education": "",
+    "certs": "",
+    "reportsTo": "",
+    "title": "Regional Operations Director",
+    "dept": "Administration",
+    "initials": "JB"
+  },
+  {
+    "id": 104,
+    "name": "Sage Pomianowski",
+    "email": "",
+    "phone": "(203) 667-6267",
+    "specialty": "",
+    "bio": "",
+    "education": "",
+    "certs": "",
+    "reportsTo": "Elizabeth DeLauri",
+    "title": "Client Service Representative",
+    "dept": "Client Services",
+    "initials": "SP",
+    "managerIds": [
+      36
+    ]
   }
 ];
 
@@ -3603,7 +3812,10 @@ function filterBySearch() {
   favGrid.querySelectorAll('.emp-card').forEach(c => { favCount++; const emp = EMPLOYEES.find(e => e.id == c.dataset.id); const show = !emp || matchesSearch(emp); c.classList.toggle('search-hidden', !show); if(show) visFav++; });
   empGrid.querySelectorAll('.emp-card').forEach(c => { const emp = EMPLOYEES.find(e => e.id == c.dataset.id); const show = !emp || matchesSearch(emp); c.classList.toggle('search-hidden', !show); if(show) visAll++; });
   const totalVisible = visFav + visAll;
-  document.getElementById('resultsCount').innerHTML = `<strong>${totalVisible}</strong> of ${EMPLOYEES.length} team members`;
+  const visibleRecords=[...favGrid.querySelectorAll('.emp-card:not(.search-hidden)'),...empGrid.querySelectorAll('.emp-card:not(.search-hidden)')].map(c=>EMPLOYEES.find(e=>e.id==c.dataset.id)).filter(Boolean);
+  const staffVisible=visibleRecords.filter(countsAsEmployee).length;
+  const regionalVisible=visibleRecords.length-staffVisible;
+  document.getElementById('resultsCount').innerHTML = `<strong>${staffVisible}</strong> of ${employeeTotal()} team members${regionalVisible?' · '+regionalVisible+' regional contact':''}`;
   if(favCount > 0 && activeFilter !== 'Favorites') {
     favSection.style.display = visFav > 0 ? 'block' : 'none';
     allLabel.style.display = 'flex';
@@ -4107,6 +4319,7 @@ function schedSave(){
 }
 
 var DIR_SCHEDULES = {
+  'Gloria Rios': { days:[0,1,2,3], start:7*60, end:17*60 },
   'Daniel Giordano': { days:[0,1,2,3], start:14*60, end:24*60 },
   'Amber Horvath':   { days:[0,1,2,3], start:12*60, end:22*60 },
   'Gregory Lalka':   { days:[1,2,3,4,5], start:7*60, end:15*60 },
@@ -4240,7 +4453,7 @@ function initStats(){
   try{
     var iv=document.getElementById('statInterns'); if(iv) iv.dataset.val=String(EMPLOYEES.filter(function(x){return x.dept==='Interns';}).length);
     var fv=document.getElementById('statFavs'); if(fv) fv.dataset.val=String((favorites||[]).length);
-    var tv=document.getElementById('statTotal'); if(tv) tv.dataset.val=String(EMPLOYEES.length);
+    var tv=document.getElementById('statTotal'); if(tv) tv.dataset.val=String(employeeTotal());
     var dv=document.getElementById('statDepts'); if(dv) dv.dataset.val=String(new Set(EMPLOYEES.map(function(x){return x.dept;})).size);
   }catch(e){}
   document.querySelectorAll('.dir-stat-num[data-val]').forEach(function(el){ _dirCountUp(el, parseInt(el.dataset.val)||0, 850); });
@@ -7223,14 +7436,14 @@ function renderOrgView(){
     <aside class="org-side" aria-label="Selected person">${orgSidePanelHTML()}</aside>
   </div>`;
   updateDeptBadges();
-  if(orgFocusId){ const el=host.querySelector(`.org-row[data-id="${orgFocusId}"]`); if(el && !reducedMotion()) el.scrollIntoView({block:'center',behavior:'smooth'}); else if(el) el.scrollIntoView({block:'center'}); }
+
 }
 function unassignedCountAll(){ return ORG?ORG.unassigned.length:0; }
 function orgNodeHTML(id, depth, path){
   const e=byId(id); if(!e) return '';
   const o=ORG, kids=o.children[id]||[], cyc=path.includes(id);
   const expandable=kids.length>0 && !cyc;
-  const open=expandable && (orgExpanded.has(id) || (depth===0 && !orgQuery && kids.length<=12 && o.roots.length<=3));
+  const open=expandable && orgExpanded.has(id);
   const m=o.mgr[id];
   const co = m.ids.length>1 ? m.ids.filter(x=>x!==(path.length?path[path.length-1]:-1)).map(x=>byId(x)&&byId(x).name).filter(Boolean) : [];
   const tags=[];
@@ -7483,8 +7696,8 @@ function activityHTML(emp){const counts=core.summary(visits,staff(emp));const la
 function log(){const emp=EMPLOYEES.find(e=>e.id===viewStaff);const el=document.getElementById('pv-log');if(!emp||!el)return;if(!visitsLive){el.textContent='Connect shared Flow data to see assignment history.';return;}const rows=core.rows(visits,staff(emp),selectedPeriod,selectedRole);const params=new URLSearchParams({staff:emp.staffId,period:selectedPeriod,role:selectedRole});el.innerHTML=`<a href="Flow.integrated.html?${params}">Open ${rows.length} matching encounters in Flow</a>`+rows.map(v=>{const as=(v.care_team?.assignments||[]).filter(a=>core.aliases(emp).has(a.staff_id?.replace(/^manual:/,'')));return `<a href="Flow.integrated.html?${params}&patient=${encodeURIComponent(v.id)}">${esc(v.patient_name||'Patient')} · ${esc(v.visit_code||v.id)}<br><span class="pv-note">${as.map(a=>esc(a.role)+' · '+esc(a.start_at?new Date(a.start_at).toLocaleString('en-US',{timeZone:'America/New_York'}):'Start unknown')+' → '+esc(a.end_at?new Date(a.end_at).toLocaleString('en-US',{timeZone:'America/New_York'}):a.status)+' · '+esc(a.updated_by||'Actor unknown')).join('<br>')}</span></a>`;}).join('');}
 const originalOpen=openDrawer;openDrawer=function(id){originalOpen(id);viewStaff=id;const emp=EMPLOYEES.find(e=>e.id===id);if(!emp)return;document.getElementById('drawerBody').insertAdjacentHTML('afterbegin',activityHTML(emp));document.getElementById('pv-role').value=selectedRole;document.getElementById('pv-role').onchange=e=>{selectedRole=e.target.value;log();};document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{selectedPeriod=b.dataset.period;log();});log();};
 function refreshActivity(){document.querySelectorAll('.pv-card-count').forEach(e=>e.remove());document.querySelectorAll('.emp-card').forEach(c=>{const e=EMPLOYEES.find(e=>String(e.id)===c.dataset.id);if(!e)return;const b=document.createElement('button');b.className='pv-btn pv-card-count';b.textContent=visitsLive?core.summary(visits,e).active+' active assignments':'Patient activity not connected';b.onclick=ev=>{ev.stopPropagation();openDrawer(e.id);};c.querySelector('.emp-card-body')?.appendChild(b);});if(document.getElementById('pv-activity'))openDrawer(viewStaff);}
-const oldRender=render;render=function(){oldRender();const count=document.getElementById('chip-all');if(count)count.textContent=EMPLOYEES.length;refreshActivity();};
-paint();refreshActivity();const count=document.getElementById('chip-all');if(count)count.textContent=EMPLOYEES.length;
+const oldRender=render;render=function(){oldRender();const count=document.getElementById('chip-all');if(count)count.textContent=employeeTotal();refreshActivity();};
+paint();refreshActivity();const count=document.getElementById('chip-all');if(count)count.textContent=employeeTotal();
 try{if(window.firebase){if(!firebase.apps.length)firebase.initializeApp(X.firebase);db=firebase.firestore();auth=firebase.auth();auth.onAuthStateChanged(connect);}}catch(e){state='Firebase unavailable; using local directory.';paint();}
 window.PVDirectory={getVisits:()=>visits,refreshActivity};
 })();
@@ -7523,6 +7736,198 @@ body.dark .az-bar{background:color-mix(in srgb,#0e1b30 80%,transparent);box-shad
   update();
 })();
 </script>
+<!-- PV-MOTION-START -->
+<style id="pv-motion">/* Timing only; existing sizes, colors, shadows, and end states are retained. */
+@media(prefers-reduced-motion:no-preference){
+ .emp-card{transition-duration:.28s!important;transition-timing-function:cubic-bezier(.16,1,.3,1)!important;}
+ #drawer{transition-property:transform!important;transition-duration:.38s!important;transition-timing-function:cubic-bezier(.16,1,.3,1)!important;}
+ #drawer:not(.open){transition-duration:.24s!important;}
+ #drawerOverlay{transition-property:opacity!important;transition-duration:.24s!important;transition-timing-function:ease-out!important;}
+}
+@media(prefers-reduced-motion:reduce){
+ .emp-card,#drawer,#drawerOverlay{animation:none!important;transition:none!important;}
+}
+</style>
+<script id="pv-motion-script">/* Motion only: resting appearance and existing interactions remain unchanged. */
+(()=>{
+ const grid=document.getElementById('empGrid');
+ if(!grid||!window.IntersectionObserver||!Element.prototype.animate)return;
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const seen=new Set(),pending=new Set(),running=new Map();
+ const stop=el=>{const a=running.get(el);if(a){a.cancel();running.delete(el);}};
+ const observer=new IntersectionObserver(entries=>{
+  const arriving=entries.filter(e=>e.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top||a.boundingClientRect.left-b.boundingClientRect.left);
+  arriving.forEach((entry,index)=>{
+   const el=entry.target;observer.unobserve(el);pending.delete(el);
+   const id=el.dataset.id;if(seen.has(id))return;seen.add(id);
+   if(reduced.matches||document.hidden||el.matches(':hover,:focus-within')||document.body.classList.contains('dir-edit'))return;
+   const animation=el.animate([{opacity:.45,translate:'0 18px'},{opacity:1,translate:'0 0'}],{duration:520,delay:Math.min(index*35,105),easing:'cubic-bezier(.16,1,.3,1)',fill:'backwards'});
+   running.set(el,animation);animation.onfinish=()=>{if(running.get(el)===animation)running.delete(el);};
+  });
+ },{threshold:0,rootMargin:'0px 0px -16px 0px'});
+ const scan=()=>{
+  for(const el of pending)if(!el.isConnected){observer.unobserve(el);pending.delete(el);}
+  for(const el of running.keys())if(!el.isConnected)stop(el);
+  grid.querySelectorAll('.emp-card[data-id]').forEach(el=>{if(!seen.has(el.dataset.id)&&!pending.has(el)){pending.add(el);observer.observe(el);}});
+ };
+ new MutationObserver(scan).observe(grid,{childList:true,subtree:true});
+ grid.addEventListener('pointerover',e=>{const el=e.target.closest('.emp-card');if(el)stop(el);});
+ grid.addEventListener('focusin',e=>{const el=e.target.closest('.emp-card');if(el)stop(el);});
+ const cancelAll=()=>{for(const el of running.keys())stop(el);};
+ reduced.addEventListener('change',()=>{if(reduced.matches)cancelAll();});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelAll();});
+ scan();
+})();
+</script>
+<!-- PV-MOTION-END -->
+<!-- PV-REPORTING-START -->
+<style id="pv-reporting">/* Scoped to Organization. Existing Directory cards and profiles are untouched. */
+#orgView{--org-ink:var(--ink-900,var(--text-primary));--org-secondary:var(--ink-700,var(--text-secondary));--org-line:var(--glass-hairline,var(--border-subtle));--org-surface:var(--surface-0);}
+#orgView .org-wrap{grid-template-columns:minmax(0,1fr) 320px;gap:24px;}
+#orgView .org-card{background:var(--org-surface);border:1px solid var(--org-line);border-radius:18px;padding:24px;box-shadow:none;}
+#orgView .org-card h3{font-size:20px;line-height:1.25;letter-spacing:-.5px;text-transform:none;color:var(--org-ink);font-weight:650;margin:0 0 12px;}
+#orgView .org-card h3:after{display:none;}
+#orgView .org-count{font-size:12px;color:var(--org-secondary);font-weight:400;}
+#orgView .org-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--org-line);}
+#orgView .org-toolbar p{margin:0;color:var(--org-secondary);font-size:12px;}
+#orgView .org-toolbar p span{margin:0 6px;}
+#orgView .org-toolbar>div{display:flex;gap:6px;flex-shrink:0;}
+#orgView .org-toolbar button{font:inherit;font-size:12px;padding:8px 10px;min-height:34px;border:1px solid var(--org-line);border-radius:8px;background:var(--fill-soft,var(--surface-1));color:var(--org-ink);cursor:pointer;}
+#orgView .org-outline{max-height:66vh;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;padding:2px 6px 12px 0;overscroll-behavior:contain;}
+#orgView .org-row{min-height:62px;padding:5px 8px;gap:6px;border-radius:10px;transition:background .18s ease;}
+#orgView .org-row:hover{background:var(--fill-soft,var(--surface-1));}
+#orgView .org-row.is-focus{outline:none;background:rgba(56,189,210,.12);box-shadow:inset 0 0 0 1px rgba(56,189,210,.25);}
+#orgView .org-node-btn{gap:12px;padding:4px;}
+#orgView .org-toggle{width:28px;height:32px;border:0;background:transparent;border-radius:8px;color:var(--org-secondary);}
+#orgView .org-av{width:34px;height:34px;border-radius:10px;background:var(--fill-soft,var(--surface-1));color:var(--org-ink);font-size:11px;font-weight:650;}
+#orgView .org-name{font-size:14px;line-height:1.35;font-weight:600;color:var(--org-ink);}
+#orgView .org-meta{font-size:12px;line-height:1.5;color:var(--org-secondary);}
+#orgView .org-meta .dept-badge{background:transparent!important;border:0!important;padding:0 0 0 5px;font-weight:500;font-size:10px;}
+#orgView .org-children{margin-left:21px;padding-left:12px;border-left:1px solid var(--org-line);}
+#orgView .org-tags .rel-tag{font-size:9px;font-weight:500;text-transform:none;letter-spacing:0;border:0;background:var(--fill-soft,var(--surface-1));color:var(--org-secondary);padding:4px 7px;}
+#orgView .org-reports-n{background:transparent;border:0;color:var(--org-secondary);font-size:12px;min-width:28px;text-align:right;}
+#orgView .org-ext-head{padding:8px 0 10px;}
+#orgView .org-ext-head .person-chip{background:transparent;border:0;padding:0;font-size:13px;color:var(--org-secondary);}
+#orgView .org-ext-head .rel-tag{font-size:9px;text-transform:none;font-weight:400;border:0;background:var(--fill-soft,var(--surface-1));}
+#orgView .org-side{position:sticky;top:96px;}
+#orgView .org-side .org-card{max-height:76vh;overflow:auto;scrollbar-width:thin;}
+#orgView .org-person-initials{width:48px;height:48px;border-radius:14px;background:var(--fill-soft,var(--surface-1));color:var(--org-ink);display:grid;place-items:center;font-weight:650;font-size:18px;margin-bottom:16px;}
+#orgView .org-focus-name{font-size:21px;line-height:1.2;letter-spacing:-.5px;color:var(--org-ink);}
+#orgView .org-focus-role{font-size:12px;line-height:1.6;color:var(--org-secondary);margin:8px 0 24px;}
+#orgView .org-side .dx-label{font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--org-ink);margin:20px 0 8px;}
+#orgView .org-side .chip-wrap{display:flex;flex-direction:column;align-items:stretch;gap:0;}
+#orgView .org-side .person-chip{display:flex;width:100%;justify-content:flex-start;white-space:normal;text-align:left;border:0;border-bottom:1px solid var(--org-line);border-radius:0;background:transparent;padding:10px 0;color:var(--org-ink);font-size:12px;line-height:1.4;}
+#orgView .org-side .person-chip:hover{background:var(--fill-soft,var(--surface-1));}
+#orgView .org-side .dx-foot{position:sticky;bottom:-24px;background:var(--org-surface);padding:16px 0 4px;margin-top:24px;border-top:1px solid var(--org-line);}
+#orgView .org-intro p,#orgView .org-empty,#orgView .org-key{font-size:12px;line-height:1.7;color:var(--org-secondary);}
+#orgView .org-guide{margin-top:28px;}#orgView .org-guide strong{font-size:12px;color:var(--org-ink);}
+#orgView .org-guide p{margin:5px 0 20px;}#orgView .org-key summary{cursor:pointer;min-height:32px;}
+#orgView :is(button,summary):focus-visible{outline:2px solid var(--brand-cyan);outline-offset:2px;}
+@media(max-width:1000px){#orgView .org-wrap{grid-template-columns:minmax(0,1fr) 280px;gap:16px;}#orgView .org-card{padding:18px;}}
+@media(max-width:760px){#orgView .org-wrap{grid-template-columns:minmax(0,1fr);}#orgView .org-side{position:static;order:0;}#orgView .org-card{padding:16px;}#orgView .org-toolbar{align-items:flex-start;flex-direction:column;}#orgView .org-outline{max-height:58vh;}#orgView .org-tags{flex-wrap:wrap;max-width:80px;}#orgView .org-children{margin-left:12px;padding-left:5px;}#orgView .org-meta{white-space:normal;}#orgView .org-name{white-space:normal;}#orgView .org-side .org-card{max-height:none;}}
+@media(prefers-reduced-motion:reduce){#orgView .org-row{transition:none;}}
+
+#orgView .org-toolbar button:disabled{opacity:.4;cursor:default;}
+
+</style>
+<script id="pv-reporting-script">/* Reporting presentation only; buildOrg and relationship records remain authoritative. */
+(()=>{
+ const originalRender=renderOrgView;
+ const originalSide=orgSidePanelHTML;
+ orgSidePanelHTML=function(){
+  if(!orgFocusId||!byId(orgFocusId))return `<div class="org-card org-intro"><h3>Your organization,<br>at a glance.</h3><p>Select a colleague to explore their reporting relationships.</p><div class="org-guide"><strong>Explore a team</strong><p>Use the chevrons to expand a manager’s direct reports.</p><strong>Follow a relationship</strong><p>Select a manager or direct report to move through the organization.</p></div><details class="org-key"><summary>Relationship key</summary><p>Shared reporting means a person has more than one recorded manager. Service leadership and temporary supervision are shown separately.</p><p>Arrow keys navigate the outline. Enter selects a person.</p></details></div>`;
+  const e=byId(orgFocusId);let html=originalSide();
+  const initials=escH(empInitials(e));
+  html=html.replace('<div class="org-focus-name">',`<div class="org-person-initials" aria-hidden="true">${initials}</div><div class="org-focus-name">`);
+  return html;
+ };
+ renderOrgView=function(){
+  const previousScroll=document.querySelector('#orgView .org-outline')?.scrollTop||0;
+  originalRender();if(dirView!=='org')return;
+  const host=document.getElementById('orgView'),main=host?.querySelector('.org-wrap>div');if(!main)return;
+  const panel=main.querySelector('.org-card');if(!panel)return;
+  panel.classList.add('org-hierarchy');
+  const h=panel.querySelector('h3');if(h)h.innerHTML='Reporting structure';
+  const toolbar=document.createElement('div');toolbar.className='org-toolbar';
+  toolbar.innerHTML=`<p>${EMPLOYEES.length-unassignedCountAll()} people connected <span aria-hidden="true">·</span> ${Object.keys(ORG.children).filter(id=>(ORG.children[id]||[]).length).length} managers</p><div><button type="button" data-org-action="expand">Expand all</button><button type="button" data-org-action="collapse">Collapse all</button></div>`;
+  h?.after(toolbar);
+  toolbar.querySelector('[data-org-action="expand"]').onclick=()=>{Object.keys(ORG.children).forEach(id=>{if(ORG.children[id].length)orgExpanded.add(Number(id));});renderOrgView();host.querySelector('[data-org-action="expand"]')?.focus();};
+  toolbar.querySelector('[data-org-action="collapse"]').onclick=()=>{orgExpanded.clear();orgFocusId=null;renderOrgView();host.querySelector('[data-org-action="collapse"]')?.focus();};
+  const collapse=toolbar.querySelector('[data-org-action="collapse"]');collapse.disabled=!!orgQuery;if(orgQuery)collapse.title='Clear search to collapse all';
+  const outline=document.createElement('div');outline.className='org-outline';outline.setAttribute('aria-label','Reporting hierarchy');
+  [...panel.children].filter(el=>el!==h&&el!==toolbar).forEach(el=>outline.appendChild(el));panel.appendChild(outline);outline.scrollTop=previousScroll;
+  host.querySelectorAll('.org-node-btn').forEach(el=>{el.setAttribute('aria-label',el.getAttribute('aria-label').replace('. Open profile','. Show reporting relationships'));});
+  host.querySelectorAll('.rel-tag.co').forEach(el=>{el.textContent='Shared reporting';});
+  host.querySelectorAll('.org-row').forEach(row=>{const item=row.closest('.org-node');if(item)item.setAttribute('aria-selected',row.classList.contains('is-focus')?'true':'false');});
+ };
+ orgToggle=function(id){if(orgExpanded.has(id)){orgExpanded.delete(id);if(orgFocusId&&orgAncestors(orgFocusId).has(id))orgFocusId=id;}else orgExpanded.add(id);renderOrgView();document.querySelector(`#orgView .org-row[data-id="${id}"] .org-toggle`)?.focus({preventScroll:true});};
+ orgSelect=function(id){const scroll=document.querySelector('#orgView .org-outline')?.scrollTop||0;orgFocusId=id;renderOrgView();const outline=document.querySelector('#orgView .org-outline');if(outline)outline.scrollTop=scroll;focusOrgBtn(id);};
+ const originalKey=orgKey;orgKey=function(event,id){if(event.key==='ArrowLeft'&&orgExpanded.has(id)||event.key==='ArrowRight'&&!orgExpanded.has(id)&&(ORG.children[id]||[]).length){event.preventDefault();orgToggle(id);focusOrgBtn(id);}else originalKey(event,id);};
+ if(dirView==='org')renderOrgView();
+})();
+</script>
+<!-- PV-REPORTING-END -->
+<!-- PV-ORGCHART-START -->
+<style>#orgView .oc-shell{border:1px solid var(--border);border-radius:22px;background:var(--surface-0);overflow:hidden;color:var(--text-primary)}
+.oc-header{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:30px 32px 22px}.oc-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);font-weight:600}.oc-header h2{font-size:28px;font-weight:600;letter-spacing:-.8px;margin:8px 0}.oc-header p,.oc-side>p{font-size:13px;line-height:1.6;color:var(--text-secondary);margin:0}.oc-controls{display:flex;gap:8px;align-items:center}.oc-controls button{border:1px solid var(--border);border-radius:9px;background:var(--surface-1);color:var(--text-primary);height:36px;min-width:36px;cursor:pointer}.oc-controls span{font-size:12px;min-width:40px;text-align:center}.oc-legend{display:flex;gap:24px;flex-wrap:wrap;padding:0 32px 22px;font-size:11px;color:var(--text-secondary)}.oc-legend span{display:flex;gap:7px;align-items:center}.oc-legend i{width:24px;border-top:1px solid var(--text-muted)}.oc-legend i.shared{border-top:2px dashed var(--brand-cyan)}.oc-layout{display:grid;grid-template-columns:minmax(0,1fr) 285px;border-top:1px solid var(--border)}.oc-viewport{overflow:auto;max-height:76vh;background:var(--bg);scrollbar-width:thin}.oc-size{position:relative;min-width:0}.oc-canvas{position:relative;width:2130px;height:1260px;transform-origin:top left}.oc-lines{position:absolute;inset:0;pointer-events:none}.oc-lines path{fill:none;stroke:var(--text-muted);stroke-width:1.4;opacity:.6}.oc-lines path.shared{stroke:var(--brand-cyan);stroke-dasharray:5 5;opacity:.8}.oc-card{position:absolute;width:250px;min-height:104px;display:flex;gap:12px;align-items:flex-start;padding:19px 16px;text-align:left;background:var(--surface-0);color:var(--text-primary);border:1px solid var(--border-strong);border-radius:15px;box-shadow:0 4px 12px #00000008;cursor:pointer;transition:transform .2s ease,border-color .2s ease}.oc-card:hover{transform:translateY(-2px);border-color:var(--brand-cyan)}.oc-card.selected,.oc-card.match{border-color:var(--brand-cyan);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand-cyan) 14%,transparent)}.oc-initials{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;background:var(--surface-2);border-radius:10px;font-size:11px;font-weight:600}.oc-copy{display:flex;flex-direction:column;gap:6px;min-width:0}.oc-copy strong{font-size:14px;line-height:1.3;font-weight:600;letter-spacing:-.2px}.oc-copy>span{font-size:11px;line-height:1.5;color:var(--text-secondary)}.oc-copy small{font-size:9px;color:var(--text-muted);line-height:1.4}.oc-arrow{margin-left:auto;color:var(--text-muted)}.oc-band{position:absolute;font-size:11px;font-weight:600;line-height:16px;color:var(--text-muted);letter-spacing:.05em;background:var(--bg);padding-right:12px}.oc-side{padding:26px 22px;border-left:1px solid var(--border);max-height:76vh;overflow:auto}.oc-side h3{font-size:22px;line-height:1.2;letter-spacing:-.5px;margin:12px 0 8px}.oc-side h4{font-size:11px;margin:26px 0 9px;font-weight:600}.oc-relation{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;width:100%;background:transparent;border:0;border-bottom:1px solid var(--border);text-align:left;color:var(--text-primary);font:inherit;font-size:12px;cursor:pointer}.oc-relation:hover{color:var(--brand-cyan)}.oc-relation small{display:block;margin-top:5px;color:var(--text-secondary);font-size:10px}.oc-profile{margin-top:24px}.oc-side .oc-note{font-size:11px;margin-top:22px;color:var(--text-muted)}.oc-roster{margin-top:20px}.oc-shell button:focus-visible,.oc-viewport:focus-visible{outline:2px solid var(--brand-cyan);outline-offset:3px}@media(max-width:850px){.oc-layout{grid-template-columns:1fr}.oc-side{border-left:0;border-top:1px solid var(--border);max-height:450px}.oc-header{padding:22px;align-items:flex-start;flex-direction:column}.oc-legend{padding:0 22px 18px;gap:12px}.oc-viewport{max-height:65vh}}@media(prefers-reduced-motion:reduce){.oc-card{transition:none}.oc-card:hover{transform:none}}
+</style>
+<script>/* Draft-only presentation of the proposed organization. No roster writes. */
+(()=>{
+let selected='joe',scale=1;
+const find=n=>EMPLOYEES.find(e=>e.name===n);
+const draftAdditions=[{"id":74,"name":"Nelson Diaz","title":"Facility Manager","dept":"Administration","phone":"(475) 731-9407","email":"Nelson.Diaz@vca.com","initials":"ND","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Kristina Staff","ext":"606","managerIds":[42,54]},{"id":101,"dept":"","email":"","specialty":"","bio":"","education":"","certs":"","name":"Gloria Rios","title":"Hospital Assistant","phone":"","reportsTo":"Nelson Diaz","initials":"GR","managerIds":[74]},{"id":102,"name":"Jonathan Maces","initials":"JM","email":"","specialty":"","bio":"","education":"","certs":"","title":"Client Service Representative","dept":"Client Services","phone":"(475) 731-7603","reportsTo":"Elizabeth DeLauri","managerIds":[36]},{"id":103,"name":"Joe Beck","email":"Joe.Beck@vca.com","phone":"(845) 325-2935","specialty":"","bio":"","education":"","certs":"","reportsTo":"","title":"Regional Operations Director","dept":"Administration","initials":"JB"},{"id":104,"name":"Sage Pomianowski","email":"","phone":"(203) 667-6267","specialty":"","bio":"","education":"","certs":"","reportsTo":"Elizabeth DeLauri","title":"Client Service Representative","dept":"Client Services","initials":"SP","managerIds":[36]},{"id":28,"name":"Danielle Infante","title":"Hospital Assistant","dept":"Client Services","phone":"(203) 996-6235","email":"Danielle.Infante@vca.com","initials":"DI","specialty":"","bio":"","education":"","certs":"","reportsTo":"Nelson Diaz","managerIds":[74]},{"id":13,"name":"Ann LeStrange","title":"Surgery Prep Assistant","dept":"Surgery","phone":"(475) 231-0013","email":"Ann.LeStrange@vca.com","initials":"AL","specialty":"","bio":"","education":"","certs":"","reportsTo":"Rachel Pieger","managerIds":[77]},{"id":87,"name":"Stephanie Cseh","title":"Head Purchaser · Technician","dept":"Administration","phone":"(475) 306-2821","email":"Stephanie.Cseh@vca.com","initials":"SC","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Kristina Staff & Brandy Fellin & Kimberly Hulme","ext":"410","managerIds":[42,54,18,52]},{"id":48,"name":"Julie Humiston","title":"Office Manager","dept":"Administration","phone":"(203) 648-3844","email":"Julie.Humiston@vca.com","initials":"JH","specialty":"","bio":"","education":"","certs":"","reportsTo":"Kristina Staff & Gregory Lalka","ext":"408","managerIds":[54,42]},{"id":45,"name":"Jeffrey Sorraco","title":"Regional Referral Manager","dept":"Administration","phone":"(203) 836-7425","email":"Jeffrey.Sorraco@vca.com","initials":"JS","specialty":"","bio":"","education":"","certs":"","reportsTo":"Joe Beck","managerIds":[103]},{"id":51,"name":"Kelley Harpin","title":"Veterinarian Lead","dept":"Administration","phone":"(860) 459-4512","email":"Kelley.Harpin@vca.com","initials":"KH2","specialty":"","bio":"","education":"B.A., Mount Holyoke College; VMD, University of Pennsylvania School of Veterinary Medicine","certs":"","reportsTo":"Gregory Lalka & Heather Galano","ext":"301","managerIds":[42,1]},{"id":11,"name":"Amber Koch","title":"Emergency Veterinarian","dept":"Emergency Medicine","phone":"(973) 919-0176","email":"Amber.Koch@vca.com","initials":"AK","specialty":"Emergency Medicine","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":14,"name":"Annie Downes","title":"Urgent Care Veterinarian","dept":"Urgent Care","phone":"(617) 733-9624","email":"Annie.Downes@vca.com","initials":"AD","specialty":"Urgent Care","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":15,"name":"Anthony Roccisano","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(347) 351-1320","email":"Anthony.Roccisano@vca.com","initials":"AR","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","ext":"304","managerIds":[42,1,51]},{"id":22,"name":"Chelsea Marko","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(203) 415-6923","email":"Chelsea.Marko@vca.com","initials":"CM","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":27,"name":"Danelle Provost","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(860) 334-4349","email":"Danelle.Provost@vca.com","initials":"DP","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":30,"name":"Danielle Splawski","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(818) 281-2276","email":"Danielle.Splawski@vca.com","initials":"DS","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":32,"name":"Dawn Nolte","title":"Surgeon","dept":"Surgery","phone":"(646) 872-1242","email":"Dawn.Nolte@vca.com","initials":"DN","specialty":"Surgery","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","ext":"523","managerIds":[42,1,51]},{"id":35,"name":"Dianne Kittrell","title":"Internist","dept":"Internal Medicine","phone":"(917) 558-6653","email":"Dianne.Kittrell@vca.com","initials":"DK","specialty":"Internal Medicine","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":46,"name":"Jessica Giannetto","title":"Surgeon","dept":"Surgery","phone":"(860) 483-1333","email":"Jessica.Giannetto@vca.com","initials":"JG","specialty":"Surgery","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","ext":"522","managerIds":[42,1,51]},{"id":49,"name":"Kate Taikowski","title":"Oncologist","dept":"Oncology","phone":"(203) 218-0301","email":"Kate.Taikowski@vca.com","initials":"KT","specialty":"Oncology","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":50,"name":"Kate Walsh","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(618) 972-8780","email":"Kate.Walsh@vca.com","initials":"KW","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":53,"name":"Klaudia Polak","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(203) 536-1438","email":"Klaudia.Polak@vca.com","initials":"KP","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":55,"name":"Larry Berkwitt","title":"Internist","dept":"Internal Medicine","phone":"(203) 926-8580","email":"Larry.Berkwitt@vca.com","initials":"LB","specialty":"Internal Medicine","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":63,"name":"Madison Roche","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(980) 622-9501","email":"Madison.Roche@vca.com","initials":"MR","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":66,"name":"Mara Kraenzlin","title":"Criticalist","dept":"Emergency Medicine","phone":"(914) 819-2950","email":"Mara.Kraenzlin@vca.com","initials":"MK","specialty":"Critical Care","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","ext":"302","managerIds":[42,1,51]},{"id":67,"name":"Marissa Marinaccio","title":"Emergency Veterinarian","dept":"Emergency Medicine","phone":"(914) 588-7266","email":"Marissa.Marinaccio@vca.com","initials":"MM2","specialty":"Emergency Medicine","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":70,"name":"Michael McCann","title":"Emergency Veterinarian","dept":"Emergency Medicine","phone":"(203) 521-2510","email":"Michael.McCann@vca.com","initials":"MM","specialty":"Emergency Medicine","bio":"","education":"DVM, Purdue University School of Veterinary Medicine (2007)","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","ext":"301","managerIds":[42,1,51]},{"id":71,"name":"Miranda Stone","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(701) 247-3273","email":"Miranda.Stone@vca.com","initials":"MS","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":72,"name":"Morgan Vrana","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(724) 766-4190","email":"Morgan.Vrana@vca.com","initials":"MV","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":80,"name":"Samantha Corrado","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(914) 582-7260","email":"Samantha.Corrado@vca.com","initials":"SC","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]},{"id":82,"name":"Sarah Schiff","title":"Emergency Veterinarian","dept":"Emergency Medicine","phone":"(413) 441-8780","email":"Sarah.Schiff@vca.com","initials":"SS","specialty":"Emergency Medicine","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","ext":"303","managerIds":[42,1,51]},{"id":83,"name":"Shaylan Meyer","title":"Criticalist","dept":"Emergency Medicine","phone":"(631) 707-4097","email":"Shaylan.Meyer@vca.com","initials":"SM","specialty":"Critical Care","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","ext":"302","managerIds":[42,1,51]},{"id":90,"name":"Tara Fowler","title":"Relief Veterinarian","dept":"Emergency Medicine","phone":"(860) 319-1333","email":"Tara.Fowler@vca.com","initials":"TF","specialty":"","bio":"","education":"","certs":"","reportsTo":"Gregory Lalka & Heather Galano & Kelley Harpin","managerIds":[42,1,51]}];
+for(const rec of draftAdditions){const current=find(rec.name);if(current)Object.assign(current,rec);else EMPLOYEES.push({...rec});}
+const alexa=find('Alexa Marucci');if(alexa){alexa.title='Liaison';alexa.reportsTo='Elizabeth DeLauri';}
+const malachi=find('Malachi Quinones');if(malachi)malachi.title='Technician Assistant Lead';
+const people={joe:find('Joe Beck'),heather:find('Heather Galano'),gregory:find('Gregory Lalka'),kristina:find('Kristina Staff'),elizabeth:find('Elizabeth DeLauri'),brandy:find('Brandy Fellin'),kimberly:find('Kimberly Hulme'),rachel:find('Rachel Pieger'),daniel:find('Daniel Giordano'),nelson:find('Nelson Diaz'),gloria:find('Gloria Rios'),danielle:find('Danielle Infante'),julie:find('Julie Humiston'),stephanie:find('Stephanie Cseh'),kelley:find('Kelley Harpin')};
+const titles={daniel:'Liaison · Internship Program Coordinator',heather:'Medical Director & Internship Director',elizabeth:'Client Services Manager'};
+const groups={interns:()=>EMPLOYEES.filter(e=>e.dept==='Interns'),clients:()=>EMPLOYEES.filter(e=>/client service representatives?/i.test(e.title||'')),liaisons:()=>EMPLOYEES.filter(e=>e.id===people.daniel?.id||/liaison/i.test(e.title||'')),techs:()=>EMPLOYEES.filter(e=>/technician|\btech\b/i.test(e.title||'')&&!/supervisor|assistant/i.test(e.title||'')&&e.dept!=='Interns'),assistants:()=>EMPLOYEES.filter(e=>/technician assistant|surgery prep assistant/i.test(e.title||'')&&e.dept!=='Interns'),medical:()=>EMPLOYEES.filter(e=>e.name!=='Kelley Harpin'&&e.dept!=='Interns'&&/veterinarian|surgeon|internist|oncologist|criticalist/i.test(e.title||'')&&!/coordinator/i.test(e.title||''))};
+const labels={assistants:'Technician & Surgery Assistants',medical:'Veterinarians & Specialists',interns:'Interns',clients:'Client Service Representatives',liaisons:'Liaisons',techs:'Technicians'};
+const managers={heather:['joe'],gregory:['joe'],kristina:['joe'],elizabeth:['gregory','kristina'],brandy:['gregory','kristina'],kimberly:['gregory','kristina'],rachel:['gregory','kristina'],daniel:['elizabeth'],interns:['heather','daniel'],clients:['elizabeth'],liaisons:['elizabeth'],techs:['brandy','kimberly'],assistants:['rachel'],nelson:['gregory','kristina'],gloria:['nelson'],danielle:['nelson'],julie:['gregory','kristina'],stephanie:['gregory','kristina','brandy','kimberly'],kelley:['gregory','heather'],medical:['gregory','heather','kelley']};
+const pos={joe:[610,24],heather:[60,186],gregory:[610,186],kristina:[1160,186],elizabeth:[340,374],brandy:[740,540],kimberly:[1010,540],rachel:[1280,540],clients:[60,724],liaisons:[340,724],daniel:[340,922],techs:[875,724],interns:[340,1120],assistants:[1280,724],nelson:[1560,540],gloria:[1560,724],danielle:[1560,922],julie:[1840,540],stephanie:[1280,922],kelley:[60,374],medical:[60,922]};
+const title=k=>titles[k]||people[k]?.title||'';
+const name=k=>people[k]?.name||labels[k]||k;
+function card(k){const p=people[k],g=groups[k]?.(),[x,y]=pos[k];const match=orgQuery&&[name(k),title(k),...(g||[]).map(e=>e.name)].join(' ').toLowerCase().includes(orgQuery);return `<button type="button" class="oc-card ${selected===k?'selected':''} ${match?'match':''}" style="left:${x}px;top:${y}px" data-oc="${k}" aria-pressed="${selected===k}"><span class="oc-initials">${g?'↳':escH(empInitials(p))}</span><span class="oc-copy"><strong>${escH(name(k))}</strong><span>${g?g.length+' colleagues · View team':escH(title(k))}</span>${k==='gregory'?'<small>Hospital-wide oversight</small>':k==='heather'?'<small>Medical oversight</small>':''}${(managers[k]||[]).length>1?'<small>Shared Reporting</small>':''}</span><span class="oc-arrow" aria-hidden="true">›</span></button>`;}
+function lines(){
+const line=(d,key)=>`<path data-reporting="${key}" class="${(managers[key]||[]).length>1?'shared':''}" d="${d}"/>`;
+let out='';
+out+=line('M735 128 V160 H185 V186','heather');
+out+=line('M735 160 V186','gregory');
+out+=line('M735 160 H1285 V186','kristina');
+out+=line('M735 290 V326 H1285 V290 M1010 326 V350 H465 V374','elizabeth');
+out+=line('M1010 326 V506 H865 V540','brandy');
+out+=line('M1010 506 H1135 V540','kimberly');
+out+=line('M1135 506 H1405 V540','rachel');
+out+=line('M1405 506 H1685 V540','nelson');
+out+=line('M1405 644 V724','assistants');
+out+=line('M1685 644 V724','gloria');
+out+=line('M465 478 V680 H185 V724','clients');
+out+=line('M465 680 V724','liaisons');
+out+=line('M465 680 H620 V898 H465 V922','daniel');
+out+=line('M865 644 V690 H1135 V644 M1000 690 V724','techs');
+out+=line('M465 1026 V1120','interns');
+out+=line('M185 290 V310 H30 V1096 H465 V1120','interns');
+
+out+=line('M1010 326 V348 H1965 V540','julie');
+out+=line('M185 290 V374 M735 290 V310 H185','kelley');
+out+=line('M185 478 V620 H12 V898 H185 V922 M735 290 V310 H12 V620','medical');
+out+=line('M1810 592 H1834 V974 H1810','danielle');
+out+=line('M1010 326 V348 H1544 V890 H1405 V922 M865 644 V862 H1405 V890 M1135 644 V862','stephanie');
+return `<svg class="oc-lines" width="2130" height="1260" aria-hidden="true">${out}</svg>`;}
+function side(){const k=selected,p=people[k],g=groups[k]?.();const parents=managers[k]||[];const children=Object.keys(managers).filter(c=>managers[c].includes(k));const link=c=>`<button type="button" class="oc-relation" data-oc="${c}"><span>${escH(name(c))}</span><span aria-hidden="true">›</span></button>`;return `<aside class="oc-side"><div class="oc-eyebrow">${g?'Team':'Selected colleague'}</div><h3>${escH(name(k))}</h3><p>${g?g.length+' colleagues':escH(title(k))}</p>${k==='gregory'?'<h4>Scope of Leadership</h4><p>Oversees the hospital as a whole and leads non-physician staff. Heather leads the doctors at the same leadership level.</p>':k==='heather'?'<h4>Scope of Leadership</h4><p>Oversees the doctors alongside Gregory, who has hospital-wide oversight. Both oversee Kelley Harpin, Veterinarian Lead.</p>':''}${parents.length?'<h4>'+(parents.length>1?'Shared Reporting':'Reports to')+'</h4>'+parents.map(link).join(''):''}${children.length?'<h4>Direct teams & reports</h4>'+children.map(link).join(''):''}${g?'<div class="oc-roster">'+g.map(e=>`<button type="button" class="oc-relation" data-profile="${e.id}"><span>${escH(e.name)}<small>${escH(e.id===people.daniel?.id?titles.daniel:e.title||'')}</small></span><span aria-hidden="true">›</span></button>`).join('')+'</div>':''}${k==='nelson'?'<h4>Contact</h4><a class="oc-relation" href="tel:+14757319407">(475) 731-9407</a>':''}${k==='joe'?'<h4>Contact</h4><a class="oc-relation" href="tel:+18453252935">(845) 325-2935</a><a class="oc-relation" href="mailto:Joe.Beck@vca.com">Joe.Beck@vca.com</a>':''}${p?.id?`<button class="dx-btn primary oc-profile" type="button" data-profile="${p.id}">Open profile</button>`:''}${k==='stephanie'?'<h4>Head Purchaser</h4><p>Reports to Gregory Lalka and Kristina Staff.</p><h4>Technician</h4><p>Reports to Brandy Fellin and Kimberly Hulme.</p>':''}${['brandy','kimberly'].includes(k)?'<p class="oc-note">Positioned below client services management; reporting lines connect to hospital leadership.</p>':''}</aside>`;}
+renderOrgView=function(){if(dirView!=='org')return;const host=document.getElementById('orgView');if(!host)return;host.innerHTML=`<section class="oc-shell"><header class="oc-header"><div><div class="oc-eyebrow">Shoreline · Organization</div><h2>Reporting structure</h2><p>People, leadership, and the teams they support.</p></div><div class="oc-controls"><button type="button" data-zoom="out" aria-label="Zoom out">−</button><span>${Math.round(scale*100)}%</span><button type="button" data-zoom="in" aria-label="Zoom in">+</button><button type="button" data-zoom="fit">Fit</button></div></header><div class="oc-legend"><span><i></i>Reports to</span><span><i class="shared"></i>Shared Reporting</span><span>Card position indicates role level</span></div><div class="oc-layout"><div class="oc-viewport" tabindex="0" aria-label="Organization chart. Scroll horizontally to explore."><div class="oc-size" style="width:${2130*scale}px;height:${1260*scale}px"><div class="oc-canvas" style="transform:scale(${scale})">${lines()}<div class="oc-band" style="left:60px;top:136px">Hospital Leadership</div><div class="oc-band" style="left:60px;top:650px">Client Services</div><div class="oc-band" style="left:60px;top:850px">Medical Team</div><div class="oc-band" style="left:1280px;top:850px">Purchasing &amp; Clinical Support</div><div class="oc-band" style="left:1840px;top:480px">Administrative Support</div><div class="oc-band" style="left:740px;top:480px">Technician Supervision</div><div class="oc-band" style="left:1560px;top:480px">Facilities</div><div class="oc-band" style="left:340px;top:868px">Internship Program</div>${Object.keys(pos).map(card).join('')}</div></div></div>${side()}</div></section>`;host.querySelectorAll('[data-oc]').forEach(b=>b.onclick=()=>{const v=host.querySelector('.oc-viewport'),x=v.scrollLeft,y=v.scrollTop;selected=b.dataset.oc;renderOrgView();const next=host.querySelector('.oc-viewport');next.scrollLeft=x;next.scrollTop=y;host.querySelector(`.oc-card[data-oc="${selected}"]`)?.focus({preventScroll:true});});host.querySelectorAll('[data-profile]').forEach(b=>b.onclick=()=>openDrawer(Number(b.dataset.profile)));host.querySelectorAll('[data-zoom]').forEach(b=>b.onclick=()=>{scale=b.dataset.zoom==='fit'?Math.max(.35,Math.min(1,host.querySelector('.oc-viewport').clientWidth/2130)):Math.max(.35,Math.min(1.25,scale+(b.dataset.zoom==='in'?.1:-.1)));renderOrgView();});};
+const previousFocus=orgFocus;orgFocus=function(id){const k=Object.keys(people).find(k=>people[k]?.id===id)||Object.keys(groups).find(k=>groups[k]().some(e=>e.id===id));if(k){selected=k;setView('org');}else openDrawer(id);};
+
+function formatPhone(value){const digits=String(value||'').replace(/\D/g,'');const n=digits.length===11&&digits[0]==='1'?digits.slice(1):digits;return n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):value;}
+const normalizePhones=()=>EMPLOYEES.forEach(e=>{e.phone=formatPhone(e.phone);});
+normalizePhones();
+const previousDirectoryRender=render;render=function(...args){normalizePhones();return previousDirectoryRender.apply(this,args);};
+const previousProfileOpen=openDrawer;openDrawer=function(...args){normalizePhones();return previousProfileOpen.apply(this,args);};
+if(dirView==='directory')render();
+if(dirView==='org')renderOrgView();
+})();
+</script>
+<!-- PV-ORGCHART-END -->
 </body>
 </html>
 
