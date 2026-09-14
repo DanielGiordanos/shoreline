@@ -207,6 +207,9 @@ body:not(.dark) .fs-search .fs-bar:focus-within{box-shadow:0 1px 3px rgba(60,80,
 }
 .results-count{font-size:12px;color:var(--text-muted);font-weight:500;}
 .results-count strong{color:var(--text-primary);}
+/* Hide the "N of N team members · N regional contact" line; keep the view toggle right-aligned. */
+.results-count{display:none!important;}
+.results-bar .results-right{margin-left:auto;}
 
 /* ═══ FAVORITES SECTION ═══ */
 .fav-section{margin-bottom:24px;}
@@ -1711,7 +1714,7 @@ body.dark .pv-btn,body.dark .pv-metric,body.dark .pv-input{background:#0e1628;co
 body.dark .pv-log a{color:#70d8eb;}
 </style></head>
 <body>
-<script>/* Apply saved theme BEFORE first paint so the logo (and everything else) renders in the correct theme immediately — no light→dark flash on refresh. Mirrors Flow's paint-correct-on-first-frame behavior. */(function(){try{var s=localStorage.getItem('darkMode');if(s==='1'||s==='payroll_1')document.body.classList.add('dark');}catch(e){}})();</script>
+<script>/* Pravix shared theme — carries across every pravix.app page via a domain-scoped cookie; defaults to dark. Applied before first paint (no flash). */(function(){try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');}catch(e){document.body.classList.add('dark');}})();</script>
 
 <div class="bg-orb-1"></div>
 <div class="bg-orb-2"></div>
@@ -4135,11 +4138,8 @@ function deleteContact(id, e) {
   showToast(`${emp.name} removed`);
 }
 
-// ── DARK MODE ──
-(function(){
-  const s = localStorage.getItem('darkMode');
-  if(s==='1'||s==='payroll_1') document.body.classList.add('dark');
-})();
+// ── DARK MODE ── (shared pravix.app theme; the .pravix.app cookie is source of truth, default dark)
+(function(){try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);document.body.classList.toggle('dark',((m&&m[1])||'dark')==='dark');}catch(e){}})();
 
 // ── Premium idle search caret (ported from Flow) — luminous pill + hidden native
 //    caret, shown only while the search field is focused AND empty. Event-driven.
@@ -4154,7 +4154,9 @@ function deleteContact(id, e) {
 })();
 function toggleDark() {
   document.body.classList.toggle('dark');
-  localStorage.setItem('darkMode', document.body.classList.contains('dark') ? '1' : '0');
+  var _dk = document.body.classList.contains('dark');
+  try{ document.cookie = 'pvx_theme='+(_dk?'dark':'light')+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax'; }catch(e){}
+  localStorage.setItem('darkMode', _dk ? '1' : '0');
   updateDeptBadges();  // dept badges carry inline theme colors baked at build time; refresh them (~3ms)
   // No full re-render: all other theme colors are CSS-driven (body.dark + CSS vars),
   // so the flip stays instant. Re-rendering 100 cards here was the old toggle lag.
@@ -7915,7 +7917,7 @@ out+=line('M1810 592 H1834 V974 H1810','danielle');
 out+=line('M1010 326 V348 H1544 V890 H1405 V922 M865 644 V862 H1405 V890 M1135 644 V862','stephanie');
 return `<svg class="oc-lines" width="2130" height="1260" aria-hidden="true">${out}</svg>`;}
 function side(){const k=selected,p=people[k],g=groups[k]?.();const parents=managers[k]||[];const children=Object.keys(managers).filter(c=>managers[c].includes(k));const link=c=>`<button type="button" class="oc-relation" data-oc="${c}"><span>${escH(name(c))}</span><span aria-hidden="true">›</span></button>`;return `<aside class="oc-side"><div class="oc-eyebrow">${g?'Team':'Selected colleague'}</div><h3>${escH(name(k))}</h3><p>${g?g.length+' colleagues':escH(title(k))}</p>${k==='gregory'?'<h4>Scope of Leadership</h4><p>Oversees the hospital as a whole and leads non-physician staff. Heather leads the doctors at the same leadership level.</p>':k==='heather'?'<h4>Scope of Leadership</h4><p>Oversees the doctors alongside Gregory, who has hospital-wide oversight. Both oversee Kelley Harpin, Veterinarian Lead.</p>':''}${parents.length?'<h4>'+(parents.length>1?'Shared Reporting':'Reports to')+'</h4>'+parents.map(link).join(''):''}${children.length?'<h4>Direct teams & reports</h4>'+children.map(link).join(''):''}${g?'<div class="oc-roster">'+g.map(e=>`<button type="button" class="oc-relation" data-profile="${e.id}"><span>${escH(e.name)}<small>${escH(e.id===people.daniel?.id?titles.daniel:e.title||'')}</small></span><span aria-hidden="true">›</span></button>`).join('')+'</div>':''}${k==='nelson'?'<h4>Contact</h4><a class="oc-relation" href="tel:+14757319407">(475) 731-9407</a>':''}${k==='joe'?'<h4>Contact</h4><a class="oc-relation" href="tel:+18453252935">(845) 325-2935</a><a class="oc-relation" href="mailto:Joe.Beck@vca.com">Joe.Beck@vca.com</a>':''}${p?.id?`<button class="dx-btn primary oc-profile" type="button" data-profile="${p.id}">Open profile</button>`:''}${k==='stephanie'?'<h4>Head Purchaser</h4><p>Reports to Gregory Lalka and Kristina Staff.</p><h4>Technician</h4><p>Reports to Brandy Fellin and Kimberly Hulme.</p>':''}${['brandy','kimberly'].includes(k)?'<p class="oc-note">Positioned below client services management; reporting lines connect to hospital leadership.</p>':''}</aside>`;}
-renderOrgView=function(){if(dirView!=='org')return;const host=document.getElementById('orgView');if(!host)return;host.innerHTML=`<section class="oc-shell"><header class="oc-header"><div><div class="oc-eyebrow">Shoreline · Organization</div><h2>Reporting structure</h2><p>People, leadership, and the teams they support.</p></div><div class="oc-controls"><button type="button" data-zoom="out" aria-label="Zoom out">−</button><span>${Math.round(scale*100)}%</span><button type="button" data-zoom="in" aria-label="Zoom in">+</button><button type="button" data-zoom="fit">Fit</button></div></header><div class="oc-legend"><span><i></i>Reports to</span><span><i class="shared"></i>Shared Reporting</span><span>Card position indicates role level</span></div><div class="oc-layout"><div class="oc-viewport" tabindex="0" aria-label="Organization chart. Scroll horizontally to explore."><div class="oc-size" style="width:${2130*scale}px;height:${1260*scale}px"><div class="oc-canvas" style="transform:scale(${scale})">${lines()}<div class="oc-band" style="left:60px;top:136px">Hospital Leadership</div><div class="oc-band" style="left:60px;top:650px">Client Services</div><div class="oc-band" style="left:60px;top:850px">Medical Team</div><div class="oc-band" style="left:1280px;top:850px">Purchasing &amp; Clinical Support</div><div class="oc-band" style="left:1840px;top:480px">Administrative Support</div><div class="oc-band" style="left:740px;top:480px">Technician Supervision</div><div class="oc-band" style="left:1560px;top:480px">Facilities</div><div class="oc-band" style="left:340px;top:868px">Internship Program</div>${Object.keys(pos).map(card).join('')}</div></div></div>${side()}</div></section>`;host.querySelectorAll('[data-oc]').forEach(b=>b.onclick=()=>{const v=host.querySelector('.oc-viewport'),x=v.scrollLeft,y=v.scrollTop;selected=b.dataset.oc;renderOrgView();const next=host.querySelector('.oc-viewport');next.scrollLeft=x;next.scrollTop=y;host.querySelector(`.oc-card[data-oc="${selected}"]`)?.focus({preventScroll:true});});host.querySelectorAll('[data-profile]').forEach(b=>b.onclick=()=>openDrawer(Number(b.dataset.profile)));host.querySelectorAll('[data-zoom]').forEach(b=>b.onclick=()=>{scale=b.dataset.zoom==='fit'?Math.max(.35,Math.min(1,host.querySelector('.oc-viewport').clientWidth/2130)):Math.max(.35,Math.min(1.25,scale+(b.dataset.zoom==='in'?.1:-.1)));renderOrgView();});};
+renderOrgView=function(){if(dirView!=='org')return;const host=document.getElementById('orgView');if(!host)return;host.innerHTML=`<section class="oc-shell"><header class="oc-header"><div><div class="oc-eyebrow">Shoreline · Organization</div><h2>Reporting structure</h2><p>People, leadership, and the teams they support.</p></div><div class="oc-controls"><button type="button" data-zoom="out" aria-label="Zoom out">−</button><span>${Math.round(scale*100)}%</span><button type="button" data-zoom="in" aria-label="Zoom in">+</button><button type="button" data-zoom="fit">Fit</button></div></header><div class="oc-legend"><span><i></i>Reports to</span><span><i class="shared"></i>Shared Reporting</span></div><div class="oc-layout"><div class="oc-viewport" tabindex="0" aria-label="Organization chart. Scroll horizontally to explore."><div class="oc-size" style="width:${2130*scale}px;height:${1260*scale}px"><div class="oc-canvas" style="transform:scale(${scale})">${lines()}<div class="oc-band" style="left:60px;top:136px">Hospital Leadership</div><div class="oc-band" style="left:60px;top:650px">Client Services</div><div class="oc-band" style="left:60px;top:850px">Medical Team</div><div class="oc-band" style="left:1280px;top:850px">Purchasing &amp; Clinical Support</div><div class="oc-band" style="left:1840px;top:480px">Administrative Support</div><div class="oc-band" style="left:740px;top:480px">Technician Supervision</div><div class="oc-band" style="left:1560px;top:480px">Facilities</div><div class="oc-band" style="left:340px;top:868px">Internship Program</div>${Object.keys(pos).map(card).join('')}</div></div></div>${side()}</div></section>`;host.querySelectorAll('[data-oc]').forEach(b=>b.onclick=()=>{const v=host.querySelector('.oc-viewport'),x=v.scrollLeft,y=v.scrollTop;selected=b.dataset.oc;renderOrgView();const next=host.querySelector('.oc-viewport');next.scrollLeft=x;next.scrollTop=y;host.querySelector(`.oc-card[data-oc="${selected}"]`)?.focus({preventScroll:true});});host.querySelectorAll('[data-profile]').forEach(b=>b.onclick=()=>openDrawer(Number(b.dataset.profile)));host.querySelectorAll('[data-zoom]').forEach(b=>b.onclick=()=>{scale=b.dataset.zoom==='fit'?Math.max(.35,Math.min(1,host.querySelector('.oc-viewport').clientWidth/2130)):Math.max(.35,Math.min(1.25,scale+(b.dataset.zoom==='in'?.1:-.1)));renderOrgView();});};
 const previousFocus=orgFocus;orgFocus=function(id){const k=Object.keys(people).find(k=>people[k]?.id===id)||Object.keys(groups).find(k=>groups[k]().some(e=>e.id===id));if(k){selected=k;setView('org');}else openDrawer(id);};
 
 function formatPhone(value){const digits=String(value||'').replace(/\D/g,'');const n=digits.length===11&&digits[0]==='1'?digits.slice(1):digits;return n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):value;}
