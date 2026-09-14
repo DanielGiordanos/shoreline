@@ -426,6 +426,38 @@ body.dark .drawer-action-btn.primary:hover{background:var(--brand-cyan);color:#0
 .drawer-action-btn.secondary{background:var(--surface-1);color:var(--text-secondary);border:1px solid var(--border-subtle);}
 .drawer-action-btn.secondary:hover{background:rgba(77,200,224,0.1);border-color:rgba(77,200,224,0.2);color:var(--brand-cyan);}
 
+/* ===== Flow patient-drawer design applied to the Directory profile drawer ===== */
+.drawer{width:440px;max-width:94vw;background:var(--surface-0)!important;}
+body.dark .drawer{background:#172440!important;border-left-color:var(--glass-border);}
+/* Header: replace the navy gradient hero with Flow's clean, compact head */
+.drawer-hero{background:none!important;padding:22px 22px 18px!important;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border-subtle);flex-shrink:0;}
+body.dark .drawer-hero{background:none!important;}
+.drawer-hero .drawer-avatar-ring{width:52px!important;height:52px!important;box-shadow:0 3px 10px rgba(0,0,0,.10),0 0 0 1px rgba(56,189,210,.10);}
+.drawer-hero .drawer-avatar{font-size:18px!important;}
+.drawer-name-block{min-width:0;flex:1;}
+.drawer-name{font-size:20px!important;font-weight:800!important;color:var(--text-primary)!important;letter-spacing:-.02em!important;margin-bottom:2px!important;line-height:1.06;white-space:normal;}
+.drawer-title{font-size:13px!important;color:var(--text-muted)!important;margin-bottom:0!important;line-height:1.2;}
+.dh-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;}
+/* Close button: top-right, Flow rounded-square, rotates on hover */
+.drawer-close{left:auto!important;right:18px!important;top:18px!important;width:32px!important;height:32px!important;border-radius:10px!important;background:var(--surface-1)!important;color:var(--text-secondary)!important;border:none!important;}
+.drawer-close:hover{background:var(--border-subtle)!important;color:var(--text-primary)!important;border-color:transparent!important;transform:rotate(90deg);}
+/* Section titles → Flow's .sect-title (no trailing hairline) */
+.drawer-section{margin-bottom:22px!important;}
+.drawer-section-title{font-size:12px!important;letter-spacing:.05em!important;color:var(--text-muted)!important;margin-bottom:14px!important;}
+.drawer-section-title::after{display:none!important;}
+/* Flow's boxed 2-column field cells */
+.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.d-cell{background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:11px 13px;min-width:0;}
+.d-cell.full{grid-column:1 / -1;}
+.d-cell .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;}
+.d-cell .v{font-size:14px;font-weight:700;margin-top:4px;letter-spacing:-.01em;color:var(--text-primary);word-break:break-word;}
+.d-cell .v a{color:var(--brand-cyan);text-decoration:none;}
+.d-cell .v a:hover{text-decoration:underline;}
+body.dark .d-cell{background:rgba(255,255,255,0.03);}
+/* Footer → Flow's clean foot */
+.drawer-actions{padding:14px 22px!important;border-top:1px solid var(--border-subtle)!important;background:var(--surface-0)!important;}
+body.dark .drawer-actions{background:#172440!important;}
+
 /* ═══ EMPTY STATE ═══ */
 .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
 .empty-state .empty-icon{font-size:48px;margin-bottom:16px;opacity:.5;}
@@ -3615,9 +3647,8 @@ function openDrawer(id) {
     </div>
     <div class="drawer-name-block">
       <div class="drawer-name">${emp.name}</div>
-      <div class="drawer-title">${emp.title}</div>
-      ${deptBadge(emp.dept)}
-      ${introActive(emp)?'<div>'+newPillHTML()+'</div>':''}
+      <div class="drawer-title">${[emp.title, emp.dept].filter(Boolean).join(' · ')}</div>
+      <div class="dh-tags">${deptBadge(emp.dept)}${introActive(emp)?newPillHTML():''}</div>
     </div>
   `;
   document.getElementById('drawer').setAttribute('aria-label', emp.name+' — profile');
@@ -3633,19 +3664,24 @@ function openDrawer(id) {
     </div>`;
   }
   body += weekScheduleHTML(emp);
-  body += `<div class="drawer-section">
-    <div class="drawer-section-title">Contact</div>`;
-  if(emp.ext) body += `<div class="drawer-field" style="cursor:pointer" onclick="copyExt('${emp.ext}',event)" title="Click to copy"><div class="drawer-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 3.8h3l1.5 3.7-2 1.4a12 12 0 0 0 5.4 5.4l1.4-2 3.7 1.5v3a1.7 1.7 0 0 1-1.9 1.7A15.7 15.7 0 0 1 4.5 5.7 1.7 1.7 0 0 1 6.2 3.8Z"/></svg></div><div><div class="drawer-field-label">Extension</div><div class="drawer-field-value">Ext. ${emp.ext}</div></div></div>`;
-  if(emp.phone) body += `<div class="drawer-field"><div class="drawer-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 3.8h3l1.5 3.7-2 1.4a12 12 0 0 0 5.4 5.4l1.4-2 3.7 1.5v3a1.7 1.7 0 0 1-1.9 1.7A15.7 15.7 0 0 1 4.5 5.7 1.7 1.7 0 0 1 6.2 3.8Z"/></svg></div><div><div class="drawer-field-label">Phone</div><div class="drawer-field-val"><a href="tel:${emp.phone}">${emp.phone}</a></div></div></div>`;
-  body += `<div class="drawer-field"><div class="drawer-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></div><div><div class="drawer-field-label">Email</div><div class="drawer-field-val"><a href="mailto:${emp.email}">${emp.email}</a></div></div></div>`;
-  if(emp.reportsTo) body += `<div class="drawer-field"><div class="drawer-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></div><div><div class="drawer-field-label">Reports To</div><div class="drawer-field-val">${emp.reportsTo}</div></div></div>`;
-  body += `</div>`;
 
-  if(emp.specialty) body += `<div class="drawer-section"><div class="drawer-section-title">Specialty</div><div class="drawer-field"><div class="drawer-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M10 15a5 5 0 0 0 5 5 4 4 0 0 0 4-4v-2"/><circle cx="19" cy="12" r="2"/></svg></div><div><div class="drawer-field-label">Focus Area</div><div class="drawer-field-val">${emp.specialty}</div></div></div></div>`;
+  // Flow-style field cell (label = .k, value = .v). full=true spans both columns.
+  const dCell = (k, v, full) => v ? `<div class="d-cell${full?' full':''}"><div class="k">${k}</div><div class="v">${v}</div></div>` : '';
 
-  if(emp.education) body += `<div class="drawer-section"><div class="drawer-section-title">Education</div><div class="drawer-field"><div class="drawer-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 2 9l10 5 10-5-10-5z"/><path d="M6 11v4c0 1.3 2.7 3 6 3s6-1.7 6-3v-4"/></svg></div><div><div class="drawer-field-label">Degree</div><div class="drawer-field-val">${emp.education}</div></div></div></div>`;
+  // Contact
+  let contact = '';
+  contact += dCell('Extension', emp.ext ? `Ext. ${emp.ext}` : '');
+  contact += dCell('Phone', emp.phone ? `<a href="tel:${emp.phone}">${emp.phone}</a>` : '');
+  contact += dCell('Email', `<a href="mailto:${emp.email}">${emp.email}</a>`, true);
+  contact += dCell('Reports To', emp.reportsTo, emp.reportsTo && emp.reportsTo.length > 20);
+  if(contact) body += `<div class="drawer-section"><div class="drawer-section-title">Contact</div><div class="d-grid">${contact}</div></div>`;
 
-  if(emp.certs) body += `<div class="drawer-section"><div class="drawer-section-title">Board Certifications</div><div class="drawer-field"><div class="drawer-field-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.3 4.7 5.2.8-3.75 3.65.9 5.15L12 14.9l-4.65 2.4.9-5.15L4.5 8.5l5.2-.8z"/></svg></div><div><div class="drawer-field-label">Certification</div><div class="drawer-field-val">${emp.certs}</div></div></div></div>`;
+  // Professional
+  let prof = '';
+  prof += dCell('Focus Area', emp.specialty, emp.specialty && emp.specialty.length > 20);
+  prof += dCell('Education', emp.education, emp.education && emp.education.length > 20);
+  prof += dCell('Certification', emp.certs, true);
+  if(prof) body += `<div class="drawer-section"><div class="drawer-section-title">Professional</div><div class="d-grid">${prof}</div></div>`;
 
   if(emp.bio) body += `<div class="drawer-section"><div class="drawer-section-title">Biography</div><div class="drawer-bio">${emp.bio}</div></div>`;
 
