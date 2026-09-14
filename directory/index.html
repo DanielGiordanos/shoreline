@@ -429,6 +429,25 @@ body.dark .drawer-action-btn.primary:hover{background:var(--brand-cyan);color:#0
 .drawer-action-btn.secondary{background:var(--surface-1);color:var(--text-secondary);border:1px solid var(--border-subtle);}
 .drawer-action-btn.secondary:hover{background:rgba(77,200,224,0.1);border-color:rgba(77,200,224,0.2);color:var(--brand-cyan);}
 
+/* ===== Flow .btn styling applied to all Directory action buttons (primary = cyan gradient, secondary = ghost) ===== */
+.drawer-action-btn.primary,.modal-btn.primary,.dx-btn.primary,.pw-submit{
+  background:linear-gradient(150deg,#38BDD2,#2C7FB8)!important;color:#fff!important;border:none!important;
+  box-shadow:0 8px 20px rgba(56,189,210,.35)!important;transition:transform .25s ease,box-shadow .25s ease,background .25s ease!important;letter-spacing:-.01em;font-weight:700;
+}
+.drawer-action-btn.primary:hover,.modal-btn.primary:hover,.dx-btn.primary:hover,.pw-submit:hover{
+  background:linear-gradient(150deg,#38BDD2,#2C7FB8)!important;color:#fff!important;
+  transform:translateY(-2px)!important;box-shadow:0 12px 26px rgba(56,189,210,.45)!important;
+}
+.drawer-action-btn.secondary,.modal-btn.secondary,.dx-btn:not(.primary){
+  background:var(--surface-1)!important;color:var(--text-secondary)!important;border:1px solid var(--border-subtle)!important;box-shadow:none!important;font-weight:700;letter-spacing:-.01em;
+}
+body.dark .drawer-action-btn.secondary,body.dark .modal-btn.secondary,body.dark .dx-btn:not(.primary){
+  background:rgba(255,255,255,.05)!important;color:rgba(220,229,239,.92)!important;border-color:rgba(255,255,255,.09)!important;
+}
+.drawer-action-btn.secondary:hover,.modal-btn.secondary:hover,.dx-btn:not(.primary):hover{
+  background:rgba(56,189,210,.10)!important;border-color:rgba(56,189,210,.30)!important;color:var(--brand-cyan)!important;transform:translateY(-1px);
+}
+
 /* ===== Flow patient-drawer design applied to the Directory profile drawer ===== */
 .drawer{width:440px;max-width:94vw;background:var(--surface-0)!important;}
 body.dark .drawer{background:#172440!important;border-left-color:var(--glass-border);}
