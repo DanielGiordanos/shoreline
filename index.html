@@ -5282,7 +5282,8 @@ body.dark{
 #searchResults::-webkit-scrollbar-thumb{background:var(--sr-scroll);border-radius:20px;border:2px solid transparent;background-clip:content-box;}
 </style>
 </head>
-<body class="dark">
+<body>
+<script>/* Pravix shared theme — carries across every pravix.app page via a domain-scoped cookie; defaults to dark. Applied before first paint (no flash). */(function(){try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');}catch(e){document.body.classList.add('dark');}})();</script>
 
 
 <div class="app">
@@ -12949,6 +12950,7 @@ function hideUndo(){ const t=document.getElementById('undoToast'); if(!t) return
 
 /* Theme toggle + logout — identical behavior to the portal */
 function toggleDark(){document.body.classList.toggle('dark');
+  try{ document.cookie = 'pvx_theme='+(document.body.classList.contains('dark')?'dark':'light')+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax'; }catch(e){}
   if(!document.body.classList.contains('dark')){const m=document.getElementById('mesh');if(m)m.style.transform='none';}}
 function logout(){
   try{ ['unsubVisits','unsubPub','unsubShifts','unsubAlert','unsubMsgs','unsubPubLobby'].forEach(function(k){ if(Backend[k]){ try{ Backend[k](); }catch(e){} Backend[k]=null; } }); }catch(e){}
