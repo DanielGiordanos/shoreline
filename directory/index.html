@@ -1346,6 +1346,16 @@ body.dark .apple-search-wrap .search-input:focus{background:rgba(18,28,48,.72);}
 .apple-filters>.chip.active{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 6px 14px rgba(56,189,210,.24);}
 body.dark .apple-filters>.chip.active{background:var(--accent);color:#fff;}
 .dept-menu[open]>summary{background:var(--surface-1);border-color:rgba(56,189,210,.28);color:var(--ink-900);}
+/* Light mode: no borders on the filter chips (All / Doctors / Interns / Departments / Languages / Favorites) */
+body:not(.dark) .apple-filters>.chip,
+body:not(.dark) .dept-menu>summary,
+body:not(.dark) .lang-menu>summary,
+body:not(.dark) .apple-filters>.chip:hover,
+body:not(.dark) .dept-menu>summary:hover,
+body:not(.dark) .lang-menu>summary:hover,
+body:not(.dark) .dept-menu[open]>summary,
+body:not(.dark) .lang-menu[open]>summary,
+body:not(.dark) .lang-menu>summary.has-lang{border-color:transparent!important;}
 .dept-menu-popover{background:var(--glass-strong);border:1px solid var(--glass-border);box-shadow:var(--panel-shadow-lg);border-radius:18px;}
 body.dark .dept-menu-popover{background:rgba(18,28,48,.96);}
 
