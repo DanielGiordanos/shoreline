@@ -8075,6 +8075,14 @@ body:not(.dark) .dept-menu[open] > summary{
   border-color:transparent !important;
   color:#1F8FA8 !important;
 }
+/* Decisive, ID-scoped override — no borders on any filter chip in light mode (beats class-only rules) */
+body:not(.dark) #filterChips .chip,
+body:not(.dark) #filterChips .chip:hover,
+body:not(.dark) #filterChips .chip.active,
+body:not(.dark) #filterChips .dept-menu > summary,
+body:not(.dark) #filterChips .dept-menu[open] > summary,
+body:not(.dark) #filterChips .lang-menu > summary,
+body:not(.dark) #filterChips .lang-menu > summary.has-lang{border:1px solid transparent !important;}
 
 /* === Flow header + footer (theme-responsive, matching family) === */
 /* ═══ GLOBAL PORTAL NAV — identical to Profile Dashboard.html ═══ */
