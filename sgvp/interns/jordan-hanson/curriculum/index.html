@@ -1308,14 +1308,27 @@ window.__pvxFB=(function(){
   }
   function gridSave(){
     if(!db||!IS_ADMIN) return;
-    var u=window.__pvxFB.user();
-    db.collection('curriculum').doc('grid').set({
-      gridByDate: exportGrid(),
-      updatedAt: new Date().toISOString(),
-      updatedBy: (u&&u.email)||''
-    },{merge:true})
-      .then(function(){ toast('✓ Schedule saved'); })
-      .catch(function(e){ console.warn('grid save',e); toast('Save failed — check permissions'); });
+    var u=window.__pvxFB.user(), ref=db.collection('curriculum').doc('grid');
+    /* Interns run on two different block calendars, so this page only knows about
+       its own cohort's dates. Merge our dates into the stored record instead of
+       replacing gridByDate wholesale — otherwise saving here silently deletes the
+       other cohort's blocks, whose dates simply don't exist on this calendar. */
+    var mine = exportGrid();
+    ref.get().then(function(snap){
+      var stored = (snap.exists && snap.data().gridByDate) || {};
+      var merged = JSON.parse(JSON.stringify(stored));
+      Object.keys(mine).forEach(function(sid){
+        merged[sid] = merged[sid] || {};
+        Object.keys(mine[sid]).forEach(function(dt){ merged[sid][dt] = mine[sid][dt]; });
+      });
+      return ref.set({
+        gridByDate: merged,
+        updatedAt: new Date().toISOString(),
+        updatedBy: (u&&u.email)||''
+      },{merge:true});
+    })
+    .then(function(){ toast('✓ Schedule saved'); })
+    .catch(function(e){ console.warn('grid save',e); toast('Save failed — check permissions'); });
   }
   function gridLoad(){
     if(!db) return;
