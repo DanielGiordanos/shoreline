@@ -4873,6 +4873,43 @@ window.addEventListener('load', () => {
     try{ if(typeof computeNextRotation==='function') computeNextRotation();
          else if(typeof computeRotationStatus==='function') computeRotationStatus(); }catch(e){ console.warn('rota status',e); }
     try{ if(typeof computeProgress==='function') computeProgress(); }catch(e){}
+    applyRotationFields();
+  }
+
+  /* The hero strip ("Current: X (dates) · Next: Y") was hand-entered and drifted
+     out of step with the schedule. Derive all three fields from the timeline,
+     which is itself derived from the grid. */
+  function put(key,val){ var el=document.querySelector('[data-key="'+key+'"]'); if(el && val!=null) el.textContent=val; }
+  function stripYear(s){ return String(s||'').replace(/,?\s*\d{4}\s*$/,'').trim(); }
+  function txt(el,sel){ var n=el&&el.querySelector(sel); return n?n.textContent.trim():''; }
+
+  function applyRotationFields(){
+    var items=[].slice.call(document.querySelectorAll('#timelineContainer .timeline-item'));
+    if(!items.length) return;
+    var curIdx=-1;
+    items.forEach(function(it,i){ if(it.querySelector('.tl-dot.current')||it.querySelector('.tl-badge.current')) curIdx=i; });
+    if(curIdx<0){
+      var allDone=items.every(function(it){ return !!it.querySelector('.tl-dot.done'); });
+      if(allDone){ put('currentRotation','Program complete'); put('currentRotDates','\u2014'); put('nextRotation','Program complete'); }
+      else { put('currentRotation','Not started'); put('currentRotDates','\u2014');
+             put('nextRotation', txt(items[0],'.tl-title') ? txt(items[0],'.tl-title')+' ('+stripYear(txt(items[0],'.tl-dates'))+')' : '\u2014'); }
+      return;
+    }
+    var c=items[curIdx], n=items[curIdx+1];
+    put('currentRotation', txt(c,'.tl-title'));
+    put('currentRotDates', stripYear(txt(c,'.tl-dates')));
+    put('nextRotation', n ? txt(n,'.tl-title')+' ('+stripYear(txt(n,'.tl-dates'))+')' : 'Program complete');
+  }
+
+  /* The profile pulls its saved record asynchronously and re-runs restoreData(),
+     which would stamp the old hand-entered values back over ours. Re-apply after
+     any restore so the derived values always win, whatever order things land in. */
+  function guardRestore(){
+    if(typeof window.restoreData==='function' && !window.restoreData.__pvxRota){
+      var orig=window.restoreData;
+      var wrapped=function(){ var r=orig.apply(this,arguments); try{ applyRotationFields(); }catch(e){} return r; };
+      wrapped.__pvxRota=true; window.restoreData=wrapped;
+    }
   }
 
   function wireFullScheduleLink(){
@@ -4883,6 +4920,7 @@ window.addEventListener('load', () => {
 
   function start(){
     wireFullScheduleLink();
+    guardRestore();
     if(!window.__pvxFB) return;
     var db=window.__pvxFB.db(); if(!db) return;
     db.collection('curriculum').doc('grid').onSnapshot(function(snap){
