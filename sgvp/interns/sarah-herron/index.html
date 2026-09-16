@@ -4826,4 +4826,72 @@ window.addEventListener('load', () => {
 })();
 </script>
 
+<script>
+/* ═══ Rotation Timeline — derived from the shared curriculum grid ═══
+   The timeline is NOT hand-edited any more. It is rebuilt from curriculum/grid
+   and kept on a live listener, so any drag on a curriculum page reflects here
+   immediately. Interns run on two different block calendars, so each profile
+   resolves block numbers against ITS OWN cohort dates. */
+(function(){
+  var ME       = "SH";
+  var BLOCKS   = [["01", "2026-07-05", "2026-08-09"], ["02", "2026-08-09", "2026-09-13"], ["03", "2026-09-13", "2026-10-18"], ["04", "2026-10-18", "2026-11-22"], ["05", "2026-11-22", "2027-01-03"], ["06", "2027-01-03", "2027-02-07"], ["07", "2027-02-07", "2027-03-14"], ["08", "2027-03-14", "2027-04-18"], ["09", "2027-04-18", "2027-05-22"], ["10", "2027-05-23", "2027-07-05"]];
+  var FALLBACK = [{"id": "em1", "name": "Emergency Medicine I"}, {"id": "em2", "name": "Emergency Medicine II"}, {"id": "im", "name": "Internal Medicine"}, {"id": "surg", "name": "Surgery"}, {"id": "neuro", "name": "Neurology"}, {"id": "onco", "name": "Oncology"}, {"id": "gp", "name": "General Practice"}, {"id": "elec", "name": "Elective"}];
+  var CURRICULUM_URL = "/sgvp/interns/sarah-herron/curriculum";
+
+  function d(iso){ var p=iso.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function fmt(dt){ return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function rowsFrom(grid, services){
+    var NAME={}; (services||FALLBACK).forEach(function(s){ NAME[s.id]=s.name; });
+    return BLOCKS.map(function(b){
+      var hits=[];
+      Object.keys(grid||{}).forEach(function(sid){
+        var cell=String(((grid[sid]||{})[b[1]])||'');
+        if(cell.split('|').map(function(x){return x.trim();}).indexOf(ME)>=0) hits.push(NAME[sid]||sid);
+      });
+      return {num:b[0], start:b[1], end:b[2], name:hits.join(' + ')};
+    });
+  }
+
+  function render(grid, services){
+    var box=document.getElementById('timelineContainer'); if(!box) return;
+    var rows=rowsFrom(grid, services);
+    /* trailing blanks mean the programme ends there (cohort A has 9 blocks, not 10);
+       a blank in the MIDDLE is a real gap and stays visible. */
+    var last=-1; rows.forEach(function(r,i){ if(r.name) last=i; });
+    if(last<0) return;                       // nothing to show — leave existing markup alone
+    rows=rows.slice(0, last+1);
+    box.innerHTML = rows.map(function(r){
+      var s=d(r.start), e=d(r.end); e.setDate(e.getDate()-1);   // block end is the next block's start
+      var dates=fmt(s)+' \u2013 '+fmt(e)+', '+e.getFullYear();
+      return '<div class="timeline-item"><div class="tl-dot"></div><div class="tl-content">'
+           + '<div class="tl-title">'+esc(r.name||'Not yet scheduled')+'</div>'
+           + '<div class="tl-dates">'+esc(dates)+'</div>'
+           + '<div class="tl-badge"></div></div></div>';
+    }).join('');
+    try{ if(typeof computeNextRotation==='function') computeNextRotation();
+         else if(typeof computeRotationStatus==='function') computeRotationStatus(); }catch(e){ console.warn('rota status',e); }
+    try{ if(typeof computeProgress==='function') computeProgress(); }catch(e){}
+  }
+
+  function wireFullScheduleLink(){
+    var box=document.getElementById('timelineContainer'); if(!box) return;
+    var card=box.closest('.glass-card-body')||box.parentNode; if(!card) return;
+    var a=card.querySelector('.card-action'); if(a) a.setAttribute('href', CURRICULUM_URL);
+  }
+
+  function start(){
+    wireFullScheduleLink();
+    if(!window.__pvxFB) return;
+    var db=window.__pvxFB.db(); if(!db) return;
+    db.collection('curriculum').doc('grid').onSnapshot(function(snap){
+      var data = snap && snap.exists ? snap.data() : null;
+      render((data&&data.gridByDate)||{}, (data&&data.services)||FALLBACK);
+    }, function(err){ console.warn('rotation timeline listener', err); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>
 </body></html>
