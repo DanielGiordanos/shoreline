@@ -4880,12 +4880,12 @@ window.addEventListener('load', () => {
   /* The hero strip ("Current: X (dates) · Next: Y") was hand-entered and drifted
      out of step with the schedule. Derive all three fields from the timeline,
      which is itself derived from the grid. */
-  var _want={}, _applying=false, _obs=null;
+  var _want={}, _obs=null;
   function put(key,val){
     var el=document.querySelector('[data-key="'+key+'"]');
     if(!el || val==null) return;
-    _want[key]=val; _applying=true; el.textContent=val;
-    setTimeout(function(){ _applying=false; },0);
+    _want[key]=val;
+    if(el.textContent!==val) el.textContent=val;
   }
   /* These three fields are written by several async paths (init, the cloud pull,
      hydrateAll) whose order isn't guaranteed. Rather than try to be the last
@@ -4896,13 +4896,13 @@ window.addEventListener('load', () => {
       .map(function(k){ return document.querySelector('[data-key="'+k+'"]'); })
       .filter(Boolean);
     if(!nodes.length) return;
+    /* No re-entrancy flag: writing the wanted value makes text === _want, so the
+       next callback finds no drift and stops. Self-limiting, and it cannot miss
+       an overwrite that lands in the same batch as one of our own writes. */
     _obs=new MutationObserver(function(){
-      if(_applying) return;
-      var drift=nodes.some(function(n){ var k=n.getAttribute('data-key'); return _want[k]!=null && n.textContent!==_want[k]; });
-      if(!drift) return;
-      _applying=true;
-      nodes.forEach(function(n){ var k=n.getAttribute('data-key'); if(_want[k]!=null) n.textContent=_want[k]; });
-      setTimeout(function(){ _applying=false; },0);
+      var fix=nodes.filter(function(n){ var k=n.getAttribute('data-key'); return _want[k]!=null && n.textContent!==_want[k]; });
+      if(!fix.length) return;
+      fix.forEach(function(n){ n.textContent=_want[n.getAttribute('data-key')]; });
     });
     nodes.forEach(function(n){ _obs.observe(n,{childList:true,characterData:true,subtree:true}); });
   }
