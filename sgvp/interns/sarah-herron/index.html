@@ -4874,12 +4874,38 @@ window.addEventListener('load', () => {
          else if(typeof computeRotationStatus==='function') computeRotationStatus(); }catch(e){ console.warn('rota status',e); }
     try{ if(typeof computeProgress==='function') computeProgress(); }catch(e){}
     applyRotationFields();
+    defendFields();
   }
 
   /* The hero strip ("Current: X (dates) · Next: Y") was hand-entered and drifted
      out of step with the schedule. Derive all three fields from the timeline,
      which is itself derived from the grid. */
-  function put(key,val){ var el=document.querySelector('[data-key="'+key+'"]'); if(el && val!=null) el.textContent=val; }
+  var _want={}, _applying=false, _obs=null;
+  function put(key,val){
+    var el=document.querySelector('[data-key="'+key+'"]');
+    if(!el || val==null) return;
+    _want[key]=val; _applying=true; el.textContent=val;
+    setTimeout(function(){ _applying=false; },0);
+  }
+  /* These three fields are written by several async paths (init, the cloud pull,
+     hydrateAll) whose order isn't guaranteed. Rather than try to be the last
+     writer, watch them and put the derived value back if anything overwrites it. */
+  function defendFields(){
+    if(_obs) return;
+    var nodes=['currentRotation','currentRotDates','nextRotation']
+      .map(function(k){ return document.querySelector('[data-key="'+k+'"]'); })
+      .filter(Boolean);
+    if(!nodes.length) return;
+    _obs=new MutationObserver(function(){
+      if(_applying) return;
+      var drift=nodes.some(function(n){ var k=n.getAttribute('data-key'); return _want[k]!=null && n.textContent!==_want[k]; });
+      if(!drift) return;
+      _applying=true;
+      nodes.forEach(function(n){ var k=n.getAttribute('data-key'); if(_want[k]!=null) n.textContent=_want[k]; });
+      setTimeout(function(){ _applying=false; },0);
+    });
+    nodes.forEach(function(n){ _obs.observe(n,{childList:true,characterData:true,subtree:true}); });
+  }
   function stripYear(s){ return String(s||'').replace(/,?\s*\d{4}\s*$/,'').trim(); }
   function txt(el,sel){ var n=el&&el.querySelector(sel); return n?n.textContent.trim():''; }
 
