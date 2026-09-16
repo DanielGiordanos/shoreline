@@ -3958,10 +3958,10 @@ function openDrawer(id) {
   document.getElementById('drawerActions').innerHTML = `
     <a href="mailto:${emp.email}" class="drawer-action-btn primary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-      Email ${emp.name.split(' ')[0]}
+      Email
     </a>
-    <button onclick="toggleFav(${emp.id},event)" class="drawer-action-btn secondary" style="${isFav(emp.id)?'color:var(--brand-amber);':''}">
-      ${isFav(emp.id)?`<span class="qa-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg></span> Favorited`:`<span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg></span> Favorite`}
+    <button onclick="toggleFav(${emp.id},event)" class="drawer-action-btn secondary" style="flex:0 0 auto;${isFav(emp.id)?'color:var(--brand-amber);':''}" aria-label="${isFav(emp.id)?'Remove favorite':'Add to favorites'}" title="${isFav(emp.id)?'Favorited':'Favorite'}">
+      ${isFav(emp.id)?`<span class="qa-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg></span>`:`<span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg></span>`}
     </button>
   `;
 
