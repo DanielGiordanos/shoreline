@@ -732,7 +732,7 @@ body:not(.dark) .curr-table tbody tr:nth-child(even) td:not(.is-current){ backgr
 <script>
 // ── DATA ──
 const SERVICES = [{"id": "em1", "name": "Emergency Medicine I", "color": "#C62828", "bg": "#FFEBEE", "icon": "\ud83c\udfe5", "director": "Mara Kraenzlin", "location": "Level 1", "phone": "Ext. 302", "dept": "Emergency & Critical Care"}, {"id": "em2", "name": "Emergency Medicine II", "color": "#A61C3C", "bg": "#FBE9EE", "icon": "\ud83c\udfe5", "director": "Sarah Schiff", "location": "Level 1", "phone": "Ext. 303", "dept": "Emergency & Critical Care"}, {"id": "im", "name": "Internal Medicine", "color": "#1565C0", "bg": "#E3F2FD", "icon": "\ud83e\ude7a", "director": "Larry Berkwitt", "location": "Level 1", "phone": "Ext. 528", "dept": "Internal Medicine"}, {"id": "surg", "name": "Surgery", "color": "#2E7D32", "bg": "#E8F5E9", "icon": "\ud83d\udd2c", "director": "Dawn Nolte", "location": "Level 1", "phone": "Ext. 523", "dept": "Surgery"}, {"id": "neuro", "name": "Neurology", "color": "#D16BA5", "bg": "#FBEAF3", "icon": "\ud83e\udde0", "director": "Heather Galano", "location": "Level 1", "phone": "Ext. 306", "dept": "Neurology"}, {"id": "onco", "name": "Oncology", "color": "#975890", "bg": "#F1E8F0", "icon": "\ud83c\udf97", "director": "Kate Taikowski", "location": "Level 1", "phone": "Ext. 530", "dept": "Oncology"}, {"id": "gp", "name": "General Practice", "color": "#F57F17", "bg": "#FFFDE7", "icon": "\ud83d\udc3e", "director": "Kelley Harpin", "location": "Level 1", "phone": "Ext. 301", "dept": "General Practice"}, {"id": "elec", "name": "Elective", "color": "#546E7A", "bg": "#ECEFF1", "icon": "\ud83d\udccb", "director": "Daniel Giordano", "location": "Various", "phone": "Ext. 510", "dept": "Elective"}];
-const BLOCKS   = [{"num": "01", "label": "BLOCK 01", "start": "2026-03-16", "end": "2026-04-19"}, {"num": "02", "label": "BLOCK 02", "start": "2026-04-19", "end": "2026-05-24"}, {"num": "03", "label": "BLOCK 03", "start": "2026-05-24", "end": "2026-07-04"}, {"num": "04", "label": "BLOCK 04", "start": "2026-07-05", "end": "2026-08-09"}, {"num": "05", "label": "BLOCK 05", "start": "2026-08-09", "end": "2026-09-13"}, {"num": "06", "label": "BLOCK 06", "start": "2026-09-13", "end": "2026-10-18"}, {"num": "07", "label": "BLOCK 07", "start": "2026-10-18", "end": "2026-11-22"}, {"num": "08", "label": "BLOCK 08", "start": "2026-11-22", "end": "2027-01-03"}, {"num": "09", "label": "BLOCK 09", "start": "2027-01-03", "end": "2027-02-07"}, {"num": "10", "label": "BLOCK 10", "start": "2027-05-23", "end": "2027-07-05"}];
+const BLOCKS   = [{"num": "01", "label": "BLOCK 01", "start": "2026-03-15", "end": "2026-04-19"}, {"num": "02", "label": "BLOCK 02", "start": "2026-04-19", "end": "2026-05-24"}, {"num": "03", "label": "BLOCK 03", "start": "2026-05-24", "end": "2026-07-05"}, {"num": "04", "label": "BLOCK 04", "start": "2026-07-05", "end": "2026-08-09"}, {"num": "05", "label": "BLOCK 05", "start": "2026-08-09", "end": "2026-09-13"}, {"num": "06", "label": "BLOCK 06", "start": "2026-09-13", "end": "2026-10-18"}, {"num": "07", "label": "BLOCK 07", "start": "2026-10-18", "end": "2026-11-22"}, {"num": "08", "label": "BLOCK 08", "start": "2026-11-22", "end": "2027-01-03"}, {"num": "09", "label": "BLOCK 09", "start": "2027-01-03", "end": "2027-02-07"}, {"num": "10", "label": "BLOCK 10", "start": "2027-05-23", "end": "2027-07-04"}];
 const GRID     = {"em1": {"01": "", "02": "", "03": "", "04": "BK", "05": "RE", "06": "SH", "07": "KW", "08": "MP", "09": "LIU|MP", "10": ""}, "em2": {"01": "", "02": "", "03": "", "04": "JH", "05": "BK", "06": "JH", "07": "AV|SH", "08": "JH|RE", "09": "JH", "10": "KW"}, "im": {"01": "", "02": "", "03": "", "04": "RE", "05": "KW", "06": "MP", "07": "LIU", "08": "SH", "09": "AV", "10": "MP"}, "surg": {"01": "", "02": "", "03": "RE", "04": "KW", "05": "JH", "06": "AV", "07": "RE", "08": "BK", "09": "SH", "10": ""}, "neuro": {"01": "", "02": "", "03": "", "04": "SH|VREC", "05": "MP", "06": "KW", "07": "BK", "08": "AV", "09": "RE", "10": "BK"}, "onco": {"01": "", "02": "", "03": "", "04": "AV", "05": "SH", "06": "RE", "07": "JH", "08": "KW", "09": "BK", "10": "SH"}, "gp": {"01": "RE", "02": "", "03": "", "04": "", "05": "", "06": "BK", "07": "MP", "08": "", "09": "KW", "10": ""}, "elec": {"01": "", "02": "RE", "03": "", "04": "MP", "05": "AV", "06": "", "07": "", "08": "", "09": "", "10": ""}};
 const SARAH_SCHEDULE = {"07": "em2", "12": "em2", "06": "im", "08": "im", "09": "surg", "04": "neuro", "10": "neuro", "05": "onco", "11": "onco"};
 
@@ -768,6 +768,14 @@ function parseDate(s) {
 function fmtDate(s) {
   return parseDate(s).toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
+/* A block's `end` is EXCLUSIVE — it is the next block's start date, and all the
+   date comparisons rely on that (now >= start && now < end). Rotations change
+   over on Sunday, so the last day an intern is actually on a service is the
+   Saturday before. Anything shown to a human goes through fmtDateEnd. */
+function fmtDateEnd(s) {
+  const d = parseDate(s); d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
 function daysBetween(a,b) {
   return Math.ceil((b-a)/(1000*60*60*24));
 }
@@ -792,7 +800,7 @@ function initCurrentBlock() {
   });
 
   // Program-wide progress bar
-  const programStart = parseDate('2026-03-16'); // internship start (matches profile)
+  const programStart = parseDate('2026-03-15'); // internship start (matches profile)
   const GRAD_DATE    = parseDate('2027-02-07'); // graduation: February 7, 2027
   const programEnd   = GRAD_DATE;
   const totalDays    = daysBetween(programStart, programEnd);
@@ -831,7 +839,7 @@ function initCurrentBlock() {
     const hbcCountdown = document.getElementById('hbcCountdown');
     const hbcNext = document.getElementById('hbcNext');
     if(hbcBlock) hbcBlock.textContent = 'BLOCK ' + currentBlock.num;
-    if(hbcDates) hbcDates.textContent = fmtDate(currentBlock.start) + ' – ' + fmtDate(currentBlock.end);
+    if(hbcDates) hbcDates.textContent = fmtDate(currentBlock.start) + ' – ' + fmtDateEnd(currentBlock.end);
     if(hbcCountdown) hbcCountdown.textContent = blockDaysLeft + ' Days Remaining';
     if(hbcNext && nextBlock) hbcNext.textContent = 'Next: Block ' + nextBlock.num + ' begins ' + fmtDate(nextBlock.start);
   }
@@ -893,7 +901,7 @@ function renderTable() {
     headHtml += `<th class="block-col block-th ${isCurr?'is-current':''}" style="position:relative;">
       ${isCurr ? '<div class="current-badge" style="font-size:8px;padding:2px 7px;margin-bottom:3px;"><span class="badge-dot"></span>CURRENT</div>' : ''}
       <div class="block-num">BLOCK ${b.num}</div>
-      <div class="block-dates">${fmtDate(b.start)} – ${fmtDate(b.end)}</div>
+      <div class="block-dates">${fmtDate(b.start)} – ${fmtDateEnd(b.end)}</div>
     </th>`;
   });
   headHtml += '</tr>';
@@ -1009,7 +1017,7 @@ function openSvcDrawer(svcId) {
         return assignment ? `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-subtle);">
           <div style="font-size:12px;font-weight:700;color:var(--text-primary);">Block ${b.num}</div>
-          <div style="font-size:11px;color:var(--text-secondary);">${fmtDate(b.start)} – ${fmtDate(b.end)}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">${fmtDate(b.start)} – ${fmtDateEnd(b.end)}</div>
           <div style="font-size:11px;font-weight:700;color:${color};">${assignment}</div>
           <div style="font-size:9.5px;font-weight:700;color:${statusColor};">${statusLabel}</div>
         </div>` : '';
