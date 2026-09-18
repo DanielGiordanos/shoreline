@@ -969,23 +969,57 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeSchedM
 /* Read-only for everyone signed in; edit only for admins. Same Firebase project as
    Flow and the curricula, and same origin, so the session simply carries over — no
    second login on this page. */
+
+/* Admin is a role record in Firestore (sgvp_roles/<email>), not a list baked into
+   this file — granting someone access is a console edit, not a redeploy of five pages.
+   BREAK_GLASS stays hardcoded on purpose: if the role document is missing, unreadable,
+   or someone fat-fingers a rule, one account can still get in and repair it. */
 window.__pvxIsAdmin = false;
 window.__pvxUserEmail = '';
+window.__pvxResolveAdmin = async function(user){
+  if(!user || !user.email) return false;
+  var email = user.email.toLowerCase();
+  if(['daniel.giordano@pravix.app'].indexOf(email) !== -1) return true;
+  try{
+    if(window.firebase && firebase.firestore){
+      var snap = await firebase.firestore().collection('sgvp_roles').doc(email).get();
+      return !!(snap.exists && snap.data().admin === true);
+    }
+    /* This page has no Firestore SDK loaded. One REST read costs a few hundred bytes
+       instead of pulling ~300 KB of SDK in just to check a boolean. */
+    var tok = await user.getIdToken();
+    var url = 'https://firestore.googleapis.com/v1/projects/shoreline-flow/databases/(default)'
+            + '/documents/sgvp_roles/' + encodeURIComponent(email);
+    var res = await fetch(url, {headers:{Authorization:'Bearer ' + tok}});
+    if(!res.ok) return false;                       /* 404 = no role record = not admin */
+    var j = await res.json();
+    return !!(j.fields && j.fields.admin && j.fields.admin.booleanValue === true);
+  }catch(e){ console.warn('role lookup', e); return false; }
+};
 window.__pvxDB = function(){ return null; };
 (function(){
-  var ADMIN_EMAILS = ['daniel.giordano@pravix.app'];
   var CFG = {apiKey:"AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE",authDomain:"shoreline-flow.firebaseapp.com",
     projectId:"shoreline-flow",storageBucket:"shoreline-flow.firebasestorage.app",
     messagingSenderId:"237404385636",appId:"1:237404385636:web:1ee3ba27f22c946f748a71"};
 
   /* Maps the signed-in address to that intern's own profile, so "Profile" in the nav
-     means their page rather than a second link to the Directory. Unknown address or
-     an admin falls back to the Directory. */
-  var INTERN_SLUGS = ['alexa-vander-ploeg','benjamin-kerns','jordan-hanson',
-    'kristi-wenger','marissa-peck','rachel-eberle','sarah-herron'];
+     means their page rather than a second link to the Directory.
+     This is an explicit table, not derived from the address: three of the seven
+     addresses do not match their slug (Ben.Kearns vs benjamin-kerns,
+     Alexa.VanderPloeg vs alexa-vander-ploeg, Kristen.Wenger vs kristi-wenger),
+     so deriving it silently sent those three to the Directory instead. */
+  var INTERN_BY_EMAIL = {
+    'alexa.vanderploeg@vca.com':'alexa-vander-ploeg',
+    'ben.kearns@vca.com':'benjamin-kerns',
+    'jordan.hanson@vca.com':'jordan-hanson',
+    'kristen.wenger@vca.com':'kristi-wenger',
+    'marissa.peck@vca.com':'marissa-peck',
+    'rachel.eberle@vca.com':'rachel-eberle',
+    'sarah.herron@vca.com':'sarah-herron'
+  };
   function slugFor(email){
-    var local = (email||'').split('@')[0].toLowerCase().replace(/[._]+/g,'-');
-    return INTERN_SLUGS.indexOf(local) !== -1 ? '/sgvp/interns/'+local : null;
+    var slug = INTERN_BY_EMAIL[(email||'').toLowerCase()];
+    return slug ? '/sgvp/interns/'+slug : null;
   }
 
   try{
@@ -994,10 +1028,10 @@ window.__pvxDB = function(){ return null; };
     var db = firebase.firestore ? firebase.firestore() : null;
     window.__pvxDB = function(){ return db; };
 
-    firebase.auth().onAuthStateChanged(function(u){
+    firebase.auth().onAuthStateChanged(async function(u){
       var email = (u && u.email || '').toLowerCase();
       window.__pvxUserEmail = email;
-      window.__pvxIsAdmin = ADMIN_EMAILS.indexOf(email) !== -1;
+      window.__pvxIsAdmin = await window.__pvxResolveAdmin(u);
 
       var btn = document.getElementById('editBtn');
       if(btn) btn.style.display = window.__pvxIsAdmin ? '' : 'none';
