@@ -7742,10 +7742,39 @@ const originalOpen=openDrawer;openDrawer=function(id){originalOpen(id);viewStaff
 function refreshActivity(){document.querySelectorAll('.pv-card-count').forEach(e=>e.remove());document.querySelectorAll('.emp-card').forEach(c=>{const e=EMPLOYEES.find(e=>String(e.id)===c.dataset.id);if(!e)return;const b=document.createElement('button');b.className='pv-btn pv-card-count';b.textContent=visitsLive?core.summary(visits,e).active+' active assignments':'Patient activity not connected';b.onclick=ev=>{ev.stopPropagation();openDrawer(e.id);};c.querySelector('.emp-card-body')?.appendChild(b);});if(document.getElementById('pv-activity'))openDrawer(viewStaff);}
 const oldRender=render;render=function(){oldRender();const count=document.getElementById('chip-all');if(count)count.textContent=employeeTotal();refreshActivity();};
 paint();refreshActivity();const count=document.getElementById('chip-all');if(count)count.textContent=employeeTotal();
+
+/* Admin is a role record in Firestore (sgvp_roles/<email>), not a list baked into
+   this file — granting someone access is a console edit, not a redeploy of five pages.
+   BREAK_GLASS stays hardcoded on purpose: if the role document is missing, unreadable,
+   or someone fat-fingers a rule, one account can still get in and repair it. */
+window.__pvxIsAdmin = false;
+window.__pvxUserEmail = '';
+window.__pvxResolveAdmin = async function(user){
+  if(!user || !user.email) return false;
+  var email = user.email.toLowerCase();
+  if(['daniel.giordano@pravix.app'].indexOf(email) !== -1) return true;
+  try{
+    if(window.firebase && firebase.firestore){
+      var snap = await firebase.firestore().collection('sgvp_roles').doc(email).get();
+      return !!(snap.exists && snap.data().admin === true);
+    }
+    /* This page has no Firestore SDK loaded. One REST read costs a few hundred bytes
+       instead of pulling ~300 KB of SDK in just to check a boolean. */
+    var tok = await user.getIdToken();
+    var url = 'https://firestore.googleapis.com/v1/projects/shoreline-flow/databases/(default)'
+            + '/documents/sgvp_roles/' + encodeURIComponent(email);
+    var res = await fetch(url, {headers:{Authorization:'Bearer ' + tok}});
+    if(!res.ok) return false;                       /* 404 = no role record = not admin */
+    var j = await res.json();
+    return !!(j.fields && j.fields.admin && j.fields.admin.booleanValue === true);
+  }catch(e){ console.warn('role lookup', e); return false; }
+};
+
 function _pv3InitFirebase(){try{if(window.firebase){if(!firebase.apps.length)firebase.initializeApp(X.firebase);db=firebase.firestore();auth=firebase.auth();auth.onAuthStateChanged(connect);
-auth.onAuthStateChanged(function(u){
+auth.onAuthStateChanged(async function(u){
   var email=(u&&u.email||'').toLowerCase();
-  window.__pvxIsAdmin = ['daniel.giordano@pravix.app'].indexOf(email)!==-1;
+  window.__pvxUserEmail=email;
+  window.__pvxIsAdmin = await window.__pvxResolveAdmin(u);
   var b=document.getElementById('dirEditBtn');
   if(b) b.style.display = window.__pvxIsAdmin ? 'inline-flex' : 'none';
   /* someone who signs out mid-session should not be left holding edit mode */
