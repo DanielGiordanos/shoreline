@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow Schedule — VCA Shoreline Graduate Veterinarian Program</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+:root{
+  --brand-navy:#0C2952; --brand-cyan:#4DC8E0; --brand-purple:#8B4DB5; --brand-coral:#E8644A; --brand-green:#1a9e6e; --brand-amber:#E8A830;
+  --bg:#E4F0F8; --surface-0:#FFFFFF; --surface-1:#F4F9FC; --surface-2:#EAF3F8; --nav-bg:#0C2952;
+  --text-primary:#0A2240; --text-secondary:#3A5572; --text-muted:#7A9BB5;
+  --border:rgba(12,41,82,0.10); --border-subtle:rgba(12,41,82,0.06); --border-strong:rgba(12,41,82,0.18);
+  --glass-bg:rgba(255,255,255,0.32); --glass-border:rgba(255,255,255,0.9);
+  --glass-shadow:0 20px 60px rgba(20,50,95,0.14),0 6px 18px rgba(20,50,95,0.07),inset 0 1px 0 rgba(255,255,255,0.98),inset 0 0 0 1px rgba(255,255,255,0.4);
+  --radius-lg:20px; --radius-xl:28px;
+}
+body.dark{
+  --bg:#080E1A; --surface-0:#0E1628; --surface-1:#131E34; --surface-2:#192540; --nav-bg:#0A1222;
+  --text-primary:#D8E8F4; --text-secondary:#7A98B8; --text-muted:#3A5070;
+  --border:rgba(77,200,224,0.10); --border-subtle:rgba(77,200,224,0.05); --border-strong:rgba(77,200,224,0.18);
+  --glass-bg:rgba(14,22,40,0.45); --glass-border:rgba(77,200,224,0.18);
+  --glass-shadow:0 8px 40px rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.6),inset 0 1px 0 rgba(77,200,224,0.08);
+  --brand-cyan:#38BDD2; --brand-purple:#A888E0; --brand-coral:#E07060; --brand-green:#48B888;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh;transition:background .4s,color .4s;overflow-x:hidden;}
+body:not(.dark){background:linear-gradient(135deg,#EAF3FB 0%,#E9ECF8 48%,#F4ECF6 100%);background-attachment:fixed;}
+.bg-orb-1{position:fixed;z-index:0;pointer-events:none;width:680px;height:680px;border-radius:50%;background:radial-gradient(circle,rgba(77,200,224,0.16) 0%,transparent 70%);top:-120px;right:-120px;}
+.bg-orb-2{position:fixed;z-index:0;pointer-events:none;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(139,75,181,0.13) 0%,transparent 70%);bottom:-60px;left:-120px;}
+.bg-orb-3{position:fixed;z-index:0;pointer-events:none;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(232,140,200,0.11) 0%,transparent 70%);top:34%;left:40%;}
+body.dark .bg-orb-3{display:none;}
+
+/* ═══ NAV ═══ */
+.topnav{position:sticky;top:0;z-index:300;background:var(--nav-bg);height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;box-shadow:0 2px 24px rgba(0,0,0,0.25);backdrop-filter:blur(20px);transition:background .4s;}
+body.dark .topnav{background:rgba(10,18,34,0.96);border-bottom:1px solid rgba(255,255,255,0.04);}
+.topnav img.logo{height:72px;width:auto;}
+.nav-center{display:flex;gap:3px;align-items:center;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 13px;border-radius:8px;cursor:pointer;transition:all .2s;color:rgba(255,255,255,0.55);font-size:10px;font-weight:600;letter-spacing:.3px;border:1px solid transparent;text-decoration:none;background:transparent;font-family:'Inter',Arial,sans-serif;white-space:nowrap;}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);}
+.nav-item.active{background:rgba(77,200,224,0.15);color:var(--brand-cyan);border-color:rgba(77,200,224,0.25);}
+.nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+.nav-right{display:flex;gap:10px;align-items:center;}
+.live{display:flex;align-items:center;gap:6px;background:rgba(26,158,110,0.15);border:1px solid rgba(26,158,110,0.3);color:#48c88c;font-size:11px;font-weight:700;padding:5px 12px;border-radius:50px;}
+.live i{width:7px;height:7px;border-radius:50%;background:#48c88c;display:inline-block;animation:pulse 3s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(1.3);}}
+.theme-toggle{cursor:pointer;background:none;border:none;border-radius:50px;overflow:hidden;width:72px;height:34px;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,0.15);position:relative;transition:box-shadow .2s;}
+.theme-toggle:hover{box-shadow:0 0 0 2px rgba(77,200,224,0.5);}
+.theme-toggle img{width:72px;height:34px;object-fit:cover;display:block;border-radius:50px;pointer-events:none;transition:opacity .3s;position:absolute;top:0;left:0;}
+.theme-toggle .img-light{opacity:1;}.theme-toggle .img-dark{opacity:0;}
+body.dark .theme-toggle .img-light{opacity:0;}body.dark .theme-toggle .img-dark{opacity:1;}
+
+/* ═══ PAGE ═══ */
+.page{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:34px 32px 80px;}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:36px;}
+.page-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(77,200,224,0.12);border:1px solid rgba(77,200,224,0.25);color:var(--brand-cyan);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 13px;border-radius:20px;margin-bottom:14px;}
+body:not(.dark) .page-tag{background:rgba(12,41,82,0.07);border-color:rgba(12,41,82,0.14);color:var(--brand-navy);}
+.page-title{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.1;}
+.page-sub{font-size:13.5px;color:var(--text-secondary);margin-top:8px;}
+.block-card{position:relative;overflow:hidden;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);box-shadow:var(--glass-shadow);backdrop-filter:blur(40px) saturate(1.9);-webkit-backdrop-filter:blur(40px) saturate(1.9);padding:18px 26px;text-align:right;min-width:240px;}
+.block-card>*{position:relative;z-index:1;}
+.bl-glow{position:absolute;inset:-50% -25%;border-radius:50%;z-index:0;pointer-events:none;filter:blur(16px);opacity:.7;
+  background:radial-gradient(ellipse at 62% 42%,rgba(77,200,224,0.20),rgba(139,75,181,0.13) 40%,rgba(70,120,235,0.09) 64%,transparent 78%);
+  animation:blGlow 7s ease-in-out infinite;}
+@keyframes blGlow{0%,100%{opacity:.5;transform:scale(.95);}50%{opacity:.85;transform:scale(1.07);}}
+.block-card .bl-lab{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);}
+.block-card .bl-name{font-size:21px;font-weight:800;color:var(--text-primary);margin:4px 0;letter-spacing:-.3px;}
+.block-card .bl-dates{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--brand-cyan);text-transform:uppercase;}
+
+/* ═══ CARD ═══ */
+.card{position:relative;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow);backdrop-filter:blur(42px) saturate(1.9);-webkit-backdrop-filter:blur(42px) saturate(1.9);padding:22px 24px;}
+.week-card{transition:transform .22s cubic-bezier(.2,.7,.2,1),box-shadow .22s ease;}
+.week-card:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(10,40,80,0.15),0 0 0 1px rgba(77,200,224,0.12),0 0 28px rgba(77,200,224,0.10);}
+body.dark .week-card:hover{box-shadow:0 16px 52px rgba(0,0,0,0.62),0 0 0 1px rgba(77,200,224,0.18),0 0 32px rgba(77,200,224,0.13);}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-h .ttl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);}
+.card-h .rng{font-size:11px;font-weight:600;color:var(--text-secondary);}
+
+/* Section separators between weeks */
+.week-divider{height:1px;margin:50px auto;max-width:88%;position:relative;background:linear-gradient(90deg,transparent,rgba(77,200,224,0.30),transparent);}
+.week-divider::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:360px;height:64px;border-radius:50%;background:radial-gradient(ellipse,rgba(77,200,224,0.10),transparent 70%);filter:blur(9px);pointer-events:none;}
+
+/* ═══ TABLE ═══ */
+.tbl-wrap{overflow-x:auto;}
+table.sched{width:100%;border-collapse:separate;border-spacing:5px;min-width:760px;}
+table.sched th,table.sched td{padding:0;}
+table.sched thead th{text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);padding:6px 4px;}
+table.sched thead th .dt{display:block;font-size:10px;font-weight:600;color:var(--text-muted);margin-top:2px;letter-spacing:0;}
+table.sched thead th.doch{text-align:left;}
+.doc{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:16px;background:var(--surface-2);font-size:12.5px;font-weight:700;color:var(--text-primary);white-space:nowrap;}
+.dept{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:12px 14px;border-radius:16px;font-size:12.5px;font-weight:700;white-space:nowrap;border:1px solid transparent;min-height:52px;background:var(--surface-2);}
+.dept .dept-name{display:inline-block;}
+table.sched td:first-child{width:1%;}
+.doc .ini{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
+.cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;border-radius:19px;font-size:11.5px;font-weight:600;padding:6px;border:1px solid transparent;line-height:1.25;transition:transform .15s ease;}
+.cell:hover{transform:translateY(-1px);}
+.r-off{background:var(--surface-1);color:var(--text-muted);border-color:var(--border-subtle);font-weight:700;}
+body.dark .r-off{background:rgba(255,255,255,0.03);}
+.cell sup{font-size:8px;font-weight:800;color:var(--brand-coral);margin-left:1px;}
+
+/* ═══ CURRICULUM-STYLE TABLE ═══ */
+.table-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow);backdrop-filter:blur(42px) saturate(1.9);-webkit-backdrop-filter:blur(42px) saturate(1.9);overflow:hidden;position:relative;transition:transform .22s cubic-bezier(.2,.7,.2,1),box-shadow .22s ease;}
+body.dark .table-card{background:rgba(14,22,40,0.5);border-color:rgba(77,200,224,0.14);}
+.table-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.85) 50%,transparent);pointer-events:none;z-index:2;}
+body.dark .table-card::after{background:linear-gradient(90deg,transparent,rgba(77,200,224,0.25) 50%,transparent);}
+.table-card:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(10,40,80,0.15),0 0 0 1px rgba(77,200,224,0.12),0 0 28px rgba(77,200,224,0.10);}
+body.dark .table-card:hover{box-shadow:0 16px 52px rgba(0,0,0,0.62),0 0 0 1px rgba(77,200,224,0.18),0 0 32px rgba(77,200,224,0.13);}
+.tc-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-subtle);}
+.tc-head .ttl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);}
+.tc-head .rng{font-size:11px;font-weight:600;color:var(--text-secondary);}
+.curr-table{width:100%;border-collapse:collapse;min-width:820px;}
+.curr-table th{padding:12px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--surface-1);border-bottom:1px solid var(--border-subtle);white-space:nowrap;position:relative;color:var(--text-secondary);}
+body.dark .curr-table th{background:rgba(255,255,255,0.03);}
+.curr-table th:first-child{text-align:left;}
+.curr-table td{padding:0;border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);vertical-align:middle;min-width:90px;}
+.curr-table td:last-child{border-right:none;}
+.curr-table tbody tr:last-child td{border-bottom:none;}
+.curr-table .svc-col{min-width:172px;width:172px;}
+.curr-table td.svc-col{background:var(--surface-1);}
+body.dark .curr-table td.svc-col{background:rgba(255,255,255,0.02);}
+.svc-dot{background:var(--brand-cyan);}
+.svc-cell{display:flex;align-items:center;gap:10px;padding:14px 16px;border-left:4px solid transparent;min-height:56px;}
+.svc-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;background:var(--text-muted);}
+.svc-name{font-size:12.5px;font-weight:700;color:var(--text-primary);line-height:1.3;}
+.block-th{padding:10px 6px;text-align:center;}
+.block-num{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--text-secondary);margin-bottom:2px;text-transform:uppercase;}
+.block-dates{font-size:9.5px;color:var(--text-muted);font-weight:600;letter-spacing:.2px;}
+.block-cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:8px 7px;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--text-primary);transition:background .15s;}
+.block-cell:hover{background:rgba(77,200,224,0.06);}
+.block-cell.empty{color:var(--text-muted);font-weight:500;}
+.block-cell sup{font-size:8px;font-weight:800;color:var(--brand-coral);margin-left:1px;}
+.foot{padding:12px 20px;}
+
+/* ═══ BOTTOM ═══ */
+.grid2{display:grid;grid-template-columns:1fr 1.4fr;gap:24px;margin-top:36px;}
+.legend-list{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;}
+.leg{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);}
+.leg .ini{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
+.leg b{color:var(--text-primary);font-weight:700;}
+.key-list{display:flex;flex-wrap:wrap;gap:9px;}
+.key{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-1);}
+.key .key-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+.foot{font-size:11.5px;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;gap:6px;}
+.foot sup{color:var(--brand-coral);font-weight:800;}
+
+/* ═══ LIQUID-GLASS REFINEMENTS (header left untouched) ═══ */
+.cell{box-shadow:inset 0 1px 0 rgba(255,255,255,0.45),0 2px 9px rgba(20,40,80,0.06);}
+.doc .ini,.leg .ini{box-shadow:inset 0 1px 0 rgba(255,255,255,0.5),0 3px 9px rgba(20,40,90,0.28);}
+body:not(.dark) .doc{background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.62);box-shadow:inset 0 1px 0 rgba(255,255,255,0.85),0 2px 8px rgba(20,40,80,0.05);}
+body:not(.dark) .key{background:rgba(255,255,255,0.42);border-color:rgba(255,255,255,0.66);box-shadow:inset 0 1px 0 rgba(255,255,255,0.85),0 2px 8px rgba(20,40,80,0.05);}
+body.dark .doc{background:rgba(255,255,255,0.05);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);}
+body.dark .key{background:rgba(255,255,255,0.05);}
+body:not(.dark) .block-card,body:not(.dark) .card{border-color:rgba(255,255,255,0.8);}
+
+/* ═══ EDIT MODE ═══ */
+[data-editable]{border-radius:6px;transition:background .2s,box-shadow .2s;}
+body.edit-mode [data-editable]{cursor:text;background:rgba(77,200,224,0.07);box-shadow:0 0 0 1.5px rgba(77,200,224,0.25);outline:none;padding:1px 4px;margin:-1px -4px;}
+body.edit-mode [data-editable]:hover{background:rgba(77,200,224,0.12);}
+body.edit-mode [data-editable]:focus{background:rgba(77,200,224,0.12);box-shadow:0 0 0 2px rgba(77,200,224,0.45);}
+body.edit-mode .cell[data-editable]{margin:0;}
+.eo{display:none!important;}
+body.edit-mode .eo{display:inline-flex!important;}
+body.edit-mode .eo-block{display:block!important;}
+.eo-block{display:none;}
+input[type=color].swatch{-webkit-appearance:none;appearance:none;width:20px;height:20px;border:1px solid var(--border-strong);border-radius:6px;padding:0;cursor:pointer;background:none;flex-shrink:0;}
+input[type=color].swatch::-webkit-color-swatch-wrapper{padding:0;}
+input[type=color].swatch::-webkit-color-swatch{border:none;border-radius:5px;}
+.mini-x{background:transparent;border:none;color:var(--brand-coral);cursor:pointer;font-size:12px;line-height:1;padding:0 2px;flex-shrink:0;}
+.add-btn{background:rgba(77,200,224,0.10);border:1px dashed var(--brand-cyan);color:var(--brand-cyan);border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.add-btn:hover{background:rgba(77,200,224,0.18);}
+.add-week{width:100%;margin:8px 0 6px;}
+
+/* edit banner */
+.edit-banner{display:none;background:var(--brand-coral);color:#fff;text-align:center;padding:9px;font-size:12px;font-weight:700;letter-spacing:.5px;position:sticky;top:76px;z-index:200;}
+.edit-banner.show{display:block;}
+.edit-banner span{cursor:pointer;text-decoration:underline;}
+
+/* frost orb + gate (same as Profile) */
+.edit-orb{position:fixed;right:22px;bottom:22px;z-index:75;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,0.5);cursor:pointer;padding:0;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.6),rgba(255,255,255,0.12) 60%,rgba(255,255,255,0.04));backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(20,40,80,0.18),inset 0 1px 2px rgba(255,255,255,0.7);opacity:0.5;transition:opacity .2s,transform .2s,box-shadow .2s;}
+.edit-orb:hover{opacity:1;transform:scale(1.08);box-shadow:0 6px 18px rgba(20,40,80,0.26),inset 0 1px 2px rgba(255,255,255,0.9),0 0 0 4px rgba(77,200,224,0.12);}
+body.dark .edit-orb{border-color:rgba(255,255,255,0.25);background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.3),rgba(120,150,200,0.08) 60%,rgba(255,255,255,0.02));}
+body.edit-mode .edit-orb{opacity:1;box-shadow:0 0 0 3px rgba(232,100,74,0.32),0 4px 14px rgba(20,40,80,0.2),inset 0 1px 2px rgba(255,255,255,0.8);}
+.editgate-overlay{position:fixed;inset:0;z-index:96000;display:none;align-items:center;justify-content:center;padding:20px;}
+.editgate-dim{position:absolute;inset:0;background:rgba(5,10,20,0.35);backdrop-filter:blur(10px);}
+.editgate-card{position:relative;z-index:2;width:min(92vw,360px);text-align:center;padding:34px 30px 24px;border-radius:26px;color:#fff;background:linear-gradient(160deg,rgba(34,40,58,0.82),rgba(15,19,30,0.86));border:1px solid rgba(255,255,255,0.12);box-shadow:0 30px 80px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,255,255,0.2);backdrop-filter:blur(30px);}
+.editgate-title{font-size:18px;font-weight:800;margin-bottom:4px;}
+.editgate-sub{font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:20px;}
+.editgate-card input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:24px;padding:12px 18px;color:#fff;font-size:14px;outline:none;font-family:inherit;text-align:center;letter-spacing:3px;}
+.editgate-btn{width:100%;margin-top:14px;background:#fff;color:#15151c;border:none;border-radius:24px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;}
+.editgate-err{color:#ff8a8a;font-size:12px;min-height:14px;margin-top:10px;font-weight:600;}
+.editgate-cancel{background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-top:8px;font-family:inherit;text-decoration:underline;}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--brand-green);color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media(max-width:900px){.nav-center{display:none;}.grid2{grid-template-columns:1fr;}.page-head{flex-direction:column;align-items:flex-start;}.block-card{text-align:left;width:100%;}.topnav img.logo{height:56px;}}
+</style>
+</head>
+<body>
+<script>/* Pravix shared theme — carries across every pravix.app page via a domain cookie (default dark). Reads the cookie (mirrors it into localStorage so this page's own theme init agrees), applies before first paint, and persists ANY dark-class change back to the cookie via an observer, covering every toggle path. */
+(function(){
+  function rc(){var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);return m&&m[1];}
+  function wc(v){try{document.cookie='pvx_theme='+v+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax';}catch(e){}}
+  try{var t=rc()||'dark';try{localStorage.setItem('darkMode',t==='dark'?'1':'0');}catch(e){}document.body.classList.toggle('dark',t==='dark');}catch(e){}
+  try{var last=document.body.classList.contains('dark');new MutationObserver(function(){var n=document.body.classList.contains('dark');if(n!==last){last=n;wc(n?'dark':'light');}}).observe(document.body,{attributes:true,attributeFilter:['class']});}catch(e){}
+})();
+</script>
+<div class="bg-orb-1"></div>
+<div class="bg-orb-2"></div>
+<div class="bg-orb-3"></div>
+
+<nav class="topnav">
+  <img class="logo" src="VCA%20Logo.png" alt="VCA Shoreline Graduate Veterinarian Program">
+  <div class="nav-center">
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
+    <a class="nav-item" href="../Profile%20Dashboard.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>Profile</a>
+    <a class="nav-item" href="Directory.html"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Directory</a>
+    <a class="nav-item" href="SGVP%20Assets.html"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Assets</a>
+    <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Tasks</a>
+    <a class="nav-item" href="SGVP%20Curriculum.html"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Curriculum</a>
+    <a class="nav-item" href="2026%20-%202027%20Calendar%20Portal.html"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
+    <a class="nav-item active" href="Shadow%20Schedule.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Shadow</a>
+    <a class="nav-item" href="SGVP%20Mentors.html"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>Mentors</a>
+  </div>
+  <div class="nav-right">
+    <span class="live"><i></i>Live</span>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+      <img class="img-light" src="Light.png" alt=""><img class="img-dark" src="Dark.png" alt="">
+    </button>
+  </div>
+</nav>
+
+<div class="edit-banner" id="editBanner">✏ EDIT MODE — Click any highlighted field to edit &nbsp;|&nbsp; <span onclick="saveAll()">💾 Save</span> &nbsp;|&nbsp; <span onclick="cancelEdit()">Cancel</span> &nbsp;|&nbsp; <span onclick="resetAll()">⟲ Reset</span> &nbsp;|&nbsp; <span onclick="exportSchedule()">⬇ Extract Copy</span></div>
+
+<div class="page">
+<div id="editArea">
+
+  <div class="page-head">
+    <div>
+      <span class="page-tag" data-editable>⬢ Shadow Rotation</span>
+      <div class="page-title" data-editable>2026 – 2027 Intern Shadow Rotation</div>
+      <div class="page-sub" data-editable>Orientation · Clinical Exposure · Service Introductions</div>
+    </div>
+    <div class="block-card">
+      <div class="bl-glow"></div>
+      <div class="bl-lab">Current Block</div>
+      <div class="bl-name" data-editable>Shadow Rotation</div>
+      <div class="bl-dates" data-editable>June 22 – July 05</div>
+    </div>
+  </div>
+
+  <div id="weeks">
+    <!-- WEEK 1 -->
+    <div class="table-card">
+      <div class="tc-head"><span class="ttl" data-editable>Week 1</span><span class="rng" data-editable>Jun 22 – Jun 28, 2026</span></div>
+      <div class="tbl-wrap"><table class="curr-table">
+        <thead><tr><th class="svc-col">Intern</th>
+          <th class="block-th"><div class="block-num">Mon</div><div class="block-dates" data-editable>6/22</div></th><th class="block-th"><div class="block-num">Tue</div><div class="block-dates" data-editable>6/23</div></th><th class="block-th"><div class="block-num">Wed</div><div class="block-dates" data-editable>6/24</div></th>
+          <th class="block-th"><div class="block-num">Thu</div><div class="block-dates" data-editable>6/25</div></th><th class="block-th"><div class="block-num">Fri</div><div class="block-dates" data-editable>6/26</div></th><th class="block-th"><div class="block-num">Sat</div><div class="block-dates" data-editable>6/27</div></th><th class="block-th"><div class="block-num">Sun</div><div class="block-dates" data-editable>6/28</div></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="svc-col"><div class="svc-cell" style="border-left-color:#4DC8E0"><span class="svc-name" data-editable>Benjamin Kerns</span></div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Neurology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Neurology</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Oncology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Oncology</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td>
+          </tr>
+          <tr>
+            <td class="svc-col"><div class="svc-cell" style="border-left-color:#8B4DB5"><span class="svc-name" data-editable>Kristen Wenger</span></div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Internal Medicine</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Internal Medicine</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Surgery</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Surgery</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td>
+          </tr>
+          <tr>
+            <td class="svc-col"><div class="svc-cell" style="border-left-color:#E8644A"><span class="svc-name" data-editable>Marissa Peck</span></div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Surgery</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Surgery</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Internal Medicine</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Internal Medicine</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td>
+          </tr>
+          <tr>
+            <td class="svc-col"><div class="svc-cell" style="border-left-color:#1a9e6e"><span class="svc-name" data-editable>Sarah Herron</span></div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Oncology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Oncology</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Neurology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Neurology</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td>
+          </tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="week-divider"></div>
+
+    <!-- WEEK 2 -->
+    <div class="table-card">
+      <div class="tc-head"><span class="ttl" data-editable>Week 2</span><span class="rng" data-editable>Jun 29 – Jul 05, 2026</span></div>
+      <div class="tbl-wrap"><table class="curr-table">
+        <thead><tr><th class="svc-col">Intern</th>
+          <th class="block-th"><div class="block-num">Mon</div><div class="block-dates" data-editable>6/29</div></th><th class="block-th"><div class="block-num">Tue</div><div class="block-dates" data-editable>6/30</div></th><th class="block-th"><div class="block-num">Wed</div><div class="block-dates" data-editable>7/1</div></th>
+          <th class="block-th"><div class="block-num">Thu</div><div class="block-dates" data-editable>7/2</div></th><th class="block-th"><div class="block-num">Fri</div><div class="block-dates" data-editable>7/3</div></th><th class="block-th"><div class="block-num">Sat</div><div class="block-dates" data-editable>7/4</div></th><th class="block-th"><div class="block-num">Sun</div><div class="block-dates" data-editable>7/5</div></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="svc-col"><div class="svc-cell" style="border-left-color:#4DC8E0"><span class="svc-name" data-editable>Benjamin Kerns</span></div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Surgery</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Surgery</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Internal Medicine</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Internal Medicine</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency<sup>1</sup></div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td>
+          </tr>
+          <tr>
+            <td class="svc-col"><div class="svc-cell" style="border-left-color:#8B4DB5"><span class="svc-name" data-editable>Kristen Wenger</span></div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Oncology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Oncology</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Neurology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Neurology</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency<sup>1</sup></div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td>
+          </tr>
+          <tr>
+            <td class="svc-col"><div class="svc-cell" style="border-left-color:#E8644A"><span class="svc-name" data-editable>Marissa Peck</span></div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Neurology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Neurology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Oncology</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Oncology</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency<sup>1</sup></div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td>
+          </tr>
+          <tr>
+            <td class="svc-col"><div class="svc-cell" style="border-left-color:#1a9e6e"><span class="svc-name" data-editable>Sarah Herron</span></div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Internal Medicine</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Internal Medicine</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Surgery</div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">Surgery</div></td>
+            <td><div class="block-cell" data-editable oninput="colorCellByText(this)">Emergency<sup>1</sup></div></td><td><div class="block-cell" data-editable oninput="colorCellByText(this)">OFF</div></td>
+          </tr>
+        </tbody>
+      </table></div>
+      <div class="foot"><sup>1</sup>&nbsp;<span data-editable>Holiday coverage — Independence Day (July 4). On-call / ER support only.</span></div>
+    </div>
+  </div>
+
+  <button class="add-btn add-week eo-block" id="addWeekBtn" onclick="addWeek()">+ Add Week</button>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><span class="ttl">Intern Legend</span></div>
+      <div class="legend-list" id="legendList">
+        <div class="leg"><b data-editable>Benjamin Kerns</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
+        <div class="leg"><b data-editable>Marissa Peck</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
+        <div class="leg"><b data-editable>Kristen Wenger</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
+        <div class="leg"><b data-editable>Sarah Herron</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
+      </div>
+      <button class="add-btn eo-block" style="margin-top:14px;" onclick="addIntern()">+ Add Intern</button>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="ttl">Rotation Key</span></div>
+      <div class="key-list" id="keyList">
+        <span class="key" data-color="#8B4DB5"><span class="key-dot" style="background:#8B4DB5"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Neurology</span><input type="color" class="swatch eo" value="#8B4DB5" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
+        <span class="key" data-color="#E8644A"><span class="key-dot" style="background:#E8644A"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Oncology</span><input type="color" class="swatch eo" value="#E8644A" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
+        <span class="key" data-color="#2E9BC0"><span class="key-dot" style="background:#2E9BC0"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Internal Medicine</span><input type="color" class="swatch eo" value="#2E9BC0" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
+        <span class="key" data-color="#1a9e6e"><span class="key-dot" style="background:#1a9e6e"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Surgery</span><input type="color" class="swatch eo" value="#1a9e6e" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
+        <span class="key" data-color="#E8A830"><span class="key-dot" style="background:#E8A830"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Emergency</span><input type="color" class="swatch eo" value="#E8A830" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
+      </div>
+      <button class="add-btn eo-block" style="margin-top:14px;" onclick="addSpecialty()">+ Add Specialty</button>
+    </div>
+  </div>
+
+</div><!-- /editArea -->
+</div>
+
+<button class="edit-orb" id="editOrb" onclick="orbClick()" title="Edit" aria-label="Edit"></button>
+<div class="editgate-overlay" id="editGate">
+  <div class="editgate-dim" onclick="closeGate()"></div>
+  <div class="editgate-card">
+    <div class="editgate-title">Edit Access</div>
+    <div class="editgate-sub">Enter the password to edit the schedule</div>
+    <input type="password" id="gatePass" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitGate();}">
+    <button class="editgate-btn" onclick="submitGate()">Unlock</button>
+    <div class="editgate-err" id="gateErr"></div>
+    <button class="editgate-cancel" onclick="closeGate()">Cancel</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SH_KEY='sgvp_shadow_copy_7k2m9q';
+/* No password in the page — it was readable in View Source. Editing is gated on the
+   signed-in Firebase identity, same as Flow and the rest of /sgvp. */
+let editMode=false;
+
+/* theme */
+/* Shared .pravix.app theme cookie, so dark/light follows the user across subdomains. */
+function pvxSetTheme(t){document.body.classList.toggle('dark',t==='dark');
+  try{document.cookie='pvx_theme='+t+'; domain=.pravix.app; path=/; max-age=31536000; samesite=lax';}catch(e){}}
+function toggleTheme(){pvxSetTheme(document.body.classList.contains('dark')?'light':'dark');recolorAll();}
+(function(){try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);
+  document.body.classList.toggle('dark',((m&&m[1])||'dark')==='dark');}catch(e){}})();
+
+/* toast */
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* ── color helpers ── */
+function hexToRgb(h){h=(h||'#888').replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');return [parseInt(h.slice(0,2),16)||0,parseInt(h.slice(2,4),16)||0,parseInt(h.slice(4,6),16)||0];}
+function toHex(rgb){return '#'+rgb.map(v=>('0'+Math.max(0,Math.min(255,v)).toString(16)).slice(-2)).join('');}
+function rgba(rgb,a){return 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+a+')';}
+function lighten(rgb,a){return rgb.map(v=>Math.round(v+(255-v)*a));}
+function darken(rgb,a){return rgb.map(v=>Math.round(v*(1-a)));}
+
+function buildKeyMap(){const m={};document.querySelectorAll('#keyList .key').forEach(k=>{const n=k.querySelector('.key-name');const c=k.getAttribute('data-color');if(n&&c)m[n.textContent.trim().toLowerCase()]=c;});return m;}
+
+function colorCellByText(cell){
+  const txt=cell.textContent.replace(/¹|1\s*$/,'').trim();
+  const up=txt.toUpperCase();
+  const dark=document.body.classList.contains('dark');
+  cell.classList.remove('empty');
+  cell.style.background='';cell.style.color='';
+  if(txt===''||txt==='—'){cell.classList.add('empty');return;}
+  if(up==='OFF'){cell.style.background=dark?'rgba(255,255,255,0.03)':'var(--surface-1)';cell.style.color='var(--text-muted)';return;}
+  const map=buildKeyMap();const lc=txt.toLowerCase();
+  let hex=map[lc];
+  if(!hex){for(const k in map){if(k.startsWith(lc)||lc.startsWith(k)){hex=map[k];break;}}}
+  if(hex){const rgb=hexToRgb(hex);
+    cell.style.background=rgba(rgb,dark?0.16:0.10);
+    cell.style.color=dark?toHex(lighten(rgb,0.5)):toHex(darken(rgb,0.22));
+  }else{cell.style.color='var(--text-primary)';}
+}
+function recolorAll(){document.querySelectorAll('.block-cell').forEach(colorCellByText);}
+
+/* ── rotation key ── */
+function keyColor(input){const key=input.closest('.key');const hex=input.value;key.setAttribute('data-color',hex);key.querySelector('.key-dot').style.background=hex;input.setAttribute('value',hex);recolorAll();}
+function renameSpec(el){const oldN=(el.dataset.prev||'').trim();const newN=el.textContent.trim();if(oldN&&newN&&oldN.toLowerCase()!==newN.toLowerCase()){document.querySelectorAll('.block-cell').forEach(c=>{if(c.textContent.trim().toLowerCase()===oldN.toLowerCase())c.textContent=newN;});}recolorAll();}
+function removeKey(btn){btn.closest('.key').remove();recolorAll();}
+function addSpecialty(){
+  const list=document.getElementById('keyList');
+  const hex='#5a78f0';
+  const span=document.createElement('span');span.className='key';span.setAttribute('data-color',hex);
+  span.innerHTML='<span class="key-dot" style="background:'+hex+'"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">New Specialty</span><input type="color" class="swatch eo" value="'+hex+'" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button>';
+  const off=Array.from(list.children).find(k=>{const n=k.querySelector('.key-name');return n&&n.textContent.trim().toUpperCase()==='OFF';});
+  list.insertBefore(span, off||null);
+  if(editMode)span.querySelectorAll('[data-editable]').forEach(e=>e.contentEditable='true');
+}
+
+/* ── doctor / legend ── */
+function badgeColor(input){input.parentElement.querySelector('.ini').style.background=input.value;input.setAttribute('value',input.value);}
+function legColor(input){input.parentElement.querySelector('.ini').style.background=input.value;input.setAttribute('value',input.value);}
+function removeRow(btn,sel){btn.closest(sel).remove();}
+function addIntern(){
+  const list=document.getElementById('legendList');
+  const d=document.createElement('div');d.className='leg';
+  d.innerHTML='<b data-editable>New Intern</b><button class="mini-x eo" onclick="removeRow(this,\'.leg\')">✕</button>';
+  list.appendChild(d);
+  if(editMode)d.querySelectorAll('[data-editable]').forEach(e=>e.contentEditable='true');
+}
+
+/* ── add week ── */
+function addWeek(){
+  const wc=document.getElementById('weeks');
+  const weeks=wc.querySelectorAll('.table-card');
+  const last=weeks[weeks.length-1];
+  const clone=last.cloneNode(true);
+  const t=clone.querySelector('.ttl');if(t)t.textContent='Week '+(weeks.length+1);
+  const r=clone.querySelector('.rng');if(r)r.textContent='Dates';
+  clone.querySelectorAll('.block-dates').forEach(d=>d.textContent='—');
+  clone.querySelectorAll('.block-cell').forEach(c=>{c.textContent='OFF';});
+  const foot=clone.querySelector('.foot');if(foot)foot.remove();
+  const div=document.createElement('div');div.className='week-divider';
+  wc.appendChild(div);wc.appendChild(clone);
+  clone.querySelectorAll('.block-cell').forEach(colorCellByText);
+  if(editMode)clone.querySelectorAll('[data-editable]').forEach(e=>e.contentEditable='true');
+}
+
+/* ── edit gate ── */
+function orbClick(){if(editMode)exitEdit();else openGate();}
+function openGate(){document.getElementById('editGate').style.display='flex';document.getElementById('gateErr').textContent='';const i=document.getElementById('gatePass');i.value='';setTimeout(()=>i.focus(),60);}
+function closeGate(){document.getElementById('editGate').style.display='none';}
+function submitGate(){if(window.__pvxIsAdmin){closeGate();enterEdit();}else{document.getElementById('gateErr').textContent='Sign in as an administrator to edit';}}
+function enterEdit(){editMode=true;document.body.classList.add('edit-mode');document.getElementById('editBanner').classList.add('show');document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='true');}
+function exitEdit(){editMode=false;document.body.classList.remove('edit-mode');document.getElementById('editBanner').classList.remove('show');document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='false');}
+
+/* ── save / cancel / reset ── */
+function saveAll(){
+  document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='false');
+  let ok=true;
+  try{localStorage.setItem(SH_KEY,document.getElementById('editArea').innerHTML);}catch(e){ok=false;toast('⚠ Could not save — too large');}
+  exitEdit();
+  if(ok)toast('✓ Schedule saved');
+}
+function cancelEdit(){location.reload();}
+
+/* ── extract a standalone copy with its own unique save key ── */
+function exportSchedule(){
+  const wasEdit=editMode;
+  document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='false');
+
+  let label=prompt('Name this copy (e.g. "Block 3" or "Spring 2026"):','');
+  if(label===null){ if(wasEdit)document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='true'); return; }
+  label=(label||'Shadow Schedule').trim()||'Shadow Schedule';
+  const slug=label.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'schedule';
+  const uniqueKey='sgvp_shadow_'+slug+'_'+Math.random().toString(36).slice(2,8);
+
+  const bodyEdit=document.body.classList.contains('edit-mode');document.body.classList.remove('edit-mode');
+  const banner=document.getElementById('editBanner');const hadBanner=banner.classList.contains('show');banner.classList.remove('show');
+  const gate=document.getElementById('editGate');const gateDisp=gate.style.display;gate.style.display='none';
+
+  let html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+
+  if(bodyEdit)document.body.classList.add('edit-mode');
+  if(hadBanner)banner.classList.add('show');
+  gate.style.display=gateDisp;
+  if(wasEdit)document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='true');
+
+  html=html.replace(/const SH_KEY='[^']*';/,"const SH_KEY='"+uniqueKey+"';");
+
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=label+'.html';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  toast('✓ Extracted "'+label+'" with its own save key');
+}
+function resetAll(){if(confirm('Reset the schedule to defaults? All saved edits will be cleared.')){try{localStorage.removeItem(SH_KEY);}catch(e){}location.reload();}}
+
+/* ── restore on load ── */
+(function(){
+  let html=null;try{html=localStorage.getItem(SH_KEY);}catch(e){}
+  if(html){document.getElementById('editArea').innerHTML=html;document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='false');}
+  recolorAll();
+})();
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&editMode)exitEdit();if((e.ctrlKey||e.metaKey)&&e.key==='s'&&editMode){e.preventDefault();saveAll();}});
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script>
+window.__pvxIsAdmin=false;
+(function(){
+  var ADMIN_EMAILS=['daniel.giordano@pravix.app'];
+  var CFG={apiKey:"AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE",authDomain:"shoreline-flow.firebaseapp.com",
+    projectId:"shoreline-flow",storageBucket:"shoreline-flow.firebasestorage.app",
+    messagingSenderId:"237404385636",appId:"1:237404385636:web:1ee3ba27f22c946f748a71"};
+  try{
+    if(!window.firebase||!firebase.auth) return;
+    if(!firebase.apps.length) firebase.initializeApp(CFG);
+    firebase.auth().onAuthStateChanged(function(u){
+      window.__pvxIsAdmin=ADMIN_EMAILS.indexOf((u&&u.email||'').toLowerCase())!==-1;
+      if(!window.__pvxIsAdmin && typeof editMode!=='undefined' && editMode
+         && typeof exitEdit==='function') exitEdit();
+    });
+  }catch(e){ console.warn('auth',e); }
+})();
+</script>
+</body>
+</html>
