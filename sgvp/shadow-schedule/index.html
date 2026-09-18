@@ -518,17 +518,43 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&editMode)exitEdit()
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script>
-window.__pvxIsAdmin=false;
+
+/* Admin is a role record in Firestore (sgvp_roles/<email>), not a list baked into
+   this file — granting someone access is a console edit, not a redeploy of five pages.
+   BREAK_GLASS stays hardcoded on purpose: if the role document is missing, unreadable,
+   or someone fat-fingers a rule, one account can still get in and repair it. */
+window.__pvxIsAdmin = false;
+window.__pvxUserEmail = '';
+window.__pvxResolveAdmin = async function(user){
+  if(!user || !user.email) return false;
+  var email = user.email.toLowerCase();
+  if(['daniel.giordano@pravix.app'].indexOf(email) !== -1) return true;
+  try{
+    if(window.firebase && firebase.firestore){
+      var snap = await firebase.firestore().collection('sgvp_roles').doc(email).get();
+      return !!(snap.exists && snap.data().admin === true);
+    }
+    /* This page has no Firestore SDK loaded. One REST read costs a few hundred bytes
+       instead of pulling ~300 KB of SDK in just to check a boolean. */
+    var tok = await user.getIdToken();
+    var url = 'https://firestore.googleapis.com/v1/projects/shoreline-flow/databases/(default)'
+            + '/documents/sgvp_roles/' + encodeURIComponent(email);
+    var res = await fetch(url, {headers:{Authorization:'Bearer ' + tok}});
+    if(!res.ok) return false;                       /* 404 = no role record = not admin */
+    var j = await res.json();
+    return !!(j.fields && j.fields.admin && j.fields.admin.booleanValue === true);
+  }catch(e){ console.warn('role lookup', e); return false; }
+};
 (function(){
-  var ADMIN_EMAILS=['daniel.giordano@pravix.app'];
   var CFG={apiKey:"AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE",authDomain:"shoreline-flow.firebaseapp.com",
     projectId:"shoreline-flow",storageBucket:"shoreline-flow.firebasestorage.app",
     messagingSenderId:"237404385636",appId:"1:237404385636:web:1ee3ba27f22c946f748a71"};
   try{
     if(!window.firebase||!firebase.auth) return;
     if(!firebase.apps.length) firebase.initializeApp(CFG);
-    firebase.auth().onAuthStateChanged(function(u){
-      window.__pvxIsAdmin=ADMIN_EMAILS.indexOf((u&&u.email||'').toLowerCase())!==-1;
+    firebase.auth().onAuthStateChanged(async function(u){
+      window.__pvxUserEmail=(u&&u.email||'').toLowerCase();
+      window.__pvxIsAdmin=await window.__pvxResolveAdmin(u);
       if(!window.__pvxIsAdmin && typeof editMode!=='undefined' && editMode
          && typeof exitEdit==='function') exitEdit();
     });
