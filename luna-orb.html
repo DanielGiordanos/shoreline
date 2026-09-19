@@ -191,7 +191,13 @@ body:not(.light) .chat-compose .send:disabled{background:#25334a;color:#8194ab;o
 @media(prefers-reduced-motion:reduce){.voice-preview-button{transition:none}.voice-preview-button:hover{transform:none}}
 </style>
 <style id="luna-announcement-mode">
-html.announcement-mode, html.announcement-mode body { background: transparent; color-scheme: normal; }
+/* Embedded in Flow's announcement overlay, which paints the tint and blur behind
+   this iframe, so the canvas here must be genuinely transparent. `color-scheme:
+   normal` overrode this document's own dark scheme and forced the canvas to the
+   light default, so wherever Luna's content did not paint, Safari filled it white
+   on top of Flow's blur. */
+html.announcement-mode, html.announcement-mode body { background: transparent; color-scheme: dark; }
+html.announcement-mode, html.announcement-mode body { height: 100%; min-height: 100%; }
 html.announcement-mode body { min-width: 0; overflow: hidden; }
 html.announcement-mode header,
 html.announcement-mode .view-switch,
