@@ -5338,9 +5338,12 @@ body.dark .pv-log a{color:#70d8eb;}
 .luna-alert-action svg{width:17px;height:17px;fill:currentColor}
 .luna-alert-action p{margin:9px 0 0;color:var(--ink-400);font-size:11px;line-height:1.45;text-align:center}
 .luna-announcement[hidden]{display:none!important}
-.luna-announcement{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;opacity:0;transition:opacity .45s ease}
+.luna-announcement{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;opacity:0;transition:opacity .45s ease;/* The tint lives here, on the plain fixed element, not on the backdrop-filter
+   layer. Safari sizes a backdrop-filter compositing layer independently and it
+   can come up short of the viewport, leaving the canvas showing through as an
+   L-shaped white gap. This element always fills the viewport. */background:rgba(5,12,26,.52)}
 .luna-announcement.open{opacity:1}
-.luna-announcement-backdrop{position:absolute;inset:0;background:rgba(5,12,26,.52);-webkit-backdrop-filter:blur(18px) saturate(.72);backdrop-filter:blur(18px) saturate(.72)}
+.luna-announcement-backdrop{position:absolute;inset:0;background:transparent;-webkit-backdrop-filter:blur(18px) saturate(.72);backdrop-filter:blur(18px) saturate(.72)}
 .luna-announcement-scene{position:relative;width:100%;height:100%;background:transparent;transform:translateY(24px) scale(.96);transition:transform .65s cubic-bezier(.22,1,.36,1)}
 .luna-announcement.open .luna-announcement-scene{transform:translateY(0) scale(1)}
 .luna-announcement iframe{width:100%;height:100%;border:0;background:transparent;display:block}
