@@ -6364,8 +6364,8 @@ Backend._mergeResus();
 Backend._lastRows = PATIENTS.map(mapToDb);
 _persistLock = false;
 Backend.setConn('live');
-try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
-try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){}
+try{ if(typeof scheduleRender==='function'){ scheduleRender(function(){ try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} }); } else { if(typeof renderAll==='function') renderAll();
+try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} } }catch(e){}
 }, function(){ Backend.setConn('reconnecting'); });
 
 if(Backend.unsubPub){ try{ Backend.unsubPub(); }catch(e){} }
@@ -6374,8 +6374,8 @@ Backend.unsubPub = DB.collection('pub').where('tenant_id','==',TENANT_ID)
 Backend._pubResus = {};
 snap.docs.forEach(function(d){ const v=d.data(); if(v.resus_pref) Backend._pubResus[d.id]={ pref:v.resus_pref, status:v.resus_status||'client_selected', at:v.resus_recorded_at||null }; });
 Backend._mergeResus();
-try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
-try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){}
+try{ if(typeof scheduleRender==='function'){ scheduleRender(function(){ try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} }); } else { if(typeof renderAll==='function') renderAll();
+try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} } }catch(e){}
 }, function(){});
 
 if(Backend.unsubShifts){ try{ Backend.unsubShifts(); }catch(e){} }
