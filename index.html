@@ -7012,8 +7012,7 @@ try{ ctSyncPrimary(p); }catch(e){}
 const d=doc(id);
 p.timeline.push({label:'Doctor assigned', at:new Date(), meta:d.name});
 notify('Doctor assigned',`${d.name} → ${p.name}`, {icon:'doctor', color:'var(--accent)'});
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function assignLiaison(p,id){
 if(p.liaison===id) return;
@@ -7021,16 +7020,14 @@ p.liaison=id;
 const l=liaison(id);
 p.timeline.push({label: l?'Liaison assigned':'Liaison removed', at:new Date(), meta: l?l.name:''});
 notify(l?'Liaison assigned':'Liaison removed', l?`${l.name} → ${p.name}`:p.name, {icon:'liaison', color:'var(--purple)'});
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function setPriority(p,level){
 if(p.prio===level) return;
 p.prio=level;
 p.timeline.push({label:`Priority set to P${level}`, at:new Date(), meta:PRIO_LABEL[level]});
 notify('Priority updated',`${p.name} · P${level} · ${PRIO_LABEL[level]}`, {icon:'info', color:PRIO[level].c});
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 
 function makeEditable(el, commit){
@@ -7691,8 +7688,7 @@ p.ultrasound = { study:'Abdominal Ultrasound', clinicalQuestion:'', status:'inco
 }
 const done = ['Diagnostics','Ultrasound','Procedure'].includes(old) ?`${old} completed`:`Moved to ${newStatus}`;
 notify(done,`${p.name} · now in ${p.room}`, {icon:'move', color:STATUSES[newStatus].color});
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 
 if(newStatus==='Ultrasound'&& (!p.ultrasound || p.ultrasound.status!=='requested')){
 const pid=p.id; setTimeout(function(){ openUltrasoundRequest(pid); }, 160);
@@ -9053,8 +9049,7 @@ try{ rdOnFlowComplete(p, finalStatus); }catch(e){}
 
 notify(cfg.title,`${p.name} · ${p.hid}`, {icon: cfg.icon, color: cfg.color});
 if(oldRoom && oldRoom!=='Lobby') notify(`${oldRoom} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
  
 
@@ -9109,8 +9104,7 @@ p.timeline.push({label:`Moved from ${old} to ${newRoom}`, at:stamp, meta:''});
 notify('Patient moved',`${p.name} · ${old} → ${newRoom}`, {icon:'move', color:STATUSES[p.status].color});
 if(old!=='Lobby'&& !PATIENTS.some(x=>x.id!==p.id && isActive(x) && x.room===old))
 notify(`${old} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 
 function canDropRoom(p,target){
@@ -9443,8 +9437,7 @@ if(Array.isArray(p.timeline)) p.timeline.push({ label:'Resuscitation preference:
 
 try{ if(typeof Backend!=='undefined'&& Backend && Backend._pubResus && p.publicToken){ Backend._pubResus[p.publicToken]={ pref:pref, status:'confirmed', at:at.toISOString() }; } }catch(e){}
 notify('Resuscitation updated', (p.name||'Patient')+' · '+pref, {icon:'info', color: pref==='CPR'?'var(--s-admitted)':'#8B4DB5'});
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function closeResusChooser(){ var pop=document.getElementById('resusPop'); if(pop) pop.remove();
 document.removeEventListener('mousedown', _resusOutside, true); document.removeEventListener('keydown', _resusKey, true); }
@@ -9667,8 +9660,7 @@ t.by=document.getElementById('triEditBy').value.trim()||'Daniel Giordano';
 t.at=fmtTime(new Date(now.getTime()));
 t.status='complete';
 closeTriageEdit();
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 notify('Triage updated',`${p.name} · ${p.hid}`, {icon:'info', color:'var(--accent)'});
 }
 function fillDrawer(p){
@@ -9893,8 +9885,7 @@ const p=intakePatient, label=finalStatus==='complete'?'Triage intake completed':
 p.timeline.push({label, at:new Date(now.getTime()), meta:''});
 notify(label,`${p.name} ${p.last}`, {icon:'check', color:'var(--s-exam)'});
 closeIntake();
-renderAll();
-if(activePatient===p.id) fillDrawer(p);
+scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 
 
@@ -10100,6 +10091,22 @@ renderAll();
 if(v==='dashboard'){ renderKPIs(true); renderClientQueue(); renderOps(true); }
 if(v==='client'){ clPage=0; clSlide=0; renderClient(true); startClientRotate(); startClientCarousel(); }
 }
+function scheduleRender(after){
+if(typeof after==='function') _renderAfter.push(after);
+if(_renderQueued) return;
+_renderQueued=true;
+requestAnimationFrame(_runQueuedRender);
+setTimeout(_runQueuedRender,100);
+}
+function _runQueuedRender(){
+if(!_renderQueued) return;
+_renderQueued=false;
+var cbs=_renderAfter; _renderAfter=[];
+try{ renderAll(); }catch(e){ console.error('renderAll failed',e); }
+for(var i=0;i<cbs.length;i++){ try{ cbs[i](); }catch(e){ console.error('post-render callback failed',e); } }
+}
+function flushRender(){ _runQueuedRender(); }
+var _renderQueued=false, _renderAfter=[];
 function renderAll(){
 renderKPIs();renderAttention();renderClientQueue();renderOps();
 renderFilterBar();renderTable();renderBoard();renderRooms();renderComplete();
