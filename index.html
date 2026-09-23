@@ -5038,6 +5038,7 @@ body.crit-active::after{content:"";position:fixed;inset:0;z-index:9400;pointer-e
 #critIsland .ci-undo{flex:0 0 auto;margin-right:4px}
 #critIsland.taken .ci-link{color:#9FEBC8}
 #critIsland.taken .ci-link:hover{background:rgba(159,235,200,.1)}
+#critIsland .ci-keys{font-size:11.5px;color:#BFA9A9}
 </style>
 </head>
 <body>
@@ -14388,11 +14389,11 @@ function alertHTML(p,more){
   if(pickFor===p.id){
     var on=shiftDoctors(), rest;
     try{ rest=DOCTORS.filter(function(d){return !on.some(function(o){return o.d.id===d.id;});}); }catch(e){ rest=[]; }
-    h+='<div class="ci-pick"><div class="ci-pick-h ci-s" style="--d:.05s"><span>'+(on.length?'Who is taking '+esc(p.name)+'? Today\'s shift doctors'+'</span><span style="font-size:11.5px;color:#BFA9A9">'+(on.length>1?'Press 1 to '+Math.min(9,on.length):'Press 1'):'Shifts haven\'t been set today. Choose the doctor taking '+esc(p.name)+'.')+'</span></div>';
+    h+='<div class="ci-pick">'+(on.length?'':'<div class="ci-pick-h ci-s" style="--d:.05s"><span>Shifts haven\'t been set today. Choose the doctor taking '+esc(p.name)+'.</span></div>');
     var grid=on.length?on:rest.map(function(d){return {d:d,shifts:[]};});
     h+='<div class="ci-docs">'+grid.map(function(o,i){return docBtn(o.d,o.shifts,(.08+i*.035).toFixed(3));}).join('')+'</div>';
     if(on.length&&rest.length&&showAll){ h+='<div class="ci-all"><div class="ci-docs">'+rest.map(function(d,i){return docBtn(d,[],(.03+i*.02).toFixed(3));}).join('')+'</div></div>'; }
-    h+='<div class="ci-foot ci-s" style="--d:.16s">'+(on.length&&rest.length?'<button class="ci-link" type="button" data-all="1">'+(showAll?'Hide other doctors':'Another doctor')+'</button>':'<span></span>')+'<button class="ci-link" type="button" data-cancel="1">Cancel</button></div></div>';
+    h+='<div class="ci-foot ci-s" style="--d:.16s">'+(on.length&&rest.length?'<button class="ci-link" type="button" data-all="1">'+(showAll?'Hide other doctors':'Another doctor')+'</button>':'<span></span>')+(on.length?'<span class="ci-keys">'+(on.length>1?'Press 1 to '+Math.min(9,on.length):'Press 1')+'</span>':'')+'<button class="ci-link" type="button" data-cancel="1">Cancel</button></div></div>';
   } else if(!soundOn()){
     h+='<div class="ci-hint ci-s" style="--d:.18s">Sound is off on this screen. Click anywhere in Flow to turn it on.</div>';
   }
@@ -14521,18 +14522,25 @@ setInterval(function(){ try{ window.renderCritAlert(); }catch(e){} },2000);
 try{ window.renderCritAlert(); }catch(e){}
 })();
 
-/* Today's Shift Assignments reset at midnight (hospital time). Assignments saved on an earlier
-   day are ignored on load, and at midnight every open screen clears them and one screen writes
-   the cleared list, so the front desk sets the day's doctors fresh each morning. */
+/* Today's Shift Assignments reset: Morning ER, Criticalist and Swing clear at midnight (hospital
+   time); Overnight clears at 7:00 AM so the overnight doctor carries through the night. Assignments
+   older than their reset are ignored on load, and at each reset one open screen saves the cleared list. */
 (function(){
+var OVERNIGHT_KEY='overnight', OVERNIGHT_RESET_H=7;
 function dayKey(d){ try{ return _hospDayKey(d); }catch(e){ return new Date(d).toDateString(); } }
-function blank(){ var b={}; try{ Object.keys(shiftAssign).forEach(function(k){ b[k]=null; }); }catch(e){} return b; }
+function cycKey(d){ return dayKey(new Date(new Date(d).getTime()-OVERNIGHT_RESET_H*3600e3)); }
+function keys(a){ var k={}; try{ Object.keys(shiftAssign).forEach(function(x){ k[x]=1; }); }catch(e){} Object.keys(a||{}).forEach(function(x){ k[x]=1; }); return Object.keys(k); }
+function filtered(data){
+  var a=(data&&data.assignments)||{}, up=data&&data.updated_at, now=new Date(), out={}, dropped=false;
+  keys(a).forEach(function(k){
+    var v=a[k]||null, ok=!!up && (k===OVERNIGHT_KEY ? cycKey(up)===cycKey(now) : dayKey(up)===dayKey(now));
+    out[k]=ok?v:null; if(v&&!ok) dropped=true;
+  });
+  return {out:out, dropped:dropped};
+}
 window._shiftsForToday=function(data){
-  var a=data&&data.assignments||null; if(!a) return a;
-  var up=data.updated_at;
-  if(up && dayKey(up)===dayKey(new Date())) return a;
-  window.__shiftsStale=true;
-  var b=blank(); Object.keys(a).forEach(function(k){ b[k]=null; }); return b;
+  if(!data||!data.assignments) return data?data.assignments:null;
+  var f=filtered(data); if(f.dropped) window.__shiftsStale=true; return f.out;
 };
 function applyLocal(a){
   try{ if(typeof _shiftModalOpen!=='undefined'&&_shiftModalOpen) return;
@@ -14541,25 +14549,25 @@ function applyLocal(a){
 }
 async function rollover(){
   try{
-    if(typeof DB==='undefined'||!DB) { applyLocal(blank()); return; }
+    if(typeof DB==='undefined'||!DB){ var b={}; Object.keys(shiftAssign).forEach(function(k){ b[k]=(k===OVERNIGHT_KEY&&cycKey(new Date())===lastCyc)?shiftAssign[k]:null; }); applyLocal(b); return; }
     var ref=DB.collection('shifts').doc(TENANT_ID);
     var snap=await ref.get(); var data=snap.exists?snap.data():null;
-    if(data&&data.updated_at&&dayKey(data.updated_at)===dayKey(new Date())){ applyLocal(data.assignments); return; }
-    applyLocal(blank());
-    if(typeof Backend!=='undefined'&&Backend.mode==='staff'){
+    if(!data||!data.assignments) return;
+    var f=filtered(data); applyLocal(f.out);
+    if(f.dropped&&typeof Backend!=='undefined'&&Backend.mode==='staff'){
       await DB.runTransaction(async function(tx){
-        var s=await tx.get(ref), d=s.exists?s.data():null;
-        if(d&&d.updated_at&&dayKey(d.updated_at)===dayKey(new Date())) return;
-        tx.set(ref,{tenant_id:TENANT_ID, assignments:blank(), updated_at:new Date().toISOString(), reset_reason:'midnight'},{merge:true});
+        var s=await tx.get(ref), d=s.exists?s.data():null; if(!d||!d.assignments) return;
+        var g=filtered(d); if(!g.dropped) return;
+        tx.set(ref,{tenant_id:TENANT_ID, assignments:g.out, updated_at:new Date().toISOString(), reset_reason:'scheduled'},{merge:true});
       });
     }
   }catch(e){}
 }
-var lastDay=dayKey(new Date());
-setInterval(function(){ var k=dayKey(new Date()); if(k!==lastDay){ lastDay=k; rollover(); } },30000);
+var lastDay=dayKey(new Date()), lastCyc=cycKey(new Date());
+setInterval(function(){ var d=dayKey(new Date()), c=cycKey(new Date()); if(d!==lastDay||c!==lastCyc){ lastDay=d; lastCyc=c; rollover(); } },30000);
 setTimeout(function(){ if(window.__shiftsStale) rollover(); },12000);
+window.__shiftReset={filtered:filtered, dayKey:dayKey, cycKey:cycKey};
 })();
-
 </script>
 </body>
 </html>
