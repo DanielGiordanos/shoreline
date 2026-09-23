@@ -5035,6 +5035,9 @@ body.crit-active::after{content:"";position:fixed;inset:0;z-index:9400;pointer-e
 @keyframes ciBreathe{0%,100%{opacity:.5}50%{opacity:1}}
 @media (max-width:640px){#critIsland .ci-sig,#critIsland .ci-tag{display:none}#critIsland .ci-take{padding:0 14px}#critIsland .ci-docs{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){#critIsland,#critIsland .ci-inner .ci-s{transition:opacity .15s ease!important}#critIsland .ci-ic::before,#critIsland .ci-ic::after,body.crit-active::after{animation:none}#critIsland .ci-check path{animation:none;stroke-dashoffset:0}body.crit-active::after{opacity:.85}}
+#critIsland .ci-undo{flex:0 0 auto;margin-right:4px}
+#critIsland.taken .ci-link{color:#9FEBC8}
+#critIsland.taken .ci-link:hover{background:rgba(159,235,200,.1)}
 </style>
 </head>
 <body>
@@ -6390,7 +6393,7 @@ else { showLogin(); }
 loadShifts: async function(){
 try{
 const snap = await DB.collection('shifts').doc(TENANT_ID).get();
-const a = snap.exists ? snap.data().assignments : null;
+const a = snap.exists ? ((typeof _shiftsForToday==='function') ? _shiftsForToday(snap.data()) : snap.data().assignments) : null;
 if(a && typeof shiftAssign!=='undefined'){
 Object.keys(shiftAssign).forEach(function(k){ shiftAssign[k]=null; });
 Object.assign(shiftAssign, a);
@@ -6444,7 +6447,7 @@ if(Backend.unsubShifts){ try{ Backend.unsubShifts(); }catch(e){} }
 Backend.unsubShifts = DB.collection('shifts').doc(TENANT_ID)
 .onSnapshot(function(d){
 if(_shiftModalOpen) return;
-const a = d.exists ? d.data().assignments : null;
+const a = d.exists ? ((typeof _shiftsForToday==='function') ? _shiftsForToday(d.data()) : d.data().assignments) : null;
 if(a && typeof shiftAssign!=='undefined'){
 Object.keys(shiftAssign).forEach(function(k){ shiftAssign[k]=null; });
 Object.assign(shiftAssign, a);
@@ -14288,7 +14291,7 @@ if (event.data?.type ==='luna-announcement-error') error.hidden = false;
    from Today's Shift Assignments. Never shown or heard on the client display. */
 (function(){
 var lastTry=0, BOOT=Date.now(), announced=new Set(), shownIds=[], localTaken=new Set(), audioCtx=null, tickT=null;
-var doneMsg=null, doneT=null, lastSig='', pickFor=null, showAll=false, phase='hidden', token=0;
+var doneMsg=null, doneT=null, lastSig='', pickFor=null, showAll=false, phase='hidden', token=0, firstSeen=new Map(), reminded=new Set(), lastTake=null;
 var REDUCE=false; try{ REDUCE=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
 var PILL_W=132, PILL_H=36;
 var ECG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg>';
@@ -14300,7 +14303,7 @@ function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return
 function pts(){try{return PATIENTS||[];}catch(e){return [];}}
 function byId(id){return pts().find(function(x){return x.id===id;});}
 function onTV(){try{ if(document.body.classList.contains('client-mode')) return true; return (typeof currentView!=='undefined' && currentView==='client'); }catch(e){return false;}}
-function takenEntry(p){var t=p&&p.timeline;if(!t||!t.length)return null;for(var i=t.length-1;i>=0;i--){if(t[i]&&t[i].label==='Critical case taken')return t[i];}return null;}
+function takenEntry(p){var t=p&&p.timeline;if(!t||!t.length)return null;for(var i=t.length-1;i>=0;i--){if(!t[i])continue;if(t[i].label==='Critical take undone')return null;if(t[i].label==='Critical case taken')return t[i];}return null;}
 function docName(id){try{var d=DOCTORS.find(function(x){return x.id===id;});return d?d.name:'';}catch(e){return '';}}
 function takenBy(p){if(p.critTakenBy)return p.critTakenBy;var e=takenEntry(p);if(e)return e.meta||'Staff';return (p.doctor&&p.doctor!=='unassigned')?docName(p.doctor):'';}
 function untaken(p){try{return !!p && isActive(p) && Number(p.prio)===1 && !p.critTakenAt && !takenEntry(p) && (!p.doctor||p.doctor==='unassigned');}catch(e){return false;}}
@@ -14336,6 +14339,19 @@ function chime(){
   }catch(e){}
 }
 
+function softChime(){
+  if(!soundOn()&&wasActive()) unlock();
+  if(!soundOn()) return;
+  try{ var t0=audioCtx.currentTime+.03;
+    [[587.33,0],[783.99,.2]].forEach(function(n){
+      var o=audioCtx.createOscillator(), g=audioCtx.createGain(), t=t0+n[1];
+      o.type='sine'; o.frequency.value=n[0];
+      g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.12,t+.03); g.gain.exponentialRampToValueAtTime(.0001,t+.3);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t+.32);
+    });
+  }catch(e){}
+}
+
 /* today's shift doctors */
 function shiftDoctors(){
   var out=[];
@@ -14354,6 +14370,7 @@ function docBtn(d,shifts,dl){
 }
 
 /* view html */
+function dur(ms){var s=Math.max(0,Math.round(ms/1000));if(s>=3600){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h+'h '+String(m).padStart(2,'0')+'m';}return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 function mmss(ms){var s=Math.max(0,Math.floor(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 function arrMs(p){var t=new Date(p.arrival).getTime();return isFinite(t)?t:null;}
 function sig(p){var sp='';try{sp=(typeof speciesEnglish==='function'?speciesEnglish(p.species):p.species)||'';}catch(e){sp=p.species||'';} var age='';try{age=formatPatientAge(p)||'';}catch(e){} return [sp,age].filter(Boolean).join(' ');}
@@ -14371,7 +14388,7 @@ function alertHTML(p,more){
   if(pickFor===p.id){
     var on=shiftDoctors(), rest;
     try{ rest=DOCTORS.filter(function(d){return !on.some(function(o){return o.d.id===d.id;});}); }catch(e){ rest=[]; }
-    h+='<div class="ci-pick"><div class="ci-pick-h ci-s" style="--d:.05s"><span>'+(on.length?'Who is taking '+esc(p.name)+'? Today\'s shift doctors':'No shift assignments today. Choose the doctor taking '+esc(p.name)+'.')+'</span></div>';
+    h+='<div class="ci-pick"><div class="ci-pick-h ci-s" style="--d:.05s"><span>'+(on.length?'Who is taking '+esc(p.name)+'? Today\'s shift doctors'+'</span><span style="font-size:11.5px;color:#BFA9A9">'+(on.length>1?'Press 1 to '+Math.min(9,on.length):'Press 1'):'Shifts haven\'t been set today. Choose the doctor taking '+esc(p.name)+'.')+'</span></div>';
     var grid=on.length?on:rest.map(function(d){return {d:d,shifts:[]};});
     h+='<div class="ci-docs">'+grid.map(function(o,i){return docBtn(o.d,o.shifts,(.08+i*.035).toFixed(3));}).join('')+'</div>';
     if(on.length&&rest.length&&showAll){ h+='<div class="ci-all"><div class="ci-docs">'+rest.map(function(d,i){return docBtn(d,[],(.03+i*.02).toFixed(3));}).join('')+'</div></div>'; }
@@ -14384,7 +14401,8 @@ function alertHTML(p,more){
 function takenHTML(){
   return '<div class="ci-row"><div class="ci-ic ci-s" style="--d:0s">'+CHECK+'</div><div class="ci-main ci-s" style="--d:.06s;cursor:default">'
    +'<span class="ci-kicker">Case Taken</span><span class="ci-name">'+esc(doneMsg.name)+' · '+esc(doneMsg.doc)+'</span>'
-   +'<span class="ci-meta">'+(doneMsg.by?'Assigned by '+esc(doneMsg.by):'Just now')+'</span></div></div>';
+   +'<span class="ci-meta">'+(doneMsg.took!=null?'Taken in '+dur(doneMsg.took):'Just now')+(doneMsg.by?' · by '+esc(doneMsg.by):'')+'</span></div>'
+   +'<button class="ci-link ci-undo ci-s" style="--d:.12s" type="button" data-undo="1">Undo</button></div>';
 }
 
 /* island motion: pill -> expand -> content in; content out -> pill -> gone */
@@ -14421,8 +14439,16 @@ function wire(){
   b.querySelectorAll('[data-doc]').forEach(function(x){ x.onclick=function(){ window.critTakeCase(pickFor, x.getAttribute('data-doc')); }; });
   b.querySelectorAll('[data-all]').forEach(function(x){ x.onclick=function(){ showAll=!showAll; lastSig=''; window.renderCritAlert(); }; });
   b.querySelectorAll('[data-cancel]').forEach(function(x){ x.onclick=function(){ pickFor=null; lastSig=''; window.renderCritAlert(); }; });
+  b.querySelectorAll('[data-undo]').forEach(function(x){ x.onclick=function(){ window.critUndoTake(); }; });
+  if(pickFor){ var f=b.querySelector('.ci-pick>.ci-docs [data-doc]'); if(f) setTimeout(function(){ try{ f.focus({preventScroll:true}); }catch(e){} },REDUCE?0:420); }
 }
-document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&pickFor){ pickFor=null; lastSig=''; window.renderCritAlert(); } });
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&pickFor){ pickFor=null; lastSig=''; window.renderCritAlert(); return; }
+  if(!pickFor||!/^[1-9]$/.test(e.key)||e.metaKey||e.ctrlKey||e.altKey) return;
+  var t=e.target, tag=t&&t.tagName; if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(t&&t.isContentEditable)) return;
+  var btns=box().querySelectorAll('.ci-pick>.ci-docs [data-doc]'); var btn=btns[Number(e.key)-1];
+  if(btn){ e.preventDefault(); btn.click(); }
+});
 window.addEventListener('resize',function(){ if(phase==='open'){ size(targetW(),measure()); } });
 function tickStart(){ if(tickT) return; tickT=setInterval(function(){ var w=document.querySelector('#critIsland .ci-wait'); if(w) w.textContent='Waiting '+mmss(Date.now()-Number(w.dataset.arr)); },1000); }
 function tickStop(){ clearInterval(tickT); tickT=null; }
@@ -14439,9 +14465,23 @@ window.critTakeCase=function(id,doctorId){
   (p.timeline=p.timeline||[]).push({label:'Critical case taken', at:at, meta:d.name+(by&&by!==d.name?' · by '+by:'')});
   try{ assignDoctor(p,d.id); }catch(e){ p.doctor=d.id; }
   localTaken.add(p.id); pickFor=null; showAll=false;
-  doneMsg={name:p.name||'Patient', doc:d.name, by:(by&&by!==d.name)?by:''};
-  clearTimeout(doneT); doneT=setTimeout(function(){ doneMsg=null; lastSig=''; window.renderCritAlert(); },2800);
+  var arr=new Date(p.arrival).getTime();
+  doneMsg={id:p.id, name:p.name||'Patient', doc:d.name, docId:d.id, by:(by&&by!==d.name)?by:'', took:isFinite(arr)?(at.getTime()-arr):null};
+  lastTake={id:doneMsg.id, doc:d.name, docId:d.id, until:Date.now()+9000};
+  clearTimeout(doneT); doneT=setTimeout(function(){ doneMsg=null; lastSig=''; window.renderCritAlert(); },6000);
   try{ if(typeof scheduleRender==='function') scheduleRender(); else renderAll(); }catch(e){}
+  lastSig=''; window.renderCritAlert();
+};
+window.critUndoTake=function(){
+  var m=lastTake; if(!m||Date.now()>m.until) return;
+  var p=byId(m.id); lastTake=null; doneMsg=null; clearTimeout(doneT);
+  if(p&&p.critTakenAt){
+    if(p.doctor===m.docId){ p.doctor='unassigned'; try{ ctSyncPrimary(p); }catch(e){} }
+    p.critTakenAt=null; p.critTakenBy=null; p.critTakenUid=null;
+    (p.timeline=p.timeline||[]).push({label:'Critical take undone', at:new Date(), meta:m.doc+' · by '+me()});
+    localTaken.delete(p.id);
+    try{ if(typeof scheduleRender==='function') scheduleRender(); else renderAll(); }catch(e){}
+  }
   lastSig=''; window.renderCritAlert();
 };
 window.critOpenPatient=function(id){
@@ -14461,6 +14501,10 @@ window.renderCritAlert=function(){
   var fresh=L.filter(function(p){return !announced.has(p.id);});
   fresh.forEach(function(p){announced.add(p.id);});
   if(fresh.length && Date.now()-BOOT>8000) chime();
+  var nowT=Date.now();
+  L.forEach(function(p){ if(!firstSeen.has(p.id)) firstSeen.set(p.id,nowT); });
+  var due=L.filter(function(p){ return !reminded.has(p.id) && nowT-firstSeen.get(p.id)>=120000; });
+  if(due.length){ due.forEach(function(p){ reminded.add(p.id); }); softChime(); }
   if(L.length&&!soundOn()&&wasActive()&&Date.now()-lastTry>10000){ lastTry=Date.now(); unlock(); }
   document.body.classList.toggle('crit-active', L.length>0 && !doneMsg);
   var p=L[0];
@@ -14476,6 +14520,46 @@ window.renderCritAlert=function(){
 setInterval(function(){ try{ window.renderCritAlert(); }catch(e){} },2000);
 try{ window.renderCritAlert(); }catch(e){}
 })();
+
+/* Today's Shift Assignments reset at midnight (hospital time). Assignments saved on an earlier
+   day are ignored on load, and at midnight every open screen clears them and one screen writes
+   the cleared list, so the front desk sets the day's doctors fresh each morning. */
+(function(){
+function dayKey(d){ try{ return _hospDayKey(d); }catch(e){ return new Date(d).toDateString(); } }
+function blank(){ var b={}; try{ Object.keys(shiftAssign).forEach(function(k){ b[k]=null; }); }catch(e){} return b; }
+window._shiftsForToday=function(data){
+  var a=data&&data.assignments||null; if(!a) return a;
+  var up=data.updated_at;
+  if(up && dayKey(up)===dayKey(new Date())) return a;
+  window.__shiftsStale=true;
+  var b=blank(); Object.keys(a).forEach(function(k){ b[k]=null; }); return b;
+};
+function applyLocal(a){
+  try{ if(typeof _shiftModalOpen!=='undefined'&&_shiftModalOpen) return;
+    Object.keys(shiftAssign).forEach(function(k){ shiftAssign[k]=null; }); Object.assign(shiftAssign,a||{});
+    applyShiftColors(); renderAll(); }catch(e){}
+}
+async function rollover(){
+  try{
+    if(typeof DB==='undefined'||!DB) { applyLocal(blank()); return; }
+    var ref=DB.collection('shifts').doc(TENANT_ID);
+    var snap=await ref.get(); var data=snap.exists?snap.data():null;
+    if(data&&data.updated_at&&dayKey(data.updated_at)===dayKey(new Date())){ applyLocal(data.assignments); return; }
+    applyLocal(blank());
+    if(typeof Backend!=='undefined'&&Backend.mode==='staff'){
+      await DB.runTransaction(async function(tx){
+        var s=await tx.get(ref), d=s.exists?s.data():null;
+        if(d&&d.updated_at&&dayKey(d.updated_at)===dayKey(new Date())) return;
+        tx.set(ref,{tenant_id:TENANT_ID, assignments:blank(), updated_at:new Date().toISOString(), reset_reason:'midnight'},{merge:true});
+      });
+    }
+  }catch(e){}
+}
+var lastDay=dayKey(new Date());
+setInterval(function(){ var k=dayKey(new Date()); if(k!==lastDay){ lastDay=k; rollover(); } },30000);
+setTimeout(function(){ if(window.__shiftsStale) rollover(); },12000);
+})();
+
 </script>
 </body>
 </html>
