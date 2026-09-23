@@ -14273,9 +14273,11 @@ function untaken(p){try{return !!p && isActive(p) && Number(p.prio)===1 && !p.cr
 function list(){return pts().filter(untaken).sort(function(a,b){return (new Date(a.arrival||0))-(new Date(b.arrival||0));});}
 function soundOn(){return !!(audioCtx&&audioCtx.state==='running');}
 function unlock(){
-  try{ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; audioCtx=new AC();}
-    var done=function(){ if(soundOn()){ ['pointerdown','keydown','touchstart'].forEach(function(t){document.removeEventListener(t,unlock,true);}); lastSig=''; window.renderCritAlert(); } };
-    if(audioCtx.state==='suspended'){ var pr=audioCtx.resume(); if(pr&&pr.then) pr.then(done); } else done();
+  /* Browsers only allow sound after someone interacts with the page. Every click or key
+     re-arms audio if the browser suspended it (first load, sleep, background tab). */
+  try{ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; audioCtx=new AC();
+      audioCtx.onstatechange=function(){ lastSig=''; try{ window.renderCritAlert(); }catch(e){} }; }
+    if(audioCtx.state!=='running'){ var pr=audioCtx.resume(); if(pr&&pr.then) pr.then(function(){ lastSig=''; window.renderCritAlert(); }).catch(function(){}); }
   }catch(e){}
 }
 ['pointerdown','keydown','touchstart'].forEach(function(t){document.addEventListener(t,unlock,true);});
