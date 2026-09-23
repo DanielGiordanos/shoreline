@@ -14260,7 +14260,7 @@ if (event.data?.type ==='luna-announcement-error') error.hidden = false;
    while an active P1 patient has no doctor and nobody has taken the case.
    Never shown or heard on the client display. */
 (function(){
-var BOOT=Date.now(), announced=new Set(), shownIds=[], localTaken=new Set(), audioCtx=null, tickT=null, doneMsg=null, doneT=null, lastSig='';
+var lastTry=0, BOOT=Date.now(), announced=new Set(), shownIds=[], localTaken=new Set(), audioCtx=null, tickT=null, doneMsg=null, doneT=null, lastSig='';
 var HEART='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg>';
 var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
 function box(){var n=document.getElementById('critIsland');if(!n){n=document.createElement('div');n.id='critIsland';n.setAttribute('role','alert');n.setAttribute('aria-live','assertive');document.body.appendChild(n);}return n;}
@@ -14273,15 +14273,22 @@ function untaken(p){try{return !!p && isActive(p) && Number(p.prio)===1 && !p.cr
 function list(){return pts().filter(untaken).sort(function(a,b){return (new Date(a.arrival||0))-(new Date(b.arrival||0));});}
 function soundOn(){return !!(audioCtx&&audioCtx.state==='running');}
 function unlock(){
-  /* Browsers only allow sound after someone interacts with the page. Every click or key
-     re-arms audio if the browser suspended it (first load, sleep, background tab). */
-  try{ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; audioCtx=new AC();
-      audioCtx.onstatechange=function(){ lastSig=''; try{ window.renderCritAlert(); }catch(e){} }; }
+  /* Browsers only allow sound after someone has interacted with the page. Any click or key
+     (and any render once the page has been interacted with) re-arms audio. A context the
+     browser left suspended is replaced, since a fresh one starts running after interaction. */
+  try{ var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    if(audioCtx&&audioCtx.state==='running') return;
+    if(audioCtx){ try{ audioCtx.onstatechange=null; audioCtx.close(); }catch(e){} }
+    audioCtx=new AC();
+    audioCtx.onstatechange=function(){ lastSig=''; try{ window.renderCritAlert(); }catch(e){} };
     if(audioCtx.state!=='running'){ var pr=audioCtx.resume(); if(pr&&pr.then) pr.then(function(){ lastSig=''; window.renderCritAlert(); }).catch(function(){}); }
+    lastSig='';
   }catch(e){}
 }
-['pointerdown','keydown','touchstart'].forEach(function(t){document.addEventListener(t,unlock,true);});
+function wasActive(){ try{ return !!(navigator.userActivation&&navigator.userActivation.hasBeenActive); }catch(e){ return false; } }
+['pointerdown','mousedown','click','keydown','touchstart'].forEach(function(t){document.addEventListener(t,function(){ unlock(); try{ window.renderCritAlert(); }catch(e){} },true);});
 function chime(){
+  if(!soundOn()&&wasActive()) unlock();
   if(!soundOn()) return;
   try{ var t0=audioCtx.currentTime+.03;
     [[659.25,0],[880,.17],[659.25,.55],[880,.72]].forEach(function(n){
@@ -14343,6 +14350,7 @@ window.renderCritAlert=function(){
   var fresh=L.filter(function(p){return !announced.has(p.id);});
   fresh.forEach(function(p){announced.add(p.id);});
   if(fresh.length && Date.now()-BOOT>8000) chime();
+  if(L.length&&!soundOn()&&wasActive()&&Date.now()-lastTry>10000){ lastTry=Date.now(); unlock(); }
   document.body.classList.toggle('crit-active', L.length>0);
   var p=L[0];
   var key=tv+'|'+soundOn()+'|'+(doneMsg?doneMsg.name:'')+'|'+ids.join(',')+'|'+(p?[p.name,p.room,p.reason,p.resusPref,p.species,p.arrival&&new Date(p.arrival).getTime()].join('~'):'');
