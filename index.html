@@ -4975,19 +4975,31 @@ body.dark .pv-log a{color:#70d8eb;}
 @media(prefers-reduced-motion:reduce){.luna-announcement,.luna-announcement-scene,.luna-alert-action button{transition:none}}
 
 
-/* ── Critical patient alert: one banner, one sound ── */
-#critIsland{position:fixed;top:12px;left:50%;z-index:9500;width:min(660px,calc(100vw - 24px));border-radius:26px;background:#150709;color:#fff;
- border:1px solid rgba(228,52,43,.38);box-shadow:0 20px 56px rgba(110,8,8,.40),inset 0 1px 0 rgba(255,255,255,.09);
- transform:translate(-50%,-150%) scale(.55);opacity:0;pointer-events:none;transition:transform .55s var(--ease-spring),opacity .22s var(--ease),background .3s var(--ease),border-color .3s var(--ease);
- font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif;letter-spacing:-.01em}
-#critIsland.show{transform:translate(-50%,0) scale(1);opacity:1;pointer-events:auto}
-#critIsland.taken{background:#06140E;border-color:rgba(72,184,136,.42);box-shadow:0 20px 56px rgba(8,70,44,.34),inset 0 1px 0 rgba(255,255,255,.08)}
+/* ── Critical Patient alert: Dynamic Island style banner ── */
+#critIsland{--ci-spring:cubic-bezier(.32,1.22,.5,1);--ci-w:640px;position:fixed;top:12px;left:50%;z-index:9500;width:132px;height:36px;border-radius:26px;overflow:hidden;
+ background:#140608;color:#fff;border:1px solid rgba(228,52,43,.34);box-shadow:0 20px 56px rgba(110,8,8,.38),inset 0 1px 0 rgba(255,255,255,.09);
+ transform:translateX(-50%) scale(.86);opacity:0;pointer-events:none;
+ transition:width .56s var(--ci-spring),height .56s var(--ci-spring),border-radius .5s var(--ci-spring),transform .5s var(--ci-spring),opacity .2s ease,background .4s ease,border-color .4s ease,box-shadow .4s ease;
+ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+#critIsland.on{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+#critIsland.pill{border-radius:18px}
+#critIsland.taken{background:#05140D;border-color:rgba(72,184,136,.42);box-shadow:0 20px 56px rgba(8,70,44,.34),inset 0 1px 0 rgba(255,255,255,.08)}
+#critIsland .ci-seed{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#FF5A4F;box-shadow:0 0 10px rgba(255,90,79,.8);opacity:0;transition:opacity .2s ease}
+#critIsland.pill .ci-seed{opacity:1}
+#critIsland.taken .ci-seed{background:#48D69A;box-shadow:0 0 10px rgba(72,214,154,.7)}
+#critIsland .ci-inner{width:var(--ci-w)}
+#critIsland .ci-inner .ci-s{opacity:0;transform:translateY(5px) scale(.98);transition:opacity .16s ease,transform .16s ease}
+#critIsland.content .ci-inner .ci-s{opacity:1;transform:none;transition:opacity .34s ease var(--d,0s),transform .5s var(--ci-spring) var(--d,0s)}
 #critIsland .ci-row{display:flex;align-items:center;gap:13px;padding:11px 11px 11px 13px}
-#critIsland .ci-ic{flex:0 0 42px;height:42px;border-radius:50%;display:grid;place-items:center;background:rgba(228,52,43,.22);color:#FF8A82}
+#critIsland .ci-ic{position:relative;flex:0 0 42px;height:42px;border-radius:50%;display:grid;place-items:center;background:rgba(228,52,43,.22);color:#FF8A82}
+#critIsland .ci-ic::before,#critIsland .ci-ic::after{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,120,110,.6);animation:ciRipple 2.4s cubic-bezier(.2,.6,.3,1) infinite;pointer-events:none}
+#critIsland .ci-ic::after{animation-delay:1.2s}
+@keyframes ciRipple{0%{transform:scale(1);opacity:.75}100%{transform:scale(1.55);opacity:0}}
+#critIsland .ci-ic svg{width:22px;height:22px;position:relative}
 #critIsland.taken .ci-ic{background:rgba(72,184,136,.22);color:#86E0B5}
-#critIsland .ci-ic svg{width:22px;height:22px;animation:ciBeat 1.6s var(--ease) infinite}
-#critIsland.taken .ci-ic svg{animation:none}
-@keyframes ciBeat{0%,100%{transform:scale(1)}14%{transform:scale(1.2)}28%{transform:scale(1)}}
+#critIsland.taken .ci-ic::before,#critIsland.taken .ci-ic::after{animation:none;opacity:0}
+#critIsland .ci-check path{stroke-dasharray:24;stroke-dashoffset:24;animation:ciDraw .5s cubic-bezier(.65,0,.35,1) .18s forwards}
+@keyframes ciDraw{to{stroke-dashoffset:0}}
 #critIsland .ci-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;background:none;border:0;padding:2px 0;color:inherit;text-align:left;font:inherit;cursor:pointer;border-radius:10px}
 #critIsland .ci-kicker{font-size:11.5px;font-weight:700;color:#FF9C95;letter-spacing:.015em}
 #critIsland.taken .ci-kicker{color:#86E0B5}
@@ -4999,15 +5011,30 @@ body.dark .pv-log a{color:#70d8eb;}
 #critIsland .ci-tag.cpr{background:rgba(255,255,255,.12);color:#fff}
 #critIsland .ci-tag.dnr{background:#fff;color:#8E1A14}
 #critIsland .ci-more{flex:0 0 auto;font-size:12px;font-weight:600;color:#FFB9B3;padding:4px 9px;border-radius:999px;background:rgba(228,52,43,.18)}
-#critIsland .ci-take{flex:0 0 auto;height:42px;padding:0 18px;border:0;border-radius:999px;background:#E4342B;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s var(--ease),filter .2s}
+#critIsland .ci-take{flex:0 0 auto;height:42px;padding:0 18px;border:0;border-radius:999px;background:#E4342B;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s ease,filter .2s}
 #critIsland .ci-take:hover{filter:brightness(1.08)}
 #critIsland .ci-take:active{transform:scale(.96)}
-#critIsland .ci-take:focus-visible,#critIsland .ci-main:focus-visible{outline:2px solid #FFB9B3;outline-offset:2px}
+#critIsland button:focus-visible{outline:2px solid #FFB9B3;outline-offset:2px}
 #critIsland .ci-hint{font-size:11.5px;color:#F3D983;padding:0 16px 10px 68px;margin-top:-4px}
+#critIsland .ci-pick{padding:0 12px 12px}
+#critIsland .ci-pick-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px 10px;font-size:13px;color:#E8D6D6}
+#critIsland .ci-docs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#critIsland .ci-doc{display:flex;align-items:center;gap:10px;min-width:0;padding:9px 11px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);color:#fff;text-align:left;cursor:pointer;font:inherit;transition:background .2s ease,transform .15s ease}
+#critIsland .ci-doc:hover{background:rgba(255,255,255,.13)}
+#critIsland .ci-doc:active{transform:scale(.97)}
+#critIsland .ci-av{flex:0 0 32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff}
+#critIsland .ci-doc span{min-width:0}
+#critIsland .ci-doc b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#critIsland .ci-doc small{display:block;font-size:12px;color:#CDB9B9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#critIsland .ci-pick>.ci-docs{max-height:min(330px,55vh);overflow:auto;overscroll-behavior:contain}
+#critIsland .ci-all{margin-top:8px;max-height:176px;overflow:auto;overscroll-behavior:contain}
+#critIsland .ci-link{background:none;border:0;color:#FFB9B3;font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:6px 8px;border-radius:10px}
+#critIsland .ci-link:hover{background:rgba(255,255,255,.07)}
+#critIsland .ci-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
 body.crit-active::after{content:"";position:fixed;inset:0;z-index:9400;pointer-events:none;box-shadow:inset 0 0 0 2px rgba(228,52,43,.55),inset 0 0 90px rgba(228,52,43,.16);animation:ciBreathe 2.6s ease-in-out infinite}
 @keyframes ciBreathe{0%,100%{opacity:.5}50%{opacity:1}}
-@media (max-width:640px){#critIsland .ci-sig,#critIsland .ci-tag{display:none}#critIsland .ci-take{padding:0 14px}}
-@media (prefers-reduced-motion:reduce){#critIsland{transition:opacity .2s}#critIsland .ci-ic svg,body.crit-active::after{animation:none}body.crit-active::after{opacity:.85}}
+@media (max-width:640px){#critIsland .ci-sig,#critIsland .ci-tag{display:none}#critIsland .ci-take{padding:0 14px}#critIsland .ci-docs{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){#critIsland,#critIsland .ci-inner .ci-s{transition:opacity .15s ease!important}#critIsland .ci-ic::before,#critIsland .ci-ic::after,body.crit-active::after{animation:none}#critIsland .ci-check path{animation:none;stroke-dashoffset:0}body.crit-active::after{opacity:.85}}
 </style>
 </head>
 <body>
@@ -14256,26 +14283,36 @@ if (event.data?.type ==='luna-announcement-error') error.hidden = false;
 </script>
 
 <script>
-/* Critical patient alert: one banner, one sound. Shows on every staff screen
-   while an active P1 patient has no doctor and nobody has taken the case.
-   Never shown or heard on the client display. */
+/* Critical Patient alert. One banner, one sound. Shows on every staff screen while an
+   active P1 patient has no doctor and nobody has taken the case. Take Case picks a doctor
+   from Today's Shift Assignments. Never shown or heard on the client display. */
 (function(){
-var lastTry=0, BOOT=Date.now(), announced=new Set(), shownIds=[], localTaken=new Set(), audioCtx=null, tickT=null, doneMsg=null, doneT=null, lastSig='';
-var HEART='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg>';
-var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
-function box(){var n=document.getElementById('critIsland');if(!n){n=document.createElement('div');n.id='critIsland';n.setAttribute('role','alert');n.setAttribute('aria-live','assertive');document.body.appendChild(n);}return n;}
+var lastTry=0, BOOT=Date.now(), announced=new Set(), shownIds=[], localTaken=new Set(), audioCtx=null, tickT=null;
+var doneMsg=null, doneT=null, lastSig='', pickFor=null, showAll=false, phase='hidden', token=0;
+var REDUCE=false; try{ REDUCE=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+var PILL_W=132, PILL_H=36;
+var ECG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg>';
+var CHECK='<svg class="ci-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+
+function box(){var n=document.getElementById('critIsland');if(!n){n=document.createElement('div');n.id='critIsland';n.setAttribute('role','alert');n.setAttribute('aria-live','assertive');n.innerHTML='<span class="ci-seed" aria-hidden="true"></span><div class="ci-inner"></div>';document.body.appendChild(n);}return n;}
+function inner(){return box().querySelector('.ci-inner');}
 function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function pts(){try{return PATIENTS||[];}catch(e){return [];}}
+function byId(id){return pts().find(function(x){return x.id===id;});}
 function onTV(){try{ if(document.body.classList.contains('client-mode')) return true; return (typeof currentView!=='undefined' && currentView==='client'); }catch(e){return false;}}
 function takenEntry(p){var t=p&&p.timeline;if(!t||!t.length)return null;for(var i=t.length-1;i>=0;i--){if(t[i]&&t[i].label==='Critical case taken')return t[i];}return null;}
-function takenBy(p){if(p.critTakenBy)return p.critTakenBy;var e=takenEntry(p);return e?(e.meta||'Staff'):'';}
+function docName(id){try{var d=DOCTORS.find(function(x){return x.id===id;});return d?d.name:'';}catch(e){return '';}}
+function takenBy(p){if(p.critTakenBy)return p.critTakenBy;var e=takenEntry(p);if(e)return e.meta||'Staff';return (p.doctor&&p.doctor!=='unassigned')?docName(p.doctor):'';}
 function untaken(p){try{return !!p && isActive(p) && Number(p.prio)===1 && !p.critTakenAt && !takenEntry(p) && (!p.doctor||p.doctor==='unassigned');}catch(e){return false;}}
 function list(){return pts().filter(untaken).sort(function(a,b){return (new Date(a.arrival||0))-(new Date(b.arrival||0));});}
+function me(){try{return CURRENT_USER||'Staff';}catch(e){return 'Staff';}}
+
+/* sound */
 function soundOn(){return !!(audioCtx&&audioCtx.state==='running');}
+function wasActive(){try{return !!(navigator.userActivation&&navigator.userActivation.hasBeenActive);}catch(e){return false;}}
 function unlock(){
-  /* Browsers only allow sound after someone has interacted with the page. Any click or key
-     (and any render once the page has been interacted with) re-arms audio. A context the
-     browser left suspended is replaced, since a fresh one starts running after interaction. */
+  /* Browsers allow sound only after someone interacts with the page. Any click or key re-arms it,
+     and a context the browser left suspended is replaced with a fresh one. */
   try{ var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
     if(audioCtx&&audioCtx.state==='running') return;
     if(audioCtx){ try{ audioCtx.onstatechange=null; audioCtx.close(); }catch(e){} }
@@ -14285,7 +14322,6 @@ function unlock(){
     lastSig='';
   }catch(e){}
 }
-function wasActive(){ try{ return !!(navigator.userActivation&&navigator.userActivation.hasBeenActive); }catch(e){ return false; } }
 ['pointerdown','mousedown','click','keydown','touchstart'].forEach(function(t){document.addEventListener(t,function(){ unlock(); try{ window.renderCritAlert(); }catch(e){} },true);});
 function chime(){
   if(!soundOn()&&wasActive()) unlock();
@@ -14299,39 +14335,112 @@ function chime(){
     });
   }catch(e){}
 }
+
+/* today's shift doctors */
+function shiftDoctors(){
+  var out=[];
+  try{ SHIFTS.forEach(function(s){ var id=shiftAssign[s.key]; if(!id||id==='unassigned'||id==='relief') return;
+      var d=DOCTORS.find(function(x){return x.id===id;}); if(!d) return;
+      var hit=out.find(function(o){return o.d.id===id;});
+      if(hit) hit.shifts.push(s); else out.push({d:d,shifts:[s]}); }); }catch(e){}
+  return out;
+}
+function patientCount(id){var n=0;try{n=activeCountForDoctor(id);}catch(e){} return n===0?'No patients':(n===1?'1 patient':n+' patients');}
+function initials(n){return String(n||'').split(/\s+/).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();}
+function docBtn(d,shifts,dl){
+  var col=shifts&&shifts.length?shifts[0].color:(d.baseColor||d.color||'#5C5E62');
+  var sub=(shifts&&shifts.length?shifts.map(function(s){return s.label;}).join(' + ')+' · ':'')+patientCount(d.id);
+  return '<button class="ci-doc ci-s" style="--d:'+dl+'s" type="button" data-doc="'+esc(d.id)+'"><span class="ci-av" style="background:'+esc(col)+'">'+esc(initials(d.name))+'</span><span><b>'+esc(d.name)+'</b><small>'+esc(sub)+'</small></span></button>';
+}
+
+/* view html */
 function mmss(ms){var s=Math.max(0,Math.floor(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
 function arrMs(p){var t=new Date(p.arrival).getTime();return isFinite(t)?t:null;}
-function myDoctor(){var n='';try{n=String(CURRENT_USER||'').trim().toLowerCase();}catch(e){} if(!n) return null; try{return DOCTORS.find(function(d){return d.name.toLowerCase()===n;})||null;}catch(e){return null;}}
-function me(){try{return CURRENT_USER||'Staff';}catch(e){return 'Staff';}}
 function sig(p){var sp='';try{sp=(typeof speciesEnglish==='function'?speciesEnglish(p.species):p.species)||'';}catch(e){sp=p.species||'';} var age='';try{age=formatPatientAge(p)||'';}catch(e){} return [sp,age].filter(Boolean).join(' ');}
 function resus(p){try{return normalizeResusPref(p.resusPref);}catch(e){return '';}}
-function html(p,more){
+function alertHTML(p,more){
   var loc=(p.room&&p.room!=='Lobby')?p.room:'Lobby', a=arrMs(p), r=resus(p), g=sig(p);
-  return '<div class="ci-row"><div class="ci-ic">'+HEART+'</div>'
-   +'<button class="ci-main" type="button" data-open="'+esc(p.id)+'" aria-label="Open '+esc(p.name)+'">'
+  var h='<div class="ci-row"><div class="ci-ic ci-s" style="--d:.02s">'+ECG+'</div>'
+   +'<button class="ci-main ci-s" style="--d:.07s" type="button" data-open="'+esc(p.id)+'" aria-label="Open '+esc(p.name)+'">'
    +'<span class="ci-kicker">Critical Patient · '+esc(loc)+'</span>'
    +'<span class="ci-name">'+esc(p.name||'Unnamed patient')+(g?' <span class="ci-sig">'+esc(g)+'</span>':'')+'</span>'
    +'<span class="ci-meta">'+(a?'<span class="ci-wait" data-arr="'+a+'">Waiting '+mmss(Date.now()-a)+'</span>':'Just arrived')+(p.reason?', '+esc(p.reason):'')+'</span></button>'
-   +(r?'<span class="ci-tag '+(r==='DNR'?'dnr':'cpr')+'">'+r+'</span>':'')
-   +(more>0?'<span class="ci-more">+'+more+' more</span>':'')
-   +'<button class="ci-take" type="button" data-take="'+esc(p.id)+'">Take case</button></div>'
-   +(soundOn()?'':'<div class="ci-hint">Sound is off on this screen. Click anywhere in Flow to turn it on.</div>');
+   +(r?'<span class="ci-tag ci-s" style="--d:.11s">'.replace('ci-tag','ci-tag '+(r==='DNR'?'dnr':'cpr'))+r+'</span>':'')
+   +(more>0?'<span class="ci-more ci-s" style="--d:.12s">+'+more+' more</span>':'')
+   +(pickFor===p.id?'':'<button class="ci-take ci-s" style="--d:.14s" type="button" data-take="'+esc(p.id)+'">Take Case</button>')+'</div>';
+  if(pickFor===p.id){
+    var on=shiftDoctors(), rest;
+    try{ rest=DOCTORS.filter(function(d){return !on.some(function(o){return o.d.id===d.id;});}); }catch(e){ rest=[]; }
+    h+='<div class="ci-pick"><div class="ci-pick-h ci-s" style="--d:.05s"><span>'+(on.length?'Who is taking '+esc(p.name)+'? Today\'s shift doctors':'No shift assignments today. Choose the doctor taking '+esc(p.name)+'.')+'</span></div>';
+    var grid=on.length?on:rest.map(function(d){return {d:d,shifts:[]};});
+    h+='<div class="ci-docs">'+grid.map(function(o,i){return docBtn(o.d,o.shifts,(.08+i*.035).toFixed(3));}).join('')+'</div>';
+    if(on.length&&rest.length&&showAll){ h+='<div class="ci-all"><div class="ci-docs">'+rest.map(function(d,i){return docBtn(d,[],(.03+i*.02).toFixed(3));}).join('')+'</div></div>'; }
+    h+='<div class="ci-foot ci-s" style="--d:.16s">'+(on.length&&rest.length?'<button class="ci-link" type="button" data-all="1">'+(showAll?'Hide other doctors':'Another doctor')+'</button>':'<span></span>')+'<button class="ci-link" type="button" data-cancel="1">Cancel</button></div></div>';
+  } else if(!soundOn()){
+    h+='<div class="ci-hint ci-s" style="--d:.18s">Sound is off on this screen. Click anywhere in Flow to turn it on.</div>';
+  }
+  return h;
 }
-function takenHTML(){return '<div class="ci-row"><div class="ci-ic">'+CHECK+'</div><div class="ci-main" style="cursor:default"><span class="ci-kicker">Case taken</span><span class="ci-name">'+esc(doneMsg.name)+' is yours</span><span class="ci-meta">'+esc(doneMsg.sub)+'</span></div></div>';}
+function takenHTML(){
+  return '<div class="ci-row"><div class="ci-ic ci-s" style="--d:0s">'+CHECK+'</div><div class="ci-main ci-s" style="--d:.06s;cursor:default">'
+   +'<span class="ci-kicker">Case Taken</span><span class="ci-name">'+esc(doneMsg.name)+' · '+esc(doneMsg.doc)+'</span>'
+   +'<span class="ci-meta">'+(doneMsg.by?'Assigned by '+esc(doneMsg.by):'Just now')+'</span></div></div>';
+}
+
+/* island motion: pill -> expand -> content in; content out -> pill -> gone */
+function targetW(){return Math.max(PILL_W,Math.min(660,(window.innerWidth||800)-24));}
+function measure(){var b=box();b.style.setProperty('--ci-w',targetW()+'px');return Math.max(PILL_H,inner().offsetHeight);}
+function size(w,h){var b=box();b.style.width=w+'px';b.style.height=h+'px';}
+function later(ms,fn){var t=token;setTimeout(function(){ if(t===token) fn(); }, REDUCE?0:ms);}
+function show(html,taken){
+  var b=box(); token++;
+  b.classList.toggle('taken',!!taken);
+  if(phase==='hidden'||phase==='closing'){
+    phase='opening';
+    inner().innerHTML=html; wire();
+    b.classList.remove('content'); b.classList.add('pill');
+    size(PILL_W,PILL_H); void b.offsetWidth; b.classList.add('on');
+    later(180,function(){ b.classList.remove('pill'); size(targetW(),measure());
+      later(250,function(){ b.classList.add('content'); phase='open'; }); });
+    return;
+  }
+  b.classList.remove('content');
+  later(130,function(){ inner().innerHTML=html; wire(); b.classList.remove('pill'); b.classList.add('on'); size(targetW(),measure()); later(60,function(){ b.classList.add('content'); phase='open'; }); });
+}
+function hide(){
+  if(phase==='hidden'||phase==='closing') return;
+  var b=box(); token++; phase='closing';
+  b.classList.remove('content');
+  later(140,function(){ b.classList.add('pill'); size(PILL_W,PILL_H);
+    later(420,function(){ b.classList.remove('on'); later(220,function(){ b.classList.remove('pill','taken'); inner().innerHTML=''; phase='hidden'; }); }); });
+}
+function wire(){
+  var b=box();
+  b.querySelectorAll('[data-take]').forEach(function(x){ x.onclick=function(){ pickFor=x.getAttribute('data-take'); showAll=false; lastSig=''; window.renderCritAlert(); }; });
+  b.querySelectorAll('[data-open]').forEach(function(x){ x.onclick=function(){ window.critOpenPatient(x.getAttribute('data-open')); }; });
+  b.querySelectorAll('[data-doc]').forEach(function(x){ x.onclick=function(){ window.critTakeCase(pickFor, x.getAttribute('data-doc')); }; });
+  b.querySelectorAll('[data-all]').forEach(function(x){ x.onclick=function(){ showAll=!showAll; lastSig=''; window.renderCritAlert(); }; });
+  b.querySelectorAll('[data-cancel]').forEach(function(x){ x.onclick=function(){ pickFor=null; lastSig=''; window.renderCritAlert(); }; });
+}
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&pickFor){ pickFor=null; lastSig=''; window.renderCritAlert(); } });
+window.addEventListener('resize',function(){ if(phase==='open'){ size(targetW(),measure()); } });
 function tickStart(){ if(tickT) return; tickT=setInterval(function(){ var w=document.querySelector('#critIsland .ci-wait'); if(w) w.textContent='Waiting '+mmss(Date.now()-Number(w.dataset.arr)); },1000); }
 function tickStop(){ clearInterval(tickT); tickT=null; }
-window.critTakeCase=function(id){
-  var p=pts().find(function(x){return x.id===id;});
-  if(!p||!untaken(p)){ lastSig=''; window.renderCritAlert(); return; }
-  var by=me(), at=new Date();
-  p.critTakenAt=at; p.critTakenBy=by;
+
+/* actions */
+window.critTakeCase=function(id,doctorId){
+  var p=byId(id);
+  if(!p||!untaken(p)){ pickFor=null; lastSig=''; window.renderCritAlert(); return; }
+  var d=null; try{ d=DOCTORS.find(function(x){return x.id===doctorId;})||null; }catch(e){}
+  if(!d){ return; }
+  var at=new Date(), by=me();
+  p.critTakenAt=at; p.critTakenBy=d.name;
   try{ if(AUTH&&AUTH.currentUser) p.critTakenUid=AUTH.currentUser.uid; }catch(e){}
-  (p.timeline=p.timeline||[]).push({label:'Critical case taken', at:at, meta:by});
-  var d=myDoctor();
-  if(d&&(!p.doctor||p.doctor==='unassigned')){ try{ assignDoctor(p,d.id); }catch(e){} }
-  localTaken.add(p.id);
-  doneMsg={name:p.name||'Patient', sub:d?('Assigned to '+d.name):('Taken by '+by)};
-  clearTimeout(doneT); doneT=setTimeout(function(){ doneMsg=null; lastSig=''; window.renderCritAlert(); },2600);
+  (p.timeline=p.timeline||[]).push({label:'Critical case taken', at:at, meta:d.name+(by&&by!==d.name?' · by '+by:'')});
+  try{ assignDoctor(p,d.id); }catch(e){ p.doctor=d.id; }
+  localTaken.add(p.id); pickFor=null; showAll=false;
+  doneMsg={name:p.name||'Patient', doc:d.name, by:(by&&by!==d.name)?by:''};
+  clearTimeout(doneT); doneT=setTimeout(function(){ doneMsg=null; lastSig=''; window.renderCritAlert(); },2800);
   try{ if(typeof scheduleRender==='function') scheduleRender(); else renderAll(); }catch(e){}
   lastSig=''; window.renderCritAlert();
 };
@@ -14339,27 +14448,29 @@ window.critOpenPatient=function(id){
   try{ if(typeof currentApp!=='undefined'&&currentApp!=='flow') switchView(currentView==='client'?'dashboard':currentView); }catch(e){}
   try{ openDrawer(id); }catch(e){}
 };
+
 window.renderCritAlert=function(){
-  var b=box(), tv=onTV(), L=tv?[]:list(), ids=L.map(function(p){return p.id;});
+  var tv=onTV(), L=tv?[]:list(), ids=L.map(function(p){return p.id;});
   shownIds.forEach(function(id){
     if(ids.indexOf(id)>-1||localTaken.has(id)||tv) return;
-    var p=pts().find(function(x){return x.id===id;});
-    var by=p?takenBy(p):''; if(by){ try{ notify('Critical case taken', esc(p.name)+' · '+esc(by), {icon:'doctor', color:'var(--priority-p1)'}); }catch(e){} }
+    var p=byId(id); var by=p?takenBy(p):'';
+    if(by){ try{ notify('Critical case taken', esc(p.name)+' · '+esc(by), {icon:'doctor', color:'var(--priority-p1)'}); }catch(e){} }
   });
   shownIds=ids;
+  if(pickFor&&ids.indexOf(pickFor)<0){ pickFor=null; showAll=false; }
   var fresh=L.filter(function(p){return !announced.has(p.id);});
   fresh.forEach(function(p){announced.add(p.id);});
   if(fresh.length && Date.now()-BOOT>8000) chime();
   if(L.length&&!soundOn()&&wasActive()&&Date.now()-lastTry>10000){ lastTry=Date.now(); unlock(); }
-  document.body.classList.toggle('crit-active', L.length>0);
+  document.body.classList.toggle('crit-active', L.length>0 && !doneMsg);
   var p=L[0];
-  var key=tv+'|'+soundOn()+'|'+(doneMsg?doneMsg.name:'')+'|'+ids.join(',')+'|'+(p?[p.name,p.room,p.reason,p.resusPref,p.species,p.arrival&&new Date(p.arrival).getTime()].join('~'):'');
+  var onDocs=''; try{ onDocs=JSON.stringify(shiftAssign); }catch(e){}
+  var key=tv+'|'+soundOn()+'|'+(doneMsg?doneMsg.name+doneMsg.doc:'')+'|'+pickFor+'|'+showAll+'|'+ids.join(',')+'|'+(pickFor?onDocs:'')+'|'+(p?[p.name,p.room,p.reason,p.resusPref,p.species,p.arrival&&new Date(p.arrival).getTime()].join('~'):'');
   if(key===lastSig) return;
   lastSig=key;
-  if(!L.length){ tickStop(); if(doneMsg&&!tv){ b.className='show taken'; b.innerHTML=takenHTML(); } else { b.className=''; } return; }
-  b.className='show'; b.innerHTML=html(p,L.length-1);
-  b.querySelector('[data-take]').onclick=function(){ window.critTakeCase(this.getAttribute('data-take')); };
-  b.querySelector('[data-open]').onclick=function(){ window.critOpenPatient(this.getAttribute('data-open')); };
+  if(tv||(!L.length&&!doneMsg)){ tickStop(); hide(); return; }
+  if(doneMsg){ tickStop(); show(takenHTML(),true); return; }
+  show(alertHTML(p,L.length-1),false);
   tickStart();
 };
 setInterval(function(){ try{ window.renderCritAlert(); }catch(e){} },2000);
