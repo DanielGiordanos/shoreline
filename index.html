@@ -14309,7 +14309,7 @@ function html(p,more){
   var loc=(p.room&&p.room!=='Lobby')?p.room:'Lobby', a=arrMs(p), r=resus(p), g=sig(p);
   return '<div class="ci-row"><div class="ci-ic">'+HEART+'</div>'
    +'<button class="ci-main" type="button" data-open="'+esc(p.id)+'" aria-label="Open '+esc(p.name)+'">'
-   +'<span class="ci-kicker">Critical patient · '+esc(loc)+'</span>'
+   +'<span class="ci-kicker">Critical Patient · '+esc(loc)+'</span>'
    +'<span class="ci-name">'+esc(p.name||'Unnamed patient')+(g?' <span class="ci-sig">'+esc(g)+'</span>':'')+'</span>'
    +'<span class="ci-meta">'+(a?'<span class="ci-wait" data-arr="'+a+'">Waiting '+mmss(Date.now()-a)+'</span>':'Just arrived')+(p.reason?', '+esc(p.reason):'')+'</span></button>'
    +(r?'<span class="ci-tag '+(r==='DNR'?'dnr':'cpr')+'">'+r+'</span>':'')
