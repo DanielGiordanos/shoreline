@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="flow-build" content="20260924-0613-a629343f">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -11,6 +12,11 @@
 <link rel="preload" href="assets/img/logo-dark.png" as="image">
 <link rel="preload" href="assets/img/logo-light.png" as="image">
 <link rel="icon" type="image/png" href="assets/img/favicon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0A1222">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Flow">
 <!-- Inter, variable axis: ONE file covering 400-900, including the 450/530/650/750
      weights this design actually uses (the old static 300;400;...;900 request had to
      round those to the nearest hundred). Loaded non-render-blocking via the media
@@ -5039,6 +5045,26 @@ body.crit-active::after{content:"";position:fixed;inset:0;z-index:9400;pointer-e
 #critIsland.taken .ci-link{color:#9FEBC8}
 #critIsland.taken .ci-link:hover{background:rgba(159,235,200,.1)}
 #critIsland .ci-keys{font-size:11.5px;color:#BFA9A9}
+/* ── Offline / sync / update capsule ── */
+#flowNet{position:fixed;left:50%;bottom:18px;z-index:9300;display:flex;align-items:center;gap:9px;max-width:calc(100vw - 32px);padding:9px 10px 9px 14px;border-radius:999px;
+ background:rgba(16,20,30,.9);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);color:#EEF1F6;
+ border:1px solid rgba(255,255,255,.08);box-shadow:0 14px 40px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08);
+ font:500 13px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;letter-spacing:-.005em;font-variant-numeric:tabular-nums;
+ opacity:0;transform:translate(-50%,14px) scale(.96);pointer-events:none;transition:opacity .25s ease,transform .45s cubic-bezier(.32,1.22,.5,1)}
+#flowNet.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+#flowNet svg{width:17px;height:17px;flex:0 0 17px}
+#flowNet b{font-weight:700}
+#flowNet span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:4px}
+#flowNet.off svg{color:#F3C95B}
+#flowNet.sync svg{color:#6FD3E6}
+#flowNet.ok svg{color:#6FDDAA}
+#flowNet.up svg{color:#6FD3E6}
+#flowNet button{flex:0 0 auto;border:0;border-radius:999px;background:#EEF1F6;color:#0C1424;font:inherit;font-weight:700;padding:6px 12px;cursor:pointer}
+#flowNet button:active{transform:scale(.96)}
+#flowNet .fn-spin{animation:fnSpin 1s linear infinite}
+@keyframes fnSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#flowNet{transition:opacity .2s ease}#flowNet .fn-spin{animation:none}}
+@media (prefers-reduced-transparency:reduce){#flowNet{background:#10141E;-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
 </head>
 <body>
@@ -6245,6 +6271,8 @@ appId:'1:237404385636:web:1ee3ba27f22c946f748a71'
 const SB_LOGIN_EMAIL ='au733@vca.com';
 try{ if(window.firebase && !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); }catch(e){}
 const DB   = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
+/* Offline: keep a local copy of the board so Flow opens and keeps working without a connection. */
+try{ if(DB && DB.enablePersistence) DB.enablePersistence({synchronizeTabs:true}).catch(function(){}); }catch(e){}
 const AUTH = (window.firebase && firebase.auth)      ? firebase.auth()      : null;
 const SB   = DB;
 
@@ -14567,6 +14595,120 @@ var lastDay=dayKey(new Date()), lastCyc=cycKey(new Date());
 setInterval(function(){ var d=dayKey(new Date()), c=cycKey(new Date()); if(d!==lastDay||c!==lastCyc){ lastDay=d; lastCyc=c; rollover(); } },30000);
 setTimeout(function(){ if(window.__shiftsStale) rollover(); },12000);
 window.__shiftReset={filtered:filtered, dayKey:dayKey, cycKey:cycKey};
+})();
+</script>
+
+<script>
+/* Offline support and automatic updates.
+   - Registers the service worker so Flow opens and shows the last board with no connection.
+   - A small capsule appears only when something needs attention: offline, syncing, just synced,
+     or an update ready. It stays hidden while everything is live.
+   - New versions of Flow are detected in the background and applied when the screen is idle,
+     online, and has nothing waiting to sync, so nobody loses what they are doing. */
+(function(){
+var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search);
+var CHECK_EVERY=120000, IDLE_MS=45000, RELOAD_GUARD_MS=5*60000;
+var state={online:navigator.onLine, fromCache:false, cacheSince:0, pending:0, offlineSince:navigator.onLine?0:Date.now(), wasOffline:!navigator.onLine, synced:0, update:false};
+var lastInput=Date.now(), loadedTag=null, el=null, lastHTML='';
+
+/* service worker */
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load',function(){ navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){}); });
+}
+
+/* capsule */
+function capsule(){ if(!el){ el=document.createElement('div'); el.id='flowNet'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite'); document.body.appendChild(el); } return el; }
+function clock(t){ try{ return new Date(t).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+function onTV(){ try{ return document.body.classList.contains('client-mode')||LOBBY; }catch(e){ return false; } }
+var ICON={
+  off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.8"/><path d="M14.7 10.2A10 10 0 0 1 19 12.9"/><path d="M2 8.8a15 15 0 0 1 4.2-2.7"/><path d="M10.7 5A15 15 0 0 1 22 8.8"/><path d="M12 20h.01"/></svg>',
+  sync:'<svg class="fn-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>',
+  ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>'
+};
+function offline(){ return !state.online || (state.fromCache && state.cacheSince && Date.now()-state.cacheSince>8000); }
+function waiting(n){ return n===1?'1 change waiting':n+' changes waiting'; }
+function render(){
+  var c=capsule(), off=offline(), html='', cls='';
+  if(off){
+    if(!state.offlineSince) state.offlineSince=Date.now();
+    state.wasOffline=true;
+    cls='off'; html=ICON.off+'<span><b>Offline</b> since '+clock(state.offlineSince)+' · '+(state.pending?waiting(state.pending):'Flow keeps working')+'</span>';
+  } else if(state.pending>0 && state.wasOffline){
+    cls='sync'; html=ICON.sync+'<span>Syncing '+(state.pending===1?'1 change':state.pending+' changes')+'</span>';
+  } else if(state.wasOffline){
+    state.wasOffline=false; state.offlineSince=0; state.synced=Date.now();
+    cls='ok'; html=ICON.ok+'<span>Back online · all changes saved</span>';
+  } else if(state.synced && Date.now()-state.synced<2600){
+    cls='ok'; html=ICON.ok+'<span>Back online · all changes saved</span>';
+  } else if(state.update){
+    cls='up'; html=ICON.up+'<span>Update ready</span><button type="button" data-fn-refresh>Refresh</button>';
+  }
+  if(onTV()) { cls=''; html=''; }
+  var key=cls+'|'+html;
+  if(key===lastHTML) return;
+  lastHTML=key;
+  if(!cls){ c.className=''; return; }
+  c.innerHTML=html; c.className='show '+cls;
+  var b=c.querySelector('[data-fn-refresh]'); if(b) b.onclick=function(){ applyUpdate(true); };
+}
+setInterval(render,1000);
+window.addEventListener('online',function(){ state.online=true; render(); checkUpdate(); });
+window.addEventListener('offline',function(){ state.online=false; state.offlineSince=Date.now(); render(); });
+
+/* pending writes and cache state, from Firestore itself */
+function watch(){
+  try{
+    if(LOBBY||typeof DB==='undefined'||!DB||typeof TENANT_ID==='undefined') return;
+    DB.collection('visits').where('tenant_id','==',TENANT_ID).onSnapshot({includeMetadataChanges:true},function(snap){
+      state.pending=snap.docs.filter(function(d){ return d.metadata.hasPendingWrites; }).length;
+      var fc=!!snap.metadata.fromCache;
+      if(fc&&!state.fromCache) state.cacheSince=Date.now();
+      state.fromCache=fc; if(!fc) state.cacheSince=0;
+      render();
+    },function(){});
+  }catch(e){}
+}
+try{ if(typeof AUTH!=='undefined'&&AUTH&&AUTH.onAuthStateChanged){ var started=false; AUTH.onAuthStateChanged(function(u){ if(u&&!started){ started=true; watch(); } }); } }catch(e){}
+
+/* updates */
+['pointerdown','keydown','wheel','touchstart'].forEach(function(t){ document.addEventListener(t,function(){ lastInput=Date.now(); },{capture:true,passive:true}); });
+function myBuild(){ var m=document.querySelector('meta[name="flow-build"]'); return m?m.getAttribute('content'):null; }
+async function liveBuild(){
+  /* Reads only the first 2 KB of the live page, where the build stamp sits. */
+  try{ var r=await fetch('/',{headers:{Range:'bytes=0-2047'},cache:'no-store'}); if(!(r.status===206||r.ok)) return null;
+    var t=await r.text(); var m=t.match(/<meta name="flow-build" content="([^"]+)"/); return m?m[1]:null; }catch(e){ return null; }
+}
+function busy(){
+  var a=document.activeElement, tag=a&&a.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(a&&a.isContentEditable)) return true;
+  if(document.querySelector('#critIsland .ci-pick, #critIsland.taken')) return true;
+  var open=document.querySelectorAll('.open');
+  for(var i=0;i<open.length;i++){ var cn=(typeof open[i].className==='string')?open[i].className:''; var s=(open[i].id||'')+' '+cn; if(/modal|drawer|scrim|sheet|menu|popover|panel/i.test(s)) return true; }
+  return false;
+}
+function canReload(){
+  if(offline()||state.pending>0) return false;
+  if(!onTV()&&(Date.now()-lastInput<IDLE_MS||busy())) return false;
+  var last=0; try{ last=Number(sessionStorage.getItem('flowUpdateAt')||0); }catch(e){}
+  return Date.now()-last>RELOAD_GUARD_MS;
+}
+function applyUpdate(now){
+  if(!now&&!canReload()) return;
+  if(offline()) return;
+  try{ sessionStorage.setItem('flowUpdateAt',String(Date.now())); }catch(e){}
+  location.reload();
+}
+async function checkUpdate(){
+  if(!loadedTag||offline()) return;
+  var cur=await liveBuild();
+  if(cur&&cur!==loadedTag){ state.update=true; render(); applyUpdate(false); }
+}
+loadedTag=myBuild();
+setInterval(checkUpdate,CHECK_EVERY);
+setInterval(function(){ if(state.update) applyUpdate(false); },15000);
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') checkUpdate(); });
+window.__flowNet={state:state, checkUpdate:checkUpdate, loadedTag:function(){ return loadedTag; }};
 })();
 </script>
 </body>
