@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20260924-0615-a629343f">
+<meta name="flow-build" content="20260929-0511-74bb7a3d">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5065,6 +5065,48 @@ body.crit-active::after{content:"";position:fixed;inset:0;z-index:9400;pointer-e
 @keyframes fnSpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#flowNet{transition:opacity .2s ease}#flowNet .fn-spin{animation:none}}
 @media (prefers-reduced-transparency:reduce){#flowNet{background:#10141E;-webkit-backdrop-filter:none;backdrop-filter:none}}
+
+/* ── Voice commands (pilot, per workstation) ── */
+#fvTalk{position:fixed;right:22px;bottom:22px;z-index:9350;display:flex;align-items:center;gap:10px;height:52px;padding:0 18px 0 6px;border:0;border-radius:999px;background:#0C1424;color:#fff;
+ font:600 14px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;box-shadow:0 14px 34px rgba(12,20,36,.28);cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;transition:transform .2s cubic-bezier(.32,1.22,.5,1),background .3s}
+#fvTalk .fv-mic{position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#4DC8E0,#2F7BEA)}
+#fvTalk .fv-mic svg{width:19px;height:19px}
+#fvTalk small{font-weight:500;color:#8FA3BF}
+#fvTalk.on{transform:scale(1.05);background:#10233A}
+#fvTalk.on .fv-mic::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(77,200,224,.6);animation:fvRing 1.2s ease-out infinite}
+@keyframes fvRing{from{transform:scale(.9);opacity:1}to{transform:scale(1.35);opacity:0}}
+#fvPanel{position:fixed;left:50%;bottom:86px;z-index:9360;width:min(620px,calc(100vw - 24px));border-radius:26px;background:rgba(16,20,30,.94);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);
+ color:#EEF1F6;box-shadow:0 22px 60px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.07);font:14px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;letter-spacing:-.01em;
+ opacity:0;transform:translate(-50%,14px) scale(.97);pointer-events:none;transition:opacity .2s ease,transform .45s cubic-bezier(.32,1.22,.5,1)}
+#fvPanel.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+#fvPanel .fv-in{padding:16px 18px}
+#fvPanel .fv-heard{font-size:13px;color:#AEB6C4;min-height:18px}
+#fvPanel .fv-heard q{color:#fff;font-weight:500}
+#fvPanel .fv-wave{display:flex;align-items:center;gap:4px;height:34px;margin:6px 0 2px}
+#fvPanel .fv-wave i{width:4px;height:6px;border-radius:3px;background:linear-gradient(180deg,#6FD3E6,#3E9BFF)}
+#fvPanel .fv-act{display:flex;align-items:center;gap:12px;margin-top:10px}
+#fvPanel .fv-med{flex:0 0 36px;height:36px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--c,#6FD3E6);font-weight:800;font-size:13px;color:#fff;background:rgba(255,255,255,.06)}
+#fvPanel .fv-t{flex:1;min-width:0}
+#fvPanel .fv-t b{display:block;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fvPanel .fv-path{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12.5px;color:#C9D0DC;flex-wrap:wrap}
+#fvPanel .fv-pill{padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.1);font-weight:600}
+#fvPanel .fv-pill.to{background:rgba(111,211,230,.2);color:#9BE6F2}
+#fvPanel .fv-btns{display:flex;gap:8px;flex:0 0 auto}
+#fvPanel .fv-no{height:40px;padding:0 15px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#EEF1F6;font:inherit;font-weight:600;cursor:pointer}
+#fvPanel .fv-ok{height:40px;padding:0 18px;border-radius:999px;border:0;background:#EEF1F6;color:#0C1424;font:inherit;font-weight:700;cursor:pointer}
+#fvPanel .fv-sub{font-size:12px;color:#8F98A8;margin-top:10px}
+#fvPanel .fv-ans{font-size:15px;margin-top:8px}
+#fvPanel .fv-err{color:#F3C95B}
+#fvPanel .fv-choices{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+#fvPanel .fv-choice{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:13px;text-align:left;cursor:pointer}
+#fvPanel .fv-choice small{display:block;color:#AEB6C4;font-size:11.5px}
+#fvPanel button:focus-visible,#fvTalk:focus-visible{outline:2px solid #6FD3E6;outline-offset:2px}
+#fvToast{position:fixed;left:50%;top:18px;z-index:9370;display:flex;align-items:center;gap:12px;padding:9px 10px 9px 16px;border-radius:999px;background:rgba(16,20,30,.94);color:#EEF1F6;font:13px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;box-shadow:0 14px 40px rgba(0,0,0,.28);opacity:0;transform:translate(-50%,-14px);pointer-events:none;transition:opacity .25s,transform .45s cubic-bezier(.32,1.22,.5,1)}
+#fvToast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#fvToast button{border:0;border-radius:999px;background:#EEF1F6;color:#0C1424;font:inherit;font-weight:700;padding:5px 12px;cursor:pointer}
+body.client-mode #fvTalk,body.client-mode #fvPanel{display:none!important}
+@media (max-width:640px){#fvTalk small{display:none}}
+@media (prefers-reduced-motion:reduce){#fvTalk,#fvPanel,#fvToast{transition:opacity .15s ease}#fvTalk.on .fv-mic::after{animation:none}}
 </style>
 </head>
 <body>
@@ -14709,6 +14751,196 @@ setInterval(checkUpdate,CHECK_EVERY);
 setInterval(function(){ if(state.update) applyUpdate(false); },15000);
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') checkUpdate(); });
 window.__flowNet={state:state, checkUpdate:checkUpdate, loadedTag:function(){ return loadedTag; }};
+})();
+</script>
+
+<script>
+/* Voice commands (pilot). Off by default. Turn on per workstation with ?voice=on, off with ?voice=off.
+   Hold Space (when not typing) or the mic button, speak, release. Flow shows what it understood and
+   waits for Confirm. Uses the browser's speech recognition (audio is processed by Google in Chrome;
+   approved by VCA IT). Only moves, rooms, assigns and answers questions. Never admits or discharges. */
+(function(){
+var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search);
+var KEY='flowVoice', STATS='flowVoiceStats';
+try{ var q=new URLSearchParams(location.search).get('voice');
+  if(q==='on') localStorage.setItem(KEY,'on');
+  if(q==='off') localStorage.removeItem(KEY);
+}catch(e){}
+var ENABLED=false; try{ ENABLED=localStorage.getItem(KEY)==='on'; }catch(e){}
+if(!ENABLED||LOBBY) return;
+
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var talk,panel,inner,toastEl, pending=null, undoFn=null, listening=false, rec=null, finalText='', interim='', startedAt=0, waveT=null;
+
+/* ---------- stats (counts only, no words or audio) ---------- */
+function stat(k){ try{ var s=JSON.parse(localStorage.getItem(STATS)||'{}'); s[k]=(s[k]||0)+1; localStorage.setItem(STATS,JSON.stringify(s)); }catch(e){} }
+function stats(){ try{ return JSON.parse(localStorage.getItem(STATS)||'{}'); }catch(e){ return {}; } }
+
+/* ---------- ui ---------- */
+function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function build(){
+  talk=document.createElement('button'); talk.id='fvTalk'; talk.type='button'; talk.setAttribute('aria-label','Hold to talk to Flow');
+  talk.innerHTML='<span class="fv-mic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span><span class="fv-l">Hold to talk</span><small>or hold Space</small>';
+  panel=document.createElement('div'); panel.id='fvPanel'; panel.setAttribute('role','dialog'); panel.setAttribute('aria-live','polite'); panel.innerHTML='<div class="fv-in"></div>';
+  toastEl=document.createElement('div'); toastEl.id='fvToast'; toastEl.setAttribute('role','status');
+  document.body.appendChild(panel); document.body.appendChild(talk); document.body.appendChild(toastEl);
+  inner=panel.querySelector('.fv-in');
+  talk.addEventListener('pointerdown',function(e){ e.preventDefault(); try{ talk.setPointerCapture(e.pointerId); }catch(_){} start(); });
+  talk.addEventListener('pointerup',stop); talk.addEventListener('pointercancel',stop);
+  if(new URLSearchParams(location.search).get('voice')==='stats'){ var s=stats(); show('<div class="fv-ans">Voice on this screen: '+(s.heard||0)+' commands heard, '+(s.understood||0)+' understood first try, '+(s.confirmed||0)+' confirmed, '+(s.cancelled||0)+' cancelled.</div>'); }
+}
+function show(html){ inner.innerHTML=html; panel.classList.add('show'); }
+function hide(){ panel.classList.remove('show'); pending=null; }
+function heard(t){ return '<div class="fv-heard">Heard <q>'+esc(t)+'</q></div>'; }
+function toast(t,withUndo){
+  toastEl.innerHTML='<span>'+esc(t)+'</span>'+(withUndo?'<button type="button">Undo</button>':'');
+  toastEl.classList.add('show');
+  var b=toastEl.querySelector('button'); if(b) b.onclick=function(){ toastEl.classList.remove('show'); if(undoFn){ undoFn(); undoFn=null; } };
+  clearTimeout(toastEl._h); toastEl._h=setTimeout(function(){ toastEl.classList.remove('show'); undoFn=null; }, withUndo?7000:2200);
+}
+function wave(){ return '<div class="fv-wave">'+new Array(28).join('<i></i>')+'<i></i></div>'; }
+function animate(){
+  clearInterval(waveT);
+  waveT=setInterval(function(){ var is=panel.querySelectorAll('.fv-wave i'); if(!is.length){ clearInterval(waveT); return; }
+    var t=Date.now(); for(var i=0;i<is.length;i++){ is[i].style.height=(5+ (0.25+0.7*Math.abs(Math.sin(t/170+i*.55)))*26)+'px'; } },60);
+}
+
+/* ---------- board access ---------- */
+function active(){ try{ return PATIENTS.filter(function(p){ return isActive(p)&&!p._voiceHidden; }); }catch(e){ return []; } }
+function roomList(){ try{ return ROOMS.filter(function(r){ return r!=='Lobby'; }); }catch(e){ return []; } }
+function docs(){ try{ return DOCTORS; }catch(e){ return []; } }
+function occupant(room){ return active().find(function(p){ return p.room===room; }); }
+function pName(p){ return ((p.name||'')+' '+(p.last||'')).trim(); }
+function color(p){ try{ return STATUSES[p.status].color; }catch(e){ return '#6FD3E6'; } }
+function where(p){ return (p.room&&p.room!=='Lobby')?p.room:(p.status==='Waiting'?'Lobby':p.status); }
+
+/* ---------- understanding ---------- */
+var NUM={one:'1',won:'1',two:'2',to:'2',too:'2',three:'3',tree:'3',four:'4',for:'4',five:'5',six:'6',sex:'6',seven:'7',eight:'8',nine:'9'};
+var STAGES=[
+  {kind:'status', v:'Waiting', words:['waiting','lobby','the lobby','waiting room']},
+  {kind:'status', v:'Exam', words:['exam','exams','exam room']},
+  {kind:'status', v:'Diagnostics', words:['diagnostics','diagnostic','lab','labs','radiology','imaging','x-ray','xray','rads']},
+  {kind:'status', v:'Ultrasound', words:['ultrasound','ultra sound','us']},
+  {kind:'status', v:'Procedure', words:['procedure','procedures','surgery','or']},
+  {kind:'room', v:'Treatment', words:['treatment','treatments','icu','the back','back','ward','wards']}
+];
+function clean(t){ return t.toLowerCase().replace(/[.,!?]/g,'').replace(/^(hey |ok |okay )?flow,?\s*/,'').replace(/\bplease\b/g,'').replace(/\s+/g,' ').trim(); }
+function roomFrom(w){ w=(w||'').trim(); if(/^comfort/.test(w)) return 'Comfort Room'; w=w.replace(/^room\s*/,'').split(' ')[0]; var n=NUM[w]||w.replace(/\D/g,''); return n?'Room '+n:null; }
+function stageFrom(t){ t=t.replace(/^the\s+/,''); for(var i=0;i<STAGES.length;i++){ if(STAGES[i].words.indexOf(t)>-1) return STAGES[i]; } return null; }
+function jw(a,b){ if(a===b) return 1; var m=Math.max(0,Math.floor(Math.max(a.length,b.length)/2)-1), am=[], bm=[], mt=0, t=0, i, j;
+  for(i=0;i<a.length;i++){ for(j=Math.max(0,i-m);j<Math.min(b.length,i+m+1);j++){ if(!bm[j]&&a[i]===b[j]){ am[i]=bm[j]=1; mt++; break; } } }
+  if(!mt) return 0; var k=0; for(i=0;i<a.length;i++){ if(am[i]){ while(!bm[k]) k++; if(a[i]!==b[k]) t++; k++; } }
+  var s=(mt/a.length+mt/b.length+(mt-t/2)/mt)/3, p=0; while(p<4&&a[p]&&a[p]===b[p]) p++; return s+p*0.1*(1-s); }
+function findPatients(q){
+  var w=q.replace(/^the\s+/,'').split(' ').filter(Boolean); if(!w.length) return [];
+  var sc=active().map(function(p){ var f=jw(w[0],(p.name||'').toLowerCase()), l=w[1]?jw(w[1],(p.last||'').toLowerCase()):0; return {p:p,s:w[1]?(f+l)/2:f}; })
+    .filter(function(x){ return x.s>0.82; }).sort(function(a,b){ return b.s-a.s; });
+  if(!sc.length) return []; var top=sc[0].s; return sc.filter(function(x){ return top-x.s<0.03; }).map(function(x){ return x.p; });
+}
+function findDoctor(t){ t=t.replace(/^(dr|doctor)\s+/,''); var best=null, bs=0;
+  docs().forEach(function(d){ var n=d.name.toLowerCase(), parts=n.split(' '); var s=Math.max.apply(null,[jw(t,n)].concat(parts.map(function(x){ return jw(t,x); }))); if(s>bs){ bs=s; best=d; } });
+  return bs>0.84?best:null; }
+function understand(raw){
+  var t=clean(raw), m;
+  if(/^(yes|yeah|yep|confirm|do it|correct|go ahead)$/.test(t)) return {kind:'yes'};
+  if(/^(no|cancel|stop|never ?mind)$/.test(t)) return {kind:'no'};
+  if(m=t.match(/^(?:move|send|take|bring)\s+(.+?)\s+(?:back\s+)?(?:to|into|in)\s+(.+)$/)){
+    if(/^(room\s|comfort)/.test(m[2])) return {kind:'room',who:m[1],room:roomFrom(m[2])};
+    return {kind:'move',who:m[1],stage:stageFrom(m[2]),said:m[2]}; }
+  if(m=t.match(/^(?:room|put)\s+(.+?)\s+(?:in|into|to)\s+(room\s.+|comfort.*)$/)) return {kind:'room',who:m[1],room:roomFrom(m[2])};
+  if(m=t.match(/^assign\s+(.+?)\s+to\s+(.+)$/)) return {kind:'assign',who:m[1],doc:findDoctor(m[2]),said:m[2]};
+  if(m=t.match(/^who(?:'s| is|s)\s+in\s+(room\s.+|comfort.*|treatment.*)$/)) return {kind:'who',room:/^treatment/.test(m[1])?'Treatment':roomFrom(m[1])};
+  if(/^(what|who)(?:'s| is|s)\s+waiting/.test(t)) return {kind:'waiting'};
+  if(/^(who(?:'s| is|s)\s+)?critical/.test(t)||/^(any|what)\s+critical/.test(t)) return {kind:'critical'};
+  return {kind:'unknown'};
+}
+
+/* ---------- actions ---------- */
+function snapshot(p){ return {status:p.status, room:p.room, roomSince:p.roomSince, doctor:p.doctor, examStartedAt:p.examStartedAt, examStartedByDoctorId:p.examStartedByDoctorId, examWaitMinutes:p.examWaitMinutes, tl:(p.timeline||[]).length}; }
+function restore(p,s){ p.status=s.status; p.room=s.room; p.roomSince=s.roomSince; var docChanged=p.doctor!==s.doctor; p.doctor=s.doctor; p.examStartedAt=s.examStartedAt; p.examStartedByDoctorId=s.examStartedByDoctorId; p.examWaitMinutes=s.examWaitMinutes;
+  if(p.timeline&&p.timeline.length>s.tl) p.timeline.length=s.tl; if(docChanged){ try{ ctSyncPrimary(p); }catch(e){} }
+  try{ scheduleRender(); }catch(e){ try{ renderAll(); }catch(_){} } }
+function propose(a,raw){
+  pending=a; var p=a.p, title='', path='';
+  if(a.kind==='move'){ title='Move '+pName(p); path='<span class="fv-pill">'+esc(where(p))+'</span> → <span class="fv-pill to">'+esc(a.stage.v)+'</span>'; }
+  if(a.kind==='room'){ title='Room '+pName(p); path='<span class="fv-pill">'+esc(where(p))+'</span> → <span class="fv-pill to">'+esc(a.room)+'</span>'; }
+  if(a.kind==='assign'){ title='Assign '+pName(p); var cur=(p.doctor&&p.doctor!=='unassigned')?(docs().find(function(d){ return d.id===p.doctor; })||{}).name:'No doctor'; path='<span class="fv-pill">'+esc(cur||'No doctor')+'</span> → <span class="fv-pill to">'+esc(a.doc.name)+'</span>'; }
+  show(heard(raw)+'<div class="fv-act"><div class="fv-med" style="--c:'+color(p)+'">'+esc((p.name||'?')[0])+'</div><div class="fv-t"><b>'+esc(title)+'</b><div class="fv-path">'+path+'</div></div><div class="fv-btns"><button class="fv-no" type="button">Cancel</button><button class="fv-ok" type="button">Confirm</button></div></div><div class="fv-sub">Press Enter, tap Confirm, or hold to talk and say “yes”.</div>');
+  inner.querySelector('.fv-ok').onclick=confirm; inner.querySelector('.fv-no').onclick=function(){ stat('cancelled'); hide(); };
+}
+function confirm(){
+  var a=pending; if(!a||!a.p) return; var p=a.p;
+  if(!isActive(p)){ show('<div class="fv-ans fv-err">'+esc(pName(p))+' is no longer on the board.</div>'); pending=null; return; }
+  var s=snapshot(p), msg='';
+  try{
+    if(a.kind==='move'){
+      if(a.stage.kind==='status'){ if(p.status===a.stage.v){ msg=pName(p)+' is already in '+a.stage.v; } else { moveStatus(p,a.stage.v); msg='Moved '+pName(p)+' to '+a.stage.v; } }
+      else { if(!canDropRoom(p,a.stage.v)){ show('<div class="fv-ans fv-err">Can\'t move '+esc(pName(p))+' to '+esc(a.stage.v)+'.</div>'); pending=null; return; } moveRoom(p,a.stage.v); msg='Moved '+pName(p)+' to '+a.stage.v; }
+    }
+    if(a.kind==='room'){ if(!canDropRoom(p,a.room)){ var o=occupant(a.room); show('<div class="fv-ans fv-err">'+esc(a.room)+(o?' has '+esc(pName(o))+' in it.':' isn\'t available.')+'</div>'); pending=null; return; } moveRoom(p,a.room); msg=pName(p)+' roomed in '+a.room; }
+    if(a.kind==='assign'){ assignDoctor(p,a.doc.id); msg=pName(p)+' assigned to '+a.doc.name; }
+  }catch(e){ show('<div class="fv-ans fv-err">That didn\'t work. Try again or use the board.</div>'); pending=null; return; }
+  stat('confirmed'); hide();
+  undoFn=function(){ restore(p,s); toast('Undone'); };
+  toast(msg,true);
+}
+function handle(raw){
+  stat('heard');
+  var u=understand(raw);
+  if(u.kind==='yes'){ if(pending&&pending.p){ confirm(); } return; }
+  if(u.kind==='no'){ hide(); return; }
+  if(u.kind==='unknown'){ show(heard(raw)+'<div class="fv-ans fv-err">Try “move Bella to Exam”, “room Oscar in Room 3”, “assign Max to Dr. Meyer”, or “who\'s in Room 5?”</div>'); return; }
+  if(u.kind==='waiting'){ var L=active().filter(function(p){ return p.status==='Waiting'; }); stat('understood'); show(heard(raw)+'<div class="fv-ans"><b>'+L.length+' waiting:</b> '+(L.length?esc(L.map(pName).join(', ')):'no one')+'.</div>'); return; }
+  if(u.kind==='critical'){ var C=active().filter(function(p){ return Number(p.prio)===1; }); stat('understood'); show(heard(raw)+'<div class="fv-ans"><b>'+C.length+' critical:</b> '+(C.length?esc(C.map(function(p){ return pName(p)+' ('+where(p)+')'; }).join(', ')):'none')+'.</div>'); return; }
+  if(u.kind==='who'){ if(!u.room){ show(heard(raw)+'<div class="fv-ans fv-err">Which room?</div>'); return; } var ps=active().filter(function(p){ return p.room===u.room; }); stat('understood');
+    show(heard(raw)+'<div class="fv-ans">'+(ps.length?esc(ps.map(pName).join(', '))+' '+(ps.length>1?'are':'is')+' in '+esc(u.room)+'.':esc(u.room)+' is empty.')+'</div>'); return; }
+  if(u.kind==='room'&&(!u.room||roomList().indexOf(u.room)<0)){ show(heard(raw)+'<div class="fv-ans fv-err">I didn\'t catch which room.</div>'); return; }
+  if(u.kind==='move'&&!u.stage){ show(heard(raw)+'<div class="fv-ans fv-err">Move where? Lobby, Exam, Diagnostics, Ultrasound, Procedure or Treatment.</div>'); return; }
+  if(u.kind==='assign'&&!u.doc){ show(heard(raw)+'<div class="fv-ans fv-err">No doctor named “'+esc(u.said)+'”.</div>'); return; }
+  var matches=findPatients(u.who||'');
+  if(!matches.length){ show(heard(raw)+'<div class="fv-ans fv-err">No patient named “'+esc(u.who)+'” on the board.</div>'); return; }
+  stat('understood');
+  var go=function(p){ if(u.kind==='move') propose({kind:'move',p:p,stage:u.stage},raw); if(u.kind==='room'){ if(p.room===u.room){ show(heard(raw)+'<div class="fv-ans">'+esc(pName(p))+' is already in '+esc(u.room)+'.</div>'); pending=null; return; } var o=occupant(u.room); if(o&&o!==p){ show(heard(raw)+'<div class="fv-ans fv-err">'+esc(u.room)+' has '+esc(pName(o))+' in it.</div>'); pending=null; return; } propose({kind:'room',p:p,room:u.room},raw); } if(u.kind==='assign') propose({kind:'assign',p:p,doc:u.doc},raw); };
+  if(matches.length===1){ go(matches[0]); return; }
+  pending={kind:'choose'};
+  show(heard(raw)+'<div class="fv-ans">Which '+esc(matches[0].name)+'?</div><div class="fv-choices">'+matches.slice(0,4).map(function(p){ return '<button class="fv-choice" type="button" data-id="'+esc(p.id)+'"><span class="fv-med" style="--c:'+color(p)+'">'+esc((p.name||'?')[0])+'</span><span>'+esc(pName(p))+'<small>'+esc(where(p))+'</small></span></button>'; }).join('')+'</div>');
+  inner.querySelectorAll('[data-id]').forEach(function(b){ b.onclick=function(){ var p=matches.find(function(x){ return String(x.id)===b.getAttribute('data-id'); }); if(p) go(p); }; });
+}
+
+/* ---------- microphone ---------- */
+function start(){
+  if(listening) return;
+  if(!SR){ show('<div class="fv-ans fv-err">Voice needs Chrome or Safari on this computer.</div>'); return; }
+  if(!navigator.onLine){ show('<div class="fv-ans fv-err">Voice needs an internet connection.</div>'); return; }
+  listening=true; finalText=''; interim=''; startedAt=Date.now();
+  talk.classList.add('on'); talk.querySelector('.fv-l').textContent='Listening…';
+  show('<div class="fv-heard" id="fvLive">Listening…</div>'+wave()); animate();
+  rec=new SR(); rec.lang='en-US'; rec.interimResults=true; rec.continuous=true;
+  rec.onresult=function(e){ interim=''; for(var i=e.resultIndex;i<e.results.length;i++){ var r=e.results[i]; if(r.isFinal) finalText+=r[0].transcript+' '; else interim+=r[0].transcript; }
+    var l=document.getElementById('fvLive'); if(l) l.innerHTML='<q>'+esc((finalText+interim).trim())+'</q>'; };
+  rec.onerror=function(e){ var m=e&&e.error; if(m==='not-allowed'||m==='service-not-allowed'){ listening=false; talk.classList.remove('on'); talk.querySelector('.fv-l').textContent='Hold to talk'; show('<div class="fv-ans fv-err">The microphone is blocked. Click the icon in the address bar and allow the microphone for Flow.</div>'); } };
+  try{ rec.start(); }catch(e){}
+}
+function stop(){
+  if(!listening) return; listening=false; clearInterval(waveT);
+  talk.classList.remove('on'); talk.querySelector('.fv-l').textContent='Hold to talk';
+  var r=rec; rec=null; if(!r) return;
+  var quick=Date.now()-startedAt<350;
+  r.onend=function(){ var t=(finalText+interim).trim(); if(quick&&!t){ hide(); return; } if(t) handle(t); else show('<div class="fv-ans fv-err">Didn\'t catch that. Hold, speak, then let go.</div>'); };
+  try{ r.stop(); }catch(e){}
+}
+function typing(){ var a=document.activeElement, t=a&&a.tagName; return t==='INPUT'||t==='TEXTAREA'||t==='SELECT'||(a&&a.isContentEditable); }
+document.addEventListener('keydown',function(e){
+  if(document.body.classList.contains('client-mode')) return;
+  if(e.code==='Space'&&!typing()&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(!e.repeat) start(); return; }
+  if(e.key==='Enter'&&panel&&panel.classList.contains('show')&&pending&&pending.p&&!typing()){ e.preventDefault(); confirm(); return; }
+  if(e.key==='Escape'&&panel&&panel.classList.contains('show')){ hide(); }
+},true);
+document.addEventListener('keyup',function(e){ if(e.code==='Space'&&listening){ e.preventDefault(); stop(); } },true);
+document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&e.target!==talk&&!talk.contains(e.target)&&!(pending&&pending.p)) hide(); },true);
+
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',build); else build();
+window.__flowVoice={understand:understand, findPatients:findPatients, handle:handle, confirm:confirm, stats:stats};
 })();
 </script>
 </body>
