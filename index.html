@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20260929-0549-f786a4c7">
+<meta name="flow-build" content="20260929-1632-f786a4c7">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -14820,22 +14820,24 @@ window.__flowNet={state:state, checkUpdate:checkUpdate, loadedTag:function(){ re
 </script>
 
 <script>
-/* Voice commands (pilot). Off by default. Turn on per workstation with ?voice=on, off with ?voice=off.
-   Click the mic in the search bar (stops after a pause), or hold Space when not typing, speak, release. Flow shows what it understood and
-   waits for Confirm. Uses the browser's speech recognition (audio is processed by Google in Chrome;
-   approved by VCA IT). Only moves, rooms, assigns and answers questions. Never admits or discharges. */
+/* Voice commands. On for every workstation (approved by VCA IT). Click the mic in the search bar
+   (stops after a pause), or hold Space when not typing, speak, release. Flow shows what it understood;
+   safe changes happen at once with Undo, everything else waits for Confirm. Uses the browser's speech
+   recognition (audio is processed by Google in Chrome). Never admits or discharges.
+   A single screen can opt out with ?voice=off and back in with ?voice=on.
+   Typed commands in the search bar always work, with or without the mic. */
 (function(){
 var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search);
 var KEY='flowVoice', STATS='flowVoiceStats';
 try{ var q=new URLSearchParams(location.search).get('voice');
-  if(q==='on') localStorage.setItem(KEY,'on');
-  if(q==='off') localStorage.removeItem(KEY);
+  if(q==='on') localStorage.removeItem(KEY);
+  if(q==='off') localStorage.setItem(KEY,'off');
 }catch(e){}
-var ENABLED=false; try{ ENABLED=localStorage.getItem(KEY)==='on'; }catch(e){}
-/* Typed commands in the search bar work for everyone. The microphone (voice) stays per-workstation: ?voice=on */
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+/* The mic shows wherever the browser can do speech (Chrome, Edge, Safari), unless this screen opted out. */
+var ENABLED=!!SR; try{ if(localStorage.getItem(KEY)==='off') ENABLED=false; }catch(e){}
 if(LOBBY) return;
 
-var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 var talk,panel,inner,toastEl, pending=null, undoFn=null, listening=false, rec=null, finalText='', interim='', startedAt=0, waveT=null;
 
 /* ---------- stats (counts only, no words or audio) ---------- */
