@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20260929-0529-4bd63474">
+<meta name="flow-build" content="20260929-0546-f786a4c7">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5153,6 +5153,23 @@ body:not(.dark) #fvPanel .fv-choice{border-color:rgba(0,0,0,.1);background:rgba(
 body:not(.dark) #fvPanel .fv-choice small{color:#6E6E73}
 body:not(.dark) #fvToast{background:rgba(255,255,255,.9);color:#1D1D1F;-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);box-shadow:0 12px 34px rgba(30,40,70,.18)}
 body:not(.dark) #fvToast button{background:#1D1D1F;color:#fff}
+
+/* multi-step confirm card, answers */
+#fvPanel .fv-list{margin-top:10px;display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
+#fvPanel .fv-row{display:flex;align-items:center;gap:12px}
+#fvPanel .fv-row .fv-med{flex-basis:30px;height:30px;font-size:12px}
+#fvPanel .fv-row .fv-t b{font-size:14px}
+#fvPanel .fv-ans+.fv-ans{margin-top:6px}
+#fvPanel .fv-ans small{font-size:12px;opacity:.6;margin-left:2px}
+body:not(.dark) #fvPanel .fv-list{border-top-color:rgba(0,0,0,.07)}
+/* typed command row in search results */
+#searchResults .fv-cmd{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:11px;align-items:center;min-height:52px;padding:6px 15px;border-bottom:1px solid var(--sr-sep);color:var(--sr-s)}
+#searchResults .fv-cmd .sr-ic{background:linear-gradient(135deg,#3E8BFF,#8E6CFF)}
+#searchResults .fv-cmd:not(.ready) .sr-ic{background:rgba(127,140,160,.35)}
+#searchResults .fv-cmd:not(.ready) .sr-t{color:var(--sr-s)}
+#searchResults .fv-cmd.ready{cursor:pointer;background:var(--sr-hover)}
+#searchResults .fv-cmd .sr-t{white-space:pre-line;line-height:1.4;padding:4px 0}
+#searchResults .fv-cmd kbd{font:600 10.5px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;letter-spacing:.02em;color:var(--sr-kind);padding:3px 7px;border-radius:6px;border:1px solid var(--sr-sep);background:transparent}
 body.client-mode #fvTalk,body.client-mode #fvPanel{display:none!important}
 @media (prefers-reduced-motion:reduce){.search .search-wrap>.fv-ring,.search .search-wrap>.fv-halo,.fv-live{animation:none!important}#fvTalk,#fvPanel,#fvToast{transition:opacity .15s ease}#fvTalk.on::after{animation:none}}
 </style>
@@ -14896,12 +14913,12 @@ function meterStop(){ cancelAnimationFrame(meter.raf); try{ if(meter.stream) met
   meter.stream=meter.ctx=meter.an=null; meter.l=0; if(wrap) wrap.style.setProperty('--fvL','0'); }
 function show(html){ inner.innerHTML=html; place(); panel.classList.add('show'); }
 function hide(){ panel.classList.remove('show'); pending=null; }
-function heard(t){ return '<div class="fv-heard">Heard <q>'+esc(t)+'</q></div>'; }
-function toast(t,withUndo){
+function heard(t){ return '<div class="fv-heard">'+(via==='typed'?'':'Heard ')+'<q>'+esc(t)+'</q></div>'; }
+function toast(t,withUndo,dur){
   toastEl.innerHTML='<span>'+esc(t)+'</span>'+(withUndo?'<button type="button">Undo</button>':'');
   toastEl.classList.add('show');
   var b=toastEl.querySelector('button'); if(b) b.onclick=function(){ toastEl.classList.remove('show'); if(undoFn){ undoFn(); undoFn=null; } };
-  clearTimeout(toastEl._h); toastEl._h=setTimeout(function(){ toastEl.classList.remove('show'); undoFn=null; }, withUndo?7000:2200);
+  clearTimeout(toastEl._h); toastEl._h=setTimeout(function(){ toastEl.classList.remove('show'); undoFn=null; }, dur||(withUndo?7000:2200));
 }
 function wave(){ return '<div class="fv-wave">'+new Array(28).join('<i></i>')+'<i></i></div>'; }
 function animate(){
@@ -14919,98 +14936,249 @@ function pName(p){ return ((p.name||'')+' '+(p.last||'')).trim(); }
 function color(p){ try{ return STATUSES[p.status].color; }catch(e){ return '#6FD3E6'; } }
 function where(p){ return (p.room&&p.room!=='Lobby')?p.room:(p.status==='Waiting'?'Lobby':p.status); }
 
-/* ---------- understanding ---------- */
+/* ---------- understanding ----------
+   One command engine for voice and typing. Handles chains ("… and give her to Dr. Lee"),
+   corrections ("no, Room 4"), questions, and decides what is safe to do without a Confirm. */
 var NUM={one:'1',won:'1',two:'2',to:'2',too:'2',three:'3',tree:'3',four:'4',for:'4',five:'5',six:'6',sex:'6',seven:'7',eight:'8',nine:'9'};
 var STAGES=[
   {kind:'status', v:'Waiting', words:['waiting','lobby','the lobby','waiting room']},
   {kind:'status', v:'Exam', words:['exam','exams','exam room']},
-  {kind:'status', v:'Diagnostics', words:['diagnostics','diagnostic','lab','labs','radiology','imaging','x-ray','xray','rads']},
+  {kind:'status', v:'Diagnostics', words:['diagnostics','diagnostic','lab','labs','radiology','imaging','x-ray','xray','x ray','rads']},
   {kind:'status', v:'Ultrasound', words:['ultrasound','ultra sound','us']},
   {kind:'status', v:'Procedure', words:['procedure','procedures','surgery','or']},
   {kind:'room', v:'Treatment', words:['treatment','treatments','icu','the back','back','ward','wards']}
 ];
-function clean(t){ return t.toLowerCase().replace(/[.,!?]/g,'').replace(/^(hey |ok |okay )?flow,?\s*/,'').replace(/\bplease\b/g,'').replace(/\s+/g,' ').trim(); }
-function roomFrom(w){ w=(w||'').trim(); if(/^comfort/.test(w)) return 'Comfort Room'; w=w.replace(/^room\s*/,'').split(' ')[0]; var n=NUM[w]||w.replace(/\D/g,''); return n?'Room '+n:null; }
-function stageFrom(t){ t=t.replace(/^the\s+/,''); for(var i=0;i<STAGES.length;i++){ if(STAGES[i].words.indexOf(t)>-1) return STAGES[i]; } return null; }
+var PRONOUN=/^(her|him|it|them|she|he|that one|this one|the same one|same one)$/;
+var HELP='Try “move Bella to Exam”, “move Max to Room 3 and give him to Dr. Meyer”, “how long has Oscar been waiting?” or “what rooms are open?”';
+var ctx=null, via='voice';
+function norm(t){ return String(t||'').toLowerCase().replace(/[’‘]/g,"'").replace(/[.!?;:]/g,' ').replace(/^\s*(hey |ok |okay )?flow\b\s*,?/,'').replace(/\bplease\b/g,' ').replace(/^\s*(?:(?:um|uh|so|okay|ok|alright|now|and now|next|then)\s+)+/,'').replace(/\s+/g,' ').trim(); }
+function flat(c){ return c.replace(/,/g,' ').replace(/\s+/g,' ').trim(); }
+function splitClauses(t){ return t.split(/\s*,\s*(?:and\s+then\s+|and\s+|then\s+)?|\s+(?:and then|and also|then|and|also)\s+/).map(flat).filter(Boolean); }
+function roomFrom(w){ w=(w||'').trim().replace(/^the\s+/,''); if(/^comfort/.test(w)) return 'Comfort Room';
+  var m=w.match(/^(?:exam room|room|rm)\s*(\w+)$/)||w.match(/^(\w+)$/); if(!m) return null; var n=NUM[m[1]]||(/^\d+$/.test(m[1])?m[1]:''); return n?'Room '+n:null; }
+function stageFrom(t){ t=(t||'').replace(/^the\s+/,''); for(var i=0;i<STAGES.length;i++){ if(STAGES[i].words.indexOf(t)>-1) return STAGES[i]; } return null; }
 function jw(a,b){ if(a===b) return 1; var m=Math.max(0,Math.floor(Math.max(a.length,b.length)/2)-1), am=[], bm=[], mt=0, t=0, i, j;
   for(i=0;i<a.length;i++){ for(j=Math.max(0,i-m);j<Math.min(b.length,i+m+1);j++){ if(!bm[j]&&a[i]===b[j]){ am[i]=bm[j]=1; mt++; break; } } }
   if(!mt) return 0; var k=0; for(i=0;i<a.length;i++){ if(am[i]){ while(!bm[k]) k++; if(a[i]!==b[k]) t++; k++; } }
   var s=(mt/a.length+mt/b.length+(mt-t/2)/mt)/3, p=0; while(p<4&&a[p]&&a[p]===b[p]) p++; return s+p*0.1*(1-s); }
+/* returns [{p,s}]: the best matches (ties within 0.03) */
 function findPatients(q){
-  var w=q.replace(/^the\s+/,'').split(' ').filter(Boolean); if(!w.length) return [];
+  var w=(q||'').replace(/^(the|a)\s+/,'').replace(/'s$/,'').split(' ').filter(Boolean); if(!w.length) return [];
   var sc=active().map(function(p){ var f=jw(w[0],(p.name||'').toLowerCase()), l=w[1]?jw(w[1],(p.last||'').toLowerCase()):0; return {p:p,s:w[1]?(f+l)/2:f}; })
     .filter(function(x){ return x.s>0.82; }).sort(function(a,b){ return b.s-a.s; });
-  if(!sc.length) return []; var top=sc[0].s; return sc.filter(function(x){ return top-x.s<0.03; }).map(function(x){ return x.p; });
+  if(!sc.length) return []; var top=sc[0].s; return sc.filter(function(x){ return top-x.s<0.03; });
 }
-function findDoctor(t){ t=t.replace(/^(dr|doctor)\s+/,''); var best=null, bs=0;
-  docs().forEach(function(d){ var n=d.name.toLowerCase(), parts=n.split(' '); var s=Math.max.apply(null,[jw(t,n)].concat(parts.map(function(x){ return jw(t,x); }))); if(s>bs){ bs=s; best=d; } });
-  return bs>0.84?best:null; }
+function findDoctor(t){ t=(t||'').replace(/^(dr|doctor)\s+/,'').replace(/'s$/,''); if(!t) return null; var best=null, bs=0;
+  docs().forEach(function(d){ var n=String(d.name||'').toLowerCase().replace(/\./g,''), parts=n.split(' ').filter(function(x){ return x&&x!=='dr'; }); var s=Math.max.apply(null,[jw(t,n),jw(t,n.replace(/^dr\s+/,''))].concat(parts.map(function(x){ return jw(t,x); }))); if(s>bs){ bs=s; best=d; } });
+  return bs>0.84?{d:best,s:bs}:null; }
+function destFrom(x){ x=(x||'').replace(/^(the|a)\s+/,'').trim(); if(!x) return null;
+  if(/^(dr|doctor)\s/.test(x)){ var d=findDoctor(x); return d?{doc:d.d,ds:d.s}:{badDoc:x}; }
+  var st=stageFrom(x); if(st) return {dest:{type:st.kind,v:st.v}};
+  var r=roomFrom(x); if(r) return {dest:{type:'room',v:r}};
+  var d2=findDoctor(x); if(d2&&d2.s>=0.9) return {doc:d2.d,ds:d2.s};
+  return {unknown:x}; }
+function withDest(o,x){ var d=destFrom(x)||{unknown:x};
+  if(d.doc){ o.op='assign'; o.doc=d.doc; o.ds=d.ds; o.said=x; } else if(d.badDoc){ o.op='assign'; o.doc=null; o.said=x; } else if(d.dest){ o.dest=d.dest; } else { o.badDest=x; }
+  return o; }
+function parseClause(c,idx){ var m;
+  c=c.replace(/^(and|then|also)\s+/,'');
+  if(m=c.match(/^((?:dr|doctor)\s+.+?)\s+(?:is\s+)?(?:taking|takes|take|has|gets|got|will take|is seeing|sees|is on)\s+(.+)$/)){ var d=findDoctor(m[1]); return {op:'assign',who:m[2],doc:d&&d.d,ds:d&&d.s,said:m[1]}; }
+  if(m=c.match(/^(?:assign|give|hand)\s+(.+?)\s+(?:over\s+)?to\s+(.+)$/)){
+    var d1=findDoctor(m[2]); if(d1) return {op:'assign',who:m[1],doc:d1.d,ds:d1.s,said:m[2]};
+    var d0=/^(dr|doctor)\s/.test(m[1])?findDoctor(m[1]):null; if(d0) return {op:'assign',who:m[2],doc:d0.d,ds:d0.s,said:m[1]};
+    return {op:'assign',who:m[1],doc:null,said:m[2]}; }
+  if(m=c.match(/^(?:move|send|take|bring|put|room|walk)\s+(.+?)\s+(?:back\s+)?(?:to|into|in to|in|over to)\s+(.+)$/)) return withDest({op:'dest',who:m[1]},m[2]);
+  if(m=c.match(/^(?:move|send|take|bring|put|walk)\s+(.+)$/)) return {op:'dest',who:m[1],noDest:true};
+  if(idx>0&&(m=c.match(/^(.+?)\s+(?:back\s+)?(?:to|into|in to|in|goes to|with)\s+(.+)$/))) return withDest({op:'dest',who:m[1]},m[2]);
+  return null; }
+function question(c){ var m; c=c.replace(/^(and|also)\s+/,'');
+  if(/^(what|who)(?:'s| is|s| are)?\s*(?:waiting|in the lobby)/.test(c)||/^who(?:'s| is|s)? waiting/.test(c)) return {q:'waiting'};
+  if(/^(?:who(?:'s| is|s| are)?\s+)?critical/.test(c)||/^(?:any|what|which)\s+critical/.test(c)) return {q:'critical'};
+  if(m=c.match(/^who(?:'s| is|s| are)?\s+in\s+(.+)$/)) return {q:'who',room:/^(the\s+)?treatment/.test(m[1])?'Treatment':roomFrom(m[1])};
+  if(m=c.match(/^how long (?:has|have|is|was|did)\s+(.+?)\s+(?:been\s+)?(?:waiting|here|in|there|been|wait)\b/)) return {q:'howlong',who:m[1]};
+  if(/\b(?:open|free|available|empty|clean)\s+rooms?\b/.test(c)||/^(?:what|which|any)\s+rooms?\s+(?:are\s+|is\s+)?(?:open|free|available|empty)/.test(c)||/^rooms?\s+(?:open|free|available)/.test(c)||/^(?:is there|are there)\s+(?:a|an|any)\s+(?:open|free|empty)\s+room/.test(c)) return {q:'open'};
+  if(m=c.match(/^(?:who|what patients?|which patients?)(?:'s| is|s| does| are| do)?\s+((?:dr|doctor)\s+.+?)\s+(?:seeing|have|has|got|with|working on|on)$/)) return {q:'doctor',said:m[1]};
+  if(m=c.match(/^((?:dr|doctor)\s+.+?)(?:'s| s)\s+patients$/)) return {q:'doctor',said:m[1]};
+  if(m=c.match(/^who(?:'s| is|s| are)\s+with\s+((?:dr|doctor)\s+.+)$/)) return {q:'doctor',said:m[1]};
+  if(m=c.match(/^where(?:'s| is|s| are)\s+(.+)$/)) return {q:'where',who:m[1]};
+  if(/^how many\b/.test(c)) return {q:'count'};
+  return null; }
+function correction(c){
+  var m=c.match(/^(?:no|nope|nah|actually|sorry|oops|wait)\s+(?:no\s+)?(?:i meant\s+|i said\s+|make (?:it|that)\s+|it's\s+|its\s+|to\s+|in\s+|into\s+)?(.+)$/)||c.match(/^(?:i meant|i said|make (?:it|that)|change (?:it|that) to)\s+(.+)$/)||c.match(/^not\s+.+?\s+(?:but\s+)?(?:to\s+|in\s+)?((?:room|dr|doctor|comfort|treatment)\b.*|exam|diagnostics|ultrasound|procedure|lobby)$/);
+  if(!m) return null; var x=m[1].trim(); if(!x||/^(wait|stop|cancel)$/.test(x)) return null;
+  var d=destFrom(x); if(d&&(d.dest||d.doc)) return d;
+  if(findPatients(x).length) return {who:x};
+  return null; }
 function understand(raw){
-  var t=clean(raw), m;
-  if(/^(yes|yeah|yep|confirm|do it|correct|go ahead)$/.test(t)) return {kind:'yes'};
-  if(/^(no|cancel|stop|never ?mind)$/.test(t)) return {kind:'no'};
-  if(m=t.match(/^(?:move|send|take|bring)\s+(.+?)\s+(?:back\s+)?(?:to|into|in)\s+(.+)$/)){
-    if(/^(room\s|comfort)/.test(m[2])) return {kind:'room',who:m[1],room:roomFrom(m[2])};
-    return {kind:'move',who:m[1],stage:stageFrom(m[2]),said:m[2]}; }
-  if(m=t.match(/^(?:room|put)\s+(.+?)\s+(?:in|into|to)\s+(room\s.+|comfort.*)$/)) return {kind:'room',who:m[1],room:roomFrom(m[2])};
-  if(m=t.match(/^assign\s+(.+?)\s+to\s+(.+)$/)) return {kind:'assign',who:m[1],doc:findDoctor(m[2]),said:m[2]};
-  if(m=t.match(/^who(?:'s| is|s)\s+in\s+(room\s.+|comfort.*|treatment.*)$/)) return {kind:'who',room:/^treatment/.test(m[1])?'Treatment':roomFrom(m[1])};
-  if(/^(what|who)(?:'s| is|s)\s+waiting/.test(t)) return {kind:'waiting'};
-  if(/^(who(?:'s| is|s)\s+)?critical/.test(t)||/^(any|what)\s+critical/.test(t)) return {kind:'critical'};
-  return {kind:'unknown'};
-}
+  var t=norm(raw), c=flat(t);
+  if(/^(yes|yeah|yep|yup|confirm|do it|correct|go ahead|sure)$/.test(c)) return {kind:'yes'};
+  if(/^(no|nope|cancel|stop|never ?mind|forget it)$/.test(c)) return {kind:'no'};
+  if(/^(undo|undo that|take (?:that|it) back|go back)$/.test(c)) return {kind:'undo'};
+  var fix=correction(c); if(fix) return {kind:'fix',slot:fix};
+  var cl=splitClauses(t); if(!cl.length) return {kind:'unknown'};
+  var qs=cl.map(question); if(qs.every(Boolean)) return {kind:'ask',qs:qs};
+  var steps=[];
+  for(var i=0;i<cl.length;i++){ var s=parseClause(cl[i],i); if(!s) return {kind:'unknown'}; steps.push(s); }
+  /* "move Bella and Max to Exam": a clause with no destination borrows the next one's */
+  for(var j=steps.length-2;j>=0;j--){ var a=steps[j], b=steps[j+1]; if(a.noDest&&!b.noDest){ a.op=b.op; a.dest=b.dest; a.doc=b.doc; a.ds=b.ds; a.said=b.said; a.badDest=b.badDest; a.noDest=false; } }
+  return {kind:'do',steps:steps}; }
+
+/* ---------- answers ---------- */
+function ms(v){ if(!v) return 0; if(v instanceof Date) return v.getTime(); if(v.toDate) return v.toDate().getTime(); if(typeof v.seconds==='number') return v.seconds*1000; var n=new Date(v).getTime(); return isNaN(n)?0:n; }
+function dur(x){ var m=Math.max(0,Math.round(x/60000)); if(m<60) return m+' min'; var h=Math.floor(m/60); return h+' h'+(m%60?' '+(m%60)+' min':''); }
+function docName(id){ var d=docs().find(function(x){ return x.id===id; }); return d?d.name:''; }
+function ans(html){ return '<div class="fv-ans">'+html+'</div>'; }
+function err(html){ return '<div class="fv-ans fv-err">'+html+'</div>'; }
+function list(ps,fn){ return ps.length?ps.map(fn||function(p){ return esc(pName(p)); }).join(', '):'none'; }
+function answer(q){
+  var A=active();
+  if(q.q==='waiting'){ var L=A.filter(function(p){ return p.status==='Waiting'; }); return ans('<b>'+L.length+' waiting:</b> '+(L.length?list(L,function(p){ return esc(pName(p))+' <small>'+dur(Date.now()-ms(p.arrival))+'</small>'; }):'no one')+'.'); }
+  if(q.q==='critical'){ var C=A.filter(function(p){ return Number(p.prio)===1; }); return ans('<b>'+C.length+' critical:</b> '+(C.length?list(C,function(p){ return esc(pName(p))+' <small>'+esc(where(p))+'</small>'; }):'none')+'.'); }
+  if(q.q==='who'){ if(!q.room) return err('Which room?'); var ps=A.filter(function(p){ return p.room===q.room; }); return ans(ps.length?'<b>'+esc(q.room)+':</b> '+list(ps)+'.':'<b>'+esc(q.room)+'</b> is empty.'); }
+  if(q.q==='open'){ var R=roomList().filter(function(r){ return r!=='Treatment'&&!occupant(r); }); return ans(R.length?'<b>'+R.length+' open:</b> '+esc(R.join(', '))+'.':'Every room is taken right now.'); }
+  if(q.q==='count'){ var by={}; A.forEach(function(p){ by[p.status]=(by[p.status]||0)+1; }); var order=['Waiting','Exam','Diagnostics','Ultrasound','Procedure','Hospitalized'];
+    var parts=order.filter(function(s){ return by[s]; }).map(function(s){ return by[s]+' '+s; }); Object.keys(by).forEach(function(s){ if(order.indexOf(s)<0) parts.push(by[s]+' '+s); });
+    return ans('<b>'+A.length+' on the board</b>'+(parts.length?': '+esc(parts.join(' · ')):'')+'.'); }
+  if(q.q==='doctor'){ var d=findDoctor(q.said); if(!d) return err('No doctor named “'+esc(q.said)+'”.'); var D=A.filter(function(p){ return p.doctor===d.d.id; });
+    return ans('<b>'+esc(d.d.name)+'</b> '+(D.length?'has '+D.length+': '+list(D,function(p){ return esc(pName(p))+' <small>'+esc(where(p))+'</small>'; })+'.':'has no patients right now.')); }
+  if(q.q==='howlong'||q.q==='where'){ var M=findPatients(q.who); if(!M.length) return err('No patient named “'+esc(q.who)+'” on the board.');
+    return M.map(function(x){ var p=x.p;
+      if(q.q==='howlong'){ var inRoom=(p.room&&p.room!=='Lobby'&&p.roomSince)?' · '+dur(Date.now()-ms(p.roomSince))+' in '+esc(p.room):''; return ans('<b>'+esc(pName(p))+'</b> has been here '+dur(Date.now()-ms(p.arrival))+inRoom+' · '+esc(p.status)+'.'); }
+      var dn=(p.doctor&&p.doctor!=='unassigned')?docName(p.doctor):''; return ans('<b>'+esc(pName(p))+'</b> is in '+esc(p.room||'Lobby')+' · '+esc(p.status)+(dn?' · '+esc(dn):' · no doctor yet')+'.'); }).join(''); }
+  return err(HELP); }
 
 /* ---------- actions ---------- */
-function snapshot(p){ return {status:p.status, room:p.room, roomSince:p.roomSince, doctor:p.doctor, examStartedAt:p.examStartedAt, examStartedByDoctorId:p.examStartedByDoctorId, examWaitMinutes:p.examWaitMinutes, tl:(p.timeline||[]).length}; }
-function restore(p,s){ p.status=s.status; p.room=s.room; p.roomSince=s.roomSince; var docChanged=p.doctor!==s.doctor; p.doctor=s.doctor; p.examStartedAt=s.examStartedAt; p.examStartedByDoctorId=s.examStartedByDoctorId; p.examWaitMinutes=s.examWaitMinutes;
+function snapshot(p){ return {status:p.status, room:p.room, roomSince:p.roomSince, doctor:p.doctor, examStartedAt:p.examStartedAt, examStartedByDoctorId:p.examStartedByDoctorId, examWaitMinutes:p.examWaitMinutes, ultrasound:p.ultrasound, tl:(p.timeline||[]).length}; }
+function restore(p,s){ p.status=s.status; p.room=s.room; p.roomSince=s.roomSince; var docChanged=p.doctor!==s.doctor; p.doctor=s.doctor; p.examStartedAt=s.examStartedAt; p.examStartedByDoctorId=s.examStartedByDoctorId; p.examWaitMinutes=s.examWaitMinutes; p.ultrasound=s.ultrasound;
   if(p.timeline&&p.timeline.length>s.tl) p.timeline.length=s.tl; if(docChanged){ try{ ctSyncPrimary(p); }catch(e){} }
   try{ scheduleRender(); }catch(e){ try{ renderAll(); }catch(_){} } }
-function propose(a,raw){
-  pending=a; var p=a.p, title='', path='';
-  if(a.kind==='move'){ title='Move '+pName(p); path='<span class="fv-pill">'+esc(where(p))+'</span> → <span class="fv-pill to">'+esc(a.stage.v)+'</span>'; }
-  if(a.kind==='room'){ title='Room '+pName(p); path='<span class="fv-pill">'+esc(where(p))+'</span> → <span class="fv-pill to">'+esc(a.room)+'</span>'; }
-  if(a.kind==='assign'){ title='Assign '+pName(p); var cur=(p.doctor&&p.doctor!=='unassigned')?(docs().find(function(d){ return d.id===p.doctor; })||{}).name:'No doctor'; path='<span class="fv-pill">'+esc(cur||'No doctor')+'</span> → <span class="fv-pill to">'+esc(a.doc.name)+'</span>'; }
-  show(heard(raw)+'<div class="fv-act"><div class="fv-med" style="--c:'+color(p)+'">'+esc((p.name||'?')[0])+'</div><div class="fv-t"><b>'+esc(title)+'</b><div class="fv-path">'+path+'</div></div><div class="fv-btns"><button class="fv-no" type="button">Cancel</button><button class="fv-ok" type="button">Confirm</button></div></div><div class="fv-sub">Press Enter, tap Confirm, or hold to talk and say “yes”.</div>');
+function rollback(snaps){ for(var i=snaps.length-1;i>=0;i--) restore(snaps[i][0],snaps[i][1]); }
+function destLabel(s){ return s.op==='assign'?s.doc.name:s.dest.v; }
+function fromLabel(s){ if(s.op==='assign'){ return (s.p.doctor&&s.p.doctor!=='unassigned')?(docName(s.p.doctor)||'No doctor'):'No doctor'; } return s.dest.type==='status'?s.p.status:(s.p.room||'Lobby'); }
+function sentence(s){ var n=pName(s.p); if(s.op==='assign') return n+' assigned to '+s.doc.name; if(s.dest.type==='room'&&/^(Room|Comfort)/.test(s.dest.v)&&s._from==='Lobby') return n+' roomed in '+s.dest.v; return 'Moved '+n+' to '+s.dest.v; }
+function same(s){ return s.op==='assign'?s.p.doctor===s.doc.id:(s.dest.type==='status'?s.p.status===s.dest.v:s.p.room===s.dest.v); }
+/* Safe = easy to undo and hard to get wrong: doctor assignments, status changes (which never move a pet
+   between rooms), and rooming a pet from the Lobby into an empty numbered room. Everything else asks first. */
+function safe(s){ if((s.conf||0)<0.92) return false; if(s.op==='assign') return true; if(s.dest.type==='status') return true;
+  var cur=s.p.room||'Lobby'; return /^Room \d+$/.test(s.dest.v)&&cur==='Lobby'&&!occupant(s.dest.v); }
+function stepRow(s){ return '<div class="fv-row"><div class="fv-med" style="--c:'+color(s.p)+'">'+esc((s.p.name||'?')[0])+'</div><div class="fv-t"><b>'+esc(pName(s.p))+'</b><div class="fv-path"><span class="fv-pill">'+esc(fromLabel(s))+'</span> → <span class="fv-pill to">'+esc(destLabel(s))+'</span></div></div></div>'; }
+function choose(M,raw,cb){
+  pending={kind:'choose'};
+  show(heard(raw)+ans('Which '+esc(M[0].p.name)+'?')+'<div class="fv-choices">'+M.slice(0,4).map(function(x){ var p=x.p; return '<button class="fv-choice" type="button" data-id="'+esc(p.id)+'"><span class="fv-med" style="--c:'+color(p)+'">'+esc((p.name||'?')[0])+'</span><span>'+esc(pName(p))+'<small>'+esc(where(p))+'</small></span></button>'; }).join('')+'</div>');
+  inner.querySelectorAll('[data-id]').forEach(function(b){ b.onclick=function(){ var x=M.find(function(y){ return String(y.p.id)===b.getAttribute('data-id'); }); if(x) cb(x.p); }; });
+}
+function resolveAll(steps,raw){
+  var out=[], lastP=null;
+  (function next(i){
+    if(i>=steps.length) return plan(out,raw);
+    var s=steps[i];
+    if(s.noDest) return show(heard(raw)+err('Move '+esc(s.who)+' where?'));
+    if(s.badDest) return show(heard(raw)+err('I didn’t catch where: “'+esc(s.badDest)+'”. Try Exam, Room 3, Ultrasound or Treatment.'));
+    if(s.op==='assign'&&!s.doc) return show(heard(raw)+err('No doctor named “'+esc(s.said)+'”.'));
+    if(s.op==='dest'&&s.dest.type==='room'&&roomList().indexOf(s.dest.v)<0&&s.dest.v!=='Treatment') return show(heard(raw)+err('There’s no '+esc(s.dest.v)+'.'));
+    var take=function(p,score){ lastP=p; out.push({op:s.op,p:p,dest:s.dest,doc:s.doc,conf:Math.min(score,s.op==='assign'?(s.ds||0):1)}); next(i+1); };
+    if(PRONOUN.test(s.who)){ var pp=lastP||(ctx&&Date.now()-ctx.at<120000?ctx.steps[ctx.steps.length-1].p:null); if(!pp) return show(heard(raw)+err('Who do you mean?')); return take(pp,1); }
+    var M=findPatients(s.who);
+    if(!M.length) return show(heard(raw)+err('No patient named “'+esc(s.who)+'” on the board.'));
+    if(M.length===1) return take(M[0].p,M[0].s);
+    choose(M,raw,function(p){ take(p,1); });
+  })(0);
+}
+function plan(steps,raw){
+  for(var i=0;i<steps.length;i++){ var s=steps[i]; if(s.op==='dest'&&s.dest.type==='room'&&s.dest.v!=='Treatment'){ var o=occupant(s.dest.v);
+    var leaving=o&&steps.some(function(x){ return x.p===o&&x.op==='dest'&&x.dest.type==='room'&&x.dest.v!==s.dest.v; });
+    if(o&&o!==s.p&&!leaving) return show(heard(raw)+err(esc(s.dest.v)+' has '+esc(pName(o))+' in it.')); } }
+  var real=steps.filter(function(s){ return !same(s); });
+  if(!real.length) return show(heard(raw)+ans(steps.map(function(s){ return esc(pName(s.p))+' is already '+(s.op==='assign'?'with '+esc(s.doc.name):'in '+esc(s.dest.v)); }).join('. ')+'.'));
+  stat('understood');
+  if(real.every(safe)) return run(real,raw,true);
+  propose(real,raw);
+}
+function propose(steps,raw){
+  pending={steps:steps,raw:raw}; ctx={steps:steps,raw:raw,at:Date.now(),done:false};
+  var one=steps.length===1, s=steps[0];
+  var head=one?'<div class="fv-med" style="--c:'+color(s.p)+'">'+esc((s.p.name||'?')[0])+'</div><div class="fv-t"><b>'+esc((s.op==='assign'?'Assign ':(s.dest.type==='room'&&/^(Room|Comfort)/.test(s.dest.v)?'Room ':'Move '))+pName(s.p))+'</b><div class="fv-path"><span class="fv-pill">'+esc(fromLabel(s))+'</span> → <span class="fv-pill to">'+esc(destLabel(s))+'</span></div></div>'
+    :'<div class="fv-t"><b>'+steps.length+' changes</b></div>';
+  show(heard(raw)+'<div class="fv-act">'+head+'<div class="fv-btns"><button class="fv-no" type="button">Cancel</button><button class="fv-ok" type="button">Confirm</button></div></div>'+(one?'':'<div class="fv-list">'+steps.map(stepRow).join('')+'</div>')+'<div class="fv-sub">Enter or “yes” to confirm. Say “no, Room 4” to change it.</div>');
   inner.querySelector('.fv-ok').onclick=confirm; inner.querySelector('.fv-no').onclick=function(){ stat('cancelled'); hide(); };
 }
-function confirm(){
-  var a=pending; if(!a||!a.p) return; var p=a.p;
-  if(!isActive(p)){ show('<div class="fv-ans fv-err">'+esc(pName(p))+' is no longer on the board.</div>'); pending=null; return; }
-  var s=snapshot(p), msg='';
-  try{
-    if(a.kind==='move'){
-      if(a.stage.kind==='status'){ if(p.status===a.stage.v){ msg=pName(p)+' is already in '+a.stage.v; } else { moveStatus(p,a.stage.v); msg='Moved '+pName(p)+' to '+a.stage.v; } }
-      else { if(!canDropRoom(p,a.stage.v)){ show('<div class="fv-ans fv-err">Can\'t move '+esc(pName(p))+' to '+esc(a.stage.v)+'.</div>'); pending=null; return; } moveRoom(p,a.stage.v); msg='Moved '+pName(p)+' to '+a.stage.v; }
-    }
-    if(a.kind==='room'){ if(!canDropRoom(p,a.room)){ var o=occupant(a.room); show('<div class="fv-ans fv-err">'+esc(a.room)+(o?' has '+esc(pName(o))+' in it.':' isn\'t available.')+'</div>'); pending=null; return; } moveRoom(p,a.room); msg=pName(p)+' roomed in '+a.room; }
-    if(a.kind==='assign'){ assignDoctor(p,a.doc.id); msg=pName(p)+' assigned to '+a.doc.name; }
-  }catch(e){ show('<div class="fv-ans fv-err">That didn\'t work. Try again or use the board.</div>'); pending=null; return; }
-  stat('confirmed'); hide();
-  undoFn=function(){ restore(p,s); toast('Undone'); };
-  toast(msg,true);
+function confirm(){ var a=pending; if(!a||!a.steps) return; run(a.steps,a.raw,false); }
+function run(steps,raw,instant){
+  var snaps=[], done=[];
+  for(var i=0;i<steps.length;i++){ var s=steps[i];
+    if(!isActive(s.p)){ rollback(snaps); pending=null; return show(err(esc(pName(s.p))+' is no longer on the board.')); }
+    s._from=s.p.room||'Lobby'; snaps.push([s.p,snapshot(s.p)]);
+    try{
+      if(s.op==='assign'){ if(s.p.doctor!==s.doc.id) assignDoctor(s.p,s.doc.id); }
+      else if(s.dest.type==='status'){ if(s.p.status!==s.dest.v) moveStatus(s.p,s.dest.v); }
+      else if(s.p.room!==s.dest.v){ if(!canDropRoom(s.p,s.dest.v)){ rollback(snaps); pending=null; var o=occupant(s.dest.v); return show(heard(raw)+err(esc(s.dest.v)+(o?' has '+esc(pName(o))+' in it.':' isn’t available.'))); } moveRoom(s.p,s.dest.v); }
+      done.push(s);
+    }catch(e){ rollback(snaps); pending=null; return show(err('That didn’t work. Try again or use the board.')); }
+  }
+  stat(instant?'instant':'confirmed'); hide();
+  ctx={steps:steps,raw:raw,at:Date.now(),done:true,snaps:snaps};
+  undoFn=function(){ rollback(snaps); ctx=null; toast('Undone'); };
+  var groups=[]; done.forEach(function(s){ var g=groups[groups.length-1]; if(g&&g.p===s.p) g.d.push(destLabel(s)); else groups.push({p:s.p,d:[destLabel(s)]}); });
+  toast(done.length===1?sentence(done[0]):groups.map(function(g){ return pName(g.p)+' → '+g.d.join(', '); }).join(' · '),true,instant?5000:7000);
 }
-function handle(raw){
-  stat('heard');
+function applyFix(slot,raw){
+  var c=(pending&&pending.steps)?{steps:pending.steps,done:false}:((ctx&&Date.now()-ctx.at<60000)?ctx:null);
+  if(!c) return show(heard(raw)+err('Nothing to change right now.'));
+  var steps=c.steps.map(function(s){ return {op:s.op,p:s.p,dest:s.dest,doc:s.doc,conf:s.conf}; });
+  var idx=-1, k;
+  if(slot.doc){ for(k=steps.length-1;k>=0;k--) if(steps[k].op==='assign'){ idx=k; break; } if(idx<0) idx=steps.length-1; steps[idx].op='assign'; steps[idx].doc=slot.doc; steps[idx].dest=null; steps[idx].conf=Math.min(1,slot.ds||1); }
+  else if(slot.dest){ for(k=steps.length-1;k>=0;k--) if(steps[k].op==='dest'){ idx=k; break; } if(idx<0) idx=steps.length-1; steps[idx].op='dest'; steps[idx].dest=slot.dest; steps[idx].doc=null;
+    if(slot.dest.type==='room'&&roomList().indexOf(slot.dest.v)<0&&slot.dest.v!=='Treatment') return show(heard(raw)+err('There’s no '+esc(slot.dest.v)+'.')); }
+  var go=function(np){ if(np){ var old=steps[steps.length-1].p; steps.forEach(function(s){ if(s.p===old) s.p=np; }); }
+    if(c.done){ rollback(c.snaps); undoFn=null; } pending=null; stat('corrected'); plan(steps,raw); };
+  if(slot.who){ var M=findPatients(slot.who); if(!M.length) return show(heard(raw)+err('No patient named “'+esc(slot.who)+'” on the board.')); if(M.length>1) return choose(M,raw,function(p){ go(p); }); return go(M[0].p); }
+  go(null);
+}
+function handle(raw,opts){
+  via=(opts&&opts.typed)?'typed':'voice'; stat(via==='typed'?'typed':'heard');
   var u=understand(raw);
-  if(u.kind==='yes'){ if(pending&&pending.p){ confirm(); } return; }
-  if(u.kind==='no'){ hide(); return; }
-  if(u.kind==='unknown'){ show(heard(raw)+'<div class="fv-ans fv-err">Try “move Bella to Exam”, “room Oscar in Room 3”, “assign Max to Dr. Meyer”, or “who\'s in Room 5?”</div>'); return; }
-  if(u.kind==='waiting'){ var L=active().filter(function(p){ return p.status==='Waiting'; }); stat('understood'); show(heard(raw)+'<div class="fv-ans"><b>'+L.length+' waiting:</b> '+(L.length?esc(L.map(pName).join(', ')):'no one')+'.</div>'); return; }
-  if(u.kind==='critical'){ var C=active().filter(function(p){ return Number(p.prio)===1; }); stat('understood'); show(heard(raw)+'<div class="fv-ans"><b>'+C.length+' critical:</b> '+(C.length?esc(C.map(function(p){ return pName(p)+' ('+where(p)+')'; }).join(', ')):'none')+'.</div>'); return; }
-  if(u.kind==='who'){ if(!u.room){ show(heard(raw)+'<div class="fv-ans fv-err">Which room?</div>'); return; } var ps=active().filter(function(p){ return p.room===u.room; }); stat('understood');
-    show(heard(raw)+'<div class="fv-ans">'+(ps.length?esc(ps.map(pName).join(', '))+' '+(ps.length>1?'are':'is')+' in '+esc(u.room)+'.':esc(u.room)+' is empty.')+'</div>'); return; }
-  if(u.kind==='room'&&(!u.room||roomList().indexOf(u.room)<0)){ show(heard(raw)+'<div class="fv-ans fv-err">I didn\'t catch which room.</div>'); return; }
-  if(u.kind==='move'&&!u.stage){ show(heard(raw)+'<div class="fv-ans fv-err">Move where? Lobby, Exam, Diagnostics, Ultrasound, Procedure or Treatment.</div>'); return; }
-  if(u.kind==='assign'&&!u.doc){ show(heard(raw)+'<div class="fv-ans fv-err">No doctor named “'+esc(u.said)+'”.</div>'); return; }
-  var matches=findPatients(u.who||'');
-  if(!matches.length){ show(heard(raw)+'<div class="fv-ans fv-err">No patient named “'+esc(u.who)+'” on the board.</div>'); return; }
-  stat('understood');
-  var go=function(p){ if(u.kind==='move') propose({kind:'move',p:p,stage:u.stage},raw); if(u.kind==='room'){ if(p.room===u.room){ show(heard(raw)+'<div class="fv-ans">'+esc(pName(p))+' is already in '+esc(u.room)+'.</div>'); pending=null; return; } var o=occupant(u.room); if(o&&o!==p){ show(heard(raw)+'<div class="fv-ans fv-err">'+esc(u.room)+' has '+esc(pName(o))+' in it.</div>'); pending=null; return; } propose({kind:'room',p:p,room:u.room},raw); } if(u.kind==='assign') propose({kind:'assign',p:p,doc:u.doc},raw); };
-  if(matches.length===1){ go(matches[0]); return; }
-  pending={kind:'choose'};
-  show(heard(raw)+'<div class="fv-ans">Which '+esc(matches[0].name)+'?</div><div class="fv-choices">'+matches.slice(0,4).map(function(p){ return '<button class="fv-choice" type="button" data-id="'+esc(p.id)+'"><span class="fv-med" style="--c:'+color(p)+'">'+esc((p.name||'?')[0])+'</span><span>'+esc(pName(p))+'<small>'+esc(where(p))+'</small></span></button>'; }).join('')+'</div>');
-  inner.querySelectorAll('[data-id]').forEach(function(b){ b.onclick=function(){ var p=matches.find(function(x){ return String(x.id)===b.getAttribute('data-id'); }); if(p) go(p); }; });
+  if(u.kind==='yes'){ if(pending&&pending.steps) confirm(); return; }
+  if(u.kind==='no'){ if(pending&&pending.steps) stat('cancelled'); hide(); return; }
+  if(u.kind==='undo'){ if(undoFn){ var f=undoFn; undoFn=null; f(); hide(); } else show(heard(raw)+err('Nothing to undo.')); return; }
+  if(u.kind==='fix') return applyFix(u.slot,raw);
+  if(u.kind==='ask'){ stat('understood'); pending=null; return show(heard(raw)+u.qs.map(answer).join('')); }
+  if(u.kind==='unknown') return show(heard(raw)+err(HELP));
+  resolveAll(u.steps,raw);
 }
+
+/* ---------- typed commands in the search bar ---------- */
+var CMD_START=/^(no|nope|actually|move|send|take|bring|put|walk|assign|give|hand|who|who's|whos|what|what's|how|where|where's|which|undo|is there|are there|any)\s/;
+function typedCommand(q){ var t=flat(norm(q)); if(t==='undo') return {kind:'undo'}; if(!CMD_START.test(t+' ')||t.split(' ').length<2) return null;
+  var u=understand(q); if(u.kind==='ask'||u.kind==='undo') return u;
+  if(u.kind==='fix') return ((pending&&pending.steps)||(ctx&&Date.now()-ctx.at<60000))?u:null;
+  if(u.kind!=='do') return null;
+  for(var i=0;i<u.steps.length;i++){ var s=u.steps[i]; if(s.noDest||s.badDest||(s.op==='assign'&&!s.doc)) return null; if(!PRONOUN.test(s.who)&&!findPatients(s.who).length) return null; }
+  return u; }
+function describe(u,q){
+  if(u.kind==='undo') return {t:'Undo the last change', s:'Command'};
+  if(u.kind==='fix'){ var sl=u.slot; return {t:'Change it to '+(sl.doc?sl.doc.name:sl.dest?sl.dest.v:sl.who), s:'Correction'}; }
+  if(u.kind==='ask') return {t:q.trim().replace(/\?*$/,'?'), s:'Ask Flow'};
+  var last=null; return {t:u.steps.map(function(s){ var n; if(PRONOUN.test(s.who)) n=last?last:'them'; else { var M=findPatients(s.who); n=M.length?pName(M[0].p):s.who; last=n; } return n+' → '+(s.op==='assign'?s.doc.name:s.dest.v); }).join('\n'), s:u.steps.length>1?u.steps.length+' changes':'Command'}; }
+var CMD_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10l-5 5 5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>';
+function cmdHint(q){
+  var box=document.getElementById('searchResults'); if(!box) return;
+  var old=box.querySelector('.fv-cmd-g'); if(old) old.remove();
+  var t=flat(norm(q)); if(!CMD_START.test(t+' ')) return;
+  /* a command is not a search: keep the board unfiltered while it's being typed */
+  try{ if(typeof searchQ!=='undefined'&&searchQ){ searchQ=''; renderTable(); renderBoard(); } }catch(e){}
+  var u=typedCommand(q), inr=box.querySelector('.sr-inner');
+  if(!inr){ box.innerHTML='<div class="sr-inner"></div>'; inr=box.firstChild; }
+  var none=inr.querySelector('.sr-none'); if(none) none.remove();
+  var d=u?describe(u,q):{t:'Keep typing, like “move Bella to Exam”', s:'Command'};
+  inr.insertAdjacentHTML('afterbegin','<div class="sr-group fv-cmd-g"><div class="sr-label">'+esc(d.s)+'</div><div class="fv-cmd'+(u?' ready':'')+'"><span class="sr-ic">'+CMD_ICON+'</span><div class="sr-main"><div class="sr-t">'+esc(d.t)+'</div></div>'+(u?'<kbd>return</kbd>':'')+'</div></div>');
+  box.classList.add('open'); try{ positionSearchResults(); }catch(e){}
+  var row=inr.querySelector('.fv-cmd.ready'); if(row) row.onclick=function(){ runTyped(); };
+}
+function runTyped(){ var el=document.getElementById('globalSearch'); if(!el) return false; var q=el.value; if(!typedCommand(q)) return false;
+  el.value=''; try{ searchQ=''; closeSearch(); renderTable(); renderBoard(); }catch(e){} el.blur(); handle(q,{typed:true}); return true; }
+document.addEventListener('input',function(e){ if(e.target&&e.target.id==='globalSearch') cmdHint(e.target.value); });
+document.addEventListener('keydown',function(e){ if(e.key!=='Enter'||!e.target||e.target.id!=='globalSearch'||e.isComposing) return;
+  if(typedCommand(e.target.value)){ e.preventDefault(); e.stopImmediatePropagation(); runTyped(); } },true);
 
 /* ---------- microphone ---------- */
 function start(tap){
@@ -15042,11 +15210,11 @@ function typing(){ var a=document.activeElement, t=a&&a.tagName; return t==='INP
 document.addEventListener('keydown',function(e){
   if(document.body.classList.contains('client-mode')) return;
   if(e.code==='Space'&&!typing()&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(!e.repeat){ if(listening&&tapMode) stop(); else start(false); } return; }
-  if(e.key==='Enter'&&panel&&panel.classList.contains('show')&&pending&&pending.p&&!typing()){ e.preventDefault(); confirm(); return; }
+  if(e.key==='Enter'&&panel&&panel.classList.contains('show')&&pending&&pending.steps&&!typing()){ e.preventDefault(); confirm(); return; }
   if(e.key==='Escape'&&panel&&panel.classList.contains('show')){ hide(); }
 },true);
 document.addEventListener('keyup',function(e){ if(e.code==='Space'&&listening&&!tapMode){ e.preventDefault(); stop(); } },true);
-document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&e.target!==talk&&!talk.contains(e.target)&&!(pending&&pending.p)) hide(); },true);
+document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&e.target!==talk&&!talk.contains(e.target)&&!(pending&&pending.steps)) hide(); },true);
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',build); else build();
 window.__flowVoice={understand:understand, findPatients:findPatients, handle:handle, confirm:confirm, stats:stats};
