@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20260929-0511-74bb7a3d">
+<meta name="flow-build" content="20260929-0522-1a1f410a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5067,24 +5067,29 @@ body.crit-active::after{content:"";position:fixed;inset:0;z-index:9400;pointer-e
 @media (prefers-reduced-transparency:reduce){#flowNet{background:#10141E;-webkit-backdrop-filter:none;backdrop-filter:none}}
 
 /* ── Voice commands (pilot, per workstation) ── */
-#fvTalk{position:fixed;right:22px;bottom:22px;z-index:9350;display:flex;align-items:center;gap:10px;height:52px;padding:0 18px 0 6px;border:0;border-radius:999px;background:#0C1424;color:#fff;
- font:600 14px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;box-shadow:0 14px 34px rgba(12,20,36,.28);cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;transition:transform .2s cubic-bezier(.32,1.22,.5,1),background .3s}
-#fvTalk .fv-mic{position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#4DC8E0,#2F7BEA)}
-#fvTalk .fv-mic svg{width:19px;height:19px}
-#fvTalk small{font-weight:500;color:#8FA3BF}
-#fvTalk.on{transform:scale(1.05);background:#10233A}
-#fvTalk.on .fv-mic::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(77,200,224,.6);animation:fvRing 1.2s ease-out infinite}
-@keyframes fvRing{from{transform:scale(.9);opacity:1}to{transform:scale(1.35);opacity:0}}
-#fvPanel{position:fixed;left:50%;bottom:86px;z-index:9360;width:min(620px,calc(100vw - 24px));border-radius:26px;background:rgba(16,20,30,.94);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);
+#fvTalk{position:relative;inset:auto;flex:0 0 auto;box-shadow:none;gap:0;width:28px;height:28px;margin-right:4px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:var(--search-ph,#7B8796);
+ cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent;transition:color .2s ease,background .2s ease,transform .25s cubic-bezier(.32,1.22,.5,1)}
+#fvTalk svg{width:16px;height:16px;position:relative;left:auto;top:auto;transform:none;color:inherit;z-index:1}
+#fvTalk:hover{background:rgba(120,130,150,.12);color:var(--text,#1D1D1F)}
+#fvTalk:active{transform:scale(.92)}
+#fvTalk.on{color:#fff;background:#2F7BEA;transform:scale(1.04)}
+#fvTalk.on::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(47,123,234,.45);animation:fvRing 1.3s ease-out infinite}
+#fvTalk.fv-float{position:fixed;right:20px;bottom:20px;z-index:9350;width:40px;height:40px;margin:0;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);box-shadow:0 6px 18px rgba(20,30,50,.14),inset 0 0 0 1px rgba(255,255,255,.6)}
+#fvTalk.fv-float.on{background:#2F7BEA}
+.search-bar.fv-listening{box-shadow:0 0 0 3px rgba(47,123,234,.22),0 6px 20px rgba(47,123,234,.16)!important;border-color:rgba(47,123,234,.45)!important;transition:box-shadow .3s ease}
+@keyframes fvRing{from{transform:scale(.9);opacity:1}to{transform:scale(1.45);opacity:0}}
+#fvPanel{position:fixed;top:76px;right:16px;left:auto;bottom:auto;z-index:9360;width:min(460px,calc(100vw - 24px));border-radius:22px;background:rgba(16,20,30,.94);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);
  color:#EEF1F6;box-shadow:0 22px 60px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.07);font:14px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;letter-spacing:-.01em;
- opacity:0;transform:translate(-50%,14px) scale(.97);pointer-events:none;transition:opacity .2s ease,transform .45s cubic-bezier(.32,1.22,.5,1)}
-#fvPanel.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+ opacity:0;transform:translateY(-8px) scale(.97);transform-origin:top right;pointer-events:none;transition:opacity .2s ease,transform .4s cubic-bezier(.32,1.22,.5,1)}
+#fvPanel.show{opacity:1;transform:none;pointer-events:auto}
+#fvPanel.fv-bottom{top:auto!important;right:20px!important;bottom:72px;transform-origin:bottom right}
 #fvPanel .fv-in{padding:16px 18px}
 #fvPanel .fv-heard{font-size:13px;color:#AEB6C4;min-height:18px}
 #fvPanel .fv-heard q{color:#fff;font-weight:500}
 #fvPanel .fv-wave{display:flex;align-items:center;gap:4px;height:34px;margin:6px 0 2px}
 #fvPanel .fv-wave i{width:4px;height:6px;border-radius:3px;background:linear-gradient(180deg,#6FD3E6,#3E9BFF)}
-#fvPanel .fv-act{display:flex;align-items:center;gap:12px;margin-top:10px}
+#fvPanel .fv-act{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+#fvPanel .fv-btns{margin-left:auto}
 #fvPanel .fv-med{flex:0 0 36px;height:36px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--c,#6FD3E6);font-weight:800;font-size:13px;color:#fff;background:rgba(255,255,255,.06)}
 #fvPanel .fv-t{flex:1;min-width:0}
 #fvPanel .fv-t b{display:block;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -5104,9 +5109,24 @@ body.crit-active::after{content:"";position:fixed;inset:0;z-index:9400;pointer-e
 #fvToast{position:fixed;left:50%;top:18px;z-index:9370;display:flex;align-items:center;gap:12px;padding:9px 10px 9px 16px;border-radius:999px;background:rgba(16,20,30,.94);color:#EEF1F6;font:13px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;box-shadow:0 14px 40px rgba(0,0,0,.28);opacity:0;transform:translate(-50%,-14px);pointer-events:none;transition:opacity .25s,transform .45s cubic-bezier(.32,1.22,.5,1)}
 #fvToast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 #fvToast button{border:0;border-radius:999px;background:#EEF1F6;color:#0C1424;font:inherit;font-weight:700;padding:5px 12px;cursor:pointer}
+/* Light theme: frosted white, like Spotlight */
+body:not(.dark) #fvPanel{background:rgba(255,255,255,.86);color:#1D1D1F;border-color:rgba(0,0,0,.06);box-shadow:0 18px 50px rgba(30,40,70,.18),inset 0 1px 0 rgba(255,255,255,.9)}
+body:not(.dark) #fvPanel .fv-heard{color:#6E6E73}
+body:not(.dark) #fvPanel .fv-heard q,body:not(.dark) #fvPanel .fv-med{color:#1D1D1F}
+body:not(.dark) #fvPanel .fv-med{background:rgba(0,0,0,.04)}
+body:not(.dark) #fvPanel .fv-path{color:#3A3A3C}
+body:not(.dark) #fvPanel .fv-pill{background:rgba(0,0,0,.06)}
+body:not(.dark) #fvPanel .fv-pill.to{background:rgba(47,123,234,.12);color:#1F5FC4}
+body:not(.dark) #fvPanel .fv-no{border-color:rgba(0,0,0,.14);color:#1D1D1F}
+body:not(.dark) #fvPanel .fv-ok{background:#1D1D1F;color:#fff}
+body:not(.dark) #fvPanel .fv-sub{color:#86868B}
+body:not(.dark) #fvPanel .fv-err{color:#B26A00}
+body:not(.dark) #fvPanel .fv-choice{border-color:rgba(0,0,0,.1);background:rgba(0,0,0,.03);color:#1D1D1F}
+body:not(.dark) #fvPanel .fv-choice small{color:#6E6E73}
+body:not(.dark) #fvToast{background:rgba(255,255,255,.9);color:#1D1D1F;-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);box-shadow:0 12px 34px rgba(30,40,70,.18)}
+body:not(.dark) #fvToast button{background:#1D1D1F;color:#fff}
 body.client-mode #fvTalk,body.client-mode #fvPanel{display:none!important}
-@media (max-width:640px){#fvTalk small{display:none}}
-@media (prefers-reduced-motion:reduce){#fvTalk,#fvPanel,#fvToast{transition:opacity .15s ease}#fvTalk.on .fv-mic::after{animation:none}}
+@media (prefers-reduced-motion:reduce){#fvTalk,#fvPanel,#fvToast{transition:opacity .15s ease}#fvTalk.on::after{animation:none}}
 </style>
 </head>
 <body>
@@ -14756,7 +14776,7 @@ window.__flowNet={state:state, checkUpdate:checkUpdate, loadedTag:function(){ re
 
 <script>
 /* Voice commands (pilot). Off by default. Turn on per workstation with ?voice=on, off with ?voice=off.
-   Hold Space (when not typing) or the mic button, speak, release. Flow shows what it understood and
+   Click the mic in the search bar (stops after a pause), or hold Space when not typing, speak, release. Flow shows what it understood and
    waits for Confirm. Uses the browser's speech recognition (audio is processed by Google in Chrome;
    approved by VCA IT). Only moves, rooms, assigns and answers questions. Never admits or discharges. */
 (function(){
@@ -14778,18 +14798,42 @@ function stats(){ try{ return JSON.parse(localStorage.getItem(STATS)||'{}'); }ca
 
 /* ---------- ui ---------- */
 function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>';
+var tapMode=false, silenceT=null, maxT=null, bar=null;
 function build(){
-  talk=document.createElement('button'); talk.id='fvTalk'; talk.type='button'; talk.setAttribute('aria-label','Hold to talk to Flow');
-  talk.innerHTML='<span class="fv-mic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span><span class="fv-l">Hold to talk</span><small>or hold Space</small>';
+  talk=document.createElement('button'); talk.id='fvTalk'; talk.type='button';
+  talk.setAttribute('aria-label','Talk to Flow'); talk.title='Talk to Flow  ·  click, or hold Space';
+  talk.innerHTML=MIC;
   panel=document.createElement('div'); panel.id='fvPanel'; panel.setAttribute('role','dialog'); panel.setAttribute('aria-live','polite'); panel.innerHTML='<div class="fv-in"></div>';
   toastEl=document.createElement('div'); toastEl.id='fvToast'; toastEl.setAttribute('role','status');
-  document.body.appendChild(panel); document.body.appendChild(talk); document.body.appendChild(toastEl);
+  document.body.appendChild(panel); document.body.appendChild(toastEl);
+  /* The mic lives inside Flow's search bar. If the bar is missing, fall back to a small glass circle. */
+  var actions=document.querySelector('#subnavFlow .search-bar .actions');
+  bar=actions?actions.closest('.search-bar'):null;
+  if(actions) actions.insertBefore(talk,actions.firstChild); else { talk.classList.add('fv-float'); document.body.appendChild(talk); }
   inner=panel.querySelector('.fv-in');
-  talk.addEventListener('pointerdown',function(e){ e.preventDefault(); try{ talk.setPointerCapture(e.pointerId); }catch(_){} start(); });
-  talk.addEventListener('pointerup',stop); talk.addEventListener('pointercancel',stop);
+  /* Click to talk (stops by itself after a pause), or press and hold, then let go. */
+  talk.addEventListener('pointerdown',function(e){ e.preventDefault(); e.stopPropagation();
+    if(listening&&tapMode){ stop(); return; }
+    try{ talk.setPointerCapture(e.pointerId); }catch(_){} start(false); });
+  talk.addEventListener('pointerup',function(){ if(!listening||tapMode) return;
+    if(Date.now()-startedAt<350){ tapMode=true; armSilence(4000); } else stop(); });
+  talk.addEventListener('pointercancel',function(){ if(listening&&!tapMode) stop(); });
+  talk.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); });
+  talk.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); if(e.repeat) return; if(listening) stop(); else { start(true); armSilence(4000); } } });
+  window.addEventListener('resize',place);
   if(new URLSearchParams(location.search).get('voice')==='stats'){ var s=stats(); show('<div class="fv-ans">Voice on this screen: '+(s.heard||0)+' commands heard, '+(s.understood||0)+' understood first try, '+(s.confirmed||0)+' confirmed, '+(s.cancelled||0)+' cancelled.</div>'); }
 }
-function show(html){ inner.innerHTML=html; panel.classList.add('show'); }
+/* The panel drops down from the search bar, right-aligned with it. */
+function place(){
+  if(!panel) return;
+  var r=(bar&&bar.offsetParent)?bar.getBoundingClientRect():null;
+  if(r&&r.width){ panel.classList.remove('fv-bottom'); panel.style.top=Math.round(r.bottom+10)+'px'; panel.style.right=Math.max(12,Math.round(window.innerWidth-r.right))+'px'; }
+  else { panel.classList.add('fv-bottom'); panel.style.top=''; panel.style.right=''; }
+}
+function armSilence(ms){ clearTimeout(silenceT); silenceT=setTimeout(function(){ if(listening&&tapMode) stop(); },ms); }
+function setOn(on){ talk.classList.toggle('on',on); if(bar){ bar.classList.toggle('fv-listening',on); var inp=bar.querySelector('input'); if(inp){ if(on){ inp.dataset.fvPh=inp.placeholder; inp.placeholder='Listening…'; } else if(inp.dataset.fvPh!=null){ inp.placeholder=inp.dataset.fvPh; delete inp.dataset.fvPh; } } } talk.setAttribute('aria-pressed',on?'true':'false'); }
+function show(html){ inner.innerHTML=html; place(); panel.classList.add('show'); }
 function hide(){ panel.classList.remove('show'); pending=null; }
 function heard(t){ return '<div class="fv-heard">Heard <q>'+esc(t)+'</q></div>'; }
 function toast(t,withUndo){
@@ -14908,35 +14952,35 @@ function handle(raw){
 }
 
 /* ---------- microphone ---------- */
-function start(){
-  if(listening) return;
+function start(tap){
+  if(listening) return; tapMode=!!tap;
   if(!SR){ show('<div class="fv-ans fv-err">Voice needs Chrome or Safari on this computer.</div>'); return; }
   if(!navigator.onLine){ show('<div class="fv-ans fv-err">Voice needs an internet connection.</div>'); return; }
   listening=true; finalText=''; interim=''; startedAt=Date.now();
-  talk.classList.add('on'); talk.querySelector('.fv-l').textContent='Listening…';
+  setOn(true); clearTimeout(maxT); maxT=setTimeout(function(){ if(listening) stop(); },15000);
   show('<div class="fv-heard" id="fvLive">Listening…</div>'+wave()); animate();
   rec=new SR(); rec.lang='en-US'; rec.interimResults=true; rec.continuous=true;
   rec.onresult=function(e){ interim=''; for(var i=e.resultIndex;i<e.results.length;i++){ var r=e.results[i]; if(r.isFinal) finalText+=r[0].transcript+' '; else interim+=r[0].transcript; }
-    var l=document.getElementById('fvLive'); if(l) l.innerHTML='<q>'+esc((finalText+interim).trim())+'</q>'; };
-  rec.onerror=function(e){ var m=e&&e.error; if(m==='not-allowed'||m==='service-not-allowed'){ listening=false; talk.classList.remove('on'); talk.querySelector('.fv-l').textContent='Hold to talk'; show('<div class="fv-ans fv-err">The microphone is blocked. Click the icon in the address bar and allow the microphone for Flow.</div>'); } };
+    var l=document.getElementById('fvLive'); if(l) l.innerHTML='<q>'+esc((finalText+interim).trim())+'</q>'; if(tapMode) armSilence(1400); };
+  rec.onerror=function(e){ var m=e&&e.error; if(m==='not-allowed'||m==='service-not-allowed'){ listening=false; setOn(false); show('<div class="fv-ans fv-err">The microphone is blocked. Click the icon in the address bar and allow the microphone for Flow.</div>'); } };
   try{ rec.start(); }catch(e){}
 }
 function stop(){
   if(!listening) return; listening=false; clearInterval(waveT);
-  talk.classList.remove('on'); talk.querySelector('.fv-l').textContent='Hold to talk';
+  setOn(false); clearTimeout(silenceT); clearTimeout(maxT);
   var r=rec; rec=null; if(!r) return;
-  var quick=Date.now()-startedAt<350;
-  r.onend=function(){ var t=(finalText+interim).trim(); if(quick&&!t){ hide(); return; } if(t) handle(t); else show('<div class="fv-ans fv-err">Didn\'t catch that. Hold, speak, then let go.</div>'); };
+  var quick=!tapMode&&Date.now()-startedAt<350; tapMode=false;
+  r.onend=function(){ var t=(finalText+interim).trim(); if(quick&&!t){ hide(); return; } if(t) handle(t); else show('<div class="fv-ans fv-err">Didn\'t catch that. Try again.</div>'); };
   try{ r.stop(); }catch(e){}
 }
 function typing(){ var a=document.activeElement, t=a&&a.tagName; return t==='INPUT'||t==='TEXTAREA'||t==='SELECT'||(a&&a.isContentEditable); }
 document.addEventListener('keydown',function(e){
   if(document.body.classList.contains('client-mode')) return;
-  if(e.code==='Space'&&!typing()&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(!e.repeat) start(); return; }
+  if(e.code==='Space'&&!typing()&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(!e.repeat){ if(listening&&tapMode) stop(); else start(false); } return; }
   if(e.key==='Enter'&&panel&&panel.classList.contains('show')&&pending&&pending.p&&!typing()){ e.preventDefault(); confirm(); return; }
   if(e.key==='Escape'&&panel&&panel.classList.contains('show')){ hide(); }
 },true);
-document.addEventListener('keyup',function(e){ if(e.code==='Space'&&listening){ e.preventDefault(); stop(); } },true);
+document.addEventListener('keyup',function(e){ if(e.code==='Space'&&listening&&!tapMode){ e.preventDefault(); stop(); } },true);
 document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&e.target!==talk&&!talk.contains(e.target)&&!(pending&&pending.p)) hide(); },true);
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',build); else build();
