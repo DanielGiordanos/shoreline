@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20260929-0546-f786a4c7">
+<meta name="flow-build" content="20260929-0549-f786a4c7">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -14832,7 +14832,8 @@ try{ var q=new URLSearchParams(location.search).get('voice');
   if(q==='off') localStorage.removeItem(KEY);
 }catch(e){}
 var ENABLED=false; try{ ENABLED=localStorage.getItem(KEY)==='on'; }catch(e){}
-if(!ENABLED||LOBBY) return;
+/* Typed commands in the search bar work for everyone. The microphone (voice) stays per-workstation: ?voice=on */
+if(LOBBY) return;
 
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 var talk,panel,inner,toastEl, pending=null, undoFn=null, listening=false, rec=null, finalText='', interim='', startedAt=0, waveT=null;
@@ -14846,15 +14847,18 @@ function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return
 var MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>';
 var tapMode=false, silenceT=null, maxT=null, hintT=null, bar=null, wrap=null, live=null;
 function build(){
-  talk=document.createElement('button'); talk.id='fvTalk'; talk.type='button';
-  talk.setAttribute('aria-label','Talk to Flow'); talk.title='Talk to Flow  ·  click, or hold Space';
-  talk.innerHTML=MIC+'<span class="fv-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
   panel=document.createElement('div'); panel.id='fvPanel'; panel.setAttribute('role','dialog'); panel.setAttribute('aria-live','polite'); panel.innerHTML='<div class="fv-in"></div>';
   toastEl=document.createElement('div'); toastEl.id='fvToast'; toastEl.setAttribute('role','status');
   document.body.appendChild(panel); document.body.appendChild(toastEl);
   /* The mic lives inside Flow's search bar. If the bar is missing, fall back to a small glass circle. */
   var actions=document.querySelector('#subnavFlow .search-bar .actions');
   bar=actions?actions.closest('.search-bar'):null;
+  inner=panel.querySelector('.fv-in');
+  window.addEventListener('resize',function(){ place(); if(listening) placeLive(); });
+  if(!ENABLED) return;
+  talk=document.createElement('button'); talk.id='fvTalk'; talk.type='button';
+  talk.setAttribute('aria-label','Talk to Flow'); talk.title='Talk to Flow  ·  click, or hold Space';
+  talk.innerHTML=MIC+'<span class="fv-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
   if(actions){ actions.insertBefore(talk,actions.firstChild);
     /* Listening happens in the search bar itself: a soft color ring around it and the words as you say them. */
     wrap=bar.closest('.search-wrap')||bar.parentElement;
@@ -14863,7 +14867,6 @@ function build(){
     wrap.insertBefore(halo,wrap.firstChild); wrap.insertBefore(ring,wrap.firstChild);
     live=document.createElement('span'); live.className='fv-live'; live.setAttribute('aria-live','polite'); bar.appendChild(live);
   } else { talk.classList.add('fv-float'); document.body.appendChild(talk); }
-  inner=panel.querySelector('.fv-in');
   /* Click to talk (stops by itself after a pause), or press and hold, then let go. */
   talk.addEventListener('pointerdown',function(e){ e.preventDefault(); e.stopPropagation();
     if(listening&&tapMode){ stop(); return; }
@@ -14873,7 +14876,6 @@ function build(){
   talk.addEventListener('pointercancel',function(){ if(listening&&!tapMode) stop(); });
   talk.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); });
   talk.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); if(e.repeat) return; if(listening) stop(); else { start(true); armSilence(4000); } } });
-  window.addEventListener('resize',function(){ place(); if(listening) placeLive(); });
   if(new URLSearchParams(location.search).get('voice')==='stats'){ var s=stats(); show('<div class="fv-ans">Voice on this screen: '+(s.heard||0)+' commands heard, '+(s.understood||0)+' understood first try, '+(s.confirmed||0)+' confirmed, '+(s.cancelled||0)+' cancelled.</div>'); }
 }
 /* The panel drops down from the search bar, right-aligned with it. */
@@ -15099,7 +15101,7 @@ function propose(steps,raw){
   var one=steps.length===1, s=steps[0];
   var head=one?'<div class="fv-med" style="--c:'+color(s.p)+'">'+esc((s.p.name||'?')[0])+'</div><div class="fv-t"><b>'+esc((s.op==='assign'?'Assign ':(s.dest.type==='room'&&/^(Room|Comfort)/.test(s.dest.v)?'Room ':'Move '))+pName(s.p))+'</b><div class="fv-path"><span class="fv-pill">'+esc(fromLabel(s))+'</span> → <span class="fv-pill to">'+esc(destLabel(s))+'</span></div></div>'
     :'<div class="fv-t"><b>'+steps.length+' changes</b></div>';
-  show(heard(raw)+'<div class="fv-act">'+head+'<div class="fv-btns"><button class="fv-no" type="button">Cancel</button><button class="fv-ok" type="button">Confirm</button></div></div>'+(one?'':'<div class="fv-list">'+steps.map(stepRow).join('')+'</div>')+'<div class="fv-sub">Enter or “yes” to confirm. Say “no, Room 4” to change it.</div>');
+  show(heard(raw)+'<div class="fv-act">'+head+'<div class="fv-btns"><button class="fv-no" type="button">Cancel</button><button class="fv-ok" type="button">Confirm</button></div></div>'+(one?'':'<div class="fv-list">'+steps.map(stepRow).join('')+'</div>')+'<div class="fv-sub">'+(via==='typed'?'Press Return to confirm. Type “no, Room 4” to change it.':'Enter or “yes” to confirm. Say “no, Room 4” to change it.')+'</div>');
   inner.querySelector('.fv-ok').onclick=confirm; inner.querySelector('.fv-no').onclick=function(){ stat('cancelled'); hide(); };
 }
 function confirm(){ var a=pending; if(!a||!a.steps) return; run(a.steps,a.raw,false); }
@@ -15182,7 +15184,7 @@ document.addEventListener('keydown',function(e){ if(e.key!=='Enter'||!e.target||
 
 /* ---------- microphone ---------- */
 function start(tap){
-  if(listening) return; tapMode=!!tap;
+  if(!ENABLED||listening) return; tapMode=!!tap;
   if(!SR){ show('<div class="fv-ans fv-err">Voice needs Chrome or Safari on this computer.</div>'); return; }
   if(!navigator.onLine){ show('<div class="fv-ans fv-err">Voice needs an internet connection.</div>'); return; }
   listening=true; finalText=''; interim=''; startedAt=Date.now();
@@ -15209,12 +15211,12 @@ function stop(){
 function typing(){ var a=document.activeElement, t=a&&a.tagName; return t==='INPUT'||t==='TEXTAREA'||t==='SELECT'||(a&&a.isContentEditable); }
 document.addEventListener('keydown',function(e){
   if(document.body.classList.contains('client-mode')) return;
-  if(e.code==='Space'&&!typing()&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(!e.repeat){ if(listening&&tapMode) stop(); else start(false); } return; }
+  if(ENABLED&&e.code==='Space'&&!typing()&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(!e.repeat){ if(listening&&tapMode) stop(); else start(false); } return; }
   if(e.key==='Enter'&&panel&&panel.classList.contains('show')&&pending&&pending.steps&&!typing()){ e.preventDefault(); confirm(); return; }
   if(e.key==='Escape'&&panel&&panel.classList.contains('show')){ hide(); }
 },true);
 document.addEventListener('keyup',function(e){ if(e.code==='Space'&&listening&&!tapMode){ e.preventDefault(); stop(); } },true);
-document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&e.target!==talk&&!talk.contains(e.target)&&!(pending&&pending.steps)) hide(); },true);
+document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&(!talk||(e.target!==talk&&!talk.contains(e.target)))&&!(pending&&pending.steps)) hide(); },true);
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',build); else build();
 window.__flowVoice={understand:understand, findPatients:findPatients, handle:handle, confirm:confirm, stats:stats};
