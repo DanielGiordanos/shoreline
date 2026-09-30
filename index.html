@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20260929-1649-357e49ba">
+<meta name="flow-build" content="20260930-0449-ddc9c4a8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5190,6 +5190,108 @@ body.dark .fv-wait-chip{color:#FFD27A;background:rgba(255,184,0,.12);border-colo
 #fvTalk.fv-off::before{content:"";position:absolute;z-index:2;width:18px;height:1.6px;border-radius:1px;background:currentColor;transform:rotate(-45deg)}
 body.client-mode #fvTalk,body.client-mode #fvPanel{display:none!important}
 @media (prefers-reduced-motion:reduce){.search .search-wrap>.fv-ring,.search .search-wrap>.fv-halo,.fv-live{animation:none!important}#fvTalk,#fvPanel,#fvToast{transition:opacity .15s ease}#fvTalk.on::after{animation:none}}
+
+/* ── Flow operations layer ── */
+/* least-busy doctor labels inside the doctor picker */
+.dd-opt .fv-load{margin-left:auto;padding-left:10px;font-size:11.5px;font-weight:500;color:var(--ink-400,#8A94A6);white-space:nowrap}
+.dd-opt .fv-load.best{color:#1F9D6B;font-weight:600}
+.dd-opt .fv-load.off{opacity:.65}
+.dd-trigger .fv-load{display:none}
+body.dark .dd-opt .fv-load.best{color:#5BD6A0}
+
+/* stale-patient pill + sheet */
+#fvStalePill{position:fixed;left:100px;bottom:34px;z-index:59;display:none;align-items:center;gap:9px;height:40px;padding:0 6px 0 14px;border-radius:999px;border:1px solid rgba(245,163,0,.35);
+ background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);color:#6B4A00;box-shadow:0 10px 28px rgba(30,40,70,.16);
+ font:600 13px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;letter-spacing:-.01em;cursor:pointer;animation:fvPillIn .5s cubic-bezier(.32,1.22,.5,1) both}
+#fvStalePill.show{display:inline-flex}
+#fvStalePill i{width:8px;height:8px;border-radius:50%;background:#F5A300;box-shadow:0 0 0 4px rgba(245,163,0,.18)}
+#fvStalePill span{margin-left:4px;padding:5px 11px;border-radius:999px;background:#1D1D1F;color:#fff;font-weight:600}
+body.dark #fvStalePill{background:rgba(22,30,46,.85);color:#FFD27A;border-color:rgba(255,184,0,.3)}
+body.dark #fvStalePill span{background:#EEF1F6;color:#0C1424}
+@keyframes fvPillIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+#fvStale{position:fixed;inset:0;z-index:9380;display:none;align-items:center;justify-content:center;font:14px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;letter-spacing:-.01em}
+#fvStale.show{display:flex}
+#fvStale .fs-scrim{position:absolute;inset:0;background:rgba(10,16,28,.32);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fvFade .25s ease both}
+#fvStale .fs-card{position:relative;width:min(640px,calc(100vw - 28px));max-height:min(78vh,720px);display:flex;flex-direction:column;border-radius:24px;background:rgba(255,255,255,.97);color:#1D1D1F;
+ box-shadow:0 30px 80px rgba(10,20,40,.28),inset 0 1px 0 #fff;border:1px solid rgba(0,0,0,.06);animation:fvPop .45s cubic-bezier(.32,1.22,.5,1) both;overflow:hidden}
+body.dark #fvStale .fs-card{background:rgba(18,24,36,.97);color:#EEF1F6;border-color:rgba(255,255,255,.08);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+@keyframes fvFade{from{opacity:0}to{opacity:1}}
+@keyframes fvPop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+#fvStale .fs-head{display:flex;gap:16px;align-items:flex-start;padding:22px 22px 12px}
+#fvStale .fs-head b{display:block;font-size:20px;font-weight:700;letter-spacing:-.02em}
+#fvStale .fs-head span{display:block;margin-top:4px;font-size:13px;opacity:.62}
+#fvStale .fs-x{margin-left:auto;flex:0 0 30px;height:30px;border-radius:50%;border:0;background:rgba(120,130,150,.14);color:inherit;cursor:pointer;font-size:13px}
+#fvStale .fs-list{overflow:auto;padding:4px 14px 8px}
+#fvStale .fs-row{display:flex;align-items:center;gap:12px;padding:12px 8px;border-top:1px solid rgba(120,130,150,.14);transition:opacity .3s,transform .3s}
+#fvStale .fs-row.done{opacity:.45}
+#fvStale .fs-med{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--c);font-weight:800;font-size:13px}
+#fvStale .fs-t{flex:1;min-width:0}
+#fvStale .fs-t b{display:block;font-size:15px;font-weight:600}
+#fvStale .fs-t small{display:block;font-size:12px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fvStale .fs-act{display:flex;gap:6px;flex:0 0 auto}
+#fvStale .fs-act button{height:34px;min-width:44px;padding:0 13px;border-radius:999px;border:1px solid rgba(120,130,150,.28);background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
+#fvStale .fs-act button:hover{background:rgba(120,130,150,.12)}
+#fvStale .fs-act button.ghost{border-color:transparent;opacity:.75}
+#fvStale .fs-act button.arm{background:#1D1D1F;color:#fff;border-color:#1D1D1F}
+body.dark #fvStale .fs-act button.arm{background:#EEF1F6;color:#0C1424}
+#fvStale .fs-ok{font-size:13px;font-weight:600;color:#1F9D6B}
+#fvStale .fs-empty{padding:28px;text-align:center;opacity:.6}
+#fvStale .fs-foot{display:flex;justify-content:flex-end;padding:12px 22px 18px}
+#fvStale .fs-done{height:38px;padding:0 20px;border-radius:999px;border:0;background:#1D1D1F;color:#fff;font:inherit;font-weight:600;cursor:pointer}
+body.dark #fvStale .fs-done{background:#EEF1F6;color:#0C1424}
+
+/* live presence */
+.fv-pres{display:inline-flex;align-items:center;gap:4px;margin:6px 0 2px 6px;padding:2px 9px 2px 3px;border-radius:999px;background:rgba(62,139,255,.10);color:#2F6FD8;font:600 11px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+.fv-pres .av,#fvPresBar .av{width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;background:linear-gradient(135deg,#3E8BFF,#8E6CFF);color:#fff;font-size:8.5px;font-weight:700;box-shadow:0 0 0 2px var(--card-bg,#fff)}
+.fv-pres .av+.av{margin-left:-7px}
+body.dark .fv-pres{color:#8DB8FF;background:rgba(62,139,255,.16)}
+#fvPresBar{display:none;align-items:center;gap:6px;margin:10px 0 0;padding:7px 12px;border-radius:12px;background:rgba(62,139,255,.10);color:#2F6FD8;font:600 12.5px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;animation:fvFade .3s ease both}
+#fvPresBar.show{display:flex}
+#fvPresBar .dot.live{width:7px;height:7px;border-radius:50%;background:#3E8BFF;box-shadow:0 0 0 4px rgba(62,139,255,.2)}
+body.dark #fvPresBar{color:#8DB8FF;background:rgba(62,139,255,.16)}
+.card.fv-remote{animation:fvRemote 1.6s ease-out}
+@keyframes fvRemote{0%{box-shadow:0 0 0 0 rgba(62,139,255,.55)}40%{box-shadow:0 0 0 6px rgba(62,139,255,.18)}100%{box-shadow:0 0 0 0 rgba(62,139,255,0)}}
+
+body.client-mode #fvStalePill,body.tv-mode #fvStalePill,body.client-mode #fvStale{display:none!important}
+
+/* ── iPad and touch ── */
+@media (hover:none) and (pointer:coarse){
+  .dd-opt{min-height:46px}
+  .dd-trigger{min-height:44px}
+  .switcher .seg{min-height:40px}
+  #fvTalk{width:36px;height:36px}
+  #fvTalk svg{width:18px;height:18px}
+  .card{touch-action:manipulation}
+  #fvStale .fs-act button{height:40px;padding:0 15px}
+}
+@media (max-width:1180px){
+  .board{scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-padding-left:4px}
+  .board>.col{scroll-snap-align:start;flex:0 0 min(330px,44vw)}
+}
+@media (max-width:820px){
+  .board{gap:12px}
+  .board>.col{flex:0 0 calc(100vw - 56px)}
+  .drawer{width:100vw;max-width:100vw}
+  .search{width:100%;max-width:none}
+  #fvStalePill{left:16px;bottom:96px}
+  #fvStale .fs-row{flex-wrap:wrap}
+  #fvStale .fs-act{width:100%;justify-content:flex-end}
+}
+
+/* tablet header: logo, scrollable app nav, full-width search */
+@media (max-width:1024px){
+ .topnav{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-areas:none!important;column-gap:10px}
+ .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ .topnav .nav-center{grid-column:2!important;grid-row:1!important;justify-self:stretch!important;position:static!important;transform:none!important;left:auto!important;min-width:0;overflow-x:auto;scrollbar-width:none;justify-content:flex-start;-webkit-overflow-scrolling:touch}
+ .topnav .nav-center::-webkit-scrollbar{display:none}
+ .topnav .nav-right{grid-column:3!important;grid-row:1!important}
+ .topnav .cobrand-div,.topnav .pvx-lockup{display:none!important}
+ #subnavFlow{flex-wrap:wrap;row-gap:10px}
+ #subnavFlow .subnav-title,#subnavFlow .fs-btn,#subnavFlow .spacer{display:none}
+ #subnavFlow .switcher{overflow-x:auto;scrollbar-width:none;max-width:100%}
+ #subnavFlow .search{order:10;flex:1 1 100%;width:100%;max-width:none}
+}
+@media (prefers-reduced-motion:reduce){#fvStalePill,#fvStale .fs-card,#fvStale .fs-scrim,.card.fv-remote{animation:none}}
 </style>
 </head>
 <body>
@@ -6482,7 +6584,7 @@ public_token: p.publicToken || null, track_code: p.trackCode || null,
 resus_pref: p.resusPref || null, resus_status: p.resusStatus || null,
 resus_recorded_at: _toISO(p.resusRecordedAt), resus_source: p.resusSource || null,
 resus_history: Array.isArray(p.resusHistory) ? p.resusHistory.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:_toISO(h.at), by:h.by||null }; }) : [],
-crit_taken_at: _toISO(p.critTakenAt), crit_taken_by: p.critTakenBy || null, crit_taken_uid: p.critTakenUid || null, waiting_on: p.waitingOn || null,
+crit_taken_at: _toISO(p.critTakenAt), crit_taken_by: p.critTakenBy || null, crit_taken_uid: p.critTakenUid || null, waiting_on: p.waitingOn || null, stale_keep_until: _toISO(p.staleKeepUntil), ms_roomed_at: _toISO(p.msRoomedAt), ms_doctor_at: _toISO(p.msDoctorAt),
 is_active: !(p.completed===true || p.active===false || p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized')
 };
 }
@@ -6500,7 +6602,7 @@ room:r.room_id||'Lobby', doctor:r.doctor_id||'unassigned', liaison:r.liaison_id|
 reason:r.reason_for_visit||'', reasonId:r.reason_id||null, reasonCategory:r.reason_category||null, reasonProblems: Array.isArray(r.reason_problems)? r.reason_problems : [], referringHospital:r.referring_hospital||'', referringHospitalInfo:r.referring_hospital_info||null,
 triage:r.triage||null, intake:r.intake||null, records:recToApp(r.records), ultrasound:usToApp(r.ultrasound), rounds:rdToApp(r.rounds), careTeam:ctToApp(r.care_team),
 timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new Date(e.at): new Date(), meta:e.meta||''}; }),
-arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt, critTakenAt: r.crit_taken_at? new Date(r.crit_taken_at): null, critTakenBy: r.crit_taken_by||null, critTakenUid: r.crit_taken_uid||null, waitingOn: (r.waiting_on&&r.waiting_on.text)?r.waiting_on:null,
+arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt, critTakenAt: r.crit_taken_at? new Date(r.crit_taken_at): null, critTakenBy: r.crit_taken_by||null, critTakenUid: r.crit_taken_uid||null, waitingOn: (r.waiting_on&&r.waiting_on.text)?r.waiting_on:null, staleKeepUntil: r.stale_keep_until?new Date(r.stale_keep_until):null, msRoomedAt: r.ms_roomed_at?new Date(r.ms_roomed_at):null, msDoctorAt: r.ms_doctor_at?new Date(r.ms_doctor_at):null, viewing: r.viewing||null, lastBy: r.last_by||null, lastByUid: r.last_by_uid||null, lastAt: r.last_at||null,
 examStartedAt: r.exam_started_at? new Date(r.exam_started_at): null, examStartedByDoctorId: r.exam_started_by||null, examWaitMinutes: (typeof r.exam_wait_min==='number'? r.exam_wait_min : null),
 totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null,
 resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusSource:r.resus_source||null, resusHistory:Array.isArray(r.resus_history)?r.resus_history.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:h.at?new Date(h.at):null, by:h.by||null }; }):[], resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
@@ -6704,11 +6806,11 @@ persist._t = setTimeout(async function(){
 try{
 const batch = DB.batch();
 changed.forEach(function(p){
-batch.set(DB.collection('visits').doc(String(p.id)), mapToDb(p));
+if(typeof fvSaveVisit==='function') fvSaveVisit(batch,p,prev); else batch.set(DB.collection('visits').doc(String(p.id)), mapToDb(p));
 batch.set(DB.collection('pub').doc(p.publicToken), safeProjection(p), { merge:true });
 batch.set(DB.collection('codes').doc(String(p.trackCode).toUpperCase()), { public_token:p.publicToken, tenant_id:TENANT_ID, is_active:!p.completed }, { merge:true });
 });
-await batch.commit();
+try{ await batch.commit(); }catch(err){ if(typeof fvSaveFallback==='function') await fvSaveFallback(changed); else throw err; }
 Backend._lastRows = LIVE.map(mapToDb);
 if(Backend.conn!=='live') Backend.setConn('live');
 }catch(e){ Backend.setConn('error'); }
@@ -7853,7 +7955,7 @@ return`<div class="card" draggable="true" data-pid="${p.id}">
     <div class="c-top">${mono(p,'patient-medallion patient-medallion--compact')}<b>${p.name} ${p.last}${msgBadge(p)}</b>
       <span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:10px">${PRIO[p.prio].l}</span></div>
     <div class="c-reason">${bcEsc(compactProblems(p))}</div>
-    ${usFlag(p)}${typeof fvWaitChip==='function'?fvWaitChip(p):''}
+    ${usFlag(p)}${typeof fvWaitChip==='function'?fvWaitChip(p):''}${typeof fvPresenceChip==='function'?fvPresenceChip(p):''}
     <div class="c-meta"><div class="l">${p.doctor==='unassigned'?'<span class="muted" style="font-size:12px">No doctor</span>':docAv(p.doctor)}${p.liaison?liaAv(p.liaison):''}${ctAvRow(p)}
       <span class="loc" style="font-size:12px">${p.room}</span></div>
       <span class="wait ${wc}" style="font-size:12px">${fmtWait(w)}</span></div>
@@ -9936,7 +10038,7 @@ p.owner=val; renderAll(); if(activePatient===p.id) fillDrawer(p);
 const dMount=document.getElementById('docAssignMount');
 dMount.innerHTML='';
 dMount.appendChild(createDropdown({
-items: DOCTORS,
+items: (typeof fvDoctorItems==='function'?fvDoctorItems():DOCTORS),
 selectedId: p.doctor==='unassigned'? null : p.doctor,
 placeholder:'Assign a doctor', searchPlaceholder:'Search doctors…',
 onSelect: id => assignDoctor(p, id)
@@ -15033,6 +15135,7 @@ function findDoctor(t){ t=(t||'').replace(/^(dr|doctor)\s+/,'').replace(/'s$/,''
   docs().forEach(function(d){ var n=String(d.name||'').toLowerCase().replace(/\./g,''), parts=n.split(' ').filter(function(x){ return x&&x!=='dr'; }); var s=Math.max.apply(null,[jw(t,n),jw(t,n.replace(/^dr\s+/,''))].concat(parts.map(function(x){ return nameScore(t,x); }))); if(s>bs){ bs=s; best=d; } });
   return bs>0.84?{d:best,s:bs}:null; }
 function destFrom(x){ x=(x||'').replace(/^(the|a)\s+/,'').trim(); if(!x) return null;
+  if(/^(?:least busy|next available|next|free|available|open)\s+(?:doctor|dr|vet)$|^whoever(?:'s| is)?\s+(?:free|available|least busy)$/.test(x)){ var lb=(typeof fvLeastBusy==='function')?fvLeastBusy():null; return lb?{doc:lb,ds:1}:{badDoc:x}; }
   if(/^(dr|doctor)\s/.test(x)){ var d=findDoctor(x); return d?{doc:d.d,ds:d.s}:{badDoc:x}; }
   var st=stageFrom(x); if(st) return {dest:{type:st.kind,v:st.v}};
   var r=roomFrom(x); if(r) return {dest:{type:'room',v:r}};
@@ -15053,6 +15156,7 @@ function parseClause(c,idx){ var m;
   if(m=c.match(/^(.+?)(?:'s)\s+[a-z ]+?\s+(?:is|are)\s+(?:back|done|in|ready|finished)$/)) return {op:'wait',who:m[1],text:''};
   if(m=c.match(/^((?:dr|doctor)\s+.+?)\s+(?:is\s+)?(?:taking|takes|take|has|gets|got|will take|is seeing|sees|is on)\s+(.+)$/)){ var d=findDoctor(m[1]); return {op:'assign',who:m[2],doc:d&&d.d,ds:d&&d.s,said:m[1]}; }
   if(m=c.match(/^(?:assign|give|hand)\s+(.+?)\s+(?:over\s+)?to\s+(.+)$/)){
+    if(/busy|available|free|next|whoever/.test(m[2])){ var lbx=destFrom(m[2]); if(lbx&&lbx.doc) return {op:'assign',who:m[1],doc:lbx.doc,ds:1,said:m[2]}; }
     var d1=findDoctor(m[2]); if(d1) return {op:'assign',who:m[1],doc:d1.d,ds:d1.s,said:m[2]};
     var d0=/^(dr|doctor)\s/.test(m[1])?findDoctor(m[1]):null; if(d0) return {op:'assign',who:m[2],doc:d0.d,ds:d0.s,said:m[1]};
     return {op:'assign',who:m[1],doc:null,said:m[2]}; }
@@ -15157,6 +15261,7 @@ function resolveAll(steps,raw){
     var s=steps[i];
     if(s.noDest) return show(heard(raw)+err('Move '+esc(s.who)+' where?'));
     if(s.badDest){ stat('bad_dest'); statWord('dest',s.badDest); } if(s.badDest) return show(heard(raw)+err('I didn’t catch where: “'+esc(s.badDest)+'”. Try Exam, Room 3, Ultrasound or Treatment.'));
+    if(s.op==='assign'&&!s.doc&&/busy|available|free|next|whoever/.test(s.said||'')) return show(heard(raw)+err('Nobody is on today’s shift list yet. Set Today’s Shift Assignments first.'));
     if(s.op==='assign'&&!s.doc) return show(heard(raw)+err('No doctor named “'+esc(s.said)+'”.'));
     if(s.op==='dest'&&s.dest.type==='room'&&roomList().indexOf(s.dest.v)<0&&s.dest.v!=='Treatment') return show(heard(raw)+err('There’s no '+esc(s.dest.v)+'.'));
     if(s.op==='prio'&&!s.level) return show(heard(raw)+err('Which priority? Critical, urgent or stable.'));
@@ -15327,6 +15432,152 @@ document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.c
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',build); else build();
 window.__flowVoice={understand:understand, findPatients:findPatients, handle:handle, confirm:confirm, stats:stats};
+})();
+</script>
+
+<script>
+/* Flow operations layer
+   1. Safer saving: only the fields that changed are written, so two screens never erase each other's work.
+   2. Stale-patient sweep: anyone on the board over 12 hours gets a Discharge / Admit / Keep prompt.
+   3. Milestones: roomed and doctor-assigned times are recorded quietly for analytics.
+   4. Least-busy doctor: doctor pickers show on-shift doctors first, lightest load on top.
+   5. Live presence: who else has a patient open, and "Kristi just moved Bella to Exam".
+   Everything here is additive; if any part fails, Flow keeps working as before. */
+(function(){
+var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search);
+function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function ms(v){ if(!v) return 0; if(v instanceof Date) return v.getTime(); if(v.toDate) return v.toDate().getTime(); if(typeof v==='number') return v; var n=new Date(v).getTime(); return isNaN(n)?0:n; }
+function me(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){} var n=''; try{ n=(typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):''; }catch(e){} return {uid:(u&&u.uid)||'', name:n||(u&&u.email)||''}; }
+function first(n){ return String(n||'').trim().split(/\s+/)[0]||'Someone'; }
+function inits(n){ var w=String(n||'').trim().split(/\s+/); return ((w[0]||'')[0]||'').toUpperCase()+((w.length>1?w[w.length-1][0]:'')||'').toUpperCase(); }
+function pn(p){ return ((p.name||'')+' '+(p.last||'')).trim(); }
+function onTV(){ try{ return LOBBY||document.body.classList.contains('client-mode')||document.body.classList.contains('tv-mode'); }catch(e){ return false; } }
+
+/* ---------- 1. safer saving ---------- */
+window.fvSaveVisit=function(batch,p,prev){
+  var ref=DB.collection('visits').doc(String(p.id)), row=mapToDb(p), who=me();
+  var stamp={last_by:who.name||null, last_by_uid:who.uid||null, last_at:new Date().toISOString()};
+  var old=null; try{ old=prev[row.id]?JSON.parse(prev[row.id]):null; }catch(e){ old=null; }
+  if(!old){ batch.set(ref, Object.assign({}, row, stamp), {merge:true}); return; }
+  var d={}, n=0;
+  Object.keys(row).forEach(function(k){ if(row[k]===undefined) return; if(JSON.stringify(row[k])!==JSON.stringify(old[k])){ d[k]=row[k]; n++; } });
+  if(!n) return;
+  batch.update(ref, Object.assign(d, stamp));
+};
+/* If a field-level update can't apply (e.g. the record was removed elsewhere), fall back to a merge. */
+window.fvSaveFallback=async function(changed){
+  var b=DB.batch(), who=me();
+  changed.forEach(function(p){ b.set(DB.collection('visits').doc(String(p.id)), Object.assign({}, mapToDb(p), {last_by:who.name||null,last_by_uid:who.uid||null,last_at:new Date().toISOString()}), {merge:true}); });
+  return b.commit();
+};
+
+/* ---------- 3. milestones ---------- */
+try{ if(typeof moveRoom==='function'){ var _mr=moveRoom; moveRoom=function(p,r){ var was=p&&p.room; var out=_mr.apply(this,arguments);
+  try{ if(p&&!p.msRoomedAt&&(!was||was==='Lobby')&&p.room&&p.room!=='Lobby') p.msRoomedAt=new Date(); }catch(e){} return out; }; } }catch(e){}
+try{ if(typeof assignDoctor==='function'){ var _ad=assignDoctor; assignDoctor=function(p,id){ var out=_ad.apply(this,arguments);
+  try{ if(p&&!p.msDoctorAt&&id&&id!=='unassigned'&&p.doctor===id) p.msDoctorAt=new Date(); }catch(e){} return out; }; } }catch(e){}
+
+/* ---------- 4. least-busy doctor ---------- */
+function onShift(){ var on={}; try{ Object.keys(shiftAssign||{}).forEach(function(k){ if(shiftAssign[k]) on[shiftAssign[k]]=k; }); }catch(e){} return on; }
+function load(id){ try{ return activeCountForDoctor(id); }catch(e){ return 0; } }
+function ranked(){ var on=onShift();
+  return DOCTORS.filter(function(d){ return d&&d.id&&d.id!=='unassigned'; }).map(function(d){ return {d:d,n:load(d.id),on:!!on[d.id]}; })
+    .sort(function(a,b){ return (b.on-a.on)||(a.n-b.n)||String(a.d.name).localeCompare(String(b.d.name)); }); }
+window.fvLeastBusy=function(){ var b=ranked().find(function(x){ return x.on; }); return b?b.d:null; };
+window.fvDoctorItems=function(){ var r=ranked(), best=r.find(function(x){ return x.on; });
+  return r.map(function(x){ var tag=x.n===0?'Free':(x.n+' active');
+    var label=x===best?'Suggested':(x.on?'On shift · '+tag:tag);
+    return Object.assign({}, x.d, {name:esc(x.d.name)+'<span class="fv-load'+(x===best?' best':'')+(x.on?'':' off')+'" title="'+(x.on?'On shift':'Off shift')+' · '+tag+'">'+label+'</span>'}); }); };
+
+if(LOBBY) return;
+
+/* ---------- 2. stale-patient sweep ---------- */
+var STALE_H=12, sheet=null, pill=null, AUTO_KEY='fvStaleAuto';
+function staleList(){ var now=Date.now(); try{ return PATIENTS.filter(function(p){ return isActive(p)&&!p._demo&&p.status!=='Hospitalized'&&ms(p.arrival)&&(now-ms(p.arrival))>STALE_H*3600000&&!(p.staleKeepUntil&&ms(p.staleKeepUntil)>now); })
+  .sort(function(a,b){ return ms(a.arrival)-ms(b.arrival); }); }catch(e){ return []; } }
+function hrs(p){ var h=Math.round((Date.now()-ms(p.arrival))/3600000); return h>=48?Math.round(h/24)+' days':h+' h'; }
+function when(p){ try{ return new Date(ms(p.arrival)).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}); }catch(e){ return ''; } }
+function buildStale(){
+  pill=document.createElement('button'); pill.id='fvStalePill'; pill.type='button'; document.body.appendChild(pill);
+  pill.onclick=function(){ openSheet(); };
+  sheet=document.createElement('div'); sheet.id='fvStale'; sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-modal','true'); sheet.setAttribute('aria-label','Patients on the board over 12 hours');
+  sheet.innerHTML='<div class="fs-scrim"></div><div class="fs-card"><div class="fs-head"><div><b>Still here?</b><span>These patients have been on the board over 12 hours. Clearing them keeps wait times and alerts accurate.</span></div><button class="fs-x" type="button" aria-label="Close">✕</button></div><div class="fs-list"></div><div class="fs-foot"><button class="fs-done" type="button">Done</button></div></div>';
+  document.body.appendChild(sheet);
+  sheet.querySelector('.fs-scrim').onclick=closeSheet; sheet.querySelector('.fs-x').onclick=closeSheet; sheet.querySelector('.fs-done').onclick=closeSheet;
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&sheet.classList.contains('show')){ e.stopPropagation(); closeSheet(); } },true);
+  sheet.querySelector('.fs-list').addEventListener('click',function(e){ var b=e.target.closest('button[data-act]'); if(!b) return;
+    var p=PATIENTS.find(function(x){ return String(x.id)===b.getAttribute('data-id'); }); if(!p) return; var act=b.getAttribute('data-act');
+    if(act==='keep'){ p.staleKeepUntil=new Date(Date.now()+STALE_H*3600000); (p.timeline=p.timeline||[]).push({label:'Kept on board (12-hour review)', at:new Date(), meta:me().name}); try{ scheduleRender(); }catch(_){ try{ renderAll(); }catch(__){} } rowDone(b,'Kept'); return; }
+    /* Discharge / Admit need a second tap */
+    if(!b.classList.contains('arm')){ sheet.querySelectorAll('button.arm').forEach(function(x){ x.classList.remove('arm'); x.textContent=x.getAttribute('data-label'); });
+      b.classList.add('arm'); b.textContent='Confirm'; clearTimeout(b._t); b._t=setTimeout(function(){ b.classList.remove('arm'); b.textContent=b.getAttribute('data-label'); },4000); return; }
+    try{ completePatient(p, act==='admit'?'Admitted':'Discharged'); }catch(err){ return; }
+    rowDone(b, act==='admit'?'Admitted':'Discharged'); });
+}
+function rowDone(b,label){ var r=b.closest('.fs-row'); if(!r) return; r.classList.add('done'); r.querySelector('.fs-act').innerHTML='<span class="fs-ok">'+esc(label)+'</span>';
+  setTimeout(function(){ r.remove(); if(!sheet.querySelector('.fs-row')) closeSheet(); updatePill(); },900); }
+function renderSheet(){ var L=staleList(), list=sheet.querySelector('.fs-list');
+  list.innerHTML=L.map(function(p){ var c='#6FD3E6'; try{ c=STATUSES[p.status].color; }catch(e){}
+    return '<div class="fs-row"><span class="fs-med" style="--c:'+c+'">'+esc((p.name||'?')[0])+'</span><div class="fs-t"><b>'+esc(pn(p))+'</b><small>'+esc(hrs(p))+' · arrived '+esc(when(p))+' · '+esc(p.status)+' · '+esc(p.room||'Lobby')+'</small></div>'
+      +'<div class="fs-act"><button type="button" data-act="discharge" data-label="Discharge" data-id="'+esc(p.id)+'">Discharge</button><button type="button" data-act="admit" data-label="Admit" data-id="'+esc(p.id)+'">Admit</button><button type="button" class="ghost" data-act="keep" data-label="Keep" data-id="'+esc(p.id)+'">Keep</button></div></div>'; }).join('')
+    ||'<div class="fs-empty">All clear.</div>'; }
+function openSheet(){ if(!sheet) return; renderSheet(); sheet.classList.add('show'); try{ localStorage.setItem(AUTO_KEY,String(Date.now())); }catch(e){} }
+function closeSheet(){ if(sheet) sheet.classList.remove('show'); updatePill(); }
+function updatePill(){ if(!pill) return; var n=staleList().length, show=n>0&&!onTV()&&!!me().uid;
+  pill.classList.toggle('show',show); if(show) pill.innerHTML='<i></i>'+n+(n===1?' patient':' patients')+' over 12 hours<span>Review</span>'; }
+function busy(){ var a=document.activeElement, t=a&&a.tagName; if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT') return true;
+  try{ if(document.getElementById('drawer').classList.contains('open')) return true; }catch(e){} return !!document.querySelector('#critIsland .ci-pick, .modal.open, .sheet.open'); }
+function hospHour(){ try{ return Number(new Date().toLocaleString('en-US',{timeZone:'America/New_York',hour:'numeric',hour12:false}))%24; }catch(e){ return new Date().getHours(); } }
+/* End-of-shift sweep at 7 AM / 7 PM, and at least once every 12 hours per screen */
+function autoSweep(){ if(!sheet||onTV()||!me().uid||sheet.classList.contains('show')||busy()) return; if(!staleList().length) return;
+  var last=0; try{ last=Number(localStorage.getItem(AUTO_KEY)||0); }catch(e){}
+  var h=hospHour(), m=new Date().getMinutes(), shiftEdge=(h===7||h===19)&&m<30;
+  if((shiftEdge&&Date.now()-last>45*60000)||Date.now()-last>12*3600000) openSheet(); }
+
+/* ---------- 5. live presence ---------- */
+var presId=null, presT=null, STALE_VIEW=150000;
+function presWrite(id,on){ var u=me(); if(!u.uid||!DB||!id) return; var o={};
+  try{ o['viewing.'+u.uid]=on?{name:u.name, at:Date.now()}:firebase.firestore.FieldValue.delete(); DB.collection('visits').doc(String(id)).update(o).catch(function(){}); }catch(e){} }
+function presOpen(id){ if(presId&&presId!==id) presWrite(presId,false); presId=id; presWrite(id,true); clearInterval(presT);
+  presT=setInterval(function(){ if(presId&&document.visibilityState==='visible') presWrite(presId,true); },60000); }
+function presClose(){ if(presId) presWrite(presId,false); presId=null; clearInterval(presT); }
+function viewers(p){ var v=p&&p.viewing, u=me(), out=[]; if(!v) return out; Object.keys(v).forEach(function(k){ var x=v[k]; if(k!==u.uid&&x&&Date.now()-ms(x.at)<STALE_VIEW) out.push(x.name||'Someone'); }); return out; }
+window.fvPresenceChip=function(p){ var vs=viewers(p); if(!vs.length) return '';
+  return '<div class="fv-pres" title="'+esc(vs.join(', '))+' viewing">'+vs.slice(0,3).map(function(n){ return '<span class="av">'+esc(inits(n))+'</span>'; }).join('')+'<span>'+esc(first(vs[0]))+(vs.length>1?' +'+(vs.length-1):'')+' viewing</span></div>'; };
+try{ if(typeof openDrawer==='function'){ var _od=openDrawer; openDrawer=function(pid){ var out=_od.apply(this,arguments); try{ var p=PATIENTS.find(function(x){ return x.id===pid; }); if(p&&!p._demo) presOpen(pid); }catch(e){} tick(); return out; }; } }catch(e){}
+try{ if(typeof closeDrawer==='function'){ var _cd=closeDrawer; closeDrawer=function(){ var out=_cd.apply(this,arguments); presClose(); return out; }; } }catch(e){}
+window.addEventListener('pagehide',presClose);
+
+var bar=null, seen={}, warm=false, flashT=null, flashMsg='';
+function sig(p){ return [p.status,p.room,p.doctor,p.prio,(p.waitingOn&&p.waitingOn.text)||''].join('|'); }
+function describe(p,old){ var o=(old||'').split('|'), who=first(p.lastBy), n=p.name||'the patient';
+  if(o[0]!==p.status) return who+' just moved '+n+' to '+p.status;
+  if(o[1]!==p.room) return who+' just moved '+n+' to '+(p.room||'Lobby');
+  if(o[2]!==p.doctor){ var d=''; try{ d=doc(p.doctor).name; }catch(e){} return who+' just assigned '+n+(d&&p.doctor!=='unassigned'?' to '+d:''); }
+  if(o[3]!==String(p.prio)) return who+' just set '+n+' to P'+p.prio;
+  return who+' just updated '+n; }
+function tick(){
+  try{
+    var u=me(), dr=document.getElementById('drawer'), open=dr&&dr.classList.contains('open')&&typeof activePatient!=='undefined'&&activePatient;
+    if(dr&&!bar){ bar=document.createElement('div'); bar.id='fvPresBar'; var head=dr.querySelector('.drawer-head'); (head||dr).appendChild(bar); }
+    PATIENTS.forEach(function(p){ if(!isActive(p)) return; var s=sig(p), old=seen[p.id]; seen[p.id]=s;
+      if(!warm||old===undefined||old===s) return;
+      if(!p.lastByUid||p.lastByUid===u.uid||Date.now()-ms(p.lastAt)>20000) return;
+      var msg=describe(p,old);
+      var card=document.querySelector('.card[data-pid="'+p.id+'"]'); if(card){ card.classList.remove('fv-remote'); void card.offsetWidth; card.classList.add('fv-remote'); }
+      if(open&&activePatient===p.id){ flashMsg=msg; clearTimeout(flashT); flashT=setTimeout(function(){ flashMsg=''; tick(); },8000); try{ notify(msg,'',{icon:'info', color:'var(--accent)'}); }catch(e){} } });
+    warm=true;
+    if(bar){ var p=open?PATIENTS.find(function(x){ return x.id===activePatient; }):null, vs=p?viewers(p):[], html='';
+      if(flashMsg) html='<span class="dot live"></span>'+esc(flashMsg);
+      else if(vs.length) html=vs.slice(0,3).map(function(n){ return '<span class="av">'+esc(inits(n))+'</span>'; }).join('')+esc(vs.length===1?first(vs[0])+' is also viewing '+(p.name||''):first(vs[0])+' and '+(vs.length-1)+' more are viewing');
+      if(bar._h!==html){ bar._h=html; bar.innerHTML=html; bar.classList.toggle('show',!!html); } }
+    updatePill();
+  }catch(e){}
+}
+
+function boot(){ buildStale(); setInterval(tick,1500); setInterval(autoSweep,60000); setTimeout(autoSweep,8000); tick(); }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers:viewers, tick:tick};
 })();
 </script>
 </body>
