@@ -235,16 +235,19 @@ function sexLabel(x){ var k=String(x||'').toLowerCase().replace(/[\s-]+/g,'_'); 
 window.tsSexLabel=sexLabel;
 function initialsOf(n){ var w=String(n||'').replace(/^dr\.?\s+/i,'').split(/[\s,]+/).filter(Boolean); return w.length?w.map(function(x){ return x[0]; }).join('').slice(0,3).toUpperCase():'—'; }
 function boardOf(s){ return s.board==='OP'?'OP Board':'IP Board'; }   /* sheets made before boards existed are inpatients */
-window.tsBoardList=function(board){
-  IPL=SHEETS.filter(function(s){ return boardOf(s)===(board||'IP Board'); }).map(function(s){ var p=s.patient||{}, at=s.admitted_at||s.created_at, d=at?new Date(at):null;
-    return {_id:s._id,name:((p.name||'')+' '+(p.last||'')).trim()||'Unnamed',sig:[p.age,sexLabel(p.sex),p.breed].filter(Boolean).join(' ')+(p.weight?' · '+p.weight+' kg':''),
+/* My Board: patients where the signed-in person is the technician (set in Flow or the Tech column) or the doctor */
+function isMine(s){ var me=normName(user().name), p=s.patient||{}; return !!me&&(normName(p.tech)===me||normName(p.doctor)===me); }
+window.tsIsMyBoard=function(){ return typeof sbBoard!=='undefined'&&sbBoard==='My Board'; };
+window.tsBoardList=function(board){ var my=board==='My Board';
+  IPL=SHEETS.filter(function(s){ return my?isMine(s):boardOf(s)===(board||'IP Board'); }).map(function(s){ var p=s.patient||{}, at=s.admitted_at||s.created_at, d=at?new Date(at):null;
+    return {_id:s._id,name:((p.name||'')+' '+(p.last||'')).trim()||'Unnamed',sig:(my?(s.board==='OP'?'OP · ':'IP · '):'')+[p.age,sexLabel(p.sex),p.breed].filter(Boolean).join(' ')+(p.weight?' · '+p.weight+' kg':''),
       cage:p.location||'',ls:(['DNR','BLS','ALS','CPR'].indexOf(p.code)>=0?p.code:''),reason:p.reason||'—',dr:initialsOf(p.doctor),ward:p.location||'Treatment Area',inout:'IN',
       date:d?(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear():'',time:d?d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}).replace(' ',''):'',
       alerts:(p.alerts||[]).map(function(x){ return {t:/dnr|caution|aggress|bite/i.test(x)?'crit':'warn',x:x}; }),service:p.service||'Emergency/Critical Care',
       owner:p.owner||'—',phone:p.phone||'—',belongings:p.belongings||'',blocks:blocksFor(s._id===CUR&&curDoc?curDoc:s)}; });
   return IPL; };
 window.tsIPList=function(){ return window.tsBoardList('IP Board'); };
-window.tsOpenFromBoard=function(i){ if(typeof sbBoard==='undefined'||(sbBoard!=='IP Board'&&sbBoard!=='OP Board')) return false; var s=IPL[i]; if(!s) return false; openSheet(s._id,true); return true; };
+window.tsOpenFromBoard=function(i){ if(typeof sbBoard==='undefined'||(sbBoard!=='IP Board'&&sbBoard!=='OP Board'&&sbBoard!=='My Board')) return false; var s=IPL[i]; if(!s) return false; openSheet(s._id,true); return true; };
 
 /* ---------- open / follow one sheet live: the sheet + today's and yesterday's charting ---------- */
 function unsubAllCur(){ if(unsubCur){ try{ unsubCur(); }catch(e){} unsubCur=null; } unsubDays.forEach(function(u){ try{ u(); }catch(e){} }); unsubDays=[]; liveCur=false; }
@@ -846,10 +849,23 @@ window.tsPickTech=function(sheetId,anchor){ var old=document.getElementById('tsT
   var r=anchor.getBoundingClientRect(); m.style.top=Math.min(window.innerHeight-380,r.bottom+6)+'px'; m.style.left=Math.max(12,Math.min(window.innerWidth-300,r.left-20))+'px';
   document.body.appendChild(m); setTimeout(function(){ document.addEventListener('mousedown',function h(ev){ if(!m.contains(ev.target)){ m.remove(); document.removeEventListener('mousedown',h); } }); },0); };
 function assignTech(sheetId,name){ var s=SHEETS.find(function(x){ return x._id===sheetId; }); if(!s) return; var me=user(), now=new Date().toISOString(), p=s.patient||{};
-  var u={'patient.tech':name||null,updated_at:now,audit:FV.arrayUnion({at:now,type:'doctor',desc:(name?'Tech assigned — <b>'+esc(name)+'</b>':'Tech unassigned'),who:me.initials,uid:me.uid})};
+  var u={'patient.tech':name||null,'patient.tech_at':now,updated_at:now,audit:FV.arrayUnion({at:now,type:'doctor',desc:(name?'Tech assigned — <b>'+esc(name)+'</b>':'Tech unassigned'),who:me.initials,uid:me.uid})};
   p.tech=name||null; s.patient=p; if(sheetId===CUR&&curDoc){ curDoc.patient=curDoc.patient||{}; curDoc.patient.tech=name||null; }
-  DB.collection(COL).doc(sheetId).update(u).then(function(){ toast(name?((p.name||'Patient')+' → '+name):'Tech unassigned'); }).catch(function(e){ console.warn(e); toast('Couldn’t save'); });
+  p.tech_at=now; DB.collection(COL).doc(sheetId).update(u).then(function(){ toast(name?((p.name||'Patient')+' → '+name):'Tech unassigned'); }).catch(function(e){ console.warn(e); toast('Couldn’t save'); });
+  techToFlow(s.visit_id,name,me,now);
   try{ if(currentCTab==='dash') renderDash(); }catch(e){} }
+/* the same technician shows on the patient in Flow (replaces whoever was there; history is kept) */
+function techToFlow(visitId,name,me,now){ if(!visitId) return; var ref=DB.collection('visits').doc(String(visitId));
+  var slug=function(n){ return 'tech:'+String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); };
+  DB.runTransaction(function(t){ return t.get(ref).then(function(snap){ if(!snap.exists) return;
+    var ct=snap.data().care_team||{}, L=Array.isArray(ct.assignments)?ct.assignments.slice():[], by=me.name||me.initials||'Treatment Sheets';
+    var cur=L.filter(function(a){ return a.role==='technician'&&a.status==='current'; });
+    if(name&&cur.length===1&&cur[0].staff_name===name) return;
+    if(!name&&!cur.length) return;
+    L=L.map(function(a){ return (a.role==='technician'&&a.status==='current')?Object.assign({},a,{status:'ended',end_at:now,ended_by:by,end_reason:name?'replaced':'unassigned',updated_at:now,updated_by:by}):a; });
+    if(name) L.push({id:'ct-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7),patient_id:String(visitId),staff_id:slug(name),staff_name:name,staff_kind:'manual',role:'technician',status:'current',
+      start_at:now,end_at:null,updated_at:now,updated_by:by,proposed_by:null,confirmed_by:null,confirmed_at:null,ended_by:null,end_reason:null,note:'From Treatment Sheets',actor_uid:me.uid||null});
+    t.update(ref,{'care_team.assignments':L}); }); }).catch(function(e){ console.warn('[sheet→flow tech]',e); }); }
 function techLoads(){ var out={}; SHEETS.forEach(function(s){ var t=techOf(s); if(!t) return; var d=s._id===CUR&&curDoc?curDoc:s, L=loadOf(d), o=out[t]||(out[t]={patients:0,due:0,over:0,score:0,list:[]});
   o.patients++; o.due+=L.due; o.over+=L.over; o.score+=L.score; o.list.push({s:s,L:L}); }); return out; }
 function loadStripHTML(){ var loads=techLoads(), names=Object.keys(loads).sort(function(a,b){ return loads[b].score-loads[a].score; });

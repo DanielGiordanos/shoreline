@@ -307,7 +307,7 @@ function renderDash(){
   const hours=[];for(let h=6;h<=20;h++)hours.push(h);
   const hlabel=h=>{const ap=h<12?'A':'P',hh=h%12||12;return hh+ap;};
   const NOWH=Math.min(20,Math.max(6,new Date().getHours())), LEFTW=802, HW=46;
-  const LIVE=(sbBoard==='IP Board'||sbBoard==='OP Board')&&typeof tsBoardList==='function', IPL=LIVE?tsBoardList(sbBoard):null, OPB=sbBoard==='OP Board';
+  const LIVE=(sbBoard==='IP Board'||sbBoard==='OP Board'||sbBoard==='My Board')&&typeof tsBoardList==='function', IPL=LIVE?tsBoardList(sbBoard):null, OPB=sbBoard==='OP Board';
   const list=IPL||[];
   const empty=!list.length;
   const boards=['My Board','OP Board','IP Board','Boarding','OTW'];
@@ -328,7 +328,7 @@ function renderDash(){
     ? `<div class="sb-hours">${hours.map(h=>`<div class="sb-hcell${h===NOWH?' now':''}">${hlabel(h)}</div>`).join('')}</div>`
     : `<div class="sb-cage"><div class="cage-head" style="width:650px">Cage Card Info</div></div>`;
   head+=`</div>`;
-  const section=`<div class="sb-section"><span class="st">${OPB?'Outpatients':'Inpatients'}</span><span class="sc">(${list.length})</span></div>`;
+  const section=`<div class="sb-section"><span class="st">${sbBoard==='My Board'?'My patients':OPB?'Outpatients':'Inpatients'}</span><span class="sc">(${list.length})</span></div>`;
   let rows='';
   list.forEach((p,i)=>{
     const left=`<div class="sb-left">
@@ -351,7 +351,7 @@ function renderDash(){
         </div>`;
     rows+=`<div class="sb-row" onclick="openPatient(${i})">${left}${right}</div>`;
   });
-  if(empty) rows=OPB?`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No outpatients in Treatment. Move a patient to Treatment in Flow and their sheet appears here.</div>`:IPL?`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No admitted patients yet. Admit a patient in Flow, or <a href="#" onclick="event.preventDefault();tsNewSheet()" style="color:var(--accent-ink);font-weight:600">start a new sheet</a>.</div>`:`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No patients on the ${sbBoard}.</div>`;
+  if(empty) rows=sbBoard==='My Board'?`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No patients assigned to you yet. In Flow, open a patient and choose a <b>Technician</b>, or use the <b>+</b> in the Tech column on the IP or OP Board.</div>`:OPB?`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No outpatients in Treatment. Move a patient to Treatment in Flow and their sheet appears here.</div>`:IPL?`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No admitted patients yet. Admit a patient in Flow, or <a href="#" onclick="event.preventDefault();tsNewSheet()" style="color:var(--accent-ink);font-weight:600">start a new sheet</a>.</div>`:`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No patients on the ${sbBoard}.</div>`;
   const nowline = (sbTx&&!empty)?`<div class="sb-nowline" style="left:${LEFTW+(NOWH-6)*HW+HW/2}px"></div>`:'';
   const legend = sbTx?`<div class="sb-legend"><div class="li"><span class="dot" style="background:var(--gray)"></span>Completed</div><div class="li"><span class="dot" style="background:var(--green)"></span>Scheduled</div><div class="li"><span class="dot" style="background:var(--amber)"></span>Due</div><div class="li"><span class="dot" style="background:var(--coral)"></span>Overdue</div></div>`:'';
   tsMorphHTML($('#ctab-dash'),`<div class="sb">${toolbar}${(window.tsLoadStrip&&tsLoadStrip())||''}<div class="sb-scroll"><div class="sb-inner">${head}${section}${rows}${nowline}</div></div>${legend}</div>`);
