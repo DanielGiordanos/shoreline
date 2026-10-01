@@ -3785,16 +3785,39 @@ window.tsCanEditEstimate=canEditEstimate;
 function estOf(){ var e=curDoc&&curDoc.estimate; return (e&&e.high>0)?e:null; }
 function fmtWhen(iso){ try{ var d=new Date(iso); return d.toLocaleDateString([], {month:'short',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return '—'; } }
 function applyEstimateToVisit(){ var e=estOf();
-  VISIT.estLow=e?Number(e.low)||0:0; VISIT.estHigh=e?Number(e.high)||0:0; VISIT.estCurrent=e?Number(e.current)||0:0;
+  VISIT.estLow=e?Number(e.low)||0:0; VISIT.estHigh=e?Number(e.high)||0:0; VISIT.estCurrent=e?Number(e.current)||0:0; VISIT.estDeposit=(e&&e.deposit!=null&&e.deposit!=='')?Number(e.deposit):null;
   VISIT.estApprovedBy=e?(e.approved_by||'—'):'—'; VISIT.estApprovedTime=e&&e.approved_at?fmtWhen(e.approved_at):'—';
   VISIT.estClientInitials=e?(e.initials||'—'):'—'; VISIT.estPlan=e?(e.plan||'—'):'—';
   VISIT.estLastUpdated=e&&e.updated_at?fmtWhen(e.updated_at)+(e.updated_by?' by '+e.updated_by:''):'—'; }
+/* Remaining = deposit − current charges (how much of the client's deposit is left) */
+function depositCard(){
+  var m=function(n){ return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var lo=VISIT.estLow, hi=VISIT.estHigh, cur=VISIT.estCurrent, dep=VISIT.estDeposit, hasDep=dep!=null&&dep>0;
+  var rem=hasDep?dep-cur:null, pct=hasDep?cur/dep*100:0, clamped=Math.max(0,Math.min(100,pct));
+  var color=!hasDep?'cyan':pct<75?'cyan':pct<90?'amber':pct<=100?'coral':'red';
+  var remLabel=rem==null?'—':(rem>=0?m(rem):'−'+m(-rem));
+  var barLabel=rem==null?'No deposit recorded':(rem>=0?m(rem)+' remaining':m(-rem)+' over deposit');
+  var labelPos=Math.max(20,Math.min(80,clamped));
+  var pending=estOf().approved_by==='Not yet approved';
+  var chk='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M8 12.5l2.5 2.5 5.5-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var info='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>';
+  return '<div class="panel est-card" tabindex="0" role="button" onclick="openEstimate()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openEstimate();}"><h4>Estimate Range</h4><div class="est">'
+    +'<div class="est-range">'+m(lo)+' — '+m(hi)+'</div>'
+    +'<div class="est-status"><span class="est-pill '+(pending?'warn':'approved')+'">'+chk+(pending?'Awaiting approval':'Approved')+'</span></div>'
+    +'<div class="est-div"></div>'
+    +'<div class="est-row"><span class="k">Current Charges</span><span class="v">'+m(cur)+'</span></div>'
+    +'<div class="est-row"><span class="k">Deposit</span><span class="v">'+(hasDep?m(dep):'—')+'</span></div>'
+    +'<div class="est-row"><span class="k">Remaining</span><span class="v '+color+'">'+remLabel+'</span></div>'
+    +'<div class="est-bar-wrap"><div class="est-bar"><div class="est-fill '+color+'" style="width:'+clamped.toFixed(1)+'%"></div><div class="est-cap"></div><div class="est-marklabel '+color+'" style="left:'+labelPos.toFixed(1)+'%">'+barLabel+'</div></div>'
+    +'<div class="est-ends"><span><b>'+m(cur)+'</b>Charges</span><span class="hi"><b>'+(hasDep?m(dep):'—')+'</b>Deposit</span></div></div>'
+    +'<div class="est-note">'+info+(rem!=null&&rem<0?'Charges are past the deposit. Collect an additional deposit before continuing.':'Stay near the low end when possible. Do not exceed the high end without updated client authorization.')+'</div>'
+    +'<div class="est-foot">Updated '+VISIT.estLastUpdated+'</div>'
+    +'</div></div>';
+}
 var _origCard=window.estimateCard;
 window.estimateCard=function(){
   applyEstimateToVisit();
-  if(estOf()){ var html=_origCard();
-    if(estOf().approved_by==='Not yet approved') html=html.replace('<span class="est-pill approved">','<span class="est-pill warn">').replace(/<\/svg>Approved<\/span>/,'</svg>Awaiting approval</span>');
-    return html; }
+  if(estOf()) return depositCard();
   var edit=canEditEstimate();
   return '<div class="panel est-card ts-est-empty"'+(edit?' tabindex="0" role="button" onclick="openEstimate()"':'')+'><h4>Estimate Range</h4><div class="est">'
     +'<div class="ts-est-none">No estimate on file</div>'
@@ -3802,14 +3825,14 @@ window.estimateCard=function(){
           :'<div class="est-sub">A doctor adds the estimate.</div>')
     +'</div></div>'; };
 /* keep Rounds (Flow) in step: low end, high end and bill live on visits/{id}.rounds.auth */
-function syncRounds(visitId,lo,hi,cur,me){
+function syncRounds(visitId,lo,hi,cur,me,dep){
   if(!visitId) return; var ref=DB.collection('visits').doc(String(visitId)), now=new Date().toISOString();
   DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
     if(!snap.exists) return 'novisit'; var r=snap.data().rounds; if(!r||typeof r!=='object') return 'norounds';
     var a=(r.auth&&typeof r.auth==='object')?r.auth:null, u={last_by:me.name||null,last_by_uid:me.uid||null,last_at:now};
-    if(a&&+a.estimate===hi&&+a.estimateLow===lo&&+a.bill===cur) return 'same';
-    if(a){ u['rounds.auth.estimate']=hi; u['rounds.auth.estimateLow']=lo; u['rounds.auth.bill']=cur; }
-    else u['rounds.auth']={hours:[],estimate:hi,estimateLow:lo,deposited:null,bill:cur,cubexDob:false,payers:[],approvals:[]};
+    if(a&&+a.estimate===hi&&+a.estimateLow===lo&&+a.bill===cur&&(a.deposited==null?null:+a.deposited)===dep) return 'same';
+    if(a){ u['rounds.auth.estimate']=hi; u['rounds.auth.estimateLow']=lo; u['rounds.auth.bill']=cur; u['rounds.auth.deposited']=dep; }
+    else u['rounds.auth']={hours:[],estimate:hi,estimateLow:lo,deposited:dep,bill:cur,cubexDob:false,payers:[],approvals:[]};
     u['rounds.audit']=FV.arrayUnion({at:now,by:me.name||me.initials,what:'Estimate updated from treatment sheet'});
     t.update(ref,u); return 'synced';
   }); }).catch(function(e){ console.warn('[sheet→rounds estimate]',e); });
@@ -3818,7 +3841,8 @@ var _origOpen=window.openEstimate;
 window.openEstimate=function(){
   if(!CUR||!curDoc) return;
   applyEstimateToVisit();
-  if(!canEditEstimate()){ if(estOf()) return _origOpen(); toast('Only doctors can add the estimate'); return; }
+  if(!canEditEstimate()){ if(estOf()){ var mm=function(n){ return n==null?'—':'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }, rr=function(k,v){ return '<div><span>'+k+'</span><strong>'+v+'</strong></div>'; }, dp=VISIT.estDeposit;
+      openModal('<h2>Estimate Authorization</h2><div class="em-rows">'+rr('Low End',mm(VISIT.estLow))+rr('High End',mm(VISIT.estHigh))+rr('Current Charges',mm(VISIT.estCurrent))+rr('Deposit',mm(dp))+rr('Remaining (deposit − charges)',dp==null?'—':mm(dp-VISIT.estCurrent))+rr('Approved By',esc(VISIT.estApprovedBy))+rr('Approved Time',VISIT.estApprovedTime)+rr('Client Initials',esc(VISIT.estClientInitials))+rr('Last Updated',VISIT.estLastUpdated)+'</div><div class="em-linked"><span>Linked Treatment Plan</span><strong>'+esc(VISIT.estPlan)+'</strong></div>','liaison-modal estimate-modal'); return; } toast('Only doctors can add the estimate'); return; }
   var e=estOf()||{}, pad2=function(n){ return (n<10?'0':'')+n; }, at=e.approved_at?new Date(e.approved_at):new Date();
   var local=at.getFullYear()+'-'+pad2(at.getMonth()+1)+'-'+pad2(at.getDate())+'T'+pad2(at.getHours())+':'+pad2(at.getMinutes());
   var num=function(v){ return v!=null&&v!==''?String(v):''; };
@@ -3826,7 +3850,8 @@ window.openEstimate=function(){
   modal('<h3>'+(estOf()?'Update estimate':'Add estimate')+'</h3><p>'+esc(VISIT.patient)+' · visible on every screen as soon as you save.</p><div class="tm-grid">'
     +'<label>Low end ($)<input id="esLow" inputmode="decimal" placeholder="3,600" value="'+num(e.low)+'"></label>'
     +'<label>High end ($)<input id="esHigh" inputmode="decimal" placeholder="4,500" value="'+num(e.high)+'"></label>'
-    +'<label class="wide">Current charges ($)<input id="esCur" inputmode="decimal" placeholder="0" value="'+num(e.current)+'"></label>'
+    +'<label>Current charges ($)<input id="esCur" inputmode="decimal" placeholder="0" value="'+num(e.current)+'"></label>'
+    +'<label>Deposit ($)<input id="esDep" inputmode="decimal" placeholder="0" value="'+num(e.deposit)+'"></label>'
     +'<label>Approved<select id="esBy">'+opts+'</select></label>'
     +'<label>Client initials<input id="esIni" maxlength="5" placeholder="JS" value="'+esc(e.initials||'')+'"></label>'
     +'<label>Approved at<input id="esAt" type="datetime-local" value="'+local+'"></label>'
@@ -3837,15 +3862,16 @@ window.openEstimate=function(){
       if(!(lo>=0)||!(hi>0)){ toast('Enter the low and high end'); return false; }
       if(hi<lo){ toast('High end must be at least the low end'); return false; }
       if(!(cur>=0)){ toast('Current charges must be a number'); return false; }
+      var dep=v('esDep').trim()===''?null:money(v('esDep')); if(dep!=null&&!(dep>=0)){ toast('Deposit must be a number'); return false; }
       var me=user(), role=staffRole(), now=new Date(), by=v('esBy'), whenD=new Date(v('esAt'));
-      var est={low:lo,high:hi,current:cur,approved_by:by,approved_at:(by==='Not yet approved'||isNaN(whenD))?null:whenD.toISOString(),
+      var est={low:lo,high:hi,current:cur,deposit:dep,approved_by:by,approved_at:(by==='Not yet approved'||isNaN(whenD))?null:whenD.toISOString(),
         initials:v('esIni').trim().toUpperCase(),plan:v('esPlan').trim(),updated_at:now.toISOString(),updated_by:me.initials,updated_by_name:me.name,updated_by_role:role};
       var fmt=function(n){ return '$'+n.toLocaleString('en-US',{maximumFractionDigits:0}); };
-      var desc=(estOf()?'Estimate updated':'Estimate added')+' — <b>'+fmt(lo)+' – '+fmt(hi)+'</b>'+(cur?' · charges '+fmt(cur):'')+(by==='Not yet approved'?' · awaiting approval':'');
+      var desc=(estOf()?'Estimate updated':'Estimate added')+' — <b>'+fmt(lo)+' – '+fmt(hi)+'</b>'+(cur?' · charges '+fmt(cur):'')+(dep!=null?' · deposit '+fmt(dep):'')+(by==='Not yet approved'?' · awaiting approval':'');
       if(curDoc) curDoc.estimate=est; rerender();
       DB.collection(COL).doc(CUR).update({estimate:est,updated_at:now.toISOString(),updated_by:me.initials,
         audit:FV.arrayUnion({at:now.toISOString(),type:'doctor',desc:desc,who:me.initials,uid:me.uid})})
-        .then(function(){ toast('Estimate saved'); syncRounds(curDoc&&curDoc.visit_id,lo,hi,cur,me); }).catch(function(err){ console.warn(err); toast('Couldn’t save the estimate'); });
+        .then(function(){ toast('Estimate saved'); syncRounds(curDoc&&curDoc.visit_id,lo,hi,cur,me,dep); }).catch(function(err){ console.warn(err); toast('Couldn’t save the estimate'); });
     });
 };
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
