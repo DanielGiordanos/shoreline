@@ -2371,6 +2371,59 @@ body.dark .rx-chip.on{background:var(--accent,#38bdd2);color:#0b1220}
 @keyframes tsFlash{0%,60%{background:rgba(56,189,210,.22)}100%{background:transparent}}
 #sheetInner .grow.ts-flash,#sheetInner .grow.ts-flash .rl{animation:tsFlash 2.4s ease-out}
 
+/* trend alerts + workload */
+#tsFlagBar{display:flex;flex-direction:column;gap:8px;margin:10px 0 2px}
+.ts-flag{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;font-size:13.5px;font-weight:600;animation:tsFlagIn .35s cubic-bezier(.2,.8,.2,1)}
+.ts-flag svg{width:17px;height:17px;flex-shrink:0}
+.ts-flag span{flex:1;min-width:0}
+.ts-flag.s1{background:rgba(232,168,48,.14);color:var(--amber-ink,#8a5a00)}
+.ts-flag.s2{background:rgba(232,100,74,.14);color:var(--coral,#c4553c)}
+.ts-flag button{height:30px;padding:0 12px;border-radius:999px;border:none;background:rgba(0,0,0,.08);color:inherit;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+.ts-flag button:hover{background:rgba(0,0,0,.14)}
+.ts-flag small{font-size:12px;opacity:.75}
+@keyframes tsFlagIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.ts-alert-pill{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;margin-right:8px;border-radius:999px;border:1px solid rgba(232,100,74,.35);background:rgba(232,100,74,.1);color:var(--coral,#c4553c);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.ts-alert-pill svg{width:15px;height:15px}
+.ts-alert-menu{position:fixed;z-index:9500;width:360px;max-height:60vh;overflow:auto;padding:6px;border-radius:16px}
+.ts-am-row{display:flex;align-items:center;gap:6px;padding:4px;border-radius:12px}
+.ts-am-row.s2 .ts-am-open span{color:var(--coral,#c4553c)}.ts-am-row.s1 .ts-am-open span{color:var(--amber-ink,#8a5a00)}
+.ts-am-open{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;padding:8px 10px;border:none;background:none;border-radius:10px;font:inherit;color:inherit;cursor:pointer}
+.ts-am-open:hover{background:rgba(0,0,0,.05)}
+.ts-am-open b{font-size:13.5px}.ts-am-open span{font-size:12.5px;font-weight:600}.ts-am-open small{font-size:11.5px;color:var(--ink-400)}
+.ts-am-ack{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--border,rgba(0,0,0,.1));background:none;font:inherit;font-size:12px;font-weight:700;cursor:pointer;color:inherit}
+.ts-am-empty{padding:16px;font-size:13px;color:var(--ink-400);text-align:center}
+.ts-doc-alert{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9800;display:flex;align-items:center;gap:12px;min-width:340px;max-width:min(560px,calc(100vw - 24px));padding:12px 12px 12px 16px;border-radius:18px;background:rgba(255,255,255,.97);border:1px solid rgba(232,100,74,.35);box-shadow:0 18px 48px rgba(0,0,0,.18);color:var(--ink-900,#111);animation:tsDocIn .45s cubic-bezier(.2,.9,.2,1.1);transition:opacity .9s}
+.ts-doc-alert.fade{opacity:0}
+.ts-doc-alert>svg{width:22px;height:22px;color:var(--coral,#c4553c);flex-shrink:0}
+.ts-doc-alert div{flex:1;min-width:0;display:flex;flex-direction:column}.ts-doc-alert b{font-size:14px}.ts-doc-alert small{font-size:12px;color:var(--ink-400)}
+.ts-doc-alert .open{height:32px;padding:0 14px;border-radius:999px;border:none;background:#1D1D1F;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.ts-doc-alert .x{width:30px;height:30px;border-radius:50%;border:none;background:rgba(0,0,0,.06);cursor:pointer;color:inherit}
+@keyframes tsDocIn{from{opacity:0;transform:translate(-50%,-14px) scale(.97)}to{opacity:1;transform:translate(-50%,0)}}
+body.dark .ts-doc-alert{background:rgba(22,28,40,.97);color:#EEF1F6}body.dark .ts-doc-alert .open{background:#EEF1F6;color:#111}
+.ts-tech{width:30px;height:30px;border-radius:50%;border:1px solid rgba(56,189,210,.4);background:rgba(56,189,210,.1);color:var(--accent-ink,#0e7c8c);font:inherit;font-size:11.5px;font-weight:800;cursor:pointer}
+.ts-tech.none{border-style:dashed;border-color:var(--ink-300,#bbb);background:none;color:var(--ink-400);font-size:15px;font-weight:500}
+.ts-tech:hover{border-color:var(--accent)}
+.ts-tech-menu{position:fixed;z-index:9500;width:280px;max-height:360px;overflow:auto;padding:6px;border-radius:16px}
+.ts-tm-h{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400);padding:8px 10px 6px}
+.ts-tech-menu button{width:100%;display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:9px 10px;border:none;background:none;border-radius:10px;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.ts-tech-menu button:hover{background:rgba(0,0,0,.05)}.ts-tech-menu button.on{background:rgba(56,189,210,.14)}
+.ts-tech-menu b{font-size:13.5px;font-weight:600}.ts-tech-menu small{font-size:11.5px;color:var(--ink-400);white-space:nowrap}
+.ts-load{padding:4px 2px 12px}
+.ts-load-h{display:flex;align-items:baseline;gap:10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400);margin:2px 4px 8px}
+.ts-load-h small{font-size:11px;letter-spacing:0;text-transform:none;color:var(--amber-ink,#8a5a00);font-weight:600}
+.ts-load-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none}
+.ts-load-card{flex:0 0 190px;padding:12px 14px;border-radius:16px;background:var(--surface-0,#fff);border:1px solid var(--border,rgba(0,0,0,.08))}
+.ts-load-card.mid{border-color:rgba(232,168,48,.45)}.ts-load-card.hi{border-color:rgba(232,100,74,.5);background:rgba(232,100,74,.05)}
+.ts-lc-top{display:flex;align-items:center;gap:8px}.ts-lc-top b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts-lc-av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(56,189,210,.14);color:var(--accent-ink,#0e7c8c);font-size:10.5px;font-weight:800;flex-shrink:0}
+.ts-lc-nums{display:flex;gap:10px;margin:8px 0 8px;font-size:12px;color:var(--ink-500,#666)}.ts-lc-nums b{color:var(--ink-900);font-size:14px}.ts-lc-nums .late,.ts-lc-nums .late b{color:var(--coral,#c4553c)}
+.ts-lc-bar{height:5px;border-radius:5px;background:rgba(0,0,0,.06);overflow:hidden}.ts-lc-bar i{display:block;height:100%;border-radius:5px;background:var(--accent,#38bdd2);transition:width .5s}
+.ts-load-card.mid .ts-lc-bar i{background:var(--amber,#e8a830)}.ts-load-card.hi .ts-lc-bar i{background:var(--coral,#e8644a)}
+.ts-load-hint{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 14px;border-radius:14px;background:rgba(56,189,210,.08);font-size:13px}
+.ts-load-hint span{flex:1}.ts-load-hint button{height:32px;padding:0 14px;border-radius:999px;border:none;background:#1D1D1F;color:#fff;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.ts-load-empty{padding:10px 14px;border-radius:14px;background:rgba(0,0,0,.03);font-size:13px;color:var(--ink-400)}
+body.dark .ts-load-card{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}body.dark .ts-load-hint button{background:#EEF1F6;color:#111}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 
@@ -2941,7 +2994,7 @@ function renderDash(){
   let head=`<div class="sb-row sb-head"><div class="sb-left">
     <div class="sbc c-pt">Patients ${IC.caretUp}</div>
     <div class="sbc c-dr">DR</div><div class="sbc c-ward">Ward</div><div class="sbc c-io">In / Out</div>
-    <div class="sbc c-timer">${IC.timer}</div><div class="sbc c-alerts">Alerts</div></div>`;
+    <div class="sbc c-timer">Tech</div><div class="sbc c-alerts">Alerts</div></div>`;
   head+= sbTx
     ? `<div class="sb-hours">${hours.map(h=>`<div class="sb-hcell${h===NOWH?' now':''}">${hlabel(h)}</div>`).join('')}</div>`
     : `<div class="sb-cage"><div class="cage-head" style="width:650px">Cage Card Info</div></div>`;
@@ -2957,7 +3010,7 @@ function renderDash(){
       <div class="sbc c-dr"><span class="dr-box">${p.dr}</span></div>
       <div class="sbc c-ward"><select class="ward-sel" onchange="toast('${p.name.split(' ')[0]} → '+this.value)">${WARDS.map(w=>`<option ${w===p.ward?'selected':''}>${w}</option>`).join('')}</select></div>
       <div class="sbc c-io"><div style="display:flex;align-items:center;gap:8px"><span class="io-badge" style="float:none;margin:0">${p.inout}</span><div><div class="io-date">${p.date}</div><div class="io-time">${p.time}</div></div></div></div>
-      <div class="sbc c-timer"></div>
+      <div class="sbc c-timer">${p.techHTML||''}</div>
       <div class="sbc c-alerts aa-cell" onclick="event.stopPropagation();${IPL?'openPatient':'openAlertAssist'}(${i})" title="Alert Assist">${p.alerts.length?p.alerts.map(a=>`<div class="al-row ${a.t}">${IC.tri}${a.x}</div>`).join(''):'<span class="al-empty">— Add alert</span>'}<div class="aa-cell-hint">${IC.spark}Alert Assist</div></div>
     </div>`;
     const right = sbTx
@@ -3519,7 +3572,7 @@ setInterval(tick,10000);
 buildTasks();
 selectCTab('dash');
 </script>
-<script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"]};window.TS_DRUGS_VER="596ec693";</script>
+<script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="596ec693";</script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -4132,6 +4185,149 @@ function tsRxSubmit(){
   logEvent('doctor','Order added — <b>'+esc(x.n)+'</b> '+dose+' '+unit+' ('+d.mg+') '+route+' '+freq,me.initials);
   try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} }
   sync(); toast(x.n+' added · '+nextDueText(o)); revealOrder(o); return true; }
+
+/* ═════════ #6 TREND ALERTS + #10 WORKLOAD ═════════
+   Alert limits are hospital workflow defaults (not diagnoses) — review with the medical director and adjust FLAG_RULES. */
+var FLAG_RULES=[
+  {id:'temp', match:/^temperature$/i, label:'Temperature', unit:'°F', lo:99, hi:103.5, clo:97, chi:105, trend:'up', delta:1.0},
+  {id:'hr',   match:/^heart rate$/i, label:'Heart rate', unit:'bpm', lo:{dog:60,cat:140}, hi:{dog:180,cat:240}, clo:{dog:45,cat:110}, chi:{dog:220,cat:270}, trend:'up', deltaPct:20},
+  {id:'rr',   match:/^respiratory rate$/i, label:'Respiratory rate', unit:'rpm', hi:40, chi:60, trend:'up', delta:10},
+  {id:'bg',   match:/blood glucose|^glucose$/i, label:'Blood glucose', unit:'mg/dL', lo:70, hi:300, clo:50, chi:450, trend:'down', deltaPct:30},
+  {id:'bp',   match:/blood pressure/i, label:'Systolic BP', unit:'mmHg', lo:90, hi:180, clo:80, chi:200, trend:'down', delta:20},
+  {id:'spo2', match:/^spo2$/i, label:'SpO2', unit:'%', lo:95, clo:90, trend:'down', delta:3},
+  {id:'lac',  match:/^lactate$/i, label:'Lactate', unit:'mmol/L', hi:2.5, chi:4, trend:'up', delta:1},
+  {id:'uop',  match:/^urine output$/i, label:'Urine output', unit:'mL/kg/hr', lo:1, clo:0.5, trend:'down', delta:0.5},
+  {id:'pain', match:/^pain score/i, label:'Pain score', unit:'', trend:'up', delta:2}
+];
+function lim(v,sp){ return (v&&typeof v==='object')?v[sp||'dog']:v; }
+function numOf(v){ var m=String(v==null?'':v).match(/-?\d+(\.\d+)?/); return m?parseFloat(m[0]):null; }
+function ruleFor(name){ for(var i=0;i<FLAG_RULES.length;i++) if(FLAG_RULES[i].match.test(String(name||'').trim())) return FLAG_RULES[i]; return null; }
+function sexSp(species){ var s=String(species||''); return /^(cat|fel)/i.test(s)?'cat':'dog'; }
+/* 0 normal · 1 outside limits · 2 critical */
+function sevOf(rule,v,sp){ if(v==null) return 0; var clo=lim(rule.clo,sp), chi=lim(rule.chi,sp), lo=lim(rule.lo,sp), hi=lim(rule.hi,sp);
+  if((clo!=null&&v<clo)||(chi!=null&&v>chi)) return 2; if((lo!=null&&v<lo)||(hi!=null&&v>hi)) return 1; return 0; }
+function fmtV(v){ return (Math.round(v*10)/10).toString(); }
+/* flags for one sheet document: latest reading outside limits, or 3 readings in a row moving the wrong way */
+function flagsFor(d){ var out=[]; if(!d||!d.orders) return out; var sp=sexSp((d.patient||{}).species), marks=d.marks||{}, acks=d.flag_acks||{};
+  var byOrder={}; Object.keys(marks).forEach(function(k){ var m=marks[k]; if(!m||m.status!=='completed'||m.value==null||m.value==='') return; var v=numOf(m.value); if(v==null) return;
+    (byOrder[m.orderId]=byOrder[m.orderId]||[]).push({k:k,v:v,t:k.slice(0,8)+'_'+('0000'+Math.round(m.min!=null?m.min:(m.sched||0))).slice(-4)}); });
+  Object.keys(byOrder).forEach(function(oid){ var o=d.orders[oid]; if(!o||o.dc) return; var rule=ruleFor(o.name); if(!rule) return;
+    var rs=byOrder[oid].sort(function(a,b){ return a.t<b.t?-1:a.t>b.t?1:0; }), last=rs[rs.length-1], unit=rule.unit?' '+rule.unit:'';
+    var s=sevOf(rule,last.v,sp);
+    if(s){ var lo=lim(rule.lo,sp), clo=lim(rule.clo,sp), low=(lo!=null&&last.v<lo)||(clo!=null&&last.v<clo);
+      out.push({key:(rule.id+'_lim_'+last.k).replace(/[^A-Za-z0-9_]/g,'_'),sev:s,rule:rule.id,text:rule.label+' '+fmtV(last.v)+unit+(low?' — low':' — high'),at:last.t}); }
+    if(rs.length>=3){ var a=rs[rs.length-3].v,b=rs[rs.length-2].v,c=last.v, up=rule.trend==='up';
+      var mono=up?(a<b&&b<c):(a>b&&b>c), chg=Math.abs(c-a), big=rule.deltaPct?(a?chg/Math.abs(a)*100>=rule.deltaPct:false):chg>=rule.delta;
+      if(mono&&big) out.push({key:(rule.id+'_trend_'+last.k).replace(/[^A-Za-z0-9_]/g,'_'),sev:Math.max(1,s),rule:rule.id,text:rule.label+(up?' rising':' falling')+': '+fmtV(a)+' → '+fmtV(b)+' → '+fmtV(c)+unit,at:last.t}); } });
+  return out.filter(function(f){ return !acks[f.key]; }).sort(function(x,y){ return y.sev-x.sev; }); }
+/* abnormal readings are tinted on the grid (amber = outside limits, coral = critical) */
+var _btFlags=buildTasks;
+buildTasks=function(){ _btFlags.apply(this,arguments); var sp=spKey()||'dog';
+  TASKS.forEach(function(t){ if(t.status!=='completed'||t.value==null) return; var r=ruleFor(t.order&&t.order.name); if(!r) return; t.severity=sevOf(r,numOf(t.value),sp); }); };
+function canAck(){ return canEditEstimate(); }
+window.tsAckFlag=function(sheetId,key,ev){ if(ev){ ev.stopPropagation(); ev.preventDefault(); }
+  if(!canAck()){ toast('A doctor acknowledges alerts'); return; }
+  var me=user(), now=new Date().toISOString(), u={updated_at:now}; u['flag_acks.'+key]={by:me.initials,name:me.name,at:now};
+  var s=sheetId===CUR?curDoc:SHEETS.find(function(x){ return x._id===sheetId; }); var f=s&&flagsFor(s).find(function(x){ return x.key===key; });
+  u.audit=FV.arrayUnion({at:now,type:'doctor',desc:'Alert acknowledged — <b>'+esc(f?f.text:key)+'</b>',who:me.initials,uid:me.uid});
+  if(s){ s.flag_acks=s.flag_acks||{}; s.flag_acks[key]=u['flag_acks.'+key]; }
+  DB.collection(COL).doc(sheetId).update(u).then(function(){ toast('Alert acknowledged'); }).catch(function(e){ console.warn(e); toast('Couldn’t save'); });
+  renderFlagsBar(); renderAlertPill(); try{ if(currentCTab==='dash') renderDash(); }catch(_){} };
+var FL_I='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.4 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+function renderFlagsBar(){ var host=document.querySelector('#ctab-sheet .clinical-patient-header'), bar=document.getElementById('tsFlagBar');
+  if(!host||!CUR||!curDoc){ if(bar) bar.remove(); return; }
+  var fl=flagsFor(curDoc); if(!fl.length){ if(bar) bar.remove(); return; }
+  if(!bar){ bar=document.createElement('div'); bar.id='tsFlagBar'; host.insertAdjacentElement('afterend',bar); }
+  bar.innerHTML=fl.map(function(f){ return '<div class="ts-flag s'+f.sev+'">'+FL_I+'<span>'+esc(f.text)+'</span>'+(canAck()?'<button type="button" onclick="tsAckFlag(\''+CUR+'\',\''+f.key+'\',event)">Acknowledge</button>':'<small>Doctor notified</small>')+'</div>'; }).join(''); }
+var _rrFlags=rerender; rerender=function(){ _rrFlags.apply(this,arguments); try{ renderFlagsBar(); }catch(e){} };
+var _rhFlags=refreshHeader; refreshHeader=function(){ _rhFlags.apply(this,arguments); try{ renderFlagsBar(); }catch(e){} };
+/* alerts pill in the sub-nav: every open alert in the hospital; the patient's doctor gets a pop-up for new ones */
+var pill=null, seenFlags={}, flagsPrimed=false;
+try{ seenFlags=JSON.parse(localStorage.getItem('tsSeenFlags')||'{}'); }catch(e){ seenFlags={}; }
+function allFlags(){ var out=[]; SHEETS.forEach(function(s){ var d=s._id===CUR&&curDoc?curDoc:s; flagsFor(d).forEach(function(f){ out.push({s:s,f:f}); }); }); return out; }
+function renderAlertPill(){ var sub=document.querySelector('.subnav'); if(!sub) return;
+  if(!pill){ pill=document.createElement('button'); pill.type='button'; pill.id='tsAlertPill'; pill.className='ts-alert-pill';
+    pill.onclick=function(e){ e.stopPropagation(); openAlertMenu(); }; var c=document.getElementById('tsPatientChip'); sub.insertBefore(pill,c||sub.firstChild); }
+  var n=allFlags().length; pill.style.display=n?'':'none'; pill.innerHTML=FL_I+'<span>'+n+' alert'+(n===1?'':'s')+'</span>'; }
+function openAlertMenu(){ var old=document.getElementById('tsAlertMenu'); if(old){ old.remove(); return; }
+  var items=allFlags(), m=document.createElement('div'); m.id='tsAlertMenu'; m.className='ts-menu ts-alert-menu';
+  m.innerHTML=items.length?items.map(function(it){ var p=it.s.patient||{};
+    return '<div class="ts-am-row s'+it.f.sev+'"><button type="button" class="ts-am-open" onclick="tsOpenSheet(\''+it.s._id+'\',true);document.getElementById(\'tsAlertMenu\').remove()"><b>'+esc(((p.name||'')+' '+(p.last||'')).trim())+'</b><span>'+esc(it.f.text)+'</span><small>'+esc(p.doctor||'No doctor')+'</small></button>'
+      +(canAck()?'<button type="button" class="ts-am-ack" onclick="tsAckFlag(\''+it.s._id+'\',\''+it.f.key+'\',event);document.getElementById(\'tsAlertMenu\').remove()">Acknowledge</button>':'')+'</div>'; }).join('')
+    :'<div class="ts-am-empty">No open alerts</div>';
+  var r=pill.getBoundingClientRect(); m.style.top=(r.bottom+8)+'px'; m.style.left=Math.max(12,Math.min(window.innerWidth-372,r.left))+'px';
+  document.body.appendChild(m); setTimeout(function(){ document.addEventListener('mousedown',function h(ev){ if(!m.contains(ev.target)&&ev.target!==pill){ m.remove(); document.removeEventListener('mousedown',h); } }); },0); }
+function notifyDoctor(){ var me=normName(user().name), mine=[], fresh=[];
+  allFlags().forEach(function(it){ var id=it.s._id+'|'+it.f.key; if(!seenFlags[id]){ fresh.push(it); seenFlags[id]=Date.now(); }
+    if(me&&normName((it.s.patient||{}).doctor)===me) mine.push(it); });
+  try{ var keep={}, cut=Date.now()-3*86400000; Object.keys(seenFlags).forEach(function(k){ if(seenFlags[k]>cut) keep[k]=seenFlags[k]; }); seenFlags=keep; localStorage.setItem('tsSeenFlags',JSON.stringify(keep)); }catch(e){}
+  var newMine=fresh.filter(function(it){ return me&&normName((it.s.patient||{}).doctor)===me; });
+  if(!flagsPrimed){ flagsPrimed=true; if(mine.length) showDocAlert(mine,true); return; }
+  if(newMine.length) showDocAlert(newMine,false); }
+function showDocAlert(list,summary){ var el=document.getElementById('tsDocAlert'); if(el) el.remove(); el=document.createElement('div'); el.id='tsDocAlert'; el.className='ts-doc-alert';
+  var top=list[0], p=top.s.patient||{};
+  el.innerHTML=FL_I+'<div><b>'+(summary&&list.length>1?list.length+' open alerts on your patients':esc(((p.name||'')+' '+(p.last||'')).trim())+' — '+esc(top.f.text))+'</b><small>'+(summary?'Tap to review':'Your patient · '+fmtTime(nowMin()))+'</small></div>'
+    +'<button type="button" class="open">Open</button><button type="button" class="x" aria-label="Dismiss">✕</button>';
+  el.querySelector('.open').onclick=function(){ el.remove(); if(summary&&list.length>1) openAlertMenu(); else tsOpenSheet(top.s._id,true); };
+  el.querySelector('.x').onclick=function(){ el.remove(); };
+  document.body.appendChild(el); try{ var ac=new (window.AudioContext||window.webkitAudioContext)(), o=ac.createOscillator(), g=ac.createGain(); o.frequency.value=880; g.gain.value=.04; o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+.18); }catch(e){}
+  setTimeout(function(){ if(el.parentNode) el.classList.add('fade'); },14000); setTimeout(function(){ if(el.parentNode) el.remove(); },15000); }
+setInterval(function(){ if(!AUTH||!AUTH.currentUser) return; try{ renderAlertPill(); notifyDoctor(); }catch(e){ console.warn(e); } },2500);
+
+/* ═════════ #10 WORKLOAD: tech per patient, load strip, one-tap rebalance ═════════ */
+function loadOf(s){ var n=nowMin(), dk=dayKey(), marks=s.marks||{}, due=0, over=0;
+  var adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
+  Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont) return;
+    freqTimes(o).forEach(function(h){ var t=h*60, m=marks[dk+'_'+id+'_'+t]; if(m&&m.status) return; if(t<from&&!o.ordered_at) return;
+      if(t<n-18) over++; else if(t<=n+60) due++; }); });
+  return {due:due,over:over,score:due+over*2}; }
+function techOf(s){ return ((s.patient||{}).tech)||''; }
+function initialsOfName(n){ return String(n||'').split(/\s+/).filter(Boolean).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase(); }
+var _bl=window.tsBoardList;
+window.tsBoardList=function(board){ var list=_bl.apply(this,arguments);
+  list.forEach(function(row){ var s=SHEETS.find(function(x){ return x._id===row._id; }); if(!s) return; var d=s._id===CUR&&curDoc?curDoc:s;
+    var fl=flagsFor(d); if(fl.length) row.alerts=fl.map(function(f){ return {t:f.sev>=2?'crit':'warn',x:f.text}; }).concat(row.alerts||[]);
+    var t=techOf(s), L=loadOf(d);
+    row.techHTML='<button type="button" class="ts-tech'+(t?'':' none')+'" title="'+esc(t?t+' · '+L.due+' due next hour'+(L.over?' · '+L.over+' overdue':''):'Assign a tech')+'" onclick="event.stopPropagation();tsPickTech(\''+s._id+'\',this)">'+(t?esc(initialsOfName(t)):'+')+'</button>'; });
+  return list; };
+var TECHS=(window.TS_STAFF&&window.TS_STAFF.techs)||[];
+window.tsPickTech=function(sheetId,anchor){ var old=document.getElementById('tsTechMenu'); if(old) old.remove();
+  var s=SHEETS.find(function(x){ return x._id===sheetId; }); if(!s) return; var loads=techLoads(), cur=techOf(s);
+  var m=document.createElement('div'); m.id='tsTechMenu'; m.className='ts-menu ts-tech-menu';
+  var opt=function(n){ var L=loads[n]; return '<button type="button" class="'+(n===cur?'on':'')+'" data-n="'+esc(n)+'"><b>'+esc(n||'Unassigned')+'</b>'+(n&&L?'<small>'+L.patients+' pt · '+L.due+' due'+(L.over?' · '+L.over+' late':'')+'</small>':'')+'</button>'; };
+  var names=TECHS.slice().sort(function(a,b){ var la=(loads[a]||{score:0}).score, lb=(loads[b]||{score:0}).score; return la-lb||a.localeCompare(b); });
+  m.innerHTML='<div class="ts-tm-h">Assign tech · '+esc(((s.patient||{}).name)||'')+'</div>'+opt('')+names.map(opt).join('');
+  m.querySelectorAll('button[data-n]').forEach(function(b){ b.onclick=function(){ m.remove(); assignTech(sheetId,b.dataset.n); }; });
+  var r=anchor.getBoundingClientRect(); m.style.top=Math.min(window.innerHeight-380,r.bottom+6)+'px'; m.style.left=Math.max(12,Math.min(window.innerWidth-300,r.left-20))+'px';
+  document.body.appendChild(m); setTimeout(function(){ document.addEventListener('mousedown',function h(ev){ if(!m.contains(ev.target)){ m.remove(); document.removeEventListener('mousedown',h); } }); },0); };
+function assignTech(sheetId,name){ var s=SHEETS.find(function(x){ return x._id===sheetId; }); if(!s) return; var me=user(), now=new Date().toISOString(), p=s.patient||{};
+  var u={'patient.tech':name||null,updated_at:now,audit:FV.arrayUnion({at:now,type:'doctor',desc:(name?'Tech assigned — <b>'+esc(name)+'</b>':'Tech unassigned'),who:me.initials,uid:me.uid})};
+  p.tech=name||null; s.patient=p; if(sheetId===CUR&&curDoc){ curDoc.patient=curDoc.patient||{}; curDoc.patient.tech=name||null; }
+  DB.collection(COL).doc(sheetId).update(u).then(function(){ toast(name?((p.name||'Patient')+' → '+name):'Tech unassigned'); }).catch(function(e){ console.warn(e); toast('Couldn’t save'); });
+  try{ if(currentCTab==='dash') renderDash(); }catch(e){} }
+function techLoads(){ var out={}; SHEETS.forEach(function(s){ var t=techOf(s); if(!t) return; var d=s._id===CUR&&curDoc?curDoc:s, L=loadOf(d), o=out[t]||(out[t]={patients:0,due:0,over:0,score:0,list:[]});
+  o.patients++; o.due+=L.due; o.over+=L.over; o.score+=L.score; o.list.push({s:s,L:L}); }); return out; }
+function loadStripHTML(){ var loads=techLoads(), names=Object.keys(loads).sort(function(a,b){ return loads[b].score-loads[a].score; });
+  var un=SHEETS.filter(function(s){ return !techOf(s); }).length;
+  if(!names.length) return '<div class="ts-load"><div class="ts-load-empty">Assign a tech to each patient (the <b>+</b> in the Tech column) to see who is carrying what.</div></div>';
+  var max=Math.max.apply(null,names.map(function(n){ return loads[n].score; }).concat([1]));
+  var cards=names.map(function(n){ var L=loads[n], lvl=L.over>=3||L.score>=12?'hi':L.score>=6?'mid':'lo';
+    return '<div class="ts-load-card '+lvl+'"><div class="ts-lc-top"><span class="ts-lc-av">'+esc(initialsOfName(n))+'</span><b>'+esc(n)+'</b></div>'
+      +'<div class="ts-lc-nums"><span><b>'+L.patients+'</b> pt</span><span><b>'+L.due+'</b> due · 1h</span>'+(L.over?'<span class="late"><b>'+L.over+'</b> late</span>':'')+'</div>'
+      +'<div class="ts-lc-bar"><i style="width:'+Math.round(L.score/max*100)+'%"></i></div></div>'; }).join('');
+  var hint='';
+  if(names.length>=2){ var hi=names[0], lo=names[names.length-1], gap=loads[hi].score-loads[lo].score;
+    if(gap>=4&&loads[hi].patients>=2){ var target=gap/2, pick=loads[hi].list.slice().sort(function(a,b){ return Math.abs(a.L.score-target)-Math.abs(b.L.score-target); })[0];
+      if(pick&&pick.L.score>0&&pick.L.score<gap){ var pn=((pick.s.patient||{}).name)||'patient';
+        hint='<div class="ts-load-hint"><span>'+esc(hi)+' has '+loads[hi].score+' tasks queued vs '+esc(lo)+' with '+loads[lo].score+'. Moving <b>'+esc(pn)+'</b> evens it out.</span><button type="button" onclick="tsRebalance(\''+pick.s._id+'\',\''+esc(lo).replace(/'/g,"\\'")+'\')">Move to '+esc(lo.split(' ')[0])+'</button></div>'; } } }
+  return '<div class="ts-load"><div class="ts-load-h">Workload · next hour'+(un?'<small>'+un+' unassigned</small>':'')+'</div><div class="ts-load-row">'+cards+'</div>'+hint+'</div>'; }
+window.tsRebalance=function(sheetId,name){ assignTech(sheetId,name); };
+var _rd=window.renderDash;
+window.renderDash=function(){ var r=_rd.apply(this,arguments);
+  try{ if(typeof sbBoard!=='undefined'&&(sbBoard==='IP Board'||sbBoard==='OP Board')){ var sb=document.querySelector('#ctab-dash .sb'), sc=sb&&sb.querySelector('.sb-scroll');
+      if(sc){ var old=sb.querySelector('.ts-load'); if(old) old.remove(); var t=document.createElement('div'); t.innerHTML=loadStripHTML(); sb.insertBefore(t.firstChild,sc); } } }catch(e){ console.warn(e); }
+  return r; };
+setInterval(function(){ try{ if(currentCTab==='dash'&&!document.getElementById('tsTechMenu')&&!document.getElementById('tsAlertMenu')) renderDash(); }catch(e){} },60000);
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
