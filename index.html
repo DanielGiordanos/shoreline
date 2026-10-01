@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0133-396f4f6d">
+<meta name="flow-build" content="20261001-0204-2b612062">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15702,6 +15702,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
         updated_at:now.toISOString(),updated_by:who.initials};
       if(board==='OP') doc.op_at=now.toISOString(); else doc.ip_at=now.toISOString();
       var tm3=triageMarks(p,doc.orders,who); Object.keys(tm3).forEach(function(f){ doc.marks[f.slice(6)]=tm3[f]; });
+      var re0=roundsEst(p); if(re0) doc.estimate={low:re0.low,high:re0.high,current:re0.current||0,approved_by:'Client — in person',approved_at:null,initials:'',plan:'',updated_at:now.toISOString(),updated_by:who.initials,updated_by_name:who.name,source:'rounds'};
       t.set(ref,doc); return 'created';
     }); }).then(function(res){ if(!opts.quiet) announce(p,id,res,board); return res; })
       .catch(function(e){ if(!opts.quiet) fail(p,e); return 'error'; });
@@ -15742,7 +15743,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
   window.completePatient=completePatient=function(p,finalStatus){
     var r=origComplete.apply(this,arguments);
     if(p&&!p._demo){ try{
-      if(finalStatus==='Admitted') ensureSheet(p,'IP');
+      if(finalStatus==='Admitted') ensureSheet(p,'IP').then(function(){ setTimeout(function(){ pullEstimate(p); pushEstimate(p); },400); });
       else if(finalStatus==='Discharged'||finalStatus==='Euthanized') closeOP(p,finalStatus);
     }catch(e){ console.warn(e); } }
     return r;
@@ -15799,7 +15800,43 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     sweepTreatment();
   },8000);
 
-  window.fvAdmitSheet={ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,sweep:sweepTreatment,triageMarks:triageMarks,syncTriage:syncTriage};
+  /* ---- estimate sync: Rounds (low end, high end, bill) <-> treatment sheet (low, high, current charges) ----
+     Rounds → sheet: any Rounds save whose numbers differ from the sheet's pushes them over.
+     Sheet → Rounds: Treatment Sheets writes visits/{id}.rounds.auth directly; Flow picks it up from its normal listener. */
+  function roundsEst(p){ var a=(typeof rdAuthRead==='function')?rdAuthRead(p):(p&&p.rounds&&p.rounds.auth); if(!a||a.estimate==null) return null;
+    var hi=+a.estimate, lo=(a.estimateLow!=null?+a.estimateLow:Math.round(hi*.8)), cur=(a.bill!=null?+a.bill:null);
+    return {low:lo,high:hi,current:cur}; }
+  function sameEst(e,r){ return !!e&&+e.low===r.low&&+e.high===r.high&&(r.current==null||+e.current===r.current); }
+  function money0(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+  var lastEstSig={};
+  function pushEstimate(p,why){
+    if(!ready()||!p||p._demo) return; var r=roundsEst(p); if(!r) return;
+    var sig=r.low+'|'+r.high+'|'+r.current; if(lastEstSig[p.id]===sig) return; lastEstSig[p.id]=sig;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
+      if(!snap.exists) return; var d=snap.data()||{}; if(d.status!=='active') return;
+      var e=(d.estimate&&typeof d.estimate==='object')?d.estimate:null; if(sameEst(e,r)) return;
+      var est=Object.assign({approved_by:'Client — in person',approved_at:null,initials:'',plan:''},e||{},
+        {low:r.low,high:r.high,current:(r.current!=null?r.current:(e&&e.current!=null?+e.current:0)),updated_at:now.toISOString(),updated_by:who.initials,updated_by_name:who.name,source:'rounds'});
+      t.update(ref,{estimate:est,updated_at:now.toISOString(),updated_by:who.initials,
+        audit:FV.arrayUnion(audit('Estimate updated in Rounds — <b>'+money0(r.low)+' – '+money0(r.high)+'</b>'+(r.current!=null?' · charges '+money0(r.current):''),who,now))});
+    }); }).catch(function(e){ lastEstSig[p.id]=null; console.warn('[rounds→sheet estimate]',e); });
+  }
+  /* sheet has an estimate but Rounds doesn't yet (e.g. estimate set on an OP sheet, then admitted): fill Rounds in */
+  function pullEstimate(p){
+    if(!ready()||!p||!p.rounds||roundsEst(p)) return;
+    DB.collection(COL).doc(sheetId(p)).get().then(function(snap){
+      var e=snap.exists&&snap.data().estimate; if(!e||!(+e.high>0)||roundsEst(p)) return;
+      var a=rdAuth(p); a.estimate=+e.high; a.estimateLow=+e.low; if(e.current!=null) a.bill=+e.current;
+      lastEstSig[p.id]=a.estimateLow+'|'+a.estimate+'|'+(a.bill!=null?a.bill:null);
+      try{ rdTouch(p,'Estimate from treatment sheet'); }catch(err){ try{ renderAll(); }catch(_){} }
+    }).catch(function(){});
+  }
+  if(typeof rdTouch==='function'){
+    var origTouch=rdTouch;
+    window.rdTouch=rdTouch=function(p,what){ var r=origTouch.apply(this,arguments); try{ if(p) pushEstimate(p,what); }catch(e){} return r; };
+  }
+  window.fvAdmitSheet={ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,pushEstimate:pushEstimate,pullEstimate:pullEstimate,sweep:sweepTreatment,triageMarks:triageMarks,syncTriage:syncTriage};
 })();
 </script>
 
