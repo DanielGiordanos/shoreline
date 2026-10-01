@@ -3216,7 +3216,7 @@ function buildGrid(){
       else{html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}</div></div>`;}
       html+=`</div><div class="hcells">`;
       if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?o.rate.replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion('${o.id}',${h})">${lbl}</div></div>`;}}
-      else{for(let h=0;h<24;h++){const t=TASKS.find(x=>x.orderId===o.id&&x.sched===h*60);if(!t){html+=`<div class="cell"></div>`;continue;}const s=deriveStatus(t);if(s==='completed'&&t.severity){html+=`<div class="cell"><div class="mark abn ${t.severity>=2?'sev':''}" onclick="openCompletion('${t.id}')">${t.value}</div></div>`;continue;}html+=`<div class="cell"><div class="mark ${s}" onclick="openCompletion('${t.id}')" title="${o.name} · ${fmtTime(t.sched)}">${markContent(t,s)}</div></div>`;}}
+      else{for(let h=0;h<24;h++){const _c=TASKS.filter(x=>x.orderId===o.id&&Math.floor(x.sched/60)===h);const t=_c.find(x=>x.status)||_c.find(x=>x.sched===h*60);if(!t){html+=`<div class="cell"></div>`;continue;}const s=deriveStatus(t);if(s==='completed'&&t.severity){html+=`<div class="cell"><div class="mark abn ${t.severity>=2?'sev':''}" onclick="openCompletion('${t.id}')">${t.value}</div></div>`;continue;}html+=`<div class="cell"><div class="mark ${s}" onclick="openCompletion('${t.id}')" title="${o.name} · ${fmtTime(t.sched)}">${markContent(t,s)}</div></div>`;}}
       html+=`</div></div>`;});
   });
   inner.innerHTML=html;
