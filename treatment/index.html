@@ -3663,7 +3663,10 @@ function openSheet(id,goSheet){
   unsubCur=DB.collection(COL).doc(id).onSnapshot(function(snap){
     if(!snap.exists){ if(CUR===id){ CUR=null; curDoc=null; reset(); rerender(); } return; }
     if(!snap.metadata.hasPendingWrites) sync();   /* push anything typed locally before taking the server's view */
-    var d=snap.data(); d._id=snap.id; curDoc=d; hydrate(); rerender();
+    var d=snap.data(); d._id=snap.id;
+    /* closed on another screen (or an old link): leave it, don't keep charting on a closed sheet */
+    if(d.status==='closed'){ if(snap.metadata.hasPendingWrites) return; /* our own close — closeSheetFlow finishes it */ if(CUR===id){ var nm=((d.patient||{}).name||'This patient'); closeCurrent(); try{ selectCTab('dash'); }catch(e){} try{ toast(nm+'’s sheet was closed'); }catch(e){} } return; }
+    curDoc=d; hydrate(); rerender();
   },function(e){ console.warn('sheet listen failed',e); showGate('rules'); });
 }
 window.tsOpenSheet=openSheet;
