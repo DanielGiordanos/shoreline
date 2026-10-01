@@ -2368,6 +2368,8 @@ body.dark .rx-ref{background:rgba(255,255,255,.04);border-color:rgba(255,255,255
 .rx-block{color:var(--coral,#c4553c)}
 body.dark .rx-chip{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);color:#EEF1F6}
 body.dark .rx-chip.on{background:var(--accent,#38bdd2);color:#0b1220}
+@keyframes tsFlash{0%,60%{background:rgba(56,189,210,.22)}100%{background:transparent}}
+#sheetInner .grow.ts-flash,#sheetInner .grow.ts-flash .rl{animation:tsFlash 2.4s ease-out}
 
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
@@ -3615,7 +3617,7 @@ function hydrate(){
 buildTasks=function(){
   TASKS=[]; var dk=dayKey(), marks=(curDoc&&curDoc.marks)||{};
   var adm=curDoc&&(curDoc.admitted_at||curDoc.created_at), from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
-  ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m) return;
+  ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m&&!o.ordered_at) return;   /* the admission cutoff is for the starter orders; a doctor's order shows from the time they chose */
     TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
@@ -3934,6 +3936,19 @@ window.medDose=function(o){ var w=Number(VISIT.weight)||0, unit=String(o.unit||'
   var total=doseTotal(Number(o.dose)||0,unit,w,spKey()), vol=o.conc?total/o.conc:null;
   return {mg:fmtN(total)+' '+base, volume:vol!=null?vol.toFixed(2)+' mL':'—', raw:total}; };
 
+/* first dose/check defaults to now; the rest of today's hours follow */
+function hourOpts(){ var ch=Math.floor(nowMin()/60), out='<option value="'+ch+'" selected>Now · '+fmtTime(ch*60)+'</option>';
+  for(var h=ch+1;h<24;h++) out+='<option value="'+h+'">'+fmtTime(h*60)+'</option>';
+  out+='<optgroup label="Earlier today">'; for(var g=0;g<ch;g++) out+='<option value="'+g+'">'+fmtTime(g*60)+'</option>'; return out+'</optgroup>'; }
+/* after adding: scroll to the row, flash it, and say when the next one is due */
+function nextDueText(o){ var ts=freqTimes(o), ch=nowMin()/60;
+  if(o.freq==='PRN') return 'as needed';
+  var up=ts.filter(function(h){ return h>=Math.floor(ch); }); if(up.length) return 'next '+fmtTime(up[0]*60);
+  if(ts.length) return 'first '+fmtTime(ts[0]*60)+' (overdue)';
+  var iv=FREQ_INT[o.freq]; if(iv){ var nx=(o.start+iv)%24; return 'next '+fmtTime(nx*60)+' tomorrow'; } return 'scheduled'; }
+function revealOrder(o){ setTimeout(function(){ var rows=document.querySelectorAll('#sheetInner .rl-name'), el=null;
+    rows.forEach(function(r){ if(!el&&r.textContent.trim()===o.name) el=r; }); if(!el) return; var row=el.closest('.grow')||el;
+    try{ row.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){ row.scrollIntoView(); } row.classList.add('ts-flash'); setTimeout(function(){ row.classList.remove('ts-flash'); },2400); },120); }
 /* ---------- monitoring & patient-care catalog: suggested frequencies, nothing assumed ---------- */
 var OBS=[
   ['Blood pressure','obs','mmHg',['q1h','q2h','q4h','q6h','q12h'],'bp doppler nibp hypertension hypotension'],
@@ -4016,8 +4031,7 @@ window.tsPick=function(key){ key=String(key); try{ closeTsDrop(); }catch(e){} va
 
 /* ---------- monitoring / care order: pick a frequency (suggestions first) ---------- */
 function openObsOrder(x){
-  var ex=onSheet(x.n), nh=Math.min(23,Math.ceil(nowMin()/60)), hrs='';
-  for(var h=0;h<24;h++) hrs+='<option value="'+h+'"'+(h===nh?' selected':'')+'>'+fmtTime(h*60)+'</option>';
+  var ex=onSheet(x.n), hrs=hourOpts();
   var chip=function(f,sugg){ return '<button type="button" class="rx-chip'+(sugg?' sugg':'')+'" data-f="'+f+'" onclick="tsObsFreq(this)">'+f+'</button>'; };
   var more=FREQS.filter(function(f){ return x.f.indexOf(f)<0; });
   modal('<h3>'+(x.custom?'New order':esc(x.n))+'</h3><p>'+esc(VISIT.patient)+(ex?' · already on the sheet at <b>'+esc(ex.freq)+'</b> — choosing a frequency updates it':'')+'</p>'
@@ -4039,7 +4053,8 @@ function tsObsSubmit(x,ex){
   else { var o={id:'c'+Date.now().toString(36),type:type,section:section,name:name,freq:f,start:start,notes:v('obNotes'),ordered_by:me.initials,ordered_at:new Date().toISOString()};
     var unit=x.custom?v('obUnit'):x.u; if(unit) o.unit=unit;
     ORDERS.push(o); logEvent('doctor','Order added — <b>'+esc(name)+'</b> '+f,me.initials); }
-  buildTasks(); try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} } sync(); toast(name+(ex?' updated':' added')); return true; }
+  buildTasks(); try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} } sync();
+  var oo=ex||ORDERS[ORDERS.length-1]; toast(name+(ex?' updated':' added')+' · '+nextDueText(oo)); revealOrder(oo); return true; }
 
 /* ---------- medication order: the dose is suggested from the reference; the doctor confirms or changes it ---------- */
 var RX=null;
@@ -4060,7 +4075,7 @@ function openMedOrder(i){
   if(others.length) refs+='<details class="rx-other"'+(mine.length?'':' open')+'><summary>'+others.length+' dose'+(others.length>1?'s':'')+' for other species</summary>'
     +others.map(function(e,k){ return refBtn(e,k,'o'); }).join('')+'</details>';
   var opt=function(list,sel){ return list.map(function(v){ return '<option'+(v===sel?' selected':'')+'>'+v+'</option>'; }).join(''); };
-  var nh=Math.min(23,Math.ceil(nowMin()/60)), hrs=''; for(var h=0;h<24;h++) hrs+='<option value="'+h+'"'+(h===nh?' selected':'')+'>'+fmtTime(h*60)+'</option>';
+  var hrs=hourOpts();
   modal('<h3>'+esc(x.n)+'</h3><p>'+esc(VISIT.patient)+' · '+esc(VISIT.species||'')+' · <b>'+(kg?kg+' kg':'no weight')+'</b>'+(kg?'':' — add a triage weight to calculate doses')+'</p>'
     +'<div class="rx-lbl">Reference doses'+(sp?' · '+(sp==='cat'?'cats':'dogs'):'')+'</div><div class="rx-refs">'+refs+'</div>'
     +'<div class="tm-grid" style="margin-top:14px">'
@@ -4116,7 +4131,7 @@ function tsRxSubmit(){
   var d=medDose(o);
   logEvent('doctor','Order added — <b>'+esc(x.n)+'</b> '+dose+' '+unit+' ('+d.mg+') '+route+' '+freq,me.initials);
   try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} }
-  sync(); toast(x.n+' added'); return true; }
+  sync(); toast(x.n+' added · '+nextDueText(o)); revealOrder(o); return true; }
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
