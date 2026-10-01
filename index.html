@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0156-079db279">
+<meta name="flow-build" content="20261001-0205-8849aa6f">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15878,17 +15878,6 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     else { var it=(window.FV_TECHS||[]).map(techItem).find(function(x){ return x.id===id; })||(cur&&cur.staffId===id?techItem(cur.staffName):null); if(!it) return;
       ctAssign(p,'technician',{id:it.id,name:it.name,kind:'manual'}); }
     delete lastTech[p.id]; setTimeout(function(){ syncTech(p); },300);
-  }
-  if(typeof renderCareTeamCard==='function'){
-    window.renderCareTeamCard=renderCareTeamCard=function(p){
-      var m=document.getElementById('careTeamMount'); if(!m||!p) return;
-      var cur=techNow(p), items=(window.FV_TECHS||[]).map(techItem);
-      if(cur&&!items.some(function(x){ return x.id===cur.staffId; })) items.unshift({id:cur.staffId,name:cur.staffName||'Technician',initials:'',color:TECH_COLOR});
-      m.innerHTML='<div class="fv-tech-field"><p class="sect-title">Technician</p><div id="techAssignMount"></div></div>';
-      m.querySelector('#techAssignMount').appendChild(createDropdown({items:[NO_TECH].concat(items),selectedId:cur?cur.staffId:null,
-        placeholder:'Assign a technician',searchPlaceholder:'Search technicians…',onSelect:function(id){ setTech(p,id); }}));
-    };
-    try{ var st=document.createElement('style'); st.textContent='.fv-tech-field{margin:-6px 0 22px}'; document.head.appendChild(st); }catch(e){}
   }
   /* Flow → sheet: the newest change wins (a tech set on the sheet itself is newer until someone changes it here) */
   var lastTech={};
