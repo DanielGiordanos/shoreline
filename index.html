@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0021-01f9fbf3">
+<meta name="flow-build" content="20261001-0027-983e100a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15595,7 +15595,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     ['Urination','obs','Basic Observation','q8h',null,2],['Defecation','obs','Basic Observation','q8h',null,2],
     ['Check IV catheter','care','Patient Care','q4h'],['Walk','care','Patient Care','q6h',null,2],['Cage cleaned','care','Patient Care','q8h',null,4]];
   function defaultOrders(h){ var out={}; DEFAULTS.forEach(function(r,i){ var id='d'+(i+1);
-    out[id]={id:id,name:r[0],type:r[1],section:r[2],freq:r[3],start:r[5]!=null?r[5]:(h||0)%4}; if(r[4]) out[id].unit=r[4]; }); return out; }
+    out[id]={id:id,name:r[0],type:r[1],section:r[2],freq:r[3],start:r[5]!=null?r[5]:((h||0)+1)%4}; if(r[4]) out[id].unit=r[4]; }); return out; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function sheetId(p){ return 'v_'+String(p.id||p.hid||'').replace(/[\/\s.#$\[\]]/g,'_'); }
   function me(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
