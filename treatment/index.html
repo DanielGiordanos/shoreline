@@ -3963,6 +3963,16 @@ window.openEstimate=function(){
         .then(function(){ toast('Estimate saved'); syncRounds(curDoc&&curDoc.visit_id,lo,hi,cur,me,dep); }).catch(function(err){ console.warn(err); toast('Couldn’t save the estimate'); });
     });
 };
+/* ---------- log out: save what's pending, sign out (shared with Flow), land on the sign-in screen ---------- */
+window.logout=function(){
+  var btn=document.getElementById('logoutBtn'); if(btn){ btn.disabled=true; btn.style.opacity='.6'; }
+  try{ sync(); }catch(e){}
+  var done=function(){ try{ if(unsubCur) unsubCur(); }catch(e){} try{ if(unsubList) unsubList(); }catch(e){} unsubCur=unsubList=null;
+    try{ localStorage.removeItem('tsCurrentSheet'); }catch(e){}
+    if(!AUTH){ location.href='/'; return; }
+    AUTH.signOut().catch(function(){}).then(function(){ location.replace('/'); }); };
+  setTimeout(done,450);   /* give the last save a moment to leave */
+};
 /* ---------- medication orders from the Pravix drug reference (dose suggested from the reference; doctor confirms or changes) ---------- */
 var DRUGS=null, drugsLoading=null;
 function loadDrugs(){ if(DRUGS) return Promise.resolve(DRUGS); if(drugsLoading) return drugsLoading;
