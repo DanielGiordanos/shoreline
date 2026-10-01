@@ -2433,6 +2433,13 @@ body.dark .ts-resus{--rc:#4CBE7A}body.dark .ts-resus.dnr{--rc:#B98BE0}
 @keyframes trDraw{to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){.ts-resus.sm .tr-live{animation:none;stroke-dashoffset:0}}
 
+/* performance: blur only where it can be seen — invisible full-screen scrims and the opaque nav were re-blurring the whole screen on every repaint */
+.topnav,.search-input{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.scrim,.brief-scrim{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;visibility:hidden;transition:opacity .25s,visibility 0s linear .25s!important}
+.scrim.show,.scrim.open,.brief-scrim.show{-webkit-backdrop-filter:blur(3px)!important;backdrop-filter:blur(3px)!important;visibility:visible;transition:opacity .25s,visibility 0s!important}
+#fvPanel:not(.show){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.mesh{will-change:auto!important}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 

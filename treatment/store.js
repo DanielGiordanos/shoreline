@@ -67,13 +67,13 @@ function computeDigest(marks){ var dk=dayKey(), done={}, by={};
     if(k.indexOf(dk+'_')===0) done[k.slice(9)]=m.status==='completed'?1:2;
     if(m.status==='completed'&&m.orderId&&isNum(m.value)){ var mn=Math.round(m.min!=null?m.min:(m.sched||0));
       (by[m.orderId]=by[m.orderId]||[]).push([k,String(m.value),mn,k.slice(0,8)+('0000'+mn).slice(-4)]); } });
-  var vit={}; Object.keys(by).sort().forEach(function(o){ vit[o]=by[o].sort(function(a,b){ return a[3]<b[3]?-1:a[3]>b[3]?1:0; }).slice(-3).map(function(r){ return r.slice(0,3); }); });
+  var vit={}; Object.keys(by).sort().forEach(function(o){ vit[o]=by[o].sort(function(a,b){ return a[3]<b[3]?-1:a[3]>b[3]?1:0; }).slice(-3).map(function(r){ return {k:r[0],v:r[1],m:r[2]}; }); });
   var sd={}; Object.keys(done).sort().forEach(function(k){ sd[k]=done[k]; });
   return {dk:dk,done:sd,vit:vit}; }
 /* board-side stand-in for a sheet's charting, rebuilt from its digest (+ any inbox readings) */
 function synthMarks(x,raw){ var m={}, g=x.digest, dk=dayKey();
   if(g){ if(g.dk===dk) Object.keys(g.done||{}).forEach(function(k){ m[dk+'_'+k]={status:g.done[k]===1?'completed':'skipped'}; });
-    Object.keys(g.vit||{}).forEach(function(o){ (g.vit[o]||[]).forEach(function(r){ m[r[0]]={status:'completed',value:r[1],min:r[2],sched:r[2],orderId:o}; }); }); }
+    Object.keys(g.vit||{}).forEach(function(o){ (g.vit[o]||[]).forEach(function(r){ if(r&&r.k) m[r.k]={status:'completed',value:r.v,min:r.m,sched:r.m,orderId:o}; }); }); }
   Object.keys(raw||{}).forEach(function(k){ if(raw[k]) m[k]=raw[k]; });
   return m; }
 function compose(){ if(!curMain) return null; var m={};
