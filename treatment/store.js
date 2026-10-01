@@ -379,7 +379,7 @@ function showGate(kind){ if(!gate){ gate=document.createElement('div'); gate.id=
     :'<div class="tg-card"><b>Sign in to continue</b><span>Treatment Sheets uses your Pravix Flow account. Sign in on Flow, then come back to this page.</span><a class="ts-btn primary" href="https://shoreline.pravix.app/">Open Flow to sign in</a></div>';
   gate.classList.add('show'); }
 function hideGate(){ if(gate) gate.classList.remove('show'); }
-if(AUTH){ AUTH.onAuthStateChanged(function(u){ if(u){ hideGate(); var ini=user().initials; if(ini&&ini!=='—'){ var i=STAFF.indexOf(ini); if(i>-1) STAFF.splice(i,1); STAFF.unshift(ini); } listen(); if(CUR&&!liveCur) openSheet(CUR,false,true); rerender(); }
+if(AUTH){ AUTH.onAuthStateChanged(function(u){ if(u){ hideGate(); var ini=user().initials; if(ini&&ini!=='—'){ var i=STAFF.indexOf(ini); if(i>-1) STAFF.splice(i,1); STAFF.unshift(ini); } listen(); applyRole(); if(CUR&&!liveCur) openSheet(CUR,false,true); rerender(); }
   else { clearCache(); unsubAllCur(); SHEETS=[]; CUR=null; curDoc=null; curMain=null; reset(); try{ rerender(); }catch(e){} showGate('signin'); } }); }
 else { showGate('rules'); }
 
@@ -400,6 +400,12 @@ function staffRole(){ var u=AUTH&&AUTH.currentUser; if(!u) return null; var S=wi
   if(S.liaisons.some(function(n){ return normName(n)===me; })) return 'liaison';
   return null; }
 function canEditEstimate(){ return EST_EDITORS.indexOf(staffRole())>-1; }
+/* the sheet's role (what you can do) follows the signed-in account — no Role picker */
+function applyRole(){ var r=staffRole(), me=normName(user().name), T=(window.TS_STAFF&&window.TS_STAFF.techs)||[];
+  var role=r==='admin'?'admin':r==='doctor'?'doctor':r==='liaison'?'liaison':'tech';
+  if(!r&&me&&!T.some(function(n){ return normName(n)===me; })) role='tech';
+  try{ if(currentRole!==role){ currentRole=role; if(currentCTab==='sheet'&&CUR&&curDoc){ renderSheet(); } } }catch(e){} }
+window.tsRole=function(){ try{ return currentRole; }catch(e){ return null; } };
 window.tsCanEditEstimate=canEditEstimate;
 function estOf(){ var e=curDoc&&curDoc.estimate; return (e&&e.high>0)?e:null; }
 function fmtWhen(iso){ try{ var d=new Date(iso); return d.toLocaleDateString([], {month:'short',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return '—'; } }

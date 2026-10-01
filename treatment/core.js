@@ -891,7 +891,7 @@ function openBrief(){const b=$('#clinSidebar');if(b)b.classList.add('open');$('#
 function closeBrief(){const b=$('#clinSidebar');if(b)b.classList.remove('open');$('#briefScrim').classList.remove('show');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawers();closeBrief();_closePop();closeModal();}});
 function toast(msg){const el=document.createElement('div');el.className='ctoast';el.innerHTML=`<span class="tk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>${msg}`;$('#toastWrap').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateY(8px)';setTimeout(()=>el.remove(),300);},2600);}
-$('#roleSelect').onchange=e=>{currentRole=e.target.value;if(currentCTab==='sheet')renderSheet();toast(`Viewing as ${e.target.selectedOptions[0].text}`);};
+
 
 /* ═══ live clock tick ═══ */
 function tick(){if(currentCTab==='sheet'){const nl=$('#sheetInner .nowline');if(nl){nl.style.left=`calc(240px + ${(nowMin()/60)*54}px)`;const l=nl.querySelector('.now-lbl');if(l)l.textContent='NOW '+fmtTime(nowMin());}}}
