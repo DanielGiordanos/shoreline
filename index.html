@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0120-e4c3ef80">
+<meta name="flow-build" content="20261001-0123-a0f99e37">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15675,7 +15675,9 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
             Object.keys(tm).forEach(function(f){ if(!mk[f.slice(6)]) upd[f]=tm[f]; });
             t.update(ref,upd); return 'promoted';
           }
-          var tm2=triageMarks(p,d.orders||{},who), mk2=d.marks||{}, miss={};
+          var have2=d.orders||{}, std=defaultOrders(now.getHours(),cur), miss={};
+          Object.keys(std).forEach(function(k){ if(!have2[k]) miss['orders.'+k]=std[k]; });   /* sheets made before a standard order existed */
+          var tm2=triageMarks(p,Object.assign({},std,have2),who), mk2=d.marks||{};
           Object.keys(tm2).forEach(function(f){ if(!mk2[f.slice(6)]) miss[f]=tm2[f]; });
           if(Object.keys(miss).length){ miss.updated_at=now.toISOString(); t.update(ref,miss); }
           return 'exists';
