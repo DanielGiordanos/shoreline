@@ -3793,8 +3793,9 @@ function applyEstimateToVisit(){ var e=estOf();
 function depositCard(){
   var m=function(n){ return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
   var lo=VISIT.estLow, hi=VISIT.estHigh, cur=VISIT.estCurrent, dep=VISIT.estDeposit, hasDep=dep!=null&&dep>0;
-  var rem=hasDep?dep-cur:null, pct=hasDep?cur/dep*100:0, clamped=Math.max(0,Math.min(100,pct));
-  var color=!hasDep?'cyan':pct<75?'cyan':pct<90?'amber':pct<=100?'coral':'red';
+  /* gauge = deposit left: full when nothing is charged, drains as charges come in, full red once past the deposit */
+  var rem=hasDep?dep-cur:null, over=rem!=null&&rem<0, left=hasDep?Math.max(0,Math.min(100,rem/dep*100)):0, clamped=over?100:left;
+  var color=!hasDep?'cyan':over?'red':left>25?'cyan':left>10?'amber':'coral';
   var remLabel=rem==null?'—':(rem>=0?m(rem):'−'+m(-rem));
   var barLabel=rem==null?'No deposit recorded':(rem>=0?m(rem)+' remaining':m(-rem)+' over deposit');
   var labelPos=Math.max(20,Math.min(80,clamped));
@@ -3809,7 +3810,7 @@ function depositCard(){
     +'<div class="est-row"><span class="k">Deposit</span><span class="v">'+(hasDep?m(dep):'—')+'</span></div>'
     +'<div class="est-row"><span class="k">Remaining</span><span class="v '+color+'">'+remLabel+'</span></div>'
     +'<div class="est-bar-wrap"><div class="est-bar"><div class="est-fill '+color+'" style="width:'+clamped.toFixed(1)+'%"></div><div class="est-cap"></div><div class="est-marklabel '+color+'" style="left:'+labelPos.toFixed(1)+'%">'+barLabel+'</div></div>'
-    +'<div class="est-ends"><span><b>'+m(cur)+'</b>Charges</span><span class="hi"><b>'+(hasDep?m(dep):'—')+'</b>Deposit</span></div></div>'
+    +'<div class="est-ends"><span><b>'+m(0)+'</b>Used up</span><span class="hi"><b>'+(hasDep?m(dep):'—')+'</b>Deposit</span></div></div>'
     +'<div class="est-note">'+info+(rem!=null&&rem<0?'Charges are past the deposit. Collect an additional deposit before continuing.':'Stay near the low end when possible. Do not exceed the high end without updated client authorization.')+'</div>'
     +'<div class="est-foot">Updated '+VISIT.estLastUpdated+'</div>'
     +'</div></div>';
