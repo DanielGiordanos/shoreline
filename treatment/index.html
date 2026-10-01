@@ -3033,7 +3033,7 @@ function patientCmdHTML(){
     <span class="pill soft">${VISIT.doctorFrom.split(',')[0]} → ${VISIT.doctorTo.split(',')[0]}</span>
     <span class="pill soft">${VISIT.day}</span>
     <span class="pill soft">${VISIT.location}</span>
-    <span class="pill code-dnr">DNR</span>`;
+    ${tsCodePill()}`;
   return `<section class="clinical-patient-header">
     <div class="cmd-r1">
       <button class="c-back" onclick="selectCTab('dash')" title="Back to patients"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -3089,7 +3089,7 @@ function sidebarBriefHTML(){
     <div class="panel"><h4>Patient</h4><div class="kvlist">
       <div class="kvrow"><span class="kk">Checked in</span><span class="vv" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px"><span class="ci-time">${VISIT.checkin}</span><span class="ci-pill">67 hrs hospitalized</span></span></div>
       ${kvr('Species',VISIT.species)}${kvr('Breed',VISIT.breed)}${kvr('Age',VISIT.age)}${kvr('Sex',VISIT.sex)}${kvr('Weight',VISIT.weight+' kg')}
-      <div class="kvrow"><span class="kk">Code Status</span><span class="vv"><span class="pill code-dnr">${VISIT.code}</span></span></div>
+      <div class="kvrow"><span class="kk">Code Status</span><span class="vv">${tsCodePill(1)}</span></div>
       <div class="kvrow"><span class="kk">E-Collar</span><span class="vv"><span class="pill st-waiting">${VISIT.ecollar}</span></span></div>
     </div></div>
 
@@ -3623,10 +3623,18 @@ function emptyHTML(){ return '<div class="ts-empty"><div class="ts-empty-card"><
   '<b>No patient open</b><span>Choose a patient from the IP Board, or start a new sheet.</span>'+
   '<div class="row"><button type="button" class="ts-btn" onclick="selectCTab(\'dash\')">IP Board</button><button type="button" class="ts-btn primary" onclick="tsNewSheet()">New sheet</button></div></div></div>'; }
 ['renderSheet','renderVitals','renderRounds','renderTimeline','renderNotes'].forEach(function(fn){ var tab={renderSheet:'sheet',renderVitals:'vitals',renderRounds:'rounds',renderTimeline:'timeline',renderNotes:'notes'}[fn];
-  try{ var o=window[fn]; window[fn]=function(){ if(!CUR||!curDoc){ var el=document.getElementById('ctab-'+tab); if(el) el.innerHTML=CUR?'<div class="ts-empty"><div class="ts-empty-card"><span>Opening sheet…</span></div></div>':emptyHTML(); if(fn==='renderSheet') renderedFor=null; return; } if(fn==='renderSheet') renderedFor=CUR; return o.apply(this,arguments); }; }catch(e){} });
+  try{ var o=window[fn]; window[fn]=function(){ if(!CUR||!curDoc){ var el=document.getElementById('ctab-'+tab); if(el) el.innerHTML=CUR?'<div class="ts-empty"><div class="ts-empty-card"><span>Opening sheet…</span></div></div>':emptyHTML(); if(fn==='renderSheet') renderedFor=null; return; } if(fn==='renderSheet'){ renderedFor=CUR; var r=o.apply(this,arguments); requestAnimationFrame(scrollToNow); return r; } return o.apply(this,arguments); }; }catch(e){} });
 
 var renderedFor=null;
-function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CUR&&document.querySelector('#sheetInner')) buildGrid(); else { renderSheet(); renderedFor=curDoc?CUR:null; } } else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='rounds') renderRounds(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); }catch(e){ console.warn(e); } updateChip(); }
+/* code-status chip reflects the sheet (prototype had DNR hard-coded) */
+window.tsCodePill=function(always){ var c=String(VISIT.code||'').toUpperCase(); if(!c||c==='—') return always?'—':'';
+  return c==='DNR'?'<span class="pill code-dnr">DNR</span>':'<span class="pill soft">'+c+'</span>'; };
+/* header vitals follow live charting without a full re-render */
+function refreshHeader(){ var vs=document.querySelectorAll('.cmd-vitals .vstat .vv'); if(vs.length<4) return;
+  var vals=[VISIT.temp==='—'?'—':VISIT.temp+'°',VISIT.hr,VISIT.rr,VISIT.mm]; vs.forEach(function(e,i){ if(i<4&&e.textContent!==String(vals[i])) e.textContent=vals[i]; }); }
+/* open the grid at "now" instead of midnight */
+function scrollToNow(){ var sh=document.getElementById('sheetScroll'); if(!sh) return; var x=240+(nowMin()/60)*54; sh.scrollLeft=Math.max(0,x-240-(sh.clientWidth-240)*0.35); }
+function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CUR&&document.querySelector('#sheetInner')){ buildGrid(); refreshHeader(); } else { renderSheet(); renderedFor=curDoc?CUR:null; } } else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='rounds') renderRounds(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); }catch(e){ console.warn(e); } updateChip(); }
 
 /* ---------- IP Board: every active sheet ---------- */
 function blocksFor(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), out=[];
