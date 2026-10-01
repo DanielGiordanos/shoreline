@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0037-19c59aac">
+<meta name="flow-build" content="20261001-0120-e4c3ef80">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15590,14 +15590,14 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
 (function(){
   if(typeof completePatient!=='function') return;
   var COL='sheets';
-  /* Mirrors Treatment Sheets' DEFAULT_ORDERS. OP sheets start with the first 7 (vitals + pain); admission adds the rest. */
+  /* Mirrors Treatment Sheets' DEFAULT_ORDERS. OP sheets start with the first 8 (vitals, pain, weight); admission adds the rest. */
   var DEFAULTS=[
     ['Temperature','obs','Basic Observation','q4h','°F'],['Heart Rate','obs','Basic Observation','q4h','bpm'],['Respiratory Rate','obs','Basic Observation','q4h','rpm'],
     ['CRT','obs','Basic Observation','q4h'],['Mucous Membrane','obs','Basic Observation','q4h'],['Mentation','obs','Basic Observation','q4h'],['Pain Score','obs','Basic Observation','q4h'],
     ['Weight','obs','Basic Observation','q24h','kg',8],['Food','obs','Basic Observation','q8h'],['Water','obs','Basic Observation','q8h'],
     ['Urination','obs','Basic Observation','q8h',null,2],['Defecation','obs','Basic Observation','q8h',null,2],
     ['Check IV catheter','care','Patient Care','q4h'],['Walk','care','Patient Care','q6h',null,2],['Cage cleaned','care','Patient Care','q8h',null,4]];
-  var OP_COUNT=7;
+  var OP_COUNT=8;   /* vitals, pain and weight */
   function defaultOrders(h,board){ var out={}; DEFAULTS.forEach(function(r,i){ if(board==='OP'&&i>=OP_COUNT) return; var id='d'+(i+1);
     out[id]={id:id,name:r[0],type:r[1],section:r[2],freq:r[3],start:r[5]!=null?r[5]:((h||0)+1)%4}; if(r[4]) out[id].unit=r[4]; }); return out; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -15615,6 +15615,35 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     return {name:p.name||'Patient',last:p.last||'',owner:p.owner||'',phone:p.ownerPhone||'',species:p.species||'Dog',breed:p.breed||'',sex:sex,
       age:p.ageDisplay||p.age||'',weight:wt,reason:p.reason||'',doctor:doctorName(p.doctor),location:'',code:code,condition:cond,
       alerts:code==='DNR'?['DNR']:[],problems:Array.isArray(p.reasonProblems)?p.reasonProblems.map(function(x){ return x.label; }).filter(Boolean):[]};
+  }
+  /* ---- triage → sheet: each triage reading becomes a completed entry at the triage time ---- */
+  var TRI_MAP={temp:'Temperature',hr:'Heart Rate',rr:'Respiratory Rate',weight:'Weight',mentation:'Mentation',mm:'Mucous Membrane',crt:'CRT'};
+  var NUMERIC={temp:1,hr:1,rr:1,weight:1};
+  function pad(n){ return (n<10?'0':'')+n; }
+  function dayKeyOf(d){ return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate()); }
+  function triageTime(p,t){
+    var base=p.arrival?new Date(p.arrival):new Date(), m=String(t.at||'').match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i);
+    if(!m) return new Date();
+    var h=+m[1]%12; if(m[3]&&/p/i.test(m[3])) h+=12; if(!m[3]&&+m[1]===12) h=12;
+    var d=new Date(base); d.setHours(h,+m[2],0,0);
+    if(p.arrival&&d<new Date(p.arrival)-60000) d.setDate(d.getDate()+1);   /* triage after midnight */
+    if(d>new Date()) d=new Date();
+    return d;
+  }
+  function triInitials(name,who){ var w=String(name||'').trim().split(/\s+/).filter(Boolean); return w.length?w.map(function(x){ return x[0]; }).join('').slice(0,2).toUpperCase():who.initials; }
+  /* -> { 'marks.<key>': mark } for every triage value whose order is on the sheet */
+  function triageMarks(p,orders,who){
+    var t=p&&p.triage; if(!t) return {};
+    var vals={}; [t.vitals||{},t.assess||{}].forEach(function(src){ Object.keys(src).forEach(function(k){ if(TRI_MAP[k]&&src[k]!=null&&String(src[k]).trim()!=='') vals[k]=String(src[k]).trim(); }); });
+    if(!Object.keys(vals).length) return {};
+    var at=triageTime(p,t), dk=dayKeyOf(at), min=at.getHours()*60+at.getMinutes(), by=triInitials(t.by,who), out={};
+    Object.keys(vals).forEach(function(k){
+      var oid=null; Object.keys(orders||{}).forEach(function(id){ var o=orders[id]; if(o&&!o.dc&&o.name===TRI_MAP[k]&&!oid) oid=o.id||id; });
+      if(!oid) return;
+      var v=vals[k]; if(NUMERIC[k]){ var n=String(v).match(/-?\d+(\.\d+)?/); if(!n) return; v=n[0]; }
+      out['marks.'+dk+'_'+oid+'_triage']={status:'completed',by:by,min:min,value:v,notes:'From triage',orderId:oid,sched:min,at:at.toISOString(),src:'triage'};
+    });
+    return out;
   }
   function audit(desc,who,now){ return {at:now.toISOString(),type:'doctor',desc:desc,who:who.initials,uid:who.uid}; }
   function openLink(id){ return '/treatment/#sheet='+encodeURIComponent(id); }
@@ -15642,8 +15671,13 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
               audit:FV.arrayUnion(audit('Admitted from Flow — moved to IP Board',who,now))};
             var have=d.orders||{}, add=defaultOrders(now.getHours(),'IP');
             Object.keys(add).forEach(function(k){ if(!have[k]) upd['orders.'+k]=add[k]; });
+            var all=Object.assign({},add,have), tm=triageMarks(p,all,who), mk=d.marks||{};
+            Object.keys(tm).forEach(function(f){ if(!mk[f.slice(6)]) upd[f]=tm[f]; });
             t.update(ref,upd); return 'promoted';
           }
+          var tm2=triageMarks(p,d.orders||{},who), mk2=d.marks||{}, miss={};
+          Object.keys(tm2).forEach(function(f){ if(!mk2[f.slice(6)]) miss[f]=tm2[f]; });
+          if(Object.keys(miss).length){ miss.updated_at=now.toISOString(); t.update(ref,miss); }
           return 'exists';
         }
         if(opts.createOnly||board!=='IP') return 'closed';
@@ -15658,6 +15692,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
         audit:[audit((board==='OP'?'Moved to Treatment in Flow — <b>':'Admitted from Flow — <b>')+nm+'</b>'+(pt.doctor?' · '+esc(pt.doctor):''),who,now)],
         updated_at:now.toISOString(),updated_by:who.initials};
       if(board==='OP') doc.op_at=now.toISOString(); else doc.ip_at=now.toISOString();
+      var tm3=triageMarks(p,doc.orders,who); Object.keys(tm3).forEach(function(f){ doc.marks[f.slice(6)]=tm3[f]; });
       t.set(ref,doc); return 'created';
     }); }).then(function(res){ if(!opts.quiet) announce(p,id,res,board); return res; })
       .catch(function(e){ if(!opts.quiet) fail(p,e); return 'error'; });
@@ -15714,6 +15749,20 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
       return r;
     };
   }
+  /* Triage edited after the sheet exists: refresh the triage entries on an open sheet. */
+  function syncTriage(p){
+    if(!ready()||!p||p._demo) return;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date();
+    DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
+      if(!snap.exists) return; var d=snap.data()||{}; if(d.status!=='active') return;
+      var tm=triageMarks(p,d.orders||{},who); if(!Object.keys(tm).length) return;
+      tm.updated_at=now.toISOString(); tm.updated_by=who.initials; t.update(ref,tm);
+    }); }).catch(function(e){ console.warn('[flow→sheet triage]',e); });
+  }
+  if(typeof saveTriageEdit==='function'){
+    var origTri=saveTriageEdit;
+    window.saveTriageEdit=saveTriageEdit=function(){ var p=(typeof triEditPatient!=='undefined')?triEditPatient:null; var r=origTri.apply(this,arguments); if(p) setTimeout(function(){ syncTriage(p); },300); return r; };
+  }
   var prevUndo=window.rdOnFlowUndo;
   window.rdOnFlowUndo=function(p){ var r; if(typeof prevUndo==='function'){ try{ r=prevUndo.apply(this,arguments); }catch(e){} } try{ undoSheet(p); }catch(e){} return r; };
 
@@ -15741,7 +15790,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     sweepTreatment();
   },8000);
 
-  window.fvAdmitSheet={ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,sweep:sweepTreatment};
+  window.fvAdmitSheet={ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,sweep:sweepTreatment,triageMarks:triageMarks,syncTriage:syncTriage};
 })();
 </script>
 
