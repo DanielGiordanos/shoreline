@@ -2439,6 +2439,8 @@ body.dark .ts-resus{--rc:#4CBE7A}body.dark .ts-resus.dnr{--rc:#B98BE0}
 .scrim.show,.scrim.open,.brief-scrim.show{-webkit-backdrop-filter:blur(3px)!important;backdrop-filter:blur(3px)!important;visibility:visible;transition:opacity .25s,visibility 0s!important}
 #fvPanel:not(.show){-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 .mesh{will-change:auto!important}
+/* the sheet's cards sit on a solid page colour — blurring a solid colour looks identical, so skip the work (drawers keep their glass) */
+.clinical-patient-header,.treatment-main,.panel{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
