@@ -2336,6 +2336,30 @@ body.dark #tsGate .tg-card b{color:#fff}
 .ts-est-none{font-size:15px;font-weight:700;color:var(--ink-900);letter-spacing:-.01em}
 .ts-est-add{min-width:150px}
 
+/* medication order composer */
+#tsModal .tm-card.rx-card{width:min(680px,calc(100vw - 28px))}
+.ts-item .ts-meta{margin-left:auto;font-size:11px;color:var(--ink-400);font-weight:500;white-space:nowrap}
+.ts-hint{padding:6px 14px 10px;font-size:12px;color:var(--ink-400)}
+.rx-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400);margin:14px 0 8px}
+.rx-refs{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto;padding:2px}
+.rx-ref{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--border,rgba(0,0,0,.08));background:var(--surface-0,#fff);cursor:pointer;font:inherit;color:inherit;transition:border-color .15s,box-shadow .15s}
+.rx-ref:hover{border-color:var(--accent)}
+.rx-ref.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,210,.16)}
+.rx-ref b{font-size:14px;font-weight:700;color:var(--ink-900);padding-right:110px}
+.rx-ref span{font-size:12.5px;color:var(--ink-600,#555)}
+.rx-ref small{font-size:12px;color:var(--ink-400)}
+.rx-ref a{position:absolute;top:10px;right:12px;font-size:11.5px;color:var(--accent-ink,var(--accent));text-decoration:none;font-weight:600}
+.rx-tag{position:absolute;top:10px;right:76px;font-size:10.5px;font-weight:700;color:var(--amber-ink,#9a6b00);background:rgba(232,168,48,.16);padding:2px 7px;border-radius:999px}
+.rx-none{font-size:13px;color:var(--ink-400);padding:6px 2px}
+.rx-other{margin-top:4px}.rx-other summary{cursor:pointer;font-size:12.5px;color:var(--ink-400);padding:6px 2px}
+.rx-other .rx-ref{margin-top:8px}
+.rx-warn{font-size:12px;color:var(--ink-400);margin:10px 0 12px}
+.rx-dose{display:flex;gap:6px}.rx-dose input{flex:1;min-width:0}.rx-dose select{width:100px}
+.rx-calc{margin-top:12px;font-size:14px;color:var(--ink-400)}.rx-calc.ok{color:var(--ink-900)}
+.rx-range{display:none;margin-top:8px;font-size:12.5px;color:var(--coral,#c4553c);background:rgba(232,100,74,.10);border-radius:12px;padding:8px 10px}
+#tsModal label.rx-ok{display:inline-flex;flex-direction:row;align-items:center;gap:6px;margin-left:6px;color:var(--ink-900);font-weight:600}
+body.dark .rx-ref{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12)}body.dark .rx-ref b{color:#EEF1F6}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 
@@ -3484,7 +3508,7 @@ setInterval(tick,10000);
 buildTasks();
 selectCTab('dash');
 </script>
-<script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"]};</script>
+<script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"]};window.TS_DRUGS_VER="596ec693";</script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -3875,6 +3899,130 @@ window.openEstimate=function(){
         .then(function(){ toast('Estimate saved'); syncRounds(curDoc&&curDoc.visit_id,lo,hi,cur,me,dep); }).catch(function(err){ console.warn(err); toast('Couldn’t save the estimate'); });
     });
 };
+/* ---------- medication orders from the Pravix drug reference (doctors confirm every dose) ---------- */
+var DRUGS=null, drugsLoading=null;
+function loadDrugs(){ if(DRUGS) return Promise.resolve(DRUGS); if(drugsLoading) return drugsLoading;
+  drugsLoading=new Promise(function(res){
+    if(window.PRAVIX_DRUGS){ DRUGS=window.PRAVIX_DRUGS.d||[]; return res(DRUGS); }
+    var sc=document.createElement('script'); sc.src='drugs.js?v='+(window.TS_DRUGS_VER||'1');
+    sc.onload=function(){ DRUGS=(window.PRAVIX_DRUGS||{}).d||[]; res(DRUGS); };
+    sc.onerror=function(){ drugsLoading=null; res(null); };
+    document.head.appendChild(sc); });
+  return drugsLoading; }
+function spKey(){ var s=String(VISIT.species||''); return /^(cat|fel)/i.test(s)?'cat':/^(dog|can)/i.test(s)?'dog':null; }
+var ROUTE={oral:'PO',intravenous:'IV',subcutaneous:'SQ',intramuscular:'IM',topical:'Topical',ophthalmic:'Ophthalmic',otic:'Otic',rectal:'Rectal',inhaled:'Inhaled',intranasal:'Intranasal',transdermal:'Transdermal'};
+function routeOf(e){ return ROUTE[e.rn]||ROUTE[String(e.ro||'').toLowerCase()]||(/^(IV|SQ|SC|IM|PO)$/i.test(e.ro)?String(e.ro).toUpperCase().replace('SC','SQ'):''); }
+var FREQS=['Once','q1h','q2h','q4h','q6h','q8h','q12h','q24h','PRN'];
+function freqOf(e){ if(e.once) return 'Once'; if(!e.h) return ''; var h=e.h[0]; return FREQS.indexOf('q'+h+'h')>-1?'q'+h+'h':''; }
+function unitOf(e){ if(!e.d) return ''; var u=e.d[2]||'mg', b=e.d[3]; if(u==='IU') u='U';
+  return b==='kg'?u+'/kg':b==='lb'?u+'/lb':b==='m²'?u+'/m²':u; }
+function bsa(kg,sp){ return (sp==='cat'?10:10.1)*Math.pow(kg,2/3)/100; }
+function doseTotal(dose,unit,kg,sp){ var per=String(unit).split('/')[1]||'';
+  return per==='kg'?dose*kg:per==='lb'?dose*kg*2.20462:per==='m²'?dose*bsa(kg,sp):dose; }
+function fmtN(n){ return n>=100?Math.round(n).toString():n>=10?(Math.round(n*10)/10).toString():(Math.round(n*100)/100).toString(); }
+/* the sheet's dose math understands mg/kg, mg/lb, mg/m² and fixed doses */
+window.medDose=function(o){ var w=Number(VISIT.weight)||0, unit=String(o.unit||'mg/kg'), base=unit.split('/')[0];
+  var total=doseTotal(Number(o.dose)||0,unit,w,spKey()), vol=o.conc?total/o.conc:null;
+  return {mg:fmtN(total)+' '+base, volume:vol!=null?vol.toFixed(2)+' mL':'—', raw:total}; };
+
+/* search: medications from the reference + the standard monitoring/care items */
+function scoreDrug(n,q){ var l=n.toLowerCase(); if(l===q) return 0; if(l.indexOf(q)===0) return 1; if((' '+l).indexOf(' '+q)>-1||l.indexOf('/ '+q)>-1) return 2; return l.indexOf(q)>-1?3:9; }
+window.tsRender=function(q){ q=(q||'').toLowerCase().trim(); var html='', rows=[], sp=spKey();
+  var d=document.getElementById('tsDrop'); if(!d) return;
+  if(!DRUGS){ d.innerHTML='<div class="ts-empty">Loading medications…</div>'; d.style.display='block';
+    loadDrugs().then(function(r){ if(r===null){ d.innerHTML='<div class="ts-empty">Couldn’t load the medication list</div>'; return; }
+      if(d.style.display!=='none') window.tsRender((document.getElementById('tsSearch')||{}).value||''); }); return; }
+  if(q){ var hits=DRUGS.map(function(x,i){ return {i:i,s:scoreDrug(x.n,q)}; }).filter(function(h){ return h.s<9; })
+      .sort(function(a,b){ return a.s-b.s||DRUGS[a.i].n.localeCompare(DRUGS[b.i].n); }).slice(0,8);
+    if(hits.length){ html+='<div class="ts-cat">Medications</div>';
+      hits.forEach(function(h){ var x=DRUGS[h.i], n=sp?x.r.filter(function(e){ return e.s.indexOf(sp)>-1; }).length:x.r.length, k=rows.length;
+        rows.push('drug:'+h.i);
+        html+='<button class="ts-item" data-i="'+k+'" onmouseenter="tsHi('+k+')" onmousedown="event.preventDefault();tsPick(\'drug:'+h.i+'\')"><span>'+esc(x.n)+'</span><small class="ts-meta">'
+          +(n?n+(sp?' '+sp:'')+' dose'+(n>1?'s':''):'no '+(sp||'')+' dose listed')+'</small></button>'; }); } }
+  else html+='<div class="ts-cat">Medications</div><div class="ts-hint">Type a drug name — '+DRUGS.length+' in the reference</div>';
+  var other=[['Monitoring',['Vomiting check q4h','Appetite check q6h','Nausea signs q6h','Blood glucose q4h','Blood pressure q6h']],['Patient Care',['Offer food q6h','Monitor hydration q4h','Turn patient q4h','Walk q6h']]];
+  other.forEach(function(g){ var items=g[1].filter(function(n){ return !q||n.toLowerCase().indexOf(q)>-1; }); if(!items.length) return;
+    html+='<div class="ts-cat">'+g[0]+'</div>'; items.forEach(function(n){ var k=rows.length; rows.push(n);
+      html+='<button class="ts-item" data-i="'+k+'" onmouseenter="tsHi('+k+')" onmousedown="event.preventDefault();tsPick(\''+n+'\')"><span>'+n+'</span></button>'; }); });
+  if(!rows.length) html='<div class="ts-empty">No medication or order matches “'+esc(q)+'”</div>';
+  tsRows=rows; tsIdx=rows.length?0:-1; d.innerHTML=html; d.style.display='block'; try{ tsMark(); }catch(e){} };
+var _origPick=window.tsPick;
+window.tsPick=function(name){
+  if(String(name).indexOf('drug:')===0){ try{ closeTsDrop(); }catch(e){} var si=document.getElementById('tsSearch'); if(si) si.value='';
+    openMedOrder(+String(name).slice(5)); return; }
+  if(!CUR){ toast('Open a patient first'); return; }
+  return _origPick.apply(this,arguments); };
+
+var RX=null;
+function openMedOrder(i){
+  if(!CUR||!curDoc){ toast('Open a patient first'); return; }
+  var x=DRUGS[i]; if(!x) return; var sp=spKey(), kg=Number(VISIT.weight)||0, canOrder=canEditEstimate();
+  var mine=x.r.filter(function(e){ return !sp||e.s.indexOf(sp)>-1; }), others=x.r.filter(function(e){ return sp&&e.s.indexOf(sp)<0; });
+  RX={i:i,x:x,sel:null,mine:mine,others:others};
+  var refBtn=function(e,k,grp){ var tag=e.st?'<span class="rx-tag">'+(e.st==='candidate'?'Candidate':'Qualified')+'</span>':'';
+    return '<button type="button" class="rx-ref" data-k="'+grp+k+'" onclick="tsRxPick(\''+grp+'\','+k+')"><b>'+esc(e.do||'See source')+'</b>'
+      +'<span>'+esc([routeOf(e)||e.ro,e.fo].filter(Boolean).join(' · '))+'</span>'
+      +(e.i?'<small>'+esc(e.i)+'</small>':'')+tag
+      +(e.u?'<a href="'+esc(e.u)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Source ↗</a>':'')+'</button>'; };
+  var refs=mine.length?mine.map(function(e,k){ return refBtn(e,k,'m'); }).join('')
+    :'<div class="rx-none">No '+(sp||'')+' dose in the reference for this drug.</div>';
+  if(others.length) refs+='<details class="rx-other"><summary>'+others.length+' dose'+(others.length>1?'s':'')+' for other species</summary>'
+    +others.map(function(e,k){ return refBtn(e,k,'o'); }).join('')+'</details>';
+  var opt=function(list,sel){ return list.map(function(v){ return '<option'+(v===sel?' selected':'')+'>'+v+'</option>'; }).join(''); };
+  var nh=Math.min(23,Math.ceil(nowMin()/60)), hrs=''; for(var h=0;h<24;h++) hrs+='<option value="'+h+'"'+(h===nh?' selected':'')+'>'+fmtTime(h*60)+'</option>';
+  modal('<h3>'+esc(x.n)+'</h3><p>'+esc(VISIT.patient)+' · '+esc(VISIT.species||'')+' · <b>'+(kg?kg+' kg':'no weight')+'</b>'+(kg?'':' — add a triage weight to calculate doses')+'</p>'
+    +'<div class="rx-lbl">Reference doses'+(sp?' · '+(sp==='cat'?'cats':'dogs'):'')+'</div><div class="rx-refs">'+refs+'</div>'
+    +'<p class="rx-warn">Reference only. The source marks these doses as not validated for automatic calculation. Tap one to start from it, then confirm the dose.</p>'
+    +'<div class="tm-grid">'
+    +'<label>Dose<span class="rx-dose"><input id="rxDose" inputmode="decimal" placeholder="Enter dose" oninput="tsRxCalc()"><select id="rxUnit" onchange="tsRxCalc()">'
+      +opt(['mg/kg','mcg/kg','U/kg','mL/kg','g/kg','mg/lb','mg/m²','mcg/m²','mg','mcg','U','mL'],'mg/kg')+'</select></span></label>'
+    +'<label>Route<select id="rxRoute"><option value="">Choose…</option>'+opt(['IV','SQ','IM','PO','Topical','Ophthalmic','Otic','Rectal','Inhaled','Intranasal','Transdermal'],'')+'</select></label>'
+    +'<label>Frequency<select id="rxFreq"><option value="">Choose…</option>'+opt(FREQS,'')+'</select></label>'
+    +'<label>First dose<select id="rxStart">'+hrs+'</select></label>'
+    +'<label>Concentration <span id="rxConcU">(mg/mL)</span><input id="rxConc" inputmode="decimal" placeholder="Optional" oninput="tsRxCalc()"></label>'
+    +'<label>Notes<input id="rxNotes" placeholder="Optional"></label>'
+    +'</div><div class="rx-calc" id="rxCalc">Enter a dose to calculate</div><div class="rx-range" id="rxRange"></div>'
+    +(canOrder?'':'<p class="rx-warn">Only doctors can place medication orders.</p>'),
+    canOrder?'Add to sheet':'Close', function(){ return canOrder?tsRxSubmit():true; });
+  setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card'); var f=document.getElementById('rxDose'); if(f) f.focus(); },30);
+}
+window.tsOpenMedOrder=function(name){ return loadDrugs().then(function(){ var i=DRUGS.findIndex(function(x){ return x.n.toLowerCase()===String(name).toLowerCase(); }); if(i>-1) openMedOrder(i); return i; }); };
+window.tsRxPick=function(grp,k){ if(!RX) return; var e=(grp==='m'?RX.mine:RX.others)[k]; if(!e) return; RX.sel=e;
+  document.querySelectorAll('#tsModal .rx-ref').forEach(function(b){ b.classList.toggle('on',b.dataset.k===grp+k); });
+  var u=unitOf(e), r=routeOf(e), f=freqOf(e), set=function(id,v){ var el=document.getElementById(id); if(el&&v!=null&&v!=='') el.value=v; };
+  if(u){ var us=document.getElementById('rxUnit'); if(us&&![].some.call(us.options,function(o){ return o.value===u; })){ var o=document.createElement('option'); o.textContent=u; us.appendChild(o); } set('rxUnit',u); }
+  set('rxRoute',r); set('rxFreq',f);
+  var dz=document.getElementById('rxDose'); if(dz) dz.value=(e.d&&e.d[0]!=null&&e.d[0]===e.d[1])?String(e.d[0]):'';   /* a range needs the doctor's pick */
+  if(dz&&!dz.value&&e.d&&e.d[0]!=null) dz.placeholder=e.d[0]+'–'+e.d[1];
+  if(e.c&&e.c[0]&&/mg\/mL/i.test(e.c[1]||'')) set('rxConc',String(e.c[0]));
+  tsRxCalc(); if(dz&&!dz.value) dz.focus(); };
+window.tsRxCalc=function(){ var el=document.getElementById('rxCalc'), rg=document.getElementById('rxRange'); if(!el) return;
+  var dose=parseFloat((document.getElementById('rxDose')||{}).value), unit=(document.getElementById('rxUnit')||{}).value||'mg/kg', conc=parseFloat((document.getElementById('rxConc')||{}).value);
+  var base=unit.split('/')[0], cu=document.getElementById('rxConcU'); if(cu) cu.textContent='('+base+'/mL)';
+  var kg=Number(VISIT.weight)||0, sp=spKey(), per=unit.split('/')[1];
+  if(!(dose>0)){ el.textContent='Enter a dose to calculate'; el.className='rx-calc'; }
+  else if(per&&!kg){ el.textContent='Add a weight to calculate the total dose'; el.className='rx-calc'; }
+  else { var tot=doseTotal(dose,unit,kg,sp); el.innerHTML='= <b>'+fmtN(tot)+' '+base+'</b>'+(per==='m²'?' · BSA '+bsa(kg,sp).toFixed(2)+' m²':'')+(conc>0?' · <b>'+(tot/conc).toFixed(2)+' mL</b>':''); el.className='rx-calc ok'; }
+  var e=RX&&RX.sel, msg='';
+  if(e&&e.d&&dose>0&&unitOf(e)===unit){ var lo=e.d[0], hi=e.d[1]; if(lo!=null&&hi!=null&&(dose<lo-1e-9||dose>hi+1e-9)) msg='Outside the reference ('+esc(e.do)+'). <label class="rx-ok"><input type="checkbox" id="rxOk"> I confirm this dose</label>'; }
+  if(rg){ rg.innerHTML=msg; rg.style.display=msg?'block':'none'; } };
+function tsRxSubmit(){
+  var v=function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
+  var dose=parseFloat(v('rxDose')), unit=v('rxUnit'), route=v('rxRoute'), freq=v('rxFreq'), start=parseInt(v('rxStart'),10), conc=parseFloat(v('rxConc'));
+  if(!(dose>0)){ toast('Enter the dose'); return false; }
+  if(!route){ toast('Choose a route'); return false; }
+  if(!freq){ toast('Choose a frequency'); return false; }
+  var rg=document.getElementById('rxRange'); if(rg&&rg.style.display!=='none'&&!(document.getElementById('rxOk')||{}).checked){ toast('Confirm the dose outside the reference'); return false; }
+  var x=RX.x, e=RX.sel, me=user(), now=new Date();
+  var o={id:'m'+now.getTime().toString(36),type:'med',section:'Medications',name:x.n,dose:dose,unit:unit,route:route,freq:freq,start:isNaN(start)?Math.ceil(nowMin()/60):start,
+    conc:conc>0?conc:null,notes:v('rxNotes'),drug_id:x.id,ordered_by:me.initials,ordered_by_name:me.name,ordered_at:now.toISOString()};
+  if(e) o.ref={dose:e.do,route:e.ro,freq:e.fo,indication:e.i,species:e.s,source:e.u||null};
+  ORDERS.push(o); buildTasks();
+  var d=medDose(o);
+  logEvent('doctor','Order added — <b>'+esc(x.n)+'</b> '+dose+' '+unit+' ('+d.mg+') '+route+' '+freq,me.initials);
+  try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} }
+  sync(); toast(x.n+' added'); return true; }
+
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
 </script>
