@@ -3775,9 +3775,9 @@ var EST_EDITORS=['doctor','admin'];
 var ADMIN_EMAILS=['daniel.giordano@pravix.app'];
 function normName(n){ return String(n||'').toLowerCase().replace(/^dr\.?\s+/,'').replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
 function staffRole(){ var u=AUTH&&AUTH.currentUser; if(!u) return null; var S=window.TS_STAFF||{doctors:[],liaisons:[]}, me=normName(user().name);
+  if(ADMIN_EMAILS.indexOf(String(u.email||'').toLowerCase())>-1) return 'admin';
   if(S.doctors.some(function(n){ return normName(n)===me; })) return 'doctor';
   if(S.liaisons.some(function(n){ return normName(n)===me; })) return 'liaison';
-  if(ADMIN_EMAILS.indexOf(String(u.email||'').toLowerCase())>-1) return 'admin';
   return null; }
 function canEditEstimate(){ return EST_EDITORS.indexOf(staffRole())>-1; }
 window.tsCanEditEstimate=canEditEstimate;
