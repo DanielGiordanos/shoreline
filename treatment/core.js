@@ -498,7 +498,7 @@ function sidebarBriefHTML(){
 
     <div class="panel"><h4>Visit</h4><div class="kvlist">
       ${kvr('Doctor','Dr. '+VISIT.doctorTo.split(',')[0])}
-      <div class="kvrow"><span class="kk">Care Team</span><span class="vv"><button class="addbtn" onclick="toast('Care team — demo')">+ Add</button></span></div>
+      <div class="kvrow"><span class="kk">Technician</span><span class="vv">${window.tsTechCell?tsTechCell():''}</span></div>
       <div class="kvrow"><span class="kk">Status</span><span class="vv"><span class="pill st-hospitalized"><span class="d"></span>${VISIT.hospStatus}</span></span></div>
       <div class="kvrow"><span class="kk">Location</span><span class="vv"><span class="pill soft">${VISIT.location}</span></span></div>
       ${kvr('Department',deptName(VISIT.department))}

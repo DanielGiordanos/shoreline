@@ -2442,6 +2442,10 @@ body.dark .ts-resus{--rc:#4CBE7A}body.dark .ts-resus.dnr{--rc:#B98BE0}
 /* the sheet's cards sit on a solid page colour — blurring a solid colour looks identical, so skip the work (drawers keep their glass) */
 .clinical-patient-header,.treatment-main,.panel{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 
+.ts-tech-cell{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px 0 4px;border-radius:999px;border:1px solid var(--border,rgba(0,0,0,.1));background:var(--surface-0,#fff);color:inherit;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.ts-tech-cell:hover{border-color:var(--accent)}
+body.dark .ts-tech-cell{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);color:#EEF1F6}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 

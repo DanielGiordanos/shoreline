@@ -853,7 +853,7 @@ function assignTech(sheetId,name){ var s=SHEETS.find(function(x){ return x._id==
   p.tech=name||null; s.patient=p; if(sheetId===CUR&&curDoc){ curDoc.patient=curDoc.patient||{}; curDoc.patient.tech=name||null; }
   p.tech_at=now; DB.collection(COL).doc(sheetId).update(u).then(function(){ toast(name?((p.name||'Patient')+' → '+name):'Tech unassigned'); }).catch(function(e){ console.warn(e); toast('Couldn’t save'); });
   techToFlow(s.visit_id,name,me,now);
-  try{ if(currentCTab==='dash') renderDash(); }catch(e){} }
+  try{ if(currentCTab==='dash') renderDash(); else if(sheetId===CUR) rerender(); }catch(e){} }
 /* the same technician shows on the patient in Flow (replaces whoever was there; history is kept) */
 function techToFlow(visitId,name,me,now){ if(!visitId) return; var ref=DB.collection('visits').doc(String(visitId));
   var slug=function(n){ return 'tech:'+String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); };
@@ -883,6 +883,10 @@ function loadStripHTML(){ var loads=techLoads(), names=Object.keys(loads).sort(f
         hint='<div class="ts-load-hint"><span>'+esc(hi)+' has '+loads[hi].score+' tasks queued vs '+esc(lo)+' with '+loads[lo].score+'. Moving <b>'+esc(pn)+'</b> evens it out.</span><button type="button" onclick="tsRebalance(\''+pick.s._id+'\',\''+esc(lo).replace(/'/g,"\\'")+'\')">Move to '+esc(lo.split(' ')[0])+'</button></div>'; } } }
   return '<div class="ts-load"><div class="ts-load-h">Workload · next hour'+(un?'<small>'+un+' unassigned</small>':'')+'</div><div class="ts-load-row">'+cards+'</div>'+hint+'</div>'; }
 window.tsRebalance=function(sheetId,name){ assignTech(sheetId,name); };
+/* Visit panel: the patient's technician (same assignment as the board's Tech column and Flow) */
+window.tsTechCell=function(){ if(!CUR) return '—'; var t=(curDoc&&curDoc.patient&&curDoc.patient.tech)||'';
+  return t?'<button type="button" class="ts-tech-cell" title="Change technician" onclick="tsPickTech(\''+CUR+'\',this)"><span class="ts-lc-av">'+esc(initialsOfName(t))+'</span>'+esc(t)+'</button>'
+          :'<button type="button" class="addbtn" onclick="tsPickTech(\''+CUR+'\',this)">+ Assign</button>'; };
 window.tsLoadStrip=function(){ try{ if(typeof sbBoard!=='undefined'&&(sbBoard==='IP Board'||sbBoard==='OP Board')) return loadStripHTML(); }catch(e){ console.warn(e); } return ''; };
 /* due / overdue colours move with the clock; the board only touches the cells that changed */
 setInterval(function(){ try{ if(!document.hidden&&currentCTab==='dash'&&!document.getElementById('tsTechMenu')&&!document.getElementById('tsAlertMenu')) renderDash(); }catch(e){} },60000);
