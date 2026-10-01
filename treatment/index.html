@@ -3533,7 +3533,7 @@ function defaultOrders(startHour){ var out={}; DEFAULT_ORDERS.forEach(function(r
 window.tsDefaultOrders=defaultOrders;
 
 /* ---------- state ---------- */
-var SHEETS=[], CUR=null, curDoc=null, unsubCur=null, unsubList=null, ready=false, IPL=[];
+var WANT=null, WANT_GO=false, SHEETS=[], CUR=null, curDoc=null, unsubCur=null, unsubList=null, ready=false, IPL=[];
 var SECTION_ORDER=['Basic Observation','Continuous Infusions','Medications','Patient Care','Diagnostics'];
 
 /* Start from an empty screen: the prototype's sample patient is not real data */
@@ -3682,8 +3682,11 @@ function listen(){
   if(unsubList) return;
   unsubList=DB.collection(COL).where('tenant_id','==',TENANT).where('status','==','active').onSnapshot(function(snap){
     SHEETS=snap.docs.map(function(d){ var x=d.data(); x._id=d.id; return x; }).sort(function(a,b){ return String(a.admitted_at||a.created_at).localeCompare(String(b.admitted_at||b.created_at)); });
-    if(!ready){ ready=true; var want=(location.hash.match(/sheet=([^&]+)/)||[])[1]; want=want?decodeURIComponent(want):null; try{ want=want||localStorage.getItem('tsCurrentSheet'); }catch(e){}
-      if(want&&SHEETS.some(function(s){ return s._id===want; })) openSheet(want,!!location.hash); }
+    if(!ready){ ready=true; var fromLink=(location.hash.match(/sheet=([^&]+)/)||[])[1]; WANT=fromLink?decodeURIComponent(fromLink):null; WANT_GO=!!WANT;
+      if(!WANT){ try{ WANT=localStorage.getItem('tsCurrentSheet'); }catch(e){} } }
+    /* the first snapshot can come from the local cache before a just-created sheet arrives — keep the link until the server answers */
+    if(WANT){ if(SHEETS.some(function(s){ return s._id===WANT; })){ var w=WANT; WANT=null; if(CUR!==w) openSheet(w,WANT_GO); }
+      else if(!(snap.metadata&&snap.metadata.fromCache)) WANT=null; }
     if(CUR) hydrate(); if(currentCTab==='dash') renderDash(); updateChip();
   },function(e){ console.warn('sheets list failed',e); showGate('rules'); });
 }
