@@ -2424,6 +2424,20 @@ body.dark .ts-doc-alert{background:rgba(22,28,40,.97);color:#EEF1F6}body.dark .t
 .ts-load-empty{padding:10px 14px;border-radius:14px;background:rgba(0,0,0,.03);font-size:13px;color:var(--ink-400)}
 body.dark .ts-load-card{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}body.dark .ts-load-hint button{background:#EEF1F6;color:#111}
 
+/* CPR / DNR pills — same as Flow */
+.ts-resus{--rc:#248A46;position:relative;display:inline-flex;align-items:center;gap:8px;height:30px;width:112px;padding:0 12px 0 8px;border-radius:12px;color:var(--rc);vertical-align:middle;white-space:nowrap;overflow:hidden;contain:paint;flex-shrink:0}
+.ts-resus.dnr{--rc:#8B4DB5}
+body.dark .ts-resus{--rc:#4CBE7A}body.dark .ts-resus.dnr{--rc:#B98BE0}
+.ts-resus .tr-line{flex:1 1 auto;min-width:0;height:22px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
+.ts-resus svg{display:block;width:100%;height:100%}
+.ts-resus .tr-base,.ts-resus .tr-live{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.ts-resus .tr-base{opacity:.2;stroke-width:1.1}.ts-resus .tr-live{stroke-width:1.5}
+.ts-resus .tr-dot{fill:#fff;stroke:currentColor;stroke-width:.5}
+.ts-resus .tr-lbl{flex:none;font-size:13px;font-weight:800;letter-spacing:-.01em;line-height:1}
+.ts-resus.sm{height:20px;width:74px;gap:5px;padding:0 6px 0 2px;border-radius:7px;margin:1px 0}
+.ts-resus.sm .tr-line{height:16px}.ts-resus.sm .tr-lbl{font-size:10.5px;letter-spacing:.02em}
+.ts-resus.sm .tr-base{stroke-width:1.4}.ts-resus.sm .tr-live{stroke-width:2}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 
@@ -4338,6 +4352,40 @@ window.renderDash=function(){ var r=_rd.apply(this,arguments);
       if(sc){ var old=sb.querySelector('.ts-load'); if(old) old.remove(); var t=document.createElement('div'); t.innerHTML=loadStripHTML(); sb.insertBefore(t.firstChild,sc); } } }catch(e){ console.warn(e); }
   return r; };
 setInterval(function(){ try{ if(currentCTab==='dash'&&!document.getElementById('tsTechMenu')&&!document.getElementById('tsAlertMenu')) renderDash(); }catch(e){} },60000);
+
+/* ═════════ TS RESUS — Flow's CPR (live ECG) / DNR (flatline) pills ═════════
+   Code status comes from Flow (staff or the client in Care Connect); the sheet only displays it. */
+var RESUS_ECG='M1 13 C4 13,5 13,7 13 C8 13,9 11.8,10.2 11.3 C11.4 10.8,12.2 12.1,13.4 13 L16 13 L17.2 14.3 L18.5 10.5 L20.1 2.7 L21.6 21.4 L23.2 12.2 L26 13 C28 13,29 12.8,30 12.5 C32 11.2,33.4 9.8,35 10.2 C37 10.7,38 12.5,40 13 L42 13 C45 13,46 13,48 13 C49 13,50 11.8,51.2 11.3 C52.4 10.8,53.2 12.1,54.4 13 L57 13 L58.2 14.3 L59.5 10.5 L61.1 2.7 L62.6 21.4 L64.2 12.2 L67 13 C69 13,70 12.8,71 12.5 C72.5 11.4,73.5 10.4,75 10.8';
+function resusPillHTML(code,size){
+  var c=String(code||'').toUpperCase(); if(['CPR','DNR','ALS','BLS'].indexOf(c)<0) return '';
+  var dnr=c==='DNR', d=dnr?'M1 13 H75':RESUS_ECG;
+  var tip=dnr?'Do not resuscitate':(c==='CPR'?'Resuscitate (CPR)':c==='ALS'?'Advanced life support':'Basic life support');
+  return '<span class="ts-resus '+(dnr?'dnr':'cpr')+(size?' '+size:'')+'" title="Code status: '+tip+' · set in Flow" aria-label="Code status '+c+'">'+
+    '<span class="tr-line" aria-hidden="true"><svg viewBox="0 0 76 26" preserveAspectRatio="xMidYMid meet"><path class="tr-base" d="'+d+'"/><path class="tr-live" d="'+d+'"/><circle class="tr-dot" cx="1" cy="13" r="1.7"/></svg></span>'+
+    '<span class="tr-lbl">'+c+'</span></span>';
+}
+window.tsCodePill=function(always){ var h=resusPillHTML(VISIT&&VISIT.code); return h||(always?'—':''); };
+try{ lsPill=function(ls){ return resusPillHTML(ls,'sm'); }; }catch(e){ window.lsPill=function(ls){ return resusPillHTML(ls,'sm'); }; }
+
+/* one shared animation loop for every pill on screen (same beat everywhere, paused when hidden or off-screen) */
+(function(){
+  var DUR=2750, list=[], lastScan=0, reduce=false;
+  try{ reduce=matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  function scan(){ list=[]; document.querySelectorAll('.ts-resus .tr-live').forEach(function(p){
+      if(!p.getClientRects().length) return;
+      var len=+p.dataset.len; if(!len){ try{ len=p.getTotalLength(); }catch(e){ len=0; } if(!len) return; p.dataset.len=len; p.style.strokeDasharray=len; }
+      list.push([p,p.parentNode.querySelector('.tr-dot'),len]); }); }
+  function frame(ts){
+    requestAnimationFrame(frame);
+    if(document.hidden) return;
+    if(ts-lastScan>400){ lastScan=ts; scan(); }
+    var prog=reduce?1:(ts%DUR)/DUR;
+    for(var i=0;i<list.length;i++){ var p=list[i][0], dot=list[i][1], len=list[i][2];
+      p.style.strokeDashoffset=(len*(1-prog)).toFixed(2);
+      if(dot){ var pt=p.getPointAtLength(prog*len); dot.setAttribute('cx',pt.x.toFixed(2)); dot.setAttribute('cy',pt.y.toFixed(2)); } }
+  }
+  requestAnimationFrame(frame);
+})();
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
