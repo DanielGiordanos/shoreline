@@ -2331,6 +2331,11 @@ body.dark #tsGate .tg-card{background:#121826;color:#AEB6C4}
 body.dark #tsGate .tg-card b{color:#fff}
 @media (max-width:640px){#tsModal .tm-grid{grid-template-columns:1fr}.ts-chip .loc{display:none}}
 
+/* estimate: empty state */
+.ts-est-empty .est{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0 6px}
+.ts-est-none{font-size:15px;font-weight:700;color:var(--ink-900);letter-spacing:-.01em}
+.ts-est-add{min-width:150px}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 
@@ -3479,6 +3484,7 @@ setInterval(tick,10000);
 buildTasks();
 selectCTab('dash');
 </script>
+<script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"]};</script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -3764,6 +3770,70 @@ function removeNote(body,min){ if(!CUR||!curDoc) return; var iso=minToISO(min);
   var keep=(curDoc.notes||[]).filter(function(n){ return !(n.body===body&&Math.abs(new Date(n.at).getTime()-new Date(iso).getTime())<90000); });
   curDoc.notes=keep; NOTES=NOTES.filter(function(n){ return !(n.body===body&&Math.abs(n.min-min)<1.5); });
   DB.collection(COL).doc(CUR).update({notes:keep,updated_at:new Date().toISOString()}).catch(function(){}); }
+/* ---------- estimate range: stored on the sheet, editable by doctors (and the admin account) — liaisons can be added via EST_EDITORS ---------- */
+var EST_EDITORS=['doctor','admin'];
+var ADMIN_EMAILS=['daniel.giordano@pravix.app'];
+function normName(n){ return String(n||'').toLowerCase().replace(/^dr\.?\s+/,'').replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
+function staffRole(){ var u=AUTH&&AUTH.currentUser; if(!u) return null; var S=window.TS_STAFF||{doctors:[],liaisons:[]}, me=normName(user().name);
+  if(S.doctors.some(function(n){ return normName(n)===me; })) return 'doctor';
+  if(S.liaisons.some(function(n){ return normName(n)===me; })) return 'liaison';
+  if(ADMIN_EMAILS.indexOf(String(u.email||'').toLowerCase())>-1) return 'admin';
+  return null; }
+function canEditEstimate(){ return EST_EDITORS.indexOf(staffRole())>-1; }
+window.tsCanEditEstimate=canEditEstimate;
+function estOf(){ var e=curDoc&&curDoc.estimate; return (e&&e.high>0)?e:null; }
+function fmtWhen(iso){ try{ var d=new Date(iso); return d.toLocaleDateString([], {month:'short',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return '—'; } }
+function applyEstimateToVisit(){ var e=estOf();
+  VISIT.estLow=e?Number(e.low)||0:0; VISIT.estHigh=e?Number(e.high)||0:0; VISIT.estCurrent=e?Number(e.current)||0:0;
+  VISIT.estApprovedBy=e?(e.approved_by||'—'):'—'; VISIT.estApprovedTime=e&&e.approved_at?fmtWhen(e.approved_at):'—';
+  VISIT.estClientInitials=e?(e.initials||'—'):'—'; VISIT.estPlan=e?(e.plan||'—'):'—';
+  VISIT.estLastUpdated=e&&e.updated_at?fmtWhen(e.updated_at)+(e.updated_by?' by '+e.updated_by:''):'—'; }
+var _origCard=window.estimateCard;
+window.estimateCard=function(){
+  applyEstimateToVisit();
+  if(estOf()){ var html=_origCard();
+    if(estOf().approved_by==='Not yet approved') html=html.replace('<span class="est-pill approved">','<span class="est-pill warn">').replace(/<\/svg>Approved<\/span>/,'</svg>Awaiting approval</span>');
+    return html; }
+  var edit=canEditEstimate();
+  return '<div class="panel est-card ts-est-empty"'+(edit?' tabindex="0" role="button" onclick="openEstimate()"':'')+'><h4>Estimate Range</h4><div class="est">'
+    +'<div class="ts-est-none">No estimate on file</div>'
+    +(edit?'<button type="button" class="ts-btn primary ts-est-add" onclick="event.stopPropagation();openEstimate()">Add estimate</button>'
+          :'<div class="est-sub">A doctor adds the estimate.</div>')
+    +'</div></div>'; };
+var _origOpen=window.openEstimate;
+window.openEstimate=function(){
+  if(!CUR||!curDoc) return;
+  applyEstimateToVisit();
+  if(!canEditEstimate()){ if(estOf()) return _origOpen(); toast('Only doctors can add the estimate'); return; }
+  var e=estOf()||{}, pad2=function(n){ return (n<10?'0':'')+n; }, at=e.approved_at?new Date(e.approved_at):new Date();
+  var local=at.getFullYear()+'-'+pad2(at.getMonth()+1)+'-'+pad2(at.getDate())+'T'+pad2(at.getHours())+':'+pad2(at.getMinutes());
+  var num=function(v){ return v!=null&&v!==''?String(v):''; };
+  var opts=['Client — in person','Client — by phone','Client — by email','Not yet approved'].map(function(o){ return '<option'+(o===(e.approved_by||'Client — in person')?' selected':'')+'>'+o+'</option>'; }).join('');
+  modal('<h3>'+(estOf()?'Update estimate':'Add estimate')+'</h3><p>'+esc(VISIT.patient)+' · visible on every screen as soon as you save.</p><div class="tm-grid">'
+    +'<label>Low end ($)<input id="esLow" inputmode="decimal" placeholder="3,600" value="'+num(e.low)+'"></label>'
+    +'<label>High end ($)<input id="esHigh" inputmode="decimal" placeholder="4,500" value="'+num(e.high)+'"></label>'
+    +'<label class="wide">Current charges ($)<input id="esCur" inputmode="decimal" placeholder="0" value="'+num(e.current)+'"></label>'
+    +'<label>Approved<select id="esBy">'+opts+'</select></label>'
+    +'<label>Client initials<input id="esIni" maxlength="5" placeholder="JS" value="'+esc(e.initials||'')+'"></label>'
+    +'<label>Approved at<input id="esAt" type="datetime-local" value="'+local+'"></label>'
+    +'<label>Treatment plan # <input id="esPlan" placeholder="Optional" value="'+esc(e.plan&&e.plan!=='—'?e.plan:'')+'"></label>'
+    +'</div><p class="tm-note">Current charges come from the medical record. Update them when you check the account.</p>','Save estimate',function(){
+      var v=function(id){ return (document.getElementById(id)||{}).value||''; }, money=function(x){ var n=parseFloat(String(x).replace(/[$,\s]/g,'')); return isFinite(n)?Math.round(n*100)/100:NaN; };
+      var lo=money(v('esLow')), hi=money(v('esHigh')), cur=v('esCur').trim()===''?0:money(v('esCur'));
+      if(!(lo>=0)||!(hi>0)){ toast('Enter the low and high end'); return false; }
+      if(hi<lo){ toast('High end must be at least the low end'); return false; }
+      if(!(cur>=0)){ toast('Current charges must be a number'); return false; }
+      var me=user(), role=staffRole(), now=new Date(), by=v('esBy'), whenD=new Date(v('esAt'));
+      var est={low:lo,high:hi,current:cur,approved_by:by,approved_at:(by==='Not yet approved'||isNaN(whenD))?null:whenD.toISOString(),
+        initials:v('esIni').trim().toUpperCase(),plan:v('esPlan').trim(),updated_at:now.toISOString(),updated_by:me.initials,updated_by_name:me.name,updated_by_role:role};
+      var fmt=function(n){ return '$'+n.toLocaleString('en-US',{maximumFractionDigits:0}); };
+      var desc=(estOf()?'Estimate updated':'Estimate added')+' — <b>'+fmt(lo)+' – '+fmt(hi)+'</b>'+(cur?' · charges '+fmt(cur):'')+(by==='Not yet approved'?' · awaiting approval':'');
+      if(curDoc) curDoc.estimate=est; rerender();
+      DB.collection(COL).doc(CUR).update({estimate:est,updated_at:now.toISOString(),updated_by:me.initials,
+        audit:FV.arrayUnion({at:now.toISOString(),type:'doctor',desc:desc,who:me.initials,uid:me.uid})})
+        .then(function(){ toast('Estimate saved'); }).catch(function(err){ console.warn(err); toast('Couldn’t save the estimate'); });
+    });
+};
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
 </script>
