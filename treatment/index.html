@@ -2702,8 +2702,8 @@ function selectCTab(tab){
 $$('#clinSwitcher .seg').forEach(b=>b.onclick=()=>selectCTab(b.dataset.ctab));
 
 /* helper: species emoji + class */
-function spTag(species){return species==='Cat'?'FEL':'CAN';}
-function spClass(species){return species==='Cat'?'sp-fel':'sp-can';}
+function spTag(species){return /^(cat|fel)/i.test(String(species||''))?'FEL':'CAN';}
+function spClass(species){return /^(cat|fel)/i.test(String(species||''))?'sp-fel':'sp-can';}
 function monogram(name){return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
 function ptBadge(name,species,style){return `<div class="pt-emoji ${spClass(species)}"${style?` style="${style}"`:''}>${monogram(name)}<span class="sp-tag">${spTag(species)}</span></div>`;}
 const IC_TRI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L14.4 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
