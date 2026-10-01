@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0027-983e100a">
+<meta name="flow-build" content="20261001-0037-19c59aac">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15581,23 +15581,28 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
 })();
 </script>
 <script>
-/* ═══ ADMIT → TREATMENT SHEET ═══
-   When a patient is admitted in Flow (drag to Admit, drawer Admit, or voice), open a treatment
-   sheet for them in the shared `sheets` collection. One sheet per visit (doc id v_<visitId>), so
-   admitting twice never makes two sheets. Default orders mirror Treatment Sheets' DEFAULT_ORDERS. */
+/* ═══ FLOW → TREATMENT SHEETS ═══
+   One sheet per visit in the shared `sheets` collection (doc id v_<visitId>), on one of two boards:
+     • Moved into the Treatment area  → OP sheet (OP Board)
+     • Admitted                        → IP sheet (IP Board). An OP sheet is promoted in place, so charting carries over.
+     • Discharged / euthanized in Flow → an OP sheet closes (IP sheets are discharged from Treatment Sheets).
+   All writes are transactions: two screens can never create two sheets or overwrite charting. */
 (function(){
   if(typeof completePatient!=='function') return;
   var COL='sheets';
+  /* Mirrors Treatment Sheets' DEFAULT_ORDERS. OP sheets start with the first 7 (vitals + pain); admission adds the rest. */
   var DEFAULTS=[
     ['Temperature','obs','Basic Observation','q4h','°F'],['Heart Rate','obs','Basic Observation','q4h','bpm'],['Respiratory Rate','obs','Basic Observation','q4h','rpm'],
     ['CRT','obs','Basic Observation','q4h'],['Mucous Membrane','obs','Basic Observation','q4h'],['Mentation','obs','Basic Observation','q4h'],['Pain Score','obs','Basic Observation','q4h'],
     ['Weight','obs','Basic Observation','q24h','kg',8],['Food','obs','Basic Observation','q8h'],['Water','obs','Basic Observation','q8h'],
     ['Urination','obs','Basic Observation','q8h',null,2],['Defecation','obs','Basic Observation','q8h',null,2],
     ['Check IV catheter','care','Patient Care','q4h'],['Walk','care','Patient Care','q6h',null,2],['Cage cleaned','care','Patient Care','q8h',null,4]];
-  function defaultOrders(h){ var out={}; DEFAULTS.forEach(function(r,i){ var id='d'+(i+1);
+  var OP_COUNT=7;
+  function defaultOrders(h,board){ var out={}; DEFAULTS.forEach(function(r,i){ if(board==='OP'&&i>=OP_COUNT) return; var id='d'+(i+1);
     out[id]={id:id,name:r[0],type:r[1],section:r[2],freq:r[3],start:r[5]!=null?r[5]:((h||0)+1)%4}; if(r[4]) out[id].unit=r[4]; }); return out; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function sheetId(p){ return 'v_'+String(p.id||p.hid||'').replace(/[\/\s.#$\[\]]/g,'_'); }
+  function ready(){ return typeof DB!=='undefined'&&DB&&!(typeof LOBBY!=='undefined'&&LOBBY); }
   function me(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
     var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
     return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
@@ -15611,76 +15616,132 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
       age:p.ageDisplay||p.age||'',weight:wt,reason:p.reason||'',doctor:doctorName(p.doctor),location:'',code:code,condition:cond,
       alerts:code==='DNR'?['DNR']:[],problems:Array.isArray(p.reasonProblems)?p.reasonProblems.map(function(x){ return x.label; }).filter(Boolean):[]};
   }
+  function audit(desc,who,now){ return {at:now.toISOString(),type:'doctor',desc:desc,who:who.initials,uid:who.uid}; }
   function openLink(id){ return '/treatment/#sheet='+encodeURIComponent(id); }
-  function announce(p,id,reopened){
-    try{ notify(reopened?'Treatment sheet reopened':'Treatment sheet ready',
-      esc(p.name||'Patient')+' · <a href="'+openLink(id)+'" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open sheet ›</a>',
+  function announce(p,id,res,board){
+    var t={created:board==='OP'?'Treatment sheet ready · OP':'Treatment sheet ready',promoted:'Sheet moved to IP Board',reopened:'Treatment sheet reopened'}[res];
+    if(!t) return;
+    try{ notify(t, esc(p.name||'Patient')+' · <a href="'+openLink(id)+'" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open sheet ›</a>',
       {icon:'info',color:'var(--s-admitted)',dur:9000}); }catch(e){}
   }
-  /* Transaction: create if missing; on a manual re-admit reopen a closed sheet. Never overwrites a sheet. */
-  function createSheet(p,opts){
+  function fail(p,e){ console.warn('[flow→sheet]',e);
+    try{ notify('Couldn’t open a treatment sheet',esc(p.name||'')+' · start one from Treatment Sheets',{icon:'info',color:'var(--priority-p1)',dur:7000}); }catch(_){} }
+
+  /* Create the sheet on `board`, or promote OP → IP. createOnly: never reopen a closed sheet (used by background sweeps). */
+  function ensureSheet(p,board,opts){
     opts=opts||{};
-    if(typeof DB==='undefined'||!DB||(typeof LOBBY!=='undefined'&&LOBBY)) return Promise.resolve(null);
+    if(!ready()||!p) return Promise.resolve(null);
     var id=sheetId(p); if(id==='v_') return Promise.resolve(null);
-    var ref=DB.collection(COL).doc(id), who=me(), now=new Date(), FV=firebase.firestore.FieldValue, pt=patientFor(p);
+    var ref=DB.collection(COL).doc(id), who=me(), now=new Date(), FV=firebase.firestore.FieldValue, pt=patientFor(p), nm=esc((pt.name+' '+pt.last).trim());
     return DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(snap.exists){
-        var d=snap.data()||{};
-        if(d.status==='active') return 'exists';
-        if(opts.createOnly) return 'closed';
-        t.update(ref,{status:'active',admitted_at:now.toISOString(),closed_at:FV.delete(),updated_at:now.toISOString(),updated_by:who.initials,
-          audit:FV.arrayUnion({at:now.toISOString(),type:'doctor',desc:'Re-admitted from Flow',who:who.initials,uid:who.uid})});
+        var d=snap.data()||{}, cur=d.board||'IP';
+        if(d.status==='active'){
+          if(board==='IP'&&cur==='OP'){
+            var upd={board:'IP',ip_at:now.toISOString(),updated_at:now.toISOString(),updated_by:who.initials,
+              audit:FV.arrayUnion(audit('Admitted from Flow — moved to IP Board',who,now))};
+            var have=d.orders||{}, add=defaultOrders(now.getHours(),'IP');
+            Object.keys(add).forEach(function(k){ if(!have[k]) upd['orders.'+k]=add[k]; });
+            t.update(ref,upd); return 'promoted';
+          }
+          return 'exists';
+        }
+        if(opts.createOnly||board!=='IP') return 'closed';
+        t.update(ref,{status:'active',board:'IP',ip_at:now.toISOString(),closed_at:FV.delete(),closed_reason:FV.delete(),updated_at:now.toISOString(),updated_by:who.initials,
+          audit:FV.arrayUnion(audit('Re-admitted from Flow',who,now))});
         return 'reopened';
       }
-      t.set(ref,{tenant_id:(typeof TENANT_ID==='string'&&TENANT_ID)||'shoreline',status:'active',visit_id:String(p.id||''),visit_code:p.hid||null,source:'flow',
-        created_at:now.toISOString(),admitted_at:(p.admittedAt?new Date(p.admittedAt):now).toISOString(),created_by:who.name,created_uid:who.uid,patient:pt,
-        orders:defaultOrders(now.getHours()),marks:{},notes:[],
-        audit:[{at:now.toISOString(),type:'doctor',desc:'Admitted from Flow — <b>'+esc((pt.name+' '+pt.last).trim())+'</b>'+(pt.doctor?' · '+esc(pt.doctor):''),who:who.initials,uid:who.uid}],
-        updated_at:now.toISOString(),updated_by:who.initials});
-      return 'created';
-    }); }).then(function(res){
-      if(!opts.quiet&&res!=='closed') announce(p,id,res==='reopened');
-      return res;
-    }).catch(function(e){
-      console.warn('[admit→sheet]',e);
-      if(!opts.quiet){ try{ notify('Couldn’t open a treatment sheet',esc(p.name||'')+' · start one from Treatment Sheets',{icon:'info',color:'var(--priority-p1)',dur:7000}); }catch(_){} }
-      return 'error';
-    });
+      var doc={tenant_id:(typeof TENANT_ID==='string'&&TENANT_ID)||'shoreline',status:'active',board:board,visit_id:String(p.id||''),visit_code:p.hid||null,
+        source:board==='OP'?'flow-treatment':'flow',created_at:now.toISOString(),
+        admitted_at:(board==='IP'&&p.admittedAt?new Date(p.admittedAt):now).toISOString(),created_by:who.name,created_uid:who.uid,patient:pt,
+        orders:defaultOrders(now.getHours(),board),marks:{},notes:[],
+        audit:[audit((board==='OP'?'Moved to Treatment in Flow — <b>':'Admitted from Flow — <b>')+nm+'</b>'+(pt.doctor?' · '+esc(pt.doctor):''),who,now)],
+        updated_at:now.toISOString(),updated_by:who.initials};
+      if(board==='OP') doc.op_at=now.toISOString(); else doc.ip_at=now.toISOString();
+      t.set(ref,doc); return 'created';
+    }); }).then(function(res){ if(!opts.quiet) announce(p,id,res,board); return res; })
+      .catch(function(e){ if(!opts.quiet) fail(p,e); return 'error'; });
   }
-  /* Catch-up: patients admitted today before this existed (or while offline) get a sheet. Never reopens a closed one. */
-  function catchUp(){
-    try{
-      var today=(PATIENTS||[]).filter(function(p){ return p&&p.status==='Admitted'&&!p._demo&&p.completedAt&&(typeof isTodayHosp!=='function'||isTodayHosp(p.completedAt)); });
-      today.forEach(function(p,i){ setTimeout(function(){ createSheet(p,{createOnly:true,quiet:true}).then(function(r){ if(r==='created') announce(p,sheetId(p),false); }); },i*250); });
-    }catch(e){ console.warn(e); }
-  }
-  var caught=false;
-  function tryCatchUp(){ if(caught) return; var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){}
-    if(u&&typeof PATIENTS!=='undefined'&&PATIENTS.length){ caught=true; catchUp(); } }
-  var tries=0, iv=setInterval(function(){ tries++; tryCatchUp(); if(caught||tries>40) clearInterval(iv); },3000);
-  var orig=completePatient;
-  window.completePatient=completePatient=function(p,finalStatus){
-    var r=orig.apply(this,arguments);
-    if(p&&finalStatus==='Admitted'&&!p._demo){ try{ createSheet(p); }catch(e){ console.warn(e); } }
-    return r;
-  };
-  /* Undo of an Admit: take the sheet back off the board (closed, not deleted) unless someone already charted on it. */
-  function undoSheet(p){
-    if(typeof DB==='undefined'||!DB||!p||p.status==='Admitted') return;
+
+  /* Discharged / euthanized from Flow: close an OP sheet. IP sheets are left alone. */
+  function closeOP(p,why){
+    if(!ready()||!p) return;
     var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date();
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
+      if(!snap.exists) return; var d=snap.data()||{};
+      if(d.status!=='active'||(d.board||'IP')!=='OP') return;
+      t.update(ref,{status:'closed',closed_at:now.toISOString(),closed_reason:String(why||'discharged').toLowerCase(),updated_at:now.toISOString(),updated_by:who.initials,
+        audit:firebase.firestore.FieldValue.arrayUnion(audit(why+' in Flow — sheet closed',who,now))});
+    }); }).catch(function(e){ console.warn('[flow→sheet close]',e); });
+  }
+
+  /* Undo of an Admit: an OP sheet that was promoted goes back to the OP Board; a sheet made by the admit closes
+     (unless someone already charted on it). */
+  function undoSheet(p){
+    if(!ready()||!p||p.status==='Admitted') return;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return 'none'; var d=snap.data()||{};
-      if(d.status!=='active') return 'closed';
+      if(d.status!=='active'||(d.board||'IP')!=='IP') return 'skip';
+      if(d.op_at){ t.update(ref,{board:'OP',ip_at:FV.delete(),updated_at:now.toISOString(),updated_by:who.initials,
+        audit:FV.arrayUnion(audit('Admission undone in Flow — back to OP Board',who,now))}); return 'demoted'; }
       if(Object.keys(d.marks||{}).length||(d.notes||[]).length) return 'kept';
       t.update(ref,{status:'closed',closed_at:now.toISOString(),closed_reason:'Admission undone',updated_at:now.toISOString(),updated_by:who.initials,
-        audit:firebase.firestore.FieldValue.arrayUnion({at:now.toISOString(),type:'doctor',desc:'Admission undone in Flow — sheet closed',who:who.initials,uid:who.uid})});
+        audit:FV.arrayUnion(audit('Admission undone in Flow — sheet closed',who,now))});
       return 'undone';
     }); }).then(function(r){ if(r==='kept'){ try{ notify('Treatment sheet kept',esc(p.name||'')+' · it already has charting',{icon:'info',color:'var(--accent)'}); }catch(e){} } })
-      .catch(function(e){ console.warn('[admit→sheet undo]',e); });
+      .catch(function(e){ console.warn('[flow→sheet undo]',e); });
+  }
+
+  /* ---- hooks ---- */
+  var origComplete=completePatient;
+  window.completePatient=completePatient=function(p,finalStatus){
+    var r=origComplete.apply(this,arguments);
+    if(p&&!p._demo){ try{
+      if(finalStatus==='Admitted') ensureSheet(p,'IP');
+      else if(finalStatus==='Discharged'||finalStatus==='Euthanized') closeOP(p,finalStatus);
+    }catch(e){ console.warn(e); } }
+    return r;
+  };
+  if(typeof moveRoom==='function'){
+    var origMove=moveRoom;
+    window.moveRoom=moveRoom=function(p,newRoom){
+      var was=p&&p.room, r=origMove.apply(this,arguments);
+      if(p&&!p._demo&&newRoom==='Treatment'&&was!=='Treatment'&&p.room==='Treatment'){ try{
+        var active=(typeof isActive==='function')?isActive(p):!p.completed;
+        if(active){ ensured[p.id]=1; ensureSheet(p,p.status==='Hospitalized'?'IP':'OP'); }
+      }catch(e){ console.warn(e); } }
+      return r;
+    };
   }
   var prevUndo=window.rdOnFlowUndo;
   window.rdOnFlowUndo=function(p){ var r; if(typeof prevUndo==='function'){ try{ r=prevUndo.apply(this,arguments); }catch(e){} } try{ undoSheet(p); }catch(e){} return r; };
-  window.fvAdmitSheet={create:createSheet,id:sheetId,catchUp:catchUp,undo:undoSheet};
+
+  /* ---- background sweeps (cover every other path: drawer room picker, voice, new hospitalized arrivals, other screens, offline) ---- */
+  var ensured={};
+  function sweepTreatment(){
+    try{ (PATIENTS||[]).forEach(function(p,i){
+      if(!p||p._demo||ensured[p.id]||p.room!=='Treatment') return;
+      if(typeof isActive==='function'&&!isActive(p)) return;
+      ensured[p.id]=1;
+      setTimeout(function(){ ensureSheet(p,p.status==='Hospitalized'?'IP':'OP',{createOnly:true,quiet:true})
+        .then(function(r){ if(r==='created') announce(p,sheetId(p),'created',p.status==='Hospitalized'?'IP':'OP'); }); },i*150);
+    }); }catch(e){ console.warn(e); }
+  }
+  function catchUpAdmitted(){
+    try{ (PATIENTS||[]).filter(function(p){ return p&&p.status==='Admitted'&&!p._demo&&p.completedAt&&(typeof isTodayHosp!=='function'||isTodayHosp(p.completedAt)); })
+      .forEach(function(p,i){ setTimeout(function(){ ensureSheet(p,'IP',{createOnly:true,quiet:true}).then(function(r){ if(r==='created'||r==='promoted') announce(p,sheetId(p),r,'IP'); }); },i*250); });
+    }catch(e){ console.warn(e); }
+  }
+  var caught=false;
+  setInterval(function(){
+    var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){}
+    if(!u||typeof PATIENTS==='undefined'||!PATIENTS.length) return;
+    if(!caught){ caught=true; catchUpAdmitted(); }
+    sweepTreatment();
+  },8000);
+
+  window.fvAdmitSheet={ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,sweep:sweepTreatment};
 })();
 </script>
 
