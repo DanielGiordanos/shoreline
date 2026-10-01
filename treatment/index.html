@@ -3039,7 +3039,7 @@ function patientCmdHTML(){
       <button class="c-back" onclick="selectCTab('dash')" title="Back to patients"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       ${ptBadge(VISIT.patient,VISIT.species,'width:40px;height:40px;font-size:14px')}
       <div style="min-width:0">
-        <div class="cmd-name">${VISIT.patient} <span class="pid">V-${VISIT.id}</span></div>
+        <div class="cmd-name">${VISIT.patient} <span class="pid">${VISIT.vcode||('V-'+VISIT.id)}</span></div>
         <div class="cmd-sig">${[VISIT.species,VISIT.breed,VISIT.sex,VISIT.age,VISIT.weight+' kg'].map(x=>`<span>${x}</span>`).join('<span class="d"></span>')}</div>
       </div>
       <div class="cmd-vitals">
@@ -3552,7 +3552,7 @@ function visitFrom(d){ var p=d.patient||{}; var full=((p.name||'')+' '+(p.last||
   var latest=function(name){ var o=Object.values(d.orders||{}).find(function(x){ return x.name===name; }); if(!o) return '—';
     var ms=Object.keys(d.marks||{}).map(function(k){ return d.marks[k]; }).filter(function(m){ return m&&m.orderId===o.id&&m.status==='completed'&&m.value; })
       .sort(function(a,b){ return (b.at||'').localeCompare(a.at||''); }); return ms[0]?ms[0].value:'—'; };
-  return {id:String(d.visit_id||d._id||'').replace(/^[a-z]_/,'').slice(-6).toUpperCase(), patient:full, client:p.last||p.owner||'—', species:p.species||'Dog', breed:p.breed||'—', sex:p.sex||'—', age:p.age||'—',
+  return {id:String(d.visit_id||d._id||'').replace(/^[a-z]_/,'').slice(-6).toUpperCase(), vcode:d.visit_code||'', patient:full, client:p.last||p.owner||'—', species:p.species||'Dog', breed:p.breed||'—', sex:p.sex||'—', age:p.age||'—',
     weight:Number(p.weight)||0, temp:latest('Temperature'), hr:latest('Heart Rate'), rr:latest('Respiratory Rate'), mm:latest('Mucous Membrane'), crt:latest('CRT'), mentation:latest('Mentation'), pain:latest('Pain Score'),
     doctorFrom:p.doctor||'—', doctorTo:p.doctor||'—', location:p.location||'—', status:p.condition||'Stable', code:p.code||'—', allergies:p.allergies||'None known',
     admit:fmtAdmit(d.admitted_at||d.created_at), checkin:fmtAdmit(d.admitted_at||d.created_at), day:dayOf(d.admitted_at||d.created_at),
