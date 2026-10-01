@@ -652,8 +652,13 @@ function tsObsSubmit(x,ex){
 
 /* ---------- medication order: the dose is suggested from the reference; the doctor confirms or changes it ---------- */
 var RX=null;
-function bestRegimen(list){ var score=function(e){ return (e.d?0:10)+(e.st?3:0)+(routeOf(e)?0:1)+(freqOf(e)?0:1); };
-  return list.slice().sort(function(a,b){ return score(a)-score(b); })[0]||null; }
+/* the dose a hospital doctor usually means: has a number, injectable first (SQ, then IV, IM, then PO),
+   and the general indication before special cases (motion sickness, pre-chemo, etc.) */
+var ROUTE_RANK={SQ:0,IV:0.5,IM:1,PO:1.5};
+function special(e){ return /motion|travel|chemo|emetogenic|prior to|before|pre-?op|premed|anesthe/i.test(e.i||'')?2:0; }
+function regimenScore(e){ var r=routeOf(e); return (e.d?0:10)+(e.st?3:0)+(r?(ROUTE_RANK[r]!=null?ROUTE_RANK[r]:2):3)+special(e)+(freqOf(e)?0:1); }
+function bestRegimen(list,route){ var L=route?list.filter(function(e){ return routeOf(e)===route; }):list;
+  return L.map(function(e,k){ return [regimenScore(e),k,e]; }).sort(function(a,b){ return a[0]-b[0]||a[1]-b[1]; }).map(function(x){ return x[2]; })[0]||null; }
 function openMedOrder(i){
   if(!CUR||!curDoc){ toast('Open a patient first'); return; }
   var x=DRUGS[i]; if(!x) return; var sp=spKey(), kg=Number(VISIT.weight)||0, canOrder=canEditEstimate();
@@ -675,7 +680,7 @@ function openMedOrder(i){
     +'<div class="tm-grid" style="margin-top:14px">'
     +'<label>Dose<span class="rx-dose"><input id="rxDose" inputmode="decimal" placeholder="Enter dose" oninput="tsRxCalc(true)"><select id="rxUnit" onchange="tsRxCalc(true)">'
       +opt(['mg/kg','mcg/kg','U/kg','mL/kg','g/kg','mg/lb','mg/m²','mcg/m²','mg','mcg','U','mL'],'mg/kg')+'</select></span></label>'
-    +'<label>Route<select id="rxRoute"><option value="">Choose…</option>'+opt(['IV','SQ','IM','PO','Topical','Ophthalmic','Otic','Rectal','Inhaled','Intranasal','Transdermal'],'')+'</select></label>'
+    +'<label>Route<select id="rxRoute" onchange="tsRxRoute()"><option value="">Choose…</option>'+opt(['IV','SQ','IM','PO','Topical','Ophthalmic','Otic','Rectal','Inhaled','Intranasal','Transdermal'],'')+'</select></label>'
     +'<label>Frequency<select id="rxFreq"><option value="">Choose…</option>'+opt(FREQS,'')+'</select></label>'
     +'<label>First dose<select id="rxStart">'+hrs+'</select></label>'
     +'<label>Concentration <span id="rxConcU">(mg/mL)</span><input id="rxConc" inputmode="decimal" placeholder="Optional" oninput="tsRxCalc()"></label>'
@@ -688,6 +693,12 @@ function openMedOrder(i){
 }
 window.tsOpenMedOrder=function(name){ return loadDrugs().then(function(){ var i=DRUGS.findIndex(function(x){ return x.n.toLowerCase()===String(name).toLowerCase(); }); if(i>-1) openMedOrder(i); return i; }); };
 /* tapping a reference (or opening the drug) fills in a suggested dose: the value, or the low end of a range */
+window.tsRxRoute=function(){ if(!RX) return; var r=(document.getElementById('rxRoute')||{}).value; if(!r) return;
+  if(RX.sel&&routeOf(RX.sel)===r) return;
+  var best=bestRegimen(RX.mine,r);
+  if(best){ tsRxPick('m',RX.mine.indexOf(best),true); return; }
+  RX.sel=null; RX.suggested=null; document.querySelectorAll('#tsModal .rx-ref').forEach(function(b){ b.classList.remove('on'); });
+  tsRxCalc(); var sg=document.getElementById('rxSugg'); if(sg){ sg.innerHTML='No '+(spKey()||'')+' reference dose for '+esc(r)+' — enter and confirm the dose.'; sg.style.display='block'; } };
 window.tsRxPick=function(grp,k){ if(!RX) return; var e=(grp==='m'?RX.mine:RX.others)[k]; if(!e) return; RX.sel=e; RX.touched=false;
   document.querySelectorAll('#tsModal .rx-ref').forEach(function(b){ b.classList.toggle('on',b.dataset.k===grp+k); });
   var u=unitOf(e), r=routeOf(e), f=freqOf(e), set=function(id,v){ var el=document.getElementById(id); if(el&&v!=null&&v!=='') el.value=v; };
