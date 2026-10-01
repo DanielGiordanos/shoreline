@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0123-a0f99e37">
+<meta name="flow-build" content="20261001-0133-396f4f6d">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15607,8 +15607,13 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
     return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
   function doctorName(id){ try{ var d=(DOCTORS||[]).find(function(x){ return x.id===id; }); return d?d.name:''; }catch(e){ return ''; } }
+  /* Triage weight (measured) always wins over the weight typed at check-in. */
+  function triageKg(p){ var v=p&&p.triage&&p.triage.vitals&&p.triage.vitals.weight; if(v==null||String(v).trim()==='') return null;
+    try{ if(typeof parseWeightInput==='function'){ var r=parseWeightInput(v); if(r&&r.valid) return r.kg; } }catch(e){}
+    var n=String(v).match(/\d+(\.\d+)?/); return n?parseFloat(n[0]):null; }
+  function weightFix(p,d,into){ var tw=triageKg(p); if(tw&&(!d.patient||d.patient.weight!==tw)) into['patient.weight']=tw; return into; }
   function patientFor(p){
-    var wt=(typeof p.weightKg==='number'&&p.weightKg>0)?p.weightKg:(parseFloat(p.weight)||null);
+    var wt=triageKg(p)||((typeof p.weightKg==='number'&&p.weightKg>0)?p.weightKg:(parseFloat(p.weight)||null));
     var sex=''; try{ sex=(typeof normalizeSexValue==='function'?normalizeSexValue(p.sex):'')||p.sex||''; }catch(e){ sex=p.sex||''; }
     var code=p.resusPref==='DNR'?'DNR':(p.resusPref==='CPR'?'CPR':'—');
     var cond={1:'Critical',2:'Watch'}[p.prio]||'Stable';
@@ -15673,12 +15678,14 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
             Object.keys(add).forEach(function(k){ if(!have[k]) upd['orders.'+k]=add[k]; });
             var all=Object.assign({},add,have), tm=triageMarks(p,all,who), mk=d.marks||{};
             Object.keys(tm).forEach(function(f){ if(!mk[f.slice(6)]) upd[f]=tm[f]; });
+            weightFix(p,d,upd);
             t.update(ref,upd); return 'promoted';
           }
           var have2=d.orders||{}, std=defaultOrders(now.getHours(),cur), miss={};
           Object.keys(std).forEach(function(k){ if(!have2[k]) miss['orders.'+k]=std[k]; });   /* sheets made before a standard order existed */
           var tm2=triageMarks(p,Object.assign({},std,have2),who), mk2=d.marks||{};
           Object.keys(tm2).forEach(function(f){ if(!mk2[f.slice(6)]) miss[f]=tm2[f]; });
+          weightFix(p,d,miss);
           if(Object.keys(miss).length){ miss.updated_at=now.toISOString(); t.update(ref,miss); }
           return 'exists';
         }
@@ -15757,7 +15764,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date();
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return; var d=snap.data()||{}; if(d.status!=='active') return;
-      var tm=triageMarks(p,d.orders||{},who); if(!Object.keys(tm).length) return;
+      var tm=weightFix(p,d,triageMarks(p,d.orders||{},who)); if(!Object.keys(tm).length) return;
       tm.updated_at=now.toISOString(); tm.updated_by=who.initials; t.update(ref,tm);
     }); }).catch(function(e){ console.warn('[flow→sheet triage]',e); });
   }
