@@ -3801,6 +3801,19 @@ window.estimateCard=function(){
     +(edit?'<button type="button" class="ts-btn primary ts-est-add" onclick="event.stopPropagation();openEstimate()">Add estimate</button>'
           :'<div class="est-sub">A doctor adds the estimate.</div>')
     +'</div></div>'; };
+/* keep Rounds (Flow) in step: low end, high end and bill live on visits/{id}.rounds.auth */
+function syncRounds(visitId,lo,hi,cur,me){
+  if(!visitId) return; var ref=DB.collection('visits').doc(String(visitId)), now=new Date().toISOString();
+  DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
+    if(!snap.exists) return 'novisit'; var r=snap.data().rounds; if(!r||typeof r!=='object') return 'norounds';
+    var a=(r.auth&&typeof r.auth==='object')?r.auth:null, u={last_by:me.name||null,last_by_uid:me.uid||null,last_at:now};
+    if(a&&+a.estimate===hi&&+a.estimateLow===lo&&+a.bill===cur) return 'same';
+    if(a){ u['rounds.auth.estimate']=hi; u['rounds.auth.estimateLow']=lo; u['rounds.auth.bill']=cur; }
+    else u['rounds.auth']={hours:[],estimate:hi,estimateLow:lo,deposited:null,bill:cur,cubexDob:false,payers:[],approvals:[]};
+    u['rounds.audit']=FV.arrayUnion({at:now,by:me.name||me.initials,what:'Estimate updated from treatment sheet'});
+    t.update(ref,u); return 'synced';
+  }); }).catch(function(e){ console.warn('[sheet→rounds estimate]',e); });
+}
 var _origOpen=window.openEstimate;
 window.openEstimate=function(){
   if(!CUR||!curDoc) return;
@@ -3832,7 +3845,7 @@ window.openEstimate=function(){
       if(curDoc) curDoc.estimate=est; rerender();
       DB.collection(COL).doc(CUR).update({estimate:est,updated_at:now.toISOString(),updated_by:me.initials,
         audit:FV.arrayUnion({at:now.toISOString(),type:'doctor',desc:desc,who:me.initials,uid:me.uid})})
-        .then(function(){ toast('Estimate saved'); }).catch(function(err){ console.warn(err); toast('Couldn’t save the estimate'); });
+        .then(function(){ toast('Estimate saved'); syncRounds(curDoc&&curDoc.visit_id,lo,hi,cur,me); }).catch(function(err){ console.warn(err); toast('Couldn’t save the estimate'); });
     });
 };
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
