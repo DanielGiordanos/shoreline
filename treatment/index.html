@@ -3529,7 +3529,7 @@ var DEFAULT_ORDERS=[
   ['Urination','obs','Basic Observation','q8h',null,2],['Defecation','obs','Basic Observation','q8h',null,2],
   ['Check IV catheter','care','Patient Care','q4h'],['Walk','care','Patient Care','q6h',null,2],['Cage cleaned','care','Patient Care','q8h',null,4]];
 function defaultOrders(startHour){ var out={}; DEFAULT_ORDERS.forEach(function(r,i){ var id='d'+(i+1);
-  out[id]={id:id,name:r[0],type:r[1],section:r[2],freq:r[3],start:r[5]!=null?r[5]:(startHour||0)%4}; if(r[4]) out[id].unit=r[4]; }); return out; }
+  out[id]={id:id,name:r[0],type:r[1],section:r[2],freq:r[3],start:r[5]!=null?r[5]:((startHour||0)+1)%4};   /* first round at the next full hour after admission */ if(r[4]) out[id].unit=r[4]; }); return out; }
 window.tsDefaultOrders=defaultOrders;
 
 /* ---------- state ---------- */
@@ -3575,7 +3575,7 @@ function hydrate(){
 /* Tasks come from the orders' schedule for today, with whatever has been charted laid on top */
 buildTasks=function(){
   TASKS=[]; var dk=dayKey(), marks=(curDoc&&curDoc.marks)||{};
-  var adm=curDoc&&(curDoc.admitted_at||curDoc.created_at), from=(adm&&dayKey(new Date(adm))===dk)?Math.floor(isoToMin(adm)/60)*60:-1;
+  var adm=curDoc&&(curDoc.admitted_at||curDoc.created_at), from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
   ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m) return;
     TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
@@ -3638,7 +3638,7 @@ function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CU
 
 /* ---------- IP Board: every active sheet ---------- */
 function blocksFor(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), out=[];
-  var adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?Math.floor(isoToMin(adm)/60)*60:-1;   /* same rule as the sheet: nothing is due before admission */
+  var adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;   /* same rule as the sheet: nothing is due before admission */
   for(var h=6;h<=20;h++){ var due=0, over=0, done=0, sched=0; if(h*60<from) continue;
     Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont) return; if(freqTimes(o).indexOf(h)<0) return;
       var m=marks[dk+'_'+id+'_'+(h*60)]; if(m&&m.status){ done++; return; } var t=h*60; if(t>n+18) sched++; else if(t>=n-18) due++; else over++; });
