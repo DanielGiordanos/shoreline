@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0109-881c0fe2">
+<meta name="flow-build" content="20261001-0140-009aedd7">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15612,6 +15612,11 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     try{ if(typeof parseWeightInput==='function'){ var r=parseWeightInput(v); if(r&&r.valid) return r.kg; } }catch(e){}
     var n=String(v).match(/\d+(\.\d+)?/); return n?parseFloat(n[0]):null; }
   function weightFix(p,d,into){ var tw=triageKg(p); if(tw&&(!d.patient||d.patient.weight!==tw)) into['patient.weight']=tw; return into; }
+  /* charting lives in sheets/{id}/days/{YYYYMMDD}; Treatment Sheets rebuilds the board summary when digest_dirty is set */
+  function dayRefOf(id,dk){ return DB.collection(COL).doc(id).collection('days').doc(dk); }
+  function byDay(tm){ var g={}; Object.keys(tm).forEach(function(f){ if(f.indexOf('marks.')!==0) return; var k=f.slice(6), dk=k.slice(0,8); (g[dk]=g[dk]||{})[k]=tm[f]; }); return g; }
+  function writeDays(t,id,g,nowIso){ Object.keys(g).forEach(function(dk){ t.set(dayRefOf(id,dk),{dk:dk,marks:g[dk],updated_at:nowIso},{merge:true}); }); return Object.keys(g).length; }
+  function hasCharting(d){ var g=d.digest||{}, k1=Object.keys(g.done||{}).some(function(k){ return !/_triage$/.test(k); }), k2=Object.keys(d.marks||{}).some(function(k){ return !/_triage$/.test(k); }); return k1||k2||(d.notes||[]).length>0; }
   function patientFor(p){
     var wt=triageKg(p)||((typeof p.weightKg==='number'&&p.weightKg>0)?p.weightKg:(parseFloat(p.weight)||null));
     var sex=''; try{ sex=(typeof normalizeSexValue==='function'?normalizeSexValue(p.sex):'')||p.sex||''; }catch(e){ sex=p.sex||''; }
@@ -15671,23 +15676,17 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
       if(snap.exists){
         var d=snap.data()||{}, cur=d.board||'IP';
         if(d.status==='active'){
-          if(board==='IP'&&cur==='OP'){
-            var upd={board:'IP',ip_at:now.toISOString(),updated_at:now.toISOString(),updated_by:who.initials,
-              audit:FV.arrayUnion(audit('Admitted from Flow — moved to IP Board',who,now))};
-            var have=d.orders||{}, add=defaultOrders(now.getHours(),'IP');
-            Object.keys(add).forEach(function(k){ if(!have[k]) upd['orders.'+k]=add[k]; });
-            var all=Object.assign({},add,have), tm=triageMarks(p,all,who), mk=d.marks||{};
-            Object.keys(tm).forEach(function(f){ if(!mk[f.slice(6)]) upd[f]=tm[f]; });
+          var promote=(board==='IP'&&cur==='OP'), upd={}, have=d.orders||{}, std=defaultOrders(now.getHours(),promote?'IP':cur);
+          Object.keys(std).forEach(function(k){ if(!have[k]) upd['orders.'+k]=std[k]; });   /* sheets made before a standard order existed / admission adds the rest */
+          var tm=triageMarks(p,Object.assign({},std,have),who), g=byDay(tm), dks=Object.keys(g), inbox=d.marks||{};
+          return Promise.all(dks.map(function(dk){ return t.get(dayRefOf(id,dk)); })).then(function(snaps){
+            snaps.forEach(function(ds,i){ var have3=(ds.exists&&ds.data().marks)||{}, dk=dks[i];
+              Object.keys(g[dk]).forEach(function(k){ if(have3[k]||inbox[k]) delete g[dk][k]; }); if(!Object.keys(g[dk]).length) delete g[dk]; });
             weightFix(p,d,upd);
-            t.update(ref,upd); return 'promoted';
-          }
-          var have2=d.orders||{}, std=defaultOrders(now.getHours(),cur), miss={};
-          Object.keys(std).forEach(function(k){ if(!have2[k]) miss['orders.'+k]=std[k]; });   /* sheets made before a standard order existed */
-          var tm2=triageMarks(p,Object.assign({},std,have2),who), mk2=d.marks||{};
-          Object.keys(tm2).forEach(function(f){ if(!mk2[f.slice(6)]) miss[f]=tm2[f]; });
-          weightFix(p,d,miss);
-          if(Object.keys(miss).length){ miss.updated_at=now.toISOString(); t.update(ref,miss); }
-          return 'exists';
+            if(promote){ upd.board='IP'; upd.ip_at=now.toISOString(); upd.updated_by=who.initials; upd.audit=FV.arrayUnion(audit('Admitted from Flow — moved to IP Board',who,now)); }
+            if(writeDays(t,id,g,now.toISOString())) upd.digest_dirty=true;
+            if(Object.keys(upd).length){ upd.updated_at=now.toISOString(); t.update(ref,upd); }
+            return promote?'promoted':'exists'; });
         }
         if(opts.createOnly||board!=='IP') return 'closed';
         t.update(ref,{status:'active',board:'IP',ip_at:now.toISOString(),closed_at:FV.delete(),closed_reason:FV.delete(),updated_at:now.toISOString(),updated_by:who.initials,
@@ -15697,11 +15696,11 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
       var doc={tenant_id:(typeof TENANT_ID==='string'&&TENANT_ID)||'shoreline',status:'active',board:board,visit_id:String(p.id||''),visit_code:p.hid||null,
         source:board==='OP'?'flow-treatment':'flow',created_at:now.toISOString(),
         admitted_at:(board==='IP'&&p.admittedAt?new Date(p.admittedAt):now).toISOString(),created_by:who.name,created_uid:who.uid,patient:pt,
-        orders:defaultOrders(now.getHours(),board),marks:{},notes:[],
+        orders:defaultOrders(now.getHours(),board),notes:[],digest_dirty:true,
         audit:[audit((board==='OP'?'Moved to Treatment in Flow — <b>':'Admitted from Flow — <b>')+nm+'</b>'+(pt.doctor?' · '+esc(pt.doctor):''),who,now)],
         updated_at:now.toISOString(),updated_by:who.initials};
       if(board==='OP') doc.op_at=now.toISOString(); else doc.ip_at=now.toISOString();
-      var tm3=triageMarks(p,doc.orders,who); Object.keys(tm3).forEach(function(f){ doc.marks[f.slice(6)]=tm3[f]; });
+      writeDays(t,id,byDay(triageMarks(p,doc.orders,who)),now.toISOString());
       var re0=roundsEst(p); if(re0) doc.estimate={low:re0.low,high:re0.high,current:re0.current||0,deposit:re0.deposit,approved_by:'Client — in person',approved_at:null,initials:'',plan:'',updated_at:now.toISOString(),updated_by:who.initials,updated_by_name:who.name,source:'rounds'};
       t.set(ref,doc); return 'created';
     }); }).then(function(res){ if(!opts.quiet) announce(p,id,res,board); return res; })
@@ -15730,7 +15729,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
       if(d.status!=='active'||(d.board||'IP')!=='IP') return 'skip';
       if(d.op_at){ t.update(ref,{board:'OP',ip_at:FV.delete(),updated_at:now.toISOString(),updated_by:who.initials,
         audit:FV.arrayUnion(audit('Admission undone in Flow — back to OP Board',who,now))}); return 'demoted'; }
-      if(Object.keys(d.marks||{}).length||(d.notes||[]).length) return 'kept';
+      if(hasCharting(d)) return 'kept';
       t.update(ref,{status:'closed',closed_at:now.toISOString(),closed_reason:'Admission undone',updated_at:now.toISOString(),updated_by:who.initials,
         audit:FV.arrayUnion(audit('Admission undone in Flow — sheet closed',who,now))});
       return 'undone';
@@ -15765,8 +15764,10 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date();
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return; var d=snap.data()||{}; if(d.status!=='active') return;
-      var tm=weightFix(p,d,triageMarks(p,d.orders||{},who)); if(!Object.keys(tm).length) return;
-      tm.updated_at=now.toISOString(); tm.updated_by=who.initials; t.update(ref,tm);
+      var tm=triageMarks(p,d.orders||{},who), upd=weightFix(p,d,{}), id=sheetId(p);
+      if(writeDays(t,id,byDay(tm),now.toISOString())) upd.digest_dirty=true;
+      if(!Object.keys(upd).length) return;
+      upd.updated_at=now.toISOString(); upd.updated_by=who.initials; t.update(ref,upd);
     }); }).catch(function(e){ console.warn('[flow→sheet triage]',e); });
   }
   if(typeof saveTriageEdit==='function'){
