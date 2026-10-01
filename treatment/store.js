@@ -796,7 +796,7 @@ function renderAlertPill(){ var sub=document.querySelector('.subnav'); if(!sub) 
     pill.onclick=function(e){ e.stopPropagation(); openAlertMenu(); }; var c=document.getElementById('tsPatientChip'); sub.insertBefore(pill,c||sub.firstChild); }
   var n=allFlags().length; if(pill._n===n) return; pill._n=n; pill.style.display=n?'':'none'; pill.innerHTML=FL_I+'<span>'+n+' alert'+(n===1?'':'s')+'</span>'; }
 function openAlertMenu(){ var old=document.getElementById('tsAlertMenu'); if(old){ old.remove(); return; }
-  var items=allFlags(), m=document.createElement('div'); m.id='tsAlertMenu'; m.className='ts-menu ts-alert-menu';
+  var items=allFlags(), m=document.createElement('div'); m.id='tsAlertMenu'; m.className='ts-menu ts-alert-menu show';
   m.innerHTML=items.length?items.map(function(it){ var p=it.s.patient||{};
     return '<div class="ts-am-row s'+it.f.sev+'"><button type="button" class="ts-am-open" onclick="tsOpenSheet(\''+it.s._id+'\',true);document.getElementById(\'tsAlertMenu\').remove()"><b>'+esc(((p.name||'')+' '+(p.last||'')).trim())+'</b><span>'+esc(it.f.text)+'</span><small>'+esc(p.doctor||'No doctor')+'</small></button>'
       +(canAck()?'<button type="button" class="ts-am-ack" onclick="tsAckFlag(\''+it.s._id+'\',\''+it.f.key+'\',event);document.getElementById(\'tsAlertMenu\').remove()">Acknowledge</button>':'')+'</div>'; }).join('')
@@ -841,7 +841,7 @@ window.tsBoardList=function(board){ var list=_bl.apply(this,arguments);
 var TECHS=(window.TS_STAFF&&window.TS_STAFF.techs)||[];
 window.tsPickTech=function(sheetId,anchor){ var old=document.getElementById('tsTechMenu'); if(old) old.remove();
   var s=SHEETS.find(function(x){ return x._id===sheetId; }); if(!s) return; var loads=techLoads(), cur=techOf(s);
-  var m=document.createElement('div'); m.id='tsTechMenu'; m.className='ts-menu ts-tech-menu';
+  var m=document.createElement('div'); m.id='tsTechMenu'; m.className='ts-menu ts-tech-menu show';
   var opt=function(n){ var L=loads[n]; return '<button type="button" class="'+(n===cur?'on':'')+'" data-n="'+esc(n)+'"><b>'+esc(n||'Unassigned')+'</b>'+(n&&L?'<small>'+L.patients+' pt · '+L.due+' due'+(L.over?' · '+L.over+' late':'')+'</small>':'')+'</button>'; };
   var names=TECHS.slice().sort(function(a,b){ var la=(loads[a]||{score:0}).score, lb=(loads[b]||{score:0}).score; return la-lb||a.localeCompare(b); });
   m.innerHTML='<div class="ts-tm-h">Assign tech · '+esc(((s.patient||{}).name)||'')+'</div>'+opt('')+names.map(opt).join('');
