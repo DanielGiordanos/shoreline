@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0140-009aedd7">
+<meta name="flow-build" content="20261001-0156-079db279">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15580,6 +15580,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers:viewers, tick:tick};
 })();
 </script>
+<script>window.FV_TECHS=["Felisha Barnes", "Tanneil Buchanan", "Stephanie Cseh", "Erin Cummings", "Chris Densky", "Nelson Diaz", "Alexis Distasio", "Lizzy Dixon", "Catherine Fappiano", "Brandy Fellin", "Viviana Fonseca", "Lauren Francione", "Amber Horvath", "Kimberly Hulme", "Danielle Infante", "Amanda Inzitari", "Danielle Kiley", "Malyssa Kubik", "Carly Kudola", "Amanda Van Kuren", "Ann LeStrange", "Janitza Lopez", "Gabrielle Lungarini", "Lindsay Martin", "Myranda May", "Sam Mitchell", "Bethany Oczkowski", "Gabriella Palumbo", "Rachel Pieger", "Malachi Quinones", "Allie Rodriguez", "Christina Rodriguez", "Delahla Rosario", "Vanessa Ruiz", "Stacey Smith", "Ally Tewksbury", "Courtney Thieke", "Shelsey Vega", "Paola Velazquez", "Dharianna Villa", "Lauren Whitney", "Jordain Williams"];</script>
 <script>
 /* ═══ FLOW → TREATMENT SHEETS ═══
    One sheet per visit in the shared `sheets` collection (doc id v_<visitId>), on one of two boards:
@@ -15624,7 +15625,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     var cond={1:'Critical',2:'Watch'}[p.prio]||'Stable';
     return {name:p.name||'Patient',last:p.last||'',owner:p.owner||'',phone:p.ownerPhone||'',species:p.species||'Dog',breed:p.breed||'',sex:sex,
       age:p.ageDisplay||p.age||'',weight:wt,reason:p.reason||'',doctor:doctorName(p.doctor),location:'',code:code,condition:cond,
-      alerts:code==='DNR'?['DNR']:[],problems:Array.isArray(p.reasonProblems)?p.reasonProblems.map(function(x){ return x.label; }).filter(Boolean):[]};
+      alerts:code==='DNR'?['DNR']:[],tech:(techNow(p)||{}).staffName||null,tech_at:techAt(p)||null,problems:Array.isArray(p.reasonProblems)?p.reasonProblems.map(function(x){ return x.label; }).filter(Boolean):[]};
   }
   /* ---- triage → sheet: each triage reading becomes a completed entry at the triage time ---- */
   var TRI_MAP={temp:'Temperature',hr:'Heart Rate',rr:'Respiratory Rate',weight:'Weight',mentation:'Mentation',mm:'Mucous Membrane',crt:'CRT'};
@@ -15863,7 +15864,48 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     var origResus=setResusPref;
     window.setResusPref=setResusPref=function(p,pref){ var r=origResus.apply(this,arguments); try{ if(p){ delete lastCode[p.id]; syncCode(p); } }catch(e){} return r; };
   }
-  window.fvAdmitSheet={syncCode:syncCode,sweepCodes:sweepCodes,ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,pushEstimate:pushEstimate,pullEstimate:pullEstimate,sweep:sweepTreatment,triageMarks:triageMarks,syncTriage:syncTriage};
+  /* ---- Technician: replaces the Care Team card in the drawer; the tech follows the patient onto the treatment sheet (and My Board) ---- */
+  var TECH_COLOR='#38BDD2';
+  function techSlug(n){ return 'tech:'+String(n||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  function techItem(n){ return {id:techSlug(n),name:n,initials:String(n).split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase(),color:TECH_COLOR}; }
+  var NO_TECH={id:'none',name:'No technician',initials:'',color:'#7A9BB5'};
+  function techNow(p){ var a=(typeof ctCurrent==='function')?ctCurrent(p,'technician'):[]; return a.length?a[a.length-1]:null; }
+  function techAt(p){ var L=(typeof ctList==='function')?ctList(p).filter(function(a){ return a.role==='technician'; }):[]; return L.reduce(function(m,a){ var t=String(a.updatedAt||''); return t>m?t:m; },''); }
+  function setTech(p,id){
+    var cur=techNow(p); if(id==='none'?!cur:(cur&&cur.staffId===id)) return;
+    ctCurrent(p,'technician').slice().forEach(function(a){ ctEndAssignment(p,a,id==='none'?'unassigned':'replaced'); });
+    if(id==='none'){ p.timeline.push({label:'Technician unassigned',at:new Date(),meta:CURRENT_USER}); notify('Technician removed',esc(p.name||''),{icon:'doctor',color:'var(--accent)'}); renderAll(); if(activePatient===p.id) fillDrawer(p); }
+    else { var it=(window.FV_TECHS||[]).map(techItem).find(function(x){ return x.id===id; })||(cur&&cur.staffId===id?techItem(cur.staffName):null); if(!it) return;
+      ctAssign(p,'technician',{id:it.id,name:it.name,kind:'manual'}); }
+    delete lastTech[p.id]; setTimeout(function(){ syncTech(p); },300);
+  }
+  if(typeof renderCareTeamCard==='function'){
+    window.renderCareTeamCard=renderCareTeamCard=function(p){
+      var m=document.getElementById('careTeamMount'); if(!m||!p) return;
+      var cur=techNow(p), items=(window.FV_TECHS||[]).map(techItem);
+      if(cur&&!items.some(function(x){ return x.id===cur.staffId; })) items.unshift({id:cur.staffId,name:cur.staffName||'Technician',initials:'',color:TECH_COLOR});
+      m.innerHTML='<div class="fv-tech-field"><p class="sect-title">Technician</p><div id="techAssignMount"></div></div>';
+      m.querySelector('#techAssignMount').appendChild(createDropdown({items:[NO_TECH].concat(items),selectedId:cur?cur.staffId:null,
+        placeholder:'Assign a technician',searchPlaceholder:'Search technicians…',onSelect:function(id){ setTech(p,id); }}));
+    };
+    try{ var st=document.createElement('style'); st.textContent='.fv-tech-field{margin:-6px 0 22px}'; document.head.appendChild(st); }catch(e){}
+  }
+  /* Flow → sheet: the newest change wins (a tech set on the sheet itself is newer until someone changes it here) */
+  var lastTech={};
+  function syncTech(p){
+    if(!ready()||!p||p._demo||typeof ctList!=='function') return; var at=techAt(p); if(!at) return;
+    var cur=techNow(p), name=cur?(cur.staffName||null):null, sig=(name||'')+'|'+at; if(lastTech[p.id]===sig) return; lastTech[p.id]=sig;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
+      if(!snap.exists) return; var d=snap.data()||{}, pt=d.patient||{}; if(d.status==='closed') return;
+      if((pt.tech||null)===name) return; if(String(pt.tech_at||'')>at) return;
+      t.update(ref,{'patient.tech':name,'patient.tech_at':at,updated_at:now.toISOString(),updated_by:who.initials,
+        audit:FV.arrayUnion(audit(name?'Technician assigned in Flow — <b>'+esc(name)+'</b>':'Technician unassigned in Flow',who,now))});
+    }); }).catch(function(e){ delete lastTech[p.id]; console.warn('[flow→sheet tech]',e); });
+  }
+  setInterval(function(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){} if(!u||typeof PATIENTS==='undefined') return;
+    try{ PATIENTS.forEach(function(p){ if(p&&(p.room==='Treatment'||p.status==='Hospitalized'||p.status==='Admitted'||ensured[p.id])) syncTech(p); }); }catch(e){} },8000);
+  window.fvAdmitSheet={syncTech:syncTech,syncCode:syncCode,sweepCodes:sweepCodes,ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,pushEstimate:pushEstimate,pullEstimate:pullEstimate,sweep:sweepTreatment,triageMarks:triageMarks,syncTriage:syncTriage};
 })();
 </script>
 
