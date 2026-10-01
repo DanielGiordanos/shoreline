@@ -2874,7 +2874,7 @@ const SB_PATIENTS=[
   {name:'Turk Smith',sig:'1 YO M DOODX',cage:'CA24105',ls:'ALS',reason:'Neuter',dr:'AJM',ward:'Surgery',inout:'IN',date:'10/31/2025',time:'9:53A',alerts:[{t:'warn',x:'Diabetic'}],service:'Surgery',owner:'Jennifer Smith',phone:'None',belongings:'',blocks:[{h:15,status:'scheduled',label:'15'}]},
 ];
 let sbTx=true, sbBoard='IP Board';
-function lsPill(ls){const m={ALS:'ls-als',BLS:'ls-bls',DNR:'ls-dnr'}[ls]||'ls-als';return `<span class="ls-pill ${m}">${IC.heart}${ls}</span>`;}
+function lsPill(ls){if(!ls)return '';const m={ALS:'ls-als',BLS:'ls-bls',DNR:'ls-dnr'}[ls]||'ls-als';return `<span class="ls-pill ${m}">${IC.heart}${ls}</span>`;}
 function toggleSbTx(){sbTx=!sbTx;renderDash();}
 function setSbBoard(b){sbBoard=b;renderDash();}
 function openSbFilters(ev){ev.stopPropagation();
@@ -2912,7 +2912,7 @@ function renderDash(){
     const left=`<div class="sb-left">
       <div class="sbc c-pt"><div class="pt-top">${p.pinned?IC.pin:''}${IC.dots}<span class="pt-nm">${p.name}</span></div>
         <div class="pt-sig2">${p.sig}</div>
-        <div class="pt-cage-line"><span>(${p.cage})</span>${lsPill(p.ls)}${IC.vit}</div>
+        <div class="pt-cage-line">${p.cage?`<span>(${p.cage})</span>`:''}${lsPill(p.ls)}${IC.vit}</div>
         <div class="pt-reason">${p.reason}</div></div>
       <div class="sbc c-dr"><span class="dr-box">${p.dr}</span></div>
       <div class="sbc c-ward"><select class="ward-sel" onchange="toast('${p.name.split(' ')[0]} → '+this.value)">${WARDS.map(w=>`<option ${w===p.ward?'selected':''}>${w}</option>`).join('')}</select></div>
@@ -2923,7 +2923,7 @@ function renderDash(){
     const right = sbTx
       ? `<div class="sb-hours">${hours.map(h=>{const b=p.blocks.find(x=>x.h===h);return `<div class="sb-hcell">${b?`<div class="sb-blk ${b.status}">${b.label}</div>`:''}</div>`;}).join('')}</div>`
       : `<div class="sb-cage">
-          <div class="cage-col c1"><div class="cage-line">${IC.cage}<span class="cp">${p.cage}</span>${IC.copy}</div><div class="cage-line">${IC.gear}${p.service}</div><div class="cage-line">${lsPill(p.ls)}</div></div>
+          <div class="cage-col c1"><div class="cage-line">${IC.cage}<span class="cp">${p.cage||'—'}</span>${IC.copy}</div><div class="cage-line">${IC.gear}${p.service}</div><div class="cage-line">${lsPill(p.ls)}</div></div>
           <div class="cage-col c2"><div class="cage-line">${IC.person}${p.owner}</div><div class="cage-line">${IC.phone}${p.phone}</div><div class="cage-line">${IC.home}<select class="cage-date"><option>Select Date</option></select></div></div>
           <div class="cage-col c3"><div class="cage-notes"><div class="lbl">Belongings / Notes</div>${p.belongings||'&nbsp;'}</div></div>
         </div>`;
@@ -3552,7 +3552,7 @@ function visitFrom(d){ var p=d.patient||{}; var full=((p.name||'')+' '+(p.last||
   var latest=function(name){ var o=Object.values(d.orders||{}).find(function(x){ return x.name===name; }); if(!o) return '—';
     var ms=Object.keys(d.marks||{}).map(function(k){ return d.marks[k]; }).filter(function(m){ return m&&m.orderId===o.id&&m.status==='completed'&&m.value; })
       .sort(function(a,b){ return (b.at||'').localeCompare(a.at||''); }); return ms[0]?ms[0].value:'—'; };
-  return {id:String(d.visit_id||d._id||'').replace(/^[a-z]_/,'').slice(-6).toUpperCase(), vcode:d.visit_code||'', patient:full, client:p.last||p.owner||'—', species:p.species||'Dog', breed:p.breed||'—', sex:p.sex||'—', age:p.age||'—',
+  return {id:String(d.visit_id||d._id||'').replace(/^[a-z]_/,'').slice(-6).toUpperCase(), vcode:d.visit_code||'', patient:full, client:p.last||p.owner||'—', species:p.species||'Dog', breed:p.breed||'—', sex:sexLabel(p.sex)||'—', age:p.age||'—',
     weight:Number(p.weight)||0, temp:latest('Temperature'), hr:latest('Heart Rate'), rr:latest('Respiratory Rate'), mm:latest('Mucous Membrane'), crt:latest('CRT'), mentation:latest('Mentation'), pain:latest('Pain Score'),
     doctorFrom:p.doctor||'—', doctorTo:p.doctor||'—', location:p.location||'—', status:p.condition||'Stable', code:p.code||'—', allergies:p.allergies||'None known',
     admit:fmtAdmit(d.admitted_at||d.created_at), checkin:fmtAdmit(d.admitted_at||d.created_at), day:dayOf(d.admitted_at||d.created_at),
@@ -3638,17 +3638,21 @@ function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CU
 
 /* ---------- IP Board: every active sheet ---------- */
 function blocksFor(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), out=[];
-  for(var h=6;h<=20;h++){ var due=0, over=0, done=0, sched=0;
+  var adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?Math.floor(isoToMin(adm)/60)*60:-1;   /* same rule as the sheet: nothing is due before admission */
+  for(var h=6;h<=20;h++){ var due=0, over=0, done=0, sched=0; if(h*60<from) continue;
     Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont) return; if(freqTimes(o).indexOf(h)<0) return;
       var m=marks[dk+'_'+id+'_'+(h*60)]; if(m&&m.status){ done++; return; } var t=h*60; if(t>n+18) sched++; else if(t>=n-18) due++; else over++; });
     var tot=due+over+done+sched; if(!tot) continue;
     out.push({h:h,status:over?'overdue':due?'due':sched?'scheduled':'completed',label:String(over||due||sched||done)}); }
   return out; }
+var SEX_LABEL={male_neutered:'MN',neutered_male:'MN',mn:'MN',female_spayed:'FS',spayed_female:'FS',fs:'FS',male_intact:'M',male:'M',m:'M',female_intact:'F',female:'F',f:'F',unknown:''};
+function sexLabel(x){ var k=String(x||'').toLowerCase().replace(/[\s-]+/g,'_'); return SEX_LABEL.hasOwnProperty(k)?SEX_LABEL[k]:(x||''); }
+window.tsSexLabel=sexLabel;
 function initialsOf(n){ var w=String(n||'').replace(/^dr\.?\s+/i,'').split(/[\s,]+/).filter(Boolean); return w.length?w.map(function(x){ return x[0]; }).join('').slice(0,3).toUpperCase():'—'; }
 window.tsIPList=function(){
   IPL=SHEETS.map(function(s){ var p=s.patient||{}, at=s.admitted_at||s.created_at, d=at?new Date(at):null;
-    return {_id:s._id,name:((p.name||'')+' '+(p.last||'')).trim()||'Unnamed',sig:[p.age,p.sex,p.breed].filter(Boolean).join(' ')+(p.weight?' · '+p.weight+' kg':''),
-      cage:p.location||'—',ls:(p.code==='DNR'?'DNR':p.code==='BLS'?'BLS':'ALS'),reason:p.reason||'—',dr:initialsOf(p.doctor),ward:p.location||'Treatment Area',inout:'IN',
+    return {_id:s._id,name:((p.name||'')+' '+(p.last||'')).trim()||'Unnamed',sig:[p.age,sexLabel(p.sex),p.breed].filter(Boolean).join(' ')+(p.weight?' · '+p.weight+' kg':''),
+      cage:p.location||'',ls:(['DNR','BLS','ALS','CPR'].indexOf(p.code)>=0?p.code:''),reason:p.reason||'—',dr:initialsOf(p.doctor),ward:p.location||'Treatment Area',inout:'IN',
       date:d?(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear():'',time:d?d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}).replace(' ',''):'',
       alerts:(p.alerts||[]).map(function(x){ return {t:/dnr|caution|aggress|bite/i.test(x)?'crit':'warn',x:x}; }),service:p.service||'Emergency/Critical Care',
       owner:p.owner||'—',phone:p.phone||'—',belongings:p.belongings||'',blocks:blocksFor(s)}; });
