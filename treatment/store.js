@@ -1303,6 +1303,8 @@ window.tsLocChip=function(){ var d=hdrDoc(); if(!d) return '<span class="pill so
 /* Day 2 · 67 h — hospital day and hours since admission */
 window.tsDayLabel=function(){ var d=hdrDoc(); if(!d) return esc(VISIT.day||''); var at=d.admitted_at||d.created_at, h=at?Math.max(0,Math.floor((Date.now()-new Date(at))/3600000)):null;
   return esc(VISIT.day||'')+(h!=null?' · '+h+' h':''); };
+/* hours since admission (Visit panel "N hrs hospitalized") */
+window.tsHoursIn=function(){ var d=hdrDoc(), at=d&&(d.admitted_at||d.created_at); return at?Math.max(0,Math.floor((Date.now()-new Date(at))/3600000)):null; };
 /* the dosing weight, when it was taken, and a warning if a newer weight was charted */
 function wtWhen(iso){ try{ var d=new Date(iso), today=new Date(); var day=d.toDateString()===today.toDateString()?'Today':(d.getMonth()+1)+'/'+d.getDate();
   return day+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }

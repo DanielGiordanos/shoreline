@@ -510,7 +510,7 @@ function sidebarBriefHTML(){
     </div></div>
 
     <div class="panel"><h4>Patient</h4><div class="kvlist">
-      <div class="kvrow"><span class="kk">Checked in</span><span class="vv" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px"><span class="ci-time">${VISIT.checkin}</span><span class="ci-pill">67 hrs hospitalized</span></span></div>
+      <div class="kvrow"><span class="kk">Checked in</span><span class="vv" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px"><span class="ci-time">${VISIT.checkin}</span>${(window.tsHoursIn&&tsHoursIn()!=null)?'<span class="ci-pill">'+tsHoursIn()+' hrs hospitalized</span>':''}</span></div>
       ${kvr('Species',VISIT.species)}${kvr('Breed',VISIT.breed)}${kvr('Age',VISIT.age)}${kvr('Sex',VISIT.sex)}${kvr('Weight',VISIT.weight+' kg')}
       <div class="kvrow"><span class="kk">Code Status</span><span class="vv">${tsCodePill(1)}</span></div>
       <div class="kvrow"><span class="kk">E-Collar</span><span class="vv"><span class="pill st-waiting">${VISIT.ecollar}</span></span></div>
