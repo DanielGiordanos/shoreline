@@ -135,7 +135,7 @@ function visitFrom(d){ var p=d.patient||{}; var full=((p.name||'')+' '+(p.last||
 function hydrate(){
   var d=curDoc; if(!d){ reset(); return; }
   setVisit(visitFrom(d));
-  ORDERS=Object.keys(d.orders||{}).map(function(k){ return d.orders[k]; }).filter(function(o){ return o&&!o.dc; })
+  ORDERS=Object.keys(d.orders||{}).map(function(k){ return d.orders[k]; }).filter(function(o){ return o&&(!o.dc||dcVisible(o)); })
     .sort(function(a,b){ return (SECTION_ORDER.indexOf(a.section)-SECTION_ORDER.indexOf(b.section))||String(a.id).localeCompare(String(b.id),undefined,{numeric:true}); });
   buildTasks();
   NOTES=(d.notes||[]).map(function(n){ return {min:isoToMin(n.at),type:n.type||'nursing',author:n.author||'—',role:n.role||'',body:n.body||'',_srv:1}; });
@@ -151,7 +151,7 @@ function hydrate(){
 buildTasks=function(){
   TASKS=[]; var dk=dayKey(), marks=(curDoc&&curDoc.marks)||{};
   var adm=curDoc&&(curDoc.admitted_at||curDoc.created_at), from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
-  ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m&&!o.ordered_at) return;   /* the admission cutoff is for the starter orders; a doctor's order shows from the time they chose */
+  ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m&&!o.ordered_at) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return;   /* the admission cutoff is for the starter orders; a doctor's order shows from the time they chose */
     TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
@@ -1418,7 +1418,7 @@ var _btDays=buildTasks; buildTasks=function(){ if(!VIEW_DK) return _btDays.apply
   TASKS=[]; var dk=VIEW_DK, marks=(curDoc&&curDoc.marks)||{}, adm=curDoc&&(curDoc.admitted_at||curDoc.created_at);
   var from=(adm&&dayKey(new Date(adm))===dk)?(new Date(adm)-dkDate(dk))/60000:-1;
   ORDERS.forEach(function(o){ if(o.cont) return; var oa=o.ordered_at?dayKey(new Date(o.ordered_at)):null; if(oa&&oa>dk) return;   /* ordered after this day */
-    freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m) return;
+    freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return;
       TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
@@ -1456,6 +1456,93 @@ var _oiDays=window.openInfusion; if(_oiDays) window.openInfusion=function(){ if(
 var _tpDays=window.tsPick; window.tsPick=function(){ if(VIEW_DK){ try{ closeTsDrop(); }catch(e){} toast('Go back to today to add orders'); return; } return _tpDays.apply(this,arguments); };
 /* a new patient always opens on today */
 var _osDays=openSheet; openSheet=function(id){ if(id!==CUR){ VIEW_DK=null; try{ document.body.classList.remove('ts-past-day'); }catch(e){} } return _osDays.apply(this,arguments); }; window.tsOpenSheet=openSheet;
+
+/* ═════════ TS ORDERS — tap an order's name: details, Change, Discontinue ═════════
+   Orders are never deleted. Discontinue keeps the order (orders.<id>.dc = true + who/when/why); what was already charted stays on the sheet,
+   the row stays visible (struck through) for the rest of that day with no new slots after the stop time. Doctors and Daniel only. */
+var DC_REASONS=[{k:'discontinued',l:'Discontinued',d:'No longer needed'},{k:'changed',l:'Changed',d:'Replaced by a new order'},
+  {k:'error',l:'Entered in error',d:'Duplicate or wrong order'},{k:'discharged',l:'Patient discharged',d:'Leaving the hospital'}];
+function dcLabel(o){ return o&&o.dc?(o.dc_reason==='error'?'Entered in error':'Stopped'):''; }
+/* a discontinued order stays on the grid for the day it was stopped (and for earlier days looked back at) */
+function dcVisible(o){ if(!o||!o.dc||!o.dc_at) return false; var dk=window.tsViewDk?tsViewDk():dayKey(); return dayKey(new Date(o.dc_at))>=dk; }
+/* no new slots after the stop time on the stop day; none at all on later days */
+function dcCut(o,dk){ if(!o||!o.dc||!o.dc_at) return Infinity; var at=new Date(o.dc_at), adk=dayKey(at); if(adk>dk) return Infinity; if(adk<dk) return -1;
+  return at.getHours()*60+at.getMinutes(); }
+function canOrderTS(){ var r=staffRole(); return r==='doctor'||r==='admin'; }
+function oFind(id){ return (ORDERS||[]).find(function(o){ return o.id===id; })||((curDoc&&curDoc.orders)||{})[id]||null; }
+function fmtWhen(iso){ try{ var d=new Date(iso), t=new Date(); var day=d.toDateString()===t.toDateString()?'Today':(d.getMonth()+1)+'/'+d.getDate(); return day+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+var TYPE_L={med:'Medication',obs:'Monitoring',care:'Patient care',diag:'Diagnostics',fluid:'Fluids'};
+var TYPE_IC={med:'M10.5 20.5 3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7ZM8.5 8.5l7 7',obs:'M3 12h4l3-8 4 16 3-8h4',care:'M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10Z',diag:'M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3',fluid:'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z'};
+
+/* today's slots for this order as small dots: done · due · missed · scheduled */
+function slotDots(o){ var T=(TASKS||[]).filter(function(t){ return t.orderId===o.id; }).sort(function(a,b){ return a.sched-b.sched; }), now=nowMin();
+  if(!T.length) return ''; var done=T.filter(function(t){ return t.status==='completed'; }).length;
+  return '<div class="op-prog"><div class="op-dots">'+T.map(function(t){ var c=t.status==='completed'?'done':t.status?'other':(t.sched<now-60?'late':t.sched<=now+60?'due':'sched');
+      return '<span class="op-dot '+c+'" title="'+esc(fmtTime(t.sched))+(t.status?' · '+esc(t.status):'')+'"></span>'; }).join('')+'</div>'
+    +'<span>'+done+' of '+T.length+' '+(o.type==='med'?'given':'done')+' '+(window.tsViewDk&&tsViewDk()!==dayKey()?'that day':'today')+'</span></div>'; }
+function row(k,v){ return v?'<div class="op-row"><span>'+k+'</span><b>'+v+'</b></div>':''; }
+
+window.tsOrderPanel=function(id){ var o=oFind(id); if(!o) return; var can=canOrderTS()&&!(window.tsViewDk&&tsViewDk()!==dayKey());
+  var brand=window.tsBrand?tsBrand(o.name):'', big='', sub='';
+  if(o.type==='med'){ var d=medDose(o); big=esc(d.mg); sub=[esc(o.dose+' '+o.unit), o.conc?esc(d.volume+' of '+(o.conc_label||o.conc+' '+String(o.unit||'mg').split('/')[0]+'/mL')):''].filter(Boolean).join(' · '); }
+  else if(o.type==='fluid'){ big=esc(o.rate||''); }
+  else { big=esc(o.freq||''); sub=o.unit?esc(o.unit):''; }
+  var nx=''; try{ nx=nextDueText(o); }catch(e){}
+  var who=o.ordered_by_name||o.ordered_by||'', src=o.dose_source==='reference_suggestion'?'Reference dose, confirmed':o.dose_source==='doctor_entered'?'Entered by the doctor':'';
+  var html='<div class="op-head"><span class="op-ic t-'+esc(o.type||'obs')+'"><svg viewBox="0 0 24 24" fill="none"><path d="'+(TYPE_IC[o.type]||TYPE_IC.obs)+'" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+    +'<div><div class="op-kind">'+(TYPE_L[o.type]||'Order')+(o.route?' · '+esc(o.route):'')+'</div><h3>'+esc(o.name)+(brand?' <span class="op-brand">'+esc(brand)+'</span>':'')+'</h3></div>'
+    +'<button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +(o.dc?'<div class="op-dc-banner"><b>'+esc(dcLabel(o))+'</b> '+esc(fmtWhen(o.dc_at))+(o.dc_by_name?' by '+esc(o.dc_by_name):'')+(o.dc_note?'<br><small>'+esc(o.dc_note)+'</small>':'')+'</div>':'')
+    +'<div class="op-hero"><div class="op-big">'+big+'</div>'+(sub?'<div class="op-sub">'+sub+'</div>':'')
+      +(o.type!=='fluid'&&o.freq&&o.type==='med'?'<div class="op-freq"><span>'+esc(o.freq)+'</span>'+(nx&&!o.dc?'<small>'+esc(nx)+'</small>':'')+'</div>':(nx&&!o.dc&&o.type!=='med'?'<div class="op-freq"><small>'+esc(nx)+'</small></div>':''))+'</div>'
+    +slotDots(o)
+    +'<div class="op-list">'+row('First dose',o.start!=null&&o.type==='med'?esc(fmtTime(o.start*60)):'')+row('Ordered by',who?esc(who)+(o.ordered_at?' · '+esc(fmtWhen(o.ordered_at)):''):'')
+      +row('Dose source',esc(src))+row('Reference',o.ref&&o.ref.dose?esc(o.ref.dose+(o.ref.indication?' — '+o.ref.indication:'')):'')+row('Notes',o.notes?esc(o.notes):'')+'</div>'
+    +(o.dc?'':(can?'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderChange(\''+esc(o.id)+'\')">Change…</button><button type="button" class="op-btn danger" onclick="tsOrderStopAsk(\''+esc(o.id)+'\')">Discontinue</button></div>'
+      :'<p class="op-foot">'+((window.tsViewDk&&tsViewDk()!==dayKey())?'Go back to today to change orders.':'Only doctors can change or stop orders.')+'</p>'));
+  opShow(html); };
+function opShow(html){ var m=document.getElementById('tsOrderSheet'); if(!m){ m=document.createElement('div'); m.id='tsOrderSheet'; document.body.appendChild(m);
+    m.addEventListener('click',function(e){ if(e.target===m) tsOrderClose(); }); document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&m.classList.contains('show')) tsOrderClose(); }); }
+  m.innerHTML='<div class="op-card" role="dialog" aria-modal="true">'+html+'</div>'; requestAnimationFrame(function(){ m.classList.add('show'); }); }
+window.tsOrderClose=function(){ var m=document.getElementById('tsOrderSheet'); if(m) m.classList.remove('show'); };
+
+/* ---------- discontinue: pick a reason, confirm ---------- */
+window.tsOrderStopAsk=function(id){ var o=oFind(id); if(!o) return; window._opDc={id:id,reason:'discontinued'};
+  var html='<div class="op-head"><span class="op-ic danger"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>'
+    +'<div><div class="op-kind">Discontinue</div><h3>'+esc(o.name)+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<p class="op-lead">Upcoming '+(o.type==='med'?'doses':'checks')+' come off the sheet. Everything already charted stays.</p>'
+    +'<div class="op-reasons">'+DC_REASONS.map(function(r,i){ return '<button type="button" class="op-reason'+(i?'':' on')+'" data-r="'+r.k+'" onclick="tsOrderReason(this)"><b>'+r.l+'</b><small>'+r.d+'</small><i></i></button>'; }).join('')+'</div>'
+    +'<input id="opDcNote" class="op-note" placeholder="Note (optional)">'
+    +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderPanel(\''+esc(id)+'\')">Back</button><button type="button" class="op-btn danger solid" onclick="tsOrderStop()">Discontinue '+esc(o.name)+'</button></div>';
+  opShow(html); };
+window.tsOrderReason=function(b){ document.querySelectorAll('#tsOrderSheet .op-reason').forEach(function(x){ x.classList.toggle('on',x===b); }); window._opDc.reason=b.dataset.r; };
+function stopOrder(id,reason,note){ var o=oFind(id); if(!o||!CUR||!curDoc) return Promise.resolve(); var me=user(), now=new Date().toISOString();
+  var base=(curDoc.orders&&curDoc.orders[id])||clean(o);
+  var dc=Object.assign({},base,{dc:true,dc_at:now,dc_by:me.initials,dc_by_name:me.name||me.initials,dc_by_uid:me.uid||null,dc_reason:reason||'discontinued',dc_note:note||null});
+  var lbl=(DC_REASONS.find(function(r){ return r.k===reason; })||DC_REASONS[0]).l;
+  curDoc.orders[id]=dc; if(curMain&&curMain.orders) curMain.orders[id]=dc;
+  ORDERS=ORDERS.map(function(x){ return x.id===id?dc:x; }); buildTasks(); try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} }
+  var u={updated_at:now,updated_by:me.initials,audit:FV.arrayUnion({at:now,type:'doctor',desc:'Order '+(reason==='error'?'entered in error':'discontinued')+' — <b>'+esc(o.name)+'</b>'+(o.type==='med'?' '+esc(medDose(o).mg)+' '+esc(o.route||'')+' '+esc(o.freq||''):'')+' · '+esc(lbl)+(note?' · '+esc(note):''),who:me.initials,uid:me.uid})};
+  u['orders.'+id]=dc;
+  return DB.collection(COL).doc(CUR).update(u).catch(function(e){ console.warn('[discontinue]',e); toast('Couldn’t save — try again'); }); }
+window.tsOrderStop=function(){ var s=window._opDc||{}, o=oFind(s.id); if(!o) return; var note=((document.getElementById('opDcNote')||{}).value||'').trim();
+  tsOrderClose(); stopOrder(s.id,s.reason,note).then(function(){ toast(o.name+' '+(s.reason==='error'?'marked entered in error':'discontinued')); }); };
+
+/* ---------- change: monitoring updates in place; a medication is re-ordered and the old one is stopped as "Changed" ---------- */
+window.tsOrderChange=function(id){ var o=oFind(id); if(!o) return; tsOrderClose();
+  if(o.type!=='med'){ var m=(typeof OBS!=='undefined'&&OBS.find(function(x){ return x.n.toLowerCase()===String(o.name).toLowerCase(); }))||{n:o.name,t:o.type||'obs',u:o.unit||'',f:[],custom:false};
+    openObsOrder(m); return; }
+  window._opReplace=o.id;
+  window.tsOpenMedOrder(o.name).then(function(i){ if(i<0){ window._opReplace=null; toast('This drug isn’t in the reference — stop it and add the new order'); return; }
+    setTimeout(function(){ var set=function(idd,v){ var el=document.getElementById(idd); if(el&&v!=null&&v!==''){ el.value=String(v); } };
+      set('rxUnit',o.unit); set('rxDose',o.dose); set('rxRoute',o.route); set('rxFreq',o.freq); if(o.conc) set('rxConc',o.conc); if(o.notes) set('rxNotes',o.notes);
+      try{ if(RX){ RX.touched=true; RX.concTouched=!!o.conc; } tsRxCalc(true); }catch(e){}
+      var h=document.querySelector('#tsModal h3'); if(h&&!h.querySelector('.op-chg')) h.insertAdjacentHTML('beforeend',' <span class="op-chg">Changing</span>'); },120); }); };
+var _rxSubOrd=tsRxSubmit; tsRxSubmit=function(){ var ok=_rxSubOrd.apply(this,arguments); var old=window._opReplace; window._opReplace=null;
+  if(ok!==false&&old){ var n=ORDERS[ORDERS.length-1]; stopOrder(old,'changed',n?('Replaced by '+n.name+' '+n.dose+' '+n.unit+' '+n.route+' '+n.freq):null); }
+  return ok; };
+/* closing the order window without placing it cancels the change */
+document.addEventListener('click',function(e){ if(window._opReplace&&e.target&&(e.target.matches('#tsModal .tm-scrim')||e.target.matches('#tsModal [data-x]'))) window._opReplace=null; },true);
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();

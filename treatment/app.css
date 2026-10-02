@@ -2573,6 +2573,77 @@ body.dark .tsh .tsh-v .tsh-link,body.dark .tsh .tsh-accent{color:#5fd0e0}
 /* no "NOW" line on a past day */
 body.ts-past-day #sheetInner .nowline{display:none}
 
+/* ═══ order rows: tap the name for details ═══ */
+#sheetInner .grow:not(.ghead) .rl[onclick]{cursor:pointer;transition:background .15s}
+#sheetInner .grow:not(.ghead) .rl[onclick]:hover{background:var(--fill-soft,rgba(0,0,0,.04))}
+#sheetInner .grow.is-dc .rl-name{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--ink-400)}
+#sheetInner .grow.is-dc .rl-meta{color:var(--ink-400)}
+#sheetInner .grow.is-dc .rl-name::after{content:attr(data-dc);display:none}
+#sheetInner .grow.is-dc .rl::after{content:attr(data-dc);position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:999px;background:rgba(255,69,58,.12);color:#ff6b61}
+#sheetInner .grow.is-dc .rl{position:relative}
+#sheetInner .grow.is-dc .route-pill{opacity:0}
+
+/* ═══ order sheet — Apple-style card ═══ */
+#tsOrderSheet{position:fixed;inset:0;z-index:9500;display:grid;place-items:center;padding:20px;background:rgba(10,14,22,0);backdrop-filter:blur(0);-webkit-backdrop-filter:blur(0);
+  pointer-events:none;transition:background .28s ease,backdrop-filter .28s ease}
+#tsOrderSheet.show{background:rgba(10,14,22,.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);pointer-events:auto}
+#tsOrderSheet .op-card{width:min(440px,100%);max-height:calc(100vh - 40px);overflow:auto;border-radius:26px;padding:22px 22px 20px;background:#fff;color:#1d1d1f;
+  box-shadow:0 30px 80px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.04);transform:translateY(14px) scale(.97);opacity:0;transition:transform .34s cubic-bezier(.32,.72,0,1),opacity .22s ease}
+#tsOrderSheet.show .op-card{transform:none;opacity:1}
+body.dark #tsOrderSheet .op-card{background:#161b26;color:#eef1f6;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06)}
+#tsOrderSheet .op-head{display:flex;align-items:center;gap:12px}
+#tsOrderSheet .op-head h3{margin:1px 0 0;font-size:20px;font-weight:650;letter-spacing:-.02em;line-height:1.2}
+#tsOrderSheet .op-brand{font-size:14px;font-weight:500;color:#8a8f98;letter-spacing:0}
+#tsOrderSheet .op-kind{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a8f98}
+#tsOrderSheet .op-ic{width:42px;height:42px;flex:none;border-radius:13px;display:grid;place-items:center;background:rgba(56,189,210,.12);color:#0e7c8c}
+#tsOrderSheet .op-ic svg{width:22px;height:22px}
+#tsOrderSheet .op-ic.t-med{background:rgba(94,92,230,.12);color:#5e5ce6}
+#tsOrderSheet .op-ic.t-care{background:rgba(255,55,95,.10);color:#ff375f}
+#tsOrderSheet .op-ic.danger{background:rgba(255,69,58,.12);color:#ff453a}
+body.dark #tsOrderSheet .op-ic{color:#5fd0e0}body.dark #tsOrderSheet .op-ic.t-med{color:#8e8cff}body.dark #tsOrderSheet .op-ic.t-care{color:#ff6b8a}body.dark #tsOrderSheet .op-ic.danger{color:#ff6b61}
+#tsOrderSheet .op-x{margin-left:auto;align-self:flex-start;width:30px;height:30px;border-radius:50%;border:0;background:rgba(120,120,128,.14);color:#8a8f98;font-size:19px;line-height:1;cursor:pointer}
+#tsOrderSheet .op-x:hover{background:rgba(120,120,128,.24)}
+#tsOrderSheet .op-hero{margin:18px 0 6px}
+#tsOrderSheet .op-big{font-size:36px;font-weight:650;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.05}
+#tsOrderSheet .op-sub{margin-top:5px;font-size:14px;color:#8a8f98}
+#tsOrderSheet .op-freq{display:flex;align-items:center;gap:10px;margin-top:12px}
+#tsOrderSheet .op-freq span{padding:5px 11px;border-radius:999px;background:rgba(120,120,128,.12);font-size:13px;font-weight:700}
+#tsOrderSheet .op-freq small{font-size:13px;color:#8a8f98}
+#tsOrderSheet .op-prog{display:flex;align-items:center;gap:12px;margin:14px 0 2px;font-size:13px;color:#8a8f98}
+#tsOrderSheet .op-dots{display:flex;gap:5px}
+#tsOrderSheet .op-dot{width:10px;height:10px;border-radius:50%;background:rgba(120,120,128,.28)}
+#tsOrderSheet .op-dot.done{background:#30d158}#tsOrderSheet .op-dot.due{background:#38bdd2}#tsOrderSheet .op-dot.late{background:#ff9f0a}#tsOrderSheet .op-dot.other{background:#8a8f98}
+#tsOrderSheet .op-list{margin-top:16px;border-radius:14px;background:rgba(120,120,128,.08);padding:0 14px}
+#tsOrderSheet .op-row{display:flex;justify-content:space-between;gap:16px;padding:11px 0;font-size:14px;border-bottom:1px solid rgba(120,120,128,.16)}
+#tsOrderSheet .op-row:last-child{border-bottom:0}
+#tsOrderSheet .op-row span{color:#8a8f98;white-space:nowrap}
+#tsOrderSheet .op-row b{font-weight:500;text-align:right}
+#tsOrderSheet .op-list:empty{display:none}
+#tsOrderSheet .op-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+#tsOrderSheet .op-btn{height:46px;border-radius:14px;border:0;background:rgba(120,120,128,.14);color:inherit;font:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:transform .12s,background .15s}
+#tsOrderSheet .op-btn:hover{background:rgba(120,120,128,.22)}
+#tsOrderSheet .op-btn:active{transform:scale(.98)}
+#tsOrderSheet .op-btn.danger{color:#ff3b30}
+#tsOrderSheet .op-btn.danger.solid{background:#ff3b30;color:#fff}
+#tsOrderSheet .op-btn.danger.solid:hover{background:#ff2d20}
+#tsOrderSheet .op-foot{margin:16px 0 0;font-size:13px;color:#8a8f98;text-align:center}
+#tsOrderSheet .op-lead{margin:14px 0 4px;font-size:14px;color:#8a8f98;line-height:1.45}
+#tsOrderSheet .op-reasons{margin-top:12px;border-radius:14px;background:rgba(120,120,128,.08);overflow:hidden}
+#tsOrderSheet .op-reason{display:grid;grid-template-columns:1fr auto;align-items:center;width:100%;padding:11px 14px;border:0;border-bottom:1px solid rgba(120,120,128,.16);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+#tsOrderSheet .op-reason:last-child{border-bottom:0}
+#tsOrderSheet .op-reason b{font-size:15px;font-weight:600}
+#tsOrderSheet .op-reason small{grid-column:1;font-size:12.5px;color:#8a8f98;margin-top:1px}
+#tsOrderSheet .op-reason i{grid-row:1/span 2;grid-column:2;width:22px;height:22px;border-radius:50%;border:2px solid rgba(120,120,128,.35);transition:all .15s}
+#tsOrderSheet .op-reason.on i{border-color:#ff3b30;background:#ff3b30;box-shadow:inset 0 0 0 4px #fff}
+body.dark #tsOrderSheet .op-reason.on i{box-shadow:inset 0 0 0 4px #161b26}
+#tsOrderSheet .op-note{width:100%;margin-top:12px;height:44px;padding:0 14px;border-radius:12px;border:1px solid rgba(120,120,128,.25);background:transparent;color:inherit;font:inherit;font-size:14px}
+#tsOrderSheet .op-note:focus{outline:none;border-color:#38bdd2}
+#tsOrderSheet .op-dc-banner{margin-top:14px;padding:10px 14px;border-radius:12px;background:rgba(255,69,58,.10);color:#ff453a;font-size:13.5px}
+#tsModal .op-chg{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(255,159,10,.15);color:#e08a00;vertical-align:3px}
+@media(max-width:560px){#tsOrderSheet{place-items:end center;padding:0}#tsOrderSheet .op-card{width:100%;border-radius:26px 26px 0 0;max-height:88vh}}
+@media(prefers-reduced-motion:reduce){#tsOrderSheet,#tsOrderSheet .op-card{transition:none}}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 
