@@ -15,7 +15,9 @@ var CFG={apiKey:'AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE',authDomain:'shoreline-
   storageBucket:'shoreline-flow.firebasestorage.app',messagingSenderId:'237404385636',appId:'1:237404385636:web:1ee3ba27f22c946f748a71'};
 var TENANT='shoreline', COL='sheets', FV=null, DB=null, AUTH=null;
 try{ if(!firebase.apps.length) firebase.initializeApp(CFG); DB=firebase.firestore(); AUTH=firebase.auth(); FV=firebase.firestore.FieldValue;
-  DB.enablePersistence({synchronizeTabs:true}).catch(function(){}); }catch(e){ console.warn('Treatment Sheets: Firebase unavailable',e); }
+  /* no shared multi-tab cache: Flow and every other tab on this site share one IndexedDB lease, and when the tab holding it is in the
+     background Chrome throttles it and other tabs stall on "Opening sheet…". Treatment Sheets keeps its own connection; instant start comes from tsCache_v1. */
+  }catch(e){ console.warn('Treatment Sheets: Firebase unavailable',e); }
 
 /* ---------- helpers ---------- */
 function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -276,6 +278,9 @@ function openSheet(id,goSheet,keep){
     recompose();
   },function(e){ console.warn('sheet listen failed',e); showGate('rules'); });
   listenDays(id);
+  /* never spin forever: after 10 s say so and offer a reload */
+  setTimeout(function(){ if(CUR!==id||curDoc) return; var el=document.getElementById('ctab-'+(currentCTab||'sheet')), c=el&&el.querySelector('.ts-empty-card');
+    if(c) c.innerHTML='<span>Still connecting to the database…</span><button type="button" class="ts-btn primary" style="margin-top:12px" onclick="location.reload()">Reload</button>'; console.warn('[sheet] slow to open',id); },10000);
 }
 window.tsOpenSheet=openSheet;
 function closeCurrent(){ unsubAllCur(); CUR=null; curDoc=null; curMain=null; curDays={}; dayLoaded={}; ARCH=[]; reset(); try{ localStorage.removeItem('tsCurrentSheet'); history.replaceState(null,'',location.pathname+location.search); }catch(e){} saveCacheSoon(); rerender(); }
