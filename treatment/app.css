@@ -2506,7 +2506,7 @@ body.dark #tsHoCard{background:rgba(18,24,36,.98);color:#EEF1F6}
 .ts-hchip{cursor:pointer;border:1px solid var(--border);transition:border-color .15s}
 .ts-hchip:hover,.ts-ho-chip:hover{border-color:var(--accent)}
 .ts-hchip.empty{opacity:.7;border-style:dashed}
-.ts-hchip .hc-k,.ts-ho-chip .hc-k{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;opacity:.55;margin-right:2px}
+.ts-hchip .hc-k,.ts-ho-chip .hc-k,.ts-wtchip .hc-k{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;opacity:.55;margin-right:2px}
 .ts-ho-chip .hc-k.next{margin:0 0 0 2px}
 .ts-hchip.loc-icu{color:#ff6b61;border-color:rgba(255,69,58,.45);background:rgba(255,69,58,.10)}
 .ts-hchip.loc-isolation{color:#e08a00;border-color:rgba(255,159,10,.5);background:rgba(255,159,10,.12)}
