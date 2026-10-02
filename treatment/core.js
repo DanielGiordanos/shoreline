@@ -536,7 +536,7 @@ function renderSheet(){
       <div class="day-nav"><button>‹</button><button class="today">Today · Day 1 of 2</button><button>›</button></div>
       <div class="spacer" style="flex:1"></div>
       <button class="btn ghost" style="flex:0 0 auto;width:auto;height:38px;padding:0 14px" onclick="selectCTab('timeline')">Audit</button>
-      ${canAdd?`<button class="btn primary" style="flex:0 0 auto;width:auto;height:38px;padding:0 16px" onclick="openOrderBuilder()">+ Add Order</button>`:''}
+      
     </div>
     <div class="treatment-grid-shell" id="sheetScroll"><div class="sheet-inner" id="sheetInner"></div></div>
     <div class="treatment-legend" id="legend"></div>

@@ -748,6 +748,8 @@ function tsRxSubmit(){
   logEvent('doctor','Order added — <b>'+esc(x.n)+'</b> '+dose+' '+unit+' ('+d.mg+(o.conc?' = '+d.volume+' of '+(o.conc_label||o.conc+' '+unit.split('/')[0]+'/mL'):'')+') '+route+' '+freq,me.initials);
   try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} }
   sync(); toast(x.n+' added · '+nextDueText(o)); revealOrder(o); return true; }
+/* the prototype's order composer is gone: anything that still calls it lands in the real order search */
+window.openOrderBuilder=function(){ var s=document.getElementById('tsSearch'); if(s){ s.focus(); try{ window.tsRender(s.value||''); }catch(e){} } };
 /* the drug reference loads quietly after start-up, so the first search is instant */
 setTimeout(function(){ var go=function(){ if(AUTH&&AUTH.currentUser&&!document.hidden) loadDrugs(); else setTimeout(go,8000); };
   if(window.requestIdleCallback) requestIdleCallback(go,{timeout:6000}); else go(); },4000);
