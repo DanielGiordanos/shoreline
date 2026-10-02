@@ -1302,6 +1302,10 @@ function ago(iso){ var m=Math.floor((Date.now()-new Date(iso))/60000); if(!(m>=0
 /* completed readings for an order name, newest last */
 function readings(d,rx){ var ids={}, fq={}; Object.keys(d.orders||{}).forEach(function(k){ var o=d.orders[k]; if(o&&!o.dc&&rx.test(String(o.name||'').trim())){ ids[o.id||k]=1; fq.f=o.freq; } });
   var out=[]; Object.keys(d.marks||{}).forEach(function(k){ var m=d.marks[k]; if(!m||m.status!=='completed'||!ids[m.orderId]||m.value==null||String(m.value).trim()==='') return; out.push({v:String(m.value).trim(),at:m.at||'',src:m.src||''}); });
+  /* older days aren't loaded on the open sheet: the board summary (digest.vit) keeps recent numeric readings per order */
+  var seen={}; out.forEach(function(r){ seen[r.at]=1; }); var vit=(d.digest&&d.digest.vit)||{};
+  Object.keys(ids).forEach(function(oid){ (vit[oid]||[]).forEach(function(x){ var k=String(x.k||''), y=+k.slice(0,4), mo=+k.slice(4,6), dd=+k.slice(6,8); if(!y||x.v==null) return;
+    var at=new Date(y,mo-1,dd,0,+x.m||0).toISOString(); if(seen[at]) return; seen[at]=1; out.push({v:String(x.v),at:at,src:/_triage$/.test(k)?'triage':''}); }); });
   out.sort(function(a,b){ return a.at<b.at?-1:a.at>b.at?1:0; }); out.freq=fq.f; return out; }
 function freqH(f){ var m=String(f||'').match(/q(\d+)h/i); return m?+m[1]:null; }
 
