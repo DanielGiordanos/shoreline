@@ -1388,6 +1388,8 @@ function liveHTML(d){ if(!d||!d.updated_at||!d.updated_by) return ''; var me=use
 /* re-render the parts that change, only when they changed */
 function refreshHdr(){ var h=document.getElementById('tsHdr'), d=hdrDoc(); if(!h||!d) return;
   var set=function(sel,html){ var el=h.querySelector(sel); if(el&&el.innerHTML!==html) el.innerHTML=html; };
+  var nm=h.querySelector('.tsh-name > span:first-child'); if(nm&&nm.textContent!==(VISIT.patient||'')) nm.textContent=VISIT.patient||'';
+  var sg=[VISIT.species,VISIT.breed,VISIT.sex,VISIT.age].filter(function(x){ return x&&x!=='—'; }).map(esc).join('<span class="tsh-sep"></span>'); set('.tsh-sig',sg);
   set('.tsh-vitals',vitalsHTML(d)); set('.tsh-info',infoHTML(d)); set('.tsh-mini',miniHTML(d)); set('.tsh-live-slot',liveHTML(d)); }
 var _rhHdr=refreshHeader; refreshHeader=function(){ _rhHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
 var _rlHdr=refreshLoc; refreshLoc=function(){ _rlHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
