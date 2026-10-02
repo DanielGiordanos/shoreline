@@ -1426,7 +1426,7 @@ var _syDays=sync; sync=function(){ if(VIEW_DK) return; return _syDays.apply(this
 function goDay(dk){ if(!CUR||!curDoc) return; var today=dayKey(); if(dk>=today) dk=null; var lo=firstDk(); if(dk&&dk<lo) dk=lo;
   if(dk===VIEW_DK) return;
   if(!VIEW_DK) _syDays();   /* save anything typed on today before looking back */
-  VIEW_DK=dk;
+  VIEW_DK=dk; try{ document.body.classList.toggle('ts-past-day',!!dk); }catch(e){}
   var show=function(){ curDoc=compose(); hydrate(); try{ renderSheet(); }catch(e){ try{ rerender(); }catch(_){} } };
   if(dk&&!curDays[dk]&&dk!==subDk&&dk!==prevDk(subDk)){ var id=CUR, el=document.querySelector('.ts-daynav .dn-mid'); if(el) el.textContent='Loading…';
     dayRef(id,dk).get().then(function(s){ if(CUR!==id) return; curDays[dk]=(s.exists&&s.data().marks)||{}; dayLoaded[dk]=1; if(VIEW_DK===dk) show(); })
@@ -1450,7 +1450,7 @@ var _oiDays=window.openInfusion; if(_oiDays) window.openInfusion=function(){ if(
 /* orders are added on today's sheet */
 var _tpDays=window.tsPick; window.tsPick=function(){ if(VIEW_DK){ try{ closeTsDrop(); }catch(e){} toast('Go back to today to add orders'); return; } return _tpDays.apply(this,arguments); };
 /* a new patient always opens on today */
-var _osDays=openSheet; openSheet=function(id){ if(id!==CUR) VIEW_DK=null; return _osDays.apply(this,arguments); }; window.tsOpenSheet=openSheet;
+var _osDays=openSheet; openSheet=function(id){ if(id!==CUR){ VIEW_DK=null; try{ document.body.classList.remove('ts-past-day'); }catch(e){} } return _osDays.apply(this,arguments); }; window.tsOpenSheet=openSheet;
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();

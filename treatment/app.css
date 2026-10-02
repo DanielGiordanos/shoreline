@@ -2570,6 +2570,9 @@ body.dark .tsh .tsh-v .tsh-link,body.dark .tsh .tsh-accent{color:#5fd0e0}
 .ts-daynav .dn-mid.past{border-color:rgba(255,159,10,.55)!important;color:#e08a00}
 .ts-daynav .dn-mid .dn-ro{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(255,159,10,.14);color:#e08a00}
 
+/* no "NOW" line on a past day */
+body.ts-past-day #sheetInner .nowline{display:none}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 
