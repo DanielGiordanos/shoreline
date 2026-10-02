@@ -2560,7 +2560,8 @@ body.dark .tsh .tsh-v .tsh-link,body.dark .tsh .tsh-accent{color:#5fd0e0}
 @media(prefers-reduced-motion:reduce){.tsh .tsh-live,.tsh .tsh-pop{animation:none}}
 
 .tsh .tsh-id{flex:0 1 auto;min-width:0}
-.tsh .tsh-sig{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+.tsh .tsh-sig{column-gap:7px}
+@media(max-width:1280px){.tsh .tsh-vitals{gap:16px}.tsh .tsh-vit{min-width:54px}}
 .tsh .tsh-vit.text .tsh-vv{font-size:18px;white-space:nowrap;line-height:26px}
 
 
