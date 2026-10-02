@@ -2362,7 +2362,9 @@ body.dark .rx-ref{background:rgba(255,255,255,.04);border-color:rgba(255,255,255
 body.dark .rx-chip{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);color:#EEF1F6}
 body.dark .rx-chip.on{background:var(--accent,#38bdd2);color:#0b1220}
 @keyframes tsFlash{0%,60%{background:rgba(56,189,210,.22)}100%{background:transparent}}
-#sheetInner .grow.ts-flash,#sheetInner .grow.ts-flash .rl{animation:tsFlash 2.4s ease-out}
+@keyframes tsFlashCol{0%,60%{box-shadow:inset 0 0 0 999px rgba(56,189,210,.22)}100%{box-shadow:inset 0 0 0 999px transparent}}
+#sheetInner .grow.ts-flash{animation:tsFlash 2.4s ease-out}
+#sheetInner .grow.ts-flash .rl{animation:tsFlashCol 2.4s ease-out}
 
 /* stock strengths under the dose */
 .rx-stock{margin-top:12px}
@@ -2575,14 +2577,14 @@ body.dark .tsh .tsh-v .tsh-link,body.dark .tsh .tsh-accent{color:#5fd0e0}
 body.ts-past-day #sheetInner .nowline{display:none}
 
 /* ═══ order rows: tap the name for details ═══ */
-#sheetInner .grow:not(.ghead) .rl[onclick]{cursor:pointer;transition:background .15s}
-#sheetInner .grow:not(.ghead) .rl[onclick]:hover{background:var(--fill-soft,rgba(0,0,0,.04))}
+#sheetInner .grow:not(.ghead) .rl[onclick]{cursor:pointer;transition:box-shadow .15s}
+#sheetInner .grow:not(.ghead) .rl[onclick]:hover{box-shadow:inset 0 0 0 999px var(--fill-soft,rgba(0,0,0,.04))}   /* tint over the opaque column, never a see-through background */
 #sheetInner .grow.is-dc .rl-name{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--ink-400)}
 #sheetInner .grow.is-dc .rl-meta{color:var(--ink-400)}
 #sheetInner .grow.is-dc .rl-name::after{content:attr(data-dc);display:none}
 #sheetInner .grow.is-dc .rl::after{content:attr(data-dc);position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   padding:2px 7px;border-radius:999px;background:rgba(255,69,58,.12);color:#ff6b61}
-#sheetInner .grow.is-dc .rl{position:relative}
+
 #sheetInner .grow.is-dc .route-pill{opacity:0}
 
 /* ═══ order sheet — Apple-style card ═══ */
