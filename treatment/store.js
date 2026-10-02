@@ -2250,6 +2250,75 @@ window.tsVHistory=function(){ var rows=[]; vOrders().forEach(function(o){ vReadi
 window.tsVCopy=function(){ var g=function(rx){ var o=vOrders().find(function(x){ return rx.test(String(x.name)); }); var R=o?vReadings(o):[]; return R.length?R[R.length-1].v:'—'; };
   var txt=VISIT.patient+' — vitals '+fmtTime(nowMin())+': T '+g(/^temperature$/i)+'°F, HR '+g(/^heart rate$/i)+', RR '+g(/^respiratory rate$/i)+', MM '+g(/^mucous membrane/i)+', CRT '+g(/^crt$/i)+', '+g(/^mentation$/i)+', pain '+g(/^pain score$/i)+'/4, weight '+g(/^weight$/i)+' kg';
   try{ navigator.clipboard.writeText(txt); toast('Latest vitals copied'); }catch(e){ toast('Couldn’t copy'); } };
+/* ═════════ TS PROBLEMS — the patient's problem list, Reminders-style ═════════
+   Stored on the sheet as patient.problem_list = [{id, text, added_at, added_by, resolved_at?, resolved_by?}].
+   Sheets that don't have one yet start from what Flow sent (patient.problems or the presenting reason); the first edit saves the list.
+   Doctors (and admin) add, edit, resolve and remove; everyone else reads. Resolving keeps the problem (tap the circle; it moves to
+   Resolved and can be restored); the × removes one entered by mistake, with Undo. Every change is in the audit. */
+var PROB_COMMON=['Vomiting','Diarrhea','Inappetence','Lethargy','Pain','Dehydration','Hypovolemia','Anemia','Hemoabdomen','Ruptured splenic mass',
+  'GDV','Pancreatitis','Acute kidney injury','Azotemia','DKA','Hypoglycemia','Hyperkalemia','Seizures','Respiratory distress','Pneumonia','Pleural effusion',
+  'Congestive heart failure','Arrhythmia','Urethral obstruction','Trauma','Fracture','Toxin ingestion','Foreign body','Hyperthermia','Sepsis','Parvovirus','Post-operative care'];
+var probShowResolved=false;
+function probList(d){ var p=(d&&d.patient)||{};
+  if(Array.isArray(p.problem_list)) return p.problem_list.filter(function(x){ return x&&x.text; });
+  var seed=(p.problems&&p.problems.length?p.problems:(p.reason?[p.reason]:[]));
+  return seed.map(function(t,i){ return {id:'seed'+i,text:String(t),seed:true}; }); }
+function probActive(d){ return probList(d).filter(function(x){ return !x.resolved_at; }); }
+window.tsProblemTexts=function(d){ return probActive(d||curDoc).map(function(x){ return x.text; }); };
+on('visit',function(v,d){ v.problems=probActive(d).map(function(x){ return x.text; }); });
+function probCan(){ return canOrderTS()&&!(window.tsViewDk&&tsViewDk()!==dayKey()); }
+function probSave(list,desc){ if(!CUR||!curDoc) return; var me=user(), now=new Date().toISOString();
+  var clean=list.map(function(x){ var o={id:x.seed?('p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)):x.id,text:x.text,added_at:x.added_at||now,added_by:x.added_by||me.name||me.initials};
+    if(x.resolved_at){ o.resolved_at=x.resolved_at; o.resolved_by=x.resolved_by||null; } return o; });
+  curDoc.patient=curDoc.patient||{}; curDoc.patient.problem_list=clean; if(curMain){ curMain.patient=curMain.patient||{}; curMain.patient.problem_list=clean; }
+  var s=SHEETS.find(function(x){ return x._id===CUR; }); if(s){ s.patient=s.patient||{}; s.patient.problem_list=clean; }
+  VISIT.problems=clean.filter(function(x){ return !x.resolved_at; }).map(function(x){ return x.text; });
+  tsCommit(CUR,{'patient.problem_list':clean,updated_at:now,updated_by:me.initials,audit:U([{at:now,type:'doctor',desc:desc,who:me.initials,uid:me.uid}])}).catch(function(){});
+  probPaint(); return clean; }
+
+/* ---------- the panel ---------- */
+var PI_X='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+var PI_PLUS='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5v10M5 10h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function probRow(x,i,can){ var res=!!x.resolved_at;
+  return '<li class="pl-row'+(res?' res':'')+'" data-id="'+esc(x.id)+'">'
+    +(can?'<button type="button" class="pl-ck" onclick="tsProbToggle(\''+esc(x.id)+'\',this)" aria-label="'+(res?'Restore ':'Resolve ')+esc(x.text)+'" title="'+(res?'Restore':'Mark resolved')+'"><i></i></button>':'<span class="pl-num">'+(i+1)+'</span>')
+    +'<span class="pl-txt"'+(can&&!res?' onclick="tsProbEdit(\''+esc(x.id)+'\',this)" title="Tap to edit"':'')+'><span class="pl-t">'+esc(x.text)+'</span>'+(res&&x.resolved_at?'<small>Resolved '+esc(fmtWhen(x.resolved_at).replace('Today · ',''))+'</small>':'')+'</span>'
+    +(can?'<button type="button" class="pl-x" onclick="tsProbRemove(\''+esc(x.id)+'\')" aria-label="Remove '+esc(x.text)+'" title="Remove (entered by mistake)">'+PI_X+'</button>':'')+'</li>'; }
+function probInner(){ var L=probList(curDoc), act=L.filter(function(x){ return !x.resolved_at; }), res=L.filter(function(x){ return x.resolved_at; }), can=probCan();
+  var others={}; (SHEETS||[]).forEach(function(s){ probActive(s).forEach(function(x){ others[x.text]=1; }); });
+  var sugg=PROB_COMMON.concat(Object.keys(others)).filter(function(t,i,a){ return a.indexOf(t)===i&&!act.some(function(x){ return x.text.toLowerCase()===t.toLowerCase(); }); });
+  return '<h4>Problem list'+(act.length?'<span class="pl-count">'+act.length+'</span>':'')+'</h4>'
+    +'<ul class="pl">'+(act.length?act.map(function(x,i){ return probRow(x,i,can); }).join(''):'<li class="pl-empty">'+(can?'No problems listed yet':'No problems listed')+'</li>')+'</ul>'
+    +(can?'<form class="pl-add" onsubmit="event.preventDefault();tsProbAdd(this)"><span class="pl-plus">'+PI_PLUS+'</span><input name="p" list="plSugg" placeholder="Add a problem" autocomplete="off" aria-label="Add a problem" onkeydown="if(event.key===\'Escape\'){this.value=\'\';this.blur();}"><datalist id="plSugg">'+sugg.map(function(t){ return '<option value="'+esc(t)+'">'; }).join('')+'</datalist><button type="submit" class="pl-go" aria-label="Add">Add</button></form>':'')
+    +(res.length?'<button type="button" class="pl-restog" onclick="tsProbShowResolved()">'+(probShowResolved?'Hide':'Show')+' resolved · '+res.length+'</button>'+(probShowResolved?'<ul class="pl pl-resolved">'+res.map(function(x,i){ return probRow(x,i,can); }).join('')+'</ul>':''):''); }
+window.tsProblemsPanel=function(){ return '<div class="panel pl-panel" id="tsProblems">'+probInner()+'</div>'; };
+function probPaint(){ var el=document.getElementById('tsProblems'); if(!el) return; var a=document.activeElement;
+  if(a&&el.contains(a)&&a.tagName==='INPUT'&&a.value) return;   /* never wipe what someone is typing */
+  var h=probInner(); if(el.innerHTML!==h) el.innerHTML=h; }
+on('header.refresh',probPaint);
+
+/* ---------- actions ---------- */
+window.tsProbAdd=function(form){ if(!probCan()) return; var inp=form.querySelector('input'), t=(inp.value||'').trim().replace(/\s+/g,' '); if(!t) { inp.focus(); return; }
+  var L=probList(curDoc); if(L.some(function(x){ return !x.resolved_at&&x.text.toLowerCase()===t.toLowerCase(); })){ toast(esc(t)+' is already on the list'); inp.select(); return; }
+  var me=user(), now=new Date().toISOString(); L=L.concat([{id:'p'+Date.now().toString(36),text:t,added_at:now,added_by:me.name||me.initials}]);
+  inp.value=''; probSave(L,'Problem added — <b>'+esc(t)+'</b>');
+  var el=document.getElementById('tsProblems'), ni=el&&el.querySelector('.pl-add input'); if(ni) ni.focus();
+  var rows=el&&el.querySelectorAll('.pl:not(.pl-resolved) .pl-row'), last=rows&&rows[rows.length-1]; if(last){ last.classList.add('pl-new'); setTimeout(function(){ last.classList.remove('pl-new'); },700); } };
+window.tsProbToggle=function(id,btn){ if(!probCan()) return; var L=probList(curDoc), x=L.find(function(p){ return p.id===id; }); if(!x) return; var me=user(), now=new Date().toISOString();
+  var go=function(){ L=L.map(function(p){ if(p.id!==id) return p; var c=Object.assign({},p); if(c.resolved_at){ delete c.resolved_at; delete c.resolved_by; } else { c.resolved_at=now; c.resolved_by=me.name||me.initials; } return c; });
+    probSave(L,(x.resolved_at?'Problem restored — <b>':'Problem resolved — <b>')+esc(x.text)+'</b>'); };
+  var row=btn&&btn.closest('.pl-row'); if(row&&!x.resolved_at&&!matchMedia('(prefers-reduced-motion: reduce)').matches){ row.classList.add('pl-done'); setTimeout(go,420); } else go(); };
+window.tsProbRemove=function(id){ if(!probCan()) return; var L=probList(curDoc), x=L.find(function(p){ return p.id===id; }); if(!x) return; var before=L.slice();
+  var row=document.querySelector('#tsProblems .pl-row[data-id="'+id+'"]'), go=function(){ probSave(L.filter(function(p){ return p.id!==id; }),'Problem removed — <b>'+esc(x.text)+'</b>');
+    undoToast(esc(x.text)+' removed',function(){ probSave(before,'Problem restored — <b>'+esc(x.text)+'</b>'); }); };
+  if(row){ row.classList.add('pl-leaving'); setTimeout(go,260); } else go(); };
+window.tsProbEdit=function(id,span){ if(!probCan()) return; var x=probList(curDoc).find(function(p){ return p.id===id; }); if(!x||span.querySelector('input')) return;
+  span.innerHTML='<input class="pl-edit" value="'+esc(x.text)+'" aria-label="Edit problem">'; var inp=span.querySelector('input'); inp.focus(); inp.select();
+  var done=false, finish=function(save){ if(done) return; done=true; var t=(inp.value||'').trim().replace(/\s+/g,' '); try{ inp.blur(); }catch(e){}
+    if(save&&t&&t!==x.text) probSave(probList(curDoc).map(function(p){ return p.id===id?Object.assign({},p,{text:t}):p; }),'Problem changed — <b>'+esc(x.text)+'</b> → <b>'+esc(t)+'</b>'); else probPaint(); };
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); finish(true); } else if(e.key==='Escape'){ finish(false); } });
+  inp.addEventListener('blur',function(){ finish(true); }); };
+window.tsProbShowResolved=function(){ probShowResolved=!probShowResolved; probPaint(); };
 /* ═════════ TS ROUNDS + PATIENT INFO — built from each sheet, nothing typed in by hand ═════════
    Medical Rounds tab: one card per admitted patient (the open one first) — doctor → next, location, hospital day, code status,
    problems, latest vitals, active medications with doses, fluids & CRIs, tasks due / overdue, the last note. Tap a card to open it.
@@ -2271,7 +2340,7 @@ function rdCard(s0){ var d=rdDoc(s0), p=d.patient||s0.patient||{}, name=((p.name
   var inf=O.filter(function(o){ return o.cont; }).map(function(o){ return esc(o.name)+(o.rate?' · '+esc(o.rate):''); });
   var nx=null; try{ nx=hoNext(d); }catch(e){} var L={due:0,over:0}; try{ L=loadOf(d); }catch(e){}
   var notes=(d.notes||[]).slice().sort(function(a,b){ return String(b.at||'').localeCompare(String(a.at||'')); }), note=notes[0];
-  var probs=(p.problems&&p.problems.length?p.problems:(p.reason?[p.reason]:[])).map(esc).join(', ');
+  var probs=probActive(d).map(function(x){ return esc(x.text); }).join(', ');
   return '<div class="rc" onclick="tsOpenSheet(\''+esc(s0._id)+'\',true)"><div class="panel"><div class="rc-head">'+ptBadge(name,p.species||'Dog','width:40px;height:40px;font-size:13px')
     +'<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:15px">'+esc(name)+'</div><div style="color:var(--ink-400);font-size:12px">'+[p.species,p.breed,sexLabel(p.sex),kg?kg+' kg':''].filter(function(x){ return x&&x!=='—'; }).map(esc).join(' · ')+'</div></div>'+clinPill(p.condition||'Stable')+'</div><div class="rc-body">'
     +rdSec('Doctor · Location · Day',[esc(p.doctor||'—')+(nx?' → '+esc(nx.name):''),esc(p.location||''),rdHospDay(s0)].filter(Boolean).join(' · '))
@@ -2314,7 +2383,7 @@ window.sidebarBriefHTML=function(){ var p=(curDoc&&curDoc.patient)||{}, kg=Numbe
       +kvr('Species',esc(VISIT.species||'—'))+kvr('Breed',esc(VISIT.breed||'—'))+kvr('Age',esc(VISIT.age||'—'))+kvr('Sex',esc(VISIT.sex||'—'))+kvr('Weight',kg?kg+' kg':'—')
       +'<div class="kvrow"><span class="kk">Code status</span><span class="vv">'+tsCodePill(1)+'</span></div></div></div>'
     +((p.owner||p.phone)?'<div class="panel"><h4>Client</h4><div class="kvlist">'+(p.owner?kvr('Owner',esc(p.owner)):'')+(p.phone?kvr('Phone',esc(p.phone)):'')+'</div></div>':'')
-    +list('Problem list',VISIT.problems)+list('Plan',VISIT.plan)
+    +tsProblemsPanel()+list('Plan',VISIT.plan)
     +'</aside>'; };
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
