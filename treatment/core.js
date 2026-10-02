@@ -118,7 +118,7 @@ function selectCTab(tab){
   $('#ctab-'+tab).classList.remove('hidden');
   $('#stage').classList.toggle('sheet-active',tab==='sheet'||tab==='vitals');
   closeBrief();
-  if(tab==='dash')renderDash();if(tab==='sheet')renderSheet();if(tab==='vitals')renderVitals();if(tab==='rounds')renderRounds();if(tab==='timeline')renderTimeline();if(tab==='notes')renderNotes();
+  if(tab==='dash')renderDash();if(tab==='sheet')renderSheet();if(tab==='vitals')renderVitals();if(tab==='rounds')renderRounds();if(tab==='timeline')renderTimeline();if(tab==='notes')renderNotes();if(tab==='tasks'&&window.tsRenderTasks)tsRenderTasks();
   $('#stage').scrollTop=0;
 }
 $$('#clinSwitcher .seg').forEach(b=>b.onclick=()=>selectCTab(b.dataset.ctab));
@@ -532,7 +532,7 @@ function renderSheet(){
   const grid=`<main class="treatment-main">
     <div class="treatment-toolbar">
       <button class="btn ghost brief-toggle" onclick="openBrief()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1.5"/><line x1="14" y1="7" x2="21" y2="7"/><line x1="14" y1="12" x2="21" y2="12"/><line x1="14" y1="17" x2="21" y2="17"/></svg>Patient info</button>
-      <div class="order-search-wrapper"><div class="qadd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tsSearch" placeholder="Add order by name or ID…" autocomplete="off" onfocus="openTsDrop()" oninput="tsRender(this.value)" onkeydown="tsKey(event)"></div><div class="order-search-dropdown" id="tsDrop" style="display:none"></div></div>
+      <div class="order-search-wrapper"><div class="qadd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tsSearch" placeholder="Add order by name or ID…" autocomplete="off" onfocus="openTsDrop()" oninput="tsRender(this.value)" onkeydown="tsKey(event)"></div><div class="order-search-dropdown" id="tsDrop" style="display:none"></div></div>${window.tsSetsBtn?tsSetsBtn():''}
       <div class="day-nav ts-daynav">${window.tsDayNavHTML?tsDayNavHTML():'<button class="today">Today</button>'}</div>
       <div class="spacer" style="flex:1"></div>
       <button class="btn ghost" style="flex:0 0 auto;width:auto;height:38px;padding:0 14px" onclick="selectCTab('timeline')">Audit</button>
@@ -629,16 +629,16 @@ function markContent(t,s){if(s==='completed')return t.value??MK_CHECK;if(s==='du
 function buildGrid(){
   const inner=$('#sheetInner');if(!inner)return;let html='';const nh=Math.floor(nowMin()/60);
   html+=`<div class="grow ghead"><div class="rl"><span class="rl-name" style="color:var(--ink-400);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:800">Order</span></div><div class="hcells">`;
-  for(let h=0;h<24;h++){const L=hourLabel(h);html+=`<div class="hcell ${h===nh?'hour-now':''}">${L.h}<span class="ampm">${L.ap}</span></div>`;}
+  for(let h=0;h<24;h++){const L=hourLabel(h);html+=`<div class="hcell ${h===nh?'hour-now':''}" onclick="tsBatch(${h})" title="Chart everything at ${L.h} ${L.ap}M">${L.h}<span class="ampm">${L.ap}</span></div>`;}
   html+=`</div></div>`;
   SECTIONS.forEach(sec=>{const so=ORDERS.filter(o=>o.section===sec.key);if(!so.length)return;
-    html+=`<div class="grow"><div class="gsection"><svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="${sec.icon}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="stitle">${sec.key}</span><span class="scount">${so.length}</span></div></div>`;
+    html+=`<div class="grow"><div class="gsection"><svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="${sec.icon}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="stitle">${sec.key}</span><span class="scount">${so.length}</span>${sec.key==='Continuous Infusions'&&window.tsInfTotal?tsInfTotal():''}</div></div>`;
     so.forEach(o=>{html+=`<div class="grow${o.dc?' is-dc':''}"><div class="rl" data-dc="${o.dc?(o.dc_reason==='error'?'Error':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">`;
       if(o.type==='med'){const d=medDose(o);html+=`<div style="min-width:0"><div class="rl-name">${o.name}${(window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> · '+tsBrand(o.name)+'</span>':''}</div><div class="rl-meta">${d.mg}${o.conc?' · <b>'+d.volume+'</b>':''} · ${o.freq}</div></div><span class="route-pill">${o.route}</span>`;}
-      else if(o.type==='fluid'){html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.rate}</div></div><span class="route-pill">IV</span>`;}
+      else if(o.type==='fluid'){html+=`<div style="min-width:0"><div class="rl-name">${window.tsInfName?tsInfName(o):o.name}</div><div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate}</div></div><span class="route-pill">${o.kind==='cri'?'CRI':'IV'}</span>`;}
       else{html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}</div></div>`;}
       html+=`</div><div class="hcells">`;
-      if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?o.rate.replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion('${o.id}',${h})">${lbl}</div></div>`;}}
+      if(o.cont&&o.kind&&window.tsInfCells){html+=tsInfCells(o);}else if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?String(o.rate||'').replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion('${o.id}',${h})">${lbl}</div></div>`;}}
       else{for(let h=0;h<24;h++){const _c=TASKS.filter(x=>x.orderId===o.id&&Math.floor(x.sched/60)===h);const t=_c.find(x=>x.status)||_c.find(x=>x.sched===h*60);if(!t){html+=`<div class="cell"></div>`;continue;}const s=deriveStatus(t);if(s==='completed'&&t.severity){html+=`<div class="cell"><div class="mark abn ${t.severity>=2?'sev':''}" onclick="openCompletion('${t.id}')">${t.value}</div></div>`;continue;}html+=`<div class="cell"><div class="mark ${s}" onclick="openCompletion('${t.id}')" title="${o.name} · ${fmtTime(t.sched)}">${markContent(t,s)}</div></div>`;}}
       html+=`</div></div>`;});
   });

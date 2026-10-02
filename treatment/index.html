@@ -6,7 +6,7 @@
 <title>Pravix Treatment Sheets | VCA Shoreline</title>
 <link rel="icon" type="image/png" href="img/3ad4e7dbff.png">
 <meta name="theme-color" content="#0A1222">
-<link rel="stylesheet" href="app.css?v=1cff6e7971">
+<link rel="stylesheet" href="app.css?v=82ff0b208a">
 
 </head>
 <body>
@@ -54,6 +54,7 @@
     <div class="subnav-title">Treatment Sheets</div>
     <nav class="switcher" id="clinSwitcher">
       <button class="seg active" data-ctab="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
+      <button class="seg" data-ctab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/></svg>Tasks<span class="seg-badge" id="tsTaskBadge"></span></button>
       <button class="seg" data-ctab="sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Treatment Sheet</button>
       <button class="seg" data-ctab="vitals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Vitals</button>
       <button class="seg" data-ctab="rounds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Medical Rounds</button>
@@ -76,6 +77,7 @@
   <main class="stage" id="stage">
     <section class="view" id="view-clinical">
       <div class="ctab" id="ctab-dash"></div>
+      <div class="ctab hidden" id="ctab-tasks"></div>
       <div class="ctab hidden" id="ctab-sheet"></div>
       <div class="ctab hidden" id="ctab-vitals"></div>
       <div class="ctab hidden" id="ctab-rounds"></div>
@@ -121,13 +123,13 @@
 
 <div class="ctoast-wrap" id="toastWrap"></div>
 
-<script defer src="core.js?v=9fc8f218da"></script>
+<script defer src="core.js?v=9e6a5ff970"></script>
 <script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "flowDoctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Larry Berkwitt", "Dianne Kittrell"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="596ec693";</script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script defer src="store.js?v=76feefe425"></script>
+<script defer src="store.js?v=b91c855b9f"></script>
 
 
 <script defer src="voice.js?v=9f982113a8"></script>
