@@ -123,9 +123,7 @@ function fmtAdmit(iso){ try{ var d=new Date(iso); return (d.getMonth()+1)+'/'+d.
 function dayOf(iso){ try{ var n=Math.floor((Date.now()-new Date(iso).getTime())/86400000)+1; return 'Day '+(n>0?n:1); }catch(e){ return 'Day 1'; } }   /* hospital day from admission: day 2 starts at 24 h */
 function visitFrom(d){ var v=visitBase(d); emit('visit',v,d); return v; }
 function visitBase(d){ var p=d.patient||{}; var full=((p.name||'')+' '+(p.last||'')).trim()||'Unnamed patient';
-  var latest=function(name){ var o=Object.values(d.orders||{}).find(function(x){ return x.name===name; }); if(!o) return '—';
-    var ms=Object.keys(d.marks||{}).map(function(k){ return d.marks[k]; }).filter(function(m){ return m&&m.orderId===o.id&&m.status==='completed'&&m.value; })
-      .sort(function(a,b){ return (b.at||'').localeCompare(a.at||''); }); return ms[0]?ms[0].value:'—'; };
+  var latest=function(name){ return rdLatest(d,new RegExp('^'+name+'$','i'))||'—'; };   /* newest charted value, by day + minute (rounds.js) */
   return {id:String(d.visit_id||d._id||'').replace(/^[a-z]_/,'').slice(-6).toUpperCase(), vcode:d.visit_code||'', patient:full, client:p.last||p.owner||'—', species:p.species||'Dog', breed:p.breed||'—', sex:sexLabel(p.sex)||'—', age:p.age||'—',
     weight:Number(p.weight)||0, temp:latest('Temperature'), hr:latest('Heart Rate'), rr:latest('Respiratory Rate'), mm:latest('Mucous Membrane'), crt:latest('CRT'), mentation:latest('Mentation'), pain:latest('Pain Score'),
     doctorFrom:p.doctor||'—', doctorTo:p.doctor||'—', location:p.location||'—', status:p.condition||'Stable', code:p.code||'—', allergies:p.allergies||'None known',
@@ -220,7 +218,7 @@ window.tsCodePill=function(always){ var c=String(VISIT.code||'').toUpperCase(); 
   return c==='DNR'?'<span class="pill code-dnr">DNR</span>':'<span class="pill soft">'+c+'</span>'; };
 /* header vitals follow live charting without a full re-render */
 function refreshEstimate(){ var c=document.querySelector('#ctab-sheet .est-card'); if(!c||typeof window.estimateCard!=='function') return; var h=window.estimateCard(); if(c.outerHTML!==h){ var t=document.createElement('div'); t.innerHTML=h; if(t.firstElementChild) c.replaceWith(t.firstElementChild); } }
-function refreshPrototypeHeader(){ try{ refreshEstimate(); }catch(e){} var vs=document.querySelectorAll('.cmd-vitals .vstat .vv'); if(vs.length<4) return;
+function refreshPrototypeHeader(){ try{ refreshEstimate(); }catch(e){} try{ vLive(); }catch(e){} var vs=document.querySelectorAll('.cmd-vitals .vstat .vv'); if(vs.length<4) return;
   var vals=[VISIT.temp==='—'?'—':VISIT.temp+'°',VISIT.hr,VISIT.rr,VISIT.mm]; vs.forEach(function(e,i){ if(i<4&&e.textContent!==String(vals[i])) e.textContent=vals[i]; }); }
 /* the prototype header's numbers, then every module's part (hook: header.refresh) */
 function refreshHeader(){ refreshPrototypeHeader(); emit('header.refresh'); }
@@ -2250,6 +2248,15 @@ window.tsVHistory=function(){ var rows=[]; vOrders().forEach(function(o){ vReadi
 window.tsVCopy=function(){ var g=function(rx){ var o=vOrders().find(function(x){ return rx.test(String(x.name)); }); var R=o?vReadings(o):[]; return R.length?R[R.length-1].v:'—'; };
   var txt=VISIT.patient+' — vitals '+fmtTime(nowMin())+': T '+g(/^temperature$/i)+'°F, HR '+g(/^heart rate$/i)+', RR '+g(/^respiratory rate$/i)+', MM '+g(/^mucous membrane/i)+', CRT '+g(/^crt$/i)+', '+g(/^mentation$/i)+', pain '+g(/^pain score$/i)+'/4, weight '+g(/^weight$/i)+' kg';
   try{ navigator.clipboard.writeText(txt); toast('Latest vitals copied'); }catch(e){ toast('Couldn’t copy'); } };
+
+/* ---------- the latest value of each vital, as charted on the sheet ----------
+   Saved readings plus anything charted this second and not yet saved; feeds VISIT (header numbers, Vitals card, handoff).
+   Runs on every header refresh and after each charted cell, so the Vitals card always matches the grid. */
+var V_LIVE=[['temp',/^temperature$/i],['hr',/^heart rate$/i],['rr',/^respiratory rate$/i],['mm',/^mucous membrane/i],['crt',/^crt$/i],['mentation',/^mentation$/i],['pain',/^pain score$/i]];
+function vLatestOf(rx){ var seen={}, best=null; (ORDERS||[]).concat(Object.keys((curDoc&&curDoc.orders)||{}).map(function(k){ return curDoc.orders[k]; })).forEach(function(o){
+    if(!o||!o.id||seen[o.id]||!rx.test(String(o.name||'').trim())) return; seen[o.id]=1; var R=vReadings(o), r=R[R.length-1]; if(r&&(!best||r.at>=best.at)) best=r; }); return best; }
+function vLive(){ if(!curDoc) return; V_LIVE.forEach(function(v){ var r=vLatestOf(v[1]); VISIT[v[0]]=r?r.v:'—'; }); }
+on('task.charted',function(){ try{ refreshHeader(); }catch(e){} },50);
 /* ═════════ TS PROBLEMS — the patient's problem list, Reminders-style ═════════
    Stored on the sheet as patient.problem_list = [{id, text, added_at, added_by, resolved_at?, resolved_by?}].
    Sheets that don't have one yet start from what Flow sent (patient.problems or the presenting reason); the first edit saves the list.
@@ -2366,13 +2373,17 @@ function weightTrendHTML(){ var R=[]; try{ R=readings(curDoc,/^weight$/i).map(fu
     +'<path class="trend-fill" d="M'+pts.join(' L')+' L'+x1+' '+base+' L'+x0+' '+base+' Z"/><path class="trend-line" d="M'+pts.join(' L')+'"/>'
     +xs.map(function(x,i){ return '<circle class="trend-dot'+(i===n-1?' current':'')+'" cx="'+x.toFixed(1)+'" cy="'+ys[i].toFixed(1)+'" r="'+(i===n-1?4:3)+'"><title>'+esc(lbl(R[i].at))+': '+R[i].v+' kg</title></circle>'; }).join('')
     +xs.map(function(x,i){ return '<text x="'+x.toFixed(1)+'" y="63" text-anchor="'+(i===0?'start':i===n-1?'end':'middle')+'">'+esc(lbl(R[i].at))+'</text>'; }).join('')+'</svg></div>'; }
-window.sidebarBriefHTML=function(){ var p=(curDoc&&curDoc.patient)||{}, kg=Number(VISIT.weight)||0, sp=spKey()||'dog', val=function(x,u){ return x&&x!=='—'?esc(x)+(u?' '+u:''):'—'; };
+function vitalsCardInner(){ try{ vLive(); }catch(e){} var kg=Number(VISIT.weight)||0, sp=spKey()||'dog', val=function(x,u){ return x&&x!=='—'?esc(x)+(u?' '+u:''):'—'; };
   var vit=[['Weight',kg?kg+' kg':'—'],['Temp',val(VISIT.temp,'°F')],['Heart rate',val(VISIT.hr,'bpm')],['Resp rate',val(VISIT.rr,'rpm')],['MM',val(VISIT.mm)],['CRT',val(VISIT.crt)],['Mentation',val(VISIT.mentation)],['Pain score',VISIT.pain&&VISIT.pain!=='—'?esc(VISIT.pain)+' / 4':'—']];
+  return '<h4>Vitals</h4><div class="vit-grid">'+vit.map(function(v){ return '<div class="vit"><div class="k">'+v[0]+'</div><div class="v">'+v[1]+'</div></div>'; }).join('')+'</div>'
+    +weightTrendHTML()
+    +(kg?'<div class="calc-row"><div class="calc-chip"><div class="k">BSA</div><div class="v">'+bsa(kg,sp).toFixed(2)+' m²</div></div><div class="calc-chip"><div class="k">RER</div><div class="v">'+Math.round(70*Math.pow(kg,0.75)).toLocaleString()+' kcal/day</div></div></div>':''); }
+function vitalsCardPaint(){ var el=document.getElementById('tsVitalsCard'); if(!el) return; var h=vitalsCardInner(); if(el.innerHTML!==h) el.innerHTML=h; }
+on('header.refresh',vitalsCardPaint);
+window.sidebarBriefHTML=function(){ var p=(curDoc&&curDoc.patient)||{}, kg=Number(VISIT.weight)||0;
   var list=function(t,a){ return a&&a.length?'<div class="panel"><h4>'+t+'</h4><div class="pc"><ul>'+a.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul></div></div>':''; };
   return '<aside class="clinical-sidebar cbrief" id="clinSidebar">'+estimateCard()
-    +'<div class="panel"><h4>Vitals</h4><div class="vit-grid">'+vit.map(function(v){ return '<div class="vit"><div class="k">'+v[0]+'</div><div class="v">'+v[1]+'</div></div>'; }).join('')+'</div>'
-      +weightTrendHTML()
-      +(kg?'<div class="calc-row"><div class="calc-chip"><div class="k">BSA</div><div class="v">'+bsa(kg,sp).toFixed(2)+' m²</div></div><div class="calc-chip"><div class="k">RER</div><div class="v">'+Math.round(70*Math.pow(kg,0.75)).toLocaleString()+' kcal/day</div></div></div>':'')+'</div>'
+    +'<div class="panel" id="tsVitalsCard">'+vitalsCardInner()+'</div>'
     +'<div class="panel"><h4>Visit</h4><div class="kvlist">'
       +kvr('Doctor','<span class="ts-ho-slot">'+(window.tsDoctorChip?tsDoctorChip():esc(VISIT.doctorTo||'—'))+'</span>')
       +'<div class="kvrow"><span class="kk">Technician</span><span class="vv ts-tech-slot">'+(window.tsTechCell?tsTechCell():'')+'</span></div>'
