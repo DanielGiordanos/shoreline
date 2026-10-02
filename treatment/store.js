@@ -270,7 +270,7 @@ function openSheet(id,goSheet,keep){
     if(CUR!==id) return;
     if(!snap.exists){ if(!snap.metadata.fromCache){ CUR=null; curDoc=null; curMain=null; reset(); rerender(); } return; }
     if(!snap.metadata.hasPendingWrites) sync();
-    var d=snap.data(); d._id=snap.id;
+    var d=snap.data(); d._id=snap.id; fillLast(d);
     /* closed on another screen (or an old link): leave it, don't keep charting on a closed sheet */
     if(d.status==='closed'){ if(snap.metadata.hasPendingWrites) return; /* our own close — closeSheetFlow finishes it */ var nm=((d.patient||{}).name||'This patient'); closeCurrent(); try{ selectCTab('dash'); }catch(e){} try{ toast(nm+'’s sheet was closed'); }catch(e){} return; }
     curMain=d; if(!archLoaded&&d.audit_archived){ archLoaded=true; loadArchive(id); }
@@ -287,7 +287,10 @@ function closeCurrent(){ unsubAllCur(); CUR=null; curDoc=null; curMain=null; cur
 /* past midnight: follow the new day's charting */
 setInterval(function(){ if(CUR&&liveCur&&subDk&&subDk!==dayKey()){ dayLoaded={}; listenDays(CUR); } },30000);
 
-function sheetFrom(doc){ var x=doc.data(); x._id=doc.id; x._inbox=x.marks||{}; x.marks=synthMarks(x,x._inbox); return x; }
+/* the pet carries the family's last name ("Linda Vander Ploeg") so two Lindas are never confused; taken from the owner when the sheet has none */
+function ownerLast(o){ o=String(o||'').trim(); if(!o) return ''; if(o.indexOf(',')>-1) return o.split(',')[0].trim(); var w=o.split(/\s+/); return w.length>1?w.slice(1).join(' '):''; }
+function fillLast(x){ var p=x&&x.patient; if(p&&!String(p.last||'').trim()){ var l=ownerLast(p.owner); if(l) p.last=l; } return x; }
+function sheetFrom(doc){ var x=doc.data(); x._id=doc.id; fillLast(x); x._inbox=x.marks||{}; x.marks=synthMarks(x,x._inbox); return x; }
 function listen(){
   if(unsubList) return;
   unsubList=DB.collection(COL).where('tenant_id','==',TENANT).where('status','==','active').onSnapshot(function(snap){
