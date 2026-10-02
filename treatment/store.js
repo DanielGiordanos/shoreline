@@ -1177,5 +1177,117 @@ function refreshLoc(){ document.querySelectorAll('.ts-loc-slot').forEach(functio
   try{ updateChip(); }catch(e){} }
 var _rhLoc=refreshHeader; refreshHeader=function(){ _rhLoc.apply(this,arguments); try{ refreshLoc(); }catch(e){} };
 
+/* ═════════ TS HANDOFF — Current → Next doctor (the same handoff Rounds shows in Flow) ═════════
+   Sheet:  patient.doctor (current) · patient.doctor_next {name,at,by} (planned) · handoffs[] (note, snapshot, acknowledgment; last 20)
+   Flow:   visits.doctor_id (current = slug of the name) · visits.rounds.next {docId,name,at,by} (only when the visit is in Rounds)
+   Doctors (and Daniel) hand off; everyone can read. The receiving doctor gets a card on the sheet until they acknowledge. */
+var FLOW_DOCS=(window.TS_STAFF&&window.TS_STAFF.flowDoctors)||[];
+function docSlugTS(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+function drShort(n){ n=String(n||'').replace(/^dr\.?\s+/i,'').trim(); return n?'Dr. '+n.split(/\s+/).slice(-1)[0]:'—'; }
+function hoCur(d){ return ((d&&d.patient)||{}).doctor||''; }
+function hoNext(d){ var n=((d&&d.patient)||{}).doctor_next; return n&&n.name?n:null; }
+function hoList(d){ return Array.isArray(d&&d.handoffs)?d.handoffs:[]; }
+/* the newest handoff to whoever is now the current doctor that they have not acknowledged yet */
+function hoPending(d){ var H=hoList(d), cur=normName(hoCur(d)); for(var i=H.length-1;i>=0;i--){ var h=H[i]; if(normName(h.to)===cur) return h.ack_at?null:h; } return null; }
+function canHandoff(){ var r=staffRole(); return r==='doctor'||r==='admin'; }
+function hoTime(iso){ try{ var d=new Date(iso); return d.toLocaleDateString([], {month:'numeric',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+
+/* the header shows Current → Next (or "Hand off" when no next doctor is set) */
+var _vfHo=visitFrom; visitFrom=function(d){ var v=_vfHo(d), n=hoNext(d); v.doctorTo=n?n.name:v.doctorFrom; return v; };
+window.tsDoctorChip=function(){ if(!CUR||!curDoc) return '<span class="pill soft">'+esc(String(VISIT.doctorFrom||'—').split(',')[0])+' → '+esc(String(VISIT.doctorTo||'—').split(',')[0])+'</span>';
+  var cur=hoCur(curDoc), n=hoNext(curDoc), p=hoPending(curDoc);
+  return '<button type="button" class="pill soft ts-ho-chip'+(n?' has-next':'')+(p?' pending':'')+'" onclick="tsOpenHandoff()" title="'+(n?'Next doctor set — tap to hand off':'Hand off to the next doctor')+'">'
+    +esc(cur||'No doctor')+' <span class="ho-arrow">→</span> '+(n?esc(n.name):'<span class="ho-muted">Hand off</span>')+(p?'<i class="ho-dot" title="Handoff not yet acknowledged"></i>':'')+'</button>'; };
+
+/* what the next doctor needs at a glance, captured with the handoff */
+function hoSnapshot(){ var v=VISIT||{}, meds=[], alerts=[];
+  try{ (ORDERS||[]).forEach(function(o){ if(o&&o.type==='med'&&!o.dc){ var d=window.medDose?medDose(o):{mg:''}; meds.push(o.name+' '+d.mg+' '+(o.route||'')+' '+(o.freq||'')); } }); }catch(e){}
+  try{ alerts=flagsFor(curDoc).map(function(f){ return f.text; }); }catch(e){}
+  var vit=[['T',v.temp],['HR',v.hr],['RR',v.rr],['Pain',v.pain]].filter(function(x){ return x[1]&&x[1]!=='—'; }).map(function(x){ return x[0]+' '+x[1]; }).join(' · ');
+  return {vitals:vit||'', meds:meds.slice(0,12), alerts:alerts.slice(0,6), code:v.code&&v.code!=='—'?v.code:'', weight:v.weight||null, location:v.location&&v.location!=='—'?v.location:''}; }
+function snapHTML(s){ if(!s) return ''; var row=function(k,val){ return val?'<div class="ho-snap-row"><span>'+k+'</span><b>'+val+'</b></div>':''; };
+  return '<div class="ho-snap">'+row('Code',esc(s.code))+row('Location',esc(s.location))+row('Last vitals',esc(s.vitals))
+    +row('Medications',(s.meds||[]).map(esc).join('<br>'))+row('Alerts',(s.alerts||[]).map(esc).join('<br>'))+'</div>'; }
+function hoEntryHTML(h){ return '<div class="ho-entry"><div class="ho-entry-h"><b>'+esc(drShort(h.from))+' → '+esc(drShort(h.to))+'</b><small>'+esc(hoTime(h.at))+(h.ack_at?' · acknowledged '+esc(hoTime(h.ack_at)):' · not yet acknowledged')+'</small></div>'
+  +(h.summary?'<p><span>Summary</span>'+esc(h.summary)+'</p>':'')+(h.todo?'<p><span>To do / watch for</span>'+esc(h.todo)+'</p>':'')+snapHTML(h.snapshot)+'</div>'; }
+
+/* ---------- the handoff window ---------- */
+window.tsOpenHandoff=function(){ if(!CUR||!curDoc){ toast('Open a patient first'); return; }
+  var cur=hoCur(curDoc), n=hoNext(curDoc), H=hoList(curDoc), last=H[H.length-1], v=VISIT||{};
+  if(!canHandoff()){ modal('<h3>Handoff · '+esc(v.patient||'')+'</h3><p>Current doctor: <b>'+esc(cur||'—')+'</b>'+(n?' · next: <b>'+esc(n.name)+'</b>':'')+'</p>'
+      +(last?hoEntryHTML(last):'<p class="ho-muted">No handoff yet.</p>')+'<p class="rx-warn rx-block">Only doctors can hand off a patient.</p>','Close',function(){ return true; }); return; }
+  var docs=FLOW_DOCS.filter(function(x){ return normName(x)!==normName(cur); });
+  var mine=normName(user().name); docs.sort(function(a,b){ return (normName(b)===mine)-(normName(a)===mine)||(n&&normName(b)===normName(n.name))-(n&&normName(a)===normName(n.name)); });
+  window._ho={to:n?n.name:'',mode:n?'now':'next'};
+  var summ=[v.age,v.sex,v.breed].filter(function(x){ return x&&x!=='—'; }).join(' ')+(v.complaint&&v.complaint!=='—'?' · '+v.complaint:'');
+  modal('<h3>Hand off · '+esc(v.patient||'')+'</h3><p>Current doctor <b>'+esc(cur||'—')+'</b>'+(n?' · next doctor set: <b>'+esc(n.name)+'</b> ('+esc(hoTime(n.at))+')':'')+'</p>'
+    +'<div class="rx-lbl">Hand off to</div><div class="rx-chips ho-docs">'+docs.map(function(x){ return '<button type="button" class="rx-chip'+(window._ho.to===x?' on':'')+'" data-d="'+esc(x)+'" onclick="tsHoDoc(this)">'+esc(x)+'</button>'; }).join('')+'</div>'
+    +'<div class="rx-lbl">When</div><div class="ho-seg"><button type="button" data-m="now" class="'+(window._ho.mode==='now'?'on':'')+'" onclick="tsHoMode(this)">Now<small>They take the case</small></button>'
+      +'<button type="button" data-m="next" class="'+(window._ho.mode==='next'?'on':'')+'" onclick="tsHoMode(this)">Next shift<small>Set as next doctor</small></button></div>'
+    +'<div class="tm-grid" style="margin-top:14px"><label class="wide">Summary<textarea id="hoSumm" rows="2">'+esc(summ)+'</textarea></label>'
+    +'<label class="wide">To do / watch for<textarea id="hoTodo" rows="3" placeholder="Recheck PCV at 2 AM · if seizures → midazolam · call owner with update"></textarea></label></div>'
+    +'<div class="rx-lbl">Included automatically</div>'+snapHTML(hoSnapshot())
+    +(n?'<button type="button" class="ho-clear" onclick="tsHoClearNext()">Clear next doctor</button>':'')
+    +(last?'<details class="ho-hist"><summary>Last handoff</summary>'+hoEntryHTML(last)+'</details>':''),
+    'Hand off', tsHoSubmit);
+  tsHoLabel(); };
+window.tsHoDoc=function(b){ document.querySelectorAll('#tsModal .ho-docs .rx-chip').forEach(function(c){ c.classList.toggle('on',c===b); }); window._ho.to=b.dataset.d; tsHoLabel(); };
+window.tsHoMode=function(b){ document.querySelectorAll('#tsModal .ho-seg button').forEach(function(c){ c.classList.toggle('on',c===b); }); window._ho.mode=b.dataset.m; tsHoLabel(); };
+function tsHoLabel(){ var ok=document.querySelector('#tsModal [data-ok]'); if(!ok) return; var t=window._ho.to;
+  ok.textContent=window._ho.mode==='now'?(t?'Hand off to '+drShort(t)+' now':'Hand off now'):(t?'Set '+drShort(t)+' as next':'Set as next doctor'); }
+
+function tsHoSubmit(){ var h=window._ho||{}, to=h.to, mode=h.mode;
+  if(!to){ toast('Choose the doctor'); return false; }
+  var s=SHEETS.find(function(x){ return x._id===CUR; }), d=curDoc, me=user(), now=new Date().toISOString(), cur=hoCur(d), visitId=d.visit_id;
+  var entry={id:'h'+Date.now().toString(36),at:now,from:cur||null,to:to,mode:mode,summary:((document.getElementById('hoSumm')||{}).value||'').trim(),
+    todo:((document.getElementById('hoTodo')||{}).value||'').trim(),snapshot:hoSnapshot(),by:me.name||me.initials,by_uid:me.uid||null,ack_at:null,ack_by:null};
+  var H=hoList(d).concat([entry]).slice(-20), desc;
+  var u={handoffs:H,updated_at:now,updated_by:me.initials};
+  if(mode==='now'){ u['patient.doctor']=to; u['patient.doctor_at']=now; u['patient.doctor_next']=null; desc='Handed off — <b>'+esc(drShort(cur))+' → '+esc(drShort(to))+'</b>'; }
+  else { u['patient.doctor_next']={name:to,at:now,by:me.name||me.initials}; desc='Next doctor — <b>'+esc(drShort(to))+'</b>'; }
+  u.audit=FV.arrayUnion({at:now,type:'doctor',desc:desc,who:me.initials,uid:me.uid});
+  u.notes=FV.arrayUnion({at:now,type:'doctor',author:me.initials,role:'Doctor',uid:me.uid,
+    body:'Handoff '+drShort(cur)+' → '+drShort(to)+(mode==='next'?' (next shift)':'')+(entry.summary?'\nSummary: '+entry.summary:'')+(entry.todo?'\nTo do / watch for: '+entry.todo:'')});
+  /* Flow first (Rounds' current/next), then the sheet — so Flow's own sync never sees a half-done handoff */
+  hoToFlow(visitId,to,mode,me,now).then(function(){ return DB.collection(COL).doc(CUR).update(u); })
+    .then(function(){ toast(mode==='now'?('Handed off to '+drShort(to)):(drShort(to)+' set as next doctor')); })
+    .catch(function(e){ console.warn('[handoff]',e); toast('Couldn’t save the handoff'); });
+  /* show it right away */
+  d.handoffs=H; d.patient=d.patient||{}; if(mode==='now'){ d.patient.doctor=to; d.patient.doctor_next=null; if(s&&s.patient){ s.patient.doctor=to; s.patient.doctor_next=null; } }
+  else { d.patient.doctor_next={name:to,at:now}; if(s&&s.patient) s.patient.doctor_next={name:to,at:now}; }
+  try{ setVisit(visitFrom(d)); }catch(e){} refreshHo(); return true; }
+function hoToFlow(visitId,to,mode,me,now){ if(!visitId||FLOW_DOCS.indexOf(to)<0) return Promise.resolve('skip');
+  var ref=DB.collection('visits').doc(String(visitId)), id=docSlugTS(to);
+  return DB.runTransaction(function(t){ return t.get(ref).then(function(snap){ if(!snap.exists) return 'novisit'; var v=snap.data(), r=(v.rounds&&typeof v.rounds==='object')?v.rounds:null, u={};
+    if(mode==='now'){ if(v.doctor_id!==id) u.doctor_id=id; if(r&&r.next) u['rounds.next']=null; }
+    else if(r){ u['rounds.next']={docId:id,name:drShort(to),at:now,by:me.name||me.initials}; }
+    if(r) u['rounds.audit']=FV.arrayUnion({at:now,by:me.name||me.initials,what:(mode==='now'?'Case handed to ':'Next doctor · ')+drShort(to)+' (treatment sheet)'});
+    if(Object.keys(u).length) t.update(ref,u); return 'ok'; }); }).catch(function(e){ console.warn('[handoff→flow]',e); }); }
+window.tsHoClearNext=function(){ if(!CUR||!curDoc) return; var me=user(), now=new Date().toISOString(), visitId=curDoc.visit_id;
+  try{ document.getElementById('tsModal').classList.remove('show'); }catch(e){}
+  var p1=visitId?DB.collection('visits').doc(String(visitId)).get().then(function(sn){ if(sn.exists&&sn.data().rounds&&sn.data().rounds.next) return sn.ref.update({'rounds.next':null}); }).catch(function(){}):Promise.resolve();
+  p1.then(function(){ return DB.collection(COL).doc(CUR).update({'patient.doctor_next':null,updated_at:now,audit:FV.arrayUnion({at:now,type:'doctor',desc:'Next doctor cleared',who:me.initials,uid:me.uid})}); })
+    .then(function(){ toast('Next doctor cleared'); }).catch(function(e){ console.warn(e); toast('Couldn’t clear'); });
+  curDoc.patient.doctor_next=null; try{ setVisit(visitFrom(curDoc)); }catch(e){} refreshHo(); };
+
+/* ---------- receiving doctor: a card on the sheet until they acknowledge ---------- */
+function hoCard(){ var el=document.getElementById('tsHoCard'), p=CUR&&curDoc?hoPending(curDoc):null;
+  var forMe=p&&(normName(user().name)===normName(hoCur(curDoc))||staffRole()==='admin');
+  if(!p||!forMe||currentCTab!=='sheet'){ if(el) el.remove(); return; }
+  if(!el){ el=document.createElement('div'); el.id='tsHoCard'; document.body.appendChild(el); }
+  var html='<div class="ho-card-h"><b>Handoff from '+esc(drShort(p.from))+'</b><small>'+esc(hoTime(p.at))+'</small></div>'
+    +(p.summary?'<p>'+esc(p.summary)+'</p>':'')+(p.todo?'<p class="ho-todo">'+esc(p.todo)+'</p>':'')
+    +'<div class="ho-card-b"><button type="button" onclick="tsHoView()">Details</button><button type="button" class="primary" onclick="tsHoAck(\''+esc(p.id)+'\')">Acknowledge</button></div>';
+  if(el.dataset.k!==p.id+CUR){ el.innerHTML=html; el.dataset.k=p.id+CUR; } }
+window.tsHoView=function(){ var p=curDoc&&hoPending(curDoc); if(!p) return; modal('<h3>Handoff · '+esc(VISIT.patient||'')+'</h3>'+hoEntryHTML(p),'Acknowledge',function(){ tsHoAck(p.id); return true; }); };
+window.tsHoAck=function(id){ if(!CUR) return; var ref=DB.collection(COL).doc(CUR), me=user(), now=new Date().toISOString();
+  DB.runTransaction(function(t){ return t.get(ref).then(function(snap){ if(!snap.exists) return; var H=(snap.data().handoffs||[]).map(function(h){ return h.id===id&&!h.ack_at?Object.assign({},h,{ack_at:now,ack_by:me.name||me.initials}):h; });
+    t.update(ref,{handoffs:H,updated_at:now,audit:FV.arrayUnion({at:now,type:'doctor',desc:'Handoff acknowledged',who:me.initials,uid:me.uid})}); }); })
+    .then(function(){ toast('Handoff acknowledged'); }).catch(function(e){ console.warn(e); toast('Couldn’t save'); });
+  if(curDoc&&curDoc.handoffs) curDoc.handoffs=curDoc.handoffs.map(function(h){ return h.id===id?Object.assign({},h,{ack_at:now,ack_by:me.name}):h; }); refreshHo(); };
+function refreshHo(){ document.querySelectorAll('.ts-ho-slot').forEach(function(c){ var h=window.tsDoctorChip(); if(c.innerHTML!==h) c.innerHTML=h; }); try{ hoCard(); }catch(e){} }
+var _rhHo=refreshHeader; refreshHeader=function(){ _rhHo.apply(this,arguments); try{ refreshHo(); }catch(e){} };
+setInterval(function(){ try{ hoCard(); }catch(e){} },3000);
+
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();

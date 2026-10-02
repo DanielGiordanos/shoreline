@@ -2464,6 +2464,43 @@ body.dark .ts-tech-cell{background:rgba(255,255,255,.05);border-color:rgba(255,2
 .ts-loc-pill.loc-wards{border-color:rgba(56,189,210,.45);color:var(--accent-ink,#0e7c8c);background:rgba(56,189,210,.08)}
 .ts-loc-menu{width:240px}
 
+/* handoff: Current → Next chip, window, receiving-doctor card */
+.ts-ho-chip{cursor:pointer;border:1px solid transparent;font:inherit;display:inline-flex;align-items:center;gap:6px;transition:border-color .15s}
+.ts-ho-chip:hover{border-color:var(--accent)}
+.ts-ho-chip .ho-arrow{opacity:.6}
+.ts-ho-chip .ho-muted{opacity:.55;font-weight:600}
+.ts-ho-chip.has-next{border-color:rgba(56,189,210,.45)}
+.ts-ho-chip .ho-dot{width:7px;height:7px;border-radius:50%;background:#FF9F0A;display:inline-block;margin-left:2px}
+#tsModal .ho-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#tsModal .ho-seg button{padding:10px 12px;border-radius:14px;border:1px solid var(--border,rgba(0,0,0,.1));background:transparent;color:inherit;font:inherit;font-weight:700;text-align:left;cursor:pointer}
+#tsModal .ho-seg button small{display:block;font-weight:500;opacity:.6;font-size:12px;margin-top:2px}
+#tsModal .ho-seg button.on{border-color:var(--accent,#0a84ff);background:rgba(56,189,210,.10)}
+#tsModal textarea{width:100%;resize:vertical;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--border,rgba(0,0,0,.12));background:transparent;color:inherit}
+#tsModal .ho-docs .rx-chip.on,.ho-docs .rx-chip.on{background:var(--accent,#0a84ff);border-color:var(--accent,#0a84ff);color:#fff}
+.ho-snap{border:1px solid var(--border,rgba(0,0,0,.08));border-radius:14px;padding:6px 12px;margin-top:6px;font-size:13px}
+.ho-snap-row{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid rgba(127,127,127,.12)}
+.ho-snap-row:last-child{border-bottom:0}
+.ho-snap-row span{opacity:.6}
+.ho-snap-row b{font-weight:600}
+.ho-clear{margin-top:10px;background:none;border:0;color:var(--accent-ink,#0e7c8c);font:inherit;font-weight:600;cursor:pointer;padding:0}
+.ho-hist{margin-top:12px}.ho-hist summary{cursor:pointer;font-weight:600;opacity:.75}
+.ho-entry{margin-top:8px}
+.ho-entry-h{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.ho-entry-h small{opacity:.6}
+.ho-entry p{margin:8px 0 0;white-space:pre-wrap}
+.ho-entry p span{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.55;margin-bottom:2px}
+.ho-muted{opacity:.6}
+#tsHoCard{position:fixed;right:20px;bottom:20px;z-index:9300;width:min(360px,calc(100vw - 32px));padding:16px;border-radius:18px;background:rgba(255,255,255,.98);color:#1D1D1F;
+  border:1px solid rgba(255,159,10,.55);box-shadow:0 18px 50px rgba(0,0,0,.18);animation:tsPop .25s cubic-bezier(.32,1.22,.5,1) both}
+body.dark #tsHoCard{background:rgba(18,24,36,.98);color:#EEF1F6}
+#tsHoCard .ho-card-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#tsHoCard .ho-card-h small{opacity:.6}
+#tsHoCard p{margin:8px 0 0;font-size:13.5px;line-height:1.4;white-space:pre-wrap;max-height:120px;overflow:auto}
+#tsHoCard .ho-todo{font-weight:600}
+#tsHoCard .ho-card-b{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+#tsHoCard button{height:34px;padding:0 14px;border-radius:999px;border:1px solid rgba(127,127,127,.3);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+#tsHoCard button.primary{background:var(--accent,#0a84ff);border-color:var(--accent,#0a84ff);color:#fff}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 

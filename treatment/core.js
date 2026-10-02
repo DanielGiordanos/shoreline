@@ -452,7 +452,7 @@ function aaHTML(){const p=SB_PATIENTS[aaPat];
 function patientCmdHTML(){
   const chips=`
     <span class="pill soft">${deptName(VISIT.dept)}</span>
-    <span class="pill soft">${VISIT.doctorFrom.split(',')[0]} → ${VISIT.doctorTo.split(',')[0]}</span>
+    <span class="ts-ho-slot">${window.tsDoctorChip?tsDoctorChip():VISIT.doctorFrom.split(',')[0]+' → '+VISIT.doctorTo.split(',')[0]}</span>
     <span class="pill soft">${VISIT.day}</span>
     <span class="pill soft">${VISIT.location}</span>
     ${tsCodePill()}`;
