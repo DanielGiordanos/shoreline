@@ -547,7 +547,7 @@ function nextDueText(o){ var ts=freqTimes(o), ch=nowMin()/60;
   if(ts.length) return 'first '+fmtTime(ts[0]*60)+' (overdue)';
   var iv=FREQ_INT[o.freq]; if(iv){ var nx=(o.start+iv)%24; return 'next '+fmtTime(nx*60)+' tomorrow'; } return 'scheduled'; }
 function revealOrder(o){ setTimeout(function(){ var rows=document.querySelectorAll('#sheetInner .rl-name'), el=null;
-    rows.forEach(function(r){ if(!el&&r.textContent.trim()===o.name) el=r; }); if(!el) return; var row=el.closest('.grow')||el;
+    rows.forEach(function(r){ if(!el&&(r.firstChild?r.firstChild.textContent:r.textContent).trim()===o.name) el=r; }); if(!el) return; var row=el.closest('.grow')||el;
     try{ row.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){ row.scrollIntoView(); } row.classList.add('ts-flash'); setTimeout(function(){ row.classList.remove('ts-flash'); },2400); },120); }
 /* ---------- monitoring & patient-care catalog: suggested frequencies, nothing assumed ---------- */
 var OBS=[
@@ -601,13 +601,13 @@ window.tsRender=function(q){ var raw=(q||'').trim(); q=raw.toLowerCase(); var ht
   var row=function(key,label,meta){ var k=rows.length; rows.push(key);
     return '<button class="ts-item" data-i="'+k+'" onmouseenter="tsHi('+k+')" onmousedown="event.preventDefault();tsPick(\''+esc(key.replace(/\\/g,'\\\\').replace(/'/g,"\\'"))+'\')"><span>'+label+'</span>'+(meta?'<small class="ts-meta">'+meta+'</small>':'')+'</button>'; };
   if(q){
-    var hits=DRUGS.map(function(x,i){ return {i:i,s:scoreName(x.n,q)}; }).filter(function(h){ return h.s<9; })
+    var hits=DRUGS.map(function(x,i){ var r=drugScore(x,q); return {i:i,s:r.s,b:r.b}; }).filter(function(h){ return h.s<9; })
       .sort(function(a,b){ return a.s-b.s||DRUGS[a.i].n.localeCompare(DRUGS[b.i].n); }).slice(0,6);
     var obs=OBS.map(function(x,i){ return {i:i,s:scoreName(x.n,q,x.k)}; }).filter(function(h){ return h.s<9; }).sort(function(a,b){ return a.s-b.s; }).slice(0,6);
     var obsFirst=obs.length&&(!hits.length||obs[0].s<hits[0].s);
     var medHTML='', obsHTML='', careHTML='';
     hits.forEach(function(h){ var x=DRUGS[h.i], n=sp?x.r.filter(function(e){ return e.s.indexOf(sp)>-1; }).length:x.r.length;
-      medHTML+=row('drug:'+h.i,esc(x.n),n?n+(sp?' '+sp:'')+' dose'+(n>1?'s':''):'no '+(sp||'')+' dose listed'); });
+      var br=h.b||tsBrand(x.n); medHTML+=row('drug:'+h.i,esc(x.n)+(br?' <span class="ts-brand">'+esc(br)+'</span>':''),n?n+(sp?' '+sp:'')+' dose'+(n>1?'s':''):'no '+(sp||'')+' dose listed'); });
     obs.forEach(function(h){ var x=OBS[h.i], ex=onSheet(x.n), meta=ex?'on sheet · '+ex.freq:'suggested '+x.f.slice(0,3).join(' · ');
       if(x.t==='care') careHTML+=row('obs:'+h.i,esc(x.n),meta); else obsHTML+=row('obs:'+h.i,esc(x.n),meta); });
     var blocks=[]; if(medHTML) blocks.push(['Medications',medHTML]); if(obsHTML) blocks.push(['Monitoring',obsHTML]); if(careHTML) blocks.push(['Patient Care',careHTML]);
@@ -681,7 +681,7 @@ function openMedOrder(i){
     +others.map(function(e,k){ return refBtn(e,k,'o'); }).join('')+'</details>';
   var opt=function(list,sel){ return list.map(function(v){ return '<option'+(v===sel?' selected':'')+'>'+v+'</option>'; }).join(''); };
   var hrs=hourOpts();
-  modal('<h3>'+esc(x.n)+'</h3><p>'+esc(VISIT.patient)+' · '+esc(VISIT.species||'')+' · <b>'+(kg?kg+' kg':'no weight')+'</b>'+(kg?'':' — add a triage weight to calculate doses')+'</p>'
+  modal('<h3>'+esc(x.n)+(brandsOf(x.n).length?' <span class="rx-brand">'+esc(brandsOf(x.n).join(' · '))+'</span>':'')+'</h3><p>'+esc(VISIT.patient)+' · '+esc(VISIT.species||'')+' · <b>'+(kg?kg+' kg':'no weight')+'</b>'+(kg?'':' — add a triage weight to calculate doses')+'</p>'
     +'<div class="rx-lbl">Reference doses'+(sp?' · '+(sp==='cat'?'cats':'dogs'):'')+'</div><div class="rx-refs">'+refs+'</div>'
     +'<div class="tm-grid" style="margin-top:14px">'
     +'<label>Dose<span class="rx-dose"><input id="rxDose" inputmode="decimal" placeholder="Enter dose" oninput="tsRxCalc(true)"><select id="rxUnit" onchange="tsStockAuto();tsRxCalc(true)">'
@@ -697,7 +697,7 @@ function openMedOrder(i){
   setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card');
     var best=bestRegimen(mine); if(best) tsRxPick('m',mine.indexOf(best),true); else tsStockAuto(); },30);
 }
-window.tsOpenMedOrder=function(name){ return loadDrugs().then(function(){ var i=DRUGS.findIndex(function(x){ return x.n.toLowerCase()===String(name).toLowerCase(); }); if(i>-1) openMedOrder(i); return i; }); };
+window.tsOpenMedOrder=function(name){ return loadDrugs().then(function(){ var l=String(name).toLowerCase(), i=DRUGS.findIndex(function(x){ return x.n.toLowerCase()===l; }); if(i<0) i=DRUGS.findIndex(function(x){ return brandsOf(x.n).some(function(b){ return b.toLowerCase()===l; }); }); if(i>-1) openMedOrder(i); return i; }); };
 /* tapping a reference (or opening the drug) fills in a suggested dose: the value, or the low end of a range */
 window.tsRxRoute=function(){ if(!RX) return; var r=(document.getElementById('rxRoute')||{}).value; if(!r) return;
   if(RX.sel&&routeOf(RX.sel)===r) return;
@@ -870,6 +870,79 @@ window.tsStockAuto=function(){ if(!RX||RX.concTouched) return; var st=stockOf(RX
   if(k!=null) ci.value=String(+concFor(st.s[k],unit).toPrecision(6)); else if(filled) ci.value='';
   tsStockRender(); };
 window.tsRxConcEdit=function(){ if(RX){ RX.concTouched=true; RX.stockK=null; RX.stockAuto=false; } tsStockRender(); tsRxCalc(); };
+
+/* ---------- brand names: staff search by "Cerenia" as often as by "maropitant" ----------
+   Generic (as named in the drug reference) → common US veterinary / human brand names. The first brand is the one shown on the sheet. */
+var BRANDS={
+  'Acarbose':['Precose'],'Acepromazine':['PromAce'],'Acetylcysteine':['Mucomyst','Acetadote'],'Activated charcoal':['ToxiBan'],
+  'Afoxolaner':['NexGard'],'Afoxolaner / milbemycin oxime':['NexGard Spectra'],'Afoxolaner / moxidectin / pyrantel':['NexGard Plus'],
+  'Aglepristone':['Alizin'],'Albuterol':['Ventolin','ProAir'],'Alfaxalone':['Alfaxan'],'Alfentanil':['Alfenta'],'Allopurinol':['Zyloprim'],
+  'Alprazolam':['Xanax'],'Alteplase':['Activase'],'Amikacin':['Amiglyde-V'],'Amiodarone':['Cordarone','Nexterone'],'Amitriptyline':['Elavil'],
+  'Amlodipine':['Norvasc'],'Amoxicillin':['Amoxi-Tabs','Amoxi-Drops'],'Amoxicillin / clavulanate':['Clavamox','Augmentin'],
+  'Amphotericin B':['Fungizone'],'Ampicillin / sulbactam':['Unasyn'],'Atenolol':['Tenormin'],'Atipamezole':['Antisedan'],'Azathioprine':['Imuran'],
+  'Azithromycin':['Zithromax'],'Bedinvetmab':['Librela'],'Benazepril':['Fortekor','Lotensin'],'Benazepril / spironolactone':['Cardalis'],
+  'Bethanechol':['Urecholine'],'Bexagliflozin':['Bexacat'],'Brinzolamide':['Azopt'],'Budesonide':['Entocort'],'Bupivacaine':['Marcaine'],
+  'Buprenorphine':['Buprenex','Simbadol','Zorbium'],'Buspirone':['Buspar'],'Butorphanol':['Torbugesic','Torbutrol'],'Cabergoline':['Dostinex'],
+  'Capromorelin':['Entyce','Elura'],'Carbimazole':['Vidalta'],'Carboplatin':['Paraplatin'],'Carprofen':['Rimadyl','Novox','Vetprofen'],
+  'Carvedilol':['Coreg'],'Cefazolin':['Ancef'],'Cefotaxime':['Claforan'],'Cefovecin':['Convenia'],'Cefoxitin':['Mefoxin'],'Cefpodoxime':['Simplicef'],
+  'Ceftazidime':['Fortaz'],'Ceftiofur':['Naxcel','Excenel'],'Ceftriaxone':['Rocephin'],'Cephalexin':['Keflex','Rilexine'],'Cetirizine':['Zyrtec'],
+  'Chlorambucil':['Leukeran'],'Chloramphenicol':['Chloromycetin'],'Chlorpheniramine':['Chlor-Trimeton'],'Cholestyramine':['Questran'],
+  'Ciprofloxacin':['Cipro'],'Cisapride':['Propulsid'],'Clindamycin':['Antirobe','Cleocin'],'Clomipramine':['Clomicalm'],'Clonidine':['Catapres'],
+  'Clopidogrel':['Plavix'],'Clotrimazole':['Lotrimin'],'Cosyntropin':['Cortrosyn'],'Cyclophosphamide':['Cytoxan'],
+  'Cyclosporine':['Atopica','Optimmune','Cyclavance'],'Dalteparin':['Fragmin'],'Darbepoetin':['Aranesp'],'Deracoxib':['Deramaxx'],
+  'Desmopressin':['DDAVP'],'Desoxycorticosterone pivalate':['Percorten-V','Zycortal','DOCP'],'Dexamethasone':['Azium','Dex SP'],
+  'Dexmedetomidine':['Dexdomitor','Sileo'],'Diazepam':['Valium'],'Digoxin':['Lanoxin'],'Diltiazem':['Cardizem'],'Diphenhydramine':['Benadryl'],
+  'Dobutamine':['Dobutrex'],'Dolasetron':['Anzemet'],'Dopamine':['Intropin'],'Dorzolamide':['Trusopt'],'Doxapram':['Dopram'],
+  'Doxorubicin':['Adriamycin'],'Doxycycline':['Vibramycin'],'Emodepside / praziquantel':['Profender'],'Enalapril':['Enacard','Vasotec'],
+  'Enoxaparin':['Lovenox'],'Enrofloxacin':['Baytril'],'Epinephrine':['Adrenalin'],'Erythromycin':['Erythrocin'],
+  'Esafoxolaner / eprinomectin / praziquantel':['NexGard Combo'],'Esmolol':['Brevibloc'],'Estriol':['Incurin'],'Etomidate':['Amidate'],
+  'Famciclovir':['Famvir'],'Famotidine':['Pepcid'],'Felbamate':['Felbatol'],'Fenbendazole':['Panacur'],'Fentanyl':['Sublimaze'],
+  'Finasteride':['Proscar'],'Fipronil':['Frontline'],'Firocoxib':['Previcox'],'Fluconazole':['Diflucan'],'Fludrocortisone':['Florinef'],
+  'Flumazenil':['Romazicon'],'Fluoxetine':['Prozac','Reconcile'],'Fluralaner':['Bravecto'],'Fluticasone':['Flovent'],
+  'Fluticasone / salmeterol':['Advair'],'Fomepizole':['Antizol'],'Frunevetmab':['Solensia'],'Furosemide':['Lasix','Salix'],
+  'Gabapentin':['Neurontin'],'Gentamicin':['Gentocin'],'Glipizide':['Glucotrol'],'Glycopyrrolate':['Robinul'],'Grapiprant':['Galliprant'],
+  'Griseofulvin':['Fulvicin'],'Hydralazine':['Apresoline'],'Hydrocodone':['Hycodan'],'Hydrocortisone':['Solu-Cortef'],'Hydromorphone':['Dilaudid'],
+  'Hydroxyzine':['Atarax','Vistaril'],'Ilunocitinib':['Zenrelia'],'Imepitoin':['Pexion'],'Imipenem / cilastatin':['Primaxin'],
+  'Insulin detemir':['Levemir'],'Insulin glargine':['Lantus'],'Insulin isophane (NPH)':['Humulin N','Novolin N'],'Isoflurane':['IsoFlo'],
+  'Itraconazole':['Itrafungol','Sporanox'],'Ivermectin':['Heartgard'],'Ketamine':['Ketaset','Vetalar'],'Ketoconazole':['Nizoral'],
+  'Lactulose':['Enulose'],'Latanoprost':['Xalatan'],'Leflunomide':['Arava'],'Levetiracetam':['Keppra'],'Levothyroxine':['Soloxine','Thyro-Tabs'],
+  'Lidocaine':['Xylocaine'],'Lokivetmab':['Cytopoint'],'Lomustine':['CeeNU','Gleostine'],'Loperamide':['Imodium'],'Lotilaner':['Credelio'],
+  'Lufenuron':['Program'],'Mannitol':['Osmitrol'],'Marbofloxacin':['Zeniquin'],'Maropitant':['Cerenia'],'Masitinib':['Kinavet'],
+  'Medetomidine':['Domitor'],'Meloxicam':['Metacam'],'Meropenem':['Merrem'],'Mesalamine':['Asacol'],'Methadone':['Dolophine'],
+  'Methimazole':['Tapazole','Felimazole'],'Methocarbamol':['Robaxin'],'Methylprednisolone':['Depo-Medrol','Solu-Medrol','Medrol'],
+  'Metoclopramide':['Reglan'],'Metoprolol':['Lopressor'],'Metronidazole':['Flagyl'],'Mexiletine':['Mexitil'],'Midazolam':['Versed'],
+  'Milbemycin oxime':['Interceptor'],'Minocycline':['Minocin'],'Mirtazapine':['Mirataz','Remeron'],'Misoprostol':['Cytotec'],
+  'Mitotane':['Lysodren'],'Moxidectin':['ProHeart'],'Mupirocin':['Bactroban'],'Mycophenolate mofetil':['CellCept'],'Naloxone':['Narcan'],
+  'Nitenpyram':['Capstar'],'Nitroglycerin':['Nitro-Bid'],'Norepinephrine':['Levophed'],'Oclacitinib':['Apoquel'],'Octreotide':['Sandostatin'],
+  'Omeprazole':['Prilosec','GastroGard'],'Ondansetron':['Zofran'],'Orbifloxacin':['Orbax'],'Oxymorphone':['Opana'],'Oxytocin':['Pitocin'],
+  'Pancrelipase':['Viokase'],'Pantoprazole':['Protonix'],'Paroxetine':['Paxil'],'Pentoxifylline':['Trental'],'Phenoxybenzamine':['Dibenzyline'],
+  'Phenylpropanolamine':['Proin'],'Phytonadione':['Vitamin K1','Veta-K1','Mephyton'],'Pimobendan':['Vetmedin'],
+  'Piperacillin / tazobactam':['Zosyn'],'Polyethylene glycol 3350':['MiraLAX'],'Ponazuril':['Marquis'],
+  'Porcine insulin zinc suspension (lente)':['Vetsulin','Caninsulin'],'Posaconazole':['Noxafil'],'Potassium bromide':['K-BroVet'],
+  'Potassium citrate':['Urocit-K'],'Potassium gluconate':['Tumil-K'],'Pradofloxacin':['Veraflox'],'Pralidoxime':['Protopam','2-PAM'],
+  'Praziquantel':['Droncit'],'Praziquantel / pyrantel / febantel':['Drontal Plus'],'Prazosin':['Minipress'],'Pregabalin':['Bonqat','Lyrica'],
+  'Procainamide':['Pronestyl'],'Proparacaine':['Alcaine'],'Propofol':['PropoFlo','Diprivan'],'Propranolol':['Inderal'],
+  'Pyrantel pamoate':['Nemex','Strongid'],'Ramipril':['Vasotop','Altace'],'Regular human insulin':['Humulin R','Novolin R'],
+  'Remdesivir':['Veklury'],'Remifentanil':['Ultiva'],'Rifampin':['Rifadin'],'Rivaroxaban':['Xarelto'],'Robenacoxib':['Onsior'],
+  'Ropinirole':['Clevor'],'Ropivacaine':['Naropin'],'Sarolaner':['Simparica'],'Sarolaner / moxidectin / pyrantel':['Simparica Trio'],
+  'Selamectin':['Revolution'],'Selamectin / sarolaner':['Revolution Plus'],'Selegiline':['Anipryl'],'Sertraline':['Zoloft'],
+  'Sevelamer':['Renvela'],'Sevoflurane':['SevoFlo'],'Sildenafil':['Viagra','Revatio'],'Sirolimus':['Rapamune'],
+  'Sodium nitroprusside':['Nitropress'],'Sotalol':['Betapace'],'Spinosad':['Comfortis'],'Spironolactone':['Aldactone'],'Sucralfate':['Carafate'],
+  'Sulfadimethoxine':['Albon'],'Sulfasalazine':['Azulfidine'],'Tacrolimus':['Protopic'],'Telmisartan':['Semintra'],'Terbinafine':['Lamisil'],
+  'Terbutaline':['Brethine'],'Theophylline':['Theo-24'],'Tiletamine / zolazepam':['Telazol'],'Timolol':['Timoptic'],
+  'Timolol / dorzolamide':['Cosopt'],'Toceranib':['Palladia'],'Topiramate':['Topamax'],'Torsemide':['UpCard','Demadex'],'Tramadol':['Ultram'],
+  'Trazodone':['Desyrel'],'Triamcinolone acetonide':['Vetalog','Kenalog'],'Trilostane':['Vetoryl'],
+  'Trimethoprim / sulfamethoxazole':['Bactrim','Septra','TMS'],'Ursodiol':['Actigall'],'Vancomycin':['Vancocin'],'Vasopressin':['Vasostrict'],
+  'Velagliflozin':['Senvelgo'],'Vinblastine':['Velban'],'Vincristine':['Oncovin','Vincasar'],'Voriconazole':['Vfend'],'Zonisamide':['Zonegran']
+};
+window.TS_BRANDS=BRANDS;
+function brandsOf(name){ return BRANDS[name]||[]; }
+/* the brand shown next to a generic name on the sheet and in the order (first listed) */
+window.tsBrand=function(name){ return brandsOf(String(name||''))[0]||''; };
+/* best search score across the generic name and its brands; .b = the brand that matched (shown first in the result) */
+function drugScore(x,q){ var s=scoreName(x.n,q), b=null;
+  brandsOf(x.n).forEach(function(br){ var t=scoreName(br,q); if(t<s){ s=t; b=br; } });
+  return {s:s,b:b}; }
 
 /* ═════════ #6 TREND ALERTS + #10 WORKLOAD ═════════
    Alert limits are hospital workflow defaults (not diagnoses) — review with the medical director and adjust FLAG_RULES. */

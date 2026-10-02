@@ -2368,6 +2368,11 @@ body.dark .rx-chip.on{background:var(--accent,#38bdd2);color:#0b1220}
 .rx-stock .rx-chip.on{background:var(--accent,#0a84ff);border-color:var(--accent,#0a84ff);color:#fff}
 .rx-stock .rx-chip[disabled]{opacity:.45;cursor:not-allowed}
 
+/* brand names next to the generic */
+.ts-brand{font-weight:500;color:var(--ink-400,#8a94a6);margin-left:4px}
+.rx-brand{font-size:.62em;font-weight:600;color:var(--ink-400,#8a94a6);margin-left:6px;letter-spacing:0}
+.rl .rl-brand{font-weight:500;color:var(--ink-400,#8a94a6)}
+
 /* trend alerts + workload */
 #tsFlagBar{display:flex;flex-direction:column;gap:8px;margin:10px 0 2px}
 .ts-flag{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;font-size:13.5px;font-weight:600;animation:tsFlagIn .35s cubic-bezier(.2,.8,.2,1)}
