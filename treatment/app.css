@@ -2902,6 +2902,37 @@ body.dark #tsNet.off,body.dark #tsNet.wait{background:#3a2a10;color:#ffd08a}
 .cbrief ul.pl li.pl-empty{padding:8px 15px 4px;font-size:12.5px;font-weight:600;color:var(--ink-400)}
 .pl-add input::-webkit-calendar-picker-indicator{display:none!important;opacity:0}
 
+/* ── section bands: fold, sticky, chart the hour, add (store/sections.js) ── */
+#sheetInner .gband{position:sticky;top:var(--ts-ghead,32px);z-index:7}
+.gband .gsection{flex:0 0 240px;width:240px;box-sizing:border-box;padding:0 5px 0 12px;gap:6px;cursor:pointer;user-select:none;-webkit-user-select:none;border-right:1px solid var(--glass-hairline)}
+.gband.inf .gsection{flex:0 0 auto;width:auto;border-right:0;padding-right:10px}
+.gband .gsection:focus-visible{outline:2px solid var(--accent);outline-offset:-3px;border-radius:8px}
+.gband .stitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.gband .scount,.gband .ts-inf-tot{flex:none}
+.sec-chev{flex:none;display:grid;place-items:center;width:14px;height:14px;margin-left:-2px;color:var(--sec-ink);opacity:.75;transition:transform .28s cubic-bezier(.32,.72,0,1)}
+.sec-chev svg{width:12px;height:12px}
+.gband.folded .sec-chev{transform:rotate(-90deg)}
+.sec-add{margin-left:auto;flex:none;width:24px;height:24px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;background:transparent;color:var(--sec-ink);cursor:pointer;transition:background .15s,transform .12s}
+.sec-add svg{width:15px;height:15px}
+.sec-add:hover,.sec-add:focus-visible{background:color-mix(in srgb,var(--accent) 16%,transparent);outline:none}
+.sec-add:active{transform:scale(.9)}
+.gband .hcell.sec-h{min-height:34px;border-right-color:transparent}
+.sec-h.can{cursor:pointer}
+.sec-go{display:inline-flex;align-items:center;gap:3px;height:20px;padding:0 7px;border-radius:999px;font-size:10.5px;font-weight:700;color:var(--sec-ink);background:color-mix(in srgb,var(--accent) 16%,transparent);opacity:0;transform:scale(.9);transition:opacity .15s,transform .15s cubic-bezier(.32,.72,0,1)}
+.sec-go svg{width:11px;height:11px}
+.sec-go b{font-weight:700}
+.sec-h.can:hover .sec-go,.sec-h.now .sec-go{opacity:1;transform:none}
+.sec-h.can:active .sec-go{transform:scale(.94)}
+@media (hover:none){.sec-go{opacity:.8;transform:none}}
+.sec-dot{--c:var(--status-scheduled);display:inline-grid;place-items:center;width:8px;height:8px;border-radius:999px;background:var(--c)}
+.sec-dot.n{width:auto;min-width:18px;height:18px;padding:0 6px;box-sizing:border-box;font-size:10.5px;font-weight:800;background:color-mix(in srgb,var(--c) 20%,transparent);color:var(--c);box-shadow:inset 0 0 0 1.2px color-mix(in srgb,var(--c) 55%,transparent)}
+.sec-dot.overdue{--c:var(--status-overdue)}.sec-dot.due{--c:var(--status-due)}.sec-dot.completed{--c:var(--status-completed)}.sec-dot.skipped{--c:var(--status-skipped)}
+#sheetInner .grow.sec-folded{display:none}
+.ts-scope{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 4px 6px;padding:7px 8px 7px 12px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,transparent);font-size:12.5px;font-weight:600;color:var(--ink-700)}
+.ts-scope b{color:var(--ink-900)}
+.ts-scope button{border:0;background:none;padding:2px 4px;font:inherit;font-size:12px;font-weight:700;color:var(--accent-ink);cursor:pointer}
+body.dark .ts-scope button{color:var(--accent)}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 

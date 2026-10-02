@@ -287,8 +287,10 @@ function buildGrid(){
   for(let h=0;h<24;h++){const L=hourLabel(h);html+=`<div class="hcell ${h===nh?'hour-now':''}" onclick="tsBatch(${h})" title="Chart everything at ${L.h} ${L.ap}M">${L.h}<span class="ampm">${L.ap}</span></div>`;}
   html+=`</div></div>`;
   SECTIONS.forEach(sec=>{const so=ORDERS.filter(o=>o.section===sec.key);if(!so.length)return;
-    html+=`<div class="grow"><div class="gsection"><svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="${sec.icon}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="stitle">${sec.key}</span><span class="scount">${so.length}</span>${sec.key==='Continuous Infusions'&&window.tsInfTotal?tsInfTotal():''}</div></div>`;
-    so.forEach(o=>{html+=`<div class="grow${o.dc?' is-dc':''}"><div class="rl" data-dc="${o.dc?(o.dc_reason==='error'?'Error':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">`;
+    /* the section band comes from the store (store/sections.js: fold, hour summary, chart the hour, add to section) when it is loaded */
+    html+=window.tsSecBand?tsSecBand(sec,so):`<div class="grow"><div class="gsection"><svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="${sec.icon}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="stitle">${sec.key}</span><span class="scount">${so.length}</span>${sec.key==='Continuous Infusions'&&window.tsInfTotal?tsInfTotal():''}</div></div>`;
+    const fold=window.tsSecFolded&&tsSecFolded(sec.key)?' sec-folded':'';
+    so.forEach(o=>{html+=`<div class="grow${o.dc?' is-dc':''}${fold}" data-sec="${sec.key}"><div class="rl" data-dc="${o.dc?(o.dc_reason==='error'?'Error':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">`;
       if(o.type==='med'){const d=medDose(o);html+=`<div style="min-width:0"><div class="rl-name">${o.name}${(window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> · '+tsBrand(o.name)+'</span>':''}</div><div class="rl-meta">${d.mg}${o.conc?' · <b>'+d.volume+'</b>':''} · ${o.freq}</div></div><span class="route-pill">${o.route}</span>`;}
       else if(o.type==='fluid'){html+=`<div style="min-width:0"><div class="rl-name">${window.tsInfName?tsInfName(o):o.name}</div><div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate}</div></div><span class="route-pill">${o.kind==='cri'?'CRI':'IV'}</span>`;}
       else{html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}</div></div>`;}

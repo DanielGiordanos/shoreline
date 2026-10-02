@@ -642,7 +642,9 @@ function scoreName(n,q,k){ var l=n.toLowerCase(); if(l===q) return 0; if(l.index
 function onSheet(name){ var l=name.toLowerCase(); return ORDERS.find(function(o){ return !o.dc&&String(o.name).toLowerCase()===l; }); }
 
 /* ---------- search: medications + monitoring/care + anything typed ---------- */
-window.tsRender=function(q){ var raw=(q||'').trim(); q=raw.toLowerCase(); var html='', rows=[], sp=spKey();
+/* a section band's "+" scopes the search to that section (store/sections.js sets window.tsSearchScope; cleared when the search closes) */
+var SCOPE_T={'Basic Observation':'obs','Patient Care':'care','Diagnostics':'diag'};
+window.tsRender=function(q){ var raw=(q||'').trim(); q=raw.toLowerCase(); var html='', rows=[], sp=spKey(), scope=window.tsSearchScope||'', sT=SCOPE_T[scope]||'';
   var d=document.getElementById('tsDrop'); if(!d) return;
   if(!DRUGS){ d.innerHTML='<div class="ts-empty">Loading…</div>'; d.style.display='block';
     loadDrugs().then(function(r){ if(r===null){ d.innerHTML='<div class="ts-empty">Couldn’t load the medication list</div>'; return; }
@@ -650,9 +652,9 @@ window.tsRender=function(q){ var raw=(q||'').trim(); q=raw.toLowerCase(); var ht
   var row=function(key,label,meta){ var k=rows.length; rows.push(key);
     return '<button class="ts-item" data-i="'+k+'" onmouseenter="tsHi('+k+')" onmousedown="event.preventDefault();tsPick(\''+esc(key.replace(/\\/g,'\\\\').replace(/'/g,"\\'"))+'\')"><span>'+label+'</span>'+(meta?'<small class="ts-meta">'+meta+'</small>':'')+'</button>'; };
   if(q){
-    var hits=DRUGS.map(function(x,i){ var r=drugScore(x,q); return {i:i,s:r.s,b:r.b}; }).filter(function(h){ return h.s<9; })
-      .sort(function(a,b){ return a.s-b.s||DRUGS[a.i].n.localeCompare(DRUGS[b.i].n); }).slice(0,6);
-    var obs=OBS.map(function(x,i){ return {i:i,s:scoreName(x.n,q,x.k)}; }).filter(function(h){ return h.s<9; }).sort(function(a,b){ return a.s-b.s; }).slice(0,6);
+    var hits=(scope&&scope!=='Medications')?[]:DRUGS.map(function(x,i){ var r=drugScore(x,q); return {i:i,s:r.s,b:r.b}; }).filter(function(h){ return h.s<9; })
+      .sort(function(a,b){ return a.s-b.s||DRUGS[a.i].n.localeCompare(DRUGS[b.i].n); }).slice(0,scope?10:6);
+    var obs=(scope&&!sT)?[]:OBS.map(function(x,i){ return {i:i,s:(sT&&x.t!==sT)?9:scoreName(x.n,q,x.k)}; }).filter(function(h){ return h.s<9; }).sort(function(a,b){ return a.s-b.s; }).slice(0,scope?10:6);
     var obsFirst=obs.length&&(!hits.length||obs[0].s<hits[0].s);
     var medHTML='', obsHTML='', careHTML='';
     hits.forEach(function(h){ var x=DRUGS[h.i], n=sp?x.r.filter(function(e){ return e.s.indexOf(sp)>-1; }).length:x.r.length;
@@ -662,20 +664,24 @@ window.tsRender=function(q){ var raw=(q||'').trim(); q=raw.toLowerCase(); var ht
     var blocks=[]; if(medHTML) blocks.push(['Medications',medHTML]); if(obsHTML) blocks.push(['Monitoring',obsHTML]); if(careHTML) blocks.push(['Patient Care',careHTML]);
     if(obsFirst) blocks.sort(function(a,b){ return (a[0]==='Medications')-(b[0]==='Medications'); });
     blocks.forEach(function(b){ html+='<div class="ts-cat">'+b[0]+'</div>'+b[1]; });
-    html+='<div class="ts-cat">Custom</div>'+row('custom:'+raw,'Add “'+esc(raw)+'” as an order','choose frequency');
+    if(scope!=='Medications'&&scope!=='Continuous Infusions') html+='<div class="ts-cat">Custom</div>'+row('custom:'+raw,'Add “'+esc(raw)+'” as an order'+(scope?' in '+esc(scope):''),'choose frequency');
+  } else if(scope==='Medications'){ html+='<div class="ts-hint">Type a drug name — '+DRUGS.length+' in the reference</div>';
+  } else if(sT){ OBS.forEach(function(x,i){ if(x.t!==sT) return; var ex=onSheet(x.n); html+=row('obs:'+i,esc(x.n),ex?'on sheet · '+ex.freq:'suggested '+x.f.slice(0,3).join(' · ')); });
+  } else if(scope){   /* Continuous Infusions: its rows come from fluids.js (search.extra) */
   } else {
     html+='<div class="ts-cat">Medications</div><div class="ts-hint">Type a drug name — '+DRUGS.length+' in the reference</div>';
     html+='<div class="ts-cat">Common monitoring</div>';
     ['Blood pressure','Blood glucose','SpO2','Urine output','Pain score','Neuro check'].forEach(function(n){ var i=OBS.findIndex(function(x){ return x.n===n; }), ex=onSheet(n);
       html+=row('obs:'+i,esc(n),ex?'on sheet · '+ex.freq:'suggested '+OBS[i].f.slice(0,3).join(' · ')); });
   }
+  if(scope) html='<div class="ts-scope"><span>Adding to <b>'+esc(scope)+'</b></span><button type="button" onmousedown="event.preventDefault();tsScopeClear()">All orders</button></div>'+html;
   tsRows=rows; tsIdx=rows.length?0:-1; d.innerHTML=html; d.style.display='block'; emit('search.extra',raw); try{ tsMark(); }catch(e){} };
-window.tsPick=function(key){ key=String(key); try{ closeTsDrop(); }catch(e){} var si=document.getElementById('tsSearch'); if(si) si.value='';
+window.tsPick=function(key){ key=String(key); var scT=SCOPE_T[window.tsSearchScope||'']||'obs'; try{ closeTsDrop(); }catch(e){} var si=document.getElementById('tsSearch'); if(si) si.value=''; if(window.tsScopeClear) tsScopeClear(true);
   if(!CUR||!curDoc){ toast('Open a patient first'); return; }
   if(claim('pick',key)) return;   /* past-day block, inf:, set: … */
   if(key.indexOf('drug:')===0) return openMedOrder(+key.slice(5));
   if(key.indexOf('obs:')===0) return openObsOrder(OBS[+key.slice(4)]);
-  if(key.indexOf('custom:')===0) return openObsOrder({n:key.slice(7),t:'obs',u:'',f:[],custom:true});
+  if(key.indexOf('custom:')===0) return openObsOrder({n:key.slice(7),t:scT,u:'',f:[],custom:true});
   var m=OBS.find(function(x){ return x.n.toLowerCase()===key.replace(/\s+q\d+h$/i,'').toLowerCase(); });   /* older quick items */
   return openObsOrder(m||{n:key.replace(/\s+q\d+h$/i,''),t:'obs',u:'',f:[],custom:true}); };
 
@@ -685,7 +691,7 @@ function openObsOrder(x){
   var chip=function(f,sugg){ return '<button type="button" class="rx-chip'+(sugg?' sugg':'')+'" data-f="'+f+'" onclick="tsObsFreq(this)">'+f+'</button>'; };
   var more=FREQS.filter(function(f){ return x.f.indexOf(f)<0; });
   modal('<h3>'+(x.custom?'New order':esc(x.n))+'</h3><p>'+esc(VISIT.patient)+(ex?' · already on the sheet at <b>'+esc(ex.freq)+'</b> — choosing a frequency updates it':'')+'</p>'
-    +(x.custom?'<div class="tm-grid"><label class="wide">Order<input id="obName" value="'+esc(x.n)+'"></label><label>Section<select id="obSec"><option value="obs">Monitoring</option><option value="care">Patient Care</option><option value="diag">Diagnostics</option></select></label><label>Unit<input id="obUnit" placeholder="Optional"></label></div>':'')
+    +(x.custom?'<div class="tm-grid"><label class="wide">Order<input id="obName" value="'+esc(x.n)+'"></label><label>Section<select id="obSec">'+[['obs','Monitoring'],['care','Patient Care'],['diag','Diagnostics']].map(function(o){ return '<option value="'+o[0]+'"'+(x.t===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select></label><label>Unit<input id="obUnit" placeholder="Optional"></label></div>':'')
     +(x.f.length?'<div class="rx-lbl">Suggested</div><div class="rx-chips">'+x.f.map(function(f){ return chip(f,true); }).join('')+'</div>':'')
     +'<div class="rx-lbl">'+(x.f.length?'Other':'Frequency')+'</div><div class="rx-chips">'+more.map(function(f){ return chip(f,false); }).join('')+'</div>'
     +'<div class="tm-grid" style="margin-top:14px"><label>First check<select id="obStart">'+hrs+'</select></label><label>Notes<input id="obNotes" placeholder="Optional"></label></div>',
@@ -1928,12 +1934,13 @@ function criSubmit(){ var g=function(id){ return ((document.getElementById(id)||
 
 /* ---------- order search: "IV fluids" and "<drug> CRI" ---------- */
 on('search.extra',infSearch);
-function infSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.display==='none'||!DRUGS) return; q=String(q||'').trim().toLowerCase(); var rows=[];
+function infSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.display==='none'||!DRUGS) return; var scope=window.tsSearchScope||''; if(scope&&scope!=='Continuous Infusions') return; q=String(q||'').trim().toLowerCase(); var rows=[];
+  if(!q&&scope){ rows.push(['inf:fluid:','IV fluids','LRS · Plasma-Lyte · Normosol-R · 0.9% NaCl']); CRI_DRUGS.forEach(function(c){ rows.push(['inf:cri:'+c[0],c[0]+' CRI',c[1]]); }); }
   if(q){ if(FLUID_KEYS.indexOf(' '+q)>-1||FLUIDS.some(function(f){ return f.toLowerCase().indexOf(q)>-1; })) rows.push(['inf:fluid:','IV fluids','LRS · Plasma-Lyte · Normosol-R · 0.9% NaCl']);
     var qq=q.replace(/\s*\bcri$/,'').trim();
     CRI_DRUGS.forEach(function(c){ var l=c[0].toLowerCase(); if(q==='cri'||(qq&&(l.indexOf(qq)===0||(' '+l).indexOf(' '+qq)>-1))) rows.push(['inf:cri:'+c[0],c[0]+' CRI',c[1]]); }); }
-  else rows.push(['inf:fluid:','IV fluids','rate in mL/hr or mL/kg/hr']);
-  rows=rows.slice(0,q==='cri'?8:4); if(!rows.length) return;
+  else if(!scope) rows.push(['inf:fluid:','IV fluids','rate in mL/hr or mL/kg/hr']);
+  rows=rows.slice(0,scope?20:q==='cri'?8:4); if(!rows.length) return;
   var k0=tsRows.length, html='<div class="ts-cat">Fluids &amp; CRIs</div>'+rows.map(function(r,j){ tsRows.push(r[0]);
     return '<button class="ts-item" data-i="'+(k0+j)+'" onmouseenter="tsHi('+(k0+j)+')" onmousedown="event.preventDefault();tsPick(\''+esc(r[0]).replace(/'/g,"\\'")+'\')"><span>'+esc(r[1])+'</span><small class="ts-meta">'+esc(r[2])+'</small></button>'; }).join('');
   var custom=[].find.call(d.querySelectorAll('.ts-cat'),function(c){ return c.textContent==='Custom'; });
@@ -2068,7 +2075,7 @@ function undoSet(S,ids,changed){ if(!CUR||!curDoc) return; sync(); var me=user()
 
 /* ---------- order search: type "parvo", "dka", "set"… ---------- */
 on('search.extra',setSearch);
-function setSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.display==='none'||!DRUGS) return; q=String(q||'').trim().toLowerCase();
+function setSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.display==='none'||!DRUGS||window.tsSearchScope) return; q=String(q||'').trim().toLowerCase();
   var hits=q?ORDER_SETS.filter(function(s){ return q==='set'||q==='sets'||q==='order set'||s.name.toLowerCase().indexOf(q)===0||(' '+s.k+' ').indexOf(' '+q)>-1; }):[];
   var rows=q?hits.slice(0,4).map(function(s){ return ['set:'+s.id,s.name,'Order set · '+s.items.length+' orders']; }):[['sets:','Browse order sets',ORDER_SETS.length+' sets · ICU admit, Parvovirus, DKA…']];
   if(!rows.length) return; var k0=tsRows.length;
@@ -2151,19 +2158,25 @@ window.tsWlDone=function(btn){ var row=btn.closest('.wl-row'); if(!row||row.clas
 on('chip',function(){ if(currentCTab==='tasks') tsRenderTasks(); else tsTaskBadge(); });
 setInterval(function(){ if(document.hidden) return; try{ if(currentCTab==='tasks'&&!(document.activeElement&&document.activeElement.classList.contains('wl-val'))) tsRenderTasks(); else tsTaskBadge(); }catch(e){} },30000);
 
-/* ═══ batch charting: one hour, one patient ═══ */
-window.tsBatch=function(h){ if(!CUR||!curDoc) return; if(window.tsViewDk&&tsViewDk()!==dayKey()){ toast('View only — go back to today to chart'); return; }
-  if(!canChart()){ toast('Your role can’t chart'); return; } var nh=Math.floor(nowMin()/60); if(h>nh+1){ toast(fmtTime(h*60)+' hasn’t come yet'); return; }
+/* ═══ batch charting: one hour, one patient — or one section of it (sec = a section band's hour, store/sections.js) ═══ */
+function btField(t,o){ var opts=(typeof V_OPTS!=='undefined')&&V_OPTS[String(o.name).toLowerCase()], id=esc(t.id);
+  return '<input class="bt-val" data-id="'+id+'" placeholder="'+esc(o.unit||(opts?'Select':'Value'))+'"'+(opts?' list="btl-'+id+'"':' inputmode="'+(o.unit?'decimal':'text')+'"')+' autocomplete="off" oninput="tsBatchVal(this)" onkeydown="tsBatchKey(event,this)">'
+    +(opts?'<datalist id="btl-'+id+'">'+opts.map(function(x){ return '<option value="'+esc(x)+'">'; }).join('')+'</datalist>':''); }
+/* Enter moves to the next reading; on the last one it completes */
+window.tsBatchKey=function(e,inp){ if(e.key!=='Enter') return; e.preventDefault(); var L=[].slice.call(document.querySelectorAll('#tsOrderSheet .bt-val')), i=L.indexOf(inp);
+  if(i>-1&&i<L.length-1) L[i+1].focus(); else { var b=document.getElementById('btGo'); if(b&&!b.disabled) b.click(); } };
+window.tsBatch=function(h,sec){ if(!CUR||!curDoc) return; if(window.tsViewDk&&tsViewDk()!==dayKey()){ toast('View only — go back to today to chart'); return; }
+  if(!canChart()){ toast('Your role can’t chart'); return; } var nh=Math.floor(nowMin()/60); if(h>nh+1){ toast(fmtTime(h*60)+' hasn’t come yet'); return; } var secName=sec?String(sec):'';
   var idx={}; (ORDERS||[]).forEach(function(o,i){ idx[o.id]=i; });
-  var L=(TASKS||[]).filter(function(t){ return !t.status&&Math.floor(t.sched/60)===h&&t.order&&!t.order.dc&&!t.order.cont; }).sort(function(a,b){ return (idx[a.orderId]-idx[b.orderId])||a.sched-b.sched; });
-  if(!L.length){ toast('Everything at '+fmtTime(h*60)+' is charted'); return; }
-  window._batch={h:h};
+  var L=(TASKS||[]).filter(function(t){ return !t.status&&Math.floor(t.sched/60)===h&&t.order&&!t.order.dc&&!t.order.cont&&(!secName||t.order.section===secName); }).sort(function(a,b){ return (idx[a.orderId]-idx[b.orderId])||a.sched-b.sched; });
+  if(!L.length){ toast((secName?esc(secName)+' at ':'Everything at ')+fmtTime(h*60)+' is charted'); return; }
+  window._batch={h:h,sec:secName};
   var rows=L.map(function(t){ var o=t.order, nv=needsValue(o);
     return '<label class="bt-row'+(nv?' nv':'')+'"><input type="checkbox" class="bt-ck" data-id="'+esc(t.id)+'"'+(nv?'':' checked')+' onchange="tsBatchCount()"><span class="bt-box"></span>'
       +'<span class="bt-what"><b>'+esc(o.name)+'</b><small>'+taskMeta(o)+(t.sched%60?' · '+esc(fmtTime(t.sched)):'')+'</small></span>'
-      +(nv?'<input class="bt-val" data-id="'+esc(t.id)+'" placeholder="'+esc(o.unit||'Value')+'" oninput="tsBatchVal(this)">':'')+'</label>'; }).join('');
+      +(nv?btField(t,o):'')+'</label>'; }).join('');
   var html='<div class="op-head"><span class="op-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
-    +'<div><div class="op-kind">Chart '+esc(fmtTime(h*60))+'</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<div><div class="op-kind">Chart '+(secName?esc(secName)+' · ':'')+esc(fmtTime(h*60))+'</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
     +'<p class="op-lead">Untick anything that wasn’t done. Readings are added when you type a value.</p><div class="bt-list">'+rows+'</div>'
     +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Cancel</button><button type="button" class="op-btn primary" id="btGo" onclick="tsBatchGo()">Complete</button></div>';
   opShow(html,'wide'); tsBatchCount(); setTimeout(function(){ var f=document.querySelector('#tsOrderSheet .bt-val'); if(f) f.focus(); },120); };
@@ -2175,12 +2188,67 @@ window.tsBatchGo=function(){ var B=window._batch||{}, me=user(), done=[], vals=[
     t.status='completed'; t.completedMin=nowMin(); t.by=me.initials||null; t.value=v||null; done.push(t); vals.push(esc(t.order.name)+(v?' '+esc(v):''));
     });
   if(!done.length) return; tsOrderClose();
-  logEvent('vital','Charted '+esc(fmtTime(B.h*60))+' — '+vals.join(', '),me.initials);
+  logEvent('vital','Charted '+(B.sec?esc(B.sec)+' ':'')+esc(fmtTime(B.h*60))+' — '+vals.join(', '),me.initials);
   try{ buildGrid(); }catch(e){} sync();
   undoToast(done.length+' task'+(done.length>1?'s':'')+' charted · '+esc(fmtTime(B.h*60)),function(){ done.forEach(function(t){ t.status=null; t.completedMin=null; t.by=null; t.value=null; });
     logEvent('doctor','Charting at '+esc(fmtTime(B.h*60))+' undone ('+done.length+')',me.initials); try{ buildGrid(); }catch(e){} sync(); });
   done.forEach(function(t){ emit('task.charted',t); }); };
 
+/* ═════════ TS SECTIONS — the grid's section bands (Basic Observation, Medications, Patient Care …) ═════════
+   Drawn by core buildGrid through window.tsSecBand; core gives every order row data-sec and hides rows of a folded section.
+   · Tap the title to fold / unfold a section. Folded, the band keeps one dot per hour (worst status, open count) so nothing is lost.
+     Fold state is per person, per browser (localStorage tsFold_v1, keyed by uid) — a convenience, never shared.
+   · The band sticks under the hour header while the grid scrolls down, so you always see which section you're in.
+   · Tap the band above an hour to chart that section's open tasks at that hour in one form (tsBatch(h, section), store/tasks.js).
+   · "+" opens the order search limited to that section (window.tsSearchScope, store/rx.js · fluids.js · sets.js). */
+var SEC_KEY='tsFold_v1', secFoldMap=null, secFoldUid=null;
+function secFolds(){ var uid=user().uid||'_'; if(secFoldMap&&secFoldUid===uid) return secFoldMap; secFoldUid=uid; secFoldMap={};
+  try{ var all=JSON.parse(localStorage.getItem(SEC_KEY)||'{}'); secFoldMap=all[uid]||{}; }catch(e){} return secFoldMap; }
+function secFoldSave(){ try{ var all=JSON.parse(localStorage.getItem(SEC_KEY)||'{}'); all[secFoldUid||'_']=secFoldMap; localStorage.setItem(SEC_KEY,JSON.stringify(all)); }catch(e){} }
+window.tsSecFolded=function(k){ return !!secFolds()[k]; };
+
+var SEC_CHEV='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var SEC_PLUS='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5v10M5 10h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+var SEC_CHECK='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.3l2.3 2.2 4.7-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var SEC_RANK={overdue:5,due:4,scheduled:3,completed:2,skipped:1};
+var SEC_WORD={overdue:'overdue',due:'due',scheduled:'scheduled',completed:'done',skipped:'skipped'};
+function secPast(){ return !!(window.tsViewDk&&tsViewDk()!==dayKey()); }
+function secQ(k){ return esc(k).replace(/'/g,"\\'"); }
+
+window.tsSecBand=function(sec,so){ var k=sec.key, f=tsSecFolded(k), inf=k==='Continuous Infusions', kq=secQ(k), past=secPast();
+  var head='<div class="gsection" role="button" tabindex="0" aria-expanded="'+(!f)+'" onclick="tsSecToggle(\''+kq+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tsSecToggle(\''+kq+'\');}" title="'+(f?'Show ':'Hide ')+esc(k)+'">'
+    +'<svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="'+sec.icon+'" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    +'<span class="stitle">'+esc(k)+'</span><span class="scount">'+so.length+'</span>'+(inf&&window.tsInfTotal?tsInfTotal():'')
+    +'<span class="sec-chev">'+SEC_CHEV+'</span>'
+    +(canOrderTS()&&!past?'<button type="button" class="sec-add" onclick="event.stopPropagation();tsSecAdd(\''+kq+'\')" onkeydown="event.stopPropagation()" aria-label="Add to '+esc(k)+'" title="Add to '+esc(k)+'">'+SEC_PLUS+'</button>':'')+'</div>';
+  var cells='';
+  if(!inf){ var nh=Math.floor(nowMin()/60), ids={}, by=[], h; for(h=0;h<24;h++) by.push([]);
+    so.forEach(function(o){ if(!o.cont&&!o.dc) ids[o.id]=1; });
+    (TASKS||[]).forEach(function(t){ var hh=Math.floor(t.sched/60); if(ids[t.orderId]&&hh>=0&&hh<24) by[hh].push(t); });
+    for(h=0;h<24;h++){ var L=by[h], open=L.filter(function(t){ return !t.status; }), n={}, worst='', chart=open.length&&h<=nh+1&&!past;
+      L.forEach(function(t){ var s=deriveStatus(t); n[s]=(n[s]||0)+1; if(!worst||SEC_RANK[s]>SEC_RANK[worst]) worst=s; });
+      var tip=Object.keys(n).sort(function(a,b){ return SEC_RANK[b]-SEC_RANK[a]; }).map(function(s){ return n[s]+' '+SEC_WORD[s]; }).join(' · ');
+      cells+='<div class="hcell sec-h'+(chart?' can':'')+(h===nh&&!past?' now':'')+'"'
+        +(chart?' onclick="tsSecChart(\''+kq+'\','+h+')" title="Chart '+esc(k)+' at '+esc(fmtTime(h*60))+(tip?' — '+esc(tip):'')+'"':(tip?' title="'+esc(fmtTime(h*60))+' — '+esc(tip)+'"':''))+'>'
+        +(f&&worst?'<span class="sec-dot '+worst+(open.length>1?' n':'')+'">'+(open.length>1?open.length:'')+'</span>':'')
+        +(!f&&chart?'<span class="sec-go">'+SEC_CHECK+(open.length>1?'<b>'+open.length+'</b>':'')+'</span>':'')+'</div>'; } }
+  return '<div class="grow gband'+(f?' folded':'')+(inf?' inf':'')+'" data-band="'+esc(k)+'">'+head+(cells?'<div class="hcells">'+cells+'</div>':'')+'</div>'; };
+
+window.tsSecToggle=function(k){ var m=secFolds(); if(m[k]) delete m[k]; else m[k]=1; secFoldSave(); try{ buildGrid(); }catch(e){}
+  var b=document.querySelector('#sheetInner .gband[data-band="'+k.replace(/"/g,'\\"')+'"] .gsection'); if(b&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.gband')) b.focus(); };
+window.tsSecChart=function(k,h){ tsBatch(h,k); };
+
+/* "+": the order search, limited to this section until it closes */
+var secPh=null;
+window.tsSecAdd=function(k){ if(!canOrderTS()){ toast('Only doctors add orders'); return; } var si=document.getElementById('tsSearch'); if(!si) return;
+  if(secPh===null) secPh=si.getAttribute('placeholder')||''; window.tsSearchScope=k; si.setAttribute('placeholder','Add to '+k+'…'); si.value='';
+  try{ si.scrollIntoView({block:'nearest'}); }catch(e){} si.focus(); try{ tsRender(''); }catch(e){}
+  if(!si._secBlur){ si._secBlur=1; si.addEventListener('blur',function(){ setTimeout(function(){ if(document.activeElement!==si) tsScopeClear(true); },150); }); } };
+window.tsScopeClear=function(silent){ if(!window.tsSearchScope) return; window.tsSearchScope=''; var si=document.getElementById('tsSearch');
+  if(si&&secPh!==null) si.setAttribute('placeholder',secPh); if(!silent&&si){ si.focus(); try{ tsRender(si.value||''); }catch(e){} } };
+
+/* the band sticks just under the hour header: its height, measured once it exists */
+on('rendered',function(){ var g=document.querySelector('#sheetInner .ghead'); if(g&&g.offsetHeight) document.documentElement.style.setProperty('--ts-ghead',g.offsetHeight+'px'); });   /* on the root: #sheetInner is rebuilt with each sheet */
 /* ═════════ TS VITALS — the Vitals tab, from the sheet's real readings ═════════
    One row per monitoring order on the sheet (Basic observation first, then the rest of Monitoring and Diagnostics), its last three
    readings with time and who, colour only when a reading is outside the hospital limits (FLAG_RULES), and a Record box that charts
