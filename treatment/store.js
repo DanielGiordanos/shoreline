@@ -1464,7 +1464,7 @@ var DC_REASONS=[{k:'discontinued',l:'Discontinued',d:'No longer needed'},{k:'cha
   {k:'error',l:'Entered in error',d:'Duplicate or wrong order'},{k:'discharged',l:'Patient discharged',d:'Leaving the hospital'}];
 function dcLabel(o){ return o&&o.dc?(o.dc_reason==='error'?'Entered in error':'Stopped'):''; }
 /* a discontinued order stays on the grid for the day it was stopped (and for earlier days looked back at) */
-function dcVisible(o){ if(!o||!o.dc||!o.dc_at) return false; var dk=window.tsViewDk?tsViewDk():dayKey(); return dayKey(new Date(o.dc_at))>=dk; }
+function dcVisible(o){ if(!o||!o.dc||!o.dc_at) return false; var dk=window.tsViewDk?tsViewDk():dayKey(); return dayKey(new Date(o.dc_at))>dk; }   /* a stopped order leaves the grid on the day it was stopped; earlier days still show it as it ran */
 /* no new slots after the stop time on the stop day; none at all on later days */
 function dcCut(o,dk){ if(!o||!o.dc||!o.dc_at) return Infinity; var at=new Date(o.dc_at), adk=dayKey(at); if(adk>dk) return Infinity; if(adk<dk) return -1;
   return at.getHours()*60+at.getMinutes(); }
@@ -1521,7 +1521,9 @@ function stopOrder(id,reason,note){ var o=oFind(id); if(!o||!CUR||!curDoc) retur
   var dc=Object.assign({},base,{dc:true,dc_at:now,dc_by:me.initials,dc_by_name:me.name||me.initials,dc_by_uid:me.uid||null,dc_reason:reason||'discontinued',dc_note:note||null});
   var lbl=(DC_REASONS.find(function(r){ return r.k===reason; })||DC_REASONS[0]).l;
   curDoc.orders[id]=dc; if(curMain&&curMain.orders) curMain.orders[id]=dc;
-  ORDERS=ORDERS.map(function(x){ return x.id===id?dc:x; }); buildTasks(); try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} }
+  var redraw=function(){ ORDERS=ORDERS.map(function(x){ return x.id===id?dc:x; }).filter(function(x){ return !x.dc||dcVisible(x); }); buildTasks(); try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} } };
+  var rl=document.querySelector('#sheetInner .rl[onclick="tsOrderPanel(\''+id+'\')"]'), row=rl&&rl.closest('.grow');
+  if(row&&!matchMedia('(prefers-reduced-motion: reduce)').matches){ row.style.height=row.offsetHeight+'px'; row.offsetHeight; row.classList.add('op-leaving'); setTimeout(redraw,340); } else redraw();
   var u={updated_at:now,updated_by:me.initials,audit:FV.arrayUnion({at:now,type:'doctor',desc:'Order '+(reason==='error'?'entered in error':'discontinued')+' — <b>'+esc(o.name)+'</b>'+(o.type==='med'?' '+esc(medDose(o).mg)+' '+esc(o.route||'')+' '+esc(o.freq||''):'')+((reason==='error'||reason==='discontinued')?'':' · '+esc(lbl))+(note?' · '+esc(note):''),who:me.initials,uid:me.uid})};
   u['orders.'+id]=dc;
   return DB.collection(COL).doc(CUR).update(u).catch(function(e){ console.warn('[discontinue]',e); toast('Couldn’t save — try again'); }); }
