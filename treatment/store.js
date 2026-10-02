@@ -1484,7 +1484,7 @@ function row(k,v){ return v?'<div class="op-row"><span>'+k+'</span><b>'+v+'</b><
 
 window.tsOrderPanel=function(id){ var o=oFind(id); if(!o) return; var can=canOrderTS()&&!(window.tsViewDk&&tsViewDk()!==dayKey());
   var brand=window.tsBrand?tsBrand(o.name):'', big='', sub='';
-  if(o.type==='med'){ var d=medDose(o); big=esc(d.mg); sub=[esc(o.dose+' '+o.unit), o.conc?esc(d.volume+' of '+(o.conc_label||o.conc+' '+String(o.unit||'mg').split('/')[0]+'/mL')):''].filter(Boolean).join(' · '); }
+  if(o.type==='med'){ var d=medDose(o); big=esc(d.mg); var per=String(o.dose+' '+o.unit); sub=[per.trim()!==String(d.mg).trim()?esc(per):'', o.conc?esc(d.volume+' of '+(o.conc_label||o.conc+' '+String(o.unit||'mg').split('/')[0]+'/mL')):''].filter(Boolean).join(' · '); }
   else if(o.type==='fluid'){ big=esc(o.rate||''); }
   else { big=esc(o.freq||''); sub=o.unit?esc(o.unit):''; }
   var nx=''; try{ nx=nextDueText(o); }catch(e){}
@@ -1522,7 +1522,7 @@ function stopOrder(id,reason,note){ var o=oFind(id); if(!o||!CUR||!curDoc) retur
   var lbl=(DC_REASONS.find(function(r){ return r.k===reason; })||DC_REASONS[0]).l;
   curDoc.orders[id]=dc; if(curMain&&curMain.orders) curMain.orders[id]=dc;
   ORDERS=ORDERS.map(function(x){ return x.id===id?dc:x; }); buildTasks(); try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} }
-  var u={updated_at:now,updated_by:me.initials,audit:FV.arrayUnion({at:now,type:'doctor',desc:'Order '+(reason==='error'?'entered in error':'discontinued')+' — <b>'+esc(o.name)+'</b>'+(o.type==='med'?' '+esc(medDose(o).mg)+' '+esc(o.route||'')+' '+esc(o.freq||''):'')+' · '+esc(lbl)+(note?' · '+esc(note):''),who:me.initials,uid:me.uid})};
+  var u={updated_at:now,updated_by:me.initials,audit:FV.arrayUnion({at:now,type:'doctor',desc:'Order '+(reason==='error'?'entered in error':'discontinued')+' — <b>'+esc(o.name)+'</b>'+(o.type==='med'?' '+esc(medDose(o).mg)+' '+esc(o.route||'')+' '+esc(o.freq||''):'')+((reason==='error'||reason==='discontinued')?'':' · '+esc(lbl))+(note?' · '+esc(note):''),who:me.initials,uid:me.uid})};
   u['orders.'+id]=dc;
   return DB.collection(COL).doc(CUR).update(u).catch(function(e){ console.warn('[discontinue]',e); toast('Couldn’t save — try again'); }); }
 window.tsOrderStop=function(){ var s=window._opDc||{}, o=oFind(s.id); if(!o) return; var note=((document.getElementById('opDcNote')||{}).value||'').trim();
