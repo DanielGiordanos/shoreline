@@ -358,7 +358,7 @@ window.tsNewSheet=function(){
     +'<label>Species<select id="nsSp"><option>Dog</option><option>Cat</option><option>Other</option></select></label><label>Weight (kg)<input id="nsWt" inputmode="decimal" placeholder="12.4"></label>'
     +'<label>Breed<input id="nsBreed" placeholder="Labrador"></label><label>Sex<select id="nsSex"><option value="">—</option><option>MN</option><option>FS</option><option>M</option><option>F</option></select></label>'
     +'<label class="wide">Reason for admission<input id="nsReason" placeholder="Vomiting, dehydration"></label>'
-    +'<label>Attending doctor<input id="nsDoc" placeholder="Dr. Downes"></label><label>Location<input id="nsLoc" placeholder="ICU Cage 2"></label>'
+    +'<label>Attending doctor<input id="nsDoc" placeholder="Dr. Downes"></label><label>Location<select id="nsLoc"><option value="">Not set</option><option>ICU</option><option>Wards</option><option>Isolation</option></select></label>'
     +'<label>Code status<select id="nsCode"><option>ALS</option><option>BLS</option><option>DNR</option></select></label><label>Condition<select id="nsCond"><option>Stable</option><option>Watch</option><option>Critical</option></select></label>'
     +'</div><p class="tm-note">Starts with standard observations every 4 hours. The doctor adds meds and fluids on the sheet.</p>','Create sheet',function(){
       var v=function(id){ return (document.getElementById(id)||{}).value||''; }; if(!v('nsName').trim()){ toast('Enter the patient’s name'); return false; }
@@ -1139,6 +1139,43 @@ try{ lsPill=function(ls){ return resusPillHTML(ls,'sm'); }; }catch(e){ window.ls
   /* look for header pills twice a second; the frame loop runs only while one is on screen */
   setInterval(function(){ if(document.hidden) return; scan(); if(list.length&&!raf) raf=requestAnimationFrame(frame); },500);
 })();
+
+/* ═════════ TS LOCATION — where the inpatient is housed: ICU · Wards · Isolation ═════════
+   One field (sheet.patient.location) shown in the Visit panel, the board's Ward column, the patient chip and Rounds. */
+var LOCATIONS=['ICU','Wards','Isolation'];
+window.TS_LOCATIONS=LOCATIONS;
+function locOf(s){ return ((s&&s.patient)||{}).location||''; }
+function setLocation(sheetId,loc){ var s=SHEETS.find(function(x){ return x._id===sheetId; }); if(!s) return;
+  var p=s.patient||(s.patient={}), was=p.location||''; loc=loc||''; if(was===loc) return;
+  var me=user(), now=new Date().toISOString();
+  var u={'patient.location':loc||null,updated_at:now,updated_by:me.initials,
+    audit:FV.arrayUnion({at:now,type:'doctor',desc:loc?('Location — <b>'+esc(loc)+'</b>'+(was?' (was '+esc(was)+')':'')):'Location cleared',who:me.initials,uid:me.uid})};
+  p.location=loc||null; if(sheetId===CUR&&curDoc){ curDoc.patient=curDoc.patient||{}; curDoc.patient.location=loc||null; VISIT.location=loc||'—'; }
+  DB.collection(COL).doc(sheetId).update(u).then(function(){ toast(((p.name||'Patient'))+(loc?' → '+loc:' · location cleared')); })
+    .catch(function(e){ console.warn(e); toast('Couldn’t save the location'); });
+  refreshLoc(); try{ if(currentCTab==='dash') renderDash(); }catch(e){} }
+window.tsSetLocation=setLocation;
+/* the menu: three choices, the current one ticked */
+window.tsPickLoc=function(sheetId,anchor){ var old=document.getElementById('tsLocMenu'); if(old) old.remove();
+  var s=SHEETS.find(function(x){ return x._id===sheetId; }); if(!s) return; var cur=locOf(s);
+  var m=document.createElement('div'); m.id='tsLocMenu'; m.className='ts-menu ts-tech-menu ts-loc-menu show';
+  var opt=function(n,label){ return '<button type="button" class="'+(n===cur?'on':'')+'" data-n="'+esc(n)+'"><b>'+esc(label||n)+'</b></button>'; };
+  m.innerHTML='<div class="ts-tm-h">Location · '+esc(((s.patient||{}).name)||'')+'</div>'+LOCATIONS.map(function(n){ return opt(n); }).join('')+(cur?opt('','Clear location'):'');
+  m.querySelectorAll('button[data-n]').forEach(function(b){ b.onclick=function(){ m.remove(); setLocation(sheetId,b.dataset.n); }; });
+  var r=anchor.getBoundingClientRect(); m.style.top=Math.min(window.innerHeight-220,r.bottom+6)+'px'; m.style.left=Math.max(12,Math.min(window.innerWidth-300,r.left-20))+'px';
+  document.body.appendChild(m); setTimeout(function(){ document.addEventListener('mousedown',function h(ev){ if(!m.contains(ev.target)){ m.remove(); document.removeEventListener('mousedown',h); } }); },0); };
+/* Visit panel row */
+window.tsLocCell=function(){ if(!CUR) return '<span class="pill soft">'+esc(VISIT.location||'—')+'</span>'; var l=locOf(curDoc);
+  return l?'<button type="button" class="ts-loc-pill loc-'+esc(l.toLowerCase().replace(/[^a-z]/g,''))+'" title="Change location" onclick="tsPickLoc(\''+CUR+'\',this)">'+esc(l)+'</button>'
+          :'<button type="button" class="addbtn" onclick="tsPickLoc(\''+CUR+'\',this)">+ Set location</button>'; };
+/* board Ward column: the same three choices, saved straight to the sheet */
+window.tsWardSel=function(p){ if(!p||!p._id) return null; var cur=p.cage||'', known=LOCATIONS.indexOf(cur)>-1;
+  return '<select class="ward-sel" onclick="event.stopPropagation()" onchange="event.stopPropagation();tsSetLocation(\''+p._id+'\',this.value)">'
+    +'<option value=""'+(cur?'':' selected')+'>—</option>'+(cur&&!known?'<option selected>'+esc(cur)+'</option>':'')
+    +LOCATIONS.map(function(w){ return '<option'+(w===cur?' selected':'')+'>'+w+'</option>'; }).join('')+'</select>'; };
+function refreshLoc(){ document.querySelectorAll('.ts-loc-slot').forEach(function(c){ var h=window.tsLocCell(); if(c.innerHTML!==h) c.innerHTML=h; });
+  try{ updateChip(); }catch(e){} }
+var _rhLoc=refreshHeader; refreshHeader=function(){ _rhLoc.apply(this,arguments); try{ refreshLoc(); }catch(e){} };
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();

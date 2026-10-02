@@ -2456,6 +2456,14 @@ body.dark .ts-resus{--rc:#4CBE7A}body.dark .ts-resus.dnr{--rc:#B98BE0}
 .ts-tech-cell:hover{border-color:var(--accent)}
 body.dark .ts-tech-cell{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);color:#EEF1F6}
 
+/* location pill (Visit panel): ICU · Wards · Isolation */
+.ts-loc-pill{height:30px;padding:0 14px;border-radius:999px;border:1px solid var(--line,rgba(0,0,0,.1));background:var(--surface,#fff);color:var(--ink-900,#111);font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:border-color .15s}
+.ts-loc-pill:hover{border-color:var(--accent)}
+.ts-loc-pill.loc-icu{border-color:rgba(255,69,58,.45);color:#ff6b61;background:rgba(255,69,58,.08)}
+.ts-loc-pill.loc-isolation{border-color:rgba(255,159,10,.5);color:#e08a00;background:rgba(255,159,10,.10)}
+.ts-loc-pill.loc-wards{border-color:rgba(56,189,210,.45);color:var(--accent-ink,#0e7c8c);background:rgba(56,189,210,.08)}
+.ts-loc-menu{width:240px}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 

@@ -337,7 +337,7 @@ function renderDash(){
         <div class="pt-cage-line">${p.cage?`<span>(${p.cage})</span>`:''}${lsPill(p.ls)}${IC.vit}</div>
         <div class="pt-reason">${p.reason}</div></div>
       <div class="sbc c-dr"><span class="dr-box">${p.dr}</span></div>
-      <div class="sbc c-ward"><select class="ward-sel" onchange="toast('${p.name.split(' ')[0]} → '+this.value)">${WARDS.map(w=>`<option ${w===p.ward?'selected':''}>${w}</option>`).join('')}</select></div>
+      <div class="sbc c-ward">${(window.tsWardSel&&tsWardSel(p))||`<select class="ward-sel" onchange="toast('${p.name.split(' ')[0]} → '+this.value)">${WARDS.map(w=>`<option ${w===p.ward?'selected':''}>${w}</option>`).join('')}</select>`}</div>
       <div class="sbc c-io"><div style="display:flex;align-items:center;gap:8px"><span class="io-badge" style="float:none;margin:0">${p.inout}</span><div><div class="io-date">${p.date}</div><div class="io-time">${p.time}</div></div></div></div>
       <div class="sbc c-timer">${p.techHTML||''}</div>
       <div class="sbc c-alerts aa-cell" onclick="event.stopPropagation();${IPL?'openPatient':'openAlertAssist'}(${i})" title="Alert Assist">${p.alerts.length?p.alerts.map(a=>`<div class="al-row ${a.t}">${IC.tri}${a.x}</div>`).join(''):'<span class="al-empty">— Add alert</span>'}<div class="aa-cell-hint">${IC.spark}Alert Assist</div></div>
@@ -500,7 +500,7 @@ function sidebarBriefHTML(){
       ${kvr('Doctor','Dr. '+VISIT.doctorTo.split(',')[0])}
       <div class="kvrow"><span class="kk">Technician</span><span class="vv ts-tech-slot">${window.tsTechCell?tsTechCell():''}</span></div>
       <div class="kvrow"><span class="kk">Status</span><span class="vv"><span class="pill st-hospitalized"><span class="d"></span>${VISIT.hospStatus}</span></span></div>
-      <div class="kvrow"><span class="kk">Location</span><span class="vv"><span class="pill soft">${VISIT.location}</span></span></div>
+      <div class="kvrow"><span class="kk">Location</span><span class="vv ts-loc-slot">${window.tsLocCell?tsLocCell():VISIT.location}</span></div>
       ${kvr('Department',deptName(VISIT.department))}
       <div class="kvrow"><span class="kk">Discharge Date</span><span class="vv">${ieVal('dcDateVal',VISIT.dischargeDate,'openDatePicker')}</span></div>
       <div class="kvrow"><span class="kk">Discharge Time</span><span class="vv">${ieVal('dcTimeVal',VISIT.dischargeTime,'openTimePicker')}</span></div>
