@@ -1395,5 +1395,62 @@ setInterval(function(){ try{ if(!document.hidden) refreshHdr(); }catch(e){} },30
 document.addEventListener('scroll',function(e){ var t=e.target; if(!t||t.id!=='sheetScroll') return; var h=document.getElementById('tsHdr'); if(!h) return;
   var y=t.scrollTop; if(y>48&&!h.classList.contains('is-compact')) h.classList.add('is-compact'); else if(y<6&&h.classList.contains('is-compact')) h.classList.remove('is-compact'); },true);
 
+/* ═════════ TS DAYS — the ‹ Today › day navigator: look back at earlier days of this stay ═════════
+   The grid normally shows today. ‹ steps back a calendar day (to the admission day), › forward, the middle button returns to today.
+   Past days are VIEW ONLY: nothing is written while one is shown (the save path assumes today), tapping a cell shows what was charted. */
+var VIEW_DK=null;
+function viewDk(){ return VIEW_DK||dayKey(); }
+window.tsViewDk=viewDk;
+function dkDate(dk){ return new Date(+dk.slice(0,4),+dk.slice(4,6)-1,+dk.slice(6,8)); }
+function nextDk(dk){ var d=dkDate(dk); d.setDate(d.getDate()+1); return dayKey(d); }
+function firstDk(){ var at=curDoc&&(curDoc.admitted_at||curDoc.created_at); return at?dayKey(new Date(at)):dayKey(); }
+function dkLabel(dk){ var d=dkDate(dk); return d.toLocaleDateString([], {weekday:'short',month:'numeric',day:'numeric'}); }
+
+/* the grid's clock: on a past day "now" is past the end of that day, so every slot reads as finished or missed */
+var _nmDays=nowMin; nowMin=function(){ return VIEW_DK?(Date.now()-dkDate(VIEW_DK).getTime())/60000:_nmDays(); };
+/* tasks for the day on screen */
+var _btDays=buildTasks; buildTasks=function(){ if(!VIEW_DK) return _btDays.apply(this,arguments);
+  TASKS=[]; var dk=VIEW_DK, marks=(curDoc&&curDoc.marks)||{}, adm=curDoc&&(curDoc.admitted_at||curDoc.created_at);
+  var from=(adm&&dayKey(new Date(adm))===dk)?(new Date(adm)-dkDate(dk))/60000:-1;
+  ORDERS.forEach(function(o){ if(o.cont) return; var oa=o.ordered_at?dayKey(new Date(o.ordered_at)):null; if(oa&&oa>dk) return;   /* ordered after this day */
+    freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m) return;
+      TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
+  Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
+    var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
+    TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,severity:0,adhoc:true}); }); };
+/* an older day's charting joins the composed sheet while it is on screen */
+var _cpDays=compose; compose=function(){ var d=_cpDays.apply(this,arguments); if(d&&VIEW_DK&&curDays[VIEW_DK]){ d.marks=Object.assign({},curDays[VIEW_DK],d.marks); } return d; };
+/* nothing is saved while a past day is on screen */
+var _syDays=sync; sync=function(){ if(VIEW_DK) return; return _syDays.apply(this,arguments); };
+
+function goDay(dk){ if(!CUR||!curDoc) return; var today=dayKey(); if(dk>=today) dk=null; var lo=firstDk(); if(dk&&dk<lo) dk=lo;
+  if(dk===VIEW_DK) return;
+  if(!VIEW_DK) _syDays();   /* save anything typed on today before looking back */
+  VIEW_DK=dk;
+  var show=function(){ curDoc=compose(); hydrate(); try{ renderSheet(); }catch(e){ try{ rerender(); }catch(_){} } };
+  if(dk&&!curDays[dk]&&dk!==subDk&&dk!==prevDk(subDk)){ var id=CUR, el=document.querySelector('.ts-daynav .dn-mid'); if(el) el.textContent='Loading…';
+    dayRef(id,dk).get().then(function(s){ if(CUR!==id) return; curDays[dk]=(s.exists&&s.data().marks)||{}; dayLoaded[dk]=1; if(VIEW_DK===dk) show(); })
+      .catch(function(e){ console.warn('[day]',e); toast('Couldn’t load '+dkLabel(dk)); VIEW_DK=null; show(); });
+  } else show();
+  if(dk) toast(dkLabel(dk)+' · view only'); }
+window.tsDayPrev=function(){ goDay(VIEW_DK?prevDk(VIEW_DK):prevDk(dayKey())); };
+window.tsDayNext=function(){ if(VIEW_DK) goDay(nextDk(VIEW_DK)); };
+window.tsDayToday=function(){ goDay(null); };
+window.tsDayNavHTML=function(){ var today=dayKey(), dk=viewDk(), lo=CUR&&curDoc?firstDk():today;
+  var label=VIEW_DK?('<b>'+esc(dkLabel(dk))+'</b><span class="dn-ro">View only</span>'):('Today · '+esc(dkLabel(today)));
+  return '<button type="button" class="dn-prev" onclick="tsDayPrev()"'+(dk<=lo?' disabled':'')+' aria-label="Previous day">‹</button>'
+    +'<button type="button" class="today dn-mid'+(VIEW_DK?' past':'')+'" onclick="tsDayToday()" title="'+(VIEW_DK?'Back to today':'Today')+'">'+label+'</button>'
+    +'<button type="button" class="dn-next" onclick="tsDayNext()"'+(VIEW_DK?'':' disabled')+' aria-label="Next day">›</button>'; };
+/* tapping a cell on a past day shows what was charted instead of opening the editor */
+var SLOT_TXT={completed:'Completed',skipped:'Skipped',refused:'Refused',held:'Held'};
+var _ocDays=window.openCompletion; window.openCompletion=function(id){ if(!VIEW_DK) return _ocDays.apply(this,arguments);
+  var t=(TASKS||[]).find(function(x){ return x.id===id; }); if(!t){ toast('View only'); return; }
+  var at=fmtTime(t.sched); toast(t.order.name+' · '+dkLabel(VIEW_DK)+' '+at+' — '+(t.status?(SLOT_TXT[t.status]||t.status)+(t.value?' '+t.value:'')+(t.by?' by '+t.by:''):'not charted')); };
+var _oiDays=window.openInfusion; if(_oiDays) window.openInfusion=function(){ if(VIEW_DK){ toast('View only — go back to today to chart'); return; } return _oiDays.apply(this,arguments); };
+/* orders are added on today's sheet */
+var _tpDays=window.tsPick; window.tsPick=function(){ if(VIEW_DK){ try{ closeTsDrop(); }catch(e){} toast('Go back to today to add orders'); return; } return _tpDays.apply(this,arguments); };
+/* a new patient always opens on today */
+var _osDays=openSheet; openSheet=function(id){ if(id!==CUR) VIEW_DK=null; return _osDays.apply(this,arguments); }; window.tsOpenSheet=openSheet;
+
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
