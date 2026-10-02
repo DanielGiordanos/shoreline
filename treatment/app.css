@@ -1688,12 +1688,16 @@ body:not(.dark) .cal-modal .dp-cell.sel .dn,body:not(.dark) .cal-modal .dp-cell.
 .ghead .hcell{font-size:11px;font-weight:700;color:var(--ink-500);min-height:28px}
 .ghead .hcell .ampm{font-size:8px;color:var(--ink-300);font-weight:700}
 .ghead .hcell.hour-now{color:var(--coral)}
-.gsection{display:flex;align-items:center;position:sticky;left:0;background:var(--fill-soft);z-index:5;
-  padding:4px 12px;gap:9px;width:auto;flex:0 0 auto}
-.grow:has(> .gsection){background:var(--fill-soft)}   /* the band spans the grid; the title stays in view when the grid is scrolled to now */
-.gsection .sicon{width:15px;height:15px;color:var(--accent)}
-.gsection .stitle{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink)}
-.gsection .scount{font-size:10px;color:var(--ink-400);font-weight:700;background:var(--surface-0);padding:1px 7px;border-radius:10px}
+.gsection{display:flex;align-items:center;position:sticky;left:0;background:var(--sec-band);z-index:5;
+  padding:0 14px;min-height:34px;gap:8px;width:auto;flex:0 0 auto}
+/* section band: one opaque tint edge to edge (title and band the same colour, so no box behind the title), hairlines above and below,
+   and it sits over the row above so the glow of an overdue cell never bleeds into it; the title stays in view when the grid is scrolled to now */
+#sheetInner{--sec-band:color-mix(in srgb,var(--accent) 7%,var(--surface-0));--sec-ink:var(--accent-ink)}
+body.dark #sheetInner{--sec-ink:var(--accent)}   /* deeper teal on the light band for contrast, bright teal on dark */
+.grow:has(> .gsection){background:var(--sec-band);position:relative;z-index:7;border-top:1px solid var(--glass-hairline)}
+.gsection .sicon{width:14px;height:14px;color:var(--sec-ink);flex:none}
+.gsection .stitle{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sec-ink)}
+.gsection .scount{min-width:18px;height:18px;padding:0 6px;border-radius:999px;display:inline-grid;place-items:center;font-size:10.5px;font-weight:700;letter-spacing:0;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--sec-ink)}
 
 .cell{width:54px;flex-shrink:0;border-right:1px solid var(--glass-hairline);min-height:31px;display:grid;place-items:center;padding:2px 3px}
 .mark{width:calc(100% - 4px);height:25px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:800;
