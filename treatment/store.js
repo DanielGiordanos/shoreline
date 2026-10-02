@@ -533,7 +533,7 @@ function doseTotal(dose,unit,kg,sp){ var per=String(unit).split('/')[1]||'';
 function fmtN(n){ return n>=100?Math.round(n).toString():n>=10?(Math.round(n*10)/10).toString():(Math.round(n*100)/100).toString(); }
 /* the sheet's dose math understands mg/kg, mg/lb, mg/m² and fixed doses */
 window.medDose=function(o){ var w=Number(VISIT.weight)||0, unit=String(o.unit||'mg/kg'), base=unit.split('/')[0];
-  var total=doseTotal(Number(o.dose)||0,unit,w,spKey()), vol=o.conc?total/o.conc:null;
+  var total=doseTotal(Number(o.dose)||0,unit,w,spKey()), vol=base==='mL'?total:(o.conc?total/o.conc:null);
   return {mg:fmtN(total)+' '+base, volume:vol!=null?vol.toFixed(2)+' mL':'—', raw:total}; };
 
 /* first dose/check defaults to now; the rest of today's hours follow */
@@ -684,18 +684,18 @@ function openMedOrder(i){
   modal('<h3>'+esc(x.n)+'</h3><p>'+esc(VISIT.patient)+' · '+esc(VISIT.species||'')+' · <b>'+(kg?kg+' kg':'no weight')+'</b>'+(kg?'':' — add a triage weight to calculate doses')+'</p>'
     +'<div class="rx-lbl">Reference doses'+(sp?' · '+(sp==='cat'?'cats':'dogs'):'')+'</div><div class="rx-refs">'+refs+'</div>'
     +'<div class="tm-grid" style="margin-top:14px">'
-    +'<label>Dose<span class="rx-dose"><input id="rxDose" inputmode="decimal" placeholder="Enter dose" oninput="tsRxCalc(true)"><select id="rxUnit" onchange="tsRxCalc(true)">'
+    +'<label>Dose<span class="rx-dose"><input id="rxDose" inputmode="decimal" placeholder="Enter dose" oninput="tsRxCalc(true)"><select id="rxUnit" onchange="tsStockAuto();tsRxCalc(true)">'
       +opt(['mg/kg','mcg/kg','U/kg','mL/kg','g/kg','mg/lb','mg/m²','mcg/m²','mg','mcg','U','mL'],'mg/kg')+'</select></span></label>'
     +'<label>Route<select id="rxRoute" onchange="tsRxRoute()"><option value="">Choose…</option>'+opt(['IV','SQ','IM','PO','Topical','Ophthalmic','Otic','Rectal','Inhaled','Intranasal','Transdermal'],'')+'</select></label>'
     +'<label>Frequency<select id="rxFreq"><option value="">Choose…</option>'+opt(FREQS,'')+'</select></label>'
     +'<label>First dose<select id="rxStart">'+hrs+'</select></label>'
-    +'<label>Concentration <span id="rxConcU">(mg/mL)</span><input id="rxConc" inputmode="decimal" placeholder="Optional" oninput="tsRxCalc()"></label>'
+    +'<label>Concentration <span id="rxConcU">(mg/mL)</span><input id="rxConc" inputmode="decimal" placeholder="Optional" oninput="tsRxConcEdit()"></label>'
     +'<label>Notes<input id="rxNotes" placeholder="Optional"></label>'
-    +'</div><div class="rx-calc" id="rxCalc">Enter a dose to calculate</div><div class="rx-sugg" id="rxSugg"></div><div class="rx-range" id="rxRange"></div>'
+    +'</div><div class="rx-stock" id="rxStock" style="display:none"></div><div class="rx-calc" id="rxCalc">Enter a dose to calculate</div><div class="rx-sugg" id="rxSugg"></div><div class="rx-range" id="rxRange"></div>'
     +(canOrder?'':'<p class="rx-warn rx-block">Signed in as <b>'+esc(user().name||'—')+'</b>. Only doctors can place medication orders.</p>'),
     canOrder?'Add to sheet':'Close', function(){ return canOrder?tsRxSubmit():true; });
   setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card');
-    var best=bestRegimen(mine); if(best) tsRxPick('m',mine.indexOf(best),true); },30);
+    var best=bestRegimen(mine); if(best) tsRxPick('m',mine.indexOf(best),true); else tsStockAuto(); },30);
 }
 window.tsOpenMedOrder=function(name){ return loadDrugs().then(function(){ var i=DRUGS.findIndex(function(x){ return x.n.toLowerCase()===String(name).toLowerCase(); }); if(i>-1) openMedOrder(i); return i; }); };
 /* tapping a reference (or opening the drug) fills in a suggested dose: the value, or the low end of a range */
@@ -704,7 +704,7 @@ window.tsRxRoute=function(){ if(!RX) return; var r=(document.getElementById('rxR
   var best=bestRegimen(RX.mine,r);
   if(best){ tsRxPick('m',RX.mine.indexOf(best),true); return; }
   RX.sel=null; RX.suggested=null; document.querySelectorAll('#tsModal .rx-ref').forEach(function(b){ b.classList.remove('on'); });
-  tsRxCalc(); var sg=document.getElementById('rxSugg'); if(sg){ sg.innerHTML='No '+(spKey()||'')+' reference dose for '+esc(r)+' — enter and confirm the dose.'; sg.style.display='block'; } };
+  tsStockAuto(); tsRxCalc(); var sg=document.getElementById('rxSugg'); if(sg){ sg.innerHTML='No '+(spKey()||'')+' reference dose for '+esc(r)+' — enter and confirm the dose.'; sg.style.display='block'; } };
 window.tsRxPick=function(grp,k){ if(!RX) return; var e=(grp==='m'?RX.mine:RX.others)[k]; if(!e) return; RX.sel=e; RX.touched=false;
   document.querySelectorAll('#tsModal .rx-ref').forEach(function(b){ b.classList.toggle('on',b.dataset.k===grp+k); });
   var u=unitOf(e), r=routeOf(e), f=freqOf(e), set=function(id,v){ var el=document.getElementById(id); if(el&&v!=null&&v!=='') el.value=v; };
@@ -713,7 +713,7 @@ window.tsRxPick=function(grp,k){ if(!RX) return; var e=(grp==='m'?RX.mine:RX.oth
   var dz=document.getElementById('rxDose');
   if(dz){ if(e.d&&e.d[0]!=null){ dz.value=String(e.d[0]); RX.suggested={v:e.d[0],range:e.d[1]!=null&&e.d[1]!==e.d[0]}; } else { dz.value=''; RX.suggested=null; } }
   if(e.c&&e.c[0]&&/mg\/mL/i.test(e.c[1]||'')) set('rxConc',String(e.c[0]));
-  tsRxCalc(); };
+  tsStockAuto(); tsRxCalc(); };
 window.tsRxCalc=function(edited){ var el=document.getElementById('rxCalc'), rg=document.getElementById('rxRange'), sg=document.getElementById('rxSugg'); if(!el) return;
   if(edited&&RX) RX.touched=true;
   var dose=parseFloat((document.getElementById('rxDose')||{}).value), unit=(document.getElementById('rxUnit')||{}).value||'mg/kg', conc=parseFloat((document.getElementById('rxConc')||{}).value);
@@ -736,16 +736,140 @@ function tsRxSubmit(){
   var rg=document.getElementById('rxRange'); if(rg&&rg.style.display!=='none'&&!(document.getElementById('rxOk')||{}).checked){ toast('Confirm the dose outside the reference'); return false; }
   var x=RX.x, e=RX.sel, me=user(), now=new Date();
   var o={id:'m'+now.getTime().toString(36),type:'med',section:'Medications',name:x.n,dose:dose,unit:unit,route:route,freq:freq,start:isNaN(start)?Math.ceil(nowMin()/60):start,
-    conc:conc>0?conc:null,notes:v('rxNotes'),drug_id:x.id,ordered_by:me.initials,ordered_by_name:me.name,ordered_at:now.toISOString(),dose_source:(e&&RX.suggested&&!RX.touched)?'reference_suggestion':'doctor_entered'};
+    conc:conc>0?conc:null,conc_label:(conc>0&&RX.stockK!=null&&stockOf(x))?stockOf(x).s[RX.stockK][2]:null,conc_source:conc>0?(RX.stockK!=null?'hospital_stock':'doctor_entered'):null,notes:v('rxNotes'),drug_id:x.id,ordered_by:me.initials,ordered_by_name:me.name,ordered_at:now.toISOString(),dose_source:(e&&RX.suggested&&!RX.touched)?'reference_suggestion':'doctor_entered'};
   if(e) o.ref={dose:e.do,route:e.ro,freq:e.fo,indication:e.i,species:e.s,source:e.u||null};
   ORDERS.push(o); buildTasks();
   var d=medDose(o);
-  logEvent('doctor','Order added — <b>'+esc(x.n)+'</b> '+dose+' '+unit+' ('+d.mg+') '+route+' '+freq,me.initials);
+  logEvent('doctor','Order added — <b>'+esc(x.n)+'</b> '+dose+' '+unit+' ('+d.mg+(o.conc?' = '+d.volume+' of '+(o.conc_label||o.conc+' '+unit.split('/')[0]+'/mL'):'')+') '+route+' '+freq,me.initials);
   try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} }
   sync(); toast(x.n+' added · '+nextDueText(o)); revealOrder(o); return true; }
 /* the drug reference loads quietly after start-up, so the first search is instant */
 setTimeout(function(){ var go=function(){ if(AUTH&&AUTH.currentUser&&!document.hidden) loadDrugs(); else setTimeout(go,8000); };
   if(window.requestIdleCallback) requestIdleCallback(go,{timeout:6000}); else go(); },4000);
+
+/* ---------- hospital stock strengths: the injectable's concentration fills in so the order shows the mL to draw up ----------
+   Standard US product strengths — a starting list for the medical director / pharmacy to confirm.
+   [value, unit per mL, label]. Several strengths in use → pick:1 = shown as choices, nothing filled in until the doctor picks.
+   Not here on purpose: powders mixed in the hospital (cefazolin, ampicillin, …) and insulin (drawn up in units). */
+var STOCK={
+  'Acepromazine':{s:[[10,'mg','10 mg/mL']]},
+  'Alfaxalone':{s:[[10,'mg','Alfaxan 10 mg/mL']]},
+  'Alfentanil':{s:[[500,'mcg','500 mcg/mL']]},
+  'Amikacin':{s:[[250,'mg','250 mg/mL'],[50,'mg','50 mg/mL']],pick:1},
+  'Aminophylline':{s:[[25,'mg','25 mg/mL']]},
+  'Amiodarone':{s:[[50,'mg','50 mg/mL']]},
+  'Atipamezole':{s:[[5,'mg','Antisedan 5 mg/mL']]},
+  'Atropine':{s:[[0.54,'mg','0.54 mg/mL'],[0.4,'mg','0.4 mg/mL']],pick:1},
+  'Bupivacaine':{s:[[5,'mg','0.5% · 5 mg/mL'],[2.5,'mg','0.25% · 2.5 mg/mL']],pick:1},
+  'Buprenorphine':{s:[[0.3,'mg','0.3 mg/mL'],[1.8,'mg','Simbadol 1.8 mg/mL']],pick:1},
+  'Butorphanol':{s:[[10,'mg','10 mg/mL']]},
+  'Calcium chloride':{s:[[100,'mg','10% · 100 mg/mL']]},
+  'Calcium gluconate':{s:[[100,'mg','10% · 100 mg/mL']]},
+  'Carboplatin':{s:[[10,'mg','10 mg/mL']]},
+  'Cefovecin':{s:[[80,'mg','Convenia 80 mg/mL']]},
+  'Clindamycin':{s:[[150,'mg','150 mg/mL']]},
+  'Cosyntropin':{s:[[250,'mcg','250 mcg/mL']]},
+  'Cyanocobalamin':{s:[[1000,'mcg','1,000 mcg/mL']]},
+  'Desmopressin':{s:[[4,'mcg','4 mcg/mL']]},
+  'Desoxycorticosterone pivalate':{s:[[25,'mg','25 mg/mL']]},
+  'Dexamethasone':{s:[[4,'mg','Dex SP 4 mg/mL'],[2,'mg','2 mg/mL']],pick:1},
+  'Dexmedetomidine':{s:[[0.5,'mg','Dexdomitor 0.5 mg/mL'],[0.1,'mg','Dexdomitor 0.1 mg/mL']],pick:1},
+  'Dextrose':{s:[[500,'mg','50% · 500 mg/mL']]},
+  'Diazepam':{s:[[5,'mg','5 mg/mL']]},
+  'Diltiazem':{s:[[5,'mg','5 mg/mL']]},
+  'Diphenhydramine':{s:[[50,'mg','50 mg/mL']]},
+  'Dobutamine':{s:[[12.5,'mg','12.5 mg/mL']]},
+  'Dolasetron':{s:[[20,'mg','20 mg/mL']]},
+  'Dopamine':{s:[[40,'mg','40 mg/mL']]},
+  'Doxapram':{s:[[20,'mg','20 mg/mL']]},
+  'Doxorubicin':{s:[[2,'mg','2 mg/mL']]},
+  'Enoxaparin':{s:[[100,'mg','100 mg/mL']]},
+  'Enrofloxacin':{s:[[22.7,'mg','2.27% · 22.7 mg/mL'],[100,'mg','100 mg/mL']],pick:1},
+  'Epinephrine':{s:[[1,'mg','1 mg/mL (1:1,000)'],[0.1,'mg','0.1 mg/mL (1:10,000)']],pick:1},
+  'Esmolol':{s:[[10,'mg','10 mg/mL']]},
+  'Etomidate':{s:[[2,'mg','2 mg/mL']]},
+  'Famotidine':{s:[[10,'mg','10 mg/mL']]},
+  'Fentanyl':{s:[[50,'mcg','50 mcg/mL']]},
+  'Flumazenil':{s:[[0.1,'mg','0.1 mg/mL']]},
+  'Furosemide':{s:[[50,'mg','50 mg/mL']]},
+  'Gentamicin':{s:[[100,'mg','100 mg/mL'],[50,'mg','50 mg/mL'],[40,'mg','40 mg/mL']],pick:1},
+  'Glycopyrrolate':{s:[[0.2,'mg','0.2 mg/mL']]},
+  'Heparin':{s:[[1000,'U','1,000 U/mL'],[5000,'U','5,000 U/mL']],pick:1},
+  'Hydralazine':{s:[[20,'mg','20 mg/mL']]},
+  'Hydrocortisone':{s:[[50,'mg','Solu-Cortef 50 mg/mL']]},
+  'Hydromorphone':{s:[[2,'mg','2 mg/mL'],[10,'mg','10 mg/mL']],pick:1},
+  'Ketamine':{s:[[100,'mg','100 mg/mL']]},
+  'Levetiracetam':{s:[[100,'mg','100 mg/mL']]},
+  'Lidocaine':{s:[[20,'mg','2% · 20 mg/mL']]},
+  'Magnesium sulfate':{s:[[500,'mg','50% · 500 mg/mL'],[4.06,'mEq','50% · 4.06 mEq/mL']]},
+  'Mannitol':{s:[[200,'mg','20% · 200 mg/mL'],[250,'mg','25% · 250 mg/mL']],pick:1},
+  'Maropitant':{s:[[10,'mg','Cerenia 10 mg/mL']]},
+  'Medetomidine':{s:[[1,'mg','1 mg/mL']]},
+  'Meloxicam':{s:[[5,'mg','5 mg/mL']]},
+  'Methadone':{s:[[10,'mg','10 mg/mL']]},
+  'Methocarbamol':{s:[[100,'mg','100 mg/mL']]},
+  'Methylprednisolone':{s:[[20,'mg','20 mg/mL'],[40,'mg','40 mg/mL']],pick:1},
+  'Metoclopramide':{s:[[5,'mg','5 mg/mL']]},
+  'Metronidazole':{s:[[5,'mg','IV 5 mg/mL']]},
+  'Midazolam':{s:[[5,'mg','5 mg/mL'],[1,'mg','1 mg/mL']],pick:1},
+  'Morphine':{s:[[15,'mg','15 mg/mL'],[10,'mg','10 mg/mL'],[1,'mg','1 mg/mL']],pick:1},
+  'Naloxone':{s:[[0.4,'mg','0.4 mg/mL']]},
+  'Norepinephrine':{s:[[1,'mg','1 mg/mL']]},
+  'Octreotide':{s:[[100,'mcg','100 mcg/mL'],[50,'mcg','50 mcg/mL'],[500,'mcg','500 mcg/mL']],pick:1},
+  'Ondansetron':{s:[[2,'mg','2 mg/mL']]},
+  'Oxymorphone':{s:[[1,'mg','1 mg/mL']]},
+  'Oxytocin':{s:[[20,'U','20 U/mL'],[10,'U','10 U/mL']],pick:1},
+  'Pantoprazole':{s:[[4,'mg','40 mg vial in 10 mL · 4 mg/mL']]},
+  'Phenobarbital':{s:[[65,'mg','65 mg/mL'],[130,'mg','130 mg/mL']],pick:1},
+  'Phytonadione':{s:[[10,'mg','10 mg/mL']]},
+  'Potassium chloride':{s:[[2,'mEq','2 mEq/mL']]},
+  'Potassium phosphate':{s:[[3,'mmol','K phos · 3 mmol/mL phosphate'],[4.4,'mEq','K phos · 4.4 mEq/mL potassium']]},
+  'Pralidoxime':{s:[[50,'mg','1 g in 20 mL · 50 mg/mL']]},
+  'Procainamide':{s:[[100,'mg','100 mg/mL'],[500,'mg','500 mg/mL']],pick:1},
+  'Propofol':{s:[[10,'mg','10 mg/mL']]},
+  'Propranolol':{s:[[1,'mg','1 mg/mL']]},
+  'Robenacoxib':{s:[[20,'mg','Onsior 20 mg/mL']]},
+  'Ropivacaine':{s:[[5,'mg','0.5% · 5 mg/mL'],[2,'mg','0.2% · 2 mg/mL'],[7.5,'mg','0.75% · 7.5 mg/mL']],pick:1},
+  'Sodium bicarbonate':{s:[[1,'mEq','8.4% · 1 mEq/mL']]},
+  'Sodium nitroprusside':{s:[[25,'mg','25 mg/mL']]},
+  'Terbutaline':{s:[[1,'mg','1 mg/mL']]},
+  'Thiamine':{s:[[100,'mg','100 mg/mL'],[200,'mg','200 mg/mL']],pick:1},
+  'Tiletamine / zolazepam':{s:[[100,'mg','Telazol 100 mg/mL']]},
+  'Triamcinolone acetonide':{s:[[2,'mg','2 mg/mL'],[10,'mg','10 mg/mL'],[40,'mg','40 mg/mL']],pick:1},
+  'Vasopressin':{s:[[20,'U','20 U/mL']]},
+  'Vinblastine':{s:[[1,'mg','1 mg/mL']]},
+  'Vincristine':{s:[[1,'mg','1 mg/mL']]}
+};
+window.TS_STOCK=STOCK;
+var INJ={IV:1,SQ:1,IM:1,IO:1};
+var MASS={g:1000,mg:1,mcg:0.001};
+/* a stock strength in the dose's unit per mL (10 mg/mL for a mg/kg dose, 50 mcg/mL for mcg/kg), or null if the units don't match */
+function concFor(st,unit){ var base=String(unit||'mg/kg').split('/')[0], u=st[1];
+  if(MASS[u]&&MASS[base]) return st[0]*MASS[u]/MASS[base];
+  return u===base?st[0]:null; }
+function stockOf(x){ return x&&STOCK[x.n]||null; }
+function rxv(id){ return ((document.getElementById(id)||{}).value||'').trim(); }
+/* chips under the dose: the hospital's strengths; one standard strength is filled in for IV/SQ/IM */
+window.tsStockRender=function(){ var el=document.getElementById('rxStock'); if(!el||!RX) return; var st=stockOf(RX.x), unit=rxv('rxUnit');
+  if(!st){ el.innerHTML=''; el.style.display='none'; return; }
+  var html=st.s.map(function(s,k){ var ok=concFor(s,unit)!=null; if(!ok&&st.s.some(function(t){ return concFor(t,unit)!=null; })) return '';
+    return '<button type="button" class="rx-chip'+(RX.stockK===k?' on':'')+'"'+(ok?'':' disabled')+' onclick="tsStockPick('+k+')">'+esc(s[2])+'</button>'; }).join('');
+  el.innerHTML='<div class="rx-lbl">Stock strength'+(st.pick?' · choose the one you are using':'')+'</div><div class="rx-chips">'+html+'</div>'; el.style.display='block'; };
+window.tsStockPick=function(k){ if(!RX) return; var st=stockOf(RX.x); if(!st||!st.s[k]) return; var c=concFor(st.s[k],rxv('rxUnit')); if(c==null) return;
+  RX.stockK=k; RX.stockAuto=false; RX.concTouched=false; var ci=document.getElementById('rxConc'); if(ci) ci.value=String(+c.toPrecision(6));
+  tsStockRender(); tsRxCalc(); };
+/* route or unit changed: refill the strength the doctor (or the default) chose, in the new unit; drop it for PO/topical */
+window.tsStockAuto=function(){ if(!RX||RX.concTouched) return; var st=stockOf(RX.x), ci=document.getElementById('rxConc'); if(!ci) return;
+  var route=rxv('rxRoute'), unit=rxv('rxUnit'), filled=RX.stockK!=null, k=null;
+  var same=function(j){ var p=st.s[j][2].split('·')[0]; return st.s.findIndex(function(s){ return s[2].split('·')[0]===p&&concFor(s,unit)!=null; }); };
+  if(st&&!(route&&!INJ[route])){
+    k=RX.stockK; if(k!=null&&concFor(st.s[k],unit)==null){ k=same(k); if(k<0) k=null; }
+    if(k==null&&!st.pick&&INJ[route]){ k=st.s.findIndex(function(s){ return concFor(s,unit)!=null; }); if(k<0) k=null; }
+  }
+  RX.stockK=k;
+  if(k!=null) ci.value=String(+concFor(st.s[k],unit).toPrecision(6)); else if(filled) ci.value='';
+  tsStockRender(); };
+window.tsRxConcEdit=function(){ if(RX){ RX.concTouched=true; RX.stockK=null; RX.stockAuto=false; } tsStockRender(); tsRxCalc(); };
 
 /* ═════════ #6 TREND ALERTS + #10 WORKLOAD ═════════
    Alert limits are hospital workflow defaults (not diagnoses) — review with the medical director and adjust FLAG_RULES. */

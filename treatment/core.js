@@ -633,7 +633,7 @@ function buildGrid(){
   SECTIONS.forEach(sec=>{const so=ORDERS.filter(o=>o.section===sec.key);if(!so.length)return;
     html+=`<div class="grow"><div class="gsection"><svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="${sec.icon}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="stitle">${sec.key}</span><span class="scount">${so.length}</span></div></div>`;
     so.forEach(o=>{html+=`<div class="grow"><div class="rl">`;
-      if(o.type==='med'){const d=medDose(o);html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${d.mg} · ${o.freq}</div></div><span class="route-pill">${o.route}</span>`;}
+      if(o.type==='med'){const d=medDose(o);html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${d.mg}${o.conc?' · <b>'+d.volume+'</b>':''} · ${o.freq}</div></div><span class="route-pill">${o.route}</span>`;}
       else if(o.type==='fluid'){html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.rate}</div></div><span class="route-pill">IV</span>`;}
       else{html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}</div></div>`;}
       html+=`</div><div class="hcells">`;

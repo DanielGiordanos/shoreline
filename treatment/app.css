@@ -2363,6 +2363,11 @@ body.dark .rx-chip.on{background:var(--accent,#38bdd2);color:#0b1220}
 @keyframes tsFlash{0%,60%{background:rgba(56,189,210,.22)}100%{background:transparent}}
 #sheetInner .grow.ts-flash,#sheetInner .grow.ts-flash .rl{animation:tsFlash 2.4s ease-out}
 
+/* stock strengths under the dose */
+.rx-stock{margin-top:12px}
+.rx-stock .rx-chip.on{background:var(--accent,#0a84ff);border-color:var(--accent,#0a84ff);color:#fff}
+.rx-stock .rx-chip[disabled]{opacity:.45;cursor:not-allowed}
+
 /* trend alerts + workload */
 #tsFlagBar{display:flex;flex-direction:column;gap:8px;margin:10px 0 2px}
 .ts-flag{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;font-size:13.5px;font-weight:600;animation:tsFlagIn .35s cubic-bezier(.2,.8,.2,1)}
