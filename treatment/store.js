@@ -36,7 +36,7 @@ window.tsMe=function(){ return user().initials||'—'; };
 try{ seedAudit=function(){}; }catch(e){}
 
 /* ---------- real clock (the prototype ran on a simulated 10:12 AM) ---------- */
-nowMin=function(){ var d=new Date(); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; };
+nowMin=function(){ var c=claim('clock'); if(c!=null&&c!==false) return c; var d=new Date(); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; };   /* hook: clock (a past day's clock) */
 
 /* ---------- the default treatment sheet every admission starts with ---------- */
 var DEFAULT_ORDERS=[
@@ -81,7 +81,7 @@ function synthMarks(x,raw){ var m={}, g=x.digest, dk=dayKey();
 function compose(){ if(!curMain) return null; var m={};
   Object.assign(m,curDays[prevDk(subDk)]||{},curDays[subDk]||{});
   var inbox=curMain.marks||{}; Object.keys(inbox).forEach(function(k){ var a=inbox[k], b=m[k]; if(a&&(!b||String(a.at||'')>=String(b.at||''))) m[k]=a; });
-  var d=Object.assign({},curMain); d.marks=m; return d; }
+  var d=Object.assign({},curMain); d.marks=m; emit('compose',d); return d; }
 var recT=null;
 function recompose(now){ if(!curMain||!dayLoaded[subDk]) return; clearTimeout(recT);
   var go=function(){ curDoc=compose(); hydrate(); rerender(); try{ flagsDirty(); }catch(e){} saveCacheSoon(); scheduleSync(); };
@@ -123,7 +123,8 @@ reset();
 /* ---------- mapping between Firestore and the screen ---------- */
 function fmtAdmit(iso){ try{ var d=new Date(iso); return (d.getMonth()+1)+'/'+d.getDate()+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return '—'; } }
 function dayOf(iso){ try{ var n=Math.floor((Date.now()-new Date(iso).getTime())/86400000)+1; return 'Day '+(n>0?n:1); }catch(e){ return 'Day 1'; } }   /* hospital day from admission: day 2 starts at 24 h */
-function visitFrom(d){ var p=d.patient||{}; var full=((p.name||'')+' '+(p.last||'')).trim()||'Unnamed patient';
+function visitFrom(d){ var v=visitBase(d); emit('visit',v,d); return v; }
+function visitBase(d){ var p=d.patient||{}; var full=((p.name||'')+' '+(p.last||'')).trim()||'Unnamed patient';
   var latest=function(name){ var o=Object.values(d.orders||{}).find(function(x){ return x.name===name; }); if(!o) return '—';
     var ms=Object.keys(d.marks||{}).map(function(k){ return d.marks[k]; }).filter(function(m){ return m&&m.orderId===o.id&&m.status==='completed'&&m.value; })
       .sort(function(a,b){ return (b.at||'').localeCompare(a.at||''); }); return ms[0]?ms[0].value:'—'; };
@@ -149,7 +150,8 @@ function hydrate(){
   var ns=document.querySelector('#noteDrawer .dh-top .sub'); if(ns) ns.textContent=VISIT.patient+' · '+VISIT.location;
 }
 /* Tasks come from the orders' schedule for today, with whatever has been charted laid on top */
-buildTasks=function(){
+buildTasks=function(){ if(!claim('tasks.build')) buildToday(); emit('tasks.built'); };
+function buildToday(){
   TASKS=[]; var dk=dayKey(), marks=(curDoc&&curDoc.marks)||{};
   var adm=curDoc&&(curDoc.admitted_at||curDoc.created_at), from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
   ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m&&!o.ordered_at) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return;   /* the admission cutoff is for the starter orders; a doctor's order shows from the time they chose */
@@ -157,7 +159,7 @@ buildTasks=function(){
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
     TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,severity:0,adhoc:true}); });
-};
+}
 
 /* ---------- writing back only what changed ---------- */
 function markOf(t){ if(!t.status) return null; return {status:t.status,by:t.by||user().initials||null,min:t.completedMin!=null?Math.round(t.completedMin):null,
@@ -166,7 +168,7 @@ function same(a,b){ var f=function(m){ return m?JSON.stringify([m.status,m.by,m.
 var syncT=null, syncing=false;
 function scheduleSync(){ clearTimeout(syncT); syncT=setTimeout(sync,350); }
 function sync(){
-  if(!CUR||!curDoc||!DB||syncing||!AUTH||!AUTH.currentUser||!dayReady()) return; var upd={}, n=0, dk=dayKey(), me=user(), marks=curDoc.marks||(curDoc.marks={});
+  if(!CUR||!curDoc||!DB||syncing||!AUTH||!AUTH.currentUser||!dayReady()||!allow('sync.allowed')) return; var upd={}, n=0, dk=dayKey(), me=user(), marks=curDoc.marks||(curDoc.marks={});
   /* charting goes to the day's own record (sheets/{id}/days/{YYYYMMDD}); the sheet itself stays small */
   var dayUpd={}, dn=0, inbox=(curMain&&curMain.marks)||{};
   TASKS.forEach(function(t){ if(!t.key){ t.key=dk+'_'+t.orderId+'_x'+Math.round(t.sched); }
@@ -199,6 +201,11 @@ window.addEventListener('pagehide',sync);
 /* save right after any change the sheet makes */
 ['buildGrid','logEvent','renderNotes','renderSheet','renderVitals'].forEach(function(fn){ try{ var o=window[fn]; if(typeof o!=='function') return;
   window[fn]=function(){ var r=o.apply(this,arguments); scheduleSync(); return r; }; }catch(e){} });
+/* ---------- adapters over the prototype's completion drawer (core): the only place base wraps core functions ---------- */
+(function(){ var oc=window.openCompletion; if(typeof oc==='function') window.openCompletion=function(id){ if(claim('completion.open',id)) return; return oc.apply(this,arguments); };
+  ['completeTask','saveTask'].forEach(function(fn){ var orig=window[fn]; if(typeof orig!=='function') return;
+    window[fn]=function(){ var id=(typeof activeTaskId!=='undefined')?activeTaskId:null, r=orig.apply(this,arguments);
+      var t=(TASKS||[]).find(function(x){ return x.id===id; }); if(t&&t.status==='completed') emit('task.charted',t); return r; }; }); })();
 try{ var _lg=logEvent; logEvent=function(type,desc,who){ return _lg(type,desc,(who==='DG'?user().initials:who)||user().initials); }; }catch(e){}
 
 /* ---------- empty state when no patient is open ---------- */
@@ -215,11 +222,13 @@ window.tsCodePill=function(always){ var c=String(VISIT.code||'').toUpperCase(); 
   return c==='DNR'?'<span class="pill code-dnr">DNR</span>':'<span class="pill soft">'+c+'</span>'; };
 /* header vitals follow live charting without a full re-render */
 function refreshEstimate(){ var c=document.querySelector('#ctab-sheet .est-card'); if(!c||typeof window.estimateCard!=='function') return; var h=window.estimateCard(); if(c.outerHTML!==h){ var t=document.createElement('div'); t.innerHTML=h; if(t.firstElementChild) c.replaceWith(t.firstElementChild); } }
-function refreshHeader(){ try{ refreshEstimate(); }catch(e){} var vs=document.querySelectorAll('.cmd-vitals .vstat .vv'); if(vs.length<4) return;
+function refreshPrototypeHeader(){ try{ refreshEstimate(); }catch(e){} var vs=document.querySelectorAll('.cmd-vitals .vstat .vv'); if(vs.length<4) return;
   var vals=[VISIT.temp==='—'?'—':VISIT.temp+'°',VISIT.hr,VISIT.rr,VISIT.mm]; vs.forEach(function(e,i){ if(i<4&&e.textContent!==String(vals[i])) e.textContent=vals[i]; }); }
+/* the prototype header's numbers, then every module's part (hook: header.refresh) */
+function refreshHeader(){ refreshPrototypeHeader(); emit('header.refresh'); }
 /* open the grid at "now" instead of midnight */
 function scrollToNow(){ var sh=document.getElementById('sheetScroll'); if(!sh) return; var x=240+(nowMin()/60)*54; sh.scrollLeft=Math.max(0,x-240-(sh.clientWidth-240)*0.35); }
-function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CUR&&document.querySelector('#sheetInner')){ buildGrid(); refreshHeader(); } else { renderSheet(); renderedFor=curDoc?CUR:null; } } else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='rounds') renderRounds(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); }catch(e){ console.warn(e); } updateChip(); }
+function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CUR&&document.querySelector('#sheetInner')){ buildGrid(); refreshHeader(); } else { renderSheet(); renderedFor=curDoc?CUR:null; } } else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='rounds') renderRounds(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); }catch(e){ console.warn(e); } updateChip(); emit('rendered'); }
 
 /* ---------- IP Board: every active sheet ---------- */
 function blocksFor(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), out=[];
@@ -245,7 +254,7 @@ window.tsBoardList=function(board){ var my=board==='My Board';
       date:d?(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear():'',time:d?d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}).replace(' ',''):'',
       alerts:(p.alerts||[]).map(function(x){ return {t:/dnr|caution|aggress|bite/i.test(x)?'crit':'warn',x:x}; }),service:p.service||'Emergency/Critical Care',
       owner:p.owner||'—',phone:p.phone||'—',belongings:p.belongings||'',blocks:blocksFor(s._id===CUR&&curDoc?curDoc:s)}; });
-  return IPL; };
+  emit('board.rows',IPL); return IPL; };
 window.tsIPList=function(){ return window.tsBoardList('IP Board'); };
 window.tsOpenFromBoard=function(i){ if(typeof sbBoard==='undefined'||(sbBoard!=='IP Board'&&sbBoard!=='OP Board'&&sbBoard!=='My Board')) return false; var s=IPL[i]; if(!s) return false; openSheet(s._id,true); return true; };
 
@@ -259,7 +268,7 @@ function listenDays(id){ unsubDays.forEach(function(u){ try{ u(); }catch(e){} })
       function(e){ console.warn('day listen failed',dk,e); dayLoaded[dk]=1; recompose(); })); }); }
 /* keep: the cached copy already on screen stays up while the live one connects */
 function openSheet(id,goSheet,keep){
-  unsubAllCur(); if(!(keep&&CUR===id&&curDoc)){ sync(); CUR=id; curDoc=null; curMain=null; curDays={}; dayLoaded={}; ARCH=[]; }
+  emit('sheet.opening',id); unsubAllCur(); if(!(keep&&CUR===id&&curDoc)){ sync(); CUR=id; curDoc=null; curMain=null; curDays={}; dayLoaded={}; ARCH=[]; }
   try{ localStorage.setItem('tsCurrentSheet',id); history.replaceState(null,'','#sheet='+encodeURIComponent(id)); }catch(e){}
   if(goSheet){ try{ selectCTab('sheet'); }catch(e){} }
   if(!AUTH||!AUTH.currentUser){ return; }   /* signed-in check still running: the live connection starts when it finishes */
@@ -331,7 +340,7 @@ function buildChip(){ var sub=document.querySelector('.subnav'); if(!sub||chip) 
   chip.onclick=function(e){ e.stopPropagation(); if(menu.classList.contains('show')){ menu.classList.remove('show'); return; } renderMenu(); var r=chip.getBoundingClientRect(); menu.style.top=(r.bottom+8)+'px'; menu.style.left=Math.max(8,Math.min(r.left,innerWidth-300))+'px'; menu.classList.add('show'); };
   document.addEventListener('click',function(e){ if(menu&&!menu.contains(e.target)) menu.classList.remove('show'); });
   updateChip(); }
-function updateChip(){ if(!chip) return; var n=CUR?(VISIT.patient||'Patient'):'No patient open';
+function updateChip(){ emit('chip'); if(!chip) return; var n=CUR?(VISIT.patient||'Patient'):'No patient open';
   chip.innerHTML='<span class="dot'+(CUR?' on':'')+'"></span><span class="nm">'+esc(n)+'</span>'+(CUR&&VISIT.location&&VISIT.location!=='—'?'<span class="loc">'+esc(VISIT.location)+'</span>':'')+'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg>'; }
 function renderMenu(){
   var rows=SHEETS.map(function(s){ var p=s.patient||{}; return '<button type="button" class="mi'+(s._id===CUR?' cur':'')+'" data-open="'+esc(s._id)+'"><span class="av">'+esc(((p.name||'?')[0]||'?').toUpperCase())+'</span><span class="tx"><b>'+esc(((p.name||'')+' '+(p.last||'')).trim()||'Unnamed')+'</b><small>'+esc([p.location,p.reason].filter(Boolean).join(' · ')||'—')+'</small></span></button>'; }).join('');
@@ -516,6 +525,44 @@ window.logout=function(){
     AUTH.signOut().catch(function(){}).then(function(){ location.replace('/'); }); };
   setTimeout(done,450);   /* give the last save a moment to leave */
 };
+/* ═════════ TS KERNEL — named extension points + the order API ═════════
+   Modules add behaviour by registering on a hook, never by replacing another module's function.
+     on(name, fn, order)  register (lower order runs first; default 0)
+     emit(name, …)        run every handler; a failing handler is logged and never breaks the caller
+     claim(name, …)       routing: the first handler that returns something truthy wins (its value is returned)
+     allow(name, …)       guards: false as soon as one handler returns false
+   Hooks (owner → listeners):
+     clock                  base nowMin            → days (the clock of a day looked back at)
+     tasks.build/.built     base buildTasks        → days (that day's tasks) · ops (abnormal readings tinted)
+     compose                base compose           → days (adds the day looked back at)
+     sync.allowed           base sync              → days (nothing is saved while a past day is shown)
+     sheet.opening          base openSheet         → days (a newly opened patient starts on today)
+     visit                  base visitFrom         → handoff (doctorTo = the next doctor)
+     board.rows             base tsBoardList       → ops (alerts, tech chip)
+     header.refresh         base refreshHeader     → loc · handoff · ops · header
+     header.parts           loc/ops/handoff redrew a part → header (redraw the flat header)
+     rendered               base rerender          → ops (alert bar)
+     chip                   base updateChip        → tasks (badge, live list)
+     task.charted           completeTask/saveTask adapter · Tasks tab · batch → safety (weight check)
+     completion.open        openCompletion adapter → days (view-only on a past day)
+     search.extra           rx tsRender            → fluids · sets (their rows in the order search)
+     pick                   rx tsPick              → days (past-day block) · fluids (inf:) · sets (set:)
+     rx.opened/.validate/.added  rx order window    → safety (duplicate banner + guard) · orders (Change… replaces the old order)
+     order.panel            orders tsOrderPanel    → fluids (infusion card)
+   window.tsHooks.list() shows what is registered. */
+function hookList(n){ var m=hookList.m||(hookList.m={}); return m[n]||(m[n]=[]); }
+function on(n,fn,order){ var L=hookList(n); L.push({fn:fn,order:order||0}); L.sort(function(a,b){ return a.order-b.order; }); }
+function emit(n){ var a=[].slice.call(arguments,1); hookList(n).forEach(function(h){ try{ h.fn.apply(null,a); }catch(e){ console.warn('[hook '+n+']',e); } }); }
+function claim(n){ var a=[].slice.call(arguments,1), L=hookList(n); for(var i=0;i<L.length;i++){ try{ var r=L[i].fn.apply(null,a); if(r) return r; }catch(e){ console.warn('[hook '+n+']',e); } } return null; }
+function allow(n){ var a=[].slice.call(arguments,1), L=hookList(n); for(var i=0;i<L.length;i++){ try{ if(L[i].fn.apply(null,a)===false) return false; }catch(e){ console.warn('[hook '+n+']',e); } } return true; }
+window.tsHooks={list:function(){ var m=hookList.m||{}; return Object.keys(m).reduce(function(o,k){ o[k]=m[k].length; return o; },{}); }};
+
+/* ---------- orders: the one way to add or change them — the grid redraws and the change is saved ----------
+   ORDERS holds the sheet's own copies (hydrate), so a changed order differs from the stored one and sync() writes it. */
+function redrawSheet(){ try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} } }
+function orderById(id){ return (ORDERS||[]).find(function(o){ return o.id===id; })||null; }
+function addOrders(list){ list.forEach(function(o){ ORDERS.push(o); }); buildTasks(); redrawSheet(); sync(); return list; }
+function updateOrder(id,patch){ var o=orderById(id); if(!o) return null; Object.assign(o,patch); buildTasks(); redrawSheet(); sync(); return o; }
 /* ---------- medication orders from the Pravix drug reference (dose suggested from the reference; doctor confirms or changes) ---------- */
 var DRUGS=null, drugsLoading=null;
 function loadDrugs(){ if(DRUGS) return Promise.resolve(DRUGS); if(drugsLoading) return drugsLoading;
@@ -626,9 +673,10 @@ window.tsRender=function(q){ var raw=(q||'').trim(); q=raw.toLowerCase(); var ht
     ['Blood pressure','Blood glucose','SpO2','Urine output','Pain score','Neuro check'].forEach(function(n){ var i=OBS.findIndex(function(x){ return x.n===n; }), ex=onSheet(n);
       html+=row('obs:'+i,esc(n),ex?'on sheet · '+ex.freq:'suggested '+OBS[i].f.slice(0,3).join(' · ')); });
   }
-  tsRows=rows; tsIdx=rows.length?0:-1; d.innerHTML=html; d.style.display='block'; try{ tsMark(); }catch(e){} };
+  tsRows=rows; tsIdx=rows.length?0:-1; d.innerHTML=html; d.style.display='block'; emit('search.extra',raw); try{ tsMark(); }catch(e){} };
 window.tsPick=function(key){ key=String(key); try{ closeTsDrop(); }catch(e){} var si=document.getElementById('tsSearch'); if(si) si.value='';
   if(!CUR||!curDoc){ toast('Open a patient first'); return; }
+  if(claim('pick',key)) return;   /* past-day block, inf:, set: … */
   if(key.indexOf('drug:')===0) return openMedOrder(+key.slice(5));
   if(key.indexOf('obs:')===0) return openObsOrder(OBS[+key.slice(4)]);
   if(key.indexOf('custom:')===0) return openObsOrder({n:key.slice(7),t:'obs',u:'',f:[],custom:true});
@@ -655,12 +703,12 @@ function tsObsSubmit(x,ex){
   if(!f){ toast('Choose a frequency'); return false; }
   var start=parseInt(v('obStart'),10), me=user(), sec=x.custom?v('obSec'):x.t;
   var section=sec==='care'?'Patient Care':sec==='diag'?'Diagnostics':'Basic Observation', type=sec==='care'?'care':sec==='diag'?'diag':'obs';
-  if(ex){ ex.freq=f; ex.start=start; if(v('obNotes')) ex.notes=v('obNotes'); logEvent('doctor','Order changed — <b>'+esc(name)+'</b> now '+f,me.initials); }
+  var oo;
+  if(ex){ var pt={freq:f,start:start}; if(v('obNotes')) pt.notes=v('obNotes'); logEvent('doctor','Order changed — <b>'+esc(name)+'</b> now '+f,me.initials); oo=updateOrder(ex.id,pt)||ex; }
   else { var o={id:'c'+Date.now().toString(36),type:type,section:section,name:name,freq:f,start:start,notes:v('obNotes'),ordered_by:me.initials,ordered_at:new Date().toISOString()};
     var unit=x.custom?v('obUnit'):x.u; if(unit) o.unit=unit;
-    ORDERS.push(o); logEvent('doctor','Order added — <b>'+esc(name)+'</b> '+f,me.initials); }
-  buildTasks(); try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} } sync();
-  var oo=ex||ORDERS[ORDERS.length-1]; toast(name+(ex?' updated':' added')+' · '+nextDueText(oo)); revealOrder(oo); return true; }
+    logEvent('doctor','Order added — <b>'+esc(name)+'</b> '+f,me.initials); addOrders([o]); oo=o; }
+  toast(name+(ex?' updated':' added')+' · '+nextDueText(oo)); revealOrder(oo); return true; }
 
 /* ---------- medication order: the dose is suggested from the reference; the doctor confirms or changes it ---------- */
 var RX=null;
@@ -700,6 +748,7 @@ function openMedOrder(i){
     +'</div><div class="rx-stock" id="rxStock" style="display:none"></div><div class="rx-calc" id="rxCalc">Enter a dose to calculate</div><div class="rx-sugg" id="rxSugg"></div><div class="rx-range" id="rxRange"></div>'
     +(canOrder?'':'<p class="rx-warn rx-block">Signed in as <b>'+esc(user().name||'—')+'</b>. Only doctors can place medication orders.</p>'),
     canOrder?'Add to sheet':'Close', function(){ return canOrder?tsRxSubmit():true; });
+  emit('rx.opened',i);
   setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card');
     var best=bestRegimen(mine); if(best) tsRxPick('m',mine.indexOf(best),true); else tsStockAuto(); },30);
 }
@@ -740,15 +789,15 @@ function tsRxSubmit(){
   if(!route){ toast('Choose a route'); return false; }
   if(!freq){ toast('Choose a frequency'); return false; }
   var rg=document.getElementById('rxRange'); if(rg&&rg.style.display!=='none'&&!(document.getElementById('rxOk')||{}).checked){ toast('Confirm the dose outside the reference'); return false; }
+  if(!allow('rx.validate')) return false;   /* e.g. duplicate needs a tick */
   var x=RX.x, e=RX.sel, me=user(), now=new Date();
   var o={id:'m'+now.getTime().toString(36),type:'med',section:'Medications',name:x.n,dose:dose,unit:unit,route:route,freq:freq,start:isNaN(start)?Math.ceil(nowMin()/60):start,
     conc:conc>0?conc:null,conc_label:(conc>0&&RX.stockK!=null&&stockOf(x))?stockOf(x).s[RX.stockK][2]:null,conc_source:conc>0?(RX.stockK!=null?'hospital_stock':'doctor_entered'):null,notes:v('rxNotes'),drug_id:x.id,ordered_by:me.initials,ordered_by_name:me.name,ordered_at:now.toISOString(),dose_source:(e&&RX.suggested&&!RX.touched)?'reference_suggestion':'doctor_entered'};
   if(e) o.ref={dose:e.do,route:e.ro,freq:e.fo,indication:e.i,species:e.s,source:e.u||null};
-  ORDERS.push(o); buildTasks();
   var d=medDose(o);
   logEvent('doctor','Order added — <b>'+esc(x.n)+'</b> '+dose+' '+unit+' ('+d.mg+(o.conc?' = '+d.volume+' of '+(o.conc_label||o.conc+' '+unit.split('/')[0]+'/mL'):'')+') '+route+' '+freq,me.initials);
-  try{ renderSheet(); }catch(err){ try{ buildGrid(); }catch(_){} }
-  sync(); toast(x.n+' added · '+nextDueText(o)); revealOrder(o); return true; }
+  addOrders([o]); emit('rx.added',o);
+  toast(x.n+' added · '+nextDueText(o)); revealOrder(o); return true; }
 /* the prototype's order composer is gone: anything that still calls it lands in the real order search */
 window.openOrderBuilder=function(){ var s=document.getElementById('tsSearch'); if(s){ s.focus(); try{ window.tsRender(s.value||''); }catch(e){} } };
 /* the drug reference loads quietly after start-up, so the first search is instant */
@@ -987,9 +1036,8 @@ function flagsFor(d){ var out=[]; if(!d||!d.orders) return out; var sp=sexSp((d.
       if(mono&&big) out.push({key:(rule.id+'_trend_'+last.k).replace(/[^A-Za-z0-9_]/g,'_'),sev:Math.max(1,s),rule:rule.id,text:rule.label+(up?' rising':' falling')+': '+fmtV(a)+' → '+fmtV(b)+' → '+fmtV(c)+unit,at:last.t}); } });
   return out.filter(function(f){ return !acks[f.key]; }).sort(function(x,y){ return y.sev-x.sev; }); }
 /* abnormal readings are tinted on the grid (amber = outside limits, coral = critical) */
-var _btFlags=buildTasks;
-buildTasks=function(){ _btFlags.apply(this,arguments); var sp=spKey()||'dog';
-  TASKS.forEach(function(t){ if(t.status!=='completed'||t.value==null) return; var r=ruleFor(t.order&&t.order.name); if(!r) return; t.severity=sevOf(r,numOf(t.value),sp); }); };
+on('tasks.built',function(){ var sp=spKey()||'dog';
+  TASKS.forEach(function(t){ if(t.status!=='completed'||t.value==null) return; var r=ruleFor(t.order&&t.order.name); if(!r) return; t.severity=sevOf(r,numOf(t.value),sp); }); });
 function canAck(){ return canEditEstimate(); }
 window.tsAckFlag=function(sheetId,key,ev){ if(ev){ ev.stopPropagation(); ev.preventDefault(); }
   if(!canAck()){ toast('A doctor acknowledges alerts'); return; }
@@ -1005,8 +1053,7 @@ function renderFlagsBar(){ var host=document.querySelector('#ctab-sheet .clinica
   var fl=flagsFor(curDoc); if(!fl.length){ if(bar) bar.remove(); return; }
   if(!bar){ bar=document.createElement('div'); bar.id='tsFlagBar'; host.insertAdjacentElement('afterend',bar); }
   bar.innerHTML=fl.map(function(f){ return '<div class="ts-flag s'+f.sev+'">'+FL_I+'<span>'+esc(f.text)+'</span>'+(canAck()?'<button type="button" onclick="tsAckFlag(\''+CUR+'\',\''+f.key+'\',event)">Acknowledge</button>':'<small>Doctor notified</small>')+'</div>'; }).join(''); }
-var _rrFlags=rerender; rerender=function(){ _rrFlags.apply(this,arguments); try{ renderFlagsBar(); }catch(e){} };
-var _rhFlags=refreshHeader; refreshHeader=function(){ _rhFlags.apply(this,arguments); try{ renderFlagsBar(); }catch(e){} };
+on('rendered',renderFlagsBar); on('header.refresh',renderFlagsBar);
 /* alerts pill in the sub-nav: every open alert in the hospital; the patient's doctor gets a pop-up for new ones */
 var pill=null, seenFlags={}, flagsPrimed=false;
 try{ seenFlags=JSON.parse(localStorage.getItem('tsSeenFlags')||'{}'); }catch(e){ seenFlags={}; }
@@ -1053,13 +1100,11 @@ function loadOf(s){ var n=nowMin(), dk=dayKey(), marks=s.marks||{}, due=0, over=
   return {due:due,over:over,score:due+over*2}; }
 function techOf(s){ return ((s.patient||{}).tech)||''; }
 function initialsOfName(n){ return String(n||'').split(/\s+/).filter(Boolean).map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase(); }
-var _bl=window.tsBoardList;
-window.tsBoardList=function(board){ var list=_bl.apply(this,arguments);
+on('board.rows',function(list){
   list.forEach(function(row){ var s=SHEETS.find(function(x){ return x._id===row._id; }); if(!s) return; var d=s._id===CUR&&curDoc?curDoc:s;
     var fl=flagsFor(d); if(fl.length) row.alerts=fl.map(function(f){ return {t:f.sev>=2?'crit':'warn',x:f.text}; }).concat(row.alerts||[]);
     var t=techOf(s), L=loadOf(d);
-    row.techHTML='<button type="button" class="ts-tech'+(t?'':' none')+'" title="'+esc(t?t+' · '+L.due+' due next hour'+(L.over?' · '+L.over+' overdue':''):'Assign a tech')+'" onclick="event.stopPropagation();tsPickTech(\''+s._id+'\',this)">'+(t?esc(initialsOfName(t)):'+')+'</button>'; });
-  return list; };
+    row.techHTML='<button type="button" class="ts-tech'+(t?'':' none')+'" title="'+esc(t?t+' · '+L.due+' due next hour'+(L.over?' · '+L.over+' overdue':''):'Assign a tech')+'" onclick="event.stopPropagation();tsPickTech(\''+s._id+'\',this)">'+(t?esc(initialsOfName(t)):'+')+'</button>'; }); });
 var TECHS=(window.TS_STAFF&&window.TS_STAFF.techs)||[];
 window.tsPickTech=function(sheetId,anchor){ var old=document.getElementById('tsTechMenu'); if(old) old.remove();
   var s=SHEETS.find(function(x){ return x._id===sheetId; }); if(!s) return; var loads=techLoads(), cur=techOf(s);
@@ -1105,8 +1150,8 @@ function loadStripHTML(){ var loads=techLoads(), names=Object.keys(loads).sort(f
         hint='<div class="ts-load-hint"><span>'+esc(hi)+' has '+loads[hi].score+' tasks queued vs '+esc(lo)+' with '+loads[lo].score+'. Moving <b>'+esc(pn)+'</b> evens it out.</span><button type="button" onclick="tsRebalance(\''+pick.s._id+'\',\''+esc(lo).replace(/'/g,"\\'")+'\')">Move to '+esc(lo.split(' ')[0])+'</button></div>'; } } }
   return '<div class="ts-load"><div class="ts-load-h">Workload · next hour'+(un?'<small>'+un+' unassigned</small>':'')+'</div><div class="ts-load-row">'+cards+'</div>'+hint+'</div>'; }
 window.tsRebalance=function(sheetId,name){ assignTech(sheetId,name); };
-function refreshTechCell(){ document.querySelectorAll('.ts-tech-slot').forEach(function(c){ var h=window.tsTechCell(); if(c.innerHTML!==h) c.innerHTML=h; }); }
-var _rhTech=refreshHeader; refreshHeader=function(){ _rhTech.apply(this,arguments); try{ refreshTechCell(); }catch(e){} };
+function refreshTechCell(){ document.querySelectorAll('.ts-tech-slot').forEach(function(c){ var h=window.tsTechCell(); if(c.innerHTML!==h) c.innerHTML=h; }); emit('header.parts'); }
+on('header.refresh',refreshTechCell);
 /* Visit panel: the patient's technician (same assignment as the board's Tech column and Flow) */
 window.tsTechCell=function(){ if(!CUR) return '—'; var t=(curDoc&&curDoc.patient&&curDoc.patient.tech)||'';
   return t?'<button type="button" class="ts-tech-cell" title="Change technician" onclick="tsPickTech(\''+CUR+'\',this)"><span class="ts-lc-av">'+esc(initialsOfName(t))+'</span>'+esc(t)+'</button>'
@@ -1182,8 +1227,8 @@ window.tsWardSel=function(p){ if(!p||!p._id) return null; var cur=p.cage||'', kn
     +'<option value=""'+(cur?'':' selected')+'>—</option>'+(cur&&!known?'<option selected>'+esc(cur)+'</option>':'')
     +LOCATIONS.map(function(w){ return '<option'+(w===cur?' selected':'')+'>'+w+'</option>'; }).join('')+'</select>'; };
 function refreshLoc(){ document.querySelectorAll('.ts-loc-slot').forEach(function(c){ var h=window.tsLocCell(); if(c.innerHTML!==h) c.innerHTML=h; });
-  try{ updateChip(); }catch(e){} }
-var _rhLoc=refreshHeader; refreshHeader=function(){ _rhLoc.apply(this,arguments); try{ refreshLoc(); }catch(e){} };
+  try{ updateChip(); }catch(e){} emit('header.parts'); }
+on('header.refresh',refreshLoc);
 
 /* ═════════ TS HANDOFF — Current → Next doctor (the same handoff Rounds shows in Flow) ═════════
    Sheet:  patient.doctor (current) · patient.doctor_next {name,at,by} (planned) · handoffs[] (note, snapshot, acknowledgment; last 20)
@@ -1201,7 +1246,7 @@ function canHandoff(){ var r=staffRole(); return r==='doctor'||r==='admin'; }
 function hoTime(iso){ try{ var d=new Date(iso); return d.toLocaleDateString([], {month:'numeric',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
 
 /* the header shows Current → Next (or "Hand off" when no next doctor is set) */
-var _vfHo=visitFrom; visitFrom=function(d){ var v=_vfHo(d), n=hoNext(d); v.doctorTo=n?n.name:v.doctorFrom; return v; };
+on('visit',function(v,d){ var n=hoNext(d); v.doctorTo=n?n.name:v.doctorFrom; });
 window.tsDoctorChip=function(){ if(!CUR||!curDoc) return '<span class="pill soft">'+esc(String(VISIT.doctorFrom||'—').split(',')[0])+' → '+esc(String(VISIT.doctorTo||'—').split(',')[0])+'</span>';
   var cur=hoCur(curDoc), n=hoNext(curDoc), p=hoPending(curDoc);
   return '<button type="button" class="pill soft ts-ho-chip'+(n?' has-next':'')+(p?' pending':'')+'" onclick="tsOpenHandoff()" title="'+(n?'Next doctor set — tap to hand off':'Hand off to the next doctor')+'">'
@@ -1293,8 +1338,8 @@ window.tsHoAck=function(id){ if(!CUR) return; var ref=DB.collection(COL).doc(CUR
     t.update(ref,{handoffs:H,updated_at:now,audit:FV.arrayUnion({at:now,type:'doctor',desc:'Handoff acknowledged',who:me.initials,uid:me.uid})}); }); })
     .then(function(){ toast('Handoff acknowledged'); }).catch(function(e){ console.warn(e); toast('Couldn’t save'); });
   if(curDoc&&curDoc.handoffs) curDoc.handoffs=curDoc.handoffs.map(function(h){ return h.id===id?Object.assign({},h,{ack_at:now,ack_by:me.name}):h; }); refreshHo(); };
-function refreshHo(){ document.querySelectorAll('.ts-ho-slot').forEach(function(c){ var h=window.tsDoctorChip(); if(c.innerHTML!==h) c.innerHTML=h; }); try{ hoCard(); }catch(e){} }
-var _rhHo=refreshHeader; refreshHeader=function(){ _rhHo.apply(this,arguments); try{ refreshHo(); }catch(e){} };
+function refreshHo(){ document.querySelectorAll('.ts-ho-slot').forEach(function(c){ var h=window.tsDoctorChip(); if(c.innerHTML!==h) c.innerHTML=h; }); try{ hoCard(); }catch(e){} emit('header.parts'); }
+on('header.refresh',refreshHo);
 setInterval(function(){ try{ hoCard(); }catch(e){} },3000);
 
 /* ═════════ TS HEADER — calm, flat, instrument-panel header (Oct 2026) ═════════
@@ -1389,10 +1434,7 @@ function refreshHdr(){ var h=document.getElementById('tsHdr'), d=hdrDoc(); if(!h
   var nm=h.querySelector('.tsh-name > span:first-child'); if(nm&&nm.textContent!==(VISIT.patient||'')) nm.textContent=VISIT.patient||'';
   var sg=[VISIT.species,VISIT.breed,VISIT.sex,VISIT.age].filter(function(x){ return x&&x!=='—'; }).map(esc).join('<span class="tsh-sep"></span>'); set('.tsh-sig',sg);
   set('.tsh-vitals',vitalsHTML(d)); set('.tsh-info',infoHTML(d)); set('.tsh-mini',miniHTML(d)); set('.tsh-live-slot',liveHTML(d)); }
-var _rhHdr=refreshHeader; refreshHeader=function(){ _rhHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
-var _rlHdr=refreshLoc; refreshLoc=function(){ _rlHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
-var _rtHdr=refreshTechCell; refreshTechCell=function(){ _rtHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
-var _rhoHdr=refreshHo; refreshHo=function(){ _rhoHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
+on('header.refresh',refreshHdr,10); on('header.parts',refreshHdr);   /* runs after the other parts have refreshed */
 setInterval(function(){ try{ if(!document.hidden) refreshHdr(); }catch(e){} },30000);
 /* collapse while the grid is scrolled; expand back at the top (with a little hysteresis) */
 document.addEventListener('scroll',function(e){ var t=e.target; if(!t||t.id!=='sheetScroll') return; var h=document.getElementById('tsHdr'); if(!h) return;
@@ -1410,9 +1452,9 @@ function firstDk(){ var at=curDoc&&(curDoc.admitted_at||curDoc.created_at); retu
 function dkLabel(dk){ var d=dkDate(dk); return d.toLocaleDateString([], {weekday:'short',month:'numeric',day:'numeric'}); }
 
 /* the grid's clock: on a past day "now" is past the end of that day, so every slot reads as finished or missed */
-var _nmDays=nowMin; nowMin=function(){ return VIEW_DK?(Date.now()-dkDate(VIEW_DK).getTime())/60000:_nmDays(); };
+on('clock',function(){ return VIEW_DK?(Date.now()-dkDate(VIEW_DK).getTime())/60000:null; });
 /* tasks for the day on screen */
-var _btDays=buildTasks; buildTasks=function(){ if(!VIEW_DK) return _btDays.apply(this,arguments);
+on('tasks.build',function(){ if(!VIEW_DK) return false;
   TASKS=[]; var dk=VIEW_DK, marks=(curDoc&&curDoc.marks)||{}, adm=curDoc&&(curDoc.admitted_at||curDoc.created_at);
   var from=(adm&&dayKey(new Date(adm))===dk)?(new Date(adm)-dkDate(dk))/60000:-1;
   ORDERS.forEach(function(o){ if(o.cont) return; var oa=o.ordered_at?dayKey(new Date(o.ordered_at)):null; if(oa&&oa>dk) return;   /* ordered after this day */
@@ -1420,15 +1462,16 @@ var _btDays=buildTasks; buildTasks=function(){ if(!VIEW_DK) return _btDays.apply
       TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
-    TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,severity:0,adhoc:true}); }); };
+    TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,severity:0,adhoc:true}); });
+  return true; });
 /* an older day's charting joins the composed sheet while it is on screen */
-var _cpDays=compose; compose=function(){ var d=_cpDays.apply(this,arguments); if(d&&VIEW_DK&&curDays[VIEW_DK]){ d.marks=Object.assign({},curDays[VIEW_DK],d.marks); } return d; };
+on('compose',function(d){ if(d&&VIEW_DK&&curDays[VIEW_DK]) d.marks=Object.assign({},curDays[VIEW_DK],d.marks); });
 /* nothing is saved while a past day is on screen */
-var _syDays=sync; sync=function(){ if(VIEW_DK) return; return _syDays.apply(this,arguments); };
+on('sync.allowed',function(){ return !VIEW_DK; });
 
 function goDay(dk){ if(!CUR||!curDoc) return; var today=dayKey(); if(dk>=today) dk=null; var lo=firstDk(); if(dk&&dk<lo) dk=lo;
   if(dk===VIEW_DK) return;
-  if(!VIEW_DK) _syDays();   /* save anything typed on today before looking back */
+  if(!VIEW_DK) sync();   /* save anything typed on today before looking back */
   VIEW_DK=dk; try{ document.body.classList.toggle('ts-past-day',!!dk); }catch(e){}
   var show=function(){ curDoc=compose(); hydrate(); try{ renderSheet(); }catch(e){ try{ rerender(); }catch(_){} } };
   if(dk&&!curDays[dk]&&dk!==subDk&&dk!==prevDk(subDk)){ var id=CUR, el=document.querySelector('.ts-daynav .dn-mid'); if(el) el.textContent='Loading…';
@@ -1446,14 +1489,13 @@ window.tsDayNavHTML=function(){ var today=dayKey(), dk=viewDk(), lo=CUR&&curDoc?
     +'<button type="button" class="dn-next" onclick="tsDayNext()"'+(VIEW_DK?'':' disabled')+' aria-label="Next day">›</button>'; };
 /* tapping a cell on a past day shows what was charted instead of opening the editor */
 var SLOT_TXT={completed:'Completed',skipped:'Skipped',refused:'Refused',held:'Held'};
-var _ocDays=window.openCompletion; window.openCompletion=function(id){ if(!VIEW_DK) return _ocDays.apply(this,arguments);
-  var t=(TASKS||[]).find(function(x){ return x.id===id; }); if(!t){ toast('View only'); return; }
-  var at=fmtTime(t.sched); toast(t.order.name+' · '+dkLabel(VIEW_DK)+' '+at+' — '+(t.status?(SLOT_TXT[t.status]||t.status)+(t.value?' '+t.value:'')+(t.by?' by '+t.by:''):'not charted')); };
-var _oiDays=window.openInfusion; if(_oiDays) window.openInfusion=function(){ if(VIEW_DK){ toast('View only — go back to today to chart'); return; } return _oiDays.apply(this,arguments); };
+on('completion.open',function(id){ if(!VIEW_DK) return false;
+  var t=(TASKS||[]).find(function(x){ return x.id===id; }); if(!t){ toast('View only'); return true; }
+  var at=fmtTime(t.sched); toast(t.order.name+' · '+dkLabel(VIEW_DK)+' '+at+' — '+(t.status?(SLOT_TXT[t.status]||t.status)+(t.value?' '+t.value:'')+(t.by?' by '+t.by:''):'not charted')); return true; });
 /* orders are added on today's sheet */
-var _tpDays=window.tsPick; window.tsPick=function(){ if(VIEW_DK){ try{ closeTsDrop(); }catch(e){} toast('Go back to today to add orders'); return; } return _tpDays.apply(this,arguments); };
+on('pick',function(){ if(!VIEW_DK) return false; toast('Go back to today to add orders'); return true; },-10);
 /* a new patient always opens on today */
-var _osDays=openSheet; openSheet=function(id){ if(id!==CUR){ VIEW_DK=null; try{ document.body.classList.remove('ts-past-day'); }catch(e){} } return _osDays.apply(this,arguments); }; window.tsOpenSheet=openSheet;
+on('sheet.opening',function(id){ if(id!==CUR){ VIEW_DK=null; try{ document.body.classList.remove('ts-past-day'); }catch(e){} } });
 
 /* ═════════ TS ORDERS — tap an order's name: details, Change, Discontinue ═════════
    Orders are never deleted. Discontinue keeps the order (orders.<id>.dc = true + who/when/why); what was already charted stays on the sheet,
@@ -1480,7 +1522,7 @@ function slotDots(o){ var T=(TASKS||[]).filter(function(t){ return t.orderId===o
     +'<span>'+done+' of '+T.length+' '+(o.type==='med'?'given':'done')+' '+(window.tsViewDk&&tsViewDk()!==dayKey()?'that day':'today')+'</span></div>'; }
 function row(k,v){ return v?'<div class="op-row"><span>'+k+'</span><b>'+v+'</b></div>':''; }
 
-window.tsOrderPanel=function(id){ var o=oFind(id); if(!o) return; var can=canOrderTS()&&!(window.tsViewDk&&tsViewDk()!==dayKey());
+window.tsOrderPanel=function(id){ var o=oFind(id); if(!o) return; if(claim('order.panel',o)) return;   /* infusions have their own card */ var can=canOrderTS()&&!(window.tsViewDk&&tsViewDk()!==dayKey());
   var brand=window.tsBrand?tsBrand(o.name):'', big='', sub='';
   if(o.type==='med'){ var d=medDose(o); big=esc(d.mg); var per=String(o.dose+' '+o.unit); sub=[per.trim()!==String(d.mg).trim()?esc(per):'', o.conc?esc(d.volume+' of '+(o.conc_label||o.conc+' '+String(o.unit||'mg').split('/')[0]+'/mL')):''].filter(Boolean).join(' · '); }
   else if(o.type==='fluid'){ big=esc(o.rate||''); }
@@ -1556,9 +1598,8 @@ window.tsOrderChange=function(id){ var o=oFind(id); if(!o) return; tsOrderClose(
       set('rxUnit',o.unit); set('rxDose',o.dose); set('rxRoute',o.route); set('rxFreq',o.freq); if(o.conc) set('rxConc',o.conc); if(o.notes) set('rxNotes',o.notes);
       try{ if(RX){ RX.touched=true; RX.concTouched=!!o.conc; } tsRxCalc(true); }catch(e){}
       var h=document.querySelector('#tsModal h3'); if(h&&!h.querySelector('.op-chg')) h.insertAdjacentHTML('beforeend',' <span class="op-chg">Changing</span>'); },120); }); };
-var _rxSubOrd=tsRxSubmit; tsRxSubmit=function(){ var ok=_rxSubOrd.apply(this,arguments); var old=window._opReplace; window._opReplace=null;
-  if(ok!==false&&old){ var n=ORDERS[ORDERS.length-1]; stopOrder(old,'changed',n?('Replaced by '+n.name+' '+n.dose+' '+n.unit+' '+n.route+' '+n.freq):null); }
-  return ok; };
+/* the replacement was placed: stop the old order as "Changed" (a failed attempt keeps the change pending) */
+on('rx.added',function(n){ var old=window._opReplace; window._opReplace=null; if(old) stopOrder(old,'changed','Replaced by '+n.name+' '+n.dose+' '+n.unit+' '+n.route+' '+n.freq); });
 /* closing the order window without placing it cancels the change */
 document.addEventListener('click',function(e){ if(window._opReplace&&e.target&&(e.target.matches('#tsModal .tm-scrim')||e.target.matches('#tsModal [data-x]'))) window._opReplace=null; },true);
 
@@ -1645,18 +1686,17 @@ setInterval(function(){ if(!document.hidden) obxReplay(); },60000);
 function activeSame(name,except){ var l=String(name||'').toLowerCase(); return (ORDERS||[]).filter(function(o){ return o&&!o.dc&&o.id!==except&&o.type==='med'&&String(o.name||'').toLowerCase()===l; }); }
 window.tsActiveSame=activeSame;
 function orderLine(o){ var d=medDose(o); return esc(d.mg)+(o.route?' '+esc(o.route):'')+(o.freq?' '+esc(o.freq):''); }
-var _omoDup=openMedOrder; openMedOrder=function(i){ var r=_omoDup.apply(this,arguments); try{ dupBanner(i); }catch(e){ console.warn('[dup]',e); } return r; };
+on('rx.opened',dupBanner);
 function dupBanner(i){ var x=DRUGS&&DRUGS[i]; if(!x||!RX) return; var ex=activeSame(x.n,window._opReplace); RX.dup=ex.length?ex:null; if(!ex.length) return;
   var p=document.querySelector('#tsModal .tm-card > p'); if(!p) return;
   p.insertAdjacentHTML('afterend','<div class="ts-dup" role="alert"><div class="td-h"><svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Already ordered</b></div>'
     +ex.map(function(o){ return '<div class="td-o"><span>'+esc(o.name)+' '+orderLine(o)+'</span><button type="button" onclick="tsDupOpen(\''+esc(o.id)+'\')">View</button></div>'; }).join('')
     +'<label class="td-ok"><input type="checkbox" id="rxDupOk"> Add a second '+esc(x.n)+' order</label></div>'); }
 window.tsDupOpen=function(id){ var m=document.getElementById('tsModal'); if(m) m.classList.remove('show'); tsOrderPanel(id); };
-var _rxSubDup=tsRxSubmit; tsRxSubmit=function(){
+on('rx.validate',function(){
   if(RX&&RX.dup&&RX.dup.length&&!(document.getElementById('rxDupOk')||{}).checked){ var b=document.querySelector('#tsModal .ts-dup');
     if(b){ b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); b.scrollIntoView({block:'nearest',behavior:'smooth'}); }
-    toast('Already on the sheet — tick “Add a second order” to add it anyway'); return false; }
-  return _rxSubDup.apply(this,arguments); };
+    toast('Already on the sheet — tick “Add a second order” to add it anyway'); return false; } });
 
 /* ---------- weight ---------- */
 function isWeightOrder(o){ return !!o&&/^weight$/i.test(String(o.name||'').trim()); }
@@ -1673,11 +1713,8 @@ function weightDoses(kg){ var keep=VISIT.weight, out=[];
   return out; }
 function weightCheck(kg){ var w=Number(VISIT.weight)||0; if(!kg||!CUR) return; if(w&&Math.abs(kg-w)<0.05) return; setTimeout(function(){ tsWeightReview(kg); },380); }
 window.tsWeightCheck=weightCheck;
-['completeTask','saveTask'].forEach(function(fn){ var orig=window[fn]; if(typeof orig!=='function') return;
-  window[fn]=function(){ var id=(typeof activeTaskId!=='undefined')?activeTaskId:null, r=orig.apply(this,arguments);
-    try{ var t=(TASKS||[]).find(function(x){ return x.id===id; }), past=window.tsViewDk&&tsViewDk()!==dayKey();
-      if(t&&!past&&t.status==='completed'&&isWeightOrder(t.order)) weightCheck(kgOf(t.value)); }catch(e){ console.warn('[weight]',e); }
-    return r; }; });
+/* any reading charted (drawer, Tasks tab, batch) — a new weight opens the dose review */
+on('task.charted',function(t){ var past=window.tsViewDk&&tsViewDk()!==dayKey(); if(t&&!past&&isWeightOrder(t.order)) weightCheck(kgOf(t.value)); });
 window.tsWeightReview=function(kg){ kg=Number(kg); if(!(kg>0)||!CUR) return; var w=Number(VISIT.weight)||0, can=canOrderTS(), L=weightDoses(kg);
   var diff=w?kg-w:0, pct=w?diff/w*100:0, big=w&&Math.abs(pct)>=10;
   var fmt=function(n){ return (Math.round(n*100)/100).toString(); };
@@ -1784,7 +1821,7 @@ window.tsInfPanel=function(id){ var o=oFind(id); if(!o) return; if(!isInf(o)){ t
         +(can?'<button type="button" class="op-link danger" onclick="tsOrderStopAsk(\''+esc(o.id)+'\')">Stop infusion</button>':''));
   opShow(html); };
 window._tsOldInf=window.openInfusion; window.openInfusion=function(id){ return tsInfPanel(id); };
-var _opInf=window.tsOrderPanel; window.tsOrderPanel=function(id){ var o=oFind(id); if(isInf(o)) return tsInfPanel(id); return _opInf.apply(this,arguments); };
+on('order.panel',function(o){ if(!isInf(o)) return false; tsInfPanel(o.id); return true; });
 
 /* ---------- change the rate ---------- */
 function unitOpts(list,sel){ return list.map(function(u){ return '<option'+(u===sel?' selected':'')+'>'+u+'</option>'; }).join(''); }
@@ -1804,9 +1841,9 @@ window.tsInfRateSave=function(id){ var o=(ORDERS||[]).find(function(x){ return x
   var v=parseFloat((document.getElementById('infV')||{}).value), u=(document.getElementById('infU')||{}).value, note=((document.getElementById('infNote')||{}).value||'').trim();
   if(!(v>=0)){ toast('Enter a rate'); return; } if(v===Number(o.rate_v)&&u===o.rate_u){ toast('That’s the current rate'); return; }
   var me=user(), now=new Date().toISOString(), was=rateStr(o);
-  o.rates=(o.rates||[]).concat([{at:now,v:v,u:u,by:me.initials,by_name:me.name||null,note:note||null}]); o.rate_v=v; o.rate_u=u; o.rate=rateStr(o);
-  logEvent('doctor',(v===0?'Infusion paused — <b>':'Rate changed — <b>')+esc(o.name)+'</b> '+esc(was)+' → '+esc(o.rate)+(note?' · '+esc(note):''),me.initials);
-  tsOrderClose(); try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} } sync(); toast(esc(o.name)+' · '+esc(o.rate)); };
+  var next=Object.assign({},o,{rate_v:v,rate_u:u}), rate=rateStr(next);
+  logEvent('doctor',(v===0?'Infusion paused — <b>':'Rate changed — <b>')+esc(o.name)+'</b> '+esc(was)+' → '+esc(rate)+(note?' · '+esc(note):''),me.initials);
+  tsOrderClose(); updateOrder(id,{rates:(o.rates||[]).concat([{at:now,v:v,u:u,by:me.initials,by_name:me.name||null,note:note||null}]),rate_v:v,rate_u:u,rate:rate}); toast(esc(o.name)+' · '+esc(rate)); };
 
 /* ---------- pump / line check ---------- */
 window.tsInfCheckAsk=function(id){ var o=oFind(id); if(!o) return;
@@ -1820,9 +1857,8 @@ window.tsInfCheckAsk=function(id){ var o=oFind(id); if(!o) return;
 window.tsInfCheckSave=function(id){ var o=(ORDERS||[]).find(function(x){ return x.id===id; }); if(!o) return;
   var chips=[].map.call(document.querySelectorAll('#tsOrderSheet .inf-chips .rx-chip.on'),function(b){ return b.textContent; }), extra=((document.getElementById('infChkNote')||{}).value||'').trim();
   var note=chips.concat(extra?[extra]:[]).join(' · '), me=user(), now=new Date().toISOString();
-  o.checks=(o.checks||[]).concat([{at:now,by:me.initials,note:note||null}]).slice(-24);
   logEvent('care','Infusion check — <b>'+esc(o.name)+'</b> '+esc(rateStr(o))+(note?' · '+esc(note):''),me.initials);
-  tsOrderClose(); try{ buildGrid(); }catch(e){} sync(); toast('Check logged · '+esc(o.name)); };
+  tsOrderClose(); updateOrder(id,{checks:(o.checks||[]).concat([{at:now,by:me.initials,note:note||null}]).slice(-24)}); toast('Check logged · '+esc(o.name)); };
 
 /* ---------- ordering ---------- */
 function hourStart(h){ var ch=Math.floor(nowMin()/60); if(isNaN(h)||h===ch) return new Date(); var d=new Date(); d.setHours(h,0,0,0); return d; }
@@ -1832,8 +1868,8 @@ function infBuild(kind,name,v,u,x){ x=x||{}; var me=user(), now=new Date(), star
     additive:x.additive||null,conc:x.conc||null,conc_label:x.conc_label||null,carrier:x.carrier||null,notes:x.notes||'',ordered_by:me.initials,ordered_by_name:me.name||null,ordered_at:now.toISOString()};
   if(x.set) o.set=x.set; o.rate=rateStr(o); return o; }
 window.tsInfBuild=infBuild;
-function infAdd(o,dupOk){ ORDERS.push(o); logEvent('doctor','Infusion started — <b>'+esc(o.name)+'</b>'+(o.additive?' + '+esc(o.additive):'')+' '+esc(o.rate),user().initials);
-  try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} } sync(); toast(esc(o.name)+' · '+esc(o.rate)); try{ revealOrder(o); }catch(e){} }
+function infAdd(o){ logEvent('doctor','Infusion started — <b>'+esc(o.name)+'</b>'+(o.additive?' + '+esc(o.additive):'')+' '+esc(o.rate),user().initials);
+  addOrders([o]); toast(esc(o.name)+' · '+esc(o.rate)); try{ revealOrder(o); }catch(e){} }
 function runningSame(name){ var l=String(name||'').toLowerCase(); return (ORDERS||[]).filter(function(o){ return isInf(o)&&!o.dc&&String(o.name).toLowerCase()===l; }); }
 function dupHTML(list){ return list.length?'<div class="ts-dup" role="alert"><div class="td-h"><b>Already running</b></div>'+list.map(function(o){ return '<div class="td-o"><span>'+esc(o.name)+' · '+esc(rateStr(o))+'</span></div>'; }).join('')
   +'<label class="td-ok"><input type="checkbox" id="infDupOk"> Start a second one</label></div>':''; }
@@ -1895,7 +1931,7 @@ function criSubmit(){ var g=function(id){ return ((document.getElementById(id)||
   infAdd(infBuild('cri',C.name,v,u,{started:hourStart(parseInt(g('crStart'),10)),conc:c>0?c:null,conc_label:lbl,carrier:g('crCar'),notes:g('crNotes')})); return true; }
 
 /* ---------- order search: "IV fluids" and "<drug> CRI" ---------- */
-var _trInf=window.tsRender; window.tsRender=function(q){ var r=_trInf.apply(this,arguments); try{ infSearch(q); }catch(e){ console.warn('[fluids search]',e); } return r; };
+on('search.extra',infSearch);
 function infSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.display==='none'||!DRUGS) return; q=String(q||'').trim().toLowerCase(); var rows=[];
   if(q){ if(FLUID_KEYS.indexOf(' '+q)>-1||FLUIDS.some(function(f){ return f.toLowerCase().indexOf(q)>-1; })) rows.push(['inf:fluid:','IV fluids','LRS · Plasma-Lyte · Normosol-R · 0.9% NaCl']);
     var qq=q.replace(/\s*\bcri$/,'').trim();
@@ -1906,11 +1942,7 @@ function infSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.d
     return '<button class="ts-item" data-i="'+(k0+j)+'" onmouseenter="tsHi('+(k0+j)+')" onmousedown="event.preventDefault();tsPick(\''+esc(r[0]).replace(/'/g,"\\'")+'\')"><span>'+esc(r[1])+'</span><small class="ts-meta">'+esc(r[2])+'</small></button>'; }).join('');
   var custom=[].find.call(d.querySelectorAll('.ts-cat'),function(c){ return c.textContent==='Custom'; });
   if(custom) custom.insertAdjacentHTML('beforebegin',html); else d.insertAdjacentHTML('beforeend',html); }
-var _tpInf=window.tsPick; window.tsPick=function(key){ key=String(key);
-  if(key.indexOf('inf:')===0){ try{ closeTsDrop(); }catch(e){} var si=document.getElementById('tsSearch'); if(si) si.value='';
-    if(window.tsViewDk&&tsViewDk()!==dayKey()){ toast('Go back to today to add orders'); return; } if(!CUR||!curDoc){ toast('Open a patient first'); return; }
-    var p=key.split(':'); return p[1]==='cri'?tsOpenCriOrder(p.slice(2).join(':')):tsOpenFluidOrder(); }
-  return _tpInf.apply(this,arguments); };
+on('pick',function(key){ if(key.indexOf('inf:')!==0) return false; var p=key.split(':'); if(p[1]==='cri') tsOpenCriOrder(p.slice(2).join(':')); else tsOpenFluidOrder(); return true; });
 
 /* ═════════ TS ORDER SETS — a whole plan in one tap ═════════
    A set lists monitoring, care, medications and infusions. Opening one shows every line for this patient: medication doses come from the
@@ -2025,9 +2057,8 @@ window.tsSetApply=function(){ var S=setOf((window._set||{}).id); if(!S||!canOrde
       var c=parseFloat((line.querySelector('.sl-cv')||{}).value), started=start===Math.floor(nowMin()/60)?new Date():(function(){ var d=new Date(); d.setHours(start,0,0,0); return d; })();
       added.push(infBuild(it.t==='cri'?'cri':'fluid',it.n,v,it.u,{k:k,started:started,conc:c>0?c:null,conc_label:c>0?(L.conc&&L.conc.c===c?L.conc.label:fmtR(c)+' '+String(it.u).split('/')[0]+'/mL'):null,set:S.id})); } });
   if(bad){ toast(esc(bad)); return; } if(!added.length&&!changed.length) return;
-  added.forEach(function(o){ ORDERS.push(o); });
   logEvent('doctor','Order set — <b>'+esc(S.name)+'</b>: '+added.map(function(o){ return esc(o.name)+(o.type==='med'?' '+esc(medDose(o).mg)+' '+esc(o.route)+' '+esc(o.freq):o.cont?' '+esc(o.rate):' '+esc(o.freq)); }).concat(changed.map(function(c){ return esc(c.name)+' '+esc(c.freq)+' → '+esc(c.to); })).join(', '),me.initials);
-  tsOrderClose(); buildTasks(); try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} } sync();
+  tsOrderClose(); addOrders(added);
   var n=added.length+changed.length, ids=added.map(function(o){ return o.id; });
   undoToast(n+' order'+(n>1?'s':'')+' from '+esc(S.name),function(){ undoSet(S,ids,changed); },6000); };
 function undoSet(S,ids,changed){ if(!CUR||!curDoc) return; sync(); var me=user(), now=new Date().toISOString(), u={updated_at:now,updated_by:me.initials};
@@ -2040,7 +2071,7 @@ function undoSet(S,ids,changed){ if(!CUR||!curDoc) return; sync(); var me=user()
   tsCommit(CUR,u).catch(function(){}); if(changed.length) sync(); toast(esc(S.name)+' undone'); }
 
 /* ---------- order search: type "parvo", "dka", "set"… ---------- */
-var _trSet=window.tsRender; window.tsRender=function(q){ var r=_trSet.apply(this,arguments); try{ setSearch(q); }catch(e){ console.warn('[sets search]',e); } return r; };
+on('search.extra',setSearch);
 function setSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.display==='none'||!DRUGS) return; q=String(q||'').trim().toLowerCase();
   var hits=q?ORDER_SETS.filter(function(s){ return q==='set'||q==='sets'||q==='order set'||s.name.toLowerCase().indexOf(q)===0||(' '+s.k+' ').indexOf(' '+q)>-1; }):[];
   var rows=q?hits.slice(0,4).map(function(s){ return ['set:'+s.id,s.name,'Order set · '+s.items.length+' orders']; }):[['sets:','Browse order sets',ORDER_SETS.length+' sets · ICU admit, Parvovirus, DKA…']];
@@ -2048,11 +2079,8 @@ function setSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.d
   var html='<div class="ts-cat">Order sets</div>'+rows.map(function(r,j){ tsRows.push(r[0]); return '<button class="ts-item" data-i="'+(k0+j)+'" onmouseenter="tsHi('+(k0+j)+')" onmousedown="event.preventDefault();tsPick(\''+esc(r[0])+'\')"><span>'+esc(r[1])+'</span><small class="ts-meta">'+esc(r[2])+'</small></button>'; }).join('');
   var custom=[].find.call(d.querySelectorAll('.ts-cat'),function(c){ return c.textContent==='Custom'; });
   if(custom) custom.insertAdjacentHTML('beforebegin',html); else d.insertAdjacentHTML('beforeend',html); }
-var _tpSet=window.tsPick; window.tsPick=function(key){ key=String(key);
-  if(key.indexOf('set:')===0||key==='sets:'){ try{ closeTsDrop(); }catch(e){} var si=document.getElementById('tsSearch'); if(si){ si.value=''; si.blur(); }
-    if(!CUR||!curDoc){ toast('Open a patient first'); return; } if(window.tsViewDk&&tsViewDk()!==dayKey()){ toast('Go back to today to add orders'); return; }
-    return key==='sets:'?tsSets():tsSetOpen(key.slice(4)); }
-  return _tpSet.apply(this,arguments); };
+on('pick',function(key){ if(key.indexOf('set:')!==0&&key!=='sets:') return false; var si=document.getElementById('tsSearch'); if(si) si.blur();
+  if(key==='sets:') tsSets(); else tsSetOpen(key.slice(4)); return true; });
 
 /* ═════════ TS TASKS — what's due across every patient · chart a whole hour at once ═════════
    Tasks tab: every open sheet's uncharted slots — Overdue (last 6 h, older on request), Due now (±18 min, the sheet's own rule), Next hour —
@@ -2114,7 +2142,7 @@ window.tsWlDone=function(btn){ var row=btn.closest('.wl-row'); if(!row||row.clas
   var me=user(), now=new Date(), nowIso=now.toISOString(), undo;
   var here=x.sheet===CUR&&curDoc&&dayReady()&&!(window.tsViewDk&&tsViewDk()!==dayKey()), t=here&&(TASKS||[]).find(function(y){ return y.key===x.key; });
   if(t){ t.status='completed'; t.completedMin=nowMin(); t.by=me.initials||null; t.value=val||null; logEvent(x.o.type==='obs'?'vital':x.o.type,chartDesc(x.o,val),me.initials); sync();
-    if(/^weight$/i.test(String(x.o.name).trim())&&window.tsWeightCheck) tsWeightCheck(tsKgOf(val));
+    emit('task.charted',t);
     undo=function(){ t.status=null; t.completedMin=null; t.by=null; t.value=null; logEvent('doctor','<b>'+esc(x.o.name)+'</b> '+esc(fmtTime(x.t))+' charting undone',me.initials); try{ buildGrid(); }catch(e){} sync(); tsRenderTasks(); }; }
   else { var mark={status:'completed',by:me.initials||null,min:Math.round(nowMin()),value:val||null,notes:null,orderId:x.id,sched:x.t,at:nowIso,uid:me.uid||null,src:'tasks'};
     var u={updated_at:nowIso,updated_by:me.name||null,audit:U([{at:nowIso,type:x.o.type==='obs'?'vital':x.o.type,desc:chartDesc(x.o,val),who:me.initials,uid:me.uid}])}; u['marks.'+x.key]=mark;
@@ -2124,7 +2152,7 @@ window.tsWlDone=function(btn){ var row=btn.closest('.wl-row'); if(!row||row.clas
   row.classList.add('wl-leaving'); setTimeout(tsRenderTasks,320);
   undoToast(esc(x.o.name)+(val?' '+esc(val):'')+' · '+esc(((x.p.name||'')+' '+(x.p.last||'')).trim()),undo); };
 /* keep the list and the badge current: data changes arrive through updateChip (every sheet snapshot), the clock through the timer */
-var _ucTasks=updateChip; updateChip=function(){ var r=_ucTasks.apply(this,arguments); try{ if(currentCTab==='tasks') tsRenderTasks(); else tsTaskBadge(); }catch(e){} return r; };
+on('chip',function(){ if(currentCTab==='tasks') tsRenderTasks(); else tsTaskBadge(); });
 setInterval(function(){ if(document.hidden) return; try{ if(currentCTab==='tasks'&&!(document.activeElement&&document.activeElement.classList.contains('wl-val'))) tsRenderTasks(); else tsTaskBadge(); }catch(e){} },30000);
 
 /* ═══ batch charting: one hour, one patient ═══ */
@@ -2149,13 +2177,13 @@ window.tsBatchGo=function(){ var B=window._batch||{}, me=user(), done=[], vals=[
   document.querySelectorAll('#tsOrderSheet .bt-ck:checked').forEach(function(ck){ var t=(TASKS||[]).find(function(x){ return x.id===ck.dataset.id; }); if(!t||t.status) return;
     var vi=document.querySelector('#tsOrderSheet .bt-val[data-id="'+ck.dataset.id+'"]'), v=vi?vi.value.trim():'';
     t.status='completed'; t.completedMin=nowMin(); t.by=me.initials||null; t.value=v||null; done.push(t); vals.push(esc(t.order.name)+(v?' '+esc(v):''));
-    if(/^weight$/i.test(String(t.order.name).trim())&&v) wt=tsKgOf(v); });
+    });
   if(!done.length) return; tsOrderClose();
   logEvent('vital','Charted '+esc(fmtTime(B.h*60))+' — '+vals.join(', '),me.initials);
   try{ buildGrid(); }catch(e){} sync();
   undoToast(done.length+' task'+(done.length>1?'s':'')+' charted · '+esc(fmtTime(B.h*60)),function(){ done.forEach(function(t){ t.status=null; t.completedMin=null; t.by=null; t.value=null; });
     logEvent('doctor','Charting at '+esc(fmtTime(B.h*60))+' undone ('+done.length+')',me.initials); try{ buildGrid(); }catch(e){} sync(); });
-  if(wt&&window.tsWeightCheck) tsWeightCheck(wt); };
+  done.forEach(function(t){ emit('task.charted',t); }); };
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
