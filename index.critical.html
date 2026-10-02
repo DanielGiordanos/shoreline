@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261002-0316-bb864108">
+<meta name="flow-build" content="20261002-0441-8c510068">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15623,7 +15623,8 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     var sex=''; try{ sex=(typeof normalizeSexValue==='function'?normalizeSexValue(p.sex):'')||p.sex||''; }catch(e){ sex=p.sex||''; }
     var code=p.resusPref==='DNR'?'DNR':(p.resusPref==='CPR'?'CPR':'—');
     var cond={1:'Critical',2:'Watch'}[p.prio]||'Stable';
-    return {name:p.name||'Patient',last:p.last||'',owner:p.owner||'',phone:p.ownerPhone||'',species:p.species||'Dog',breed:p.breed||'',sex:sex,
+    var own=String(p.owner||'').trim(), oLast=own.indexOf(',')>-1?own.split(',')[0].trim():(own.split(/\s+/).length>1?own.split(/\s+/).slice(1).join(' '):'');
+    return {name:p.name||'Patient',last:p.last||oLast||'',owner:p.owner||'',phone:p.ownerPhone||'',species:p.species||'Dog',breed:p.breed||'',sex:sex,
       age:p.ageDisplay||p.age||'',weight:wt,reason:p.reason||'',doctor:doctorName(p.doctor),location:'',code:code,condition:cond,
       alerts:code==='DNR'?['DNR']:[],tech:(techNow(p)||{}).staffName||null,tech_at:techAt(p)||null,problems:Array.isArray(p.reasonProblems)?p.reasonProblems.map(function(x){ return x.label; }).filter(Boolean):[]};
   }
