@@ -453,17 +453,18 @@ function patientCmdHTML(){
   const chips=`
     <span class="pill soft">${deptName(VISIT.dept)}</span>
     <span class="ts-ho-slot">${window.tsDoctorChip?tsDoctorChip():VISIT.doctorFrom.split(',')[0]+' → '+VISIT.doctorTo.split(',')[0]}</span>
-    <span class="pill soft">${VISIT.day}</span>
-    <span class="pill soft">${VISIT.location}</span>
+    <span class="ts-techchip-slot">${window.tsTechChip?tsTechChip():''}</span>
+    <span class="pill soft ts-day-slot">${window.tsDayLabel?tsDayLabel():VISIT.day}</span>
+    <span class="ts-locchip-slot">${window.tsLocChip?tsLocChip():'<span class="pill soft">'+VISIT.location+'</span>'}</span>
     ${tsCodePill()}`;
   return `<section class="clinical-patient-header">
     <div class="cmd-r1">
       <button class="c-back" onclick="selectCTab('dash')" title="Back to patients"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      ${ptBadge(VISIT.patient,VISIT.species,'width:40px;height:40px;font-size:14px')}
       <div style="min-width:0">
         <div class="cmd-name">${VISIT.patient} <span class="pid">${VISIT.vcode||('V-'+VISIT.id)}</span></div>
-        <div class="cmd-sig">${[VISIT.species,VISIT.breed,VISIT.sex,VISIT.age,VISIT.weight+' kg'].map(x=>`<span>${x}</span>`).join('<span class="d"></span>')}</div>
+        <div class="cmd-sig">${[VISIT.species,VISIT.breed,VISIT.sex,VISIT.age].map(x=>`<span>${x}</span>`).join('<span class="d"></span>')}</div>
       </div>
+      <div class="ts-wt-slot">${window.tsWeightHTML?tsWeightHTML():VISIT.weight+' kg'}</div>
       <div class="cmd-vitals">
         <div class="vstat"><div class="vv">${VISIT.temp}°</div><div class="vl">Temp</div></div>
         <div class="vstat"><div class="vv">${VISIT.hr}</div><div class="vl">HR</div></div>

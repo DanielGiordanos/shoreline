@@ -1197,7 +1197,7 @@ var _vfHo=visitFrom; visitFrom=function(d){ var v=_vfHo(d), n=hoNext(d); v.docto
 window.tsDoctorChip=function(){ if(!CUR||!curDoc) return '<span class="pill soft">'+esc(String(VISIT.doctorFrom||'—').split(',')[0])+' → '+esc(String(VISIT.doctorTo||'—').split(',')[0])+'</span>';
   var cur=hoCur(curDoc), n=hoNext(curDoc), p=hoPending(curDoc);
   return '<button type="button" class="pill soft ts-ho-chip'+(n?' has-next':'')+(p?' pending':'')+'" onclick="tsOpenHandoff()" title="'+(n?'Next doctor set — tap to hand off':'Hand off to the next doctor')+'">'
-    +esc(cur||'No doctor')+' <span class="ho-arrow">→</span> '+(n?esc(n.name):'<span class="ho-muted">Hand off</span>')+(p?'<i class="ho-dot" title="Handoff not yet acknowledged"></i>':'')+'</button>'; };
+    +esc(cur||'No doctor')+' <span class="ho-arrow">→</span> '+(n?esc(n.name)+'<span class="hc-k next">Next</span>':'<span class="ho-muted">Hand off</span>')+(p?'<i class="ho-dot" title="Handoff not yet acknowledged"></i>':'')+'</button>'; };
 
 /* what the next doctor needs at a glance, captured with the handoff */
 function hoSnapshot(){ var v=VISIT||{}, meds=[], alerts=[];
@@ -1288,6 +1288,42 @@ window.tsHoAck=function(id){ if(!CUR) return; var ref=DB.collection(COL).doc(CUR
 function refreshHo(){ document.querySelectorAll('.ts-ho-slot').forEach(function(c){ var h=window.tsDoctorChip(); if(c.innerHTML!==h) c.innerHTML=h; }); try{ hoCard(); }catch(e){} }
 var _rhHo=refreshHeader; refreshHeader=function(){ _rhHo.apply(this,arguments); try{ refreshHo(); }catch(e){} };
 setInterval(function(){ try{ hoCard(); }catch(e){} },3000);
+
+/* ═════════ TS HEADER — one consistent chip row + the dosing weight up front ═════════
+   Chips: Department · Doctor → Next · Tech · Day N · h · Location (coloured, tap to change). No avatar.
+   Weight: the dosing weight (patient.weight) with when it was taken; warns when a newer charted weight differs. */
+function hdrDoc(){ return CUR&&curDoc?curDoc:null; }
+/* tech chip — same assignment as the Visit panel, the board's Tech column and Flow */
+window.tsTechChip=function(){ var d=hdrDoc(); if(!d) return ''; var t=((d.patient||{}).tech)||'';
+  return '<button type="button" class="pill soft ts-hchip'+(t?'':' empty')+'" title="'+(t?'Change technician':'Assign a technician')+'" onclick="tsPickTech(\''+CUR+'\',this)">'
+    +(t?'<span class="hc-k">Tech</span>'+esc(t):'+ Tech')+'</button>'; };
+/* location chip — ICU red, Isolation amber, Wards teal */
+window.tsLocChip=function(){ var d=hdrDoc(); if(!d) return '<span class="pill soft">'+esc(VISIT.location||'—')+'</span>'; var l=((d.patient||{}).location)||'';
+  return '<button type="button" class="pill soft ts-hchip'+(l?' loc-'+esc(l.toLowerCase().replace(/[^a-z]/g,'')):' empty')+'" title="Change location" onclick="tsPickLoc(\''+CUR+'\',this)">'+(l?esc(l):'+ Location')+'</button>'; };
+/* Day 2 · 67 h — hospital day and hours since admission */
+window.tsDayLabel=function(){ var d=hdrDoc(); if(!d) return esc(VISIT.day||''); var at=d.admitted_at||d.created_at, h=at?Math.max(0,Math.floor((Date.now()-new Date(at))/3600000)):null;
+  return esc(VISIT.day||'')+(h!=null?' · '+h+' h':''); };
+/* the dosing weight, when it was taken, and a warning if a newer weight was charted */
+function wtWhen(iso){ try{ var d=new Date(iso), today=new Date(); var day=d.toDateString()===today.toDateString()?'Today':(d.getMonth()+1)+'/'+d.getDate();
+  return day+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+function weightReadings(d){ var ids={}; Object.keys(d.orders||{}).forEach(function(k){ var o=d.orders[k]; if(o&&/^weight$/i.test(String(o.name||'').trim())) ids[o.id||k]=1; });
+  var out=[]; Object.keys(d.marks||{}).forEach(function(k){ var m=d.marks[k]; if(!m||m.status!=='completed'||!ids[m.orderId]) return; var v=parseFloat(String(m.value||'').match(/\d+(\.\d+)?/)); if(!(v>0)) return;
+    out.push({v:v,at:m.at||'',src:m.src||''}); }); return out.sort(function(a,b){ return a.at<b.at?-1:a.at>b.at?1:0; }); }
+window.tsWeightHTML=function(){ var d=hdrDoc(), kg=Number(VISIT.weight)||0;
+  if(!kg) return '<div class="ts-wt none"><b>No weight</b><small>Add a weight to calculate doses</small></div>';
+  if(!d) return '<div class="ts-wt"><b>'+kg+' kg</b></div>';
+  var R=weightReadings(d), match=null, latest=R[R.length-1]||null;
+  for(var i=R.length-1;i>=0;i--){ if(Math.abs(R[i].v-kg)<0.05){ match=R[i]; break; } }
+  var when=match?((match.src==='triage'?'Triage · ':'Weighed ')+wtWhen(match.at)):('Admission · '+wtWhen(d.admitted_at||d.created_at));
+  var warn=latest&&Math.abs(latest.v-kg)>=0.05&&(!match||latest.at>match.at)
+    ?'<small class="ts-wt-warn" title="Doses are calculated from '+kg+' kg">Charted '+latest.v+' kg · '+esc(wtWhen(latest.at))+'</small>':'';
+  return '<div class="ts-wt'+(warn?' stale':'')+'" title="Dosing weight — every dose on this sheet uses it"><b>'+kg+' kg</b><small>'+esc(when)+'</small>'+warn+'</div>'; };
+function refreshHdr(){ var map={'.ts-techchip-slot':window.tsTechChip,'.ts-locchip-slot':window.tsLocChip,'.ts-day-slot':window.tsDayLabel,'.ts-wt-slot':window.tsWeightHTML};
+  Object.keys(map).forEach(function(sel){ document.querySelectorAll(sel).forEach(function(c){ var h=map[sel](); if(c.innerHTML!==h) c.innerHTML=h; }); }); }
+var _rhHdr=refreshHeader; refreshHeader=function(){ _rhHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
+var _rlHdr=refreshLoc; refreshLoc=function(){ _rlHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
+var _rtHdr=refreshTechCell; refreshTechCell=function(){ _rtHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
+setInterval(function(){ try{ if(!document.hidden) refreshHdr(); }catch(e){} },60000);
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();

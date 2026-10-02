@@ -2465,7 +2465,7 @@ body.dark .ts-tech-cell{background:rgba(255,255,255,.05);border-color:rgba(255,2
 .ts-loc-menu{width:240px}
 
 /* handoff: Current → Next chip, window, receiving-doctor card */
-.ts-ho-chip{cursor:pointer;border:1px solid transparent;font:inherit;display:inline-flex;align-items:center;gap:6px;transition:border-color .15s}
+.ts-ho-chip{cursor:pointer;border:1px solid var(--border);font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:border-color .15s}
 .ts-ho-chip:hover{border-color:var(--accent)}
 .ts-ho-chip .ho-arrow{opacity:.6}
 .ts-ho-chip .ho-muted{opacity:.55;font-weight:600}
@@ -2500,6 +2500,24 @@ body.dark #tsHoCard{background:rgba(18,24,36,.98);color:#EEF1F6}
 #tsHoCard .ho-card-b{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 #tsHoCard button{height:34px;padding:0 14px;border-radius:999px;border:1px solid rgba(127,127,127,.3);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
 #tsHoCard button.primary{background:var(--accent,#0a84ff);border-color:var(--accent,#0a84ff);color:#fff}
+
+/* header: one chip row (same type as Emergency Medicine / Day 2), the dosing weight up front */
+.cmd-chips .pill{font-size:11.5px;font-weight:700;font-family:inherit;line-height:1.2}
+.ts-hchip{cursor:pointer;border:1px solid var(--border);transition:border-color .15s}
+.ts-hchip:hover,.ts-ho-chip:hover{border-color:var(--accent)}
+.ts-hchip.empty{opacity:.7;border-style:dashed}
+.ts-hchip .hc-k,.ts-ho-chip .hc-k{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;opacity:.55;margin-right:2px}
+.ts-ho-chip .hc-k.next{margin:0 0 0 2px}
+.ts-hchip.loc-icu{color:#ff6b61;border-color:rgba(255,69,58,.45);background:rgba(255,69,58,.10)}
+.ts-hchip.loc-isolation{color:#e08a00;border-color:rgba(255,159,10,.5);background:rgba(255,159,10,.12)}
+.ts-hchip.loc-wards{color:var(--accent-ink,#0e7c8c);border-color:rgba(56,189,210,.45);background:rgba(56,189,210,.10)}
+body.dark .ts-hchip.loc-wards{color:#5fd0e0}
+.ts-wt{display:flex;flex-direction:column;justify-content:center;padding:6px 14px;border-radius:14px;border:1px solid var(--border);background:var(--fill-soft);margin-left:14px;min-width:96px}
+.ts-wt b{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--ink-900);line-height:1.1}
+.ts-wt small{font-size:11px;font-weight:600;color:var(--ink-400);white-space:nowrap}
+.ts-wt .ts-wt-warn{color:#e08a00;font-weight:700}
+.ts-wt.stale{border-color:rgba(255,159,10,.55)}
+.ts-wt.none b{font-size:14px;color:#e08a00}
 
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
