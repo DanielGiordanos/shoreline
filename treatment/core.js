@@ -451,6 +451,7 @@ function aaHTML(){const p=SB_PATIENTS[aaPat];
 /* ═══ TREATMENT SHEET ═══ */
 function patientCmdHTML(){
   const chips=`
+    <span class="ts-wt-slot">${window.tsWeightHTML?tsWeightHTML():'<span class="pill soft">'+VISIT.weight+' kg</span>'}</span>
     <span class="pill soft">${deptName(VISIT.dept)}</span>
     <span class="ts-ho-slot">${window.tsDoctorChip?tsDoctorChip():VISIT.doctorFrom.split(',')[0]+' → '+VISIT.doctorTo.split(',')[0]}</span>
     <span class="ts-techchip-slot">${window.tsTechChip?tsTechChip():''}</span>
@@ -464,7 +465,6 @@ function patientCmdHTML(){
         <div class="cmd-name">${VISIT.patient} <span class="pid">${VISIT.vcode||('V-'+VISIT.id)}</span></div>
         <div class="cmd-sig">${[VISIT.species,VISIT.breed,VISIT.sex,VISIT.age].map(x=>`<span>${x}</span>`).join('<span class="d"></span>')}</div>
       </div>
-      <div class="ts-wt-slot">${window.tsWeightHTML?tsWeightHTML():VISIT.weight+' kg'}</div>
       <div class="cmd-vitals">
         <div class="vstat"><div class="vv">${VISIT.temp}°</div><div class="vl">Temp</div></div>
         <div class="vstat"><div class="vv">${VISIT.hr}</div><div class="vl">HR</div></div>

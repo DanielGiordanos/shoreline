@@ -1312,14 +1312,15 @@ function weightReadings(d){ var ids={}; Object.keys(d.orders||{}).forEach(functi
   var out=[]; Object.keys(d.marks||{}).forEach(function(k){ var m=d.marks[k]; if(!m||m.status!=='completed'||!ids[m.orderId]) return; var v=parseFloat(String(m.value||'').match(/\d+(\.\d+)?/)); if(!(v>0)) return;
     out.push({v:v,at:m.at||'',src:m.src||''}); }); return out.sort(function(a,b){ return a.at<b.at?-1:a.at>b.at?1:0; }); }
 window.tsWeightHTML=function(){ var d=hdrDoc(), kg=Number(VISIT.weight)||0;
-  if(!kg) return '<div class="ts-wt none"><b>No weight</b><small>Add a weight to calculate doses</small></div>';
-  if(!d) return '<div class="ts-wt"><b>'+kg+' kg</b></div>';
+  if(!kg) return '<span class="pill soft ts-wtchip none" title="Add a weight to calculate doses"><span class="hc-k">Weight</span>Not set</span>';
+  if(!d) return '<span class="pill soft ts-wtchip"><span class="hc-k">Weight</span>'+kg+' kg</span>';
   var R=weightReadings(d), match=null, latest=R[R.length-1]||null;
   for(var i=R.length-1;i>=0;i--){ if(Math.abs(R[i].v-kg)<0.05){ match=R[i]; break; } }
-  var when=match?((match.src==='triage'?'Triage · ':'Weighed ')+wtWhen(match.at)):('Admission · '+wtWhen(d.admitted_at||d.created_at));
-  var warn=latest&&Math.abs(latest.v-kg)>=0.05&&(!match||latest.at>match.at)
-    ?'<small class="ts-wt-warn" title="Doses are calculated from '+kg+' kg">Charted '+latest.v+' kg · '+esc(wtWhen(latest.at))+'</small>':'';
-  return '<div class="ts-wt'+(warn?' stale':'')+'" title="Dosing weight — every dose on this sheet uses it"><b>'+kg+' kg</b><small>'+esc(when)+'</small>'+warn+'</div>'; };
+  var when=match?wtWhen(match.at):wtWhen(d.admitted_at||d.created_at), how=match?(match.src==='triage'?'Triage':'Weighed'):'Admission';
+  var newer=latest&&Math.abs(latest.v-kg)>=0.05&&(!match||latest.at>match.at)?latest:null;
+  var tip='Dosing weight — every dose on this sheet uses it · '+how+' '+when+(newer?' · newer charted weight '+newer.v+' kg ('+wtWhen(newer.at)+')':'');
+  return '<span class="pill soft ts-wtchip'+(newer?' stale':'')+'" title="'+esc(tip)+'"><span class="hc-k">Weight</span>'+kg+' kg<span class="wt-when">'+esc(when)+'</span>'
+    +(newer?'<span class="wt-warn">Charted '+newer.v+' kg</span>':'')+'</span>'; };
 function refreshHdr(){ var map={'.ts-techchip-slot':window.tsTechChip,'.ts-locchip-slot':window.tsLocChip,'.ts-day-slot':window.tsDayLabel,'.ts-wt-slot':window.tsWeightHTML};
   Object.keys(map).forEach(function(sel){ document.querySelectorAll(sel).forEach(function(c){ var h=map[sel](); if(c.innerHTML!==h) c.innerHTML=h; }); }); }
 var _rhHdr=refreshHeader; refreshHeader=function(){ _rhHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };

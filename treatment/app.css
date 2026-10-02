@@ -2512,12 +2512,11 @@ body.dark #tsHoCard{background:rgba(18,24,36,.98);color:#EEF1F6}
 .ts-hchip.loc-isolation{color:#e08a00;border-color:rgba(255,159,10,.5);background:rgba(255,159,10,.12)}
 .ts-hchip.loc-wards{color:var(--accent-ink,#0e7c8c);border-color:rgba(56,189,210,.45);background:rgba(56,189,210,.10)}
 body.dark .ts-hchip.loc-wards{color:#5fd0e0}
-.ts-wt{display:flex;flex-direction:column;justify-content:center;padding:6px 14px;border-radius:14px;border:1px solid var(--border);background:var(--fill-soft);margin-left:14px;min-width:96px}
-.ts-wt b{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--ink-900);line-height:1.1}
-.ts-wt small{font-size:11px;font-weight:600;color:var(--ink-400);white-space:nowrap}
-.ts-wt .ts-wt-warn{color:#e08a00;font-weight:700}
-.ts-wt.stale{border-color:rgba(255,159,10,.55)}
-.ts-wt.none b{font-size:14px;color:#e08a00}
+.ts-wtchip .wt-when{font-weight:600;opacity:.6;margin-left:4px}
+.ts-wtchip .wt-when:before{content:'· ';}
+.ts-wtchip .wt-warn{color:#e08a00;margin-left:6px}
+.ts-wtchip.stale{border-color:rgba(255,159,10,.55)}
+.ts-wtchip.none{color:#e08a00;border-style:dashed}
 
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
