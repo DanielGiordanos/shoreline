@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261001-0205-8849aa6f">
+<meta name="flow-build" content="20261002-0316-bb864108">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -15607,7 +15607,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
   function me(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
     var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
     return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
-  function doctorName(id){ try{ var d=(DOCTORS||[]).find(function(x){ return x.id===id; }); return d?d.name:''; }catch(e){ return ''; } }
+  function doctorName(id){ try{ var L=(typeof rdAllDoctors==='function')?rdAllDoctors():(DOCTORS||[]); var d=L.find(function(x){ return x.id===id; }); return d?d.name:''; }catch(e){ return ''; } }
   /* Triage weight (measured) always wins over the weight typed at check-in. */
   function triageKg(p){ var v=p&&p.triage&&p.triage.vitals&&p.triage.vitals.weight; if(v==null||String(v).trim()==='') return null;
     try{ if(typeof parseWeightInput==='function'){ var r=parseWeightInput(v); if(r&&r.valid) return r.kg; } }catch(e){}
@@ -15892,9 +15892,25 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
         audit:FV.arrayUnion(audit(name?'Technician assigned in Flow — <b>'+esc(name)+'</b>':'Technician unassigned in Flow',who,now))});
     }); }).catch(function(e){ delete lastTech[p.id]; console.warn('[flow→sheet tech]',e); });
   }
+  /* Flow → sheet: the current doctor (Flow's doctor / Rounds' Current) and Rounds' Next doctor — a handoff in either app shows in both */
+  var lastDoc={};
+  function syncDoctor(p){
+    if(!ready()||!p||p._demo) return; var cur=(p.doctor&&p.doctor!=='unassigned')?doctorName(p.doctor):'';
+    var inRounds=!!(p.rounds&&typeof p.rounds==='object'), nx=inRounds&&p.rounds.next, nxName=nx&&nx.docId?doctorName(nx.docId):'';
+    var sig=cur+'|'+(inRounds?nxName:'~'); if(lastDoc[p.id]===sig) return; lastDoc[p.id]=sig;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
+      if(!snap.exists) return; var d=snap.data()||{}, pt=d.patient||{}, upd={}, msg=[]; if(d.status==='closed') return;
+      if(cur&&pt.doctor!==cur){ upd['patient.doctor']=cur; upd['patient.doctor_at']=now.toISOString(); msg.push('Doctor in Flow — <b>'+esc(cur)+'</b>'); }
+      if(inRounds){ var have=(pt.doctor_next&&pt.doctor_next.name)||''; if(have!==nxName&&!(nxName&&nxName===(upd['patient.doctor']||pt.doctor))){
+        upd['patient.doctor_next']=nxName?{name:nxName,at:nx.at||now.toISOString(),by:nx.by||'Rounds'}:null; msg.push(nxName?'Next doctor in Rounds — <b>'+esc(nxName)+'</b>':'Next doctor cleared in Rounds'); } }
+      if(!msg.length) return;
+      upd.updated_at=now.toISOString(); upd.updated_by=who.initials; upd.audit=FV.arrayUnion(audit(msg.join(' · '),who,now)); t.update(ref,upd);
+    }); }).catch(function(e){ delete lastDoc[p.id]; console.warn('[flow→sheet doctor]',e); });
+  }
   setInterval(function(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){} if(!u||typeof PATIENTS==='undefined') return;
-    try{ PATIENTS.forEach(function(p){ if(p&&(p.room==='Treatment'||p.status==='Hospitalized'||p.status==='Admitted'||ensured[p.id])) syncTech(p); }); }catch(e){} },8000);
-  window.fvAdmitSheet={syncTech:syncTech,syncCode:syncCode,sweepCodes:sweepCodes,ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,pushEstimate:pushEstimate,pullEstimate:pullEstimate,sweep:sweepTreatment,triageMarks:triageMarks,syncTriage:syncTriage};
+    try{ PATIENTS.forEach(function(p){ if(p&&(p.room==='Treatment'||p.status==='Hospitalized'||p.status==='Admitted'||ensured[p.id])){ syncTech(p); syncDoctor(p); } }); }catch(e){} },8000);
+  window.fvAdmitSheet={syncTech:syncTech,syncDoctor:syncDoctor,syncCode:syncCode,sweepCodes:sweepCodes,ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,pushEstimate:pushEstimate,pullEstimate:pullEstimate,sweep:sweepTreatment,triageMarks:triageMarks,syncTriage:syncTriage};
 })();
 </script>
 
