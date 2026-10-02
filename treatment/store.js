@@ -122,7 +122,7 @@ reset();
 
 /* ---------- mapping between Firestore and the screen ---------- */
 function fmtAdmit(iso){ try{ var d=new Date(iso); return (d.getMonth()+1)+'/'+d.getDate()+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return '—'; } }
-function dayOf(iso){ try{ var n=Math.floor((midnight()-new Date(new Date(iso).setHours(0,0,0,0)).getTime())/86400000)+1; return 'Day '+Math.max(1,n); }catch(e){ return 'Day 1'; } }
+function dayOf(iso){ try{ var n=Math.floor((Date.now()-new Date(iso).getTime())/86400000)+1; return 'Day '+(n>0?n:1); }catch(e){ return 'Day 1'; } }   /* hospital day from admission: day 2 starts at 24 h */
 function visitFrom(d){ var p=d.patient||{}; var full=((p.name||'')+' '+(p.last||'')).trim()||'Unnamed patient';
   var latest=function(name){ var o=Object.values(d.orders||{}).find(function(x){ return x.name===name; }); if(!o) return '—';
     var ms=Object.keys(d.marks||{}).map(function(k){ return d.marks[k]; }).filter(function(m){ return m&&m.orderId===o.id&&m.status==='completed'&&m.value; })
@@ -1302,7 +1302,8 @@ setInterval(function(){ try{ hoCard(); }catch(e){} },3000);
    Collapses to one slim line while the grid is scrolled (iOS large-title style). Red is only for critical / DNR. */
 function hdrDoc(){ return CUR&&curDoc?curDoc:null; }
 window.tsHoursIn=function(){ var d=hdrDoc(), at=d&&(d.admitted_at||d.created_at); return at?Math.max(0,Math.floor((Date.now()-new Date(at))/3600000)):null; };
-window.tsDayLabel=function(){ var h=window.tsHoursIn(); return esc(VISIT.day||'')+(h!=null?' · '+h+' h':''); };
+function hospDay(h){ return h!=null?Math.floor(h/24)+1:null; }
+window.tsDayLabel=function(){ var h=window.tsHoursIn(); return h!=null?'Day '+hospDay(h)+' · '+h+' h':esc(VISIT.day||''); };
 function wtWhen(iso){ try{ var d=new Date(iso), today=new Date(); var day=d.toDateString()===today.toDateString()?'Today':(d.getMonth()+1)+'/'+d.getDate();
   return day+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
 function ago(iso){ var m=Math.floor((Date.now()-new Date(iso))/60000); if(!(m>=0)) return ''; if(m<1) return 'now'; if(m<60) return m+'m ago'; var h=Math.floor(m/60); return h<24?h+'h ago':Math.floor(h/24)+'d ago'; }
@@ -1356,7 +1357,7 @@ function infoHTML(d){ var p=(d&&d.patient)||{}, W=weightInfo(d), out=[];
       {on:'tsOpenHandoff()',title:cur?(cur+(n?' → '+n.name+' (next)':'')+' · tap to hand off'):'Tap to set the doctor'}));
     out.push(item('Tech',p.tech?'<b>'+esc(p.tech)+'</b>':'<small class="tsh-link">Assign</small>',{on:'tsPickTech(\''+CUR+'\',this)'}));
   } else out.push(item('Doctor','<b>'+esc(String(VISIT.doctorFrom||'—').split(',')[0])+'</b>'));
-  var h=window.tsHoursIn(); out.push(item('Hospital day','<b>'+esc(String(VISIT.day||'').replace(/^Day\s*/i,''))+'</b>'+(h!=null?'<small>'+h+' h</small>':'')));
+  var h=window.tsHoursIn(); out.push(item('Hospital day','<b>'+(h!=null?hospDay(h):esc(String(VISIT.day||'').replace(/^Day\s*/i,'')))+'</b>'+(h!=null?'<small>'+h+' h</small>':'')));
   var loc=p.location||''; out.push(item('Location',loc?LOC_ICON+'<b>'+esc(loc)+'</b>':'<small class="tsh-link">Set</small>',{on:d?'tsPickLoc(\''+CUR+'\',this)':'',cls:loc==='Isolation'?'amber':''}));
   var code=resusPillHTML(VISIT.code); out.push(item('Code',code||'<small>Not set</small>',{title:'Code status comes from Flow'}));
   return out.join(''); }

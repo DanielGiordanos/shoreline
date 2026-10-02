@@ -2531,7 +2531,7 @@ body.dark #tsHoCard{background:rgba(18,24,36,.98);color:#EEF1F6}
 .tsh .tsh-pop{animation:tshPop .5s cubic-bezier(.32,.72,0,1) both}
 @keyframes tshPop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 /* info row: label over value, no borders */
-.tsh .tsh-info{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:14px;margin-left:-10px}
+.tsh .tsh-info{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:14px;margin-left:28px}
 .tsh .tsh-item{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:6px 10px;border:0;border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:default;transition:background .15s}
 .tsh button.tsh-item{cursor:pointer}
 .tsh button.tsh-item:hover{background:var(--fill-soft)}
