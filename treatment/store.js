@@ -1325,7 +1325,7 @@ function vitalsData(d){ var sp=sexSp(VISIT.species), fl=[]; try{ fl=flagsFor(d);
 function vitalsHTML(d){ var D=vitalsData(d); if(!D.some(function(x){ return x.val; })) return '<div class="tsh-novit">No vitals charted yet</div>';
   var cur={}, html=D.map(function(x){ if(!x.val) return '<div class="tsh-vit empty"><div class="tsh-vv">—</div><div class="tsh-vk">'+x.V.l+'</div></div>';
     var sig=x.val+'|'+x.at; cur[x.V.k]=sig; var changed=_tshPrev[x.V.k]&&_tshPrev[x.V.k]!==sig;
-    return '<div class="tsh-vit'+(x.sev===2?' crit':x.sev===1?' warn':'')+(changed?' tsh-pop':'')+'" title="'+esc(x.V.l+' '+x.val+(x.V.u?' '+x.V.u:'')+' · '+wtWhen(x.at))+'">'
+    return '<div class="tsh-vit'+(x.V.k==='mm'?' text':'')+(x.sev===2?' crit':x.sev===1?' warn':'')+(changed?' tsh-pop':'')+'" title="'+esc(x.V.l+' '+x.val+(x.V.u?' '+x.V.u:'')+' · '+wtWhen(x.at))+'">'
       +'<div class="tsh-vv">'+esc(x.val)+(x.V.u?'<span class="tsh-u">'+x.V.u+'</span>':'')+(x.arrow?'<span class="tsh-ar">'+x.arrow+'</span>':'')+'</div>'
       +'<div class="tsh-vk">'+x.V.l+'<span class="tsh-age'+(x.old?' old':'')+'">'+esc(ago(x.at))+'</span></div></div>'; }).join('');
   _tshPrev=cur; return html; }
@@ -1366,8 +1366,9 @@ window.tsHeaderHTML=function(){ var d=hdrDoc(), v=VISIT||{};
 function miniHTML(d){ if(!d) return ''; var W=weightInfo(d), loc=((d.patient||{}).location)||'';
   return '<span><b>'+(W.kg?W.kg+' kg':'No weight')+'</b></span>'+(resusPillHTML(VISIT.code,'sm')||'')+(loc?'<span>'+esc(loc)+'</span>':'')+miniVitals(d); }
 /* someone else changed this sheet in the last 90 s */
-function liveHTML(d){ if(!d||!d.updated_at||!d.updated_by) return ''; var me=user().initials, age=Date.now()-new Date(d.updated_at);
-  return (age<90000&&d.updated_by!==me)?'<i class="tsh-live" title="Updated just now by '+esc(d.updated_by)+'"></i>':''; }
+function liveHTML(d){ if(!d||!d.updated_at||!d.updated_by) return ''; var me=user(), by=String(d.updated_by), age=Date.now()-new Date(d.updated_at);
+  var mine=by===me.initials||normName(by)===normName(me.name)||normName(by)===normName(me.initials);
+  return (age<90000&&!mine)?'<i class="tsh-live" title="Updated just now by '+esc(d.updated_by)+'"></i>':''; }
 
 /* re-render the parts that change, only when they changed */
 function refreshHdr(){ var h=document.getElementById('tsHdr'), d=hdrDoc(); if(!h||!d) return;

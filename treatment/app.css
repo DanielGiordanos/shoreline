@@ -2559,6 +2559,10 @@ body.dark .tsh .tsh-v .tsh-link,body.dark .tsh .tsh-accent{color:#5fd0e0}
 @media(max-width:1100px){.tsh .tsh-vitals{gap:18px}.tsh .tsh-vv{font-size:22px}.tsh .tsh-name{font-size:22px}}
 @media(prefers-reduced-motion:reduce){.tsh .tsh-live,.tsh .tsh-pop{animation:none}}
 
+.tsh .tsh-id{flex:0 1 auto;min-width:0}
+.tsh .tsh-sig{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+.tsh .tsh-vit.text .tsh-vv{font-size:18px;white-space:nowrap;line-height:26px}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 
