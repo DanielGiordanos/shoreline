@@ -32,8 +32,6 @@ function user(){ var u=AUTH&&AUTH.currentUser; if(!u) return {uid:'',name:'',ini
   var parts=name.trim().split(/\s+/); return {uid:u.uid,name:name,initials:((parts[0]||'')[0]||'').toUpperCase()+((parts.length>1?parts[parts.length-1][0]:'')||'').toUpperCase()}; }
 window.tsMe=function(){ return user().initials||'—'; };
 
-/* the sample timeline generator is prototype-only */
-try{ seedAudit=function(){}; }catch(e){}
 
 /* ---------- real clock (the prototype ran on a simulated 10:12 AM) ---------- */
 nowMin=function(){ var c=claim('clock'); if(c!=null&&c!==false) return c; var d=new Date(); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; };   /* hook: clock (a past day's clock) */
@@ -199,7 +197,7 @@ setInterval(sync,10000);
 document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') sync(); });
 window.addEventListener('pagehide',sync);
 /* save right after any change the sheet makes */
-['buildGrid','logEvent','renderNotes','renderSheet','renderVitals'].forEach(function(fn){ try{ var o=window[fn]; if(typeof o!=='function') return;
+['buildGrid','logEvent','renderNotes','renderSheet'].forEach(function(fn){ try{ var o=window[fn]; if(typeof o!=='function') return;
   window[fn]=function(){ var r=o.apply(this,arguments); scheduleSync(); return r; }; }catch(e){} });
 /* ---------- adapters over the prototype's completion drawer (core): the only place base wraps core functions ---------- */
 (function(){ var oc=window.openCompletion; if(typeof oc==='function') window.openCompletion=function(id){ if(claim('completion.open',id)) return; return oc.apply(this,arguments); };
@@ -213,7 +211,7 @@ function emptyHTML(){ return '<div class="ts-empty"><div class="ts-empty-card"><
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17.5" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg></div>'+
   '<b>No patient open</b><span>Choose a patient from the IP Board, or start a new sheet.</span>'+
   '<div class="row"><button type="button" class="ts-btn" onclick="selectCTab(\'dash\')">IP Board</button><button type="button" class="ts-btn primary" onclick="tsNewSheet()">New sheet</button></div></div></div>'; }
-['renderSheet','renderVitals','renderRounds','renderTimeline','renderNotes'].forEach(function(fn){ var tab={renderSheet:'sheet',renderVitals:'vitals',renderRounds:'rounds',renderTimeline:'timeline',renderNotes:'notes'}[fn];
+['renderSheet','renderTimeline','renderNotes'].forEach(function(fn){ var tab={renderSheet:'sheet',renderTimeline:'timeline',renderNotes:'notes'}[fn];   /* Vitals and Rounds guard themselves (store/vitals.js, store/rounds.js) */
   try{ var o=window[fn]; window[fn]=function(){ if(!CUR||!curDoc){ var el=document.getElementById('ctab-'+tab); if(el) el.innerHTML=CUR?'<div class="ts-empty"><div class="ts-empty-card"><span>Opening sheet…</span></div></div>':emptyHTML(); if(fn==='renderSheet') renderedFor=null; return; } if(fn==='renderSheet'){ renderedFor=CUR; var r=o.apply(this,arguments); requestAnimationFrame(scrollToNow); return r; } return o.apply(this,arguments); }; }catch(e){} });
 
 var renderedFor=null;
@@ -2185,5 +2183,138 @@ window.tsBatchGo=function(){ var B=window._batch||{}, me=user(), done=[], vals=[
     logEvent('doctor','Charting at '+esc(fmtTime(B.h*60))+' undone ('+done.length+')',me.initials); try{ buildGrid(); }catch(e){} sync(); });
   done.forEach(function(t){ emit('task.charted',t); }); };
 
+/* ═════════ TS VITALS — the Vitals tab, from the sheet's real readings ═════════
+   One row per monitoring order on the sheet (Basic observation first, then the rest of Monitoring and Diagnostics), its last three
+   readings with time and who, colour only when a reading is outside the hospital limits (FLAG_RULES), and a Record box that charts
+   into the sheet exactly like the grid: it completes the open slot nearest now (±60 min) or adds an extra reading. A weight opens
+   the dose review (hook task.charted). Infusions show their pump rate and today's volume. Earlier days: view only.
+   (Replaces the prototype's Vitals board, which showed the same sample readings for every patient and saved nothing.) */
+var V_OPTS={'mucous membrane':['Pink','Pale Pink','Pale','White','Injected','Cyanotic'],'crt':['<2','2','>2'],'mentation':['BAR','QAR','Dull','Obtunded','Stupor'],
+  'pain score':['0','1','2','3','4'],'food':['Ate','Some','Off','NPO'],'water':['Drank','Some','None'],'vomiting':['No','Yes'],'urination':['Nml','None','Abnormal'],'defecation':['Nml','None','Diarrhea']};
+var vFilterQ='';
+function vPast(){ return !!(window.tsViewDk&&tsViewDk()!==dayKey()); }
+function vOrders(){ return (ORDERS||[]).filter(function(o){ return o&&!o.dc&&!o.cont&&(o.type==='obs'||o.type==='diag'); }); }
+/* every charted value for an order: what is saved (curDoc.marks) plus anything charted this second and not yet saved (TASKS) */
+function vReadings(o){ var out={}, d=curDoc||{}, marks=d.marks||{};
+  var add=function(k,m,dk){ if(!m||m.status!=='completed'||m.value==null||String(m.value).trim()==='') return; var mn=m.min!=null?m.min:(m.sched||0);
+    out[k]={v:String(m.value),at:dkDate(dk).getTime()+mn*60000,by:m.by||'',notes:m.notes||''}; };
+  Object.keys(marks).forEach(function(k){ var m=marks[k]; if(m&&m.orderId===o.id&&/^\d{8}_/.test(k)) add(k,m,k.slice(0,8)); });
+  (TASKS||[]).forEach(function(t){ if(t.orderId!==o.id||t.status!=='completed') return; var dk=(t.key&&/^\d{8}_/.test(t.key))?t.key.slice(0,8):viewDk(); add(t.key||t.id,{status:t.status,value:t.value,min:t.completedMin,sched:t.sched,by:t.by,notes:t.notes},dk); });
+  return Object.keys(out).map(function(k){ return out[k]; }).sort(function(a,b){ return a.at-b.at; }); }
+function vWhen(ms){ var d=new Date(ms), t=new Date(), y=new Date(t.getFullYear(),t.getMonth(),t.getDate()-1);
+  var hm=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}).replace(':00','').replace(' ','').replace('AM','A').replace('PM','P');
+  return d.toDateString()===t.toDateString()?hm:d.toDateString()===y.toDateString()?'Yday '+hm:(d.getMonth()+1)+'/'+d.getDate()+' '+hm; }
+function vTone(o,v){ var r=ruleFor(o.name); if(!r) return ''; var n=numOf(v), s=n!=null?sevOf(r,n,sexSp(VISIT.species)):0; return s>=2?'coral':s===1?'amber':''; }
+function vRow(o){ var R=vReadings(o).slice(-3), past=vPast(), opts=V_OPTS[String(o.name).toLowerCase()];
+  var strip=R.length?'<div class="v-strip">'+R.map(function(r,i){ var last=i===R.length-1, tone=vTone(o,r.v);
+      return '<div class="v-pt" title="'+esc(r.v+(o.unit?' '+o.unit:'')+' · '+vWhen(r.at)+(r.by?' · '+r.by:'')+(r.notes?' · '+r.notes:''))+'"><span class="v-chip'+(last?' cur '+(tone||'cyan'):(tone?' '+tone:''))+'">'+esc(r.v)+'</span><span class="v-t">'+esc(vWhen(r.at))+'</span></div>'; }).join('<span class="v-dash"></span>')+'</div>'
+    :'<span class="v-empty">Nothing charted yet</span>';
+  var field=opts?'<input class="v-in" id="vin-'+esc(o.id)+'" list="vl-'+esc(o.id)+'" placeholder="Select"'+(past?' disabled':'')+'><datalist id="vl-'+esc(o.id)+'">'+opts.map(function(x){ return '<option>'+esc(x)+'</option>'; }).join('')+'</datalist>'
+    :'<input class="v-in" id="vin-'+esc(o.id)+'" inputmode="'+(o.unit?'decimal':'text')+'" placeholder="Value"'+(past?' disabled':'')+' onkeydown="if(event.key===\'Enter\')tsVRecord(\''+esc(o.id)+'\')">';
+  return '<div class="v-row"><div class="v-name">'+esc(o.name)+'<small>'+esc(o.freq||'')+'</small></div><div class="v-trend">'+strip+'</div>'
+    +(past?'<div class="v-input v-ro">View only</div>':'<div class="v-input">'+field+(o.unit?'<span class="v-unit">'+esc(o.unit)+'</span>':'')+'<input class="v-note" id="vnote-'+esc(o.id)+'" placeholder="Note (optional)"><button class="v-rec" onclick="tsVRecord(\''+esc(o.id)+'\')">Record</button></div>')+'</div>'; }
+function vInfRows(){ return (ORDERS||[]).filter(function(o){ return o&&o.cont&&o.kind&&!o.dc; }).map(function(o){
+    return '<div class="v-row v-inf" onclick="tsInfPanel(\''+esc(o.id)+'\')"><div class="v-name">'+esc(o.name)+'<small>'+(o.kind==='cri'?'CRI':'IV fluids')+'</small></div><div class="v-trend"><span class="v-chip cur cyan">'+esc(o.rate||'')+'</span></div><div class="v-input v-ro">Open infusion ›</div></div>'; }).join(''); }
+function vRowsHTML(){ var q=vFilterQ.toLowerCase().trim(), L=vOrders().filter(function(o){ return !q||String(o.name).toLowerCase().indexOf(q)>-1; });
+  var basic=L.filter(function(o){ return o.section==='Basic Observation'; }), more=L.filter(function(o){ return o.section!=='Basic Observation'; }), inf=q?'':vInfRows();
+  var sec=function(t,a){ return a?'<div class="v-sec-h"><span>'+t+'</span></div>'+a:''; };
+  var html=sec('Basic observations',basic.map(vRow).join(''))+sec('Monitoring &amp; diagnostics',more.map(vRow).join(''))+sec('Fluids &amp; CRIs',inf);
+  return html||'<div class="v-empty" style="padding:30px">'+(q?'No vitals match.':'No monitoring orders on this sheet yet.')+'</div>'; }
+window.tsVFilter=function(v){ vFilterQ=v||''; var el=document.getElementById('vRows'); if(el) el.innerHTML=vRowsHTML(); };
+window.renderVitals=function(){ var os=document.getElementById('ctab-sheet'); if(os) os.innerHTML=''; var el=document.getElementById('ctab-vitals'); if(!el) return;
+  if(!CUR||!curDoc){ el.innerHTML=CUR?'<div class="ts-empty"><div class="ts-empty-card"><span>Opening sheet…</span></div></div>':emptyHTML(); return; }
+  var fl=[]; try{ fl=flagsFor(curDoc).slice(0,3); }catch(e){}
+  el.innerHTML=patientCmdHTML()+'<section class="clinical-workspace vitals-mode"><main class="treatment-main vitals-main">'
+    +'<div class="v-header"><button class="btn ghost" style="width:auto;height:34px;padding:0 12px;flex:0 0 auto" onclick="selectCTab(\'sheet\')">‹ Sheet</button>'
+    +'<div class="v-filter">'+IC.search+'<input placeholder="Filter vitals by name" value="'+esc(vFilterQ)+'" oninput="tsVFilter(this.value)"></div><div class="v-title">VITALS</div><div class="spacer" style="flex:1"></div>'
+    +(vPast()?'<span class="v-pastnote">'+esc(dkLabel(tsViewDk()))+' · view only</span>':'')+'</div>'
+    +(fl.length?'<div class="v-luna"><div class="v-luna-l"><div class="oc-luna-h">Trends &amp; limits</div><div class="v-luna-txt">'+fl.map(function(f){ return esc(f.text); }).join(' · ')+'</div></div></div>':'')
+    +'<div class="v-scroll"><div id="vRows">'+vRowsHTML()+'</div></div>'
+    +'<div class="v-footer"><button class="btn ghost" style="width:auto;height:34px;padding:0 12px" onclick="tsVHistory()">Vitals history</button><button class="btn ghost" style="width:auto;height:34px;padding:0 12px" onclick="tsVCopy()">Copy latest vitals</button></div>'
+    +'</main></section>'; };
+/* Record: the open slot nearest now, or an extra reading; saved like a grid cell */
+window.tsVRecord=function(oid){ if(vPast()){ toast('View only — go back to today to chart'); return; } if(!canChart()){ toast('Your role can’t chart'); return; }
+  var o=orderById(oid), inp=document.getElementById('vin-'+oid), val=inp?inp.value.trim():''; if(!o) return; if(!val){ toast('Enter a value first'); if(inp) inp.focus(); return; }
+  var note=((document.getElementById('vnote-'+oid)||{}).value||'').trim(), n=nowMin(), me=user();
+  var t=(TASKS||[]).filter(function(x){ return x.orderId===oid&&!x.status&&Math.abs(x.sched-n)<=60; }).sort(function(a,b){ return Math.abs(a.sched-n)-Math.abs(b.sched-n); })[0];
+  if(!t){ t={id:'v'+Date.now().toString(36),orderId:oid,order:o,sched:Math.round(n),severity:0}; TASKS.push(t); }
+  t.status='completed'; t.completedMin=n; t.by=me.initials||null; t.value=val; t.notes=note||null;
+  logEvent('vital','<b>'+esc(o.name)+'</b> — '+esc(val)+(o.unit?' '+esc(o.unit):'')+' recorded',me.initials);
+  sync(); emit('task.charted',t); toast(esc(o.name)+' '+esc(val)+' recorded'); renderVitals(); };
+window.tsVHistory=function(){ var rows=[]; vOrders().forEach(function(o){ vReadings(o).forEach(function(r){ rows.push({o:o,r:r}); }); });
+  rows.sort(function(a,b){ return b.r.at-a.r.at; }); rows=rows.slice(0,80);
+  var html='<div class="op-head"><span class="op-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="op-kind">Vitals history</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +(rows.length?'<div class="op-list vh-list">'+rows.map(function(x){ return '<div class="op-row"><span>'+esc(vWhen(x.r.at))+'</span><b>'+esc(x.o.name)+' · '+esc(x.r.v)+(x.o.unit?' '+esc(x.o.unit):'')+(x.r.by?' · '+esc(x.r.by):'')+(x.r.notes?'<small> — '+esc(x.r.notes)+'</small>':'')+'</b></div>'; }).join('')+'</div>'
+      :'<p class="op-lead">Nothing charted yet.</p>');
+  opShow(html,'wide'); };
+window.tsVCopy=function(){ var g=function(rx){ var o=vOrders().find(function(x){ return rx.test(String(x.name)); }); var R=o?vReadings(o):[]; return R.length?R[R.length-1].v:'—'; };
+  var txt=VISIT.patient+' — vitals '+fmtTime(nowMin())+': T '+g(/^temperature$/i)+'°F, HR '+g(/^heart rate$/i)+', RR '+g(/^respiratory rate$/i)+', MM '+g(/^mucous membrane/i)+', CRT '+g(/^crt$/i)+', '+g(/^mentation$/i)+', pain '+g(/^pain score$/i)+'/4, weight '+g(/^weight$/i)+' kg';
+  try{ navigator.clipboard.writeText(txt); toast('Latest vitals copied'); }catch(e){ toast('Couldn’t copy'); } };
+/* ═════════ TS ROUNDS + PATIENT INFO — built from each sheet, nothing typed in by hand ═════════
+   Medical Rounds tab: one card per admitted patient (the open one first) — doctor → next, location, hospital day, code status,
+   problems, latest vitals, active medications with doses, fluids & CRIs, tasks due / overdue, the last note. Tap a card to open it.
+   Patient info panel (sheet sidebar): estimate, latest vitals, weight trend from charted weights, BSA / RER from the dosing weight,
+   visit, patient and client details that exist on the sheet.
+   (Replaces the prototype's cards and panel, which carried sample text — overnight events, plan, owner calls — on real patients.) */
+function rdDoc(s){ return s._id===CUR&&curDoc?curDoc:s; }
+function rdLatest(d,rx){ var ids={}; Object.keys(d.orders||{}).forEach(function(k){ var o=d.orders[k]; if(o&&rx.test(String(o.name||'').trim())) ids[o.id||k]=1; });
+  var best=null; Object.keys(d.marks||{}).forEach(function(k){ var m=d.marks[k]; if(!m||m.status!=='completed'||m.value==null||m.value===''||!ids[m.orderId]) return;
+    var t=k.slice(0,8)+('0000'+Math.round(m.min!=null?m.min:(m.sched||0))).slice(-4); if(!best||t>best.t) best={t:t,v:String(m.value)}; }); return best&&best.v; }
+var RD_VITS=[['T',/^temperature$/i,'°F'],['HR',/^heart rate$/i,''],['RR',/^respiratory rate$/i,''],['MM',/^mucous membrane/i,''],['CRT',/^crt$/i,''],['',/^mentation$/i,''],['Pain',/^pain score$/i,'/4']];
+function rdVitals(d){ var a=RD_VITS.map(function(v){ var x=rdLatest(d,v[1]); return x?(v[0]?v[0]+' ':'')+x+v[2]:''; }).filter(Boolean); return a.length?esc(a.join(' · ')):'<span class="rd-none">Nothing charted yet</span>'; }
+function rdDose(o,kg,sp){ var unit=String(o.unit||'mg/kg'), base=unit.split('/')[0]; if(/\/(kg|lb|m²)/.test(unit)&&!kg) return o.dose+' '+unit; return fmtN(doseTotal(Number(o.dose)||0,unit,kg,sp))+' '+base; }
+function rdHospDay(s){ var at=s.admitted_at||s.created_at; if(!at) return ''; var h=Math.max(0,Math.floor((Date.now()-new Date(at))/3600000)); return 'Day '+(Math.floor(h/24)+1); }
+function rdSec(l,v){ return v?'<div class="rc-sec"><div class="lab">'+l+'</div><div class="val">'+v+'</div></div>':''; }
+function rdCard(s0){ var d=rdDoc(s0), p=d.patient||s0.patient||{}, name=((p.name||'')+' '+(p.last||'')).trim()||'Unnamed patient', kg=Number(p.weight)||0, sp=/^(cat|fel)/i.test(String(p.species||''))?'cat':'dog';
+  var O=Object.keys(d.orders||{}).map(function(k){ return d.orders[k]; }).filter(function(o){ return o&&!o.dc; });
+  var meds=O.filter(function(o){ return o.type==='med'; }).map(function(o){ return esc(o.name)+' '+esc(rdDose(o,kg,sp))+(o.route?' '+esc(o.route):'')+(o.freq?' '+esc(o.freq):''); });
+  var inf=O.filter(function(o){ return o.cont; }).map(function(o){ return esc(o.name)+(o.rate?' · '+esc(o.rate):''); });
+  var nx=null; try{ nx=hoNext(d); }catch(e){} var L={due:0,over:0}; try{ L=loadOf(d); }catch(e){}
+  var notes=(d.notes||[]).slice().sort(function(a,b){ return String(b.at||'').localeCompare(String(a.at||'')); }), note=notes[0];
+  var probs=(p.problems&&p.problems.length?p.problems:(p.reason?[p.reason]:[])).map(esc).join(', ');
+  return '<div class="rc" onclick="tsOpenSheet(\''+esc(s0._id)+'\',true)"><div class="panel"><div class="rc-head">'+ptBadge(name,p.species||'Dog','width:40px;height:40px;font-size:13px')
+    +'<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:15px">'+esc(name)+'</div><div style="color:var(--ink-400);font-size:12px">'+[p.species,p.breed,sexLabel(p.sex),kg?kg+' kg':''].filter(function(x){ return x&&x!=='—'; }).map(esc).join(' · ')+'</div></div>'+clinPill(p.condition||'Stable')+'</div><div class="rc-body">'
+    +rdSec('Doctor · Location · Day',[esc(p.doctor||'—')+(nx?' → '+esc(nx.name):''),esc(p.location||''),rdHospDay(s0)].filter(Boolean).join(' · '))
+    +rdSec('Code status',resusPillHTML(p.code,'sm')||esc(p.code||'Not set'))
+    +rdSec('Problem list',probs)
+    +rdSec('Latest vitals',rdVitals(d))
+    +rdSec('Medications',meds.length?meds.join('<br>'):'<span class="rd-none">None</span>')
+    +rdSec('Fluids &amp; CRIs',inf.join('<br>'))
+    +rdSec('Tasks',L.due+' due in the next hour'+(L.over?' · <b class="rd-over">'+L.over+' overdue</b>':''))
+    +rdSec('Last note',note?esc(String(note.body||'').slice(0,240))+'<small class="rd-meta"> — '+esc(note.author||'')+(note.at?' · '+esc(fmtWhen(note.at)):'')+'</small>':'')
+    +'</div></div></div>'; }
+window.renderRounds=function(){ var el=document.getElementById('ctab-rounds'); if(!el) return; var L=(SHEETS||[]).slice();
+  if(!L.length){ el.innerHTML='<div class="ts-empty"><div class="ts-empty-card"><b>No admitted patients</b><span>Rounds cards appear as soon as a patient is admitted.</span></div></div>'; return; }
+  L.sort(function(a,b){ return (b._id===CUR)-(a._id===CUR); });
+  el.innerHTML='<div class="rounds-grid">'+L.map(rdCard).join('')+'</div>'; };
+
+/* ---------- patient info panel ---------- */
+function weightTrendHTML(){ var R=[]; try{ R=readings(curDoc,/^weight$/i).map(function(r){ return {v:parseFloat((String(r.v).match(/\d+(\.\d+)?/)||[])[0]),at:r.at}; }).filter(function(r){ return r.v>0; }); }catch(e){}
+  if(R.length<2) return ''; R=R.slice(-6); var n=R.length, x0=14, x1=286, top=20, bot=46, base=56, vals=R.map(function(p){ return p.v; }), lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+  var xs=R.map(function(_,i){ return x0+i*(x1-x0)/(n-1); }), ys=R.map(function(p){ return hi===lo?(top+bot)/2:top+(1-(p.v-lo)/(hi-lo))*(bot-top); });
+  var pts=xs.map(function(x,i){ return x.toFixed(1)+' '+ys[i].toFixed(1); }), lbl=function(at){ var d=new Date(at); return (d.getMonth()+1)+'/'+d.getDate(); };
+  return '<div class="weight-trend"><div class="trend-header"><span>Weight trend</span><strong>'+esc(vals[n-1])+' kg</strong></div><svg viewBox="0 0 300 64" preserveAspectRatio="none">'
+    +'<path class="trend-fill" d="M'+pts.join(' L')+' L'+x1+' '+base+' L'+x0+' '+base+' Z"/><path class="trend-line" d="M'+pts.join(' L')+'"/>'
+    +xs.map(function(x,i){ return '<circle class="trend-dot'+(i===n-1?' current':'')+'" cx="'+x.toFixed(1)+'" cy="'+ys[i].toFixed(1)+'" r="'+(i===n-1?4:3)+'"><title>'+esc(lbl(R[i].at))+': '+R[i].v+' kg</title></circle>'; }).join('')
+    +xs.map(function(x,i){ return '<text x="'+x.toFixed(1)+'" y="63" text-anchor="'+(i===0?'start':i===n-1?'end':'middle')+'">'+esc(lbl(R[i].at))+'</text>'; }).join('')+'</svg></div>'; }
+window.sidebarBriefHTML=function(){ var p=(curDoc&&curDoc.patient)||{}, kg=Number(VISIT.weight)||0, sp=spKey()||'dog', val=function(x,u){ return x&&x!=='—'?esc(x)+(u?' '+u:''):'—'; };
+  var vit=[['Weight',kg?kg+' kg':'—'],['Temp',val(VISIT.temp,'°F')],['Heart rate',val(VISIT.hr,'bpm')],['Resp rate',val(VISIT.rr,'rpm')],['MM',val(VISIT.mm)],['CRT',val(VISIT.crt)],['Mentation',val(VISIT.mentation)],['Pain score',VISIT.pain&&VISIT.pain!=='—'?esc(VISIT.pain)+' / 4':'—']];
+  var list=function(t,a){ return a&&a.length?'<div class="panel"><h4>'+t+'</h4><div class="pc"><ul>'+a.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul></div></div>':''; };
+  return '<aside class="clinical-sidebar cbrief" id="clinSidebar">'+estimateCard()
+    +'<div class="panel"><h4>Vitals</h4><div class="vit-grid">'+vit.map(function(v){ return '<div class="vit"><div class="k">'+v[0]+'</div><div class="v">'+v[1]+'</div></div>'; }).join('')+'</div>'
+      +weightTrendHTML()
+      +(kg?'<div class="calc-row"><div class="calc-chip"><div class="k">BSA</div><div class="v">'+bsa(kg,sp).toFixed(2)+' m²</div></div><div class="calc-chip"><div class="k">RER</div><div class="v">'+Math.round(70*Math.pow(kg,0.75)).toLocaleString()+' kcal/day</div></div></div>':'')+'</div>'
+    +'<div class="panel"><h4>Visit</h4><div class="kvlist">'
+      +kvr('Doctor','<span class="ts-ho-slot">'+(window.tsDoctorChip?tsDoctorChip():esc(VISIT.doctorTo||'—'))+'</span>')
+      +'<div class="kvrow"><span class="kk">Technician</span><span class="vv ts-tech-slot">'+(window.tsTechCell?tsTechCell():'')+'</span></div>'
+      +'<div class="kvrow"><span class="kk">Location</span><span class="vv ts-loc-slot">'+(window.tsLocCell?tsLocCell():esc(VISIT.location||'—'))+'</span></div>'
+      +kvr('Department',esc(deptName(VISIT.department||VISIT.dept||'')))+'</div></div>'
+    +'<div class="panel"><h4>Patient</h4><div class="kvlist">'
+      +'<div class="kvrow"><span class="kk">Checked in</span><span class="vv" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px"><span class="ci-time">'+esc(VISIT.checkin||'—')+'</span>'+((window.tsHoursIn&&tsHoursIn()!=null)?'<span class="ci-pill">'+tsHoursIn()+' hrs hospitalized</span>':'')+'</span></div>'
+      +kvr('Species',esc(VISIT.species||'—'))+kvr('Breed',esc(VISIT.breed||'—'))+kvr('Age',esc(VISIT.age||'—'))+kvr('Sex',esc(VISIT.sex||'—'))+kvr('Weight',kg?kg+' kg':'—')
+      +'<div class="kvrow"><span class="kk">Code status</span><span class="vv">'+tsCodePill(1)+'</span></div></div></div>'
+    +((p.owner||p.phone)?'<div class="panel"><h4>Client</h4><div class="kvlist">'+(p.owner?kvr('Owner',esc(p.owner)):'')+(p.phone?kvr('Phone',esc(p.phone)):'')+'</div></div>':'')
+    +list('Problem list',VISIT.problems)+list('Plan',VISIT.plan)
+    +'</aside>'; };
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();
