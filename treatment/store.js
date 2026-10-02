@@ -1289,44 +1289,98 @@ function refreshHo(){ document.querySelectorAll('.ts-ho-slot').forEach(function(
 var _rhHo=refreshHeader; refreshHeader=function(){ _rhHo.apply(this,arguments); try{ refreshHo(); }catch(e){} };
 setInterval(function(){ try{ hoCard(); }catch(e){} },3000);
 
-/* ═════════ TS HEADER — one consistent chip row + the dosing weight up front ═════════
-   Chips: Department · Doctor → Next · Tech · Day N · h · Location (coloured, tap to change). No avatar.
-   Weight: the dosing weight (patient.weight) with when it was taken; warns when a newer charted weight differs. */
+/* ═════════ TS HEADER — calm, flat, instrument-panel header (Oct 2026) ═════════
+   Name + signalment · big live vitals (value, unit, age, colour only when out of range, ▲▼ trend)
+   Info row of label-over-value items (no borders): Weight · Service · Doctor → Next · Tech · Hospital day · Location · Code
+   Collapses to one slim line while the grid is scrolled (iOS large-title style). Red is only for critical / DNR. */
 function hdrDoc(){ return CUR&&curDoc?curDoc:null; }
-/* tech chip — same assignment as the Visit panel, the board's Tech column and Flow */
-window.tsTechChip=function(){ var d=hdrDoc(); if(!d) return ''; var t=((d.patient||{}).tech)||'';
-  return '<button type="button" class="pill soft ts-hchip'+(t?'':' empty')+'" title="'+(t?'Change technician':'Assign a technician')+'" onclick="tsPickTech(\''+CUR+'\',this)">'
-    +(t?'<span class="hc-k">Tech</span>'+esc(t):'+ Tech')+'</button>'; };
-/* location chip — ICU red, Isolation amber, Wards teal */
-window.tsLocChip=function(){ var d=hdrDoc(); if(!d) return '<span class="pill soft">'+esc(VISIT.location||'—')+'</span>'; var l=((d.patient||{}).location)||'';
-  return '<button type="button" class="pill soft ts-hchip'+(l?' loc-'+esc(l.toLowerCase().replace(/[^a-z]/g,'')):' empty')+'" title="Change location" onclick="tsPickLoc(\''+CUR+'\',this)">'+(l?esc(l):'+ Location')+'</button>'; };
-/* Day 2 · 67 h — hospital day and hours since admission */
-window.tsDayLabel=function(){ var d=hdrDoc(); if(!d) return esc(VISIT.day||''); var at=d.admitted_at||d.created_at, h=at?Math.max(0,Math.floor((Date.now()-new Date(at))/3600000)):null;
-  return esc(VISIT.day||'')+(h!=null?' · '+h+' h':''); };
-/* hours since admission (Visit panel "N hrs hospitalized") */
 window.tsHoursIn=function(){ var d=hdrDoc(), at=d&&(d.admitted_at||d.created_at); return at?Math.max(0,Math.floor((Date.now()-new Date(at))/3600000)):null; };
-/* the dosing weight, when it was taken, and a warning if a newer weight was charted */
+window.tsDayLabel=function(){ var h=window.tsHoursIn(); return esc(VISIT.day||'')+(h!=null?' · '+h+' h':''); };
 function wtWhen(iso){ try{ var d=new Date(iso), today=new Date(); var day=d.toDateString()===today.toDateString()?'Today':(d.getMonth()+1)+'/'+d.getDate();
   return day+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
-function weightReadings(d){ var ids={}; Object.keys(d.orders||{}).forEach(function(k){ var o=d.orders[k]; if(o&&/^weight$/i.test(String(o.name||'').trim())) ids[o.id||k]=1; });
-  var out=[]; Object.keys(d.marks||{}).forEach(function(k){ var m=d.marks[k]; if(!m||m.status!=='completed'||!ids[m.orderId]) return; var v=parseFloat(String(m.value||'').match(/\d+(\.\d+)?/)); if(!(v>0)) return;
-    out.push({v:v,at:m.at||'',src:m.src||''}); }); return out.sort(function(a,b){ return a.at<b.at?-1:a.at>b.at?1:0; }); }
-window.tsWeightHTML=function(){ var d=hdrDoc(), kg=Number(VISIT.weight)||0;
-  if(!kg) return '<span class="pill soft ts-wtchip none" title="Add a weight to calculate doses"><span class="hc-k">Weight</span>Not set</span>';
-  if(!d) return '<span class="pill soft ts-wtchip"><span class="hc-k">Weight</span>'+kg+' kg</span>';
-  var R=weightReadings(d), match=null, latest=R[R.length-1]||null;
-  for(var i=R.length-1;i>=0;i--){ if(Math.abs(R[i].v-kg)<0.05){ match=R[i]; break; } }
-  var when=match?wtWhen(match.at):wtWhen(d.admitted_at||d.created_at), how=match?(match.src==='triage'?'Triage':'Weighed'):'Admission';
+function ago(iso){ var m=Math.floor((Date.now()-new Date(iso))/60000); if(!(m>=0)) return ''; if(m<1) return 'now'; if(m<60) return m+'m ago'; var h=Math.floor(m/60); return h<24?h+'h ago':Math.floor(h/24)+'d ago'; }
+/* completed readings for an order name, newest last */
+function readings(d,rx){ var ids={}, fq={}; Object.keys(d.orders||{}).forEach(function(k){ var o=d.orders[k]; if(o&&!o.dc&&rx.test(String(o.name||'').trim())){ ids[o.id||k]=1; fq.f=o.freq; } });
+  var out=[]; Object.keys(d.marks||{}).forEach(function(k){ var m=d.marks[k]; if(!m||m.status!=='completed'||!ids[m.orderId]||m.value==null||String(m.value).trim()==='') return; out.push({v:String(m.value).trim(),at:m.at||'',src:m.src||''}); });
+  out.sort(function(a,b){ return a.at<b.at?-1:a.at>b.at?1:0; }); out.freq=fq.f; return out; }
+function freqH(f){ var m=String(f||'').match(/q(\d+)h/i); return m?+m[1]:null; }
+
+/* ---------- weight: the dosing weight and when it was taken ---------- */
+function weightInfo(d){ var kg=Number(VISIT.weight)||0; if(!kg) return {kg:0};
+  var R=d?readings(d,/^weight$/i).map(function(r){ return {v:parseFloat((r.v.match(/\d+(\.\d+)?/)||[])[0]),at:r.at,src:r.src}; }).filter(function(r){ return r.v>0; }):[];
+  var match=null, latest=R[R.length-1]||null; for(var i=R.length-1;i>=0;i--){ if(Math.abs(R[i].v-kg)<0.05){ match=R[i]; break; } }
+  var when=match?wtWhen(match.at):(d?wtWhen(d.admitted_at||d.created_at):''), how=match?(match.src==='triage'?'Triage':'Weighed'):'Admission';
   var newer=latest&&Math.abs(latest.v-kg)>=0.05&&(!match||latest.at>match.at)?latest:null;
-  var tip='Dosing weight — every dose on this sheet uses it · '+how+' '+when+(newer?' · newer charted weight '+newer.v+' kg ('+wtWhen(newer.at)+')':'');
-  return '<span class="pill soft ts-wtchip'+(newer?' stale':'')+'" title="'+esc(tip)+'"><span class="hc-k">Weight</span>'+kg+' kg<span class="wt-when">'+esc(when)+'</span>'
-    +(newer?'<span class="wt-warn">Charted '+newer.v+' kg</span>':'')+'</span>'; };
-function refreshHdr(){ var map={'.ts-techchip-slot':window.tsTechChip,'.ts-locchip-slot':window.tsLocChip,'.ts-day-slot':window.tsDayLabel,'.ts-wt-slot':window.tsWeightHTML};
-  Object.keys(map).forEach(function(sel){ document.querySelectorAll(sel).forEach(function(c){ var h=map[sel](); if(c.innerHTML!==h) c.innerHTML=h; }); }); }
+  return {kg:kg,when:when,how:how,newer:newer}; }
+
+/* ---------- vitals ---------- */
+var VITS=[{k:'temp',rx:/^temperature$/i,l:'Temp',u:'°F'},{k:'hr',rx:/^heart rate$/i,l:'Heart rate',u:'bpm'},{k:'rr',rx:/^respiratory rate$/i,l:'Resp rate',u:'rpm'},{k:'mm',rx:/^mucous membrane/i,l:'MM',u:''}];
+var _tshPrev={};
+function vitalsData(d){ var sp=sexSp(VISIT.species), fl=[]; try{ fl=flagsFor(d); }catch(e){}
+  return VITS.map(function(V){ var R=readings(d,V.rx), last=R[R.length-1]; if(!last) return {V:V};
+    var rule=V.k!=='mm'?ruleFor({temp:'Temperature',hr:'Heart Rate',rr:'Respiratory Rate'}[V.k]):null, num=numOf(last.v), sev=rule&&num!=null?sevOf(rule,num,sp):0;
+    var tr=fl.find(function(f){ return f.rule===V.k&&/rising|falling/.test(f.text); }), arrow=tr?(/rising/.test(tr.text)?'▲':'▼'):'';
+    var fh=freqH(R.freq), old=fh&&last.at&&(Date.now()-new Date(last.at))>fh*1.25*3600000;
+    return {V:V,val:V.k==='mm'?last.v:(num!=null?String(num):last.v),at:last.at,sev:sev,arrow:arrow,old:old}; }); }
+function vitalsHTML(d){ var D=vitalsData(d); if(!D.some(function(x){ return x.val; })) return '<div class="tsh-novit">No vitals charted yet</div>';
+  var cur={}, html=D.map(function(x){ if(!x.val) return '<div class="tsh-vit empty"><div class="tsh-vv">—</div><div class="tsh-vk">'+x.V.l+'</div></div>';
+    var sig=x.val+'|'+x.at; cur[x.V.k]=sig; var changed=_tshPrev[x.V.k]&&_tshPrev[x.V.k]!==sig;
+    return '<div class="tsh-vit'+(x.sev===2?' crit':x.sev===1?' warn':'')+(changed?' tsh-pop':'')+'" title="'+esc(x.V.l+' '+x.val+(x.V.u?' '+x.V.u:'')+' · '+wtWhen(x.at))+'">'
+      +'<div class="tsh-vv">'+esc(x.val)+(x.V.u?'<span class="tsh-u">'+x.V.u+'</span>':'')+(x.arrow?'<span class="tsh-ar">'+x.arrow+'</span>':'')+'</div>'
+      +'<div class="tsh-vk">'+x.V.l+'<span class="tsh-age'+(x.old?' old':'')+'">'+esc(ago(x.at))+'</span></div></div>'; }).join('');
+  _tshPrev=cur; return html; }
+function miniVitals(d){ var D=vitalsData(d); return D.filter(function(x){ return x.val&&x.V.k!=='mm'; }).map(function(x){ return '<span class="'+(x.sev===2?'crit':x.sev===1?'warn':'')+'">'+({temp:'T',hr:'HR',rr:'RR'})[x.V.k]+' '+esc(x.val)+(x.arrow?' '+x.arrow:'')+'</span>'; }).join(''); }
+
+/* ---------- info row: label over value, no borders; tappable items get a soft hover ---------- */
+function item(k,v,o){ o=o||{}; var tag=o.on?'button type="button"':'div';
+  return '<'+tag+' class="tsh-item'+(o.cls?' '+o.cls:'')+'"'+(o.on?' onclick="'+o.on+'"':'')+(o.title?' title="'+esc(o.title)+'"':'')+'><span class="tsh-k">'+k+'</span><span class="tsh-v">'+v+'</span></'+(o.on?'button':'div')+'>'; }
+var LOC_ICON='<svg class="tsh-ic" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 15V6m0 5h14v4m-14-2h14M7 8.5h3.5a2 2 0 0 1 2 2V11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function infoHTML(d){ var p=(d&&d.patient)||{}, W=weightInfo(d), out=[];
+  out.push(W.kg?item('Weight','<b>'+W.kg+' kg</b><small>'+esc(W.when)+'</small>'+(W.newer?'<small class="tsh-amber">Charted '+W.newer.v+' kg</small>':''),
+      {cls:W.newer?'amber':'',title:'Dosing weight — every dose on this sheet uses it · '+W.how+' '+W.when+(W.newer?' · newer charted weight '+W.newer.v+' kg ('+wtWhen(W.newer.at)+')':'')})
+    :item('Weight','<b class="tsh-amber">Not set</b>',{title:'Add a weight to calculate doses'}));
+  out.push(item('Service','<b>'+esc(deptName(VISIT.dept))+'</b>'));
+  if(d){ var cur=hoCur(d), n=hoNext(d), pend=hoPending(d);
+    out.push(item(n?'Doctor → Next':'Doctor','<b>'+esc(cur?drShort(cur):'—')+'</b>'+(n?'<span class="tsh-arrow">→</span><b class="tsh-accent">'+esc(drShort(n.name))+'</b>':'<small class="tsh-link">Hand off</small>')+(pend?'<i class="tsh-dot" title="Handoff not yet acknowledged"></i>':''),
+      {on:'tsOpenHandoff()',title:cur?(cur+(n?' → '+n.name+' (next)':'')+' · tap to hand off'):'Tap to set the doctor'}));
+    out.push(item('Tech',p.tech?'<b>'+esc(p.tech)+'</b>':'<small class="tsh-link">Assign</small>',{on:'tsPickTech(\''+CUR+'\',this)'}));
+  } else out.push(item('Doctor','<b>'+esc(String(VISIT.doctorFrom||'—').split(',')[0])+'</b>'));
+  var h=window.tsHoursIn(); out.push(item('Hospital day','<b>'+esc(String(VISIT.day||'').replace(/^Day\s*/i,''))+'</b>'+(h!=null?'<small>'+h+' h</small>':'')));
+  var loc=p.location||''; out.push(item('Location',loc?LOC_ICON+'<b>'+esc(loc)+'</b>':'<small class="tsh-link">Set</small>',{on:d?'tsPickLoc(\''+CUR+'\',this)':'',cls:loc==='Isolation'?'amber':''}));
+  var code=resusPillHTML(VISIT.code); out.push(item('Code',code||'<small>Not set</small>',{title:'Code status comes from Flow'}));
+  return out.join(''); }
+
+/* ---------- the header ---------- */
+window.tsHeaderHTML=function(){ var d=hdrDoc(), v=VISIT||{};
+  var sig=[v.species,v.breed,v.sex,v.age].filter(function(x){ return x&&x!=='—'; }).map(esc).join('<span class="tsh-sep"></span>');
+  return '<section class="clinical-patient-header tsh" id="tsHdr">'
+    +'<div class="tsh-top">'
+      +'<button type="button" class="tsh-back" onclick="selectCTab(\'dash\')" aria-label="Back to patients" title="Back to patients"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+      +'<div class="tsh-id"><div class="tsh-name"><span>'+esc(v.patient||'')+'</span><span class="tsh-pid">'+esc(v.vcode||('V-'+(v.id||'')))+'</span><span class="tsh-live-slot">'+liveHTML(d)+'</span></div>'
+        +'<div class="tsh-sig">'+sig+'</div></div>'
+      +'<div class="tsh-mini">'+miniHTML(d)+'</div>'
+      +'<div class="tsh-vitals">'+(d?vitalsHTML(d):'')+'</div>'
+    +'</div>'
+    +'<div class="tsh-info">'+infoHTML(d)+'</div>'
+  +'</section>'; };
+function miniHTML(d){ if(!d) return ''; var W=weightInfo(d), loc=((d.patient||{}).location)||'';
+  return '<span><b>'+(W.kg?W.kg+' kg':'No weight')+'</b></span>'+(resusPillHTML(VISIT.code,'sm')||'')+(loc?'<span>'+esc(loc)+'</span>':'')+miniVitals(d); }
+/* someone else changed this sheet in the last 90 s */
+function liveHTML(d){ if(!d||!d.updated_at||!d.updated_by) return ''; var me=user().initials, age=Date.now()-new Date(d.updated_at);
+  return (age<90000&&d.updated_by!==me)?'<i class="tsh-live" title="Updated just now by '+esc(d.updated_by)+'"></i>':''; }
+
+/* re-render the parts that change, only when they changed */
+function refreshHdr(){ var h=document.getElementById('tsHdr'), d=hdrDoc(); if(!h||!d) return;
+  var set=function(sel,html){ var el=h.querySelector(sel); if(el&&el.innerHTML!==html) el.innerHTML=html; };
+  set('.tsh-vitals',vitalsHTML(d)); set('.tsh-info',infoHTML(d)); set('.tsh-mini',miniHTML(d)); set('.tsh-live-slot',liveHTML(d)); }
 var _rhHdr=refreshHeader; refreshHeader=function(){ _rhHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
 var _rlHdr=refreshLoc; refreshLoc=function(){ _rlHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
 var _rtHdr=refreshTechCell; refreshTechCell=function(){ _rtHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
-setInterval(function(){ try{ if(!document.hidden) refreshHdr(); }catch(e){} },60000);
+var _rhoHdr=refreshHo; refreshHo=function(){ _rhoHdr.apply(this,arguments); try{ refreshHdr(); }catch(e){} };
+setInterval(function(){ try{ if(!document.hidden) refreshHdr(); }catch(e){} },30000);
+/* collapse while the grid is scrolled; expand back at the top (with a little hysteresis) */
+document.addEventListener('scroll',function(e){ var t=e.target; if(!t||t.id!=='sheetScroll') return; var h=document.getElementById('tsHdr'); if(!h) return;
+  var y=t.scrollTop; if(y>48&&!h.classList.contains('is-compact')) h.classList.add('is-compact'); else if(y<6&&h.classList.contains('is-compact')) h.classList.remove('is-compact'); },true);
 
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
 })();

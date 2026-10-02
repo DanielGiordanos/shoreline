@@ -449,7 +449,7 @@ function aaHTML(){const p=SB_PATIENTS[aaPat];
 }
 
 /* ═══ TREATMENT SHEET ═══ */
-function patientCmdHTML(){
+function patientCmdHTML(){ if(window.tsHeaderHTML){ try{ return tsHeaderHTML(); }catch(e){ console.warn('[header]',e); } }
   const chips=`
     <span class="ts-wt-slot">${window.tsWeightHTML?tsWeightHTML():'<span class="pill soft">'+VISIT.weight+' kg</span>'}</span>
     <span class="pill soft">${deptName(VISIT.dept)}</span>

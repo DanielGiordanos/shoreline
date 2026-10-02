@@ -2459,7 +2459,7 @@ body.dark .ts-tech-cell{background:rgba(255,255,255,.05);border-color:rgba(255,2
 /* location pill (Visit panel): ICU · Wards · Isolation */
 .ts-loc-pill{height:30px;padding:0 14px;border-radius:999px;border:1px solid var(--line,rgba(0,0,0,.1));background:var(--surface,#fff);color:var(--ink-900,#111);font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:border-color .15s}
 .ts-loc-pill:hover{border-color:var(--accent)}
-.ts-loc-pill.loc-icu{border-color:rgba(255,69,58,.45);color:#ff6b61;background:rgba(255,69,58,.08)}
+.ts-loc-pill.loc-icu{border-color:var(--line,rgba(0,0,0,.12));color:var(--ink-900,#111);background:var(--fill-soft,rgba(0,0,0,.04))}  /* ICU is a place, not an emergency: red stays for critical / DNR */
 .ts-loc-pill.loc-isolation{border-color:rgba(255,159,10,.5);color:#e08a00;background:rgba(255,159,10,.10)}
 .ts-loc-pill.loc-wards{border-color:rgba(56,189,210,.45);color:var(--accent-ink,#0e7c8c);background:rgba(56,189,210,.08)}
 .ts-loc-menu{width:240px}
@@ -2501,22 +2501,63 @@ body.dark #tsHoCard{background:rgba(18,24,36,.98);color:#EEF1F6}
 #tsHoCard button{height:34px;padding:0 14px;border-radius:999px;border:1px solid rgba(127,127,127,.3);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
 #tsHoCard button.primary{background:var(--accent,#0a84ff);border-color:var(--accent,#0a84ff);color:#fff}
 
-/* header: one chip row (same type as Emergency Medicine / Day 2), the dosing weight up front */
-.cmd-chips .pill{font-size:11.5px;font-weight:700;font-family:inherit;line-height:1.2}
-.ts-hchip{cursor:pointer;border:1px solid var(--border);transition:border-color .15s}
-.ts-hchip:hover,.ts-ho-chip:hover{border-color:var(--accent)}
-.ts-hchip.empty{opacity:.7;border-style:dashed}
-.ts-hchip .hc-k,.ts-ho-chip .hc-k,.ts-wtchip .hc-k{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;opacity:.55;margin-right:2px}
-.ts-ho-chip .hc-k.next{margin:0 0 0 2px}
-.ts-hchip.loc-icu{color:#ff6b61;border-color:rgba(255,69,58,.45);background:rgba(255,69,58,.10)}
-.ts-hchip.loc-isolation{color:#e08a00;border-color:rgba(255,159,10,.5);background:rgba(255,159,10,.12)}
-.ts-hchip.loc-wards{color:var(--accent-ink,#0e7c8c);border-color:rgba(56,189,210,.45);background:rgba(56,189,210,.10)}
-body.dark .ts-hchip.loc-wards{color:#5fd0e0}
-.ts-wtchip .wt-when{font-weight:600;opacity:.6;margin-left:4px}
-.ts-wtchip .wt-when:before{content:'· ';}
-.ts-wtchip .wt-warn{color:#e08a00;margin-left:6px}
-.ts-wtchip.stale{border-color:rgba(255,159,10,.55)}
-.ts-wtchip.none{color:#e08a00;border-style:dashed}
+/* ═══ patient header — flat instrument panel ═══ */
+.clinical-patient-header.tsh{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:14px 22px 14px!important;
+  border-bottom:1px solid var(--line,rgba(127,127,127,.18))!important;transition:padding .28s cubic-bezier(.32,.72,0,1)}
+.tsh .tsh-top{display:flex;align-items:center;gap:14px;min-width:0}
+.tsh .tsh-back{width:30px;height:30px;flex:none;display:grid;place-items:center;border:0;background:transparent;color:var(--ink-400);border-radius:50%;cursor:pointer;margin-left:-6px;transition:background .15s,color .15s}
+.tsh .tsh-back svg{width:20px;height:20px}
+.tsh .tsh-back:hover{background:var(--fill-soft);color:var(--ink-900)}
+.tsh .tsh-id{min-width:0}
+.tsh .tsh-name{display:flex;align-items:baseline;gap:10px;font-size:26px;font-weight:650;letter-spacing:-.025em;color:var(--ink-900);line-height:1.1;transition:font-size .28s cubic-bezier(.32,.72,0,1)}
+.tsh .tsh-pid{font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--ink-400)}
+.tsh .tsh-sig{margin-top:3px;font-size:13px;color:var(--ink-400);display:flex;align-items:center;flex-wrap:wrap;gap:4px 9px}
+.tsh .tsh-sep{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.5}
+.tsh .tsh-live{width:7px;height:7px;border-radius:50%;background:#30D158;display:inline-block;align-self:center;box-shadow:0 0 0 0 rgba(48,209,88,.6);animation:tshLive 1.8s ease-out infinite}
+@keyframes tshLive{0%{box-shadow:0 0 0 0 rgba(48,209,88,.55)}70%{box-shadow:0 0 0 7px rgba(48,209,88,0)}100%{box-shadow:0 0 0 0 rgba(48,209,88,0)}}
+/* vitals: big tabular numerals, colour only when out of range */
+.tsh .tsh-vitals{margin-left:auto;display:flex;gap:30px;align-items:flex-end}
+.tsh .tsh-vit{text-align:right;min-width:62px}
+.tsh .tsh-vv{font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink-900);line-height:1}
+.tsh .tsh-u{font-size:12px;font-weight:600;color:var(--ink-400);margin-left:3px;letter-spacing:0}
+.tsh .tsh-ar{font-size:12px;margin-left:4px;vertical-align:4px}
+.tsh .tsh-vk{margin-top:6px;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-400);white-space:nowrap}
+.tsh .tsh-age{margin-left:6px;font-weight:600;letter-spacing:0;text-transform:none;opacity:.75}
+.tsh .tsh-age.old{color:#e08a00;opacity:1}
+.tsh .tsh-vit.warn .tsh-vv{color:#FF9F0A}
+.tsh .tsh-vit.crit .tsh-vv{color:#FF453A}
+.tsh .tsh-vit.empty .tsh-vv{color:var(--ink-300,#9aa3b2)}
+.tsh .tsh-novit{margin-left:auto;font-size:13px;color:var(--ink-400)}
+.tsh .tsh-pop{animation:tshPop .5s cubic-bezier(.32,.72,0,1) both}
+@keyframes tshPop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* info row: label over value, no borders */
+.tsh .tsh-info{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:14px;margin-left:-10px}
+.tsh .tsh-item{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:6px 10px;border:0;border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:default;transition:background .15s}
+.tsh button.tsh-item{cursor:pointer}
+.tsh button.tsh-item:hover{background:var(--fill-soft)}
+.tsh .tsh-k{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-400)}
+.tsh .tsh-v{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink-900);white-space:nowrap}
+.tsh .tsh-v b{font-weight:600}
+.tsh .tsh-v small{font-size:12px;font-weight:500;color:var(--ink-400)}
+.tsh .tsh-v .tsh-link{color:var(--accent-ink,#0e7c8c);font-weight:600}
+body.dark .tsh .tsh-v .tsh-link,body.dark .tsh .tsh-accent{color:#5fd0e0}
+.tsh .tsh-accent{color:var(--accent-ink,#0e7c8c)}
+.tsh .tsh-arrow{color:var(--ink-400)}
+.tsh .tsh-amber{color:#e08a00!important}
+.tsh .tsh-item.amber .tsh-v b{color:#e08a00}
+.tsh .tsh-dot{width:7px;height:7px;border-radius:50%;background:#FF9F0A;display:inline-block}
+.tsh .tsh-ic{width:15px;height:15px;color:var(--ink-400);margin-right:-2px}
+.tsh .tsh-item .ts-resus{transform:scale(.92);transform-origin:left center}
+/* compact: one slim line while the grid is scrolled */
+.tsh .tsh-mini{display:none;align-items:center;gap:14px;font-size:13px;color:var(--ink-500,#6b7280);white-space:nowrap;overflow:hidden}
+.tsh .tsh-mini b{color:var(--ink-900);font-weight:600}
+.tsh .tsh-mini .warn{color:#FF9F0A;font-weight:600}.tsh .tsh-mini .crit{color:#FF453A;font-weight:600}
+.clinical-patient-header.tsh.is-compact{padding:8px 22px!important}
+.tsh.is-compact .tsh-name{font-size:17px}
+.tsh.is-compact .tsh-sig,.tsh.is-compact .tsh-info,.tsh.is-compact .tsh-vitals,.tsh.is-compact .tsh-novit{display:none}
+.tsh.is-compact .tsh-mini{display:flex}
+@media(max-width:1100px){.tsh .tsh-vitals{gap:18px}.tsh .tsh-vv{font-size:22px}.tsh .tsh-name{font-size:22px}}
+@media(prefers-reduced-motion:reduce){.tsh .tsh-live,.tsh .tsh-pop{animation:none}}
 
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
