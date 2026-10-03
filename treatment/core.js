@@ -47,7 +47,8 @@ const SECTIONS=[
   {key:'Diagnostics',icon:'M9 3v6l-5 9a2 2 0 002 3h12a2 2 0 002-3l-5-9V3M8 3h8'},
 ];
 const FREQ_INT={q1h:1,q2h:2,q4h:4,q6h:6,q8h:8,q12h:12,q24h:24,SID:24,BID:12,TID:8,QID:6};
-function freqTimes(o){if(['PRN','Continuous','Until discontinued','Custom'].includes(o.freq))return [];if(o.freq==='Once')return [o.start];const int=FREQ_INT[o.freq]||24,out=[];for(let h=o.start;h<24;h+=int)out.push(h);return out;}
+function freqTimes(o){if(o.draft)return [];   /* a draft order (store/drafts.js) has no slots until a doctor approves it */
+  if(['PRN','Continuous','Until discontinued','Custom'].includes(o.freq))return [];if(o.freq==='Once')return [o.start];const int=FREQ_INT[o.freq]||24,out=[];for(let h=o.start;h<24;h+=int)out.push(h);return out;}
 
 let TASKS=[],AUDIT=[],NOTES=[],TASK_SEQ=0;
 function deriveStatus(t){if(t.status==='completed')return 'completed';if(t.status==='held'||t.status==='skipped')return 'skipped';if(t.status==='delayed')return 'scheduled';const n=nowMin();if(t.sched>n+18)return 'scheduled';if(t.sched>=n-18)return 'due';return 'overdue';}
@@ -65,7 +66,7 @@ function selectCTab(tab){
   $('#ctab-'+tab).classList.remove('hidden');
   $('#stage').classList.toggle('sheet-active',tab==='sheet'||tab==='vitals');
   closeBrief();
-  if(tab==='dash')renderDash();if(tab==='sheet')renderSheet();if(tab==='vitals')renderVitals();if(tab==='rounds')renderRounds();if(tab==='timeline')renderTimeline();if(tab==='notes')renderNotes();if(tab==='tasks'&&window.tsRenderTasks)tsRenderTasks();
+  if(tab==='dash')renderDash();if(tab==='sheet')renderSheet();if(tab==='vitals')renderVitals();if(tab==='rounds')renderRounds();if(tab==='timeline')renderTimeline();if(tab==='notes')renderNotes();if(tab==='charges'&&window.tsRenderCharges)tsRenderCharges();if(tab==='tasks'&&window.tsRenderTasks)tsRenderTasks();
   $('#stage').scrollTop=0;
 }
 $$('#clinSwitcher .seg').forEach(b=>b.onclick=()=>selectCTab(b.dataset.ctab));
@@ -175,7 +176,7 @@ let sbTx=true, sbBoard='IP Board';
 function lsPill(ls){if(!ls)return '';const m={ALS:'ls-als',BLS:'ls-bls',DNR:'ls-dnr'}[ls]||'ls-als';return `<span class="ls-pill ${m}">${IC.heart}${ls}</span>`;}
 function toggleSbTx(){sbTx=!sbTx;renderDash();}
 function setSbBoard(b){sbBoard=b;renderDash();}
-function openSbFilters(ev){ev.stopPropagation();
+function openSbFilters(ev){ev.stopPropagation();if(window.tsSbFilters){tsSbFilters(ev.currentTarget);return;}   /* workflow filters (store/workflow.js) */
   const rows=[['Tx Status',IC.dotSm],['Doctor',IC.person],['Ward',IC.home],['Service',IC.gear],['Workflow',IC.flow],['Location',IC.cage]];
   _openPop(ev.currentTarget,`<div class="sb-filter-pop" style="width:236px;padding:6px 10px">${rows.map(([l,ic])=>`<div class="fp-row"><span class="fp-lab">${ic}${l}</span><span class="fp-add" onclick="toast('Add filter: ${l}')">+ Add</span></div>`).join('')}<button class="fp-clear" onclick="_closePop();toast('Filters cleared')">Clear Filters</button></div>`);
 }
@@ -193,7 +194,7 @@ function renderDash(){
     <div class="sb-tabs">${boards.map(t=>`<div class="sb-tab ${t===sbBoard?'active':''}" onclick="setSbBoard('${t}')">${t}</div>`).join('')}</div>
     <div class="sb-tool-r">
       <div class="sb-search">${IC.search}<input placeholder="Name or problem…"></div>
-      <button class="sb-filters" onclick="openSbFilters(event)">${IC.filter} Filters</button>
+      ${window.tsBoardTools?tsBoardTools():''}${window.tsWfChip?tsWfChip():''}<button class="sb-filters${window.tsWfOn&&tsWfOn()?' on':''}" onclick="openSbFilters(event)">${IC.filter} Filters</button>
     </div></div>`;
   // header row
   let head=`<div class="sb-row sb-head"><div class="sb-left">
@@ -269,6 +270,7 @@ function renderSheet(){
       <div class="order-search-wrapper"><div class="qadd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tsSearch" placeholder="Add order by name or ID…" autocomplete="off" onfocus="openTsDrop()" oninput="tsRender(this.value)" onkeydown="tsKey(event)"></div><div class="order-search-dropdown" id="tsDrop" style="display:none"></div></div>${window.tsSetsBtn?tsSetsBtn():''}
       <div class="day-nav ts-daynav">${window.tsDayNavHTML?tsDayNavHTML():'<button class="today">Today</button>'}</div>
       <div class="spacer" style="flex:1"></div>
+      <span id="tsDrafts" class="ts-seen-slot"></span><span id="tsSeen" class="ts-seen-slot"></span>
       <button class="btn ghost" style="flex:0 0 auto;width:auto;height:38px;padding:0 14px" onclick="selectCTab('timeline')">Audit</button>
       
     </div>
@@ -290,13 +292,13 @@ function buildGrid(){
     /* the section band comes from the store (store/sections.js: fold, hour summary, chart the hour, add to section) when it is loaded */
     html+=window.tsSecBand?tsSecBand(sec,so):`<div class="grow"><div class="gsection"><svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="${sec.icon}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="stitle">${sec.key}</span><span class="scount">${so.length}</span>${sec.key==='Continuous Infusions'&&window.tsInfTotal?tsInfTotal():''}</div></div>`;
     const fold=window.tsSecFolded&&tsSecFolded(sec.key)?' sec-folded':'';
-    so.forEach(o=>{html+=`<div class="grow${o.dc?' is-dc':''}${fold}" data-sec="${sec.key}"><div class="rl" data-dc="${o.dc?(o.dc_reason==='error'?'Error':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">`;
-      if(o.type==='med'){const d=medDose(o);html+=`<div style="min-width:0"><div class="rl-name">${o.name}${(window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> · '+tsBrand(o.name)+'</span>':''}</div><div class="rl-meta">${d.mg}${o.conc?' · <b>'+d.volume+'</b>':''} · ${o.freq}</div></div><span class="route-pill">${o.route}</span>`;}
+    so.forEach(o=>{html+=`<div class="grow${o.dc?' is-dc':''}${o.draft?' is-draft':''}${o.pin?' is-pin':''}${fold}" data-sec="${sec.key}" data-o="${o.id}"><div class="rl" data-dc="${o.dc?(o.dc_reason==='error'?'Error':o.dc_reason==='rejected'?'Not approved':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">${window.tsRowLead?tsRowLead(o):''}`;   /* draft badge · pin · reorder grip (store/drafts.js, store/sortorder.js) */
+      if(o.type==='med'){const d=medDose(o);html+=`<div style="min-width:0"><div class="rl-name">${o.name}${(window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> · '+tsBrand(o.name)+'</span>':''}</div><div class="rl-meta">${d.mg}${o.conc?' · <b>'+d.volume+'</b>':''} · ${o.freq}</div></div>${window.tsDoseClock?tsDoseClock(o):''}<span class="route-pill">${o.route}</span>`;}   /* the dose clock (store/medsafe.js) */
       else if(o.type==='fluid'){html+=`<div style="min-width:0"><div class="rl-name">${window.tsInfName?tsInfName(o):o.name}</div><div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate}</div></div><span class="route-pill">${o.kind==='cri'?'CRI':'IV'}</span>`;}
-      else{html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}</div></div>`;}
+      else{html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}</div></div>${window.tsRowTrend?tsRowTrend(o):''}`;}   /* the reading's trend (store/vitals.js) */
       html+=`</div><div class="hcells">`;
       if(o.cont&&o.kind&&window.tsInfCells){html+=tsInfCells(o);}else if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?String(o.rate||'').replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion('${o.id}',${h})">${lbl}</div></div>`;}}
-      else{for(let h=0;h<24;h++){const _c=TASKS.filter(x=>x.orderId===o.id&&Math.floor(x.sched/60)===h);const t=_c.find(x=>x.status)||_c.find(x=>x.sched===h*60);if(!t){html+=`<div class="cell"></div>`;continue;}const s=deriveStatus(t);if(s==='completed'&&t.severity){html+=`<div class="cell"><div class="mark abn ${t.severity>=2?'sev':''}" onclick="openCompletion('${t.id}')">${t.value}</div></div>`;continue;}html+=`<div class="cell"><div class="mark ${s}" onclick="openCompletion('${t.id}')" title="${o.name} · ${fmtTime(t.sched)}">${markContent(t,s)}</div></div>`;}}
+      else{for(let h=0;h<24;h++){const _c=TASKS.filter(x=>x.orderId===o.id&&Math.floor(x.sched/60)===h);const t=_c.find(x=>x.status)||_c.find(x=>x.sched===h*60)||_c[0];if(!t){html+=`<div class="cell"></div>`;continue;}const s=deriveStatus(t);if(s==='completed'&&t.severity){html+=`<div class="cell"><div class="mark abn ${t.severity>=2?'sev':''}" onclick="openCompletion('${t.id}')">${t.value}</div></div>`;continue;}const mv=t.movedFrom!=null;html+=`<div class="cell"><div class="mark ${s}${mv?' moved':''}" data-t="${t.id}" onclick="openCompletion('${t.id}')" title="${o.name} · ${fmtTime(t.sched)}${mv?' (moved from '+fmtTime(t.movedFrom)+')':''}">${markContent(t,s)}</div></div>`;}}
       html+=`</div></div>`;});
   });
   {const old=inner.querySelector('.nowline');if(old)old.remove();}
@@ -315,6 +317,7 @@ function openCompletion(id){
   $('#cd-title').textContent=o.name;
   $('#cd-sub').innerHTML=`${o.section}`+(o.type==='med'?` · ${medDose(o).mg} ${o.route}`:'');
   let body=`<div class="status-line ${s}"><span class="sw"></span>${sLabel} · scheduled ${fmtTime(t.sched)}</div>`;
+  if(window.tsCdExtra)body+=tsCdExtra(t);   /* the doctor's dose note and the last dose (store/medsafe.js) */
   body+=drow('Task',o.name)+drow('Category',o.section)+drow('Scheduled',fmtTime(t.sched));
   if(o.type==='med'){const d=medDose(o);body+=drow('Dose',d.mg)+drow('Volume',d.volume)+drow('Route',o.route)+drow('Frequency',o.freq);}
   if(t.status==='completed')body+=drow('Completed',fmtTime(t.completedMin))+drow('Completed by',t.by);

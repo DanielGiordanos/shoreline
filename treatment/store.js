@@ -108,6 +108,9 @@ function refreshSheet(id){ var ref=DB.collection(COL).doc(id), today=dayKey(), y
 function loadArchive(id){ ARCH=[]; DB.collection(COL).doc(id).collection(LOGC).get().then(function(qs){ if(CUR!==id) return; var all=[];
   qs.forEach(function(doc){ (doc.data().entries||[]).forEach(function(a){ all.push(a); }); }); ARCH=all; if(curDoc){ hydrate(); rerender(); } }).catch(function(){}); }
 var SECTION_ORDER=['Basic Observation','Continuous Infusions','Medications','Patient Care','Diagnostics'];
+/* row order: section, then pinned first, then the order someone dragged the rows into (order.rank), then when it was added (store/sortorder.js) */
+function orderRank(o){ return (o.pin?-1e9:0)+(o.rank!=null?+o.rank:1e6); }
+function orderCmp(a,b){ return (SECTION_ORDER.indexOf(a.section)-SECTION_ORDER.indexOf(b.section))||(orderRank(a)-orderRank(b))||String(a.id).localeCompare(String(b.id),undefined,{numeric:true}); }
 
 /* Start from an empty screen: the prototype's sample patient is not real data */
 var BLANK_VISIT={id:'',patient:'',client:'',species:'Dog',breed:'—',sex:'—',age:'—',weight:0,temp:'—',hr:'—',rr:'—',mm:'—',crt:'—',mentation:'—',dept:'ER',
@@ -134,7 +137,7 @@ function hydrate(){
   setVisit(visitFrom(d));
   /* own copies: an order edited on screen (frequency, rate…) must differ from the stored one so sync() sees the change and saves it */
   ORDERS=Object.keys(d.orders||{}).map(function(k){ return d.orders[k]?Object.assign({},d.orders[k]):d.orders[k]; }).filter(function(o){ return o&&(!o.dc||dcVisible(o)); })
-    .sort(function(a,b){ return (SECTION_ORDER.indexOf(a.section)-SECTION_ORDER.indexOf(b.section))||String(a.id).localeCompare(String(b.id),undefined,{numeric:true}); });
+    .sort(orderCmp);
   buildTasks();
   NOTES=(d.notes||[]).map(function(n){ return {min:isoToMin(n.at),type:n.type||'nursing',author:n.author||'—',role:n.role||'',body:n.body||'',_srv:1}; });
   AUDIT=ARCH.concat(d.audit||[]).map(function(a){ return {min:isoToMin(a.at),type:a.type||'doctor',desc:a.desc||'',who:a.who||'',_srv:1}; }).sort(function(a,b){ return a.min-b.min; });
@@ -150,8 +153,8 @@ buildTasks=function(){ if(!claim('tasks.build')) buildToday(); emit('tasks.built
 function buildToday(){
   TASKS=[]; var dk=dayKey(), marks=(curDoc&&curDoc.marks)||{};
   var adm=curDoc&&(curDoc.admitted_at||curDoc.created_at), from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
-  ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m&&!o.ordered_at) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return;   /* the admission cutoff is for the starter orders; a doctor's order shows from the time they chose */
-    TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
+  ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m&&!o.ordered_at) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return; if(o.not_before&&!m&&dayKey(new Date(o.not_before))===dk&&min<isoToMin(o.not_before)) return;   /* not_before: no slot earlier than that on its day (store/weight.js) · the admission cutoff is for the starter orders; a doctor's order shows from the time they chose */
+    var at=slotMin(o,dk,min); TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:at,movedFrom:at!==min?min:null,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
     TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,severity:0,adhoc:true}); });
@@ -210,7 +213,7 @@ function emptyHTML(){ return '<div class="ts-empty"><div class="ts-empty-card"><
   '<b>No patient open</b><span>Choose a patient from the IP Board, or start a new sheet.</span>'+
   '<div class="row"><button type="button" class="ts-btn" onclick="selectCTab(\'dash\')">IP Board</button><button type="button" class="ts-btn primary" onclick="tsNewSheet()">New sheet</button></div></div></div>'; }
 ['renderSheet','renderTimeline','renderNotes'].forEach(function(fn){ var tab={renderSheet:'sheet',renderTimeline:'timeline',renderNotes:'notes'}[fn];   /* Vitals and Rounds guard themselves (store/vitals.js, store/rounds.js) */
-  try{ var o=window[fn]; window[fn]=function(){ if(!CUR||!curDoc){ var el=document.getElementById('ctab-'+tab); if(el) el.innerHTML=CUR?'<div class="ts-empty"><div class="ts-empty-card"><span>Opening sheet…</span></div></div>':emptyHTML(); if(fn==='renderSheet') renderedFor=null; return; } if(fn==='renderSheet'){ renderedFor=CUR; var r=o.apply(this,arguments); requestAnimationFrame(scrollToNow); return r; } return o.apply(this,arguments); }; }catch(e){} });
+  try{ var o=window[fn]; window[fn]=function(){ if(!CUR||!curDoc){ var el=document.getElementById('ctab-'+tab); if(el) el.innerHTML=CUR?'<div class="ts-empty"><div class="ts-empty-card"><span>Opening sheet…</span></div></div>':emptyHTML(); if(fn==='renderSheet') renderedFor=null; return; } if(fn==='renderSheet'){ renderedFor=CUR; var r=o.apply(this,arguments); requestAnimationFrame(scrollToNow); emit('sheet.drawn'); return r; }   /* sheet.drawn: toolbar slots refill (seen.js, drafts.js) */ return o.apply(this,arguments); }; }catch(e){} });
 
 var renderedFor=null;
 /* code-status chip reflects the sheet (prototype had DNR hard-coded) */
@@ -224,14 +227,14 @@ function refreshPrototypeHeader(){ try{ refreshEstimate(); }catch(e){} try{ vLiv
 function refreshHeader(){ refreshPrototypeHeader(); emit('header.refresh'); }
 /* open the grid at "now" instead of midnight */
 function scrollToNow(){ var sh=document.getElementById('sheetScroll'); if(!sh) return; var x=240+(nowMin()/60)*54; sh.scrollLeft=Math.max(0,x-240-(sh.clientWidth-240)*0.35); }
-function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CUR&&document.querySelector('#sheetInner')){ buildGrid(); refreshHeader(); } else { renderSheet(); renderedFor=curDoc?CUR:null; } } else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='rounds') renderRounds(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); }catch(e){ console.warn(e); } updateChip(); emit('rendered'); }
+function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CUR&&document.querySelector('#sheetInner')){ buildGrid(); refreshHeader(); } else { renderSheet(); renderedFor=curDoc?CUR:null; } } else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='rounds') renderRounds(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); else if(currentCTab==='charges'&&window.tsRenderCharges) tsRenderCharges(); }catch(e){ console.warn(e); } updateChip(); emit('rendered'); }
 
 /* ---------- IP Board: every active sheet ---------- */
 function blocksFor(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), out=[];
   var adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;   /* same rule as the sheet: nothing is due before admission */
   for(var h=6;h<=20;h++){ var due=0, over=0, done=0, sched=0; if(h*60<from) continue;
-    Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont) return; if(freqTimes(o).indexOf(h)<0) return;
-      var m=marks[dk+'_'+id+'_'+(h*60)]; if(m&&m.status){ done++; return; } var t=h*60; if(t>n+18) sched++; else if(t>=n-18) due++; else over++; });
+    Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont||(window.tsWfOk&&!tsWfOk(o))) return; var h0=freqTimes(o).find(function(x){ return Math.floor(slotMin(o,dk,x*60)/60)===h; }); if(h0==null) return;
+      var m=marks[dk+'_'+id+'_'+(h0*60)]; if(m&&m.status){ done++; return; } var t=slotMin(o,dk,h0*60); if(t>n+18) sched++; else if(t>=n-18) due++; else over++; });
     var tot=due+over+done+sched; if(!tot) continue;
     out.push({h:h,status:over?'overdue':due?'due':sched?'scheduled':'completed',label:String(over||due||sched||done)}); }
   return out; }
@@ -445,6 +448,7 @@ function depositCard(){
     +'<div class="est-row"><span class="k">Current Charges</span><span class="v">'+m(cur)+'</span></div>'
     +'<div class="est-row"><span class="k">Deposit</span><span class="v">'+(hasDep?m(dep):'—')+'</span></div>'
     +'<div class="est-row"><span class="k">Remaining</span><span class="v '+color+'">'+remLabel+'</span></div>'
+    +(window.tsChProjRow?tsChProjRow():'')   /* projected cost if nothing changes (store/charges.js) */
     +'<div class="est-bar-wrap"><div class="est-bar"><div class="est-fill '+color+'" style="width:'+clamped.toFixed(1)+'%"></div><div class="est-cap"></div><div class="est-marklabel '+color+'" style="left:'+labelPos.toFixed(1)+'%">'+barLabel+'</div></div>'
     +'<div class="est-ends"><span><b>'+m(0)+'</b>Used up</span><span class="hi"><b>'+(hasDep?m(dep):'—')+'</b>Deposit</span></div></div>'
     +'<div class="est-note">'+info+(rem!=null&&rem<0?'Charges are past the deposit. Collect an additional deposit before continuing.':'Stay near the low end when possible. Do not exceed the high end without updated client authorization.')+'</div>'
@@ -493,7 +497,7 @@ window.openEstimate=function(){
     +'<label>Client initials<input id="esIni" maxlength="5" placeholder="JS" value="'+esc(e.initials||'')+'"></label>'
     +'<label>Approved at<input id="esAt" type="datetime-local" value="'+local+'"></label>'
     +'<label>Treatment plan # <input id="esPlan" placeholder="Optional" value="'+esc(e.plan&&e.plan!=='—'?e.plan:'')+'"></label>'
-    +'</div><p class="tm-note">Current charges come from the medical record. Update them when you check the account.</p>','Save estimate',function(){
+    +'</div>'+(window.tsEstPlanHTML?tsEstPlanHTML():'')+'<p class="tm-note">Current charges come from the medical record. Update them when you check the account.</p>','Save estimate',function(){
       var v=function(id){ return (document.getElementById(id)||{}).value||''; }, money=function(x){ var n=parseFloat(String(x).replace(/[$,\s]/g,'')); return isFinite(n)?Math.round(n*100)/100:NaN; };
       var lo=money(v('esLow')), hi=money(v('esHigh')), cur=v('esCur').trim()===''?0:money(v('esCur'));
       if(!(lo>=0)||!(hi>0)){ toast('Enter the low and high end'); return false; }
@@ -538,6 +542,9 @@ window.logout=function(){
      header.refresh         base refreshHeader     → loc · handoff · ops · header
      header.parts           loc/ops/handoff redrew a part → header (redraw the flat header)
      rendered               base rerender          → ops (alert bar)
+     sheet.drawn            base renderSheet       → seen · drafts (toolbar pills)
+     order.window           rx · fluids order windows → drafts ("your orders need approval")
+     orders.adding/.added   kernel addOrders       → drafts (an intern's orders become drafts) · sortorder (rescue drugs pinned)
      chip                   base updateChip        → tasks (badge, live list)
      task.charted           completeTask/saveTask adapter · Tasks tab · batch → safety (weight check)
      completion.open        openCompletion adapter → days (view-only on a past day)
@@ -555,10 +562,17 @@ window.tsHooks={list:function(){ var m=hookList.m||{}; return Object.keys(m).red
 
 /* ---------- orders: the one way to add or change them — the grid redraws and the change is saved ----------
    ORDERS holds the sheet's own copies (hydrate), so a changed order differs from the stored one and sync() writes it. */
+/* a treatment moved to another hour (drag on the grid, store/move.js): order.moves = {'<YYYYMMDD>_<scheduled min>': new min}.
+   The slot keeps its key (charting still saves under the original slot); only its time changes. */
+function slotMin(o,dk,min){ var m=o&&o.moves&&o.moves[dk+'_'+min]; return m!=null?m:min; }
 function redrawSheet(){ try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} } }
 function orderById(id){ return (ORDERS||[]).find(function(o){ return o.id===id; })||null; }
-function addOrders(list){ list.forEach(function(o){ ORDERS.push(o); }); buildTasks(); redrawSheet(); sync(); return list; }
-function updateOrder(id,patch){ var o=orderById(id); if(!o) return null; Object.assign(o,patch); buildTasks(); redrawSheet(); sync(); return o; }
+/* rebuild the day's tasks without losing what was charted on screen but not saved yet (the save is debounced) */
+function rebuildTasks(){ var prev={}; (TASKS||[]).forEach(function(t){ if(t.key) prev[t.key]=t; }); buildTasks(); var have={};
+  TASKS.forEach(function(t){ have[t.key]=1; var p=prev[t.key]; if(p&&p!==t){ t.status=p.status; t.by=p.by; t.completedMin=p.completedMin; t.value=p.value; t.notes=p.notes; } });
+  Object.keys(prev).forEach(function(k){ var p=prev[k]; if(!have[k]&&p.adhoc&&p.status&&orderById(p.orderId)){ p.order=orderById(p.orderId); TASKS.push(p); } }); }
+function addOrders(list){ emit('orders.adding',list); list.forEach(function(o){ ORDERS.push(o); }); try{ ORDERS.sort(orderCmp); }catch(e){} rebuildTasks(); redrawSheet(); sync(); emit('orders.added',list); return list; }   /* orders.adding: drafts.js marks an intern's orders as drafts */
+function updateOrder(id,patch){ var o=orderById(id); if(!o) return null; Object.assign(o,patch); rebuildTasks(); redrawSheet(); sync(); return o; }
 /* ---------- medication orders from the Pravix drug reference (dose suggested from the reference; doctor confirms or changes) ---------- */
 var DRUGS=null, drugsLoading=null;
 function loadDrugs(){ if(DRUGS) return Promise.resolve(DRUGS); if(drugsLoading) return drugsLoading;
@@ -590,7 +604,7 @@ function hourOpts(){ var ch=Math.floor(nowMin()/60), out='<option value="'+ch+'"
   for(var h=ch+1;h<24;h++) out+='<option value="'+h+'">'+fmtTime(h*60)+'</option>';
   out+='<optgroup label="Earlier today">'; for(var g=0;g<ch;g++) out+='<option value="'+g+'">'+fmtTime(g*60)+'</option>'; return out+'</optgroup>'; }
 /* after adding: scroll to the row, flash it, and say when the next one is due */
-function nextDueText(o){ var ts=freqTimes(o), ch=nowMin()/60;
+function nextDueText(o){ if(o.draft) return 'draft — waiting for a doctor to approve'; var ts=freqTimes(o), ch=nowMin()/60;
   if(o.freq==='PRN') return 'as needed';
   var up=ts.filter(function(h){ return h>=Math.floor(ch); }); if(up.length) return 'next '+fmtTime(up[0]*60);
   if(ts.length) return 'first '+fmtTime(ts[0]*60)+' (overdue)';
@@ -616,6 +630,8 @@ var OBS=[
   ['PCV / TS','obs','',['q6h','q8h','q12h','q24h'],'pcv ts hct packed cell'],
   ['Lactate','obs','mmol/L',['q2h','q4h','q6h','q12h'],'lactate'],
   ['Electrolytes','obs','',['q6h','q8h','q12h','q24h'],'lytes potassium sodium'],
+  ['Catalyst Chem15 CBC Lytes','diag','',['Once','q12h','q24h'],'chem chemistry chem15 cbc lytes electrolytes bloodwork panel catalyst idexx'],
+  ['Nova panel','obs','',['q4h','q6h','q8h','q12h','q24h'],'nova blood gas bgas lytes electrolytes lactate ionized calcium istat'],
   ['Ketones','obs','',['q6h','q8h','q12h','q24h'],'ketone dka'],
   ['Weight','obs','kg',['q12h','q24h'],'weigh'],
   ['Hydration check','obs','',['q4h','q6h','q8h','q12h'],'hydration dehydration skin tent'],
@@ -696,7 +712,7 @@ function openObsOrder(x){
     +'<div class="rx-lbl">'+(x.f.length?'Other':'Frequency')+'</div><div class="rx-chips">'+more.map(function(f){ return chip(f,false); }).join('')+'</div>'
     +'<div class="tm-grid" style="margin-top:14px"><label>First check<select id="obStart">'+hrs+'</select></label><label>Notes<input id="obNotes" placeholder="Optional"></label></div>',
     ex?'Update order':'Add to sheet', function(){ return tsObsSubmit(x,ex); });
-  window._obsFreq='';
+  window._obsFreq=''; emit('order.window',x.t==='diag'?'diag':x.t||'obs');
 }
 window.tsObsFreq=function(b){ document.querySelectorAll('#tsModal .rx-chip').forEach(function(c){ c.classList.toggle('on',c===b); }); window._obsFreq=b.dataset.f; };
 function tsObsSubmit(x,ex){
@@ -747,10 +763,10 @@ function openMedOrder(i){
     +'<label>First dose<select id="rxStart">'+hrs+'</select></label>'
     +'<label>Concentration <span id="rxConcU">(mg/mL)</span><input id="rxConc" inputmode="decimal" placeholder="Optional" oninput="tsRxConcEdit()"></label>'
     +'<label>Notes<input id="rxNotes" placeholder="Optional"></label>'
-    +'</div><div class="rx-stock" id="rxStock" style="display:none"></div><div class="rx-calc" id="rxCalc">Enter a dose to calculate</div><div class="rx-sugg" id="rxSugg"></div><div class="rx-range" id="rxRange"></div>'
+    +'</div><div class="rx-stock" id="rxStock" style="display:none"></div><div class="rx-calc" id="rxCalc">Enter a dose to calculate</div><div class="rx-sugg" id="rxSugg"></div><div class="rx-range" id="rxRange"></div><div id="rxPrn" style="display:none"></div>'
     +(canOrder?'':'<p class="rx-warn rx-block">Signed in as <b>'+esc(user().name||'—')+'</b>. Only doctors can place medication orders.</p>'),
     canOrder?'Add to sheet':'Close', function(){ return canOrder?tsRxSubmit():true; });
-  emit('rx.opened',i);
+  emit('rx.opened',i); emit('order.window','med');
   setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card');
     var best=bestRegimen(mine); if(best) tsRxPick('m',mine.indexOf(best),true); else tsStockAuto(); },30);
 }
@@ -781,21 +797,20 @@ window.tsRxCalc=function(edited){ var el=document.getElementById('rxCalc'), rg=d
   else { var tot=doseTotal(dose,unit,kg,sp); el.innerHTML='= <b>'+fmtN(tot)+' '+base+'</b>'+(per?' for '+kg+' kg':'')+(per==='m²'?' · BSA '+bsa(kg,sp).toFixed(2)+' m²':'')+(conc>0?' · <b>'+(tot/conc).toFixed(2)+' mL</b>':''); el.className='rx-calc ok'; }
   var e=RX&&RX.sel, s=RX&&RX.suggested;
   if(sg){ sg.innerHTML=(e&&s&&!RX.touched)?'Suggested from the reference'+(s.range?' (low end of '+esc(e.do)+')':'')+' — confirm or change the dose.':''; sg.style.display=sg.innerHTML?'block':'none'; }
-  var msg='';
-  if(e&&e.d&&dose>0&&unitOf(e)===unit){ var lo=e.d[0], hi=e.d[1]; if(lo!=null&&hi!=null&&(dose<lo-1e-9||dose>hi+1e-9)) msg='Outside the reference ('+esc(e.do)+'). <label class="rx-ok"><input type="checkbox" id="rxOk"> I confirm this dose</label>'; }
-  if(rg){ rg.innerHTML=msg; rg.style.display=msg?'block':'none'; } };
+  /* the dose bar, 24-hour total, overlapping drugs and PRN rules (store/medsafe.js) */
+  if(rg){ rg.innerHTML=''; rg.style.display='none'; } emit('rx.calc'); };
 function tsRxSubmit(){
   var v=function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
   var dose=parseFloat(v('rxDose')), unit=v('rxUnit'), route=v('rxRoute'), freq=v('rxFreq'), start=parseInt(v('rxStart'),10), conc=parseFloat(v('rxConc'));
   if(!(dose>0)){ toast('Enter the dose'); return false; }
   if(!route){ toast('Choose a route'); return false; }
   if(!freq){ toast('Choose a frequency'); return false; }
-  var rg=document.getElementById('rxRange'); if(rg&&rg.style.display!=='none'&&!(document.getElementById('rxOk')||{}).checked){ toast('Confirm the dose outside the reference'); return false; }
-  if(!allow('rx.validate')) return false;   /* e.g. duplicate needs a tick */
+  if(!allow('rx.validate')) return false;   /* duplicate needs a tick · an out-of-range dose needs a reason · a PRN needs its rules (safety.js, medsafe.js) */
   var x=RX.x, e=RX.sel, me=user(), now=new Date();
   var o={id:'m'+now.getTime().toString(36),type:'med',section:'Medications',name:x.n,dose:dose,unit:unit,route:route,freq:freq,start:isNaN(start)?Math.ceil(nowMin()/60):start,
     conc:conc>0?conc:null,conc_label:(conc>0&&RX.stockK!=null&&stockOf(x))?stockOf(x).s[RX.stockK][2]:null,conc_source:conc>0?(RX.stockK!=null?'hospital_stock':'doctor_entered'):null,notes:v('rxNotes'),drug_id:x.id,ordered_by:me.initials,ordered_by_name:me.name,ordered_at:now.toISOString(),dose_source:(e&&RX.suggested&&!RX.touched)?'reference_suggestion':'doctor_entered'};
   if(e) o.ref={dose:e.do,route:e.ro,freq:e.fo,indication:e.i,species:e.s,source:e.u||null};
+  emit('rx.build',o);   /* order.safety (why an out-of-range dose) · order.prn (how often, when) */
   var d=medDose(o);
   logEvent('doctor','Order added — <b>'+esc(x.n)+'</b> '+dose+' '+unit+' ('+d.mg+(o.conc?' = '+d.volume+' of '+(o.conc_label||o.conc+' '+unit.split('/')[0]+'/mL'):'')+') '+route+' '+freq,me.initials);
   addOrders([o]); emit('rx.added',o);
@@ -1097,7 +1112,7 @@ function flagsDirty(){ clearTimeout(alertT); alertT=setTimeout(function(){ if(!A
 function loadOf(s){ var n=nowMin(), dk=dayKey(), marks=s.marks||{}, due=0, over=0;
   var adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
   Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont) return;
-    freqTimes(o).forEach(function(h){ var t=h*60, m=marks[dk+'_'+id+'_'+t]; if(m&&m.status) return; if(t<from&&!o.ordered_at) return;
+    freqTimes(o).forEach(function(h){ var t=slotMin(o,dk,h*60), m=marks[dk+'_'+id+'_'+(h*60)]; if(m&&m.status) return; if(h*60<from&&!o.ordered_at) return;
       if(t<n-18) over++; else if(t<=n+60) due++; }); });
   return {due:due,over:over,score:due+over*2}; }
 function techOf(s){ return ((s.patient||{}).tech)||''; }
@@ -1396,8 +1411,9 @@ function item(k,v,o){ o=o||{}; var tag=o.on?'button type="button"':'div';
   return '<'+tag+' class="tsh-item'+(o.cls?' '+o.cls:'')+'"'+(o.on?' onclick="'+o.on+'"':'')+(o.title?' title="'+esc(o.title)+'"':'')+'><span class="tsh-k">'+k+'</span><span class="tsh-v">'+v+'</span></'+(o.on?'button':'div')+'>'; }
 var LOC_ICON='<svg class="tsh-ic" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 15V6m0 5h14v4m-14-2h14M7 8.5h3.5a2 2 0 0 1 2 2V11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function infoHTML(d){ var p=(d&&d.patient)||{}, W=weightInfo(d), out=[];
-  out.push(W.kg?item('Weight','<b>'+W.kg+' kg</b><small>'+esc(W.when)+'</small>'+(W.newer?'<small class="tsh-amber">Charted '+W.newer.v+' kg</small>':''),
-      {cls:W.newer?'amber':'',on:W.newer?'tsWeightReview('+W.newer.v+')':'',title:(W.newer?'Tap to review doses · ':'')+'Dosing weight — every dose on this sheet uses it · '+W.how+' '+W.when+(W.newer?' · newer charted weight '+W.newer.v+' kg ('+wtWhen(W.newer.at)+')':'')})
+  var WP=W.kg&&window.tsWtPlaus?tsWtPlaus(W.kg):null, WA=W.kg&&window.tsWtAgeH?tsWtAgeH(d):null;   /* believable for the breed? how old? (store/weight.js) */
+  out.push(W.kg?item('Weight','<b>'+W.kg+' kg</b><small>'+esc(W.when)+'</small>'+(WP?'<small class="tsh-coral">Check — '+esc(WP.short)+'</small>':W.newer?'<small class="tsh-amber">Charted '+W.newer.v+' kg</small>':(WA!=null&&WA>24?'<small class="tsh-amber">Weigh today</small>':'')),
+      {cls:WP?'coral':W.newer?'amber':'',on:WP?'tsWtCheckOpen()':W.newer?'tsWeightReview('+W.newer.v+')':'',title:(WP?WP.t+' · tap to check · ':'')+(W.newer?'Tap to review doses · ':'')+'Dosing weight — every dose on this sheet uses it · '+W.how+' '+W.when+(W.newer?' · newer charted weight '+W.newer.v+' kg ('+wtWhen(W.newer.at)+')':'')})
     :item('Weight','<b class="tsh-amber">Not set</b>',{title:'Add a weight to calculate doses'}));
   out.push(item('Service','<b>'+esc(deptName(VISIT.dept))+'</b>'));
   if(d){ var cur=hoCur(d), n=hoNext(d), pend=hoPending(d);
@@ -1460,8 +1476,8 @@ on('tasks.build',function(){ if(!VIEW_DK) return false;
   TASKS=[]; var dk=VIEW_DK, marks=(curDoc&&curDoc.marks)||{}, adm=curDoc&&(curDoc.admitted_at||curDoc.created_at);
   var from=(adm&&dayKey(new Date(adm))===dk)?(new Date(adm)-dkDate(dk))/60000:-1;
   ORDERS.forEach(function(o){ if(o.cont) return; var oa=o.ordered_at?dayKey(new Date(o.ordered_at)):null; if(oa&&oa>dk) return;   /* ordered after this day */
-    freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return;
-      TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
+    freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return; if(o.not_before&&!m&&dayKey(new Date(o.not_before))===dk&&min<(new Date(o.not_before)-dkDate(dk))/60000) return;
+      var at=slotMin(o,dk,min); TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:at,movedFrom:at!==min?min:null,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
     TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,severity:0,adhoc:true}); });
@@ -1504,7 +1520,7 @@ on('sheet.opening',function(id){ if(id!==CUR){ VIEW_DK=null; try{ document.body.
    the row fades off the grid at once (earlier days still show it as it ran); a 5-second Undo restores it. Doctors and Daniel only. */
 var DC_REASONS=[{k:'discontinued',l:'Discontinued',d:'No longer needed'},{k:'changed',l:'Changed',d:'Replaced by a new order'},
   {k:'error',l:'Entered in error',d:'Duplicate or wrong order'},{k:'discharged',l:'Patient discharged',d:'Leaving the hospital'}];
-function dcLabel(o){ return o&&o.dc?(o.dc_reason==='error'?'Entered in error':'Stopped'):''; }
+function dcLabel(o){ return o&&o.dc?(o.dc_reason==='error'?'Entered in error':o.dc_reason==='rejected'?'Not approved':'Stopped'):''; }
 /* a discontinued order stays on the grid for the day it was stopped (and for earlier days looked back at) */
 function dcVisible(o){ if(!o||!o.dc||!o.dc_at) return false; var dk=window.tsViewDk?tsViewDk():dayKey(); return dayKey(new Date(o.dc_at))>dk; }   /* a stopped order leaves the grid on the day it was stopped; earlier days still show it as it ran */
 /* no new slots after the stop time on the stop day; none at all on later days */
@@ -1537,9 +1553,10 @@ window.tsOrderPanel=function(id){ var o=oFind(id); if(!o) return; if(claim('orde
     +(o.dc?'<div class="op-dc-banner"><b>'+esc(dcLabel(o))+'</b> '+esc(fmtWhen(o.dc_at))+(o.dc_by_name?' by '+esc(o.dc_by_name):'')+(o.dc_note?'<br><small>'+esc(o.dc_note)+'</small>':'')+'</div>':'')
     +'<div class="op-hero"><div class="op-big">'+big+'</div>'+(sub?'<div class="op-sub">'+sub+'</div>':'')
       +(o.type!=='fluid'&&o.freq&&o.type==='med'?'<div class="op-freq"><span>'+esc(o.freq)+'</span>'+(nx&&!o.dc?'<small>'+esc(nx)+'</small>':'')+'</div>':(nx&&!o.dc&&o.type!=='med'?'<div class="op-freq"><small>'+esc(nx)+'</small></div>':''))+'</div>'
-    +slotDots(o)
+    +slotDots(o)+(o.safety&&window.tsMsSafetyHTML?tsMsSafetyHTML(o):'')
     +'<div class="op-list">'+row('First dose',o.start!=null&&o.type==='med'?esc(fmtTime(o.start*60)):'')+row('Ordered by',who?esc(who)+(o.ordered_at?' · '+esc(fmtWhen(o.ordered_at)):''):'')
-      +row('Dose source',esc(src))+row('Reference',o.ref&&o.ref.dose?esc(o.ref.dose+(o.ref.indication?' — '+o.ref.indication:'')):'')+row('Notes',o.notes?esc(o.notes):'')+'</div>'
+      +(window.tsMsPanelRows?tsMsPanelRows(o):'')+row('Dose source',esc(src))+row('Reference',o.ref&&o.ref.dose?esc(o.ref.dose+(o.ref.indication?' — '+o.ref.indication:'')):'')+row('Notes',o.notes?esc(o.notes):'')+'</div>'
+    +(window.tsPinBtn?tsPinBtn(o):'')   /* pin to the top of its section (sortorder.js) */
     +(o.dc?'':(can?'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderChange(\''+esc(o.id)+'\')">Change…</button><button type="button" class="op-btn danger" onclick="tsOrderStopAsk(\''+esc(o.id)+'\')">Discontinue</button></div>'
       :'<p class="op-foot">'+((window.tsViewDk&&tsViewDk()!==dayKey())?'Go back to today to change orders.':'Only doctors can change or stop orders.')+'</p>'));
   opShow(html); };
@@ -1566,7 +1583,7 @@ function stopOrder(id,reason,note){ var o=oFind(id); if(!o||!CUR||!curDoc) retur
   var redraw=function(){ ORDERS=ORDERS.map(function(x){ return x.id===id?dc:x; }).filter(function(x){ return !x.dc||dcVisible(x); }); buildTasks(); try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(_){} } };
   var rl=document.querySelector('#sheetInner .rl[onclick="tsOrderPanel(\''+id+'\')"]'), row=rl&&rl.closest('.grow');
   if(row&&!matchMedia('(prefers-reduced-motion: reduce)').matches){ row.style.height=row.offsetHeight+'px'; row.offsetHeight; row.classList.add('op-leaving'); setTimeout(redraw,340); } else redraw();
-  var u={updated_at:now,updated_by:me.initials,audit:U([{at:now,type:'doctor',desc:'Order '+(reason==='error'?'entered in error':'discontinued')+' — <b>'+esc(o.name)+'</b>'+(o.type==='med'?' '+esc(medDose(o).mg)+' '+esc(o.route||'')+' '+esc(o.freq||''):'')+((reason==='error'||reason==='discontinued')?'':' · '+esc(lbl))+(note?' · '+esc(note):''),who:me.initials,uid:me.uid}])};
+  var u={updated_at:now,updated_by:me.initials,audit:U([{at:now,type:'doctor',desc:'Order '+(reason==='error'?'entered in error':reason==='rejected'?'not approved':'discontinued')+' — <b>'+esc(o.name)+'</b>'+(o.type==='med'?' '+esc(medDose(o).mg)+' '+esc(o.route||'')+' '+esc(o.freq||''):'')+((reason==='error'||reason==='discontinued'||reason==='rejected')?'':' · '+esc(lbl))+(note?' · '+esc(note):''),who:me.initials,uid:me.uid}])};
   u['orders.'+id]=dc;
   return tsCommit(CUR,u).catch(function(e){ console.warn('[discontinue]',e); }); }
 window.tsOrderStop=function(){ var s=window._opDc||{}, o=oFind(s.id); if(!o) return; var note=((document.getElementById('opDcNote')||{}).value||'').trim();
@@ -1581,6 +1598,7 @@ function restoreOrder(sheet,id,before){ if(CUR!==sheet||!curDoc){ toast('Open th
   var u={updated_at:now,updated_by:me.initials,audit:U([{at:now,type:'doctor',desc:'Discontinue undone — <b>'+esc(o.name)+'</b>',who:me.initials,uid:me.uid}])}; u['orders.'+id]=o;
   tsCommit(sheet,u).catch(function(){}); toast(esc(o.name)+' restored'); }
 window.tsRestoreOrder=restoreOrder;
+window.tsStopOrder=stopOrder;
 /* a toast with an Undo button and a thin countdown line */
 function undoToast(msg,onUndo,ms){ ms=ms||5000; var w=document.getElementById('toastWrap'); if(!w){ toast(msg); return; }
   var el=document.createElement('div'); el.className='ctoast ts-undo';
@@ -1601,10 +1619,250 @@ window.tsOrderChange=function(id){ var o=oFind(id); if(!o) return; tsOrderClose(
       try{ if(RX){ RX.touched=true; RX.concTouched=!!o.conc; } tsRxCalc(true); }catch(e){}
       var h=document.querySelector('#tsModal h3'); if(h&&!h.querySelector('.op-chg')) h.insertAdjacentHTML('beforeend',' <span class="op-chg">Changing</span>'); },120); }); };
 /* the replacement was placed: stop the old order as "Changed" (a failed attempt keeps the change pending) */
-on('rx.added',function(n){ var old=window._opReplace; window._opReplace=null; if(old) stopOrder(old,'changed','Replaced by '+n.name+' '+n.dose+' '+n.unit+' '+n.route+' '+n.freq); });
+on('rx.added',function(n){ var old=window._opReplace; window._opReplace=null; if(old&&n.draft){ var od=oFind(old); if(od&&od.draft) stopOrder(old,'error','Replaced by a new draft'); return; }   /* an intern's change waits for approval; the old order keeps running (drafts.js) */
+  if(old) stopOrder(old,'changed','Replaced by '+n.name+' '+n.dose+' '+n.unit+' '+n.route+' '+n.freq); });
 /* closing the order window without placing it cancels the change */
 document.addEventListener('click',function(e){ if(window._opReplace&&e.target&&(e.target.matches('#tsModal .tm-scrim')||e.target.matches('#tsModal [data-x]'))) window._opReplace=null; },true);
 
+/* ═════════ TS DRAFTS — an intern's orders wait for a doctor's approval ═════════
+   Who drafts: Graduate Veterinarian Interns (window.TS_STAFF.interns, from the Directory titles at build time). The owner account can
+   try it from the toolbar in the preview (sessionStorage tsInternTry). Everyone else's orders go straight onto the sheet as before.
+   What is drafted: medications, IV fluids / CRIs and diagnostics (monitoring and patient care go straight on). An intern's Change… is a
+   draft that replaces the running order only when approved (order.draft.replaces); an intern's rate change is order.rate_draft.
+   Per intern (ts_settings/drafts, store below): drafts on or off, optionally "until" a date; the owner and the people the owner names change it
+   from the board (Intern drafts). An intern not listed there is in draft mode.
+   A draft has no slots (core freqTimes), runs no fluids, is not charged and shows hatched with a Draft badge. Doctors see "N to approve"
+   in the toolbar and on the board; Approve · Edit · Not approved (with a reason). Every step is in the audit. */
+var DRAFT_TYPES={med:1,fluid:1,diag:1};
+var DRAFT_CAP='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5L2 9Z M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5 M22 9v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+window.tsIsDrafter=function(){ var r=staffRole(); if(r==='admin'){ try{ return sessionStorage.getItem('tsInternTry')==='1'; }catch(e){ return false; } }
+  var me=normName(user().name); return !!me&&((window.TS_STAFF||{}).interns||[]).some(function(n){ return normName(n)===me; })&&tsDraftOnFor(user().name); };
+function drCanApprove(){ return canOrderTS()&&!tsIsDrafter(); }
+function drMine(o){ var me=user(); return !!(o&&o.draft&&((o.draft.uid&&o.draft.uid===me.uid)||o.draft.by===me.initials)); }
+function drLine(o){ if(o.type==='med'){ var d=medDose(o); return d.mg+(o.route?' '+o.route:'')+(o.freq?' '+o.freq:''); }
+  if(o.cont) return window.tsInfRateStr?tsInfRateStr(o):(o.rate||''); return o.freq||''; }
+function drWhen(iso){ try{ return fmtWhen(iso); }catch(e){ return ''; } }
+function drList(d){ d=d||curDoc; var O=(d&&d.orders)||{}, out=[]; Object.keys(O).forEach(function(k){ var o=O[k]; if(o&&!o.dc&&(o.draft||o.rate_draft)) out.push(o); }); return out; }
+
+/* new orders from an intern become drafts */
+on('orders.adding',function(list){ if(!tsIsDrafter()) return; var me=user(), now=new Date().toISOString(), names=[];
+  var rp=window._opReplace&&oFind(window._opReplace);   /* an intern's Change…: the draft replaces that order (or what the draft it redoes was replacing) once approved */
+  list.forEach(function(o){ if(!o||!DRAFT_TYPES[o.type]) return; o.draft={by:me.initials||null,by_name:me.name||null,uid:me.uid||null,at:now};
+    if(rp&&o.type==='med'&&!rp.dc){ var r=rp.draft?(rp.draft.replaces||null):rp.id; if(r) o.draft.replaces=r; } names.push('<b>'+esc(o.name)+'</b>'); });
+  if(!names.length) return; logEvent('doctor','Draft order'+(names.length>1?'s':'')+' — '+names.join(', ')+' · waiting for a doctor to approve',me.initials);
+  var viaRx=list.length===1&&list[0].type==='med';   /* the medication window already says "draft — waiting for a doctor to approve" */
+  if(!viaRx) setTimeout(function(){ toast(names.length>1?names.length+' drafts sent for approval':'Draft sent for approval'); },450); });
+/* a doctor editing an intern's draft: the new order is the approved one; the order the draft was replacing stops */
+var drRepl=null;
+on('rx.build',function(o){ var old=window._opReplace&&oFind(window._opReplace); drRepl=null; if(!old||!old.draft||tsIsDrafter()) return; var me=user();
+  o.approved={by:me.initials,by_name:me.name||null,at:new Date().toISOString(),draft_by:old.draft.by,draft_by_name:old.draft.by_name||null,edited:true}; drRepl=old.draft.replaces||null;
+  logEvent('doctor','Approved with changes — <b>'+esc(o.name)+'</b> (drafted by '+esc(old.draft.by_name||old.draft.by||'')+')',me.initials); });
+on('rx.added',function(o){ var r=drRepl; drRepl=null; if(r&&window.tsStopOrder) tsStopOrder(r,'changed','Replaced by '+o.name+' (approved)'); });
+
+/* ---------- approve · not approved · withdraw ---------- */
+window.tsDraftApprove=function(id,quiet){ var o=orderById(id); if(!o||!o.draft||!drCanApprove()) return false; var me=user(), now=new Date().toISOString(), d=o.draft;
+  var patch={draft:null,approved:{by:me.initials,by_name:me.name||null,at:now,draft_by:d.by,draft_by_name:d.by_name||null}};
+  if(o.cont){ patch.started_at=now; patch.start=new Date().getHours(); patch.rates=(o.rates||[]).map(function(r,i){ return i===0?Object.assign({},r,{at:now}):r; }); }
+  logEvent('doctor','Approved — <b>'+esc(o.name)+'</b> '+esc(drLine(o))+' (drafted by '+esc(d.by_name||d.by||'')+')',me.initials);
+  updateOrder(id,patch); if(d.replaces&&window.tsStopOrder) tsStopOrder(d.replaces,'changed','Replaced by '+o.name+' (approved)');
+  if(!quiet){ tsOrderClose(); toast(esc(o.name)+' approved'); } drPaint(); return true; };
+window.tsDraftApproveAll=function(){ var n=0; drList().slice().forEach(function(o){ if(o.draft&&tsDraftApprove(o.id,true)) n++; else if(o.rate_draft&&window.tsRateDraftApprove){ tsRateDraftApprove(o.id,true); n++; } });
+  tsOrderClose(); if(n) toast(n+' approved'); drPaint(); };
+var DR_WHY=['Dose','Drug choice','Route / frequency','Not needed','Let’s talk'];
+window.tsDraftRejectAsk=function(id){ var o=oFind(id); if(!o) return; window._drWhy=null;
+  var html='<div class="op-head"><span class="op-ic danger"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>'
+    +'<div><div class="op-kind">Not approved</div><h3>'+esc(o.name)+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<p class="op-lead">'+esc(drLine(o))+' — drafted by '+esc((o.draft&&(o.draft.by_name||o.draft.by))||'')+'. The intern sees your reason.</p>'
+    +'<div class="rx-chips dr-why">'+DR_WHY.map(function(w){ return '<button type="button" class="rx-chip" onclick="tsDraftWhy(this)">'+esc(w)+'</button>'; }).join('')+'</div>'
+    +'<input id="drNote" class="op-note" placeholder="Note for the intern (optional)">'
+    +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderPanel(\''+esc(id)+'\')">Back</button><button type="button" class="op-btn danger solid" onclick="tsDraftReject(\''+esc(id)+'\')">Not approved</button></div>';
+  opShow(html); };
+window.tsDraftWhy=function(b){ document.querySelectorAll('#tsOrderSheet .dr-why .rx-chip').forEach(function(x){ x.classList.toggle('on',x===b); }); window._drWhy=b.textContent; };
+window.tsDraftReject=function(id){ var o=oFind(id); if(!o||!drCanApprove()) return; var note=((document.getElementById('drNote')||{}).value||'').trim(), why=[window._drWhy,note].filter(Boolean).join(' — ');
+  tsOrderClose(); tsStopOrder(id,'rejected',why||null); toast(esc(o.name)+' not approved'); setTimeout(drPaint,400); };
+window.tsDraftWithdraw=function(id){ var o=oFind(id); if(!o||!drMine(o)) return; tsOrderClose(); tsStopOrder(id,'error','Draft withdrawn'); toast('Draft withdrawn'); setTimeout(drPaint,400); };
+window.tsDraftEdit=function(id){ var o=oFind(id); if(!o) return; tsOrderClose(); if(o.cont) return tsInfRateAsk(id); tsOrderChange(id); };
+
+/* ---------- the draft's own panel (before the regular order panel and the infusion card) ---------- */
+on('order.panel',function(o){ if(!o||!o.draft||o.dc) return false; tsDraftPanel(o); return true; },-1);
+function drPanelHTML(o){ var d=o.draft, rep=d.replaces&&oFind(d.replaces), can=drCanApprove()&&!(window.tsViewDk&&tsViewDk()!==dayKey());
+  var html='<div class="op-head"><span class="op-ic dr-ic">'+DRAFT_CAP+'</span>'
+    +'<div><div class="op-kind">Draft · '+esc((TYPE_L&&TYPE_L[o.type])||'Order')+(o.route?' · '+esc(o.route):'')+'</div><h3>'+esc(o.name)+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<div class="op-hero"><div class="op-big">'+esc(drLine(o))+'</div>'+(o.type==='med'&&o.dose!=null?'<div class="op-sub">'+esc(o.dose+' '+o.unit)+(o.conc?' · '+esc(medDose(o).volume):'')+'</div>':'')+'</div>'
+    +'<div class="dr-banner"><b>Waiting for a doctor’s approval</b><span>Drafted by '+esc(d.by_name||d.by||'')+' · '+esc(drWhen(d.at))+'. Nothing is given or charged until it’s approved.</span>'
+      +(rep?'<span>Replaces <b>'+esc(rep.name)+' '+esc(drLine(rep))+'</b> — that order keeps running until then.</span>':'')+'</div>'
+    +(o.safety&&window.tsMsSafetyHTML?tsMsSafetyHTML(o):'')
+    +'<div class="op-list">'+(o.type==='med'&&o.start!=null?'<div class="op-row"><span>First dose</span><b>'+esc(fmtTime(o.start*60))+'</b></div>':'')
+      +(o.prn?'<div class="op-row"><span>PRN</span><b>'+(o.prn.min?'q'+o.prn.min+'h at most':'')+(o.prn.when?' · when '+esc(o.prn.when.charAt(0).toLowerCase()+o.prn.when.slice(1)):'')+'</b></div>':'')
+      +(o.ref&&o.ref.dose?'<div class="op-row"><span>Reference</span><b>'+esc(o.ref.dose+(o.ref.indication?' — '+o.ref.indication:''))+'</b></div>':'')
+      +(o.notes?'<div class="op-row"><span>Notes</span><b>'+esc(o.notes)+'</b></div>':'')+'</div>';
+  if(can) html+='<div class="op-actions three"><button type="button" class="op-btn danger" onclick="tsDraftRejectAsk(\''+esc(o.id)+'\')">Not approved</button><button type="button" class="op-btn" onclick="tsDraftEdit(\''+esc(o.id)+'\')">Edit</button><button type="button" class="op-btn primary" onclick="tsDraftApprove(\''+esc(o.id)+'\')">Approve</button></div>';
+  else if(drMine(o)) html+='<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button><button type="button" class="op-btn danger" onclick="tsDraftWithdraw(\''+esc(o.id)+'\')">Withdraw draft</button></div>';
+  else html+='<p class="op-foot">A doctor approves this order before it goes on the schedule.</p><div class="op-actions one"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button></div>';
+  return html; }
+window.tsDraftPanel=function(o){ if(typeof o==='string') o=oFind(o); if(!o) return; opShow(drPanelHTML(o)); };
+/* an intern's rate change on a running infusion (fluids.js shows it on the infusion card) */
+window.tsRateDraftHTML=function(o){ var d=o&&o.rate_draft; if(!d) return ''; var can=drCanApprove(), to=window.tsInfRateStr?tsInfRateStr(o,d.v,d.u):(d.v+' '+d.u);
+  return '<div class="dr-banner"><b>Rate change waiting for approval</b><span>'+esc(to)+' — drafted by '+esc(d.by_name||d.by||'')+' · '+esc(drWhen(d.at))+(d.note?' · '+esc(d.note):'')+'</span>'
+    +(can?'<div class="dr-acts"><button type="button" class="op-btn danger" onclick="tsRateDraftApprove(\''+esc(o.id)+'\',false)">Not approved</button><button type="button" class="op-btn primary" onclick="tsRateDraftApprove(\''+esc(o.id)+'\',true)">Approve rate</button></div>':'')+'</div>'; };
+
+/* ---------- the row badge, the toolbar pill, the list, the board ---------- */
+window.tsDraftBadge=function(o){ if(!o) return ''; if(o.draft&&!o.dc) return '<span class="dr-badge" title="Draft by '+esc(o.draft.by_name||o.draft.by||'')+' — waiting for approval">'+DRAFT_CAP+'Draft</span>';
+  if(o.rate_draft&&!o.dc) return '<span class="dr-badge rate" title="Rate change waiting for approval">'+DRAFT_CAP+'Rate</span>'; return ''; };
+function drPaint(){ var el=document.getElementById('tsDrafts'); if(!el) return; var L=CUR&&curDoc?drList():[], drafter=tsIsDrafter(), admin=staffRole()==='admin', h='';
+  if(L.length) h='<button type="button" class="ts-seen dr-pill'+(drafter?' mine':'')+'" onclick="tsDraftList()" title="Draft orders on this sheet">'+DRAFT_CAP+L.length+(drafter?' waiting for approval':' to approve')+'</button>';
+  if(admin&&(window.__FS||drafter)) h+='<button type="button" class="ts-seen dr-try'+(drafter?' on':'')+'" onclick="tsInternTry()" title="Owner account: order as an intern would (only on this device, until the tab closes)">'+(drafter?'Intern mode on':'Try intern mode')+'</button>';
+  if(el.innerHTML!==h) el.innerHTML=h; }
+on('header.refresh',drPaint); on('rendered',drPaint); on('sheet.drawn',drPaint);
+window.tsInternTry=function(){ try{ if(sessionStorage.getItem('tsInternTry')==='1') sessionStorage.removeItem('tsInternTry'); else sessionStorage.setItem('tsInternTry','1'); }catch(e){}
+  toast(tsIsDrafter()?'Intern mode — your orders are drafts':'Intern mode off'); drPaint(); };
+window.tsDraftList=function(){ var L=drList(), can=drCanApprove(); if(!L.length){ tsOrderClose(); return; }
+  var html='<div class="op-head"><span class="op-ic dr-ic">'+DRAFT_CAP+'</span><div><div class="op-kind">Drafts · '+L.length+'</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<div class="op-list dr-list">'+L.map(function(o){ var d=o.draft||o.rate_draft, rate=!o.draft;
+      return '<div class="op-row" onclick="'+(rate?'tsInfPanel':'tsDraftPanel')+'(\''+esc(o.id)+'\')" style="cursor:pointer"><span>'+esc(drWhen(d.at).replace('Today · ',''))+'</span><b>'+esc(o.name)+' · '+esc(rate?'rate → '+(window.tsInfRateStr?tsInfRateStr(o,d.v,d.u):d.v):drLine(o))+'<small> — '+esc(d.by_name||d.by||'')+'</small></b></div>'; }).join('')+'</div>'
+    +(drCanEdit()?'<button type="button" class="op-link" onclick="tsInternsOpen()">Which interns need approval…</button>':'')
+    +(can?'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button><button type="button" class="op-btn primary" onclick="tsDraftApproveAll()">Approve all</button></div>'
+      :'<div class="op-actions one"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button></div>');
+  opShow(html,'wide'); };
+on('board.rows',function(list){ list.forEach(function(row){ var s=SHEETS.find(function(x){ return x._id===row._id; }); if(!s) return; var d=s._id===CUR&&curDoc?curDoc:s, n=drList(d).length;
+  if(n) row.alerts=[{t:'warn',x:n+' draft'+(n>1?'s':'')+' to approve'}].concat(row.alerts||[]); }); });
+
+/* ═════════ per-intern switch — Firestore ts_settings/drafts ═════════
+   { interns: { '<normName>': {name, on, until:'YYYY-MM-DD'|null, by, at} }, editors: ['email', …], log: [{at, by, who, change}] }
+   Read by everyone signed in; written by the owner, or by the emails in editors (who can't change editors) — rule: Firebase/firestore-ts-settings-rule.txt.
+   Until the rule is published the read fails quietly and every intern stays in draft mode. */
+var DR_SET={interns:{},editors:[],log:[]}, drSetUnsub=null;
+function drSetListen(){ if(drSetUnsub||typeof DB==='undefined'||!DB||!AUTH||!AUTH.currentUser) return;
+  try{ drSetUnsub=DB.collection('ts_settings').doc('drafts').onSnapshot(function(s){ var d=(s&&s.exists&&s.data())||{}; DR_SET={interns:d.interns||{},editors:(d.editors||[]).map(function(e){ return String(e).toLowerCase(); }),log:d.log||[]};
+      drPaint(); var p=document.querySelector('#tsOrderSheet .di-list'); if(p) tsInternsOpen(); try{ if(currentCTab==='dash') renderDash(); }catch(e){} },
+    function(e){ console.warn('[intern drafts settings]',e&&e.code); }); }catch(e){} }
+on('header.refresh',drSetListen); on('rendered',drSetListen); setTimeout(drSetListen,1500);
+function drKey(n){ return normName(n); }
+function drIso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+/* is this intern in draft mode today? (not listed: yes) */
+window.tsDraftOnFor=function(name){ var s=DR_SET.interns[drKey(name)]; if(!s) return true; if(s.on===false) return false; if(s.until) return drIso(new Date())<=String(s.until); return true; };
+function drUntilText(iso){ try{ var p=String(iso).split('-'); return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString([], {month:'short',day:'numeric',year:(+p[0]!==new Date().getFullYear()?'numeric':undefined)}); }catch(e){ return iso; } }
+function drCanEdit(){ var u=AUTH&&AUTH.currentUser; return staffRole()==='admin'||(!!u&&DR_SET.editors.indexOf(String(u.email||'').toLowerCase())>-1); }
+window.tsDraftCanEdit=drCanEdit;
+function drStatus(n){ var s=DR_SET.interns[drKey(n)];
+  if(!s||s.on!==false&&!s.until) return {on:true,t:'Drafts on'};
+  if(s.on===false) return {on:false,t:'Off — orders go straight onto the sheet'};
+  var live=tsDraftOnFor(n); return {on:live,until:s.until,t:live?'Drafts until '+drUntilText(s.until):'Ended '+drUntilText(s.until)+' — orders go straight on'}; }
+function drSave(patch,change,who){ var me=user(), now=new Date().toISOString(), entry={at:now,by:me.name||me.initials||'',who:who||'',change:change};
+  if(patch.interns) Object.keys(patch.interns).forEach(function(k){ DR_SET.interns[k]=Object.assign({},DR_SET.interns[k]||{},patch.interns[k]); });
+  if(patch.editors) DR_SET.editors=patch.editors.slice(); DR_SET.log=(DR_SET.log||[]).concat([entry]);
+  var data=Object.assign({},patch,{updated_at:now,updated_by:me.name||null}); try{ data.log=firebase.firestore.FieldValue.arrayUnion(entry); }catch(e){}
+  try{ DB.collection('ts_settings').doc('drafts').set(data,{merge:true}).catch(function(e){ console.warn('[intern drafts]',e); toast('Couldn’t save — '+(e&&e.code==='permission-denied'?'the database rule for intern settings isn’t published yet':'try again')); }); }catch(e){}
+  drPaint(); }
+window.tsInternSet=function(name,on){ if(!drCanEdit()) return; var k=drKey(name), cur=DR_SET.interns[k]||{}, me=user(), rec={name:name,on:!!on,until:on?(cur.until||null):null,by:me.name||null,at:new Date().toISOString()};
+  var I={}; I[k]=rec; drSave({interns:I},on?'drafts on':'drafts off',name); tsInternsOpen(); toast(name+(on?' — orders need approval':' — orders go straight onto the sheet')); };
+window.tsInternUntil=function(name,iso){ if(!drCanEdit()) return; var k=drKey(name), me=user(), v=iso||null, rec={name:name,on:true,until:v,by:me.name||null,at:new Date().toISOString()};
+  var I={}; I[k]=rec; drSave({interns:I},v?'drafts until '+drUntilText(v):'drafts on (no end date)',name); tsInternsOpen(); };
+window.tsInternEditor=function(email,add){ if(staffRole()!=='admin') return; email=String(email||'').trim().toLowerCase(); if(add&&!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(email)){ toast('Enter an email address'); return; }
+  var E=DR_SET.editors.filter(function(e){ return e!==email; }); if(add) E.push(email); drSave({editors:E},(add?'can change intern drafts: ':'removed: ')+email,''); tsInternsOpen(); };
+/* the panel: one row per intern */
+window.tsInternsOpen=function(){ if(!drCanEdit()){ toast('Only the owner and the people they name change this'); return; } var I=((window.TS_STAFF||{}).interns||[]).slice().sort(), owner=staffRole()==='admin', min=drIso(new Date());
+  var rows=I.map(function(n){ var st=drStatus(n), s=DR_SET.interns[drKey(n)]||{}, q=esc(n).replace(/'/g,"\\'");
+    return '<div class="di-row'+(st.on?'':' off')+'"><div class="di-who"><b>'+esc(n)+'</b><small>'+esc(st.t)+'</small></div>'
+      +'<div class="di-ctl"><div class="di-seg" role="group" aria-label="Drafts for '+esc(n)+'"><button type="button" class="'+(s.on!==false?'on':'')+'" onclick="tsInternSet(\''+q+'\',true)">On</button><button type="button" class="'+(s.on===false?'on':'')+'" onclick="tsInternSet(\''+q+'\',false)">Off</button></div>'
+      +(s.on!==false?'<label class="di-until"><span>until</span><input type="date" min="'+min+'" value="'+esc(s.until||'')+'" onchange="tsInternUntil(\''+q+'\',this.value)" aria-label="Drafts until (optional)"></label>':'')+'</div></div>'; }).join('');
+  var log=(DR_SET.log||[]).slice(-5).reverse().map(function(l){ return '<div class="op-row"><span>'+esc(drWhen(l.at))+'</span><b>'+esc((l.who?l.who+' — ':'')+l.change)+'<small> · '+esc(l.by||'')+'</small></b></div>'; }).join('');
+  var html='<div class="op-head"><span class="op-ic dr-ic">'+DRAFT_CAP+'</span><div><div class="op-kind">Intern drafts</div><h3>Graduate Veterinarian Interns</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<p class="op-lead">On: medications, fluids, CRIs and diagnostics wait for a doctor’s approval. Add an end date and drafts switch off by themselves after it.</p>'
+    +'<div class="di-list">'+(rows||'<p class="op-lead">No interns in the Directory.</p>')+'</div>'
+    +(owner?'<div class="rx-lbl op-lbl">Who else can change this</div><div class="di-eds">'+DR_SET.editors.map(function(e){ return '<span class="di-ed">'+esc(e)+'<button type="button" onclick="tsInternEditor(\''+esc(e)+'\',false)" aria-label="Remove '+esc(e)+'">×</button></span>'; }).join('')
+      +'<span class="di-add"><input id="diEd" type="email" placeholder="name@pravix.app" onkeydown="if(event.key===\'Enter\')tsInternEditor(this.value,true)"><button type="button" class="op-btn" onclick="tsInternEditor(document.getElementById(\'diEd\').value,true)">Add</button></span></div>':'')
+    +(log?'<div class="rx-lbl op-lbl">Recent changes</div><div class="op-list">'+log+'</div>':'')
+    +'<div class="op-actions one"><button type="button" class="op-btn" onclick="tsOrderClose()">Done</button></div>';
+  opShow(html,'wide'); };
+/* the board's toolbar: the way in, for the people who can change it */
+window.tsBoardTools=function(){ return drCanEdit()?'<button type="button" class="sb-wf-chip di-open" onclick="tsInternsOpen()" title="Which interns’ orders need approval">'+DRAFT_CAP+'Intern drafts</button>':''; };
+/* the order window tells an intern their orders need approval (rx.js · fluids.js emit order.window) */
+on('order.window',function(type){ if(!tsIsDrafter()||!DRAFT_TYPES[type]) return; var c=document.querySelector('#tsModal .tm-card'); if(!c||c.querySelector('.dr-note')) return;
+  var s=DR_SET.interns[drKey(user().name)], until=s&&s.on!==false&&s.until?' until '+drUntilText(s.until):'', p=c.querySelector('p');
+  var h='<div class="dr-note">'+DRAFT_CAP+'<span>'+(staffRole()==='admin'?'Intern mode — this order':'Your orders need')+' '+(staffRole()==='admin'?'will be a draft for a doctor to approve.':'a doctor’s approval'+until+'.')+'</span></div>';
+  if(p) p.insertAdjacentHTML('afterend',h); else c.insertAdjacentHTML('afterbegin',h); });
+/* ═════════ TS SORT ORDER — rows in the order the team wants them ═════════
+   · Drag the grip at the left edge of a row label (it appears on hover) up or down within its section; arrow keys on the grip do the same.
+     The new order is saved on the orders (order.rank) so everyone sees it.
+   · Pin to top (order panel): order.pin keeps a row first in its section. Rescue drugs ordered PRN (midazolam, diazepam, naloxone,
+     atropine, epinephrine, flumazenil, atipamezole) are pinned when they're added, so they're never hunted for in an emergency.
+   Sorting itself is base.js orderCmp (section → pinned → rank → when added). Anyone who charts can sort; past days are view-only. */
+var SO_RESCUE=/^(midazolam|diazepam|naloxone|atropine|epinephrine|flumazenil|atipamezole)$/i;
+var SO_GRIP='<svg viewBox="0 0 8 14" aria-hidden="true"><circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/></svg>';
+var SO_PIN='<svg class="rl-pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2l1.5 1.5L13 6l4 4 2.5-2.5L21 9l-6 6-1.4-1.4-3.3 3.3L8 19l-3-3 2.1-2.3L5.7 12 2 6l4-4z" fill="currentColor"/></svg>';
+function soCan(){ return canChart()&&!(window.tsViewDk&&tsViewDk()!==dayKey()); }
+/* what core grid puts at the start of each row label: the reorder grip, a pin, a draft badge */
+window.tsRowLead=function(o){ if(!o) return ''; var h='';
+  if(!o.dc&&soCan()) h+='<button type="button" class="rl-grip" aria-label="Reorder '+esc(o.name)+' — drag, or use the arrow keys" title="Drag to reorder" onpointerdown="tsSortDown(event,\''+esc(o.id)+'\')" onclick="event.stopPropagation()" onkeydown="tsSortKey(event,\''+esc(o.id)+'\')">'+SO_GRIP+'</button>';
+  if(o.pin&&!o.dc) h+='<span class="rl-pinwrap" title="Pinned to the top of '+esc(o.section)+'">'+SO_PIN+'</span>';
+  if(window.tsDraftBadge) h+=tsDraftBadge(o);
+  return h; };
+on('orders.adding',function(list){ list.forEach(function(o){ if(o&&o.type==='med'&&o.freq==='PRN'&&SO_RESCUE.test(String(o.name||'').trim())) o.pin=true; }); });
+
+/* ---------- save a section's order ---------- */
+function soSection(sec){ return (ORDERS||[]).filter(function(o){ return o.section===sec&&(!o.dc||dcVisible(o)); }); }
+function soApply(sec,ids){ var changed=0; ids.forEach(function(id,i){ var o=orderById(id); if(o&&o.rank!==i*10){ o.rank=i*10; changed++; } });
+  if(!changed) return false; ORDERS.sort(orderCmp); rebuildTasks(); redrawSheet(); sync(); return true; }
+window.tsSortMove=function(id,to){ var o=orderById(id); if(!o||!soCan()) return false; var L=soSection(o.section).map(function(x){ return x.id; }), from=L.indexOf(id); if(from<0) return false;
+  to=Math.max(0,Math.min(L.length-1,to)); if(to===from) return false; L.splice(from,1); L.splice(to,0,id); return soApply(o.section,L); };
+window.tsSortKey=function(e,id){ if(e.key!=='ArrowUp'&&e.key!=='ArrowDown') return; e.preventDefault(); e.stopPropagation(); var o=orderById(id); if(!o) return;
+  var L=soSection(o.section).map(function(x){ return x.id; }); if(tsSortMove(id,L.indexOf(id)+(e.key==='ArrowUp'?-1:1))) setTimeout(function(){ var g=document.querySelector('#sheetInner .grow[data-o="'+id+'"] .rl-grip'); if(g) g.focus(); },30); };
+window.tsPinToggle=function(id){ var o=orderById(id); if(!o||!soCan()) return; var on=!o.pin; tsOrderClose(); updateOrder(id,{pin:on||null}); try{ ORDERS.sort(orderCmp); redrawSheet(); }catch(e){}
+  toast(esc(o.name)+(on?' pinned to the top of '+esc(o.section):' unpinned')); };
+window.tsPinBtn=function(o){ if(!o||o.dc||!soCan()) return ''; return '<button type="button" class="op-link" onclick="tsPinToggle(\''+esc(o.id)+'\')">'+(o.pin?'Unpin':'Pin to the top of '+esc(o.section))+'</button>'; };
+
+/* ---------- drag ---------- */
+var soD=null;
+window.tsSortDown=function(e,id){ if(e.button!==0||!soCan()) return; e.preventDefault(); e.stopPropagation(); var row=document.querySelector('#sheetInner .grow[data-o="'+id+'"]'); if(!row) return;
+  var sec=row.dataset.sec, rows=[].slice.call(document.querySelectorAll('#sheetInner .grow[data-sec="'+sec.replace(/"/g,'\\"')+'"]')).filter(function(r){ return !r.classList.contains('sec-folded'); });
+  soD={id:id,row:row,rows:rows,y0:e.clientY,h:row.offsetHeight,from:rows.indexOf(row),to:rows.indexOf(row),pid:e.pointerId,moved:false};
+  try{ e.target.setPointerCapture(e.pointerId); }catch(_){} };
+document.addEventListener('pointermove',function(e){ var d=soD; if(!d||e.pointerId!==d.pid) return; var dy=e.clientY-d.y0; if(!d.moved&&Math.abs(dy)<4) return;
+  if(!d.moved){ d.moved=true; d.row.classList.add('so-drag'); document.body.classList.add('so-dragging'); }
+  e.preventDefault(); var to=Math.max(0,Math.min(d.rows.length-1,d.from+Math.round(dy/d.h))); d.to=to;
+  d.row.style.transform='translateY('+dy+'px)';
+  d.rows.forEach(function(r,i){ if(r===d.row) return; var s=0; if(d.from<to&&i>d.from&&i<=to) s=-d.h; else if(d.from>to&&i<d.from&&i>=to) s=d.h; r.style.transform=s?'translateY('+s+'px)':''; }); },true);
+function soEnd(drop){ var d=soD; soD=null; if(!d) return; d.rows.forEach(function(r){ r.style.transform=''; }); d.row.classList.remove('so-drag'); document.body.classList.remove('so-dragging');
+  if(!drop||!d.moved||d.to===d.from) return; var L=d.rows.map(function(r){ return r.dataset.o; }); L.splice(d.from,1); L.splice(d.to,0,d.id);
+  var o=orderById(d.id); if(o) soApply(o.section,L); }
+document.addEventListener('pointerup',function(e){ if(soD&&e.pointerId===soD.pid) soEnd(true); },true);
+document.addEventListener('pointercancel',function(e){ if(soD&&e.pointerId===soD.pid) soEnd(false); },true);
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&soD) soEnd(false); });
+/* ═════════ TS WORKFLOW — the board filtered by the kind of work ═════════
+   Board → Filters: Assistant (walks, feeding, water, cage care, weights) · Lab (diagnostics and bloodwork) · Controlled drugs ·
+   Fluids & CRIs · Medications. With one or more on, the board lists only patients who have that work ordered, and the hour blocks count
+   only that work (base.js blocksFor asks tsWfOk). Per person, per browser (localStorage tsWf_v1) — a convenience, never shared.
+   WF_CONTROLLED is the federal DEA-scheduled list for drugs in the reference; state-scheduled drugs (e.g. gabapentin) can be added. */
+var WF_KEY='tsWf_v1';
+var WF_CONTROLLED=/^(methadone|hydromorphone|morphine|fentanyl|oxymorphone|hydrocodone|remifentanil|alfentanil|buprenorphine|butorphanol|tramadol|midazolam|diazepam|alprazolam|ketamine|tiletamine \/ zolazepam|alfaxalone|phenobarbital|pregabalin)$/i;
+var WF_LAB=/pcv|glucose|lactate|electrolyte|lytes|nova|chem|ketone|cbc|urinalysis|blood gas|culture|cytology|coag|pt\/ptt|smear/i;
+var WF=[
+  {k:'assist',l:'Assistant',d:'Walks, feeding, water, cage care, weights',
+    t:function(o){ var n=String(o.name||''); return (o.type==='care'&&!/catheter|fluid|oxygen|physical therapy/i.test(n))||(o.type==='obs'&&/^(food|water|weight|appetite)/i.test(n)); }},
+  {k:'lab',l:'Lab',d:'Diagnostics and bloodwork',t:function(o){ return o.type==='diag'||(o.type==='obs'&&WF_LAB.test(String(o.name||''))); }},
+  {k:'ctrl',l:'Controlled drugs',d:'Opioids, benzodiazepines, ketamine, phenobarbital…',t:function(o){ return (o.type==='med'||o.cont)&&WF_CONTROLLED.test(String(o.name||'').trim()); }},
+  {k:'inf',l:'Fluids & CRIs',d:'Anything running IV',t:function(o){ return !!o.cont; }},
+  {k:'meds',l:'Medications',d:'Every medication order',t:function(o){ return o.type==='med'; }}];
+function wfSel(){ try{ var a=JSON.parse(localStorage.getItem(WF_KEY)||'{}'); return a[user().uid||'_']||[]; }catch(e){ return []; } }
+function wfSave(list){ try{ var a=JSON.parse(localStorage.getItem(WF_KEY)||'{}'); a[user().uid||'_']=list; localStorage.setItem(WF_KEY,JSON.stringify(a)); }catch(e){} }
+window.tsWfOn=function(){ return wfSel().length>0; };
+/* is this order part of the work being shown? (no filter: everything is) */
+window.tsWfOk=function(o){ var S=wfSel(); if(!S.length) return true; if(!o||o.dc||o.draft) return false; return WF.some(function(w){ return S.indexOf(w.k)>-1&&w.t(o); }); };
+window.tsWfMatches=function(d){ var O=(d&&d.orders)||{}; return Object.keys(O).some(function(k){ var o=O[k]; return o&&!o.dc&&!o.draft&&tsWfOk(o); }); };
+/* the board keeps only the patients with that work (runs after every other board.rows handler) */
+on('board.rows',function(list){ if(!tsWfOn()) return; for(var i=list.length-1;i>=0;i--){ var s=SHEETS.find(function(x){ return x._id===list[i]._id; }), d=s&&(s._id===CUR&&curDoc?curDoc:s);
+  if(!d||!tsWfMatches(d)) list.splice(i,1); } },99);
+window.tsWfChip=function(){ var S=wfSel(); if(!S.length) return ''; var names=WF.filter(function(w){ return S.indexOf(w.k)>-1; }).map(function(w){ return w.l; });
+  return '<button type="button" class="sb-wf-chip" onclick="tsWfClear()" title="Showing only this work — tap to show everything">'+esc(names.join(' · '))+'<span aria-hidden="true">×</span></button>'; };
+function wfPopHTML(){ var S=wfSel();
+  return '<div class="sb-filter-pop wf-pop"><div class="wf-h">Show the work</div>'+WF.map(function(w){ var on=S.indexOf(w.k)>-1;
+      return '<button type="button" class="fp-row wf-row'+(on?' on':'')+'" onclick="tsWfToggle(\''+w.k+'\')" aria-pressed="'+on+'"><span class="fp-lab"><b>'+esc(w.l)+'</b><small>'+esc(w.d)+'</small></span><i class="wf-ck"></i></button>'; }).join('')
+    +'<button class="fp-clear" onclick="tsWfClear();_closePop()">Show everything</button></div>'; }
+window.tsSbFilters=function(anchor){ _openPop(anchor,wfPopHTML()); };
+window.tsWfToggle=function(k){ var S=wfSel(), i=S.indexOf(k); if(i>-1) S.splice(i,1); else S.push(k); wfSave(S);
+  var p=document.getElementById('flPop'); if(p) p.innerHTML=wfPopHTML(); try{ renderDash(); }catch(e){} };
+window.tsWfClear=function(){ wfSave([]); try{ renderDash(); }catch(e){} };
 /* ═════════ TS OUTBOX — charting survives a wifi dead zone ═════════
    Every save is kept on this device first (localStorage, per signed-in user), then sent; it is crossed off when the database confirms it.
    Offline, the screen keeps working from memory and Firestore holds the writes until the connection returns. If the tab is closed or
@@ -1723,6 +1981,7 @@ window.tsWeightReview=function(kg){ kg=Number(kg); if(!(kg>0)||!CUR) return; var
   var html='<div class="op-head"><span class="op-ic t-wt"><svg viewBox="0 0 24 24" fill="none"><path d="M6 20h12a2 2 0 0 0 2-2l-1.4-9.3A2 2 0 0 0 16.6 7H7.4a2 2 0 0 0-2 1.7L4 18a2 2 0 0 0 2 2Z M9.5 7a2.5 2.5 0 0 1 5 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
     +'<div><div class="op-kind">'+(w?'Weight changed':'Dosing weight')+'</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
     +'<div class="op-hero"><div class="op-big">'+fmt(kg)+' kg</div>'+(w?'<div class="op-sub">was '+fmt(w)+' kg · '+(diff>0?'+':'−')+fmt(Math.abs(diff))+' kg ('+(diff>0?'+':'−')+Math.abs(pct).toFixed(1)+'%)</div>':'<div class="op-sub">No dosing weight on this sheet yet</div>')+'</div>'
+    +(window.tsWtPlausHTML?tsWtPlausHTML(kg,can):'')   /* heavy or light for the breed — pounds typed as kilograms? (store/weight.js) */
     +(big?'<div class="wt-warn">A change of more than 10% — re-weigh to confirm before changing doses.</div>':'')
     +(w?'<p class="op-lead">Doses on this sheet are calculated from <b>'+fmt(w)+' kg</b>.</p>':'')
     +(L.length?'<div class="wt-list">'+L.map(function(r){ return '<div class="wt-row"><div><b>'+esc(r.o.name)+'</b><small>'+r.what+'</small></div><div class="wt-ch"><span>'+esc(r.from)+'</span><i>→</i><b>'+esc(r.to)+'</b></div></div>'; }).join('')+'</div>'
@@ -1738,6 +1997,323 @@ window.tsSetDosingWeight=function(kg){ if(!CUR||!curDoc||!canOrderTS()) return; 
     audit:U([{at:now,type:'doctor',desc:'Dosing weight — <b>'+kg+' kg</b>'+(w?' (was '+w+' kg)':'')+(n?' · '+n+' dose'+(n>1?'s':'')+' recalculated':''),who:me.initials,uid:me.uid}])}).catch(function(){});
   toast('Dosing weight '+kg+' kg'+(n?' · '+n+' dose'+(n>1?'s':'')+' updated':'')); };
 
+/* ═════════ TS MEDSAFE — the dose bar, 24-hour totals, overlapping drugs, PRN rules and the dose clock ═════════
+   In the medication order window (store/rx.js emits rx.opened · rx.calc · rx.validate · rx.build):
+   · Dose bar: where the dose sits in the species range for that route (all reference doses for the species, same unit), drawn as a strip.
+   · 24-hour total: this order plus every other active order of the same drug (same unit) and its CRI, against the reference daily maximum
+     (the top dose × how often the reference allows it). Catches "q4h PRN on top of q8h".
+   · Overlap: drugs that shouldn't run together (two NSAIDs, NSAID + steroid, full + partial opioid …). MS_RULES below; a doctor reviews the list.
+   · Anything outside the reference needs one tap on a reason; the order keeps it (order.safety) and the tech sees it when giving the dose.
+   · PRN: "no more often than" and "give when". A charted reading that meets the trigger (pain score ≥ 3 …) puts the dose on the grid as due
+     (order.prn_due), or at the first time it's allowed.
+   On the grid: every medication row gets a dose clock (time since the last dose → the next one; PRN: when it can be given again).
+   Tap it for the last 24 hours of that drug and, for a PRN, Give now (an early dose needs a reason). */
+
+/* ---------- the reference span for a drug, species, unit and route ---------- */
+function msDrug(name){ var l=String(name||'').toLowerCase(); return (DRUGS||[]).find(function(d){ return d.n.toLowerCase()===l; })||null; }
+function msSpan(name,unit,route){ var x=msDrug(name), sp=spKey(); if(!x||!unit) return null;
+  var L=x.r.filter(function(e){ return e.d&&e.d[0]!=null&&unitOf(e)===unit&&(!sp||e.s.indexOf(sp)>-1); }); if(!L.length) return null;
+  var R=route?L.filter(function(e){ return routeOf(e)===route; }):[], use=R.length?R:L, lo=Infinity, hi=0, day=0, minH=null;
+  use.forEach(function(e){ var a=+e.d[0], b=e.d[1]!=null?+e.d[1]:a; lo=Math.min(lo,a); hi=Math.max(hi,b);
+    if(e.h&&e.h[0]>0){ day=Math.max(day,b*24/Math.min(24,e.h[0])); minH=minH==null?e.h[0]:Math.min(minH,e.h[0]); } else if(e.once) day=Math.max(day,b); });
+  return {lo:lo,hi:hi,day:day||null,minH:minH,route:R.length?route:'',sp:sp}; }
+window.tsDoseSpan=msSpan;
+function msN(n){ return fmtN(+n); }
+function msSpWord(sp){ return sp==='cat'?'cat':sp==='dog'?'dog':''; }
+
+/* ---------- doses per day and the 24-hour total of a drug ---------- */
+function msPerDay(freq,prnMin){ if(freq==='PRN') return prnMin?Math.max(1,Math.floor(24/prnMin)):0; if(freq==='Once') return 1; var iv=FREQ_INT[freq]; return iv?Math.max(1,Math.floor(24/Math.min(24,iv))):0; }
+/* a CRI of the same drug, as an amount per day in the order's unit (mg/kg + mg/kg/hr …) */
+function msCriDay(o,unit){ var u=String(o.rate_u||''), b=unit.split('/'), p=u.split('/'); if(!o.cont||Number(o.rate_v)===0) return 0;
+  var f=p[0]===b[0]?1:(p[0]==='mcg'&&b[0]==='mg')?0.001:(p[0]==='mg'&&b[0]==='mcg')?1000:null; if(f==null) return 0;
+  if(b[1]==='kg'&&p[1]!=='kg') return 0; if(b[1]!=='kg'&&p[1]==='kg') return 0;
+  var per=p[p.length-1]; return (Number(o.rate_v)||0)*f*(per==='min'?1440:per==='hr'?24:per==='day'?1:0); }
+function msTotal(name,unit,self){ var l=String(name||'').toLowerCase(), skip=window._opReplace, parts=[], tot=0;
+  (ORDERS||[]).forEach(function(o){ if(!o||o.dc||o.id===skip||String(o.name||'').toLowerCase().replace(/\s+cri$/,'')!==l) return;
+    if(o.cont){ var c=msCriDay(o,unit); if(c){ tot+=c; parts.push({o:o,amt:c,txt:'CRI '+(o.rate_v+' '+o.rate_u)}); } return; }
+    if(o.type!=='med'||o.unit!==unit) return; var n=msPerDay(o.freq,o.prn&&o.prn.min); if(!n) return; tot+=n*(+o.dose||0); parts.push({o:o,amt:n*(+o.dose||0),txt:o.dose+' '+o.unit+' '+(o.route||'')+' '+o.freq}); });
+  if(self&&self.n){ tot+=self.n*self.dose; }
+  return {tot:tot,parts:parts}; }
+
+/* ---------- drugs that shouldn't run together (a doctor reviews this list) ---------- */
+var MS_CLASS={
+  nsaid:/^(meloxicam|carprofen|robenacoxib|firocoxib|deracoxib|grapiprant|aspirin|ketoprofen|piroxicam)$/,
+  steroid:/^(dexamethasone|prednisone|prednisolone|methylprednisolone|hydrocortisone|budesonide|triamcinolone acetonide)$/,
+  mu:/^(methadone|hydromorphone|morphine|fentanyl|oxymorphone|hydrocodone|remifentanil|alfentanil)$/,
+  partial:/^(buprenorphine|butorphanol)$/,
+  benzo:/^(midazolam|diazepam|alprazolam)$/,
+  sero:/^(trazodone|tramadol|fluoxetine|sertraline|paroxetine|clomipramine|amitriptyline|doxepin|mirtazapine|selegiline|buspirone)$/,
+  clot:/^(heparin|enoxaparin|dalteparin|rivaroxaban|clopidogrel|aspirin)$/,
+  amino:/^(gentamicin|amikacin)$/,
+  loop:/^(furosemide|torsemide)$/,
+  raas:/^(enalapril|benazepril|ramipril|telmisartan|spironolactone|benazepril \/ spironolactone)$/,
+  kplus:/^(potassium chloride|potassium gluconate|potassium phosphate|potassium citrate)$/ };
+var MS_RULES=[
+  {a:'nsaid',b:'nsaid',tone:'crit',t:'Two NSAIDs together — risk of GI ulceration and kidney injury'},
+  {a:'nsaid',b:'steroid',tone:'crit',t:'An NSAID with a corticosteroid — risk of GI ulceration and perforation'},
+  {a:'steroid',b:'steroid',tone:'warn',t:'Two corticosteroids'},
+  {a:'mu',b:'partial',tone:'warn',t:'A partial or mixed opioid can blunt a full mu opioid'},
+  {a:'mu',b:'mu',tone:'warn',t:'Two full mu opioids — added sedation and respiratory depression'},
+  {a:'benzo',b:'benzo',tone:'warn',t:'Two benzodiazepines'},
+  {a:'sero',b:'sero',tone:'warn',t:'Two serotonergic drugs — watch for serotonin syndrome'},
+  {a:'clot',b:'clot',tone:'warn',t:'Two drugs that affect clotting — watch for bleeding'},
+  {a:'amino',b:'nsaid',tone:'warn',t:'An aminoglycoside with an NSAID — added kidney risk'},
+  {a:'amino',b:'loop',tone:'warn',t:'An aminoglycoside with a loop diuretic — added kidney and hearing risk'},
+  {a:'raas',b:'kplus',tone:'warn',t:'Potassium with an ACE inhibitor / spironolactone — watch potassium'} ];
+function msClasses(name){ var l=String(name||'').toLowerCase().replace(/\s+cri$/,'').replace(/\s*\(.*\)$/,''); return Object.keys(MS_CLASS).filter(function(k){ return MS_CLASS[k].test(l); }); }
+function msOverlaps(name){ var mine=msClasses(name), l=String(name||'').toLowerCase(), out=[], seen={}; if(!mine.length) return out;
+  (ORDERS||[]).forEach(function(o){ if(!o||o.dc||o.id===window._opReplace||(o.type!=='med'&&!o.cont)) return; var n=String(o.name||''); if(n.toLowerCase()===l) return;   /* the same drug: the duplicate banner */
+    var theirs=msClasses(n); MS_RULES.forEach(function(r){ var hit=(mine.indexOf(r.a)>-1&&theirs.indexOf(r.b)>-1)||(mine.indexOf(r.b)>-1&&theirs.indexOf(r.a)>-1); if(!hit||seen[r.t+n]) return; seen[r.t+n]=1; out.push({tone:r.tone,t:r.t,with:n}); }); });
+  return out; }
+window.tsMsOverlaps=msOverlaps;
+
+/* ---------- the checks for the order being written ---------- */
+var MS_WHY=['Per specialist','Titrating to effect','Patient-specific dose','Intended combination','Other'];
+function msRead(){ var g=function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
+  return {dose:parseFloat(g('rxDose')),unit:g('rxUnit')||'mg/kg',route:g('rxRoute'),freq:g('rxFreq')}; }
+function msChecks(v){ var x=RX&&RX.x; if(!x) return {flags:[],html:''}; var S=msSpan(x.n,v.unit,v.route), flags=[], html='', sp=spKey();
+  if(S&&v.dose>0){ var top=Math.max(S.hi*2,v.dose*1.12,S.lo*1.6)||1, pc=function(n){ return Math.max(0,Math.min(100,n/top*100)); };
+    var tone=(v.dose<S.lo*0.5-1e-9||v.dose>S.hi*2+1e-9)?'crit':(v.dose<S.lo-1e-9||v.dose>S.hi+1e-9)?'warn':'ok';
+    var rng=(S.lo===S.hi?msN(S.lo):msN(S.lo)+'–'+msN(S.hi))+' '+v.unit, who=[msSpWord(S.sp),S.route].filter(Boolean).join(' ');
+    var where=tone==='ok'?(S.lo===S.hi?'at the reference dose':((v.dose-S.lo)/(S.hi-S.lo)<1/3?'low end':(v.dose-S.lo)/(S.hi-S.lo)>2/3?'high end':'mid-range')):'';
+    var say=tone==='ok'?'In range'+(who?' for '+esc(who):'')+' · '+where
+      :(v.dose>S.hi?'Above':'Below')+' the '+(who?esc(who)+' ':'')+'range'+(v.dose>S.hi?' · '+msN(v.dose/S.hi)+'× the top':'');
+    if(tone!=='ok') flags.push({k:'range',tone:tone,t:(v.dose>S.hi?'Above':'Below')+' the reference ('+rng+')'});
+    var zl=pc(S.lo), zw=Math.max(1.5,pc(S.hi)-zl);
+    html+='<div class="ms-bar '+tone+'"><div class="ms-track"><span class="ms-zone" style="left:'+zl+'%;width:'+zw+'%"></span><i class="ms-mk" style="left:'+pc(v.dose)+'%"></i></div>'
+      +'<div class="ms-scale"><span style="left:'+zl+'%">'+esc(msN(S.lo))+'</span>'+(S.hi!==S.lo?'<span style="left:'+(zl+zw)+'%">'+esc(msN(S.hi))+'</span>':'')+'</div>'
+      +'<div class="ms-say"><b>'+say+'</b><span>Reference '+esc(rng)+'</span></div></div>'; }
+  else if(v.dose>0&&x.r.some(function(e){ return e.d&&(!sp||e.s.indexOf(sp)>-1); })&&!S) html+='<div class="ms-line">No '+(sp?msSpWord(sp)+' ':'')+'reference dose in '+esc(v.unit)+' — the range can’t be checked.</div>';
+  /* the 24-hour total */
+  var per=msPerDay(v.freq,v.freq==='PRN'?RX.prnMin:null);
+  if(S&&S.day&&v.dose>0&&per){ var T=msTotal(x.n,v.unit,{n:per,dose:v.dose}), over=T.tot>S.day*1.0001;
+    if(over||T.parts.length) html+='<div class="ms-line'+(over?' warn':'')+'"><b>24 h'+(v.freq==='PRN'?' if given as often as allowed':'')+': '+esc(msN(T.tot))+' '+esc(v.unit)+'</b>'
+      +(T.parts.length?' · with '+T.parts.map(function(p){ return esc(p.o.name+' '+p.txt.trim()); }).join(', '):'')+' · reference max '+esc(msN(S.day))+' '+esc(v.unit)+'/day</div>';
+    if(over) flags.push({k:'day',tone:'warn',t:'24-hour total '+msN(T.tot)+' '+v.unit+' (reference max '+msN(S.day)+')'}); }
+  /* overlapping drugs */
+  msOverlaps(x.n).forEach(function(f){ flags.push({k:'overlap',tone:f.tone,t:f.t+' ('+f.with+')'});
+    html+='<div class="ms-line '+f.tone+'"><b>'+esc(f.t)+'</b> · '+esc(f.with)+' is on the sheet</div>'; });
+  /* the weight the doses use */
+  var wp=window.tsWtPlaus&&tsWtPlaus(Number(VISIT.weight)||0); if(wp) html+='<div class="ms-line crit"><b>Check the weight</b> · '+esc(wp.t)+'</div>';
+  if(flags.length) html+='<div class="ms-why"><div class="ms-why-h">Reason to go ahead</div><div class="rx-chips">'+MS_WHY.map(function(w){ return '<button type="button" class="rx-chip'+(RX.msWhy===w?' on':'')+'" onclick="tsMsWhy(this)">'+esc(w)+'</button>'; }).join('')+'</div>'
+    +(RX.msWhy==='Other'?'<input id="msWhyNote" class="ms-note" placeholder="Why this dose?" value="'+esc(RX.msNote||'')+'" oninput="RX.msNote=this.value">':'')+'</div>';
+  return {flags:flags,html:html}; }
+window.tsMsWhy=function(b){ if(!RX) return; RX.msWhy=RX.msWhy===b.textContent?null:b.textContent; msPaint(); if(RX.msWhy==='Other') setTimeout(function(){ var n=document.getElementById('msWhyNote'); if(n) n.focus(); },20); };
+function msPaint(){ var rg=document.getElementById('rxRange'); if(!rg||!RX) return; var v=msRead(); if(v.freq==='PRN') prnDefault(v); var c=msChecks(v); RX.msFlags=c.flags;
+  rg.innerHTML=c.html; rg.style.display=c.html?'block':'none'; rg.className='rx-range ms'+(c.flags.some(function(f){ return f.tone==='crit'; })?' crit':c.flags.length?' warn':'');
+  prnPaint(v); }
+on('rx.calc',msPaint);
+on('rx.opened',function(){ if(!RX) return; RX.msWhy=null; RX.msNote=''; RX.prnMin=null; RX.prnWhen=null; RX.prnText='';
+  var f=document.getElementById('rxFreq'); if(f&&!f._ms){ f._ms=1; f.addEventListener('change',function(){ try{ tsRxCalc(); }catch(e){} }); } });
+on('rx.validate',function(){ if(!RX) return;
+  if(RX.msFlags&&RX.msFlags.length&&(!RX.msWhy||(RX.msWhy==='Other'&&!String(RX.msNote||'').trim()))){ var b=document.querySelector('#tsModal .ms-why');
+    if(b){ b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); b.scrollIntoView({block:'nearest',behavior:'smooth'}); }
+    toast(RX.msWhy==='Other'?'Say why in a few words':'Choose a reason to go ahead'); return false; }
+  if(msRead().freq==='PRN'){ if(!RX.prnMin){ toast('Choose how often the PRN can be given'); return false; }
+    if(!RX.prnWhen&&!String(RX.prnText||'').trim()){ var p=document.querySelector('#tsModal .ms-prn'); if(p){ p.classList.remove('shake'); void p.offsetWidth; p.classList.add('shake'); } toast('Say when to give it'); return false; } } });
+on('rx.build',function(o){ var me=user(), now=new Date().toISOString();
+  if(RX&&RX.msFlags&&RX.msFlags.length){ o.safety={flags:RX.msFlags.map(function(f){ return f.t; }),tone:RX.msFlags.some(function(f){ return f.tone==='crit'; })?'crit':'warn',
+      reason:RX.msWhy==='Other'?String(RX.msNote||'').trim():RX.msWhy,by:me.initials,by_name:me.name||null,at:now};
+    logEvent('doctor','Dose check — <b>'+esc(o.name)+'</b>: '+esc(o.safety.flags.join('; '))+' · '+esc(o.safety.reason),me.initials); }
+  if(o.freq==='PRN'&&RX){ var w=PRN_WHEN.find(function(x){ return x.l===RX.prnWhen; }); o.prn={min:RX.prnMin,when:RX.prnWhen==='Other'||!RX.prnWhen?String(RX.prnText||'').trim():RX.prnWhen,trig:w&&w.rx?{rx:w.rx,op:w.op,v:w.v==null?null:w.v}:null}; } });
+
+/* ---------- PRN: how often, and when ---------- */
+var PRN_EVERY=[1,2,4,6,8,12,24];
+var PRN_WHEN=[{l:'Pain score ≥ 2',rx:'^pain',op:'>=',v:2},{l:'Pain score ≥ 3',rx:'^pain',op:'>=',v:3},{l:'Vomiting',rx:'vomit',op:'yes'},{l:'Nausea signs',rx:'nausea',op:'yes'},
+  {l:'Temp ≥ 103.5 °F',rx:'^temp',op:'>=',v:103.5},{l:'Seizure'},{l:'Anxious / agitated'},{l:'Other'}];
+/* the shortest interval the reference allows for this species (and route, when it lists one) — doses with or without a number */
+function msMinH(name,route){ var x=msDrug(name), sp=spKey(); if(!x) return null; var L=x.r.filter(function(e){ return e.h&&e.h[0]>0&&(!sp||e.s.indexOf(sp)>-1); }), R=route?L.filter(function(e){ return routeOf(e)===route; }):[];
+  return (R.length?R:L).reduce(function(m,e){ return m==null?e.h[0]:Math.min(m,e.h[0]); },null); }
+function prnDefault(v){ if(RX.prnMin!=null) return; var m=msMinH(RX.x.n,v.route); RX.prnMin=m&&PRN_EVERY.indexOf(m)>-1?m:4; RX.prnAuto=!!(m&&PRN_EVERY.indexOf(m)>-1); }
+function prnPaint(v){ var el=document.getElementById('rxPrn'); if(!el||!RX) return; if(v.freq!=='PRN'){ el.innerHTML=''; el.style.display='none'; return; }
+  prnDefault(v);
+  var h='<div class="ms-prn"><div class="rx-lbl">No more often than'+(RX.prnAuto?' · from the reference':'')+'</div><div class="rx-chips">'
+    +PRN_EVERY.map(function(n){ return '<button type="button" class="rx-chip'+(RX.prnMin===n?' on':'')+'" onclick="tsPrnEvery('+n+')">q'+n+'h</button>'; }).join('')+'</div>'
+    +'<div class="rx-lbl">Give when</div><div class="rx-chips">'+PRN_WHEN.map(function(w){ return '<button type="button" class="rx-chip'+(RX.prnWhen===w.l?' on':'')+'" onclick="tsPrnWhen(this)">'+esc(w.l)+'</button>'; }).join('')+'</div>'
+    +(RX.prnWhen==='Other'?'<input id="prnText" class="ms-note" placeholder="Give when…" value="'+esc(RX.prnText||'')+'" oninput="RX.prnText=this.value">':'')
+    +((PRN_WHEN.find(function(w){ return w.l===RX.prnWhen; })||{}).rx?'<div class="ms-line ok">Charting a reading that meets this puts the dose on the sheet as due.</div>':'')+'</div>';
+  el.innerHTML=h; el.style.display='block'; }
+window.tsPrnEvery=function(n){ if(!RX) return; RX.prnMin=n; RX.prnAuto=false; msPaint(); };
+window.tsPrnWhen=function(b){ if(!RX) return; var l=b.textContent; RX.prnWhen=RX.prnWhen===l?null:l; msPaint(); if(RX.prnWhen==='Other') setTimeout(function(){ var n=document.getElementById('prnText'); if(n) n.focus(); },20); };
+
+/* ---------- doses given: this drug, today and yesterday (saved charting + anything charted this second) ---------- */
+function msNowMs(){ return dkDate(dayKey()).getTime()+nowMin()*60000; }
+function msSameDrug(name){ var l=String(name||'').toLowerCase(), ids={}; (ORDERS||[]).concat(Object.keys((curDoc&&curDoc.orders)||{}).map(function(k){ return curDoc.orders[k]; }))
+  .forEach(function(o){ if(o&&o.type==='med'&&String(o.name||'').toLowerCase()===l) ids[o.id]=o; }); return ids; }
+function msGiven(name){ var ids=msSameDrug(name), out=[], seen={}, today=dayKey(), t0=dkDate(today).getTime();
+  (TASKS||[]).forEach(function(t){ if(t.status!=='completed'||!ids[t.orderId]) return; var ms=t0+(t.completedMin!=null?t.completedMin:t.sched)*60000; if(t.key) seen[t.key]=1;
+    out.push({at:ms,by:t.by||'',o:ids[t.orderId],notes:t.notes||''}); });
+  var M=(curDoc&&curDoc.marks)||{}; Object.keys(M).forEach(function(k){ var m=M[k]; if(seen[k]||!m||m.status!=='completed'||!ids[m.orderId]) return; var dk=k.slice(0,8); if(dk===today) return;
+    out.push({at:dkDate(dk).getTime()+(m.min!=null?m.min:(m.sched||0))*60000,by:m.by||'',o:ids[m.orderId],notes:m.notes||''}); });
+  return out.sort(function(a,b){ return b.at-a.at; }); }
+window.tsMsGiven=msGiven;
+function msPrnMin(o){ return (o&&o.prn&&o.prn.min)||null; }
+function msAgo(ms){ var m=Math.max(0,Math.round(ms/60000)); if(m<1) return 'just now'; if(m<60) return m+' min'; var h=Math.floor(m/60), r=m%60; return h+' h'+(r?' '+r+' m':''); }
+function msClock(ms){ var d=new Date(ms), a=new Date(); a.setHours(0,0,0,0); var day=Math.floor((new Date(d).setHours(0,0,0,0)-a)/86400000);
+  return (day===0?'':day===-1?'yesterday ':day===1?'tomorrow ':(d.getMonth()+1)+'/'+d.getDate()+' ')+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
+function msAgoTxt(ms){ var t=msAgo(ms); return t==='just now'?t:t+' ago'; }
+/* the state of one order's clock */
+function msState(o){ var now=msNowMs(), G=msGiven(o.name), last=G[0]||null, t0=dkDate(dayKey()).getTime(), st={last:last,given:G,now:now};
+  if(o.freq==='PRN'){ var mh=msPrnMin(o); st.prn=true; st.min=mh; st.next=last&&mh?last.at+mh*3600000:null; st.ok=!st.next||st.next<=now; st.span=mh?mh*3600000:null; }
+  else { var open=(TASKS||[]).filter(function(t){ return t.orderId===o.id&&!t.status; }).sort(function(a,b){ return a.sched-b.sched; });
+    var nx=open.find(function(t){ return t0+t.sched*60000>=now-18*60000; })||null; st.next=nx?t0+nx.sched*60000:null; st.late=open.some(function(t){ return t0+t.sched*60000<now-18*60000; });
+    var iv=FREQ_INT[o.freq]; st.span=iv?iv*3600000:(last&&st.next?st.next-last.at:null); }
+  var day=G.filter(function(g){ return g.at>now-86400000; }); st.day=day;
+  return st; }
+window.tsMsState=msState;
+
+/* ---------- the dose clock on the grid ---------- */
+function msRing(frac,tone,label){ var r=8, c=2*Math.PI*r, f=Math.max(0,Math.min(1,frac||0));
+  return '<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="'+r+'" class="dc-bg"/>'+(f>0?'<circle cx="11" cy="11" r="'+r+'" class="dc-fg" stroke-dasharray="'+(c*f).toFixed(2)+' '+c.toFixed(2)+'" transform="rotate(-90 11 11)"/>':'')+'</svg>'+(label?'<b>'+label+'</b>':''); }
+function msShort(ms){ var m=Math.max(0,Math.round(ms/60000)); return m<60?m+'m':Math.round(m/60)+'h'; }
+window.tsDoseClock=function(o){ if(!o||o.type!=='med'||o.dc||o.draft||!curDoc||(window.tsViewDk&&tsViewDk()!==dayKey())) return ''; var s=msState(o), tone='', frac=0, lbl='', tip='';
+  var lastT=s.last?'Last given '+msClock(s.last.at)+' ('+msAgoTxt(s.now-s.last.at)+(s.last.by?', '+s.last.by:'')+')':'Not given yet';
+  if(s.prn){ if(!s.last){ tone='ok'; frac=1; tip=lastT+' · can give'; }
+    else if(s.ok){ tone='ok'; frac=1; tip=lastT+' · can give again now'; }
+    else { tone='wait'; frac=s.span?(s.now-s.last.at)/s.span:0; lbl=msShort(s.next-s.now); tip=lastT+' · can give again '+msClock(s.next)+' (in '+msAgo(s.next-s.now)+')'; } }
+  else { if(s.late){ tone='late'; frac=1; tip=lastT+' · a dose is overdue'; }
+    else if(s.next){ var a=s.last?s.last.at:s.next-(s.span||3600000); frac=(s.now-a)/Math.max(1,s.next-a); tone=s.next-s.now<=18*60000?'due':''; lbl=s.next-s.now<=18*60000?'':msShort(s.next-s.now); tip=lastT+' · next '+msClock(s.next)+(s.next>s.now?' (in '+msAgo(s.next-s.now)+')':' (due)'); }
+    else { tone='done'; frac=s.last?1:0; tip=lastT+' · nothing more today'; } }
+  return '<button type="button" class="dose-clock '+tone+'" onclick="event.stopPropagation();tsDoseOpen(\''+esc(o.id)+'\')" title="'+esc(tip)+'" aria-label="'+esc(o.name+' — '+tip)+'">'+msRing(frac,tone,lbl)+'</button>'; };
+
+/* ---------- the dose panel: last 24 hours of this drug, and Give now for a PRN ---------- */
+var MS_EARLY=['Doctor approved','Pain not controlled — doctor aware','Other'];
+window.tsDoseOpen=function(id,early){ var o=orderById(id)||oFind(id); if(!o) return; var s=msState(o), S=msSpan(o.name,o.unit,o.route), past=window.tsViewDk&&tsViewDk()!==dayKey();
+  var dayAmt=s.day.reduce(function(a,g){ return a+(g.o.unit===o.unit?(+g.o.dose||0):0); },0), over=S&&S.day&&dayAmt>S.day*1.0001;
+  var hero=s.last?'<div class="op-big">'+esc(msAgoTxt(s.now-s.last.at).replace(/^./,function(c){ return c.toUpperCase(); }))+'</div><div class="op-sub">Last given '+esc(msClock(s.last.at))+(s.last.by?' by '+esc(s.last.by):'')+'</div>'
+    :'<div class="op-big">Not given yet</div>';
+  var status='';
+  if(s.prn) status=s.ok?'<div class="dc-say ok">Can give now</div>':'<div class="dc-say wait">Can give again at <b>'+esc(msClock(s.next))+'</b> · in '+esc(msAgo(s.next-s.now))+'</div>';
+  else if(s.late) status='<div class="dc-say late">A dose is overdue</div>';
+  else if(s.next) status='<div class="dc-say">Next <b>'+esc(msClock(s.next))+'</b>'+(s.next>s.now?' · in '+esc(msAgo(s.next-s.now)):' · due now')+'</div>';
+  var rule=o.prn?'<div class="op-row"><span>PRN</span><b>'+(o.prn.min?'q'+o.prn.min+'h at most':'')+(o.prn.when?(o.prn.min?' · ':'')+'give when '+esc(o.prn.when.charAt(0).toLowerCase()+o.prn.when.slice(1)):'')+'</b></div>':'';
+  var list=s.day.length?'<div class="rx-lbl op-lbl">Last 24 hours · '+s.day.length+' dose'+(s.day.length>1?'s':'')+(o.unit?' · '+esc(msN(dayAmt))+' '+esc(o.unit)+(S&&S.day?' of '+esc(msN(S.day))+' max':''):'')+'</div>'
+    +'<div class="op-list">'+s.day.map(function(g){ return '<div class="op-row"><span>'+esc(msClock(g.at))+'</span><b>'+esc(g.o.dose+' '+g.o.unit+' '+(g.o.route||'')+' · '+g.o.freq)+(g.by?' · '+esc(g.by):'')+(g.notes?'<small> — '+esc(g.notes)+'</small>':'')+'</b></div>'; }).join('')+'</div>'
+    :'<p class="op-lead">No doses of '+esc(o.name)+' in the last 24 hours.</p>';
+  var act='', can=canChart()&&!past&&!o.dc&&o.freq==='PRN';
+  if(can){ var need=!s.ok||over||(S&&S.day&&dayAmt+(+o.dose||0)>S.day*1.0001);
+    if(need&&!early) act='<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button><button type="button" class="op-btn" onclick="tsDoseOpen(\''+esc(o.id)+'\',1)">Give early…</button></div>';
+    else if(need) act='<div class="ms-why"><div class="ms-why-h">'+(!s.ok?'Before the allowed time':'Over the 24-hour maximum')+' — reason</div><div class="rx-chips">'+MS_EARLY.map(function(w){ return '<button type="button" class="rx-chip" onclick="tsDoseWhy(this)">'+esc(w)+'</button>'; }).join('')+'</div><input id="dcWhyNote" class="ms-note" placeholder="Note (required for Other)" style="display:none"></div>'
+      +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsDoseOpen(\''+esc(o.id)+'\')">Back</button><button type="button" class="op-btn primary" onclick="tsDoseGive(\''+esc(o.id)+'\',1)">Give now</button></div>';
+    else act='<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button><button type="button" class="op-btn primary" onclick="tsDoseGive(\''+esc(o.id)+'\')">Give now</button></div>'; }
+  else act='<div class="op-actions one"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button></div>';
+  var html='<div class="op-head"><span class="op-ic t-med"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4l2.5 2M10 2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+    +'<div><div class="op-kind">Dose clock · '+esc(medDose(o).mg)+' '+esc(o.route||'')+' '+esc(o.freq||'')+'</div><h3>'+esc(o.name)+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<div class="op-hero">'+hero+status+'</div>'+(o.safety?msSafetyHTML(o):'')+(rule?'<div class="op-list">'+rule+'</div>':'')+list+act;
+  opShow(html); window._dcWhy=null; };
+window.tsDoseWhy=function(b){ document.querySelectorAll('#tsOrderSheet .ms-why .rx-chip').forEach(function(x){ x.classList.toggle('on',x===b); }); window._dcWhy=b.textContent;
+  var n=document.getElementById('dcWhyNote'); if(n){ n.style.display=window._dcWhy==='Other'?'block':'none'; if(window._dcWhy==='Other') n.focus(); } };
+window.tsDoseGive=function(id,early){ var o=orderById(id); if(!o||!canChart()) return; var me=user(), n=nowMin(), why='';
+  if(early){ why=window._dcWhy||''; if(why==='Other') why=((document.getElementById('dcWhyNote')||{}).value||'').trim(); if(!why){ toast('Choose a reason'); return; } }
+  var t=(TASKS||[]).find(function(x){ return x.orderId===id&&x.prnDue&&!x.status; });
+  if(!t){ var key=dayKey()+'_'+id+'_x'+Math.round(n), k=key, i=1; while((TASKS||[]).some(function(x){ return x.key===k; })) k=key+'_'+(i++);   /* two doses in one minute keep both */
+    t={id:k,key:k,orderId:id,order:o,sched:Math.round(n),severity:0}; TASKS.push(t); }
+  t.status='completed'; t.completedMin=n; t.by=me.initials||null; t.notes=why?'Early dose — '+why:null;
+  logEvent('med','<b>'+esc(o.name)+'</b> '+esc(medDose(o).mg)+' '+esc(o.route||'')+' PRN given'+(why?' early — '+esc(why):''),me.initials);
+  tsOrderClose(); sync(); emit('task.charted',t); try{ buildGrid(); }catch(e){} toast(esc(o.name)+' given'); };
+
+/* what the doctor said about an out-of-range dose: the order panel, the dose panel and the completion drawer show it */
+function msSafetyHTML(o){ var s=o.safety; if(!s) return ''; return '<div class="ms-note-card '+(s.tone||'warn')+'"><b>Dose check</b><span>'+esc((s.flags||[]).join(' · '))+'</span><small>'+esc(s.reason||'')+(s.by_name||s.by?' — '+esc(s.by_name||s.by):'')+'</small></div>'; }
+window.tsMsSafetyHTML=msSafetyHTML;
+window.tsMsPanelRows=function(o){ if(!o||o.type!=='med') return ''; var s=msState(o), r='';
+  r+='<div class="op-row"><span>Last given</span><b>'+(s.last?esc(msClock(s.last.at))+' · '+esc(msAgoTxt(s.now-s.last.at))+(s.last.by?' · '+esc(s.last.by):''):'Not yet')+'</b></div>';
+  if(o.prn) r+='<div class="op-row"><span>PRN</span><b>'+(o.prn.min?'q'+o.prn.min+'h at most':'')+(o.prn.when?' · when '+esc(o.prn.when.charAt(0).toLowerCase()+o.prn.when.slice(1)):'')+'</b></div>';
+  return r; };
+/* the completion drawer: before giving a dose */
+window.tsCdExtra=function(t){ var o=t&&t.order; if(!o||o.type!=='med') return ''; var s=msState(o), h='';
+  if(o.safety) h+=msSafetyHTML(o);
+  if(!t.status) h+='<div class="ms-cd">'+(s.last?'Last '+esc(o.name)+' '+esc(msClock(s.last.at))+' · '+esc(msAgoTxt(s.now-s.last.at))+(s.last.by?' ('+esc(s.last.by)+')':''):'First dose of '+esc(o.name))+(t.prnDue&&o.prn_due&&o.prn_due.why?' · due because '+esc(o.prn_due.why):'')+'</div>';
+  return h; };
+
+/* ---------- give-when: a reading that meets a PRN's trigger puts the dose on the sheet ---------- */
+function msMeets(tr,val){ var s=String(val==null?'':val).trim(); if(!s) return false;
+  if(tr.op==='yes') return !/^(no|none|neg|negative|0|-|n|nad|wnl|normal)$/i.test(s);
+  var m=s.match(/-?\d+(\.\d+)?/); if(!m) return false; var n=parseFloat(m[0]); return tr.op==='>='?n>=tr.v:tr.op==='<='?n<=tr.v:false; }
+on('task.charted',function(t){ if(!t||!t.order||t.order.type==='med'||(window.tsViewDk&&tsViewDk()!==dayKey())) return; var nm=String(t.order.name||''), me=user();
+  (ORDERS||[]).forEach(function(o){ if(!o||o.dc||o.type!=='med'||o.freq!=='PRN'||!o.prn||!o.prn.trig) return; var tr=o.prn.trig;
+    try{ if(!new RegExp(tr.rx,'i').test(nm)) return; }catch(e){ return; } if(!msMeets(tr,t.value)) return;
+    var s=msState(o), pending=o.prn_due&&new Date(o.prn_due.at).getTime()>(s.last?s.last.at:0); if(pending) return;
+    var at=s.ok?s.now:s.next, why=nm+' '+t.value+' at '+fmtTime(nowMin());
+    updateOrder(o.id,{prn_due:{at:new Date(at).toISOString(),why:why,by:me.initials||null}});
+    logEvent('med','<b>'+esc(o.name)+'</b> PRN '+(s.ok?'due':'scheduled '+esc(msClock(at)))+' — '+esc(why),me.initials);
+    toast(esc(nm)+' '+esc(t.value)+' → '+esc(o.name)+' PRN '+(s.ok?'is due':'at '+esc(msClock(at))+' (earliest allowed)')); }); });
+/* the due PRN dose as a task on today's grid, until a dose of that drug is given after it */
+on('tasks.built',function(){ if(!curDoc||(window.tsViewDk&&tsViewDk()!==dayKey())) return; var dk=dayKey(), t0=dkDate(dk).getTime();
+  (ORDERS||[]).forEach(function(o){ if(!o||o.dc||o.type!=='med'||o.freq!=='PRN'||!o.prn_due) return; var at=new Date(o.prn_due.at).getTime(); if(isNaN(at)||at<t0||at>=t0+86400000) return;
+    var min=Math.round((at-t0)/60000), key=dk+'_'+o.id+'_q'+min; if(TASKS.some(function(t){ return t.key===key; })) return;
+    if(msGiven(o.name).some(function(g){ return g.at>=at-60000; })) return;
+    TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:min,status:null,by:null,completedMin:null,value:null,notes:null,severity:0,prnDue:true}); }); });
+/* ═════════ TS WEIGHT — is this weight believable, how old is it, and a daily weigh-in ═════════
+   · Plausibility: the weight against the breed's usual adult range (WT_DOG / WT_CAT, approximate breed-standard weights) or, with no breed
+     match, the species. Far outside it — and especially when the number makes sense as pounds — the header, the dose review and the
+     medication order window say so ("40 kg is heavy for a Domestic Shorthair — if 40 was pounds, that's 18.1 kg"). Puppies and kittens
+     are only checked for being too heavy. A doctor can switch the dosing weight in one tap; nothing changes on its own.
+   · Age: the header's weight says when it was taken; older than a day it asks for a weigh-in.
+   · Daily weigh-in: an inpatient sheet without a Weight order gets one (q24h at 8 AM, order id auto_weight). Stopped by a doctor, it stays stopped. */
+var WT_DOG=[
+  [['chihuahua'],1.5,3],[['yorkshire terrier','yorkie'],2,3.5],[['pomeranian'],1.5,3.5],[['maltese'],2,4],[['toy poodle'],2,4],[['papillon'],2,4.5],
+  [['italian greyhound'],3,7],[['havanese'],3,6],[['shih tzu'],4,7.5],[['miniature poodle'],4.5,7.5],[['lhasa apso'],5,8],[['bichon','bichon frise'],5,8],
+  [['cavalier','cavalier king charles spaniel'],5.5,8.5],[['pug'],6,8.5],[['cairn terrier'],6,8],[['jack russell','jack russell terrier','parson russell terrier'],6,8],
+  [['west highland white terrier','westie'],6.5,9],[['miniature schnauzer'],5,9],[['dachshund'],3.5,14.5],[['miniature dachshund'],3.5,5.5],[['boston terrier'],5,11],
+  [['shetland sheepdog','sheltie'],6,12],[['shiba inu'],7,11],[['scottish terrier'],8,10],[['french bulldog'],8,13],[['beagle'],9,14],[['whippet'],9,19],
+  [['cocker spaniel','american cocker spaniel','english cocker spaniel'],10,15],[['corgi','pembroke welsh corgi','cardigan welsh corgi'],10,17],
+  [['staffordshire bull terrier'],11,17],[['border collie'],12,20],[['brittany'],14,18],[['pit bull','american pit bull terrier','pitbull'],14,27],
+  [['australian cattle dog','blue heeler','heeler'],15,22],[['siberian husky','husky'],16,27],[['australian shepherd','aussie'],16,32],[['samoyed'],16,30],
+  [['bulldog','english bulldog'],18,25],[['english springer spaniel','springer spaniel'],18,25],[['basset hound'],18,29],[['shar pei','chinese shar pei'],18,27],
+  [['american staffordshire terrier'],18,32],[['standard poodle'],18,32],[['airedale terrier','airedale'],18,29],[['belgian malinois','malinois'],18,36],
+  [['chow chow','chow'],20,32],[['vizsla'],20,30],[['german shorthaired pointer'],20,32],[['bull terrier'],22,32],[['german shepherd','german shepherd dog','gsd'],22,40],
+  [['labrador retriever','labrador','lab'],25,36],[['golden retriever','golden'],25,34],[['boxer'],25,32],[['weimaraner'],25,40],[['doberman','doberman pinscher'],27,45],
+  [['greyhound'],27,40],[['rhodesian ridgeback'],29,39],[['bernese mountain dog','bernese'],32,52],[['akita'],32,59],[['alaskan malamute','malamute'],32,43],
+  [['rottweiler'],35,60],[['bloodhound'],36,50],[['great pyrenees'],39,60],[['cane corso'],40,55],[['bullmastiff'],45,60],[['newfoundland'],45,70],
+  [['dogue de bordeaux'],45,65],[['great dane'],50,80],[['saint bernard','st bernard'],54,82],[['mastiff','english mastiff'],54,100]];
+var WT_CAT=[
+  [['domestic shorthair','dsh','domestic medium hair','dmh','domestic longhair','dlh','domestic'],2.5,7.5],[['siamese'],2.5,5.5],[['devon rex'],2.5,4.5],[['scottish fold'],2.5,6],
+  [['abyssinian'],3,5],[['russian blue'],3,5.5],[['sphynx'],3,5.5],[['persian'],3,6.5],[['himalayan'],3,6.5],[['bengal'],3.5,7],[['british shorthair'],3.5,8],
+  [['savannah'],3.5,11],[['ragdoll'],4.5,9],[['norwegian forest cat','norwegian forest'],4,9],[['maine coon'],4,11]];
+var WT_LB=2.20462;
+function wtTitle(k){ return k.length<=4?k.toUpperCase():k.replace(/\b[a-z]/g,function(c){ return c.toUpperCase(); }); }
+function wtYoung(){ var a=String(VISIT.age||'').toLowerCase(); if(!a||a==='—') return false; var n=parseFloat(a);
+  if(/(wk|week|mo|month)/.test(a)&&!/(\d\s*(y|yr|yrs|year))/.test(a)) return true; return /(y|yr|year)/.test(a)&&n<1; }
+function wtRange(){ var sp=spKey(); if(!sp) return null; var b=' '+String(VISIT.breed||'').toLowerCase().replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim()+' ', T=sp==='cat'?WT_CAT:WT_DOG, best=null;
+  T.forEach(function(r){ r[0].forEach(function(k){ if(b.indexOf(' '+k+' ')>-1&&(!best||k.length>best.k.length)) best={k:k,lo:r[1],hi:r[2],name:wtTitle(r[0][0])}; }); });
+  return best||(sp==='cat'?{lo:1.8,hi:8,name:'a cat',species:true}:{lo:1,hi:90,name:'a dog',species:true}); }
+/* null when the weight is believable; otherwise what to say and the likely real weight */
+window.tsWtPlaus=function(kg){ kg=Number(kg)||0; if(!(kg>0)) return null; var R=wtRange(); if(!R) return null; var young=wtYoung();
+  var heavy=R.species?kg>R.hi*1.4:kg>R.hi*1.6, light=!young&&(R.species?kg<R.lo*0.6:kg<R.lo*0.55); if(!heavy&&!light) return null;
+  var fmt=function(n){ return (Math.round(n*10)/10).toString(); }, usual=R.species?'':' (usually '+fmt(R.lo)+'–'+fmt(R.hi)+' kg)';
+  var fix=null, how='', a=kg/WT_LB, b=kg*WT_LB;
+  if(heavy&&a>=R.lo*0.7&&a<=R.hi*1.35){ fix=Math.round(a*10)/10; how='if '+fmt(kg)+' was pounds, that’s '+fmt(fix)+' kg'; }
+  else if(light&&b>=R.lo*0.7&&b<=R.hi*1.35){ fix=Math.round(b*10)/10; how='converted twice? '+fmt(kg)+' × 2.2 = '+fmt(fix)+' kg'; }
+  return {tone:'crit',fix:fix,short:fix?(heavy?fmt(kg)+' lb?':'× 2.2?'):(heavy?'heavy for breed':'light for breed'),
+    t:fmt(kg)+' kg is '+(heavy?'heavy':'light')+' for '+R.name+usual+(how?' — '+how:'')}; };
+window.tsWtPlausHTML=function(kg,can){ var p=tsWtPlaus(kg); if(!p) return '';
+  return '<div class="wt-plaus"><div><b>Check this weight</b><span>'+esc(p.t)+'</span></div>'+(p.fix&&can?'<button type="button" class="op-btn" onclick="tsSetDosingWeight('+p.fix+')">Use '+p.fix+' kg</button>':'')+'</div>'; };
+/* from the header: the same check with the choice */
+window.tsWtCheckOpen=function(){ var kg=Number(VISIT.weight)||0, p=tsWtPlaus(kg); if(!p) return; var can=canOrderTS();
+  var html='<div class="op-head"><span class="op-ic t-wt"><svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+    +'<div><div class="op-kind">Check the weight</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<div class="op-hero"><div class="op-big">'+kg+' kg</div><div class="op-sub">'+esc([VISIT.breed!=='—'?VISIT.breed:'',VISIT.age!=='—'?VISIT.age:''].filter(Boolean).join(' · '))+'</div></div>'
+    +'<p class="op-lead">'+esc(p.t)+'. Every dose on this sheet is calculated from this weight.</p>'
+    +(can?'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Keep '+kg+' kg</button>'+(p.fix?'<button type="button" class="op-btn primary" onclick="tsSetDosingWeight('+p.fix+')">Use '+p.fix+' kg</button>':'')+'</div>'
+      :'<p class="op-foot">A doctor decides the dosing weight. Re-weigh, then chart the Weight.</p><div class="op-actions one"><button type="button" class="op-btn" onclick="tsOrderClose()">OK</button></div>');
+  opShow(html); };
+/* when the dosing weight was taken (a reading that matches it, the time it was set, or admission) */
+window.tsWtAt=function(d){ d=d||curDoc; if(!d) return null; var kg=Number(VISIT.weight)||0, p=d.patient||{}, R=[]; try{ R=readings(d,/^weight$/i); }catch(e){}
+  for(var i=R.length-1;i>=0;i--){ var v=parseFloat((String(R[i].v).match(/\d+(\.\d+)?/)||[])[0]); if(Math.abs(v-kg)<0.05) return R[i].at; }
+  return p.weight_at||d.admitted_at||d.created_at||null; };
+window.tsWtAgeH=function(d){ var at=tsWtAt(d); if(!at) return null; var h=(Date.now()-new Date(at))/3600000; return isNaN(h)?null:h; };
+
+/* ---------- the daily weigh-in ---------- */
+var wtAsked={};
+function wtDaily(){ if(!CUR||!curDoc||wtAsked[CUR]||(window.tsViewDk&&tsViewDk()!==dayKey())||!canChart()) return; if(typeof dayReady==='function'&&!dayReady()) return; wtAsked[CUR]=1;
+  if(curDoc.board==='OP'||(curDoc.orders||{}).auto_weight) return;
+  if((ORDERS||[]).some(function(o){ return o&&!o.dc&&/^weight$/i.test(String(o.name||'').trim()); })) return;
+  var age=tsWtAgeH(), now=new Date().toISOString(), me=user();
+  var o={id:'auto_weight',type:'obs',section:'Basic Observation',name:'Weight',unit:'kg',freq:'q24h',start:8,auto:true,ordered_by:'Auto',ordered_by_name:'Daily weigh-in',ordered_at:now};
+  if(age!=null&&age<12) o.not_before=now;   /* weighed recently: the first weigh-in is tomorrow morning */
+  logEvent('care','Daily weigh-in added — <b>Weight</b> q24h at 8:00 AM',me.initials); addOrders([o]); }
+on('rendered',function(){ setTimeout(wtDaily,600); });
+window.tsWtDaily=function(again){ if(again&&CUR) delete wtAsked[CUR]; wtDaily(); };
 /* ═════════ TS FLUIDS — IV fluids and CRIs as first-class orders ═════════
    An infusion is one order (type 'fluid', cont: true, kind 'fluid' | 'cri') with its whole rate history:
      rates: [{at, v, u, by}] — every rate the doctor set, oldest first; rate_v / rate_u = the current one
@@ -1770,7 +2346,7 @@ function startMs(o){ return tms(o.started_at||o.ordered_at); }
 function endMs(o){ return o.dc&&o.dc_at?tms(o.dc_at):Infinity; }
 function rateAt(o,t){ var R=o.rates||[], cur=R[0]||(o.rate_v!=null?{v:o.rate_v,u:o.rate_u}:null); for(var i=0;i<R.length;i++){ if(tms(R[i].at)<=t) cur=R[i]; else break; } return cur; }
 /* mL given between a and b (ms), following every rate change */
-function volume(o,a,b){ a=Math.max(a,startMs(o)); b=Math.min(b,endMs(o),Date.now()); if(!(b>a)) return 0;
+function volume(o,a,b){ if(o.draft) return 0; a=Math.max(a,startMs(o)); b=Math.min(b,endMs(o),Date.now()); if(!(b>a)) return 0;
   var pts=[a].concat((o.rates||[]).map(function(r){ return tms(r.at); }).filter(function(t){ return t>a&&t<b; })).concat([b]), tot=0;
   for(var i=0;i<pts.length-1;i++){ var r=rateAt(o,pts[i]), m=r?mlhrOf(o,r.v,r.u):null; if(m) tot+=m*(pts[i+1]-pts[i])/3600000; }
   return tot; }
@@ -1779,7 +2355,7 @@ function fmtAmt(n,b){ if(b==='mcg'&&n>=1000) return fmtR(n/1000)+' mg'; return f
 function fmtMl(n){ return Math.round(n).toLocaleString()+' mL'; }
 
 /* ---------- the grid ---------- */
-window.tsInfCells=function(o){ if(!isInf(o)) return ''; var dk=window.tsViewDk?tsViewDk():dayKey(), d0=dkDate(dk).getTime(), now=Date.now(), st=startMs(o)||d0, end=endMs(o), html='', prev=null;
+window.tsInfCells=function(o){ if(!isInf(o)) return ''; if(o.draft){ var dh=''; for(var q=0;q<24;q++) dh+='<div class="cell inf"><div class="inf-fill off" onclick="tsOrderPanel(\''+o.id+'\')"></div></div>'; return dh; } var dk=window.tsViewDk?tsViewDk():dayKey(), d0=dkDate(dk).getTime(), now=Date.now(), st=startMs(o)||d0, end=endMs(o), html='', prev=null;
   for(var h=0;h<24;h++){ var hs=d0+h*3600000, he=hs+3600000, run=st<he&&end>hs, cls=!run?'off':(hs>now?'future':'on'), lbl='', tip='';
     if(run){ var r=rateAt(o,Math.min(he-1,end-1)), key=r?r.v+'|'+r.u:''; var m=r?mlhrOf(o,r.v,r.u):null;
       if(key!==prev){ lbl=r&&Number(r.v)===0?'Paused':(m!=null?fmtR(m):(r?fmtR(Number(r.v)):'')); prev=key; }
@@ -1790,8 +2366,9 @@ window.tsInfName=function(o){ if(!isInf(o)) return esc(o.name); return esc(o.nam
 window.tsInfMeta=function(o){ if(!isInf(o)) return esc(o.rate||''); var kg=kgNow(), m=mlhrOf(o,o.rate_v,o.rate_u,kg);
   if(Number(o.rate_v)===0) return '<b>Paused</b>';
   if(o.kind==='cri') return esc(o.rate_v+' '+o.rate_u)+(m!=null?' · <b>'+fmtR(m)+' mL/hr</b>':' · add concentration');
-  if(/\/kg/.test(o.rate_u)) return '<b>'+fmtR(m)+' mL/hr</b> · '+esc(o.rate_v)+' mL/kg/hr';
-  return '<b>'+fmtR(Number(o.rate_v))+' mL/hr</b>'+(kg?' · '+fmtR(o.rate_v/kg)+' mL/kg/hr':''); };
+  var mx=maintX(m,kg);
+  if(/\/kg/.test(o.rate_u)) return '<b>'+fmtR(m)+' mL/hr</b> · '+esc(o.rate_v)+' mL/kg/hr'+(mx!=null?' · '+mx+'× maint':'');
+  return '<b>'+fmtR(Number(o.rate_v))+' mL/hr</b>'+(kg?' · '+fmtR(o.rate_v/kg)+' mL/kg/hr':'')+(mx!=null?' · '+mx+'× maint':''); };
 /* section header: everything infused on the day shown (stopped infusions count too) */
 window.tsInfTotal=function(){ if(!curDoc) return ''; var dk=window.tsViewDk?tsViewDk():dayKey(), d0=dkDate(dk).getTime(), t=0;
   Object.keys(curDoc.orders||{}).forEach(function(k){ var o=curDoc.orders[k]; if(isInf(o)) t+=volume(o,d0,d0+86400000); });
@@ -1804,7 +2381,7 @@ window.tsInfPanel=function(id){ var o=oFind(id); if(!o) return; if(!isInf(o)){ t
   var big, sub;
   if(paused){ big='Paused'; sub='Rate set to 0'; }
   else if(o.kind==='cri'){ big=esc(o.rate_v+' '+o.rate_u); sub=(m!=null?'<b>'+fmtR(m)+' mL/hr</b>':'Add the concentration to get the pump rate')+(o.conc?' · '+esc(o.conc_label||(o.conc+' '+baseOf(o.rate_u)+'/mL')):'')+(kg?' · '+kg+' kg':''); }
-  else { big=(m!=null?fmtR(m):'—')+' mL/hr'; sub=/\/kg/.test(o.rate_u)?esc(o.rate_v)+' mL/kg/hr · '+kg+' kg':(kg?fmtR(o.rate_v/kg)+' mL/kg/hr · '+kg+' kg':''); }
+  else { big=(m!=null?fmtR(m):'—')+' mL/hr'; sub=(/\/kg/.test(o.rate_u)?esc(o.rate_v)+' mL/kg/hr · '+kg+' kg':(kg?fmtR(o.rate_v/kg)+' mL/kg/hr · '+kg+' kg':''))+(m!=null&&kg?'<br>'+esc(flMath(m,kg)):''); }
   var d0=dkDate(dayKey()).getTime(), vToday=volume(o,d0,d0+86400000), vAll=volume(o,0,Date.now()+1);
   var R=(o.rates||[]).slice().reverse(), C=(o.checks||[]).slice().reverse(), lastC=C[0];
   var hist=R.slice(0,6).map(function(r,i){ var mm=mlhrOf(o,r.v,r.u); return '<div class="op-row"><span>'+(i===R.length-1?'Started ':'')+esc(fmtWhen(r.at).replace('Today · ',''))+'</span><b>'+(Number(r.v)===0?'Paused':esc(o.kind==='cri'?r.v+' '+r.u+(mm!=null?' · '+fmtR(mm)+' mL/hr':''):fmtR(mm)+' mL/hr'))+(r.by?' · '+esc(r.by):'')+'</b></div>'; }).join('');
@@ -1815,13 +2392,21 @@ window.tsInfPanel=function(id){ var o=oFind(id); if(!o) return; if(!isInf(o)){ t
     +'<div class="op-hero"><div class="op-big">'+big+'</div>'+(sub?'<div class="op-sub">'+sub+'</div>':'')
       +'<div class="op-freq"><span class="inf-live'+(o.dc||paused?' off':'')+'"><i></i>'+(o.dc?'Stopped':paused?'Paused':'Running')+'</span><small>since '+esc(fmtWhen(o.started_at||o.ordered_at))+'</small></div></div>'
     +'<div class="inf-stats"><div><span>Today</span><b>'+fmtMl(vToday)+'</b></div><div><span>Since start</span><b>'+fmtMl(vAll)+'</b></div><div><span>Last check</span><b>'+(lastC?esc(fmtWhen(lastC.at).replace('Today · ',''))+(lastC.by?' · '+esc(lastC.by):''):'—')+'</b></div></div>'
+    +(window.tsRateDraftHTML?tsRateDraftHTML(o):'')
     +(hist?'<div class="rx-lbl op-lbl">Rate history</div><div class="op-list">'+hist+'</div>':'')
     +'<div class="op-list">'+row('Ordered by',o.ordered_by_name||o.ordered_by?esc(o.ordered_by_name||o.ordered_by)+(o.ordered_at?' · '+esc(fmtWhen(o.ordered_at)):''):'')+row('Carrier',o.carrier?esc(o.carrier):'')+row('Notes',o.notes?esc(o.notes):'')+'</div>'
     +(past?'<p class="op-foot">Go back to today to change this infusion.</p>':o.dc?'':
       '<div class="op-actions">'+(can?'<button type="button" class="op-btn" onclick="tsInfRateAsk(\''+esc(o.id)+'\')">Change rate</button>':'')
         +(canChart()?'<button type="button" class="op-btn'+(can?'':' wide')+'" onclick="tsInfCheckAsk(\''+esc(o.id)+'\')">Log check</button>':'')+'</div>'
-        +(can?'<button type="button" class="op-link danger" onclick="tsOrderStopAsk(\''+esc(o.id)+'\')">Stop infusion</button>':''));
+        +(window.tsPinBtn?tsPinBtn(o):'')+(can?'<button type="button" class="op-link danger" onclick="tsOrderStopAsk(\''+esc(o.id)+'\')">Stop infusion</button>':''));
   opShow(html); };
+/* an intern's rate change, approved or not (drafts.js shows the banner) */
+window.tsRateDraftApprove=function(id,ok){ var o=(ORDERS||[]).find(function(x){ return x.id===id; }); if(!o||!o.rate_draft||!canOrderTS()) return; var d=o.rate_draft, me=user(), now=new Date().toISOString();
+  if(!ok){ logEvent('doctor','Rate change not approved — <b>'+esc(o.name)+'</b> (drafted by '+esc(d.by_name||d.by||'')+')',me.initials); tsOrderClose(); updateOrder(id,{rate_draft:null}); toast('Rate change not approved'); return; }
+  var was=rateStr(o), next=Object.assign({},o,{rate_v:d.v,rate_u:d.u}), rate=rateStr(next);
+  logEvent('doctor','Rate change approved — <b>'+esc(o.name)+'</b> '+esc(was)+' → '+esc(rate)+' (drafted by '+esc(d.by_name||d.by||'')+')',me.initials);
+  tsOrderClose(); updateOrder(id,{rates:(o.rates||[]).concat([{at:now,v:d.v,u:d.u,by:d.by,by_name:d.by_name||null,approved_by:me.initials,approved_by_name:me.name||null,note:d.note||null}]),rate_v:d.v,rate_u:d.u,rate:rate,rate_draft:null}); toast(esc(o.name)+' · '+esc(rate)); };
+window.tsInfRateStr=function(o,v,u){ return rateStr(Object.assign({},o,v!=null?{rate_v:v,rate_u:u}:{})); };
 window._tsOldInf=window.openInfusion; window.openInfusion=function(id){ return tsInfPanel(id); };
 on('order.panel',function(o){ if(!isInf(o)) return false; tsInfPanel(o.id); return true; });
 
@@ -1843,6 +2428,9 @@ window.tsInfRateSave=function(id){ var o=(ORDERS||[]).find(function(x){ return x
   var v=parseFloat((document.getElementById('infV')||{}).value), u=(document.getElementById('infU')||{}).value, note=((document.getElementById('infNote')||{}).value||'').trim();
   if(!(v>=0)){ toast('Enter a rate'); return; } if(v===Number(o.rate_v)&&u===o.rate_u){ toast('That’s the current rate'); return; }
   var me=user(), now=new Date().toISOString(), was=rateStr(o);
+  if(window.tsIsDrafter&&tsIsDrafter()&&!o.draft){ var nx=Object.assign({},o,{rate_v:v,rate_u:u}); logEvent('doctor','Rate change drafted — <b>'+esc(o.name)+'</b> '+esc(was)+' → '+esc(rateStr(nx))+' · waiting for approval'+(note?' · '+esc(note):''),me.initials);
+    tsOrderClose(); updateOrder(id,{rate_draft:{v:v,u:u,note:note||null,by:me.initials,by_name:me.name||null,at:now}}); toast('Rate change sent for approval'); return; }   /* an intern's rate change waits for a doctor (drafts.js) */
+  if(o.draft){ var dr=Object.assign({},o,{rate_v:v,rate_u:u}); tsOrderClose(); updateOrder(id,{rate_v:v,rate_u:u,rates:[{at:now,v:v,u:u,by:me.initials,by_name:me.name||null}],rate:rateStr(dr)}); toast('Draft updated'); return; }
   var next=Object.assign({},o,{rate_v:v,rate_u:u}), rate=rateStr(next);
   logEvent('doctor',(v===0?'Infusion paused — <b>':'Rate changed — <b>')+esc(o.name)+'</b> '+esc(was)+' → '+esc(rate)+(note?' · '+esc(note):''),me.initials);
   tsOrderClose(); updateOrder(id,{rates:(o.rates||[]).concat([{at:now,v:v,u:u,by:me.initials,by_name:me.name||null,note:note||null}]),rate_v:v,rate_u:u,rate:rate}); toast(esc(o.name)+' · '+esc(rate)); };
@@ -1877,6 +2465,10 @@ function dupHTML(list){ return list.length?'<div class="ts-dup" role="alert"><di
   +'<label class="td-ok"><input type="checkbox" id="infDupOk"> Start a second one</label></div>':''; }
 function dupBlocked(list){ if(list.length&&!(document.getElementById('infDupOk')||{}).checked){ var b=document.querySelector('#tsModal .ts-dup'); if(b){ b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); } toast('Already running — tick “Start a second one”'); return true; } return false; }
 function maintMlHr(kg){ return kg?(spKey()==='cat'?80:132)*Math.pow(kg,0.75)/24:0; }
+/* the rate in the words doctors check it by: mL/kg/day and the multiple of maintenance (computed, never typed) */
+function maintX(m,kg){ var mt=maintMlHr(kg); return mt&&m>0?Math.round(m/mt*10)/10:null; }
+function flMath(m,kg){ if(!(m>0)||!kg) return ''; var x=maintX(m,kg); return fmtR(m*24/kg)+' mL/kg/day'+(x!=null?' · '+x+'× maint':''); }
+window.tsFlMath=flMath;
 window.tsOpenFluidOrder=function(name){ if(!CUR||!curDoc){ toast('Open a patient first'); return; } var can=canOrderTS(), kg=kgNow(), mt=maintMlHr(kg);
   modal('<h3>IV fluids</h3><p>'+esc(VISIT.patient)+' · <b>'+(kg?kg+' kg':'no weight')+'</b>'+(kg?'':' — add a weight for mL/kg/hr')+'</p><div id="flDup"></div>'
     +'<div class="tm-grid"><label class="wide">Fluid<input id="flName" list="flList" value="'+esc(name||FLUIDS[0])+'" oninput="tsFlDup()"><datalist id="flList">'+FLUIDS.map(function(f){ return '<option value="'+esc(f)+'">'; }).join('')+'</datalist></label>'
@@ -1889,13 +2481,13 @@ window.tsOpenFluidOrder=function(name){ if(!CUR||!curDoc){ toast('Open a patient
     +'<div class="rx-calc" id="flCalc">Enter a rate</div>'
     +(can?'':'<p class="rx-warn rx-block">Signed in as <b>'+esc(user().name||'—')+'</b>. Only doctors can order fluids.</p>'),
     can?'Start fluids':'Close', function(){ return can?flSubmit():true; });
-  setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card'); tsFlDup(); var i=document.getElementById('flV'); if(i) i.focus(); },30); };
+  setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card'); tsFlDup(); emit('order.window','fluid'); var i=document.getElementById('flV'); if(i) i.focus(); },30); };
 window.tsFlDup=function(){ var el=document.getElementById('flDup'); if(el) el.innerHTML=dupHTML(runningSame(((document.getElementById('flName')||{}).value||'').trim())); };
 window.tsFlMaint=function(f){ var v=document.getElementById('flV'), u=document.getElementById('flU'); if(!v||!u) return; v.value=fmtR(maintMlHr(kgNow())*f); u.value='mL/hr'; tsFlCalc(); };
 window.tsFlCalc=function(){ var el=document.getElementById('flCalc'); if(!el) return; var v=parseFloat((document.getElementById('flV')||{}).value), u=(document.getElementById('flU')||{}).value, kg=kgNow(), m=mlhrOf({},v,u,kg);
   if(!(v>0)){ el.textContent='Enter a rate'; el.className='rx-calc'; return; }
   if(m==null){ el.textContent='Add a weight to use mL/kg/hr'; el.className='rx-calc'; return; }
-  el.innerHTML='= <b>'+fmtR(m)+' mL/hr</b>'+(kg?' · '+fmtR(m/kg)+' mL/kg/hr · '+fmtMl(m*24)+'/day':''); el.className='rx-calc ok'; };
+  el.innerHTML='= <b>'+fmtR(m)+' mL/hr</b>'+(kg?' · '+fmtR(m/kg)+' mL/kg/hr · '+fmtMl(m*24)+'/day<br><b>'+esc(flMath(m,kg))+'</b>':''); el.className='rx-calc ok'; };
 function flSubmit(){ var g=function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
   var name=g('flName'), v=parseFloat(g('flV')), u=g('flU'); if(!name){ toast('Choose the fluid'); return false; } if(!(v>0)){ toast('Enter the rate'); return false; }
   if(mlhrOf({},v,u)==null){ toast('Add a weight to use mL/kg/hr'); return false; } if(dupBlocked(runningSame(name))) return false;
@@ -1906,14 +2498,15 @@ window.tsOpenCriOrder=function(name){ if(!CUR||!curDoc){ toast('Open a patient f
   modal('<h3>'+esc(def[0])+' CRI'+(window.tsBrand&&tsBrand(def[0])?' <span class="rx-brand">'+esc(tsBrand(def[0]))+'</span>':'')+'</h3><p>'+esc(VISIT.patient)+' · <b>'+(kg?kg+' kg':'no weight')+'</b>'+(kg?'':' — add a weight to calculate the rate')+'</p>'+dupHTML(runningSame(def[0]))
     +'<div class="tm-grid"><label>Dose<span class="rx-dose"><input id="crV" inputmode="decimal" placeholder="Enter dose" oninput="tsCriCalc()"><select id="crU" onchange="tsCriStock();tsCriCalc()">'+unitOpts(CRI_UNITS,def[1])+'</select></span></label>'
     +'<label>Concentration <span id="crCU">(mcg/mL)</span><input id="crC" inputmode="decimal" placeholder="In the syringe or bag" oninput="window._cri.stockK=null;tsCriStockPaint();tsCriCalc()"></label>'
+    +'<label>Pump rate <span>(mL/hr)</span><input id="crM" inputmode="decimal" placeholder="Or enter mL/hr" oninput="tsCriFromPump()"></label>'
     +'<label>Start<select id="crStart">'+hourOpts()+'</select></label>'
-    +'<label>Carrier<input id="crCar" placeholder="Optional — e.g. in 0.9% NaCl"></label></div>'
+    +'<label class="wide">Carrier<input id="crCar" placeholder="Optional — e.g. in 0.9% NaCl"></label></div>'
     +'<div class="rx-stock" id="crStock" style="display:none"></div>'
     +'<div class="tm-grid" style="margin-top:12px"><label class="wide">Notes<input id="crNotes" placeholder="Optional"></label></div>'
     +'<div class="rx-calc" id="crCalc">Enter a dose to calculate</div>'
     +(can?'':'<p class="rx-warn rx-block">Signed in as <b>'+esc(user().name||'—')+'</b>. Only doctors can order CRIs.</p>'),
     can?'Start CRI':'Close', function(){ return can?criSubmit():true; });
-  setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card'); tsCriStock(); tsCriCalc(); var i=document.getElementById('crV'); if(i) i.focus(); },30); };
+  setTimeout(function(){ var c=document.querySelector('#tsModal .tm-card'); if(c) c.classList.add('rx-card'); tsCriStock(); tsCriCalc(); emit('order.window','fluid'); var i=document.getElementById('crV'); if(i) i.focus(); },30); };
 function criStock(){ var n=window._cri&&window._cri.name; return (typeof STOCK!=='undefined'&&STOCK[n])||null; }
 window.tsCriStock=function(){ var st=criStock(), u=(document.getElementById('crU')||{}).value||'', cu=document.getElementById('crCU'); if(cu) cu.textContent='('+baseOf(u)+'/mL)';
   var ci=document.getElementById('crC'); if(st&&ci&&window._cri.stockK!=null){ var c=concFor(st.s[window._cri.stockK],baseOf(u)+'/kg'); ci.value=c!=null?String(+c.toPrecision(6)):''; if(c==null) window._cri.stockK=null; }
@@ -1922,10 +2515,13 @@ window.tsCriStockPaint=function(){ var el=document.getElementById('crStock'), st
   var html=st.s.map(function(s,k){ var ok=concFor(s,baseOf(u)+'/kg')!=null; return '<button type="button" class="rx-chip'+(window._cri.stockK===k?' on':'')+'"'+(ok?'':' disabled')+' onclick="tsCriPick('+k+')">'+esc(s[2])+' · undiluted</button>'; }).join('');
   el.innerHTML='<div class="rx-lbl">Stock strength</div><div class="rx-chips">'+html+'</div>'; el.style.display='block'; };
 window.tsCriPick=function(k){ window._cri.stockK=k; tsCriStock(); tsCriCalc(); };
+/* both ways: the pump rate a tech reads off the pump gives the dose (mL/hr × concentration ÷ kg) */
+window.tsCriFromPump=function(){ var g=function(id){ return parseFloat((document.getElementById(id)||{}).value); }, m=g('crM'), c=g('crC'), u=(document.getElementById('crU')||{}).value, kg=kgNow(), v=document.getElementById('crV');
+  if(!(m>0)||!(c>0)||!v){ tsCriCalc(true); return; } var per=amtPerHr(1,u,kg); if(!(per>0)){ tsCriCalc(true); return; } v.value=String(+(m*c/per).toPrecision(4)); tsCriCalc(true); };
 window.tsCriCalc=function(){ var el=document.getElementById('crCalc'); if(!el) return; var g=function(id){ return parseFloat((document.getElementById(id)||{}).value); };
   var v=g('crV'), c=g('crC'), u=(document.getElementById('crU')||{}).value, kg=kgNow();
   if(!(v>0)){ el.textContent='Enter a dose to calculate'; el.className='rx-calc'; return; } if(!kg){ el.textContent='Add a weight to calculate the rate'; el.className='rx-calc'; return; }
-  var amt=amtPerHr(v,u,kg), b=baseOf(u); el.innerHTML='= <b>'+fmtAmt(amt,b)+'/hr</b>'+(c>0?' · <b>'+fmtR(amt/c)+' mL/hr</b> of '+fmtAmt(c,b)+'/mL':' · add the concentration for mL/hr'); el.className='rx-calc ok'; };
+  var amt=amtPerHr(v,u,kg), b=baseOf(u), pm=document.getElementById('crM'); if(pm&&!arguments[0]&&document.activeElement!==pm) pm.value=c>0?fmtR(amt/c):''; el.innerHTML='= <b>'+fmtAmt(amt,b)+'/hr</b>'+(c>0?' · <b>'+fmtR(amt/c)+' mL/hr</b> of '+fmtAmt(c,b)+'/mL':' · add the concentration for mL/hr'); el.className='rx-calc ok'; };
 function criSubmit(){ var g=function(id){ return ((document.getElementById(id)||{}).value||'').trim(); }, C=window._cri||{};
   var v=parseFloat(g('crV')), u=g('crU'), c=parseFloat(g('crC')); if(!(v>0)){ toast('Enter the dose'); return false; }
   if(!kgNow()){ toast('Add a weight first'); return false; } if(dupBlocked(runningSame(C.name))) return false;
@@ -2100,8 +2696,8 @@ function wlItems(){ var dk=dayKey(), n=nowMin(), out=[];
     if(WL.mine&&!isMine(s0)) return; if(WL.loc&&(p.location||'')!==WL.loc) return;
     var adm=s0.admitted_at||s0.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
     Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.cont||o.dc) return;
-      freqTimes(o).forEach(function(h){ var t=h*60; if(t>n+60) return; if(t<from&&!o.ordered_at) return;
-        var key=dk+'_'+id+'_'+t, m=marks[key]; if(m&&m.status) return;
+      freqTimes(o).forEach(function(h0){ var t=slotMin(o,dk,h0*60), h=Math.floor(t/60); if(t>n+60) return; if(h0*60<from&&!o.ordered_at) return;
+        var key=dk+'_'+id+'_'+(h0*60), m=marks[key]; if(m&&m.status) return;
         /* a reading charted off-schedule in the same hour counts (the grid shows it in that cell) */
         if(Object.keys(marks).some(function(k){ var x=marks[k]; return x&&x.status&&x.orderId===id&&k.indexOf(dk+'_')===0&&Math.floor((x.sched!=null?x.sched:x.min||0)/60)===h; })) return;
         out.push({sheet:s0._id,s0:s0,p:p,o:o,id:id,key:key,t:t,state:t<n-18?'over':t<=n+18?'due':'next'}); }); }); });
@@ -2177,7 +2773,7 @@ window.tsBatch=function(h,sec){ if(!CUR||!curDoc) return; if(window.tsViewDk&&ts
       +(nv?btField(t,o):'')+'</label>'; }).join('');
   var html='<div class="op-head"><span class="op-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
     +'<div><div class="op-kind">Chart '+(secName?esc(secName)+' · ':'')+esc(fmtTime(h*60))+'</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
-    +'<p class="op-lead">Untick anything that wasn’t done. Readings are added when you type a value.</p><div class="bt-list">'+rows+'</div>'
+    +'<p class="op-lead">Untick anything that wasn’t done. Readings are added when you type a value.</p>'+(window.tsBtSayHTML?tsBtSayHTML():'')+'<div class="bt-list">'+rows+'</div>'
     +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Cancel</button><button type="button" class="op-btn primary" id="btGo" onclick="tsBatchGo()">Complete</button></div>';
   opShow(html,'wide'); tsBatchCount(); setTimeout(function(){ var f=document.querySelector('#tsOrderSheet .bt-val'); if(f) f.focus(); },120); };
 window.tsBatchVal=function(inp){ var row=inp.closest('.bt-row'), ck=row&&row.querySelector('.bt-ck'); if(ck) ck.checked=!!inp.value.trim(); tsBatchCount(); };
@@ -2194,6 +2790,55 @@ window.tsBatchGo=function(){ var B=window._batch||{}, me=user(), done=[], vals=[
     logEvent('doctor','Charting at '+esc(fmtTime(B.h*60))+' undone ('+done.length+')',me.initials); try{ buildGrid(); }catch(e){} sync(); });
   done.forEach(function(t){ emit('task.charted',t); }); };
 
+/* ═════════ TS SAY — charting an hour by voice (or by typing one line) ═════════
+   In the "Chart <section> · <hour>" form (tsBatch, store/tasks.js): tap the mic and say the readings —
+   "temp 101.2, heart rate 130, RR 24, pink, under 2, BAR, pain 1" — or type the same line and press Enter.
+   Each value goes into its row (names, short forms and the usual answers are understood); nothing is saved until Complete,
+   so the person checks every value first. Rows it filled flash; anything it couldn't place stays empty.
+   Uses the browser's speech recognition (as LUNA voice does); without it, the typed line still works. */
+var SAY_SR=window.SpeechRecognition||window.webkitSpeechRecognition, sayRec=null;
+var SAY_ALIAS={'temperature':['temperature','temp','t'],'heart rate':['heart rate','hr','pulse','heart'],'respiratory rate':['respiratory rate','resp rate','respiration rate','respirations','resp','rr','breathing'],
+  'mucous membrane':['mucous membranes','mucous membrane','membranes','mm','gums'],'crt':['capillary refill time','capillary refill','cap refill','crt','refill'],'mentation':['mentation','mental status','mentally'],
+  'pain score':['pain score','pain'],'weight':['weight','wt','weighs'],'blood glucose':['blood glucose','glucose','bg','sugar'],'blood pressure':['blood pressure','bp','pressure'],
+  'spo2':['spo2','oxygen saturation','pulse ox','sats','sat'],'food':['food','eating','ate'],'water':['water','drinking','drank'],'urination':['urination','urine','urinated','peed'],'defecation':['defecation','stool','feces','poop'],
+  'vomiting':['vomiting','vomit','vomited'],'lactate':['lactate'],'urine output':['urine output','uop']};
+function sayNorm(t){ return ' '+String(t||'').toLowerCase().replace(/(\d)\s*point\s*(\d)/g,'$1.$2').replace(/\bpoint\b/g,'.').replace(/[,;]/g,' , ')
+  .replace(/\b(less than|under|below|fewer than)\s*(two|2)\b/g,' <2 ').replace(/\b(more than|over|greater than|above|longer than)\s*(two|2)\b/g,' >2 ')
+  .replace(/\bone\b/g,'1').replace(/\btwo\b/g,'2').replace(/\bthree\b/g,'3').replace(/\bfour\b/g,'4').replace(/\bzero\b/g,'0').replace(/\bfive\b/g,'5')
+  .replace(/\s+/g,' ')+' '; }
+function sayRows(){ return [].slice.call(document.querySelectorAll('#tsOrderSheet .bt-val')).map(function(inp){ var t=(TASKS||[]).find(function(x){ return x.id===inp.dataset.id; }), n=t?String(t.order.name).toLowerCase().trim():'';
+  var key=Object.keys(SAY_ALIAS).find(function(k){ return n===k||n.indexOf(k)===0; }), opts=(typeof V_OPTS!=='undefined'&&V_OPTS[n])||[];
+  return {inp:inp,name:n,al:(key?SAY_ALIAS[key]:[]).concat([n]).sort(function(a,b){ return b.length-a.length; }),opts:opts.map(function(o){ return String(o).toLowerCase(); }),num:!opts.length}; }); }
+/* text → {row index: value} */
+function sayParse(text,R){ var s=sayNorm(text), out={}, used=[];
+  /* mentions of a row by name, earliest first */
+  var hits=[]; R.forEach(function(r,i){ r.al.forEach(function(a){ var re=new RegExp('(^|[\\s,])'+a.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&')+'(?=[\\s,])','g'), m;
+    while((m=re.exec(s))){ var st=m.index+m[1].length; if(!used.some(function(u){ return st<u[1]&&st+a.length>u[0]; })){ hits.push({i:i,at:st,end:st+a.length}); used.push([st,st+a.length]); } } }); });
+  hits.sort(function(a,b){ return a.at-b.at; });
+  hits.forEach(function(h,k){ if(out[h.i]!=null) return; var r=R[h.i], next=k<hits.length-1?hits[k+1].at:s.length, seg=s.slice(h.end,next).replace(/^[\s,:=is]*(is|of|was)?\s*/,'');
+    if(r.num){ var m=seg.match(/^-?\d+(\.\d+)?/)||seg.match(/-?\d+(\.\d+)?/); if(m) out[h.i]=m[0]; }
+    else { var o=r.opts.slice().sort(function(a,b){ return b.length-a.length; }).find(function(o){ return (' '+seg+' ').indexOf(' '+o+' ')>-1; }); if(o) out[h.i]=R[h.i].opts.indexOf(o); } });
+  /* answers said without the name ("pink", "BAR", "under 2") go to the one row that offers them */
+  R.forEach(function(r,i){ if(out[i]!=null||r.num) return; var o=r.opts.slice().sort(function(a,b){ return b.length-a.length; }).find(function(o){ if(!/[a-z<>]/.test(o)) return false; var others=R.some(function(q,j){ return j!==i&&q.opts.indexOf(o)>-1; }); return !others&&s.indexOf(' '+o+' ')>-1; });
+    if(o) out[i]=r.opts.indexOf(o); });
+  return out; }
+function sayApply(text){ var R=sayRows(); if(!R.length) return 0; var P=sayParse(text,R), n=0;
+  Object.keys(P).forEach(function(i){ var r=R[i], v=P[i]; if(!r.num){ var opts=(V_OPTS[r.name]||[]); v=opts[v]; } if(v==null||v==='') return;
+    r.inp.value=String(v); try{ tsBatchVal(r.inp); }catch(e){} n++; var row=r.inp.closest('.bt-row'); if(row){ row.classList.remove('bt-said'); void row.offsetWidth; row.classList.add('bt-said'); } });
+  var st=document.getElementById('btSayMsg'); if(st) st.textContent=n?'Filled '+n+' of '+R.length+' — check them, then Complete':'Couldn’t place those — try “temp 101.2, heart rate 130”';
+  return n; }
+window.tsBtSayHTML=function(){ if(!document) return ''; return '<div class="bt-say">'+(SAY_SR?'<button type="button" class="bt-mic" id="btMic" onclick="tsBtMic()" aria-label="Say the readings" title="Say the readings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>':'')
+  +'<input id="btSay" autocomplete="off" placeholder="'+(SAY_SR?'Say or type':'Type')+': temp 101.2, HR 130, pink, under 2, BAR, pain 1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();event.stopPropagation();tsBtSay(this.value);}"></div><div class="bt-say-msg" id="btSayMsg"></div>'; };
+window.tsBtSay=function(text){ return sayApply(text); };
+window.tsBtMic=function(){ if(!SAY_SR) return; var b=document.getElementById('btMic'), inp=document.getElementById('btSay');
+  if(sayRec){ try{ sayRec.stop(); }catch(e){} return; }
+  try{ sayRec=new SAY_SR(); }catch(e){ toast('Voice isn’t available on this device'); return; }
+  sayRec.lang='en-US'; sayRec.interimResults=true; sayRec.continuous=false; var fin='';
+  sayRec.onresult=function(e){ var t=''; for(var i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) fin+=e.results[i][0].transcript+' '; else t+=e.results[i][0].transcript; } if(inp) inp.value=(fin+t).trim(); };
+  sayRec.onerror=function(e){ if(e.error==='not-allowed') toast('Allow the microphone to chart by voice'); };
+  sayRec.onend=function(){ sayRec=null; if(b) b.classList.remove('on'); var txt=(inp&&inp.value)||fin; if(txt.trim()) sayApply(txt); };
+  if(b) b.classList.add('on'); var st=document.getElementById('btSayMsg'); if(st) st.textContent='Listening…';
+  try{ sayRec.start(); }catch(e){ sayRec=null; if(b) b.classList.remove('on'); } };
 /* ═════════ TS SECTIONS — the grid's section bands (Basic Observation, Medications, Patient Care …) ═════════
    Drawn by core buildGrid through window.tsSecBand; core gives every order row data-sec and hides rows of a folded section.
    · Tap the title to fold / unfold a section. Folded, the band keeps one dot per hour (worst status, open count) so nothing is lost.
@@ -2249,6 +2894,441 @@ window.tsScopeClear=function(silent){ if(!window.tsSearchScope) return; window.t
 
 /* the band sticks just under the hour header: its height, measured once it exists */
 on('rendered',function(){ var g=document.querySelector('#sheetInner .ghead'); if(g&&g.offsetHeight) document.documentElement.style.setProperty('--ts-ghead',g.offsetHeight+'px'); });   /* on the root: #sheetInner is rebuilt with each sheet */
+/* ═════════ TS MOVE — drag a treatment to another hour ═════════
+   Drag an open cell (not charted yet) along its row to another hour — the patient is asleep, in imaging, being walked.
+   Mouse / pen: press and drag. Touch: press and hold, then drag (a quick swipe still scrolls the grid).
+   Only that one treatment moves: order.moves['<YYYYMMDD>_<scheduled min>'] = new min (kernel slotMin); the rest of the order keeps
+   its times. Allowed for anyone who charts, today only, to this hour or later, and never onto an hour that already has this order.
+   The audit records who moved what; Undo puts it back. A moved cell carries a small corner tick and "moved from …" in its tooltip. */
+var mvD=null, mvSwallow=false;
+function mvTask(id){ return (TASKS||[]).find(function(t){ return t.id===id; })||null; }
+function mvOk(t){ return !!(t&&!t.status&&!t.adhoc&&t.key&&t.order&&!t.order.dc&&!t.order.cont&&canChart()&&!(window.tsViewDk&&tsViewDk()!==dayKey())); }
+function mvOrig(t){ return +String(t.key).split('_').pop(); }
+function mvWhy(t,h){ var nh=Math.floor(nowMin()/60); if(h===Math.floor(t.sched/60)) return 'same';
+  if(h<nh) return 'Can’t move into the past'; if(h>23) return 'Tomorrow isn’t on this sheet yet';
+  if((TASKS||[]).some(function(x){ return x!==t&&x.orderId===t.orderId&&Math.floor(x.sched/60)===h; })) return esc(t.order.name)+' is already at '+fmtTime(h*60);
+  return ''; }
+function mvHourAt(x){ var c=mvD.cells.getBoundingClientRect(); return Math.max(0,Math.min(23,Math.floor((x-c.left)/54))); }
+
+function mvStart(){ var d=mvD; d.on=true; var r=d.mk.getBoundingClientRect();
+  d.ghost=d.mk.cloneNode(true); d.ghost.removeAttribute('onclick'); d.ghost.removeAttribute('data-t'); d.ghost.classList.add('mv-ghost');
+  d.ghost.style.cssText='position:fixed;left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;margin:0';
+  document.body.appendChild(d.ghost); d.dx=d.x0-r.left; d.mk.classList.add('mv-origin'); document.body.classList.add('mv-dragging');
+  d.drop=document.createElement('div'); d.drop.className='mv-drop'; d.cells.appendChild(d.drop);
+  d.tag=document.createElement('div'); d.tag.className='mv-tag'; document.body.appendChild(d.tag);
+  if(navigator.vibrate&&d.type==='touch') try{ navigator.vibrate(8); }catch(e){} }
+function mvMove(x){ var d=mvD, sh=document.getElementById('sheetScroll'); if(!d||!d.on) return; d.lastX=x;
+  var c=d.cells.getBoundingClientRect(), r=d.mk.getBoundingClientRect(), left=Math.max(c.left,Math.min(c.right-r.width,x-d.dx));
+  d.ghost.style.left=left+'px'; d.ghost.style.top=r.top+'px';
+  var h=mvHourAt(left+r.width/2), why=mvWhy(d.t,h); d.h=h; d.why=why;
+  d.drop.style.left=(h*54)+'px'; d.drop.className='mv-drop'+(why==='same'?' same':why?' no':' ok');
+  d.tag.className='mv-tag'+(why&&why!=='same'?' no':''); d.tag.innerHTML=why==='same'?esc(fmtTime(d.t.sched)):why?why:'→ '+esc(fmtTime(h*60));
+  d.tag.style.left=(left+r.width/2)+'px'; d.tag.style.top=(r.top-8)+'px';
+  /* near an edge of the grid: scroll it along */
+  if(sh){ var s=sh.getBoundingClientRect(), edge=48, v=x<s.left+240+edge?-1:x>s.right-edge?1:0; d.vx=v; if(v&&!d.raf) d.raf=requestAnimationFrame(mvTick); } }
+function mvTick(){ var d=mvD, sh=document.getElementById('sheetScroll'); if(!d||!d.on||!d.vx||!sh){ if(d) d.raf=null; return; } sh.scrollLeft+=d.vx*10; mvMove(d.lastX); d.raf=requestAnimationFrame(mvTick); }
+function mvEnd(drop){ var d=mvD; mvD=null; if(!d) return; clearTimeout(d.timer); document.removeEventListener('touchmove',mvBlock,{passive:false});
+  if(!d.on) return; mvSwallow=true; setTimeout(function(){ mvSwallow=false; },350);
+  if(d.raf) cancelAnimationFrame(d.raf); document.body.classList.remove('mv-dragging'); d.mk.classList.remove('mv-origin');
+  if(d.drop) d.drop.remove(); if(d.ghost) d.ghost.remove(); if(d.tag) d.tag.remove();
+  if(!drop||d.h==null||d.why==='same') return; if(d.why){ toast(d.why); return; } tsMoveTask(d.t.id,d.h); }
+function mvBlock(e){ if(mvD&&mvD.on) e.preventDefault(); }
+
+document.addEventListener('pointerdown',function(e){ if(e.button!==0||mvD) return; var mk=e.target.closest&&e.target.closest('#sheetInner .mark[data-t]'); if(!mk) return;
+  var t=mvTask(mk.dataset.t); if(!mvOk(t)) return; var cells=mk.closest('.hcells'); if(!cells) return;
+  mvD={mk:mk,t:t,cells:cells,x0:e.clientX,y0:e.clientY,lastX:e.clientX,pid:e.pointerId,type:e.pointerType,on:false,timer:null};
+  if(e.pointerType==='touch'){ document.addEventListener('touchmove',mvBlock,{passive:false}); mvD.timer=setTimeout(function(){ if(mvD&&!mvD.on){ mvStart(); mvMove(mvD.lastX); } },420); } },true);
+document.addEventListener('pointermove',function(e){ var d=mvD; if(!d||e.pointerId!==d.pid) return; var dx=e.clientX-d.x0, dy=e.clientY-d.y0;
+  if(!d.on){ if(d.type==='touch'){ if(Math.abs(dx)>8||Math.abs(dy)>8) mvEnd(false); return; } if(Math.abs(dx)>6){ mvStart(); } else return; }
+  e.preventDefault(); mvMove(e.clientX); },true);
+document.addEventListener('pointerup',function(e){ if(mvD&&e.pointerId===mvD.pid) mvEnd(true); },true);
+document.addEventListener('pointercancel',function(e){ if(mvD&&e.pointerId===mvD.pid) mvEnd(false); },true);
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&mvD&&mvD.on){ mvD.h=null; mvEnd(false); } });
+document.addEventListener('click',function(e){ if(mvSwallow){ e.stopPropagation(); e.preventDefault(); mvSwallow=false; } },true);   /* the drop isn't a tap */
+document.addEventListener('contextmenu',function(e){ if(mvD&&mvD.type==='touch') e.preventDefault(); });
+
+/* the move itself — also callable on its own (tests, keyboard) */
+window.tsMoveTask=function(id,h){ var t=mvTask(id); if(!mvOk(t)) return false; var why=mvWhy(t,h); if(why){ if(why!=='same') toast(why); return false; }
+  var o=orderById(t.orderId); if(!o) return false; var dk=dayKey(), orig=mvOrig(t), from=t.sched, to=h*60, me=user(), before=o.moves?Object.assign({},o.moves):null;
+  var mv=Object.assign({},o.moves||{}), y=prevDk(dk); Object.keys(mv).forEach(function(k){ if(k.slice(0,8)<y) delete mv[k]; });   /* keep only today's and yesterday's */
+  if(to===orig) delete mv[dk+'_'+orig]; else mv[dk+'_'+orig]=to;
+  logEvent(o.type==='med'?'med':o.type==='obs'?'vital':'care','<b>'+esc(o.name)+'</b> '+esc(fmtTime(from))+' moved to '+esc(fmtTime(to)),me.initials);
+  updateOrder(o.id,{moves:Object.keys(mv).length?mv:null});
+  undoToast(esc(o.name)+' moved to '+esc(fmtTime(to)),function(){ logEvent('doctor','<b>'+esc(o.name)+'</b> back to '+esc(fmtTime(from)),me.initials); updateOrder(o.id,{moves:before}); });
+  return true; };
+/* ═════════ TS SEEN — "what changed since you last looked" ═════════
+   Each person's last look at each sheet is kept in this browser (localStorage tsSeen_v1: {uid: {sheetId: iso}}).
+   Opening a sheet compares it with that moment: other people's order changes (added, changed, stopped, moved), problem-list edits,
+   notes, and readings outside the hospital limits. Routine charting is not a change. A pill in the toolbar says how many
+   ("3 changes since 7:05 AM"); tap it for the list. Rows that changed glow once when the sheet opens.
+   The first time someone opens a sheet there is nothing to compare with, so nothing shows. */
+var SEEN_KEY='tsSeen_v1', seenSince={}, seenCur=null, seenGlowed={};
+function seenRead(){ try{ return JSON.parse(localStorage.getItem(SEEN_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function seenWrite(id,iso){ try{ var a=seenRead(), u=user().uid||'_', m=a[u]||(a[u]={}); m[id]=iso;
+    var ks=Object.keys(m); if(ks.length>300) ks.sort(function(x,y){ return String(m[x]).localeCompare(String(m[y])); }).slice(0,ks.length-300).forEach(function(k){ delete m[k]; });
+    localStorage.setItem(SEEN_KEY,JSON.stringify(a)); }catch(e){} }
+/* a sheet opened: remember when this person last looked, then mark it looked at now */
+function seenOpen(){ if(!CUR||!curDoc||CUR===seenCur) return; var now=new Date().toISOString(), u=user().uid||'_';
+  if(seenCur) seenWrite(seenCur,now); seenCur=CUR; seenSince[CUR]=(seenRead()[u]||{})[CUR]||null; seenWrite(CUR,now); }
+window.addEventListener('pagehide',function(){ if(seenCur) seenWrite(seenCur,new Date().toISOString()); });
+
+function seenMine(x){ var me=user(); return x.uid?x.uid===me.uid:(!!x.who&&x.who===me.initials); }
+function seenList(){ var since=seenSince[CUR]; if(!since||!curDoc) return []; var out=[], O=curDoc.orders||{};
+  (curDoc.audit||[]).forEach(function(a){ if(!a||!a.at||a.at<=since||seenMine(a)) return;
+    if(a.type!=='doctor'&&a.type!=='comm'&&!/ moved to | back to /.test(a.desc||'')) return;   /* routine charting is not a change */
+    out.push({at:a.at,who:a.who||'',desc:a.desc||''}); });
+  (curDoc.notes||[]).forEach(function(n){ if(!n||!n.at||n.at<=since||seenMine({uid:n.uid,who:n.author})) return;
+    out.push({at:n.at,who:n.author||'',desc:esc(String(n.type||'').replace(/^./,function(c){ return c.toUpperCase(); }))+' note — '+esc(String(n.body||'').slice(0,90))}); });
+  Object.keys(curDoc.marks||{}).forEach(function(k){ var m=curDoc.marks[k], o=m&&O[m.orderId]; if(!o||m.status!=='completed'||!m.at||m.at<=since||m.value==null||seenMine(m)) return;
+    var tone=vTone(o,m.value); if(!tone) return;
+    out.push({at:m.at,who:m.by||'',oid:o.id,tone:tone,desc:'<b>'+esc(o.name)+'</b> '+esc(m.value)+(o.unit?' '+esc(o.unit):'')+' — '+(tone==='coral'?'critical':'outside normal')}); });
+  return out.sort(function(a,b){ return String(b.at).localeCompare(String(a.at)); }); }
+/* the rows to point at: orders added, stopped or moved since, and abnormal readings */
+function seenRows(L){ var since=seenSince[CUR], ids={}; if(!since) return ids; var O=curDoc.orders||{};
+  Object.keys(O).forEach(function(id){ var o=O[id]; if(!o) return; if((o.ordered_at&&o.ordered_at>since&&o.ordered_by!==user().initials)||(o.dc_at&&o.dc_at>since)) ids[id]=1; });
+  L.forEach(function(x){ if(x.oid) ids[x.oid]=1; }); return ids; }
+function seenTime(iso){ var d=new Date(iso), t=new Date(); return (d.toDateString()===t.toDateString()?'':(d.getMonth()+1)+'/'+d.getDate()+' ')+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
+
+function seenPaint(){ seenOpen(); var el=document.getElementById('tsSeen'); if(!el) return; var L=seenList(), since=seenSince[CUR];
+  var h=L.length?'<button type="button" class="ts-seen'+(L.some(function(x){ return x.tone==='coral'; })?' crit':'')+'" onclick="tsSeenOpen()" title="Changes by others since you last opened this sheet"><span class="ts-seen-dot"></span>'+L.length+' change'+(L.length>1?'s':'')+' since '+esc(seenTime(since))+'</button>':'';
+  if(el.innerHTML!==h) el.innerHTML=h;
+  if(L.length&&!seenGlowed[CUR]){ seenGlowed[CUR]=1; var ids=seenRows(L); setTimeout(function(){ Object.keys(ids).forEach(function(id){ var r=document.querySelector('#sheetInner .grow[data-o="'+id+'"]'); if(r){ r.classList.remove('ts-flash'); void r.offsetWidth; r.classList.add('ts-flash'); } }); },350); } }
+on('header.refresh',seenPaint);
+on('rendered',seenPaint);
+on('sheet.drawn',seenPaint);
+
+window.tsSeenOpen=function(){ var L=seenList(), since=seenSince[CUR]; if(!L.length) return;
+  var html='<div class="op-head"><span class="op-ic"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+    +'<div><div class="op-kind">Since you last looked · '+esc(seenTime(since))+'</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<div class="op-list sn-list">'+L.map(function(x){ return '<div class="op-row'+(x.tone?' sn-'+x.tone:'')+'"'+(x.oid?' onclick="tsSeenShow(\''+esc(x.oid)+'\')" style="cursor:pointer"':'')+'><span>'+esc(seenTime(x.at))+'</span><b>'+x.desc+(x.who?'<small> — '+esc(x.who)+'</small>':'')+'</b></div>'; }).join('')+'</div>'
+    +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button><button type="button" class="op-btn primary" onclick="tsSeenDone()">Mark as seen</button></div>';
+  opShow(html,'wide'); };
+window.tsSeenShow=function(id){ tsOrderClose(); var r=document.querySelector('#sheetInner .grow[data-o="'+id+'"]'); if(!r) return; try{ r.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'}); }catch(e){ r.scrollIntoView(); } r.classList.remove('ts-flash'); void r.offsetWidth; r.classList.add('ts-flash'); };
+window.tsSeenDone=function(){ seenSince[CUR]=new Date().toISOString(); tsOrderClose(); seenPaint(); };
+/* ═════════ TS CHARGES — charge capture from the treatment sheet (VCA Coding Handbook v10.6) ═════════
+   The Charges tab lists, day by day for the whole stay (Day 1 = admission day), everything the sheet says was done, with its VCA code and quantity, so the front desk
+   can enter it in the invoice and nothing is missed. It does not bill or price anything; the PIMS stays the invoice.
+     Hospitalization  HOSP Setup on day 1 + HOSP/Hour Level 1–4 by species and size (K9 Sm ≤ 27.7 kg, K9 Lg above), hours per calendar day,
+                      counted automatically from admission to now (or discharge). The level is worked out from the sheet with the handbook's
+                      level definitions (see chAutoAt); the doctor can override it (sheet.hosp_levels = [{at, level, by}], 0 = automatic).
+     Monitoring       services ordered on the sheet that the handbook charges by the hour (oxygen, ECG / BP / pulse-ox monitors, CVP):
+                      Setup on the order's first day only + per hour while it is ordered.
+     Fluids & CRIs    Fluid IV Set-Up (hourly) on the day it starts + Maintenance/hr hours that day; additives → Fluid Additives pick list.
+                      CRI: syringe pump (or piggyback, when the carrier says so) Setup + Maintenance/hr, and the drug's ADD code from the pick list.
+     Treatments       every charted administration / reading of an order that carries a code (order.code, or the hospital's code for that
+                      drug or test, charge_codes/map, or a built-in first/recheck pair: glucose, blood pressure, PCV/TP). Basic observations and
+                      nursing care are part of hospitalization. Anything charted with no code shows "Needs a code".
+     Added charges    codes added by hand (exam, catheter placement …): sheet.charges_extra.{id} = {dk, code, name, qty, at, by}.
+   Ticking a line means "entered on the invoice": sheet.charges_done.{key} = {at, by, q}; if more is charted after (more hours), the line
+   asks to be updated. The code list itself (2,400+ codes) is in Firestore charge_codes/{meta, p1…} — staff can read it, only admin writes it;
+   it is never shipped with the app. Prices are this hospital's (charge_codes/prices), set by the owner/admin by tapping a price.
+   */
+var CH_CODES=null, CH_IX={}, CH_P=null, CH_MAP={}, CH_ADMIN_FILE=null;
+/* this hospital's prices (charge_codes/prices, written by the owner/admin): codes = {code: price}; items = {order name: {price, code}}
+   for things priced by the hospital that the handbook has no master price or code for (e.g. the Nova panel) */
+var CH_PRICES={codes:{},items:{}};
+function chDB(){ return DB&&DB.collection?DB.collection('charge_codes'):null; }
+function chLoad(){ if(CH_CODES) return Promise.resolve(CH_CODES); if(CH_P) return CH_P; var col=chDB(); if(!col) return Promise.resolve([]);
+  CH_P=col.doc('meta').get().then(function(m){ var meta=m.exists?m.data():null, parts=(meta&&meta.parts)||[];
+      return Promise.all(parts.map(function(id){ return col.doc(id).get(); })).then(function(S){ var L=[];
+        S.forEach(function(s){ if(s.exists) (s.data().rows||[]).forEach(function(r){ L.push({c:r[0],n:r[1],d:r[2]||''}); }); });
+        CH_CODES=L; CH_IX={}; L.forEach(function(x){ CH_IX[x.c]=x; }); CH_CODES.version=meta&&meta.version; return L; }); })
+    .then(function(L){ return chLoadPrices().then(function(){ return L; }); })
+    .catch(function(e){ console.warn('[charges] code list',e); CH_P=null; return []; });
+  return CH_P; }
+/* prices + the hospital's codes per drug/test: two small documents, read once per session (the projection on the estimate card needs them);
+   the full code list (chLoad) is read only when the Charges tab or a code search opens */
+var CH_PP=null, CH_PP_OK=false;
+function chLoadPrices(){ if(CH_PP) return CH_PP; var col=chDB(); if(!col) return Promise.resolve();
+  CH_PP=Promise.all([col.doc('map').get().then(function(s){ CH_MAP=(s.exists&&s.data().codes)||{}; },function(){}),
+    col.doc('prices').get().then(function(s){ var d=s.exists?s.data():{}; CH_PRICES={codes:d.codes||{},items:d.items||{}}; },function(){})])
+    .then(function(){ CH_PP_OK=true; try{ refreshHeader(); }catch(e){} }); return CH_PP; }
+on('header.refresh',function(){ if(!CH_PP&&CUR&&curDoc) chLoadPrices(); });
+function chName(code,fallback){ var x=CH_IX[code]; return x?x.n:(fallback||''); }
+
+/* ---------- the patient ---------- */
+function chSp(){ var s=String(VISIT.species||(curDoc&&curDoc.patient&&curDoc.patient.species)||'').toLowerCase();
+  return /cat|fel/.test(s)?'cat':/dog|can|k9/.test(s)?'dog':'zm'; }
+function chHospCode(level){ var sp=chSp(), kg=Number(VISIT.weight)||0, L=level-1;
+  if(sp==='cat') return '49.25'+L; if(sp==='dog') return (kg&&kg<=27.7?'49.26':'49.27')+L; return null; }   /* ZooMed: size isn't on the sheet → pick the code */
+/* ---------- the hospitalization level, worked out from the sheet (Coding Handbook "HOSP per Hour Level Definitions") ----------
+   Level 1  every hospitalized patient (TPR, visits every 2–4 h, not on continuous IV fluids)
+   Level 2  IV fluids or another IV infusion running; non-invasive monitoring (ECG, blood pressure, pulse oximetry monitor); checks every hour;
+            conditions that can become unstable quickly — seizures, renal failure, cardiac disease
+   Level 3  oxygen supplementation; blood products / antivenin; invasive monitoring (CVP, direct blood pressure); DKA, pneumonia / dyspnea,
+            active bleeding, unstable after major surgery
+   Level 4  continual one-on-one care — the doctor's call (never automatic)
+   It is worked out for each stretch of the stay between changes (an order started or stopped, a problem added or resolved), so the hours
+   split between levels by themselves.
+   The doctor can override it from a moment on (sheet.hosp_levels = [{at, level 1–4 | 0 = automatic again, by}]). */
+var CH_L3_PROB=/ketoacidosis|\bdka\b|pneumonia|dyspn|respiratory distress|bleed|hemorrhag|haemorrhag|hemoabdomen|hemothorax|coagulopath|\bdic\b|rodenticide|\bgdv\b|post.?op/i;
+var CH_L2_PROB=/seizure|status epilepticus|renal|kidney|\baki\b|azotemi|uremi|cardiac|heart|arrhythmi|\bchf\b|tachycard|bradycard/i;
+var CH_L3_ORD=/oxygen(?! check)|\bo2\b|\bcvp\b|central venous|direct (blood pressure|bp)|arterial line|transfusion|\bprbc|whole blood|fresh frozen|\bffp\b|\bplasma\b(?!-?lyte)|cryo|antivenin|antivenom/i;
+var CH_L2_ORD=/ecg monitor|telemetry|continuous ecg|blood pressure monitor|continuous (bp|blood pressure)|pulse ox(imetry)? monitor|spo2 monitor|neuro check/i;
+function chOverrides(){ var H=curDoc&&curDoc.hosp_levels; return (Array.isArray(H)?H:[]).filter(function(x){ return x&&x.at!=null&&x.level!=null; }).slice().sort(function(a,b){ return String(a.at).localeCompare(String(b.at)); }); }
+function chOverrideAt(t){ var L=chOverrides(), cur=0; L.forEach(function(x){ if(tms(x.at)<=t) cur=+x.level||0; }); return cur; }
+function chActive(o,t){ if(o.draft) return false; var f=o.cont?startMs(o):tms(o.ordered_at)||chAdm(), e=o.dc&&o.dc_at?tms(o.dc_at):Infinity; return t>=f&&t<e; }
+function chProblemsAt(t){ var P=(curDoc&&curDoc.patient)||{}, L=Array.isArray(P.problem_list)?P.problem_list:(P.problems||(P.reason?[P.reason]:[])).map(function(x){ return {text:x}; });
+  return L.filter(function(x){ return x&&x.text&&(!x.added_at||tms(x.added_at)<=t)&&(!x.resolved_at||tms(x.resolved_at)>t); }).map(function(x){ return x.text; }); }
+function chHourly(o){ return /^q1h$|^q30m|^q15m|^continuous$/i.test(String(o.freq||'')); }
+/* {level, why[]} at moment t */
+function chAutoAt(t){ var O=Object.keys((curDoc&&curDoc.orders)||{}).map(function(k){ return curDoc.orders[k]; }).filter(function(o){ return o&&chActive(o,t); }), w3=[], w2=[];
+  O.forEach(function(o){ var n=String(o.name||'');
+    if(CH_L3_ORD.test(n)) w3.push(n); else if(isInf(o)) w2.push(o.kind==='cri'?n+' CRI':'IV fluids'); else if(CH_L2_ORD.test(n)) w2.push(n); else if(!o.cont&&o.type!=='med'&&chHourly(o)) w2.push(n+' hourly'); });
+  chProblemsAt(t).forEach(function(p){ if(CH_L3_PROB.test(p)) w3.push(p); else if(CH_L2_PROB.test(p)) w2.push(p); });
+  var u=function(a){ return a.filter(function(x,i){ return a.indexOf(x)===i; }); };
+  return w3.length?{level:3,why:u(w3)}:w2.length?{level:2,why:u(w2)}:{level:1,why:[]}; }
+function chLevelAt(t){ var ov=chOverrideAt(t); if(ov) return {level:ov,why:['set by the doctor'],manual:true}; return chAutoAt(t); }
+function chLevelNow(){ return chLevelAt(Math.min(Date.now(),chEnd())); }
+function chAdm(){ return tms(curDoc&&(curDoc.admitted_at||curDoc.created_at)); }
+function chEnd(){ if(curDoc&&curDoc.status==='closed'&&curDoc.closed_at) return tms(curDoc.closed_at); return CH_UNTIL||Date.now(); }
+/* projection: while CH_UNTIL is set, every line is worked out as if the sheet ran on unchanged until then (chProject) */
+var CH_UNTIL=null, CH_SIM={};
+/* treatments still to come for an order on one day, up to CH_UNTIL (scheduled times after now, before it stops) */
+function chFuture(o,dk){ if(!CH_UNTIL||o.dc||o.freq==='PRN') return 0; var W=chWin(dk), a=Math.max(Date.now(),W[0],tms(o.ordered_at)||0), b=Math.min(CH_UNTIL,W[1]), M=(curDoc&&curDoc.marks)||{}, n=0;
+  if(!(b>a)) return 0; freqTimes(o).forEach(function(h){ var t=W[0]+slotMin(o,dk,h*60)*60000, m=M[dk+'_'+o.id+'_'+(h*60)]; if(t>a&&t<=b&&!(m&&m.status)) n++; }); return n; }
+function chHrs(ms){ return ms>0?Math.ceil(ms/3600000-0.0001):0; }
+function chWin(dk){ var d0=dkDate(dk).getTime(); return [d0,d0+864e5]; }
+
+/* ---------- the lines for one day ---------- */
+var CH_PAIRS=[[/^blood glucose|^glucose/i,'101.208','101.1174'],[/^blood pressure/i,'39.19','39.530'],[/^pcv\s*\/?\s*t[ps]/i,'101.259','101.282'],[/^pcv$/i,'101.247','101.282']];
+function chMarksOf(o){ var M=Object.assign({},chOldMarks,(curDoc&&curDoc.marks)||{}), out=[]; Object.keys(M).forEach(function(k){ var m=M[k]; if(m&&m.status==='completed'&&m.orderId===o.id&&/^\d{8}_/.test(k)) out.push({dk:k.slice(0,8),k:k,m:m}); });
+  (TASKS||[]).forEach(function(t){ if(t.orderId===o.id&&t.status==='completed'&&t.key&&!M[t.key]) out.push({dk:t.key.slice(0,8),k:t.key,m:{by:t.by,value:t.value,min:t.completedMin}}); });
+  return out.sort(function(a,b){ return a.k.localeCompare(b.k); }); }
+function chOrderCode(o){ if(o.code) return {c:o.code,src:'order'}; var k=String(o.name||'').trim().toLowerCase(); if(CH_MAP[k]) return {c:CH_MAP[k],src:'map'};
+  var it=CH_PRICES.items[k]; if(it) return {c:it.code||'',src:'item',item:k};
+  for(var i=0;i<CH_PAIRS.length;i++) if(CH_PAIRS[i][0].test(String(o.name||'').trim())) return {c:CH_PAIRS[i][1],re:CH_PAIRS[i][2],src:'pair'}; return null; }
+/* services charged by the hour while ordered — the handbook: "Setup code: invoice only on the 1st day. Monitoring/hr: invoice … repeated each day" */
+var CH_CONT=[[/oxygen.*(nasal|cannula)/i,'51.32','51.34'],[/oxygen.*high.?flow|high.?flow.*oxygen/i,'51.80','51.82'],[/oxygen.*(mask|facial)/i,'51.30','51.34'],[/oxygen(?! check)|\bo2 cage/i,'51.29','51.34'],
+  [/ecg monitor|telemetry|continuous ecg/i,'39.59','39.60'],[/direct (blood pressure|bp)|arterial line/i,'','39.546'],[/blood pressure monitor|continuous (bp|blood pressure)/i,'39.56','39.57'],
+  [/pulse ox(imetry)? monitor|spo2 monitor|continuous (pulse ox|spo2)/i,'39.344','39.345'],[/\bcvp\b|central venous/i,'39.44','39.339']];
+function chContinuous(o){ if(o.cont||o.type==='med'||o.code) return null; var n=String(o.name||''); for(var i=0;i<CH_CONT.length;i++) if(CH_CONT[i][0].test(n)) return [CH_CONT[i][1],CH_CONT[i][2]]; return null; }
+function chActiveFrom(o){ return Math.max(tms(o.ordered_at)||chAdm(),chAdm()); }
+function chPriceOf(l){ var c=l.code&&CH_PRICES.codes[l.code]; if(c!=null&&c!=='') return +c; var it=l.item&&CH_PRICES.items[l.item]; return it&&it.price!=null?+it.price:null; }
+function chMoney(n){ return n==null?'':'$'+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function chIncluded(o){ return (o.type==='obs'||o.type==='care')&&!chOrderCode(o); }   /* part of hospitalization */
+function chLines(dk){ if(!curDoc) return []; var L=[], W=chWin(dk), adm=chAdm(), end=chEnd(), sp=chSp();
+  var add=function(g,key,code,name,qty,unit,note,x){ L.push(Object.assign({g:g,key:dk+'_'+key,code:code||'',name:name||chName(code),qty:qty,unit:unit||'',note:note||''},x||{})); };
+  /* hospitalization */
+  var a=Math.max(adm,W[0]), b=Math.min(end,W[1]);
+  if(adm&&b>a){ if(dayKey(new Date(adm))===dk) add('hosp','hosp_setup',sp==='zm'?'49.319':'49.320',sp==='zm'?'HOSP Setup ZM':'HOSP Setup K9/Feline',1,'','Day 1 of the stay');
+    /* hours per level add up to the hours in hospital that day */
+    var byL={}, why={}, cuts=[a,b];
+    /* the level can only change when something starts or stops: orders, infusions, problems, the doctor's override */
+    Object.keys(curDoc.orders||{}).forEach(function(k){ var o=curDoc.orders[k]; if(!o) return; [o.cont?startMs(o):tms(o.ordered_at),o.dc&&o.dc_at?tms(o.dc_at):0].forEach(function(t){ if(t>a&&t<b) cuts.push(t); }); });
+    var PL=(curDoc.patient||{}).problem_list; (Array.isArray(PL)?PL:[]).forEach(function(x){ [tms(x&&x.added_at),tms(x&&x.resolved_at)].forEach(function(t){ if(t>a&&t<b) cuts.push(t); }); });
+    chOverrides().forEach(function(x){ var t=tms(x.at); if(t>a&&t<b) cuts.push(t); });
+    cuts.sort(function(x,y){ return x-y; });
+    for(var i=0;i<cuts.length-1;i++){ var f=cuts[i], e=cuts[i+1]; if(!(e>f)) continue; var lv=chLevelAt((f+e)/2); byL[lv.level]=(byL[lv.level]||0)+(e-f); (why[lv.level]=why[lv.level]||[]).push.apply(why[lv.level],lv.why); }
+    /* a started hour counts as an hour (like the fluids per hour); the higher level gets its started hours, the lowest level the rest,
+       so the levels always add up to the hours in hospital that day */
+    var tot=chHrs(b-a), ks=Object.keys(byL).map(Number).sort(), hrs={}, left=tot;
+    ks.slice().reverse().forEach(function(l,i,A){ var h=i===A.length-1?left:Math.min(chHrs(byL[l]),left); hrs[l]=h; left-=h; });
+    ks.forEach(function(l){ var h=hrs[l]; if(!(h>0)) return; var c=chHospCode(l), W2=(why[l]||[]).filter(function(x,i,A){ return A.indexOf(x)===i; });
+      add('hosp','hosp_L'+l,c,c?chName(c,'HOSP/Hour Level '+l):'HOSP/Hour Level '+l+' ZM',h,'hr',(W2.length?esc(W2.slice(0,3).join(' · ')):'Hospitalized')+(c?'':' — ZooMed: choose the size code'),c?null:{warn:'code'}); }); }
+  /* infusions + charted orders */
+  var O=Object.keys(curDoc.orders||{}).map(function(k){ return curDoc.orders[k]; }).filter(Boolean);
+  O.forEach(function(o){ if(o.draft) return;   /* not approved yet: nothing to charge */
+    if(isInf(o)){ var s=startMs(o), e=Math.min(endMs(o),end), f=Math.max(s,W[0]), t=Math.min(e,W[1]); if(!(t>f)) return; var h=chHrs(t-f), first=dayKey(new Date(s))===dk;
+      if(o.kind==='fluid'){ if(first) add('inf','fl_'+o.id+'_s',sp==='zm'?'37.82':'37.83',sp==='zm'?'Fluid IV Set-Up ZM (hourly)':'Fluid IV Set-Up (hourly)',1,'',esc(o.name));
+        add('inf','fl_'+o.id+'_h',sp==='zm'?'37.87':'37.84',sp==='zm'?'Fluid IV Maintenance/hr ZM':'Fluid IV Maintenance/hr',h,'hr',esc(o.name)+(o.dc?' · stopped':''));
+        if(o.additive&&first) add('inf','fl_'+o.id+'_a','37.300','Fluid Additives (Pick List)',1,'','Add: '+esc(o.additive)+' — choose the additive in the pick list'); }
+      else { var pig=/piggy|in\s+(lrs|plasma|normosol|nacl|saline|fluid|the bag)/i.test(o.carrier||'');
+        if(first) add('inf','cri_'+o.id+'_s',pig?'37.110':'37.108',pig?'CRI Piggyback Setup':'CRI Syringe Pump Setup',1,'',esc(o.name)+' CRI');
+        add('inf','cri_'+o.id+'_h',pig?'37.111':'37.109',pig?'CRI Piggyback Maintenance/hour':'CRI Syringe Pump Maintenance/hour',h,'hr',esc(o.name)+' CRI'+(o.dc?' · stopped':''));
+        add('inf','cri_'+o.id+'_d','37.107','CRI Medications to ADD (Pick List)',1,'','Choose the '+esc(o.name)+' ADD code in the pick list'); }
+      return; }
+    var cs=chContinuous(o); if(cs){ var cf=Math.max(chActiveFrom(o),W[0]), ct=Math.min(o.dc&&o.dc_at?tms(o.dc_at):end,end,W[1]); if(ct>cf){
+        if(cs[0]&&dayKey(new Date(chActiveFrom(o)))===dk) add('dx','cs_'+o.id+'_s',cs[0],'',1,'',esc(o.name)+' — setup, first day only');
+        add('dx','cs_'+o.id+'_h',cs[1],'',chHrs(ct-cf),'hr',esc(o.name)+(o.dc?' · stopped':'')); } return; }
+    if(o.cont||chIncluded(o)) return;
+    var M=chMarksOf(o), today=M.filter(function(x){ return x.dk===dk; }), fut=chFuture(o,dk); if(!today.length&&!fut) return;
+    var cc=chOrderCode(o), g=o.type==='med'?'med':'dx', what=o.type==='med'?esc(o.name)+(o.route?' '+esc(o.route):''):esc(o.name);
+    var times=today.map(function(x){ return (x.m.min!=null?fmtTime(x.m.min):'')+(x.m.by?' '+esc(x.m.by):''); }).filter(Boolean).join(' · ');
+    var cnt=today.length+fut;
+    if(fut) times=(times?times+' · ':'')+fut+' to come';
+    if(cc&&cc.re){ var firstEver=CH_UNTIL?(!M.some(function(x){ return x.dk<dk; })&&!CH_SIM[o.id]):(M[0]&&M[0].dk===dk), n1=firstEver&&cnt?1:0, n2=cnt-n1; if(CH_UNTIL&&cnt) CH_SIM[o.id]=1;
+      if(n1) add(g,'o_'+o.id+'_1',cc.c,'',1,'',what+' · '+times.split(' · ')[0]);
+      if(n2) add(g,'o_'+o.id+'_r',cc.re,'',n2,'',what+' · recheck'); }
+    else add(g,'o_'+o.id,cc?cc.c:'',cc&&cc.c?'':(o.type==='med'?(/^(iv|im|sc|sq)/i.test(o.route||'')?'Injection':'Medication')+' — '+o.name:o.name),cnt,cnt>1?'×':'',what+' · '+times,cc?{src:cc.src,oid:o.id,item:cc.item,warn:cc.c?null:'code'}:{warn:'code',oid:o.id}); });
+  /* added by hand */
+  var X=(curDoc.charges_extra)||{}; Object.keys(X).forEach(function(id){ var x=X[id]; if(!x||x.dk!==dk) return;
+    L.push({g:'extra',key:'x_'+id,xid:id,code:x.code||(x.item&&CH_PRICES.items[x.item]&&CH_PRICES.items[x.item].code)||'',item:x.item||null,warn:!(x.code||(x.item&&CH_PRICES.items[x.item]&&CH_PRICES.items[x.item].code))?'code':null,name:x.name||chName(x.code),qty:x.qty||1,unit:'',note:(x.by?'Added by '+esc(x.by):'')+(x.at?' · '+esc(fmtWhen(x.at)):'')}); });
+  L.forEach(function(l){ var p=chPriceOf(l); l.price=p; l.total=p!=null?Math.round(p*l.qty*100)/100:null; });
+  var D=(curDoc.charges_done)||{}; L.forEach(function(l){ var d=D[l.key]; l.done=!!d; l.doneQ=d&&d.q; l.more=!!d&&l.qty>(d.q||0); if(l.name&&!l.nameHTML) l.nameHTML=esc(l.name); });
+  return L; }
+
+/* ---------- the tab ---------- */
+var CH_GROUPS=[['hosp','Hospitalization'],['inf','Fluids & CRIs'],['med','Medications'],['dx','Diagnostics & monitoring'],['extra','Added charges']];
+function chDk(){ return dayKey(); }   /* a charge added by hand belongs to today */
+/* the whole stay, admission day first: Day 1 carries HOSP Setup and the setups of anything started that day */
+function chDays(){ var out=[], lo=dayKey(new Date(chAdm()||Date.now())), hi=dayKey(new Date(CH_UNTIL?Math.max(chEnd()-1,Date.now()):Math.min(chEnd(),Date.now()))), d=dkDate(lo), guard=0;
+  while(dayKey(d)<=hi&&guard++<120){ out.push(dayKey(d)); d.setDate(d.getDate()+1); } return out; }
+function chAllLines(){ var L=[]; chDays().forEach(function(dk,i){ chLines(dk).forEach(function(l){ l.dk=dk; l.day=i+1; L.push(l); }); }); return L; }
+/* charting of days older than the two the sheet keeps live: read once per sheet, so their treatments are charged too */
+var chOldMarks={}, chOldFor=null;
+function chLoadOld(){ if(!CUR||chOldFor===CUR) return; var id=CUR; chOldFor=id; chOldMarks={}; var keep={}; keep[dayKey()]=1; keep[prevDk(dayKey())]=1;
+  (curDays?Object.keys(curDays):[]).forEach(function(dk){ Object.assign(chOldMarks,curDays[dk]||{}); });
+  var need=chDays().filter(function(dk){ return !keep[dk]&&!(curDays&&curDays[dk]); });
+  if(!need.length) return; Promise.all(need.map(function(dk){ return dayRef(id,dk).get().then(function(sn){ return (sn.exists&&sn.data().marks)||{}; },function(){ return {}; }); }))
+    .then(function(R){ if(CUR!==id) return; R.forEach(function(m){ Object.assign(chOldMarks,m); }); if(currentCTab==='charges') tsRenderCharges(); }); }
+function chCan(){ return !!CUR; }
+var chOpen={};   /* days opened or closed by hand stay that way while the tab redraws */
+window.tsChDay=function(el){ chOpen[CUR+el.getAttribute('data-dk')]=el.open; };
+window.tsRenderCharges=function(){ var el=document.getElementById('ctab-charges'); if(!el) return; var os=document.getElementById('ctab-sheet'); if(os&&currentCTab!=='sheet') os.innerHTML='';
+  if(!CUR||!curDoc){ el.innerHTML=CUR?'<div class="ts-empty"><div class="ts-empty-card"><span>Opening sheet…</span></div></div>':emptyHTML(); return; }
+  if(!CH_CODES) chLoad().then(function(){ if(currentCTab==='charges') tsRenderCharges(); });
+  chLoadOld(); var days=chDays(), L=chAllLines(), lv=chLevelNow(), doc=canOrderTS(), todo=L.filter(function(l){ return !l.done||l.more; }).length, need=L.filter(function(l){ return l.warn; }).length;
+  var row=function(l){ var st=l.warn?'warn':l.more?'more':l.done?'done':'';
+    return '<li class="ch-row '+st+'" data-k="'+esc(l.key)+'">'
+      +'<button type="button" class="ch-ck" onclick="tsChTick(\''+esc(l.key)+'\','+l.qty+')" aria-label="'+(l.done?'Mark as not entered':'Mark as entered on the invoice')+'" title="'+(l.done?'Entered on the invoice — tap to undo':'Tap when it is on the invoice')+'"'+(l.warn&&!l.code?' disabled':'')+'><i></i></button>'
+      +'<span class="ch-code">'+(l.code?esc(l.code):'—')+'</span>'
+      +'<span class="ch-what"><b>'+l.nameHTML+'</b>'+(l.note?'<small>'+l.note+'</small>':'')+(l.more?'<small class="ch-more">Entered '+l.doneQ+' — '+(l.qty-l.doneQ)+' more since</small>':'')+'</span>'
+      +'<span class="ch-qty">'+l.qty+(l.unit==='hr'?' hr':'')+'</span>'
+      +'<span class="ch-amt'+(l.total==null?' none':'')+'">'+(chAdmin()&&(l.code||l.item)?'<button type="button" class="ch-price" onclick="tsChPrice(this,\''+esc(l.code||'')+'\',\''+esc(l.item||'')+'\')" title="Set this hospital’s price">':'')
+        +(l.total!=null?'<b>'+chMoney(l.total)+'</b>'+(l.qty>1?'<small>'+chMoney(l.price)+' each</small>':''):(chAdmin()&&(l.code||l.item)?'<small>Set price</small>':'<small>—</small>'))+(chAdmin()&&(l.code||l.item)?'</button>':'')+'</span>'
+      +(l.warn==='level'?(doc?'<button type="button" class="ch-fix" onclick="document.getElementById(\'chLevel\').scrollIntoView({block:\'center\'})">Set level</button>':'<span class="ch-fix muted">Doctor sets level</span>')
+        :l.warn==='code'||l.oid?'<button type="button" class="ch-fix'+(l.warn?'':' ghost')+'" onclick="tsChPick(\''+esc(l.oid||'')+'\',\''+esc(l.key)+'\')">'+(l.warn?'Find code':'Change')+'</button>'
+        :l.xid?'<button type="button" class="ch-fix ghost" onclick="tsChRemove(\''+esc(l.xid)+'\')" aria-label="Remove">Remove</button>':'')+'</li>'; };
+  /* newest day first; a day that is all on the invoice folds away */
+  var groups=days.slice().reverse().map(function(dk){ var D=L.filter(function(l){ return l.dk===dk; }); if(!D.length) return ''; var n=days.indexOf(dk)+1, left=D.filter(function(l){ return !l.done||l.more; }).length;
+    var body=CH_GROUPS.map(function(g){ var G=D.filter(function(l){ return l.g===g[0]; }); return G.length?'<section class="ch-group"><h4>'+g[1]+'</h4><ul class="ch-list">'+G.map(row).join('')+'</ul></section>':''; }).join('');
+    var open=chOpen[CUR+dk]!=null?chOpen[CUR+dk]:(left||dk===dayKey());
+    return '<details class="ch-day" data-dk="'+dk+'"'+(open?' open':'')+' ontoggle="tsChDay(this)"><summary><b>Day '+n+'</b><span>'+esc(dkLabel(dk))+(dk===dayKey()?' · today':'')+'</span><em class="'+(left?'':'ok')+'">'+(left?left+' to enter':'All entered')+'</em>'+(D.some(function(l){ return l.total!=null; })?'<strong class="ch-daytot">'+chMoney(D.reduce(function(t,l){ return t+(l.total||0); },0))+'</strong>':'')+'</summary>'+body+'</details>'; }).join('');
+  var ov=chOverrideAt(Date.now()), lvBtns='<button type="button" class="ch-lv auto'+(!ov?' on':'')+'"'+(doc?' onclick="tsChLevel(0)"':' disabled')+'>Auto</button>'+[1,2,3,4].map(function(n){ return '<button type="button" class="ch-lv'+(ov===n?' on':'')+'"'+(doc?' onclick="tsChLevel('+n+')"':' disabled')+'>'+n+'</button>'; }).join('');
+  el.innerHTML=patientCmdHTML()+'<section class="ch-wrap"><main class="ch-main panel">'
+    +'<div class="ch-head"><div><div class="ch-kicker">Charges · whole stay · '+days.length+' day'+(days.length>1?'s':'')+'</div><div class="ch-sum">'+(L.length?(todo?'<b>'+todo+'</b> to enter':'<b>All entered</b>')+' · '+L.length+' line'+(L.length>1?'s':'')+(need?' · <span class="ch-need">'+need+' need attention</span>':''):'Nothing to charge yet')+'</div>'
+    +(L.some(function(l){ return l.total!=null; })?'<div class="ch-total"><b>'+chMoney(L.reduce(function(t,l){ return t+(l.total||0); },0))+'</b> so far'+(L.some(function(l){ return l.total==null; })?' <small>· '+L.filter(function(l){ return l.total==null; }).length+' without a price</small>':'')+'</div>':'')+chProjHTML()+'</div>'
+    +'<div class="ch-acts"><button type="button" class="btn ghost" onclick="tsChAdd()">Add charge</button><button type="button" class="btn ghost" onclick="tsChCopy()"'+(L.length?'':' disabled')+'>Copy list</button>'
+    +(todo?'<button type="button" class="btn" onclick="tsChAll()">Mark all entered</button>':'')+'</div></div>'
+    +(groups||'<div class="ch-empty">Charted treatments, fluids and hospitalization hours appear here with their VCA codes.</div>')
+    +'<p class="ch-foot">Codes from the VCA Coding Handbook'+(CH_CODES&&CH_CODES.version?' v'+esc(CH_CODES.version):'')+'. Basic observations and nursing care are part of hospitalization. Prices and the invoice stay in the PIMS.</p></main>'
+    +'<aside class="ch-side"><div class="panel" id="chLevel"><h4>Hospitalization level</h4><div class="ch-lvs" role="group" aria-label="Hospitalization level">'+lvBtns+'</div>'
+    +'<div class="ch-lvnow"><b>Level '+lv.level+'</b>'+(chHospCode(lv.level)?' · '+esc(chHospCode(lv.level)):'')+'<small>'+(lv.manual?'Set by the doctor':lv.why.length?'Automatic — '+esc(lv.why.slice(0,3).join(' · ')):'Automatic — hospitalized, no IV fluids or monitoring')+'</small></div>'
+    +'<p class="ch-lvnote">Worked out from the sheet using the Coding Handbook level definitions'+(doc?'. Tap a number to override; Auto goes back.':'. The doctor can override it.')+'</p>'
+    +(chOverrides().length?'<div class="ch-hist">'+chOverrides().slice().reverse().map(function(x){ return '<div><span>'+esc(fmtWhen(x.at))+'</span><b>'+(+x.level?'Level '+x.level:'Auto')+'</b><small>'+esc(x.by||'')+'</small></div>'; }).join('')+'</div>':'')+'</div>'
+    +(chAdmin()?'<div class="panel ch-admin"><h4>Code list</h4><p>'+(CH_CODES&&CH_CODES.length?CH_CODES.length.toLocaleString()+' codes · v'+esc(CH_CODES.version||'?'):'Not loaded yet')+'</p><label class="btn ghost ch-imp">Import code list (.json)<input type="file" accept=".json,application/json" onchange="tsChImport(this)" hidden></label></div>':'')
+    +'</aside></section>'; };
+function chAdmin(){ try{ var e=String((AUTH&&AUTH.currentUser&&AUTH.currentUser.email)||'').toLowerCase(); return e==='daniel.giordano@pravix.app'||staffRole()==='admin'; }catch(e){ return false; } }
+on('header.refresh',function(){ if(currentCTab==='charges') tsRenderCharges(); });
+
+/* ---------- saving ---------- */
+function chLocal(path,val){ [curDoc,curMain,(SHEETS||[]).find(function(s){ return s._id===CUR; })].forEach(function(d){ if(!d) return; var p=path.split('.'), o=d;
+  for(var i=0;i<p.length-1;i++){ if(!o[p[i]]||typeof o[p[i]]!=='object') o[p[i]]={}; o=o[p[i]]; } if(val===DEL) delete o[p[p.length-1]]; else o[p[p.length-1]]=val; }); }
+function chSave(upd,desc,keepLocal){ var me=user(), now=new Date().toISOString(); Object.keys(upd).forEach(function(k){ if(!keepLocal||keepLocal.indexOf(k)<0) chLocal(k,upd[k]); });
+  if(desc) upd.audit=U([{at:now,type:'comm',desc:desc,who:me.initials,uid:me.uid}]); upd.updated_at=now; upd.updated_by=me.name||null;
+  tsCommit(CUR,upd).catch(function(){}); tsRenderCharges(); }
+window.tsChTick=function(key,q){ var me=user(), D=(curDoc&&curDoc.charges_done)||{}, d=D[key], u={};
+  if(d&&(d.q||0)>=q){ u['charges_done.'+key]=DEL; chSave(u); return; }
+  u['charges_done.'+key]={at:new Date().toISOString(),by:me.initials||'',q:q}; chSave(u); };
+window.tsChAll=function(){ var me=user(), now=new Date().toISOString(), u={}, n=0;
+  chAllLines().forEach(function(l){ if((!l.done||l.more)&&!(l.warn&&!l.code)){ u['charges_done.'+l.key]={at:now,by:me.initials||'',q:l.qty}; n++; } });
+  if(n){ chSave(u,n+' charge'+(n>1?'s':'')+' marked as entered on the invoice'); toast(n+' marked as entered'); } };
+window.tsChLevel=function(n){ if(!canOrderTS()){ toast('The doctor can override the hospitalization level'); return; } if(chOverrideAt(Date.now())===n) return;
+  var me=user(), now=new Date().toISOString(), x={at:now,level:n,by:me.initials||''}, L=chOverrides().concat([x]);
+  chLocal('hosp_levels',L); chSave({hosp_levels:U([x])},n?'Hospitalization level set to '+n+(chHospCode(n)?' ('+chHospCode(n)+')':''):'Hospitalization level back to automatic',['hosp_levels']); };   /* the array is added to on the server; locally it is already set */
+window.tsChRemove=function(id){ var X=(curDoc&&curDoc.charges_extra)||{}, x=X[id]; if(!x) return; var u={}; u['charges_extra.'+id]=DEL; u['charges_done.x_'+id]=DEL;
+  chSave(u,'Charge removed — '+esc(x.code)+' '+esc(x.name||''));
+  undoToast(esc(x.code)+' removed',function(){ var v={}; v['charges_extra.'+id]=x; chSave(v,'Charge restored — '+esc(x.code)); }); };
+window.tsChCopy=function(){ var L=chAllLines().filter(function(l){ return l.code&&(!l.done||l.more); }); if(!L.length) L=chAllLines().filter(function(l){ return l.code; });
+  var txt=L.map(function(l){ var q=l.more?l.qty-l.doneQ:l.qty; return l.code+'\t'+q+'\t'+l.name+(l.price!=null?'\t'+chMoney(Math.round(l.price*q*100)/100):''); }).join('\n');
+  try{ navigator.clipboard.writeText(txt).then(function(){ toast(L.length+' line'+(L.length>1?'s':'')+' copied — code, quantity, description'); },function(){ toast('Couldn’t copy'); }); }catch(e){ toast('Couldn’t copy'); } };
+
+/* ---------- finding a code ---------- */
+function chSearch(q,limit){ q=String(q||'').trim().toLowerCase(); if(!q||!CH_CODES) return []; var words=q.split(/\s+/);
+  return CH_CODES.map(function(x){ var n=x.n.toLowerCase(), s;
+      if(x.c===q) s=0; else if(x.c.indexOf(q)===0) s=1; else if(n.indexOf(q)===0) s=2; else if(words.every(function(w){ return n.indexOf(w)>-1; })) s=3; else if(words.every(function(w){ return (n+' '+x.d.toLowerCase()).indexOf(w)>-1; })) s=5; else return null;
+      return {x:x,s:s}; }).filter(Boolean).sort(function(a,b){ return a.s-b.s||a.x.n.length-b.x.n.length; }).slice(0,limit||40).map(function(r){ return r.x; }); }
+var chPickCtx=null;
+function chPicker(title,lead,ctx,q0){ chPickCtx=ctx;
+  var html='<div class="op-head"><span class="op-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h10M4 17h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><div><div class="op-kind">VCA code</div><h3>'+title+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +(lead?'<p class="op-lead">'+lead+'</p>':'')+'<input id="chQ" class="ch-q" placeholder="Code or name — e.g. 101.208 or glucose" autocomplete="off" oninput="tsChFind(this.value)" value="'+esc(q0||'')+'">'
+    +(ctx.qty?'<label class="ch-qtyin">Quantity <input id="chN" type="number" min="1" value="1" inputmode="numeric"></label>':'')
+    +(ctx.oid?'<label class="ch-all"><input type="checkbox" id="chAll" checked> Use this code for every '+esc(ctx.name||'')+' order</label>':'')
+    +(ctx.qty&&chItemsHTML()?'<div class="ch-items">'+chItemsHTML()+'</div>':'')+'<div id="chRes" class="ch-res"></div>';
+  opShow(html,'wide'); chLoad().then(function(){ tsChFind((document.getElementById('chQ')||{}).value||''); var i=document.getElementById('chQ'); if(i){ i.focus(); i.select(); } }); }
+window.tsChFind=function(q){ var el=document.getElementById('chRes'); if(!el) return; if(!CH_CODES||!CH_CODES.length){ el.innerHTML='<div class="ch-empty">The code list isn’t loaded'+(chAdmin()?' — import it from the Charges tab.':' yet.')+'</div>'; return; }
+  var qq=String(q||'').trim(), own=/^\d{1,4}\.\d{1,5}$/.test(qq)&&!CH_IX[qq];   /* drug and product codes live in the WOOFware catalog, not the handbook: any code can be typed */
+  var R=chSearch(q); el.innerHTML=(own?'<button type="button" class="ch-hit" onclick="tsChChoose(\''+esc(qq)+'\')"><span class="ch-code">'+esc(qq)+'</span><span><b>Use '+esc(qq)+'</b><small>Not in the Coding Handbook — a product or drug code from WOOFware</small></span></button>':'')+(R.length?R.map(function(x){ return '<button type="button" class="ch-hit" onclick="tsChChoose(\''+esc(x.c)+'\')"><span class="ch-code">'+esc(x.c)+'</span><span><b>'+esc(x.n)+'</b>'+(x.d?'<small>'+esc(x.d.slice(0,150))+(x.d.length>150?'…':'')+'</small>':'')+'</span></button>'; }).join('')
+    :(own?'':'<div class="ch-empty">'+(q?'No handbook code matches “'+esc(q)+'”. Drug and product codes are in WOOFware — type the code itself (e.g. 54.733).':'Type a code or a few words.')+'</div>')); };
+window.tsChChoose=function(code){ var C=chPickCtx||{}, x=CH_IX[code]||{c:code,n:''}, me=user(), now=new Date().toISOString(); tsOrderClose();
+  if(C.xid){ var u1={}; u1['charges_extra.'+C.xid+'.code']=code; chSave(u1,'Charge code for '+esc(C.name||'')+': '+esc(code)); if(C.item) emit('ch.coded',C.item,code); toast(esc(code)+' — '+esc(C.name||'')); return; }
+  if(C.oid){ var o=orderById(C.oid)||(curDoc.orders||{})[C.oid]; if(!o) return; var all=(document.getElementById('chAll')||{}).checked;
+    if(orderById(C.oid)) updateOrder(C.oid,{code:code}); else { var u0={}; u0['orders.'+C.oid+'.code']=code; chSave(u0); }
+    logEvent('comm','Charge code for <b>'+esc(o.name)+'</b>: '+esc(code)+' '+esc(x.n),me.initials); emit('ch.coded',o.name,code);
+    if(all&&chDB()){ var k=String(o.name||'').trim().toLowerCase(), f={}; CH_MAP[k]=code; f[k]=code;   /* the hospital's code for this drug / test, for every patient */
+      try{ chDB().doc('map').set({codes:f,updated_at:now,updated_by:me.initials},{merge:true}).catch(function(){}); }catch(e){} }
+    toast(esc(code)+' — '+esc(x.n||o.name)); setTimeout(tsRenderCharges,50); return; }
+  var n=Math.max(1,parseInt((document.getElementById('chN')||{}).value,10)||1), id='x'+Date.now().toString(36), u={};
+  u['charges_extra.'+id]={dk:chDk(),code:code,name:x.n||'',qty:n,at:now,by:me.initials||''}; chSave(u,'Charge added — '+esc(code)+' '+esc(x.n||'')+(n>1?' ×'+n:'')); };
+window.tsChPick=function(oid,key){ var o=oid&&((curDoc.orders||{})[oid]);
+  if(!o&&/^x_/.test(key||'')){ var xid=key.slice(2), x=((curDoc&&curDoc.charges_extra)||{})[xid]; if(!x) return;   /* an added charge (e.g. Exam) still without its code */
+    chPicker(esc(x.name||'Charge'),'Type the WOOFware code for '+esc(x.name||'this charge')+'. '+(x.item?'It is remembered for every '+esc(x.name)+' from now on.':''),{xid:xid,item:x.item,name:x.name},''); return; }
+  if(!o) return;
+  chPicker(esc(o.name),'Choose the code for '+esc(o.name)+'. Every charted '+(o.type==='med'?'administration':'reading')+' is listed with it.',{oid:oid,name:o.name},String(o.name||'').split(/[\s\/(]/)[0]); };
+window.tsChAdd=function(){ chPicker('Add a charge','For things the sheet doesn’t record — an exam, a catheter placement, a procedure.',{qty:true},''); };
+
+/* ---------- the code list: imported once by the owner (JSON from the Coding Handbook), stored behind sign-in ---------- */
+window.tsChImport=function(inp){ var f=inp.files&&inp.files[0]; if(!f||!chAdmin()) return; var r=new FileReader();
+  r.onload=function(){ try{ var J=JSON.parse(r.result), rows=(J.codes||J).map(function(x){ return [String(x.c),String(x.n||''),String(x.d||'').slice(0,240)]; }).filter(function(x){ return /^\d+\.\d+$/.test(x[0]); });
+      if(rows.length<50){ toast('That file has no codes'); return; } var col=chDB(), per=1200, parts=[], ver=String(J.version||'');
+      for(var i=0;i<rows.length;i+=per) parts.push('p'+(parts.length+1));
+      Promise.all(parts.map(function(id,i){ return col.doc(id).set({rows:rows.slice(i*per,(i+1)*per),version:ver}); }))
+        .then(function(){ return col.doc('meta').set({parts:parts,version:ver,count:rows.length,updated_at:new Date().toISOString(),updated_by:user().initials},{merge:true}); })
+        .then(function(){ return J.prices?col.doc('prices').set({codes:J.prices.codes||{},items:J.prices.items||{},updated_at:new Date().toISOString(),updated_by:user().initials},{merge:true}):null; })   /* the hospital's starting prices, if the file has them */
+        .then(function(){ CH_CODES=null; CH_P=null; CH_PP=null; toast(rows.length.toLocaleString()+' codes imported'); chLoad().then(tsRenderCharges); })
+        .catch(function(e){ console.warn(e); toast('Import failed — '+(e&&e.code==='permission-denied'?'the database rule for charge_codes isn’t published yet':'see console')); });
+    }catch(e){ toast('Couldn’t read that file'); } };
+  r.readAsText(f); inp.value=''; };
+
+/* ---------- prices: the owner/admin taps a price to set it for the whole hospital ---------- */
+window.tsChPrice=function(btn,code,item){ if(!chAdmin()) return; var cur=code?CH_PRICES.codes[code]:(CH_PRICES.items[item]||{}).price;
+  var cell=btn.parentNode; cell.innerHTML='<input class="ch-pin" inputmode="decimal" placeholder="0.00" value="'+(cur!=null?(+cur).toFixed(2):'')+'" aria-label="Price">';
+  var inp=cell.querySelector('input'), done=false; inp.focus(); inp.select();
+  var fin=function(save){ if(done) return; done=true; var v=String(inp.value||'').replace(/[$,\s]/g,''); if(save&&v!==''&&!isNaN(+v)) chSetPrice(code,item,Math.round(+v*100)/100); else tsRenderCharges(); };
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); fin(true); } else if(e.key==='Escape') fin(false); });
+  inp.addEventListener('blur',function(){ fin(true); }); };
+function chSetPrice(code,item,v){ var col=chDB(), me=user(), now=new Date().toISOString(), up={updated_at:now,updated_by:me.initials||''};
+  if(code){ CH_PRICES.codes[code]=v; up.codes={}; up.codes[code]=v; } else if(item){ CH_PRICES.items[item]=Object.assign({},CH_PRICES.items[item],{price:v}); up.items={}; up.items[item]={price:v}; }
+  if(col) col.doc('prices').set(up,{merge:true}).then(function(){ toast(esc(code||item)+' · '+chMoney(v)); },function(e){ toast(e&&e.code==='permission-denied'?'Only the owner or an admin can set prices':'Couldn’t save the price'); });
+  tsRenderCharges(); }
+/* a priced hospital item learns its code once someone picks one for it */
+on('ch.coded',function(name,code){ var k=String(name||'').trim().toLowerCase(), it=CH_PRICES.items[k]; if(!it||it.code===code||!chDB()) return; it.code=code; var f={}; f[k]={code:code}; try{ chDB().doc('prices').set({items:f},{merge:true}).catch(function(){}); }catch(e){} });
+
+/* the hospital's own priced items (Exam, Nova panel …): one tap in Add a charge */
+function chItemsHTML(){ var I=CH_PRICES.items||{}; return Object.keys(I).filter(function(k){ return I[k]&&I[k].price!=null; }).sort().map(function(k){ var x=I[k];
+  return '<button type="button" class="ch-item" onclick="tsChChooseItem(\''+esc(k).replace(/'/g,"\\'")+'\')"><b>'+esc(x.name||k)+'</b><small>'+chMoney(+x.price)+(x.code?' · '+esc(x.code):'')+'</small></button>'; }).join(''); }
+window.tsChChooseItem=function(k){ var x=(CH_PRICES.items||{})[k]; if(!x) return; var me=user(), now=new Date().toISOString(), n=Math.max(1,parseInt((document.getElementById('chN')||{}).value,10)||1), id='x'+Date.now().toString(36), u={};
+  tsOrderClose(); u['charges_extra.'+id]={dk:chDk(),code:x.code||'',item:k,name:x.name||k,qty:n,at:now,by:me.initials||''}; chSave(u,'Charge added — '+esc(x.name||k)+(n>1?' ×'+n:'')); };
+
+/* ---------- projected cost: everything the sheet would charge if nothing changes until `until` (ms) ----------
+   Hours keep counting at the level the sheet is at, fluids / CRIs / hourly services keep running, scheduled treatments are given.
+   Only priced lines add up; the count of lines without a price is returned so the number is never presented as complete. */
+function chProject(until){ var now=chAllLines(), nowT=now.reduce(function(t,l){ return t+(l.total||0); },0);
+  CH_UNTIL=Math.max(until,Date.now()); CH_SIM={}; var L; try{ L=chAllLines(); }finally{ CH_UNTIL=null; CH_SIM={}; }
+  var tot=L.reduce(function(t,l){ return t+(l.total||0); },0), unp=L.filter(function(l){ return l.total==null; }).length;
+  return {now:Math.round(nowT*100)/100,total:Math.round(tot*100)/100,add:Math.round((tot-nowT)*100)/100,unpriced:unp,lines:L}; }
+window.tsChProject=function(until){ return chProject(until); };
+/* the horizons offered: 8 AM tomorrow (rounds), +24 h, +48 h */
+var CH_HZ=[['8am','8 AM tomorrow'],['24','In 24 h'],['48','In 48 h']], chHz='8am';
+function chHzTime(k){ if(k==='24') return Date.now()+864e5; if(k==='48') return Date.now()+1728e5; var d=new Date(); d.setDate(d.getDate()+(d.getHours()>=8?1:0)); d.setHours(8,0,0,0); return d.getTime(); }
+function chHzLabel(t){ var d=new Date(t), x=new Date(); x.setDate(x.getDate()+1); return (d.toDateString()===x.toDateString()?'tomorrow':d.toLocaleDateString([], {weekday:'short'}))+' '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
+function chProjHTML(){ if(!curDoc||curDoc.status==='closed') return ''; var t=chHzTime(chHz), P=chProject(t); if(!(P.total>0)) return '';
+  return '<div class="ch-proj"><span>If nothing changes: <b>'+chMoney(P.total)+'</b> by '+esc(chHzLabel(t))+' <small>(+'+chMoney(P.add)+(P.unpriced?' · '+P.unpriced+' line'+(P.unpriced>1?'s':'')+' without a price not included':'')+')</small></span>'
+    +'<span class="ch-hz">'+CH_HZ.map(function(h){ return '<button type="button" class="'+(h[0]===chHz?'on':'')+'" onclick="tsChHz(\''+h[0]+'\')">'+h[1]+'</button>'; }).join('')+'</span></div>'; }
+window.tsChHz=function(k){ chHz=k; tsRenderCharges(); };
+/* a line for the estimate card (base.js depositCard) */
+window.tsChProjRow=function(){ try{ if(!CH_PP_OK) return ''; var t=chHzTime('8am'), P=chProject(t); if(!(P.total>0)) return '';
+  return '<div class="est-row ch-est-proj"><span class="k">Projected by '+esc(chHzLabel(t).replace('tomorrow ',''))+'</span><span class="v">'+chMoney(P.total)+'</span></div>'; }catch(e){ return ''; } };
+/* ---------- estimate from the plan (base.js estimate editor): low = stay of N days, high = M days, from the orders on the sheet now ---------- */
+window.tsEstPlanHTML=function(){ if(!curDoc) return ''; var d=Math.max(1,Math.ceil((Date.now()-chAdm())/864e5));
+  return '<div class="ch-plan"><div class="ch-plan-h">Build from the plan</div><div class="ch-plan-row"><span>Stay of</span><input id="epLo" type="number" min="1" value="'+(d+1)+'" aria-label="Shortest stay in days"><span>to</span><input id="epHi" type="number" min="1" value="'+(d+2)+'" aria-label="Longest stay in days"><span>days</span>'
+    +'<button type="button" class="ts-btn" onclick="tsEstPlan()">Calculate</button></div><div id="epOut" class="ch-plan-out">From the orders on the sheet and this hospital’s prices.</div></div>'; };
+window.tsEstPlan=function(){ chLoad().then(function(){ var lo=Math.max(1,parseInt((document.getElementById('epLo')||{}).value,10)||1), hi=Math.max(lo,parseInt((document.getElementById('epHi')||{}).value,10)||lo), adm=chAdm();
+    var A=chProject(adm+lo*864e5), B=chProject(adm+hi*864e5), r=function(n){ return Math.ceil(n/10)*10; }, set=function(id,v){ var el=document.getElementById(id); if(el) el.value=String(v); };
+    set('esLow',r(A.total)); set('esHigh',r(B.total)); if(!(+((document.getElementById('esCur')||{}).value)>0)) set('esCur',A.now);
+    var out=document.getElementById('epOut'); if(out) out.innerHTML='Low <b>'+chMoney(r(A.total))+'</b> ('+lo+' day'+(lo>1?'s':'')+') · high <b>'+chMoney(r(B.total))+'</b> ('+hi+' days) · charges so far '+chMoney(A.now)
+      +(B.unpriced?'<br><span class="ch-need">'+B.unpriced+' line'+(B.unpriced>1?'s have':' has')+' no price yet and '+(B.unpriced>1?'aren’t':'isn’t')+' included</span>':''); }); };
 /* ═════════ TS VITALS — the Vitals tab, from the sheet's real readings ═════════
    One row per monitoring order on the sheet (Basic observation first, then the rest of Monitoring and Diagnostics), its last three
    readings with time and who, colour only when a reading is outside the hospital limits (FLAG_RULES), and a Record box that charts
@@ -2263,10 +3343,10 @@ function vOrders(){ return (ORDERS||[]).filter(function(o){ return o&&!o.dc&&!o.
 /* every charted value for an order: what is saved (curDoc.marks) plus anything charted this second and not yet saved (TASKS) */
 function vReadings(o){ var out={}, d=curDoc||{}, marks=d.marks||{};
   var add=function(k,m,dk){ if(!m||m.status!=='completed'||m.value==null||String(m.value).trim()==='') return; var mn=m.min!=null?m.min:(m.sched||0);
-    out[k]={v:String(m.value),at:dkDate(dk).getTime()+mn*60000,by:m.by||'',notes:m.notes||''}; };
+    out[k]={v:String(m.value),at:dkDate(dk).getTime()+mn*60000,s:m.sched||0,by:m.by||'',notes:m.notes||''}; };
   Object.keys(marks).forEach(function(k){ var m=marks[k]; if(m&&m.orderId===o.id&&/^\d{8}_/.test(k)) add(k,m,k.slice(0,8)); });
   (TASKS||[]).forEach(function(t){ if(t.orderId!==o.id||t.status!=='completed') return; var dk=(t.key&&/^\d{8}_/.test(t.key))?t.key.slice(0,8):viewDk(); add(t.key||t.id,{status:t.status,value:t.value,min:t.completedMin,sched:t.sched,by:t.by,notes:t.notes},dk); });
-  return Object.keys(out).map(function(k){ return out[k]; }).sort(function(a,b){ return a.at-b.at; }); }
+  return Object.keys(out).map(function(k){ return out[k]; }).sort(function(a,b){ return (a.at-b.at)||(a.s-b.s); }); }   /* same minute: the later slot is the newer reading */
 function vWhen(ms){ var d=new Date(ms), t=new Date(), y=new Date(t.getFullYear(),t.getMonth(),t.getDate()-1);
   var hm=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}).replace(':00','').replace(' ','').replace('AM','A').replace('PM','P');
   return d.toDateString()===t.toDateString()?hm:d.toDateString()===y.toDateString()?'Yday '+hm:(d.getMonth()+1)+'/'+d.getDate()+' '+hm; }
@@ -2325,6 +3405,19 @@ function vLatestOf(rx){ var seen={}, best=null; (ORDERS||[]).concat(Object.keys(
     if(!o||!o.id||seen[o.id]||!rx.test(String(o.name||'').trim())) return; seen[o.id]=1; var R=vReadings(o), r=R[R.length-1]; if(r&&(!best||r.at>=best.at)) best=r; }); return best; }
 function vLive(){ if(!curDoc) return; V_LIVE.forEach(function(v){ var r=vLatestOf(v[1]); VISIT[v[0]]=r?r.v:'—'; }); }
 on('task.charted',function(){ try{ refreshHeader(); }catch(e){} },50);
+
+/* ---------- the trend in a grid row's label (core buildGrid → window.tsRowTrend) ----------
+   Monitoring and diagnostic rows: the latest reading, an arrow against the one before, and a small line of the last 24 h of numbers.
+   Colour only when the latest reading is outside the hospital limits (FLAG_RULES: amber outside normal, coral critical). */
+window.tsRowTrend=function(o){ if(!o||o.dc||(o.type!=='obs'&&o.type!=='diag')) return ''; var R=vReadings(o); if(!R.length) return '';
+  var last=R[R.length-1], tone=vTone(o,last.v), P=R.filter(function(r){ return r.at>=last.at-864e5; }).map(function(r){ return {n:numOf(r.v),at:r.at,v:r.v}; }).filter(function(p){ return p.n!=null; }).slice(-8);
+  var arrow='', svg='';
+  if(P.length>=2&&numOf(last.v)!=null){ var a=P[P.length-2].n, b=P[P.length-1].n, eps=Math.max(Math.abs(a),1)*0.01; arrow=b>a+eps?'↑':b<a-eps?'↓':''; }
+  if(P.length>=2){ var lo=Math.min.apply(null,P.map(function(p){ return p.n; })), hi=Math.max.apply(null,P.map(function(p){ return p.n; })), W=34, H=14, n=P.length;
+    var pts=P.map(function(p,i){ return (1+i*(W-2)/(n-1)).toFixed(1)+','+(hi===lo?H/2:1.5+(1-(p.n-lo)/(hi-lo))*(H-3)).toFixed(1); });
+    svg='<svg class="rt-line" viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><polyline points="'+pts.join(' ')+'"/><circle cx="'+pts[n-1].split(',')[0]+'" cy="'+pts[n-1].split(',')[1]+'" r="1.8"/></svg>'; }
+  var tip=P.length?P.map(function(p){ return vWhen(p.at)+' '+p.v; }).join(' · '):vWhen(last.at)+' '+last.v;
+  return '<span class="rl-trend'+(tone?' '+tone:'')+'" title="'+esc(o.name+': '+tip+(o.unit?' '+o.unit:''))+'">'+svg+'<b>'+esc(last.v)+'</b>'+(arrow?'<i>'+arrow+'</i>':'')+'</span>'; };
 /* ═════════ TS PROBLEMS — the patient's problem list, Reminders-style ═════════
    Stored on the sheet as patient.problem_list = [{id, text, added_at, added_by, resolved_at?, resolved_by?}].
    Sheets that don't have one yet start from what Flow sent (patient.problems or the presenting reason); the first edit saves the list.
@@ -2464,5 +3557,6 @@ window.sidebarBriefHTML=function(){ var p=(curDoc&&curDoc.patient)||{}, kg=Numbe
     +((p.owner||p.phone)?'<div class="panel"><h4>Client</h4><div class="kvlist">'+(p.owner?kvr('Owner',esc(p.owner)):'')+(p.phone?kvr('Phone',esc(p.phone)):'')+'</div></div>':'')
     +tsProblemsPanel()+list('Plan',VISIT.plan)
     +'</aside>'; };
-window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey};
+window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey,
+  /* for tests and the preview only */ infAdd:function(){ return infAdd.apply(null,arguments); }, infBuild:function(){ return infBuild.apply(null,arguments); }, addOrders:function(L){ return addOrders(L); }};
 })();
