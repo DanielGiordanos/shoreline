@@ -1441,8 +1441,9 @@ window.tsHeaderHTML=function(){ var d=hdrDoc(), v=VISIT||{};
   +'</section>'; };
 function miniHTML(d){ if(!d) return ''; var W=weightInfo(d), loc=((d.patient||{}).location)||'';
   return '<span><b>'+(W.kg?W.kg+' kg':'No weight')+'</b></span>'+(resusPillHTML(VISIT.code,'sm')||'')+(loc?'<span>'+esc(loc)+'</span>':'')+miniVitals(d); }
-/* someone else changed this sheet in the last 90 s */
-function liveHTML(d){ if(!d||!d.updated_at||!d.updated_by) return ''; var me=user(), by=String(d.updated_by), age=Date.now()-new Date(d.updated_at);
+/* someone else changed this sheet in the last 90 s — hidden (Daniel, Oct 3 2026: saving and syncing stay in the background) */
+var TSH_LIVE_DOT=false;
+function liveHTML(d){ if(!TSH_LIVE_DOT) return ''; if(!d||!d.updated_at||!d.updated_by) return ''; var me=user(), by=String(d.updated_by), age=Date.now()-new Date(d.updated_at);
   var mine=by===me.initials||normName(by)===normName(me.name)||normName(by)===normName(me.initials);
   return (age<90000&&!mine)?'<i class="tsh-live" title="Updated just now by '+esc(d.updated_by)+'"></i>':''; }
 
@@ -1892,7 +1893,7 @@ function obxSend(e){ var b=DB.batch(), nowIso=new Date().toISOString();
   return b.commit().then(function(){ obxDone(e.id); }).catch(function(err){
     console.warn('[outbox] save failed',err);
     if(OBX_FATAL.test(String(err&&(err.code||err.message)||''))){ obxDone(e.id); try{ toast('Couldn’t save that change — '+(/permission/.test(String(err.code))?'no permission':'the sheet is gone')); }catch(_){} }
-    else { delete OBX_LIVE[e.id]; try{ toast('Couldn’t save — kept on this device, will retry'); }catch(_){} obxPaint(); }
+    else { delete OBX_LIVE[e.id]; obxPaint(); }   /* kept on this device and retried quietly */
     throw err; }); }
 
 /* saves left over from a closed tab or a reload: send them again, never over newer charting */
@@ -1903,7 +1904,7 @@ function obxReplay(){ if(obxReplaying||!DB||!AUTH||!AUTH.currentUser||!navigator
   obxReplaying=true; L.forEach(function(e){ OBX_LIVE[e.id]=Date.now(); });
   var chain=Promise.resolve();
   L.forEach(function(e){ chain=chain.then(function(){ return obxReplayOne(e); }).catch(function(err){ console.warn('[outbox] replay',e.id,err); }); });
-  chain.then(function(){ obxReplaying=false; obxPaint(); var n=L.length; if(n) try{ toast(n+' saved change'+(n>1?'s':'')+' from this device synced'); }catch(_){} }); }
+  chain.then(function(){ obxReplaying=false; obxPaint(); }); }
 function obxReplayOne(e){ var ref=DB.collection(COL).doc(e.sheet);
   return Promise.all([ref.get({source:'server'}),e.day?dayRef(e.sheet,e.dk).get({source:'server'}):Promise.resolve(null)]).then(function(r){
     var main=r[0], dayS=r[1]; if(!main.exists){ obxDone(e.id); return; }
@@ -1920,15 +1921,18 @@ function obxReplayOne(e){ var ref=DB.collection(COL).doc(e.sheet);
     if(!out.main&&!out.day){ obxDone(e.id); return; }
     return obxSend(out); }); }
 
-/* the status pill: hidden while everything is saved; "Saving…" if a save takes a moment; amber when the connection is gone */
-var obxT=null, obxTick=null;
+/* Saving is silent (Daniel, Oct 3 2026): changes are kept on this device and sent in the background — no "Saving…", no "Not connected".
+   The only time anyone hears about it: a change still hasn't reached the database after OBX_WARN (5 min) — then one calm line, because
+   that charting exists only on this computer until the connection comes back. */
+var obxT=null, obxTick=null, OBX_WARN=5*60000;
 function obxPaintSoon(){ clearTimeout(obxT); obxT=setTimeout(obxPaint,1500); }
 function obxPaint(){ var el=document.getElementById('tsNet');
-  var mine=obxMine(), n=mine.length, off=!navigator.onLine, oldest=mine.reduce(function(a,e){ var t=new Date(e.at).getTime(); return Math.min(a,t); },Date.now()), waiting=n&&(Date.now()-oldest>8000);
-  var state=off?'off':waiting?'wait':n?'saving':'';
-  if(!state){ if(el) el.classList.remove('show'); clearInterval(obxTick); obxTick=null; return; }
+  var mine=obxMine(), n=mine.length, oldest=mine.reduce(function(a,e){ var t=new Date(e.at).getTime(); return Math.min(a,t); },Date.now()), stuck=n&&(Date.now()-oldest>OBX_WARN);
+  if(n&&!obxTick) obxTick=setInterval(obxPaint,15000);
+  if(!stuck){ if(el) el.classList.remove('show'); if(!n){ clearInterval(obxTick); obxTick=null; } return; }
+  var state='wait';
   if(!el){ el=document.createElement('div'); el.id='tsNet'; el.setAttribute('role','status'); document.body.appendChild(el); }
-  var txt=state==='saving'?'Saving…':(off?'Offline':'Not connected')+(n?' · '+n+' change'+(n>1?'s':'')+' saved on this device':' · keep charting, it syncs when you’re back');
+  var txt='Some charting hasn’t reached the database yet — it’s safe on this computer and will send when the connection is back';
   el.className='show '+state; el.innerHTML='<i></i><span>'+txt+'</span>';
   if(!obxTick) obxTick=setInterval(obxPaint,3000); }
 window.addEventListener('online',function(){ obxPaint(); setTimeout(obxReplay,1200); });
