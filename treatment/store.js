@@ -3031,7 +3031,7 @@ function chDB(){ return DB&&DB.collection?DB.collection('charge_codes'):null; }
 function chLoad(){ if(CH_CODES) return Promise.resolve(CH_CODES); if(CH_P) return CH_P; var col=chDB(); if(!col) return Promise.resolve([]);
   CH_P=col.doc('meta').get().then(function(m){ var meta=m.exists?m.data():null, parts=(meta&&meta.parts)||[];
       return Promise.all(parts.map(function(id){ return col.doc(id).get(); })).then(function(S){ var L=[];
-        S.forEach(function(s){ if(s.exists) (s.data().rows||[]).forEach(function(r){ L.push({c:r[0],n:r[1],d:r[2]||''}); }); });
+        S.forEach(function(s){ if(s.exists) (s.data().rows||[]).forEach(function(r){ L.push(Array.isArray(r)?{c:r[0],n:r[1],d:r[2]||''}:{c:r.c,n:r.n,d:r.d||''}); });   /* rows are {c,n,d}: Firestore forbids nested arrays */ });
         CH_CODES=L; CH_IX={}; L.forEach(function(x){ CH_IX[x.c]=x; }); CH_CODES.version=meta&&meta.version; return L; }); })
     .then(function(L){ return chLoadPrices().then(function(){ return L; }); })
     .catch(function(e){ console.warn('[charges] code list',e); CH_P=null; return []; });
@@ -3270,7 +3270,7 @@ window.tsChAdd=function(){ chPicker('Add a charge','For things the sheet doesnâ€
 
 /* ---------- the code list: imported once by the owner (JSON from the Coding Handbook), stored behind sign-in ---------- */
 window.tsChImport=function(inp){ var f=inp.files&&inp.files[0]; if(!f||!chAdmin()) return; var r=new FileReader();
-  r.onload=function(){ try{ var J=JSON.parse(r.result), rows=(J.codes||J).map(function(x){ return [String(x.c),String(x.n||''),String(x.d||'').slice(0,240)]; }).filter(function(x){ return /^\d+\.\d+$/.test(x[0]); });
+  r.onload=function(){ try{ var J=JSON.parse(r.result), rows=(J.codes||J).map(function(x){ return {c:String(x.c),n:String(x.n||''),d:String(x.d||'').slice(0,240)}; }).filter(function(x){ return /^\d+\.\d+$/.test(x.c); });
       if(rows.length<50){ toast('That file has no codes'); return; } var col=chDB(), per=1200, parts=[], ver=String(J.version||'');
       for(var i=0;i<rows.length;i+=per) parts.push('p'+(parts.length+1));
       Promise.all(parts.map(function(id,i){ return col.doc(id).set({rows:rows.slice(i*per,(i+1)*per),version:ver}); }))
