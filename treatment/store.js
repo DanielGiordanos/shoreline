@@ -3257,8 +3257,8 @@ function chDB(){ return DB&&DB.collection?DB.collection('charge_codes'):null; }
 function chLoad(){ if(CH_CODES) return Promise.resolve(CH_CODES); if(CH_P) return CH_P; var col=chDB(); if(!col) return Promise.resolve([]);
   CH_P=col.doc('meta').get().then(function(m){ var meta=m.exists?m.data():null, parts=(meta&&meta.parts)||[];
       return Promise.all(parts.map(function(id){ return col.doc(id).get(); })).then(function(S){ var L=[];
-        S.forEach(function(s){ if(s.exists) (s.data().rows||[]).forEach(function(r){ L.push(Array.isArray(r)?{c:r[0],n:r[1],d:r[2]||''}:{c:r.c,n:r.n,d:r.d||''}); });   /* rows are {c,n,d}: Firestore forbids nested arrays */ });
-        CH_CODES=L; CH_IX={}; L.forEach(function(x){ CH_IX[x.c]=x; }); CH_CODES.version=meta&&meta.version; return L; }); })
+        S.forEach(function(s){ if(s.exists) (s.data().rows||[]).forEach(function(r){ L.push(Array.isArray(r)?{c:r[0],n:r[1],d:r[2]||''}:{c:r.c,n:r.n,d:r.d||'',u:r.u||'',t:r.t||''});   /* u: the invoice unit (mL, tab, hr …) · t: WOOFware type (IHINJ, IHMED, DISP …) */ });   /* rows are {c,n,d}: Firestore forbids nested arrays */ });
+        CH_CODES=L; CH_IX={}; CH_DX=null; L.forEach(function(x){ CH_IX[x.c]=x; }); CH_CODES.version=meta&&meta.version; return L; }); })
     .then(function(L){ return chLoadPrices().then(function(){ return L; }); })
     .catch(function(e){ console.warn('[charges] code list',e); CH_P=null; return []; });
   return CH_P; }
@@ -3269,7 +3269,7 @@ function chLoadPrices(){ if(CH_PP) return CH_PP; var col=chDB(); if(!col) return
   CH_PP=Promise.all([col.doc('map').get().then(function(s){ CH_MAP=(s.exists&&s.data().codes)||{}; },function(){}),
     col.doc('prices').get().then(function(s){ var d=s.exists?s.data():{}; CH_PRICES={codes:d.codes||{},items:d.items||{}}; },function(){})])
     .then(function(){ CH_PP_OK=true; try{ refreshHeader(); }catch(e){} }); return CH_PP; }
-on('header.refresh',function(){ if(!CH_PP&&CUR&&curDoc) chLoadPrices(); });
+on('header.refresh',function(){ if(!CH_PP&&CUR&&curDoc) chLoadPrices(); if(!CH_CODES&&!CH_P&&CUR&&curDoc) chLoad().then(function(L){ if(L&&L.length) try{ refreshHeader(); }catch(e){} }); });
 function chName(code,fallback){ var x=CH_IX[code]; return x?x.n:(fallback||''); }
 
 /* ---------- the patient ---------- */
@@ -3322,8 +3322,36 @@ function chMarksOf(o){ var M=Object.assign({},chOldMarks,(curDoc&&curDoc.marks)|
   (TASKS||[]).forEach(function(t){ if(t.orderId===o.id&&t.status==='completed'&&t.key&&!M[t.key]) out.push({dk:t.key.slice(0,8),k:t.key,m:{by:t.by,value:t.value,min:t.completedMin}}); });
   return out.sort(function(a,b){ return a.k.localeCompare(b.k); }); }
 function chOrderCode(o){ if(o.code) return {c:o.code,src:'order'}; var k=String(o.name||'').trim().toLowerCase(); if(CH_MAP[k]) return {c:CH_MAP[k],src:'map'};
-  var it=CH_PRICES.items[k]; if(it) return {c:it.code||'',src:'item',item:k};
+  var it=CH_PRICES.items[k]; if(it&&it.code) return {c:it.code,src:'item',item:k};
+  var dc=chDrugCode(o); if(dc){ if(it) dc.item=k; return dc; }   /* the drug's own code; a price set per dose for the drug still counts until the code has a price */
+  if(it) return {c:'',src:'item',item:k};
   for(var i=0;i<CH_PAIRS.length;i++) if(CH_PAIRS[i][0].test(String(o.name||'').trim())) return {c:CH_PAIRS[i][1],re:CH_PAIRS[i][2],src:'pair'}; return null; }
+/* ---------- drug codes (WOOFware catalog, verified list Oct 2026): a medication order finds its own code by drug, strength and route ----------
+   Injectable on the sheet (IV · IM · SC · IO) → the IHINJ code for that drug at the order's stock concentration; invoiced in mL actually given.
+   By mouth → the IHMED tablet / capsule that makes the dose in whole or half tablets (or the oral suspension at the order's mg/mL), in tablets or mL.
+   A code typed on the order, or remembered for the drug (charge_codes/map), always wins. Nothing matched → "Needs a code" as before. */
+var CH_DX=null;
+function chGen(s){ return String(s||'').toLowerCase().replace(/\(.*?\)/g,' ').replace(/\b(gen|generic|hcl|hydrochloride|sodium|potassium|citrate|sulfate|phosphate|tartrate|maleate|mesylate|acetate|succinate|hyclate|base|inj|injection)\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim(); }
+function chDxIndex(){ if(CH_DX) return CH_DX; CH_DX={}; (CH_CODES||[]).forEach(function(x){ var t=x.t||((String(x.n).match(/\b(IHINJ|IHMED)\s*$/)||[])[1]||''); if(t!=='IHINJ'&&t!=='IHMED') return;
+    var m=String(x.n).match(/^(.*?)\s+(\d+(?:\.\d+)?)\s*(mg|mcg|g|meq|u|iu|units?)(\/\s*ml)?\s*(.*?)\s*(?:IHINJ|IHMED)\s*$/i); if(!m||/\d+\s*ct\b/i.test(m[5])) return;
+    var g=chGen(m[1]); if(!g) return; var su=m[3].toLowerCase(), s=+m[2]*(su==='mcg'?0.001:su==='g'?1000:1);
+    (CH_DX[g]=CH_DX[g]||[]).push({c:x.c,t:t,s:s,ml:!!m[4],form:String(m[5]||'').toLowerCase(),u:x.u||(m[4]?'mL':/cap/i.test(m[5])?'cap':'tab'),unitWord:su}); }); return CH_DX; }
+function chRound(n){ return Math.round(n*100)/100; }
+function chCodePriced(c){ var v=c&&CH_PRICES.codes[c]; return v!=null&&v!==''; }
+/* bill in mL / tablets when the code itself is priced (or nothing is); a per-dose price set for the drug counts doses */
+function chByUnit(cc){ return !!(cc&&cc.per&&(chCodePriced(cc.c)||!cc.item)); }
+function chDrugCode(o){ if(!o||o.type!=='med'||!CH_CODES) return null; var X=chDxIndex(), g=chGen(o.name), L=X[g];
+  if(!L){ var ks=Object.keys(X).filter(function(k){ return k.split(' ')[0]===g.split(' ')[0]; }); if(ks.length===1) L=X[ks[0]]; }
+  if(!L||!L.length) return null; var r=String(o.route||''), d=window.medDose?medDose(o):null, total=d?d.raw:0, base=String(o.unit||'mg').split('/')[0].toLowerCase(), f=base==='mcg'?0.001:base==='g'?1000:1, mg=total*f, conc=o.conc?Number(o.conc)*f:0;   /* the dose and the stock strength are in the dose's unit (mcg, mg, U …): compare in mg */
+  if(/^(iv|im|sc|sq|io|subq|intra)/i.test(r)){ var I=L.filter(function(x){ return x.t==='IHINJ'&&x.ml; }), pick=null;
+    if(conc) pick=I.filter(function(x){ return Math.abs(x.s-conc)<1e-6*Math.max(1,conc); })[0]||null; else if(I.length===1) pick=I[0];
+    if(!pick) return null; var ml=pick.s>0&&mg>0?mg/pick.s:(d&&parseFloat(d.volume))||0; return {c:pick.c,src:'drug',u:'mL',per:ml>0?chRound(ml):null}; }
+  if(/^(po|oral)/i.test(r)){ var M=L.filter(function(x){ return x.t==='IHMED'; }); if(!M.length||!(mg>0)) return null;
+    var sus=conc?M.filter(function(x){ return x.ml&&Math.abs(x.s-conc)<1e-6*Math.max(1,conc); })[0]:null; if(sus) return {c:sus.c,src:'drug',u:'mL',per:chRound(mg/sus.s)};
+    /* tablets: the strength whose whole (or half) tablets come within 12.5% of the dose, fewest whole tablets first — 182 mg → 2 × 100 mg */
+    var best=null; M.filter(function(x){ return !x.ml&&x.s>0; }).forEach(function(x){ var n=mg/x.s, h=Math.round(n*2)/2; if(h<0.5||h>6||Math.abs(n-h)>0.125*n) return; var sc=(h%1?10:0)+h+Math.abs(n-h)/n; if(!best||sc<best.sc) best={x:x,n:h,sc:sc}; });
+    return best?{c:best.x.c,src:'drug',u:best.x.u,per:best.n}:null; }
+  return null; }
 /* services charged by the hour while ordered — the handbook: "Setup code: invoice only on the 1st day. Monitoring/hr: invoice … repeated each day" */
 var CH_CONT=[[/oxygen.*(nasal|cannula)/i,'51.32','51.34'],[/oxygen.*high.?flow|high.?flow.*oxygen/i,'51.80','51.82'],[/oxygen.*(mask|facial)/i,'51.30','51.34'],[/oxygen(?! check)|\bo2 cage/i,'51.29','51.34'],
   [/ecg monitor|telemetry|continuous ecg/i,'39.59','39.60'],[/direct (blood pressure|bp)|arterial line/i,'','39.546'],[/blood pressure monitor|continuous (bp|blood pressure)/i,'39.56','39.57'],
@@ -3376,7 +3404,7 @@ function chLines(dk){ if(!curDoc) return []; var L=[], W=chWin(dk), adm=chAdm(),
     if(cc&&cc.re){ var firstEver=CH_UNTIL?(!M.some(function(x){ return x.dk<dk; })&&!CH_SIM[o.id]):(M[0]&&M[0].dk===dk), n1=firstEver&&cnt?1:0, n2=cnt-n1; if(CH_UNTIL&&cnt) CH_SIM[o.id]=1;
       if(n1) add(g,'o_'+o.id+'_1',cc.c,'',1,'',what+' · '+times.split(' · ')[0]);
       if(n2) add(g,'o_'+o.id+'_r',cc.re,'',n2,'',what+' · recheck'); }
-    else add(g,'o_'+o.id,cc?cc.c:'',cc&&cc.c?'':(o.type==='med'?(/^(iv|im|sc|sq)/i.test(o.route||'')?'Injection':'Medication')+' — '+o.name:o.name),cnt,cnt>1?'×':'',what+' · '+times,cc?{src:cc.src,oid:o.id,item:cc.item,warn:cc.c?null:'code'}:{warn:'code',oid:o.id}); });
+    else add(g,'o_'+o.id,cc?cc.c:'',cc&&cc.c?'':(o.type==='med'?(/^(iv|im|sc|sq)/i.test(o.route||'')?'Injection':'Medication')+' — '+o.name:o.name),chByUnit(cc)?chRound(cnt*cc.per):cnt,chByUnit(cc)?cc.u:(cnt>1?'×':''),what+' · '+times,cc?{src:cc.src,oid:o.id,item:cc.item,warn:cc.c?null:'code'}:{warn:'code',oid:o.id}); });
   /* added by hand */
   var X=(curDoc.charges_extra)||{}; Object.keys(X).forEach(function(id){ var x=X[id]; if(!x||x.dk!==dk) return;
     L.push({g:'extra',key:'x_'+id,xid:id,code:x.code||(x.item&&CH_PRICES.items[x.item]&&CH_PRICES.items[x.item].code)||'',item:x.item||null,warn:!(x.code||(x.item&&CH_PRICES.items[x.item]&&CH_PRICES.items[x.item].code))?'code':null,name:x.name||chName(x.code),qty:x.qty||1,unit:'',note:(x.by?'Added by '+esc(x.by):'')+(x.at?' · '+esc(fmtWhen(x.at)):'')}); });
@@ -3410,7 +3438,7 @@ window.tsRenderCharges=function(){ var el=document.getElementById('ctab-charges'
       +'<button type="button" class="ch-ck" onclick="tsChTick(\''+esc(l.key)+'\','+l.qty+')" aria-label="'+(l.done?'Mark as not entered':'Mark as entered on the invoice')+'" title="'+(l.done?'Entered on the invoice — tap to undo':'Tap when it is on the invoice')+'"'+(l.warn&&!l.code?' disabled':'')+'><i></i></button>'
       +'<span class="ch-code">'+(l.code?esc(l.code):'—')+'</span>'
       +'<span class="ch-what"><b>'+l.nameHTML+'</b>'+(l.note?'<small>'+l.note+'</small>':'')+(l.more?'<small class="ch-more">Entered '+l.doneQ+' — '+(l.qty-l.doneQ)+' more since</small>':'')+'</span>'
-      +'<span class="ch-qty">'+l.qty+(l.unit==='hr'?' hr':'')+'</span>'
+      +'<span class="ch-qty">'+l.qty+(/^(hr|mL|tab|cap)$/.test(l.unit)?' '+l.unit:'')+'</span>'
       +'<span class="ch-amt'+(l.total==null?' none':'')+'">'+(chAdmin()&&(l.code||l.item)?'<button type="button" class="ch-price" onclick="tsChPrice(this,\''+esc(l.code||'')+'\',\''+esc(l.item||'')+'\')" title="Set this hospital’s price">':'')
         +(l.total!=null?'<b>'+chMoney(l.total)+'</b>'+(l.qty>1?'<small>'+chMoney(l.price)+' each</small>':''):(chAdmin()&&(l.code||l.item)?'<small>Set price</small>':'<small>—</small>'))+(chAdmin()&&(l.code||l.item)?'</button>':'')+'</span>'
       +(l.warn==='level'?(doc?'<button type="button" class="ch-fix" onclick="document.getElementById(\'chLevel\').scrollIntoView({block:\'center\'})">Set level</button>':'<span class="ch-fix muted">Doctor sets level</span>')
@@ -3496,7 +3524,7 @@ window.tsChAdd=function(){ chPicker('Add a charge','For things the sheet doesn�
 
 /* ---------- the code list: imported once by the owner (JSON from the Coding Handbook), stored behind sign-in ---------- */
 window.tsChImport=function(inp){ var f=inp.files&&inp.files[0]; if(!f||!chAdmin()) return; var r=new FileReader();
-  r.onload=function(){ try{ var J=JSON.parse(r.result), rows=(J.codes||J).map(function(x){ return {c:String(x.c),n:String(x.n||''),d:String(x.d||'').slice(0,240)}; }).filter(function(x){ return /^\d+\.\d+$/.test(x.c); });
+  r.onload=function(){ try{ var J=JSON.parse(r.result), rows=(J.codes||J).map(function(x){ var r={c:String(x.c),n:String(x.n||''),d:String(x.d||'').slice(0,240)}; if(x.u) r.u=String(x.u).slice(0,8); if(x.t) r.t=String(x.t).slice(0,8); return r; }).filter(function(x){ return /^\d+\.\d+$/.test(x.c); });
       if(rows.length<50){ toast('That file has no codes'); return; } var col=chDB(), per=1200, parts=[], ver=String(J.version||'');
       for(var i=0;i<rows.length;i+=per) parts.push('p'+(parts.length+1));
       Promise.all(parts.map(function(id,i){ return col.doc(id).set({rows:rows.slice(i*per,(i+1)*per),version:ver}); }))
@@ -3536,8 +3564,9 @@ function chProject(until){ var now=chAllLines(), nowT=now.reduce(function(t,l){ 
   return {now:Math.round(nowT*100)/100,total:Math.round(tot*100)/100,add:Math.round((tot-nowT)*100)/100,unpriced:unp,lines:L}; }
 window.tsChProject=function(until){ return chProject(until); };
 /* one dose (or one charge) of an order, at this hospital's price — the order window and order panel show it (store/ordercare.js) */
-window.tsChReady=function(){ return chLoadPrices(); };
+window.tsChReady=function(){ return chLoad().then(function(){ return chLoadPrices(); }); };   /* drug codes come from the code list, so the order window loads it too (once a session) */
 window.tsChOrderPrice=function(o){ if(!o) return null; var cc=chOrderCode(o), k=String(o.name||'').trim().toLowerCase(); var p=chPriceOf({code:cc&&cc.c||'',item:(cc&&cc.item)||k});
+  if(p!=null&&chByUnit(cc)) return {price:chRound(p*cc.per),code:cc.c,per:cc.per,u:cc.u,unitPrice:p};   /* priced per mL / tablet: one dose = the price × what one dose uses */
   return p!=null?{price:p,code:cc&&cc.c||''}:null; };
 window.tsChMoney=chMoney; window.tsChAdmin=function(){ return chAdmin(); };
 /* the horizons offered: 8 AM tomorrow (rounds), +24 h, +48 h */
@@ -3646,7 +3675,7 @@ function ocFreqDay(f){ f=String(f||''); var m=/^q(\d+)h$/i.exec(f); if(m) return
 function ocPriceHTML(o){ if(!window.tsChOrderPrice) return ''; var p=tsChOrderPrice(o), M=window.tsChMoney||function(n){ return '$'+n; };
   if(!p) return '<div class="oc-price none"><span>No hospital price for '+esc(o.name)+' yet</span>'+(window.tsChAdmin&&tsChAdmin()?'<small>Set it in Charges</small>':'')+'</div>';
   var n=ocFreqDay(o.freq), day=n&&n>1?' · about <b>'+M(Math.round(p.price*n*100)/100)+'</b> a day':'';
-  return '<div class="oc-price"><span class="oc-price-k">Charge</span><span><b>'+M(p.price)+'</b> a dose'+day+'</span>'+(p.code?'<small>'+esc(p.code)+'</small>':'')+'</div>'; }
+  return '<div class="oc-price"><span class="oc-price-k">Charge</span><span><b>'+M(p.price)+'</b> a dose'+day+'</span>'+(p.code?'<small>'+esc(p.code)+(p.per?' · '+p.per+' '+esc(p.u)+' × '+M(p.unitPrice):'')+'</small>':'')+'</div>'; }
 
 /* ---------- the medication order window ---------- */
 on('rx.opened',function(){ var c=document.getElementById('rxCalc'); if(!c||document.getElementById('rxPrice')) return;
