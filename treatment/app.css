@@ -3973,9 +3973,9 @@ body.ts-dense #sheetInner .cell > .mark.due .mk-rim{height:32px}
 body.ts-dense .da{height:26px}body.ts-dense .da .disc{height:26px}
 @keyframes da-gather2{from{width:42px;height:30px;border-radius:8px}to{width:22px;height:22px;border-radius:11px}}
 @keyframes da-fade2{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(1.12)}100%{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
-.da.od .disc{animation:da-gather-od .34s cubic-bezier(.32,.72,0,1) calc(var(--da-d,0ms) + .12s) both,da-fade2 .5s ease calc(var(--da-d,0ms) + .9s) forwards}
+.da.da-late .disc{animation:da-gather-od .34s cubic-bezier(.32,.72,0,1) calc(var(--da-d,0ms) + .12s) both,da-fade2 .5s ease calc(var(--da-d,0ms) + .9s) forwards}
 @keyframes da-gather-od{from{width:42px;height:30px;border-radius:8px;background:var(--g-l1bg);box-shadow:inset 0 0 0 1.5px var(--g-l1rim)}to{width:22px;height:22px;border-radius:11px;background:var(--g-donebg);box-shadow:none}}
-.da.od .da-ck{color:var(--ink-900)}
+.da.da-late .da-ck{color:var(--ink-900)}
 @media (prefers-reduced-motion:reduce){
   #sheetInner .cell > .mark.overdue,#sheetInner .cell > .mark.due,.gx-pill{transition:none}
 }

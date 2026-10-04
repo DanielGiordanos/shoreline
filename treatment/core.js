@@ -345,7 +345,7 @@ function buildGrid(){
         const word=((MK_STATES[s]||{}).word||s)+(s==='overdue'?` (${mkLate(t).replace('m',' min').replace('h',' h').replace('d',' d')} late)`:''),extra=_c.length>1?` · ${_c.length} tasks this hour`:'';
         const just=s==='completed'&&window.tsJust?tsJust(t.id):null;
         let inner=markContent(t,s);
-        if(just){const hv=t.value!=null&&t.value!=='';inner=`<span class="da${hv?' val':''}${just.od?' od':''}${just.od2?' od2':''}" style="--da-d:${just.d}ms"><span class="disc"></span>${MK_DRAW}${hv?`<span class="v">${inner}</span>`:''}</span>`;}
+        if(just){const hv=t.value!=null&&t.value!=='';inner=`<span class="da${hv?' val':''}${just.od?' da-late':''}" style="--da-d:${just.d}ms"><span class="disc"></span>${MK_DRAW}${hv?`<span class="v">${inner}</span>`:''}</span>`;}
         const beat=s==='due'?` style="animation-delay:-${Date.now()%MK_BEAT}ms"`:'';
         const l2=s==='overdue'&&nowMin()-t.sched>120?' late2':'';   /* more than 2 h late: the stronger tile (Oct 2026 grid tiles) */
         html+=`<div class="${cc}"><button type="button" class="mark ${s}${l2}${abn}${off}${mv?' moved':''}${just?' just':''}" ${o._ghost?'data-g':'data-t'}="${t.id}" data-s="${s}"${beat} onclick="${o._ghost?`tsOrderPanel('${o.id}')`:`openCompletion('${t.id}')`}" title="${gEsc(o.name)} · ${fmtTime(t.sched)} · ${word}${s==='completed'&&t.value?' '+gEsc(t.value):''}${mv?' (moved from '+fmtTime(t.movedFrom)+')':''}${extra}" aria-label="${gEsc(o.name)}, ${fmtTime(t.sched)}, ${word}">${inner}</button></div>`;}}
