@@ -3980,6 +3980,56 @@ body.ts-dense .da{height:26px}body.ts-dense .da .disc{height:26px}
   #sheetInner .cell > .mark.overdue,#sheetInner .cell > .mark.due,.gx-pill{transition:none}
 }
 
+/* ═════════ weight card (Oct 2026) — top of the sidebar Vitals card: dosing weight, change since admit, copy, trend chart, BSA · RER (store/weightcard.js) ═════════ */
+#tsVitalsCard .wc{position:relative;margin:2px 15px 0;padding:10px 12px 10px;border-radius:12px;background:var(--fill-soft)}
+#tsVitalsCard .vit-grid{padding-bottom:14px}
+.wc .k{font-size:9px;color:var(--ink-400);text-transform:uppercase;letter-spacing:.03em;font-weight:800}
+.wc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.wc-v{position:relative;display:flex;align-items:baseline;gap:4px;height:28px;overflow:hidden;margin-top:1px}
+.wc-num{display:inline-block;font-size:24px;line-height:28px;font-weight:800;letter-spacing:-.02em;color:var(--ink-900);font-variant-numeric:tabular-nums}
+.wc-num.wc-ghost{position:absolute;left:0;top:0}
+.wc-u{font-size:13px;font-weight:700;color:var(--ink-400)}
+.wc-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:3px;font-size:11px;font-weight:600;color:var(--ink-400);font-variant-numeric:tabular-nums}
+.wc-delta{display:inline-flex;align-items:center;gap:3px;height:19px;padding:0 7px;border-radius:10px;background:color-mix(in srgb,var(--ink-400) 13%,transparent);color:var(--ink-700);font-size:10.5px;font-weight:700}
+.wc-delta svg{width:9px;height:9px}
+.wc-chk{margin-top:3px;font-size:11px;font-weight:600;color:var(--amber-txt)}
+.wc-cp{appearance:none;-webkit-appearance:none;border:0;background:none;font:inherit;cursor:pointer;position:relative;width:32px;height:32px;margin:-6px -8px 0 0;border-radius:9px;display:grid;place-items:center;color:var(--ink-400)}
+.wc-cp:hover{color:var(--ink-900);background:color-mix(in srgb,var(--ink-400) 12%,transparent)}
+.wc-cp:focus-visible{outline:2px solid var(--accent-ink,#17738A);outline-offset:1px}
+.wc-cp svg{width:15px;height:15px}
+.wc-cp .ok{position:absolute;right:34px;top:8px;font-size:11px;font-weight:700;color:#17738A;opacity:0;transform:translateX(4px);transition:opacity .2s,transform .3s cubic-bezier(.32,.72,0,1);pointer-events:none;white-space:nowrap}
+body.dark .wc-cp .ok{color:#38BDD2}
+.wc-cp.done .ok{opacity:1;transform:none}
+.wc-chart{display:block;width:100%;height:auto;margin-top:6px;outline:none;border-radius:6px;touch-action:none;cursor:crosshair;overflow:visible}
+.wc-chart:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.wc-chart text{font-size:9.5px;font-weight:600;fill:var(--ink-400);font-variant-numeric:tabular-nums}
+.wc-chart .wc-now{fill:var(--ink-700)}
+.wc-chart .wc-gl{stroke:color-mix(in srgb,var(--ink-400) 28%,transparent);stroke-width:1;stroke-dasharray:2 3}
+.wc-chart .wc-fut{fill:color-mix(in srgb,var(--ink-400) 8%,transparent)}
+.wc-chart .wc-ln{fill:none;stroke:#1A7C93;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.wc-chart .wc-ar{fill:url(#wcGrad)}
+.wc-chart .wc-g0{stop-color:#1A7C93;stop-opacity:.24}.wc-chart .wc-g1{stop-color:#1A7C93;stop-opacity:0}
+.wc-chart .wc-tail{fill:none;stroke:#1A7C93;stroke-width:1.6;stroke-dasharray:2 4;stroke-linecap:round;opacity:.55}
+.wc-chart .wc-dot{fill:var(--surface-0,#fff);stroke:#1A7C93;stroke-width:2;transform-box:fill-box;transform-origin:center}
+.wc-chart .wc-dot.last{fill:#1A7C93}
+.wc-chart .wc-ring{fill:none;stroke:#1A7C93;stroke-width:1.5;opacity:0}
+.wc-chart .wc-scrub{stroke:var(--ink-400);stroke-width:1;opacity:0;transition:opacity .12s}.wc-chart .wc-scrub.on{opacity:.55}
+body.dark .wc-chart :is(.wc-ln,.wc-tail,.wc-ring){stroke:#38BDD2}body.dark .wc-chart .wc-dot{stroke:#38BDD2}body.dark .wc-chart .wc-dot.last{fill:#38BDD2}
+body.dark .wc-chart .wc-g0{stop-color:#38BDD2;stop-opacity:.3}body.dark .wc-chart .wc-g1{stop-color:#38BDD2}
+.wc-hint{margin-top:2px;font-size:11px;font-weight:500;color:var(--ink-400)}
+.wc-bub{position:absolute;z-index:3;pointer-events:none;transform:translate(-50%,-100%);background:var(--ink-900);color:var(--surface-0,#fff);border-radius:8px;padding:4px 8px;font-size:11.5px;font-weight:700;white-space:nowrap;
+  opacity:0;transition:opacity .12s;font-variant-numeric:tabular-nums;box-shadow:0 6px 16px -8px rgba(0,0,0,.5)}
+.wc-bub small{display:block;font-size:10.5px;font-weight:500;opacity:.75}
+.wc-bub.on{opacity:1}
+.wc-der{display:grid;grid-template-columns:1fr 1fr;margin-top:8px;padding-top:8px;border-top:1px solid color-mix(in srgb,var(--ink-400) 18%,transparent)}
+.wc-der > div + div{border-left:1px solid color-mix(in srgb,var(--ink-400) 18%,transparent);padding-left:11px}
+.wc-der .k{color:#17738A}body.dark .wc-der .k{color:var(--accent)}
+.wc-der b{display:block;margin-top:1px;font-size:15px;font-weight:800;color:var(--ink-900);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.wc-der b small{font-size:11px;font-weight:700;color:var(--ink-400)}
+.cbrief .vit .age{margin-top:1px;font-size:10.5px;font-weight:500;color:var(--ink-400)}
+.cbrief .vit.none .v{color:var(--ink-400)}
+@media (prefers-reduced-motion:reduce){.wc-cp .ok,.wc-bub,.wc-chart .wc-scrub{transition:none}}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 

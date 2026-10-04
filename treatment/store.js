@@ -4274,10 +4274,14 @@ function wtTileHTML(kg){ var R=[]; try{ R=readings(curDoc,/^weight$/i).map(funct
   return '<div class="vit vit-wt" title="'+esc(R.map(function(r){ var x=new Date(r.at); return (x.getMonth()+1)+'/'+x.getDate()+' '+r.v+' kg'; }).join(' · '))+'"><div class="wt-l"><div class="k">Weight</div><div class="v">'+(kg?kg+' kg':'—')+'</div>'
     +(last!=null&&kg&&Math.abs(last-kg)>=0.05?'<small>Charted '+esc(last)+' kg</small>':d?d:'')+'</div>'+(spark?'<div class="wt-r">'+spark+(last!=null&&kg&&Math.abs(last-kg)>=0.05?d:'')+'</div>':'')+'</div>'; }
 function vitalsCardInner(){ try{ vLive(); }catch(e){} var kg=Number(VISIT.weight)||0, sp=spKey()||'dog', val=function(x,u){ return x&&x!=='—'?esc(x)+(u?' '+u:''):'—'; };
-  var vit=[['Temp',val(VISIT.temp,'°F')],['Heart rate',val(VISIT.hr,'bpm')],['Resp rate',val(VISIT.rr,'rpm')],['MM',val(VISIT.mm)],['CRT',val(VISIT.crt)],['Mentation',val(VISIT.mentation)],['Pain score',VISIT.pain&&VISIT.pain!=='—'?esc(VISIT.pain)+' / 4':'—']];
+  /* six vitals, three even rows (Oct 2026: pain score left the card — it is on the sheet), each with how old its reading is */
+  var age=function(rx,has){ if(!has) return ''; try{ var R=readings(curDoc,rx), l=R[R.length-1]; return l&&l.at?ago(l.at):''; }catch(e){ return ''; } }, has=function(x){ return x&&x!=='—'; };
+  var vit=[['Temp',val(VISIT.temp,'°F'),age(/^temperature$/i,has(VISIT.temp))],['Heart rate',val(VISIT.hr,'bpm'),age(/^heart rate$/i,has(VISIT.hr))],['Resp rate',val(VISIT.rr,'rpm'),age(/^respiratory rate$/i,has(VISIT.rr))],
+    ['MM',val(VISIT.mm),age(/^mucous membrane/i,has(VISIT.mm))],['CRT',val(VISIT.crt),age(/^crt$/i,has(VISIT.crt))],['Mentation',val(VISIT.mentation),age(/^mentation$/i,has(VISIT.mentation))]];
+  if(window.tsWeightCard) return '<h4>Vitals</h4>'+tsWeightCard(kg,sp)+'<div class="vit-grid">'+vit.map(function(v){ return '<div class="vit'+(v[1]==='—'?' none':'')+'"><div class="k">'+v[0]+'</div><div class="v">'+v[1]+'</div>'+(v[2]?'<div class="age">'+esc(v[2])+'</div>':'')+'</div>'; }).join('')+'</div>';
   return '<h4>Vitals</h4>'+wtTileHTML(kg)+'<div class="vit-grid">'+vit.map(function(v){ return '<div class="vit"><div class="k">'+v[0]+'</div><div class="v">'+v[1]+'</div></div>'; }).join('')+'</div>'
     +(kg?'<div class="calc-row"><div class="calc-chip"><div class="k">BSA</div><div class="v">'+bsa(kg,sp).toFixed(2)+' m²</div></div><div class="calc-chip"><div class="k">RER</div><div class="v">'+Math.round(70*Math.pow(kg,0.75)).toLocaleString()+' kcal/day</div></div></div>':''); }
-function vitalsCardPaint(){ var el=document.getElementById('tsVitalsCard'); if(!el) return; var h=vitalsCardInner(); if(el.innerHTML!==h) el.innerHTML=h; }
+function vitalsCardPaint(){ var el=document.getElementById('tsVitalsCard'); if(!el) return; var h=vitalsCardInner(); if(el._h!==h){ el.innerHTML=h; el._h=h; } }   /* compare with what was written, not the browser's re-serialized innerHTML (SVG never matches) */
 on('header.refresh',vitalsCardPaint);
 window.sidebarBriefHTML=function(){ var p=(curDoc&&curDoc.patient)||{}, kg=Number(VISIT.weight)||0;
   var list=function(t,a){ return a&&a.length?'<div class="panel"><h4>'+t+'</h4><div class="pc"><ul>'+a.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul></div></div>':''; };
@@ -4295,6 +4299,123 @@ window.sidebarBriefHTML=function(){ var p=(curDoc&&curDoc.patient)||{}, kg=Numbe
     +((p.owner||p.phone)?'<div class="panel"><h4>Client</h4><div class="kvlist">'+(p.owner?kvr('Owner',esc(p.owner)):'')+(p.phone?kvr('Phone',esc(p.phone)):'')+'</div></div>':'')
     +tsProblemsPanel()+list('Plan',VISIT.plan)
     +'</aside>'; };
+/* ═══ WEIGHT CARD (Oct 2026) — the top of the sidebar Vitals card ═══
+   The dosing weight, the change since admit, a copy button, a trend chart of every charted weight (admit → now), and BSA / RER
+   beside it, since both come from that weight. Reading the chart: pointer or Tab + ← → moves between weigh-ins.
+   Motion (never with Reduce Motion): opening a sheet draws the line, raises the fill, brings each dot in as the line reaches it and
+   sends one ring from the newest; a new weight springs the chart to its new scale, the new dot slides in from the last one and the
+   number rolls. The card is re-rendered as a string (store/rounds.js vitalsCardInner); this module only decides what moves. */
+(function(){
+  var CW=276, CH=74, AX=15, PL=5, PR=32, WC={id:null,n:0,kg:null,P:null,now:0};
+  var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function pts(){ var R=[]; try{ R=readings(curDoc,/^weight$/i).map(function(r){ return {v:parseFloat((String(r.v).match(/\d+(\.\d+)?/)||[])[0]),at:r.at,src:r.src}; }).filter(function(r){ return r.v>0&&r.at&&!isNaN(new Date(r.at)); }); }catch(e){}
+    if(!R.length){ var kg=Number(VISIT.weight)||0, at=curDoc&&(curDoc.admitted_at||curDoc.created_at); if(kg&&at) R=[{v:kg,at:at,src:'admit'}]; }
+    /* the same weigh-in can arrive twice (the open day's mark and the board summary, minutes rounded): keep one */
+    var out=[]; R.map(function(r){ return {v:r.v,t:new Date(r.at).getTime(),src:r.src}; }).sort(function(a,b){ return a.t-b.t; }).forEach(function(r){ var p=out[out.length-1]; if(p&&Math.abs(r.t-p.t)<3*60000&&Math.abs(r.v-p.v)<0.005){ if(!p.src) p.src=r.src; return; } out.push(r); });
+    return out.slice(-14); }
+  function f2(k,ref){ var r=ref==null?k:ref; return (Math.round(k*100)/100).toFixed(r>=20?1:2); }
+  function hr(t){ var d=new Date(t), h=d.getHours(), m=d.getMinutes(), a=h<12?'AM':'PM'; h=h%12||12; return h+(m?':'+String(m).padStart(2,'0'):'')+' '+a; }
+  function sh(t){ var d=new Date(t), h=d.getHours(); return (h%12||12)+(h<12?'A':'P'); }
+  function geom(R,now){ var t0=R[0].t, span=Math.max(now-t0,6*3600e3), x=function(t){ return PL+Math.min(1,(t-t0)/span)*(CW-PL-PR); };
+    var ks=R.map(function(r){ return r.v; }), lo=Math.min.apply(null,ks), hi=Math.max.apply(null,ks), mid=(lo+hi)/2, half=Math.max((hi-lo)/2*1.35,mid*0.012,.15);
+    var y=function(k){ return 7+(1-(k-(mid-half))/(2*half))*(CH-14); };
+    return {x:x,y:y,lo:lo,hi:hi,P:R.map(function(r){ return [x(r.t),y(r.v)]; })}; }
+  /* a monotone curve through the weigh-ins: it never bulges above or below a real weight */
+  function mono(P){ if(P.length<2) return P.length?'M'+P[0][0].toFixed(1)+','+P[0][1].toFixed(1):''; var n=P.length,dx=[],m=[],t=[],i;
+    for(i=0;i<n-1;i++){ dx[i]=Math.max(.01,P[i+1][0]-P[i][0]); m[i]=(P[i+1][1]-P[i][1])/dx[i]; }
+    t[0]=m[0]; t[n-1]=m[n-2]; for(i=1;i<n-1;i++) t[i]=m[i-1]*m[i]<=0?0:(m[i-1]+m[i])/2;
+    for(i=0;i<n-1;i++){ if(m[i]===0){ t[i]=t[i+1]=0; continue; } var a=t[i]/m[i], b=t[i+1]/m[i], s=a*a+b*b; if(s>9){ var k=3/Math.sqrt(s); t[i]=k*a*m[i]; t[i+1]=k*b*m[i]; } }
+    var d='M'+P[0][0].toFixed(1)+','+P[0][1].toFixed(1); for(i=0;i<n-1;i++){ var h=dx[i]/3; d+=' C'+(P[i][0]+h).toFixed(1)+','+(P[i][1]+t[i]*h).toFixed(1)+' '+(P[i+1][0]-h).toFixed(1)+','+(P[i+1][1]-t[i+1]*h).toFixed(1)+' '+P[i+1][0].toFixed(1)+','+P[i+1][1].toFixed(1); }
+    return d; }
+  function chart(R,now){ var g=geom(R,now), P=g.P, L=P[P.length-1], nx=CW-PR, line=mono(P), s='', i, prev=null, lastLbl=-99;
+    s+='<defs><linearGradient id="wcGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="wc-g0"/><stop offset="1" class="wc-g1"/></linearGradient></defs>';
+    if(R.length>1) s+='<rect class="wc-fut" x="'+L[0].toFixed(1)+'" y="0" width="'+Math.max(0,nx-L[0]).toFixed(1)+'" height="'+CH+'" rx="4"/>'
+      +'<line class="wc-gl" x1="0" x2="'+nx+'" y1="'+g.y(g.hi).toFixed(1)+'" y2="'+g.y(g.hi).toFixed(1)+'"/><line class="wc-gl" x1="0" x2="'+nx+'" y1="'+g.y(g.lo).toFixed(1)+'" y2="'+g.y(g.lo).toFixed(1)+'"/>'
+      +'<text x="'+CW+'" y="'+(g.y(g.hi)+3).toFixed(1)+'" text-anchor="end">'+f2(g.hi)+'</text>'+(g.hi!==g.lo?'<text x="'+CW+'" y="'+(g.y(g.lo)+3).toFixed(1)+'" text-anchor="end">'+f2(g.lo)+'</text>':'');
+    else s+='<text x="'+CW+'" y="'+(L[1]+3).toFixed(1)+'" text-anchor="end">'+f2(R[0].v)+'</text>';
+    if(R.length>1) s+='<path class="wc-ar" d="'+line+' L'+L[0].toFixed(1)+','+CH+' L'+P[0][0].toFixed(1)+','+CH+' Z"/>';
+    s+='<path class="wc-ln" d="'+line+'"/><path class="wc-tail" d="M'+L[0].toFixed(1)+','+L[1].toFixed(1)+' H'+nx+'"/><line class="wc-scrub" x1="0" x2="0" y1="0" y2="'+CH+'"/>';
+    for(i=0;i<P.length;i++) s+='<circle class="wc-dot'+(i===P.length-1?' last':'')+'" cx="'+P[i][0].toFixed(1)+'" cy="'+P[i][1].toFixed(1)+'" r="3.3"/>';
+    s+='<circle class="wc-ring" cx="'+L[0].toFixed(1)+'" cy="'+L[1].toFixed(1)+'" r="4"/>';
+    /* the time axis: each weigh-in (its day when the day changes), never two labels on top of each other, and Now */
+    for(i=0;i<R.length;i++){ var x=P[i][0], last=i===R.length-1; if(!last&&x-lastLbl<34) continue; if(last&&x-lastLbl<30&&i>0){ /* the newest wins */ s=s.replace(/<text class="wc-t"[^>]*>[^<]*<\/text>$/,''); }
+      var lb=(!prev||new Date(prev).toDateString()!==new Date(R[i].t).toDateString()?DAYS[new Date(R[i].t).getDay()]+' ':'')+sh(R[i].t); prev=R[i].t; lastLbl=x;
+      s+='<text class="wc-t" x="'+x.toFixed(1)+'" y="'+(CH+AX-3)+'" text-anchor="'+(i===0?'start':'middle')+'">'+lb+'</text>'; }
+    if(nx-L[0]>44) s+='<text class="wc-now" x="'+nx+'" y="'+(CH+AX-3)+'" text-anchor="end">Now</text>';
+    return s; }
+  var COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
+  function arrow(d){ return '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="'+(d<0?'M5 1.5v7M2 5.5l3 3 3-3':'M5 8.5v-7M2 4.5l3-3 3 3')+'" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+
+  window.tsWeightCard=function(kg,sp){ var R=pts(), now=nowMs(), W=null; try{ W=weightInfo(curDoc); }catch(e){}
+    var first=R[0], last=R[R.length-1], meta='';
+    if(R.length>1){ var dk=last.v-first.v, pct=dk/first.v*100, adm=curDoc&&(curDoc.admitted_at||curDoc.created_at), sinceAdmit=adm&&Math.abs(first.t-new Date(adm).getTime())<8*3600e3, fd=new Date(first.t);
+      meta='<span class="wc-delta">'+(Math.abs(dk)<0.005?'No change':arrow(dk)+(dk>0?'+':'−')+f2(Math.abs(dk),last.v)+' kg')+'</span><span>'+(Math.abs(pct)>=0.05?(pct>0?'+':'−')+Math.abs(pct).toFixed(1)+'% ':'')+'since '+(sinceAdmit?'admit':(fd.getMonth()+1)+'/'+fd.getDate())+'</span>'; }
+    else if(W&&W.kg) meta='<span>'+esc(W.how||'Weighed')+(W.when?' · '+esc(W.when):'')+'</span>';
+    var chk=W&&W.newer?'<div class="wc-chk">Charted '+esc(f2(W.newer.v))+' kg · doses still use '+esc(String(kg))+' kg</div>':'';
+    var sum=R.length>1?'Weight trend: '+f2(first.v)+' kg '+DAYS[new Date(first.t).getDay()]+' '+hr(first.t)+' to '+f2(last.v)+' kg '+DAYS[new Date(last.t).getDay()]+' '+hr(last.t)+'. Use the arrow keys to read each weigh-in.':(R.length?'Weight '+f2(last.v)+' kg, one weigh-in so far.':'');
+    var data=R.map(function(r){ return r.t+':'+r.v+':'+(r.src||''); }).join(',');
+    return '<div class="wc" data-pts="'+esc(data)+'" data-kg="'+esc(String(kg||''))+'"><div class="wc-top"><div><div class="k">Weight</div><div class="wc-v"><span class="wc-num">'+(kg?esc(String(kg)):'—')+'</span>'+(kg?'<span class="wc-u">kg</span>':'')+'</div></div>'
+      +(kg?'<button type="button" class="wc-cp" onclick="tsWcCopy(this)" aria-label="Copy weight" title="Copy weight">'+COPY+'<span class="ok">Copied</span></button>':'')+'</div>'
+      +(meta?'<div class="wc-meta">'+meta+'</div>':'')+chk
+      +(R.length?'<svg class="wc-chart" viewBox="0 0 '+CW+' '+(CH+AX)+'" tabindex="0" role="img" aria-label="'+esc(sum)+'">'+chart(R,now)+'</svg>'+(R.length<2?'<div class="wc-hint">Weigh again to see the trend.</div>':''):'')
+      +'<div class="wc-bub" aria-hidden="true"></div>'
+      +(kg?'<div class="wc-der"><div><div class="k">BSA</div><b>'+bsa(kg,sp).toFixed(2)+' <small>m²</small></b></div><div><div class="k">RER</div><b>'+Math.round(70*Math.pow(kg,0.75)).toLocaleString()+' <small>kcal/day</small></b></div></div>':'')
+      +'</div>'; };
+  function nowMs(){ return Date.now(); }
+
+  window.tsWcCopy=function(b){ var t=(Number(VISIT.weight)||'')+' kg'; try{ if(navigator.clipboard) navigator.clipboard.writeText(t); }catch(e){} b.classList.add('done'); setTimeout(function(){ b.classList.remove('done'); },1300); };
+
+  /* reading the chart */
+  function readOf(svg){ var c=svg.closest('.wc'); return String(c.getAttribute('data-pts')||'').split(',').filter(Boolean).map(function(s){ var a=s.split(':'); return {t:+a[0],v:+a[1],src:a[2]}; }); }
+  function show(svg,i){ var R=readOf(svg); if(!R[i]) return; var c=svg.closest('.wc'), g=geom(R,+svg.getAttribute('data-now')||nowMs()), p=g.P[i], bub=c.querySelector('.wc-bub'), sc=svg.querySelector('.wc-scrub');
+    svg._i=i; svg.querySelectorAll('.wc-dot').forEach(function(d,j){ d.setAttribute('r',j===i?4.5:3.3); }); sc.setAttribute('x1',p[0]); sc.setAttribute('x2',p[0]); sc.classList.add('on');
+    var sr=svg.getBoundingClientRect(), cr=c.getBoundingClientRect(), k=sr.width/CW, d=new Date(R[i].t), today=new Date().toDateString()===d.toDateString();
+    bub.innerHTML=f2(R[i].v)+' kg<small>'+(today?'Today':DAYS[d.getDay()]+' '+(d.getMonth()+1)+'/'+d.getDate())+' '+hr(R[i].t)+(R[i].src==='triage'?' · Triage':'')+'</small>';
+    bub.style.left=Math.min(Math.max(sr.left-cr.left+p[0]*k,58),cr.width-58)+'px'; bub.style.top=(sr.top-cr.top+p[1]*k-8)+'px'; bub.classList.add('on'); }
+  function hide(svg){ var c=svg.closest('.wc'); svg._i=-1; c.querySelector('.wc-bub').classList.remove('on'); var sc=svg.querySelector('.wc-scrub'); if(sc) sc.classList.remove('on'); svg.querySelectorAll('.wc-dot').forEach(function(d){ d.setAttribute('r',3.3); }); }
+  document.addEventListener('pointermove',function(e){ var svg=e.target&&e.target.closest&&e.target.closest('.wc-chart'); if(!svg) return; var R=readOf(svg); if(!R.length) return;
+    var r=svg.getBoundingClientRect(), x=(e.clientX-r.left)*(CW/r.width), g=geom(R,+svg.getAttribute('data-now')||nowMs()), b=0, bd=1e9; g.P.forEach(function(p,i){ var d=Math.abs(p[0]-x); if(d<bd){ bd=d; b=i; } }); if(b!==svg._i) show(svg,b); },{passive:true});
+  document.addEventListener('pointerout',function(e){ var svg=e.target&&e.target.closest&&e.target.closest('.wc-chart'); if(svg&&!svg.contains(e.relatedTarget)&&document.activeElement!==svg) hide(svg); },{passive:true});
+  document.addEventListener('focusin',function(e){ var svg=e.target; if(svg&&svg.classList&&svg.classList.contains('wc-chart')){ var R=readOf(svg); if(R.length) show(svg,R.length-1); } });
+  document.addEventListener('focusout',function(e){ var svg=e.target; if(svg&&svg.classList&&svg.classList.contains('wc-chart')) hide(svg); });
+  document.addEventListener('keydown',function(e){ var svg=e.target; if(!(svg&&svg.classList&&svg.classList.contains('wc-chart'))) return; var R=readOf(svg);
+    if(e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); var i=svg._i==null||svg._i<0?R.length-1:svg._i+(e.key==='ArrowRight'?1:-1); show(svg,Math.max(0,Math.min(R.length-1,i))); } if(e.key==='Escape') hide(svg); });
+
+  /* motion */
+  function still(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return true; } }
+  var E='cubic-bezier(.32,.72,0,1)';
+  function ring(svg,delay){ var r=svg.querySelector('.wc-ring'); if(r&&r.animate) try{ r.animate([{r:4,opacity:.55},{r:13,opacity:0}],{duration:1000,delay:delay,easing:'cubic-bezier(.2,.7,.3,1)'}); }catch(e){} }
+  function intro(svg,R,now){ var ln=svg.querySelector('.wc-ln'), ar=svg.querySelector('.wc-ar'), D=900, Lh=0; try{ Lh=ln.getTotalLength(); }catch(e){}
+    if(Lh>0) ln.animate([{strokeDasharray:Lh+' '+Lh,strokeDashoffset:Lh},{strokeDasharray:Lh+' '+Lh,strokeDashoffset:0}],{duration:D,easing:E});
+    if(ar) ar.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:D+150,delay:80,easing:E,fill:'backwards'});
+    var g=geom(R,now), span=(g.P[g.P.length-1][0]-g.P[0][0])||1;
+    svg.querySelectorAll('.wc-dot').forEach(function(d,i){ d.animate([{transform:'scale(0)'},{transform:'scale(1.25)',offset:.6},{transform:'scale(1)'}],{duration:420,delay:(g.P[i][0]-g.P[0][0])/span*D*.85,easing:'ease-out',fill:'backwards'}); });
+    svg.querySelectorAll('.wc-tail,.wc-fut').forEach(function(e){ e.animate([{opacity:0},{opacity:1}],{duration:400,delay:D*.8,fill:'backwards'}); });
+    svg.querySelectorAll('text').forEach(function(t,i){ t.animate([{opacity:0},{opacity:1}],{duration:400,delay:200+i*40,fill:'backwards'}); });
+    ring(svg,D*.9); }
+  function springE(t){ return 1-Math.exp(-6.5*t)*Math.cos(9.5*t); }
+  function springTo(svg,fromP,toP){ var ln=svg.querySelector('.wc-ln'), ar=svg.querySelector('.wc-ar'), dots=[].slice.call(svg.querySelectorAll('.wc-dot')), fut=svg.querySelector('.wc-fut'), tail=svg.querySelector('.wc-tail'), rg=svg.querySelector('.wc-ring'), nx=CW-PR;
+    var from=toP.map(function(_,i){ return fromP[Math.min(i,fromP.length-1)]; }), T0=performance.now(), DUR=750;
+    (function step(now){ if(!svg.isConnected) return; var k=Math.min(1,(now-T0)/DUR), e=springE(k), P=toP.map(function(p,i){ return [from[i][0]+(p[0]-from[i][0])*e, from[i][1]+(p[1]-from[i][1])*e]; }), L=P[P.length-1], d=mono(P);
+      ln.setAttribute('d',d); if(ar) ar.setAttribute('d',d+' L'+L[0]+','+CH+' L'+P[0][0]+','+CH+' Z'); dots.forEach(function(c,i){ if(P[i]){ c.setAttribute('cx',P[i][0]); c.setAttribute('cy',P[i][1]); } });
+      if(fut){ fut.setAttribute('x',L[0]); fut.setAttribute('width',Math.max(0,nx-L[0])); } if(tail) tail.setAttribute('d','M'+L[0]+','+L[1]+' H'+nx); if(rg){ rg.setAttribute('cx',L[0]); rg.setAttribute('cy',L[1]); }
+      if(k<1) requestAnimationFrame(step); else ring(svg,0); })(T0); }
+  function roll(card,oldTxt){ var num=card.querySelector('.wc-num'); if(!num||!num.animate) return; var g=num.cloneNode(true); g.textContent=oldTxt; g.className='wc-num wc-ghost'; num.parentNode.appendChild(g);
+    var a=g.animate([{transform:'none',opacity:1},{transform:'translateY(-70%)',opacity:0}],{duration:380,easing:E,fill:'forwards'}); a.onfinish=function(){ g.remove(); };
+    num.animate([{transform:'translateY(70%)',opacity:0},{transform:'none',opacity:1}],{duration:460,delay:60,easing:E,fill:'backwards'});
+    card.querySelectorAll('.wc-der b').forEach(function(b){ b.animate([{opacity:.25,transform:'translateY(3px)'},{opacity:1,transform:'none'}],{duration:420,delay:200,easing:E,fill:'backwards'}); }); }
+  function motion(){ var card=document.querySelector('#tsVitalsCard .wc'); if(!card||card._wc) return; card._wc=1;
+    var svg=card.querySelector('.wc-chart'), R=svg?readOf(svg):[], now=nowMs(), kg=card.getAttribute('data-kg'), id=CUR, prev=WC, g=R.length?geom(R,now):null;
+    if(svg) svg.setAttribute('data-now',String(now));
+    WC={id:id,n:R.length,kg:kg,P:g?g.P:null,now:now};
+    if(still()||!card.animate) return;
+    if(prev.id!==id){ if(svg&&R.length) intro(svg,R,now); return; }
+    if(svg&&R.length>prev.n&&prev.P&&prev.n>0) springTo(svg,prev.P,g.P);
+    if(prev.kg&&kg&&prev.kg!==kg) roll(card,prev.kg); }
+  window.tsWcMotion=motion;
+  on('header.refresh',function(){ setTimeout(motion,0); });
+  on('sheet.opening',function(){ WC={id:null,n:0,kg:null,P:null,now:0}; });
+})();
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey,
   /* for tests and the preview only */ infAdd:function(){ return infAdd.apply(null,arguments); }, infBuild:function(){ return infBuild.apply(null,arguments); }, addOrders:function(L){ return addOrders(L); }};
 })();
