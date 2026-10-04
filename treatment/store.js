@@ -3252,7 +3252,7 @@ window.tsSeenDone=function(){ seenSince[CUR]=new Date().toISOString(); tsOrderCl
 var CH_CODES=null, CH_IX={}, CH_P=null, CH_MAP={}, CH_ADMIN_FILE=null;
 /* this hospital's prices (charge_codes/prices, written by the owner/admin): codes = {code: price}; items = {order name: {price, code}}
    for things priced by the hospital that the handbook has no master price or code for (e.g. the Nova panel) */
-var CH_PRICES={codes:{},items:{}};
+var CH_PRICES={codes:{},items:{},fees:{}};
 function chDB(){ return DB&&DB.collection?DB.collection('charge_codes'):null; }
 function chLoad(){ if(CH_CODES) return Promise.resolve(CH_CODES); if(CH_P) return CH_P; var col=chDB(); if(!col) return Promise.resolve([]);
   CH_P=col.doc('meta').get().then(function(m){ var meta=m.exists?m.data():null, parts=(meta&&meta.parts)||[];
@@ -3267,7 +3267,7 @@ function chLoad(){ if(CH_CODES) return Promise.resolve(CH_CODES); if(CH_P) retur
 var CH_PP=null, CH_PP_OK=false;
 function chLoadPrices(){ if(CH_PP) return CH_PP; var col=chDB(); if(!col) return Promise.resolve();
   CH_PP=Promise.all([col.doc('map').get().then(function(s){ CH_MAP=(s.exists&&s.data().codes)||{}; },function(){}),
-    col.doc('prices').get().then(function(s){ var d=s.exists?s.data():{}; CH_PRICES={codes:d.codes||{},items:d.items||{}}; },function(){})])
+    col.doc('prices').get().then(function(s){ var d=s.exists?s.data():{}; CH_PRICES={codes:d.codes||{},items:d.items||{},fees:d.fees||{}};   /* fees: WOOFware's fee per invoice entry (e.g. the injection fee), added once per entry on top of unit price × quantity */ },function(){})])
     .then(function(){ CH_PP_OK=true; try{ refreshHeader(); }catch(e){} }); return CH_PP; }
 on('header.refresh',function(){ if(!CH_PP&&CUR&&curDoc) chLoadPrices(); if(!CH_CODES&&!CH_P&&CUR&&curDoc) chLoad().then(function(L){ if(L&&L.length) try{ refreshHeader(); }catch(e){} }); });
 function chName(code,fallback){ var x=CH_IX[code]; return x?x.n:(fallback||''); }
@@ -3332,11 +3332,14 @@ function chOrderCode(o){ if(o.code) return {c:o.code,src:'order'}; var k=String(
    A code typed on the order, or remembered for the drug (charge_codes/map), always wins. Nothing matched → "Needs a code" as before. */
 var CH_DX=null;
 function chGen(s){ return String(s||'').toLowerCase().replace(/\(.*?\)/g,' ').replace(/\b(gen|generic|hcl|hydrochloride|sodium|potassium|citrate|sulfate|phosphate|tartrate|maleate|mesylate|acetate|succinate|hyclate|base|inj|injection)\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim(); }
-function chDxIndex(){ if(CH_DX) return CH_DX; CH_DX={}; (CH_CODES||[]).forEach(function(x){ var t=x.t||((String(x.n).match(/\b(IHINJ|IHMED)\s*$/)||[])[1]||''); if(t!=='IHINJ'&&t!=='IHMED') return;
-    var m=String(x.n).match(/^(.*?)\s+(\d+(?:\.\d+)?)\s*(mg|mcg|g|meq|u|iu|units?)(\/\s*ml)?\s*(.*?)\s*(?:IHINJ|IHMED)\s*$/i); if(!m||/\d+\s*ct\b/i.test(m[5])) return;
-    var g=chGen(m[1]); if(!g) return; var su=m[3].toLowerCase(), s=+m[2]*(su==='mcg'?0.001:su==='g'?1000:1);
-    (CH_DX[g]=CH_DX[g]||[]).push({c:x.c,t:t,s:s,ml:!!m[4],form:String(m[5]||'').toLowerCase(),u:x.u||(m[4]?'mL':/cap/i.test(m[5])?'cap':'tab'),unitWord:su}); }); return CH_DX; }
+function chDxIndex(){ if(CH_DX) return CH_DX; CH_DX={}; (CH_CODES||[]).forEach(function(x){ var n=String(x.n||'').replace(/\/mL\/mL/gi,'/mL'), t=x.t||((n.match(/\b(IHINJ|IHMED)\s*$/)||[])[1]||''); if(t!=='IHINJ'&&t!=='IHMED') return;
+    if(/\d+\s*ct\b|\bpatch\b/i.test(n)) return;   /* case counts and patches are not doses */
+    var core=n.replace(/\s*(IHINJ|IHMED)\s*$/,''), m=core.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|g|meq|u|iu|units?)\s*\/\s*ml/i), ml=!!m; if(!m) m=core.match(/(\d+(?:\.\d+)?)\s*(mg|mcg|g|meq|u|iu|units?)\b/i); if(!m) return;
+    var lead=core.slice(0,core.search(/\d/)), g=chGen(lead); if(!g) return; var su=m[2].toLowerCase(), sv=+m[1]*(su==='mcg'?0.001:su==='g'?1000:1), form=core.slice(m.index+m[0].length).toLowerCase();
+    (CH_DX[g]=CH_DX[g]||[]).push({c:x.c,t:t,s:sv,ml:ml,form:form,u:x.u&&x.u!=='each'?x.u:(ml?'mL':/cap/i.test(form)?'cap':'tab'),unitWord:su}); }); return CH_DX; }
 function chRound(n){ return Math.round(n*100)/100; }
+function chFeeCount(l){ return l&&l.unit==='hr'?(+l.qty||0):(l&&l.n||1); }   /* hourly codes (HOSP/hr, fluids/hr, oxygen/hr) carry their fee on every hour; everything else once per invoice entry */
+function chFee(l){ var f=l&&l.code&&CH_PRICES.fees&&CH_PRICES.fees[l.code]; return f?+f:0; }
 function chCodePriced(c){ var v=c&&CH_PRICES.codes[c]; return v!=null&&v!==''; }
 /* bill in mL / tablets when the code itself is priced (or nothing is); a per-dose price set for the drug counts doses */
 function chByUnit(cc){ return !!(cc&&cc.per&&(chCodePriced(cc.c)||!cc.item)); }
@@ -3402,13 +3405,13 @@ function chLines(dk){ if(!curDoc) return []; var L=[], W=chWin(dk), adm=chAdm(),
     var cnt=today.length+fut;
     if(fut) times=(times?times+' · ':'')+fut+' to come';
     if(cc&&cc.re){ var firstEver=CH_UNTIL?(!M.some(function(x){ return x.dk<dk; })&&!CH_SIM[o.id]):(M[0]&&M[0].dk===dk), n1=firstEver&&cnt?1:0, n2=cnt-n1; if(CH_UNTIL&&cnt) CH_SIM[o.id]=1;
-      if(n1) add(g,'o_'+o.id+'_1',cc.c,'',1,'',what+' · '+times.split(' · ')[0]);
-      if(n2) add(g,'o_'+o.id+'_r',cc.re,'',n2,'',what+' · recheck'); }
-    else add(g,'o_'+o.id,cc?cc.c:'',cc&&cc.c?'':(o.type==='med'?(/^(iv|im|sc|sq)/i.test(o.route||'')?'Injection':'Medication')+' — '+o.name:o.name),chByUnit(cc)?chRound(cnt*cc.per):cnt,chByUnit(cc)?cc.u:(cnt>1?'×':''),what+' · '+times,cc?{src:cc.src,oid:o.id,item:cc.item,warn:cc.c?null:'code'}:{warn:'code',oid:o.id}); });
+      if(n1) add(g,'o_'+o.id+'_1',cc.c,'',1,'',what+' · '+times.split(' · ')[0],{n:1});
+      if(n2) add(g,'o_'+o.id+'_r',cc.re,'',n2,'',what+' · recheck',{n:n2}); }
+    else add(g,'o_'+o.id,cc?cc.c:'',cc&&cc.c?'':(o.type==='med'?(/^(iv|im|sc|sq)/i.test(o.route||'')?'Injection':'Medication')+' — '+o.name:o.name),chByUnit(cc)?chRound(cnt*cc.per):cnt,chByUnit(cc)?cc.u:(cnt>1?'×':''),what+' · '+times,cc?{src:cc.src,oid:o.id,item:cc.item,warn:cc.c?null:'code',n:cnt}:{warn:'code',oid:o.id,n:cnt}); });
   /* added by hand */
   var X=(curDoc.charges_extra)||{}; Object.keys(X).forEach(function(id){ var x=X[id]; if(!x||x.dk!==dk) return;
     L.push({g:'extra',key:'x_'+id,xid:id,code:x.code||(x.item&&CH_PRICES.items[x.item]&&CH_PRICES.items[x.item].code)||'',item:x.item||null,warn:!(x.code||(x.item&&CH_PRICES.items[x.item]&&CH_PRICES.items[x.item].code))?'code':null,name:x.name||chName(x.code),qty:x.qty||1,unit:'',note:(x.by?'Added by '+esc(x.by):'')+(x.at?' · '+esc(fmtWhen(x.at)):'')}); });
-  L.forEach(function(l){ var p=chPriceOf(l); l.price=p; l.total=p!=null?Math.round(p*l.qty*100)/100:null; });
+  L.forEach(function(l){ var p=chPriceOf(l), f=chFee(l); l.price=p; l.fee=f; l.total=p!=null?Math.round((p*l.qty+f*chFeeCount(l))*100)/100:null; });   /* l.n: invoice entries on the line (each administration is its own entry) */
   var D=(curDoc.charges_done)||{}; L.forEach(function(l){ var d=D[l.key]; l.done=!!d; l.doneQ=d&&d.q; l.more=!!d&&l.qty>(d.q||0); if(l.name&&!l.nameHTML) l.nameHTML=esc(l.name); });
   return L; }
 
@@ -3440,7 +3443,7 @@ window.tsRenderCharges=function(){ var el=document.getElementById('ctab-charges'
       +'<span class="ch-what"><b>'+l.nameHTML+'</b>'+(l.note?'<small>'+l.note+'</small>':'')+(l.more?'<small class="ch-more">Entered '+l.doneQ+' — '+(l.qty-l.doneQ)+' more since</small>':'')+'</span>'
       +'<span class="ch-qty">'+l.qty+(/^(hr|mL|tab|cap)$/.test(l.unit)?' '+l.unit:'')+'</span>'
       +'<span class="ch-amt'+(l.total==null?' none':'')+'">'+(chAdmin()&&(l.code||l.item)?'<button type="button" class="ch-price" onclick="tsChPrice(this,\''+esc(l.code||'')+'\',\''+esc(l.item||'')+'\')" title="Set this hospital’s price">':'')
-        +(l.total!=null?'<b>'+chMoney(l.total)+'</b>'+(l.qty>1?'<small>'+chMoney(l.price)+' each</small>':''):(chAdmin()&&(l.code||l.item)?'<small>Set price</small>':'<small>—</small>'))+(chAdmin()&&(l.code||l.item)?'</button>':'')+'</span>'
+        +(l.total!=null?'<b>'+chMoney(l.total)+'</b>'+((l.qty!==1||l.fee)?'<small>'+(l.qty!==1?chMoney(l.price)+(/^(mL|tab|cap|hr)$/.test(l.unit)?'/'+l.unit:' each'):'')+(l.fee?(l.qty!==1?' + ':'')+chMoney(l.fee)+' fee'+(l.unit==='hr'?'/hr':((l.n||1)>1?' ×'+l.n:'')):'')+'</small>':''):(chAdmin()&&(l.code||l.item)?'<small>Set price</small>':'<small>—</small>'))+(chAdmin()&&(l.code||l.item)?'</button>':'')+'</span>'
       +(l.warn==='level'?(doc?'<button type="button" class="ch-fix" onclick="document.getElementById(\'chLevel\').scrollIntoView({block:\'center\'})">Set level</button>':'<span class="ch-fix muted">Doctor sets level</span>')
         :l.warn==='code'||l.oid?'<button type="button" class="ch-fix'+(l.warn?'':' ghost')+'" onclick="tsChPick(\''+esc(l.oid||'')+'\',\''+esc(l.key)+'\')">'+(l.warn?'Find code':'Change')+'</button>'
         :l.xid?'<button type="button" class="ch-fix ghost" onclick="tsChRemove(\''+esc(l.xid)+'\')" aria-label="Remove">Remove</button>':'')+'</li>'; };
@@ -3529,7 +3532,7 @@ window.tsChImport=function(inp){ var f=inp.files&&inp.files[0]; if(!f||!chAdmin(
       for(var i=0;i<rows.length;i+=per) parts.push('p'+(parts.length+1));
       Promise.all(parts.map(function(id,i){ return col.doc(id).set({rows:rows.slice(i*per,(i+1)*per),version:ver}); }))
         .then(function(){ return col.doc('meta').set({parts:parts,version:ver,count:rows.length,updated_at:new Date().toISOString(),updated_by:user().initials},{merge:true}); })
-        .then(function(){ return J.prices?col.doc('prices').set({codes:J.prices.codes||{},items:J.prices.items||{},updated_at:new Date().toISOString(),updated_by:user().initials},{merge:true}):null; })   /* the hospital's starting prices, if the file has them */
+        .then(function(){ return J.prices?col.doc('prices').set(Object.assign({codes:J.prices.codes||{},items:J.prices.items||{},updated_at:new Date().toISOString(),updated_by:user().initials},J.prices.fees?{fees:J.prices.fees}:{}),{merge:true}):null; })   /* the hospital's starting prices, if the file has them */
         .then(function(){ CH_CODES=null; CH_P=null; CH_PP=null; toast(rows.length.toLocaleString()+' codes imported'); chLoad().then(tsRenderCharges); })
         .catch(function(e){ console.warn(e); toast('Import failed — '+(e&&e.code==='permission-denied'?'the database rule for charge_codes isn’t published yet':'see console')); });
     }catch(e){ toast('Couldn’t read that file'); } };
@@ -3566,8 +3569,9 @@ window.tsChProject=function(until){ return chProject(until); };
 /* one dose (or one charge) of an order, at this hospital's price — the order window and order panel show it (store/ordercare.js) */
 window.tsChReady=function(){ return chLoad().then(function(){ return chLoadPrices(); }); };   /* drug codes come from the code list, so the order window loads it too (once a session) */
 window.tsChOrderPrice=function(o){ if(!o) return null; var cc=chOrderCode(o), k=String(o.name||'').trim().toLowerCase(); var p=chPriceOf({code:cc&&cc.c||'',item:(cc&&cc.item)||k});
-  if(p!=null&&chByUnit(cc)) return {price:chRound(p*cc.per),code:cc.c,per:cc.per,u:cc.u,unitPrice:p};   /* priced per mL / tablet: one dose = the price × what one dose uses */
-  return p!=null?{price:p,code:cc&&cc.c||''}:null; };
+  var fee=chFee({code:cc&&cc.c});   /* one dose = unit price × what one dose uses + the fee for that entry */
+  if(p!=null&&chByUnit(cc)) return {price:chRound(p*cc.per+fee),code:cc.c,per:cc.per,u:cc.u,unitPrice:p,fee:fee};
+  return p!=null?{price:chRound(p+fee),code:cc&&cc.c||'',fee:fee}:null; };
 window.tsChMoney=chMoney; window.tsChAdmin=function(){ return chAdmin(); };
 /* the horizons offered: 8 AM tomorrow (rounds), +24 h, +48 h */
 var CH_HZ=[['8am','8 AM tomorrow'],['24','In 24 h'],['48','In 48 h']], chHz='8am';
@@ -3675,7 +3679,7 @@ function ocFreqDay(f){ f=String(f||''); var m=/^q(\d+)h$/i.exec(f); if(m) return
 function ocPriceHTML(o){ if(!window.tsChOrderPrice) return ''; var p=tsChOrderPrice(o), M=window.tsChMoney||function(n){ return '$'+n; };
   if(!p) return '<div class="oc-price none"><span>No hospital price for '+esc(o.name)+' yet</span>'+(window.tsChAdmin&&tsChAdmin()?'<small>Set it in Charges</small>':'')+'</div>';
   var n=ocFreqDay(o.freq), day=n&&n>1?' · about <b>'+M(Math.round(p.price*n*100)/100)+'</b> a day':'';
-  return '<div class="oc-price"><span class="oc-price-k">Charge</span><span><b>'+M(p.price)+'</b> a dose'+day+'</span>'+(p.code?'<small>'+esc(p.code)+(p.per?' · '+p.per+' '+esc(p.u)+' × '+M(p.unitPrice):'')+'</small>':'')+'</div>'; }
+  return '<div class="oc-price"><span class="oc-price-k">Charge</span><span><b>'+M(p.price)+'</b> a dose'+day+'</span>'+(p.code?'<small>'+esc(p.code)+(p.per?' · '+p.per+' '+esc(p.u)+' × '+M(p.unitPrice):'')+(p.fee?' + '+M(p.fee)+' fee':'')+'</small>':'')+'</div>'; }
 
 /* ---------- the medication order window ---------- */
 on('rx.opened',function(){ var c=document.getElementById('rxCalc'); if(!c||document.getElementById('rxPrice')) return;
