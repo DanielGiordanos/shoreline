@@ -3211,6 +3211,775 @@ body.dark .sb-wf-chip{color:var(--accent)}
 body.dark .dr-note{color:#c9a8f0}.dr-note svg{width:17px;height:17px;flex:none}
 @media (max-width:640px){.di-row{flex-direction:column;align-items:flex-start}}
 
+/* ═════════ the clear grid (Oct 2026) — one status system, restrained lines, readable type ═════════
+   Every element answers one of: which order · when · what state · chart it. No glows, no pulses, no dashed outlines.
+   Status = colour + shape (works without colour): scheduled ring · due filled teal + dot · overdue filled amber + clock · done ✓/value · omitted ⊘ */
+body{
+  --st-due:#38BDD2; --st-due-ink:#05303a;
+  --st-late:#F0B13C; --st-late-ink:#3f2700; --st-late-bg:color-mix(in srgb,#F0B13C 22%,transparent); --st-late-ic:#8a5800;
+  --st-done:color-mix(in srgb,#1a9e6e 11%,transparent); --st-done-ink:#0f6b4a;
+  --st-omit:color-mix(in srgb,var(--ink-400) 13%,transparent); --st-omit-ink:#55555a;
+  --st-ring:#6e6e73; --st-meta:#636366; --row-alt:color-mix(in srgb,var(--ink-400) 4.5%,transparent);
+  --now:#C93D24; --now-col:color-mix(in srgb,var(--accent) 5%,transparent); --amber-txt:#8a5800;
+}
+#sheetInner{--sec-band:color-mix(in srgb,var(--accent) 5%,var(--surface-0));--sec-ink:#17738A}
+body.dark{
+  --st-due:#38BDD2; --st-due-ink:#03242c;
+  --st-late:#E8A830; --st-late-ink:#2a1a00; --st-late-bg:color-mix(in srgb,#E8A830 17%,transparent); --st-late-ic:#F2C065;
+  --st-done:color-mix(in srgb,#2fc48d 14%,transparent); --st-done-ink:#6fe0b3;
+  --st-omit:color-mix(in srgb,#9fb3c8 14%,transparent); --st-omit-ink:#b4c4d6;
+  --st-ring:#8ea3ba; --st-meta:#9fb5cc; --row-alt:rgba(150,185,220,.045);
+  --now:#FF7A5C; --now-col:rgba(56,189,210,.06); --amber-txt:#F2C065;
+}
+body.dark #sheetInner{--sec-band:color-mix(in srgb,var(--accent) 7%,var(--surface-0))}
+/* lines: no per-hour rules; a faint one every 3 h, a firmer one at shift change (7 AM / 7 PM); rows shaded alternately, not ruled */
+#sheetInner .cell,#sheetInner .hcell{border-right-color:transparent}
+#sheetInner .cell.q3,#sheetInner .ghead .hcell.q3{box-shadow:inset 1px 0 0 color-mix(in srgb,var(--ink-400) 11%,transparent)}
+#sheetInner .cell.shift,#sheetInner .ghead .hcell.shift{box-shadow:inset 1px 0 0 color-mix(in srgb,var(--ink-400) 28%,transparent)}
+#sheetInner .grow[data-o]{border-bottom-color:transparent}
+#sheetInner .grow.zb:not(.is-draft) > .hcells{background:var(--row-alt)}
+#sheetInner .grow.zb > .rl{box-shadow:inset 0 0 0 999px var(--row-alt)}
+#sheetInner .grow:not(.ghead):not(.gband) > .rl{border-right:1px solid color-mix(in srgb,var(--ink-400) 16%,transparent)}
+#sheetInner .cell{min-height:44px}
+#sheetInner .rl{width:328px}
+#sheetInner .gband .gsection{flex:0 0 328px;width:328px}
+#sheetInner .gband.inf .gsection{flex:0 0 auto;width:auto}
+#sheetInner .grow[data-o] > .rl{min-height:44px;box-sizing:border-box;padding:5px 0 5px 12px;align-items:stretch;gap:8px}
+#sheetInner .grow[data-o] > .rl > .rl-main{align-self:center}
+/* Order | Latest: two aligned columns in the fixed area */
+#sheetInner .rl .rl-latest{flex:0 0 112px;width:112px;box-sizing:border-box;margin:-5px 0 -5px auto;padding:4px 8px 4px 10px;display:flex;align-items:center;border-left:1px solid color-mix(in srgb,var(--ink-400) 14%,transparent)}
+#sheetInner .rl .rl-none{color:color-mix(in srgb,var(--st-meta) 55%,transparent);font-size:12px}
+#sheetInner .ghead .rl{padding:0 0 0 12px;align-items:stretch}
+#sheetInner .ghead .gh-col{font-size:11px;font-weight:700;color:var(--st-meta);letter-spacing:.04em;text-transform:uppercase;padding-top:8px}
+#sheetInner .ghead .gh-order{flex:1}
+#sheetInner .ghead .gh-latest{flex:0 0 112px;box-sizing:border-box;padding-left:10px;border-left:1px solid color-mix(in srgb,var(--ink-400) 14%,transparent)}
+#sheetInner .cell.now{background:var(--now-col)}
+/* header: whole hour labels ("12 AM", "2 PM"), the current hour in the now colour, a compact "Now 2:14 PM" chip on the line */
+#sheetInner .ghead .hcell{min-height:40px;align-items:start;padding-top:7px;font-size:11px;font-weight:600;color:var(--st-meta);font-variant-numeric:tabular-nums;white-space:nowrap}
+#sheetInner .ghead .hcell .hl{letter-spacing:-.01em}
+#sheetInner .ghead .hcell.hour-now{background:none;color:var(--now);font-weight:700}
+#sheetInner .ghead .hcell[onclick]:hover{background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--accent-ink)}
+#sheetInner .ghead .rl{align-items:flex-start;padding-top:8px}
+#sheetInner .ghead .gh-order{font-size:11px;font-weight:700;color:var(--st-meta);letter-spacing:.04em;text-transform:uppercase}
+#sheetInner .ghead .hcells{position:relative}
+#sheetInner .now-chip{position:absolute;bottom:3px;transform:translateX(-50%);z-index:3;height:16px;padding:0 6px;border-radius:5px;background:var(--now);color:#fff;font-size:10px;font-weight:600;line-height:16px;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
+#sheetInner .now-chip b{font-weight:700}
+body.dark #sheetInner .now-chip{color:#1a0700}
+#sheetInner .nowline{width:2px;margin-left:-1px;background:var(--now);opacity:.85}
+#sheetInner .nowline::before,#sheetInner .nowline .now-lbl{display:none}
+/* row labels: full names (they wrap, never cut), meta in a readable grey, the latest reading on the right */
+#sheetInner .rl .rl-main{min-width:0;flex:1 1 auto}
+#sheetInner .rl .rl-name{font-size:13px;font-weight:600;line-height:1.25;color:var(--ink-900);overflow-wrap:anywhere}
+#sheetInner .rl .rl-brand{color:var(--st-meta);font-weight:500}
+#sheetInner .rl .rl-meta{font-size:11px;line-height:1.35;color:var(--st-meta);margin-top:1px;font-variant-numeric:tabular-nums}
+#sheetInner .rl .rl-meta b{color:var(--ink-700);font-weight:600}
+#sheetInner .rl .route-pill{font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:color-mix(in srgb,var(--ink-400) 11%,transparent);color:var(--ink-700);letter-spacing:.02em}
+/* section bands: the whole title, quieter tint, no rings */
+#sheetInner .gband .stitle{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.2}
+#sheetInner .gsection .stitle{font-size:12.5px;font-weight:700;letter-spacing:-.005em;text-transform:none}
+#sheetInner .gsection .scount{background:color-mix(in srgb,var(--accent) 13%,transparent)}
+#sheetInner .sec-dot.n{box-shadow:none}
+/* ── marks: one shape per state ── */
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark{appearance:none;-webkit-appearance:none;border:0;margin:0;padding:0 3px;font:inherit;width:calc(100% - 6px);height:26px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;gap:3px;
+  font-size:10.5px;font-weight:700;letter-spacing:-.01em;line-height:1;font-variant-numeric:tabular-nums;box-shadow:none;transition:background .15s,transform .12s;color:inherit;background:none}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark:hover{transform:none;filter:brightness(.97)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark:focus-visible{outline:2px solid var(--accent-ink);outline-offset:1px}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark .mk-ic{width:13px;height:13px;flex:none}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark::after{display:none;content:none;animation:none}
+/* the whole cell is the target: the mark reaches its edges, tinted on hover, ringed on keyboard focus */
+#sheetInner .cell{position:relative}
+#sheetInner .cell > .mark{position:static;isolation:isolate}   /* static: its ::before is placed against the cell, so the whole cell selects the task */
+#sheetInner .cell > .mark::before{content:"";display:block;position:absolute;z-index:-1;inset:2px;border-radius:6px;background:transparent;border:0;width:auto;height:auto;opacity:1;transition:background .12s}
+#sheetInner .cell > .mark:hover{filter:none}
+#sheetInner .cell > .mark:hover::before{z-index:1;background:color-mix(in srgb,var(--ink-900) 7%,transparent)}
+body.dark #sheetInner .cell > .mark:hover::before{background:rgba(255,255,255,.08)}
+#sheetInner .cell > .mark:focus-visible{outline:2px solid var(--accent-ink);outline-offset:3px;border-radius:7px}
+body.dark #sheetInner .cell > .mark:focus-visible{outline-color:var(--accent)}
+#sheetInner .cell > .mark:focus-visible::before{z-index:1;box-shadow:inset 0 0 0 2px var(--accent-ink)}
+#sheetInner .cell > .mark:focus-visible{outline:none}
+.mk-ring{display:block;width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--st-ring);flex:none}
+.mk-dot{display:block;width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.mk-min{font-weight:700}
+.mk-val{display:block;white-space:nowrap;font-size:10px;letter-spacing:-.015em}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed:has(.mk-val){padding:0 1px}
+.mk-more{width:12px;height:12px;flex:none;opacity:.85}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.scheduled{background:none;color:var(--st-meta)}
+
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.due{background:var(--st-due);color:var(--st-due-ink)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.overdue{background:var(--st-late-bg);color:var(--st-late-ic)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.overdue .mk-ic{width:15px;height:15px;stroke-width:2.8}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed{background:var(--st-done);color:var(--st-done-ink)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.skipped{background:var(--st-omit);color:var(--st-omit-ink)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed.abn{color:var(--amber-txt)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed.abn.sev{color:var(--now)}
+/* earlier hours: recorded work stays readable, the empty past recedes */
+#sheetInner .cell.past .mark.completed,#sheetInner .cell.past .mark.skipped{opacity:1}
+/* the row's overdue count: once per row, never in every cell */
+#sheetInner .rl .rl-missed{display:inline-flex;align-items:center;height:16px;margin-left:6px;padding:0 6px;border:0;border-radius:5px;background:color-mix(in srgb,var(--st-late) 24%,transparent);color:var(--amber-txt);font:inherit;font-size:10.5px;font-weight:700;cursor:pointer;vertical-align:1px}
+#sheetInner .rl .rl-missed:hover{background:color-mix(in srgb,var(--st-late) 36%,transparent)}
+#tsOrderSheet .op-ic.ms-miss{color:#8a5800;background:color-mix(in srgb,var(--amber) 18%,transparent)}
+#tsOrderSheet .op-ic.ms-miss svg{width:20px;height:20px}
+body.dark #tsOrderSheet .op-ic.ms-miss{color:var(--amber)}
+#tsOrderSheet .mi-go{width:auto;height:30px;padding:0 14px}
+/* the latest reading beside the name: value, then how old it is — secondary to the name, apart from the cells */
+#sheetInner .rl .rl-latest .rl-trend{margin:0;flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;max-width:none;color:var(--st-meta)}
+#sheetInner .rl-trend .rt-line{display:none}
+#sheetInner .rl-trend .rt-v{display:flex;align-items:baseline;gap:2px;max-width:100%}
+#sheetInner .rl-trend b{font-size:12.5px;font-weight:600;line-height:1.25;color:var(--ink-900);max-width:none;white-space:nowrap;overflow:hidden}
+#sheetInner .rl-trend i{font-size:10.5px;color:var(--st-meta);margin-left:0}
+#sheetInner .rl-trend small{font-size:10px;font-weight:500;color:var(--st-meta);white-space:nowrap}
+#sheetInner .rl-trend.amber b,#sheetInner .rl-trend.amber i{color:var(--amber-txt)}
+#sheetInner .rl-trend.coral b,#sheetInner .rl-trend.coral i{color:var(--now)}
+/* the dose clock: timing only, in the same palette as the grid */
+#sheetInner .dose-clock.late{color:var(--st-late)}#sheetInner .dose-clock.due{color:var(--st-due)}#sheetInner .dose-clock.wait{color:var(--st-ring)}#sheetInner .dose-clock.ok{color:var(--green)}
+/* infusions: one solid line while running, a lighter one ahead — no dashes */
+#sheetInner .inf-fill.future{border-top-style:solid;border-top-color:color-mix(in srgb,var(--green) 30%,transparent)}
+/* legend: the grid's own shapes */
+#legend{gap:14px;row-gap:6px;flex-wrap:wrap}
+#legend .li{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--ink-700)}
+#legend .lg-mk{position:relative;width:34px;height:20px;border-radius:6px;font-size:10px;pointer-events:none;flex:none;margin:0}
+#legend .lg-mk .mk-ic{width:11px;height:11px}
+#legend .lg-hint{color:var(--st-meta,#636366);font-weight:500}
+@media (prefers-reduced-motion:reduce){:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark{transition:none}}
+
+/* ═════════ the task drawer (store/chart.js): entry · not done · review with history ═════════ */
+#completionDrawer{--cd-ink:#17738A}
+body.dark #completionDrawer{--cd-ink:#5fd3e6}
+#completionDrawer .drawer-head .sub{color:var(--st-meta)}
+#completionDrawer .drawer-body{padding-top:16px}
+#completionDrawer .btn.primary{background:var(--cd-ink);color:#fff;box-shadow:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+body.dark #completionDrawer .btn.primary{color:#03242c}
+#completionDrawer .btn.primary:hover{transform:none;box-shadow:none;filter:brightness(1.06)}
+#completionDrawer .btn.primary:disabled{opacity:.4;cursor:not-allowed;filter:none}
+#completionDrawer .btn .mk-ic{width:15px;height:15px}
+#completionDrawer .btn:focus-visible{outline:2px solid var(--cd-ink);outline-offset:2px}
+.cd-state{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:13.5px;color:var(--ink-700)}
+.cd-state b{color:var(--ink-900);font-weight:700}
+.cd-state small{color:var(--st-meta);font-size:12px}
+#completionDrawer .mark.cd-mk{width:34px;height:22px;flex:none;cursor:default}
+.cd-last{margin:-2px 0 16px;font-size:12.5px;color:var(--st-meta)}.cd-last b{color:var(--ink-900);font-weight:600}
+.cd-lead{margin:0 0 12px;font-size:13px;line-height:1.45;color:var(--ink-700)}
+.cd-opt-l{font-weight:500;text-transform:none;letter-spacing:0;color:var(--st-meta)}
+.cd-big input{font-size:22px;font-weight:600;height:52px;font-variant-numeric:tabular-nums}
+#completionDrawer .field input.cd-need{border-color:var(--st-late);box-shadow:0 0 0 3px color-mix(in srgb,var(--st-late) 25%,transparent)}
+.cd-opts{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 16px}
+.cd-opt{min-height:36px;padding:0 12px;border-radius:10px;border:0;background:var(--fill-soft);color:var(--ink-900);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.cd-opt:hover{background:var(--fill-track)}
+.cd-opt.on{background:var(--cd-ink);color:#fff}
+body.dark .cd-opt.on{color:#03242c}
+.cd-order{margin:2px 0 14px;padding:12px 14px;border-radius:12px;background:var(--fill-soft)}
+.cd-order-l,.cd-rec-l{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--st-meta);margin-bottom:3px}
+.cd-order-v{font-size:15px;color:var(--ink-900)}.cd-order-v b{font-weight:700}
+.cd-order-s{font-size:12px;color:var(--st-meta);margin-top:2px}
+.cd-editing{margin:0 0 14px;padding:9px 12px;border-radius:10px;background:var(--fill-soft);font-size:12.5px;color:var(--ink-700)}
+.cd-reasons{display:flex;flex-direction:column;gap:6px;margin:0 0 14px}
+.cd-reason{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:12px;background:var(--fill-soft);cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink-900)}
+.cd-reason input{width:18px;height:18px;margin:0;accent-color:var(--cd-ink);flex:none}
+.cd-reason:has(input:checked){background:color-mix(in srgb,var(--cd-ink) 14%,transparent)}
+.cd-rec{margin:0 0 12px;padding:14px;border-radius:14px;background:var(--st-done)}
+.cd-rec.omit{background:var(--st-omit)}
+.cd-rec-v{font-size:22px;font-weight:700;letter-spacing:-.01em;color:var(--ink-900);font-variant-numeric:tabular-nums}
+.cd-rec-v small{font-size:14px;font-weight:600;color:var(--st-meta)}
+.cd-rec.omit .cd-rec-v{font-size:16px}
+.cd-diff{margin:-4px 0 12px;font-size:12.5px;font-weight:600;color:var(--amber-txt)}
+.cd-rows .drow small{color:var(--st-meta);font-weight:500;margin-left:4px}
+.cd-note{margin:14px 0 0}.cd-note p{margin:2px 0 0;font-size:13.5px;line-height:1.45;color:var(--ink-900);white-space:pre-wrap}
+.cd-hist{margin:18px 0 0;padding-top:14px;border-top:1px solid var(--glass-hairline)}
+.cd-hrow{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--glass-hairline)}
+.cd-hrow:last-child{border-bottom:0}
+.cd-hrow b{font-size:13.5px;font-weight:600;color:var(--ink-900);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--ink-400) 60%,transparent)}
+.cd-hrow span{font-size:12px;color:var(--st-meta)}
+.cd-none{font-size:12.5px;color:var(--st-meta);font-weight:500;margin:2px 0 0}
+.cd-viewonly{flex:1;text-align:center;font-size:13px;color:var(--st-meta);padding:12px 6px}
+#completionDrawer .drow .k{color:var(--st-meta)}
+
+/* touch: 44-pt targets on tablets and phones (HIG) */
+@media (hover:none){#sheetInner .sec-h:not(.now) .sec-go{opacity:0}}
+@media (pointer:coarse){
+  #sheetInner .cell,#sheetInner .grow[data-o] > .rl{min-height:44px}
+  :is(#ctab-sheet,#completionDrawer) .mark{height:34px}
+  #legend .lg-mk{height:20px}
+  #sheetInner .rl .rl-missed{height:24px;padding:0 9px}
+}
+
+/* ═════════ account card (store/finance.js): quiet by default, details on request ═════════ */
+.cbrief .est-card.fin{cursor:default;padding:12px 14px 10px;box-shadow:none}
+.cbrief .est-card.fin:hover,.cbrief .est-card.fin:focus-visible{box-shadow:none}
+.fin-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.cbrief .fin-head h4{padding:0;margin:0;font-size:12.5px;font-weight:700;letter-spacing:-.005em;text-transform:none;color:var(--ink-900)}
+.fin-status{font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.fin-status.ok{color:var(--st-done-ink);background:var(--st-done)}
+.fin-status.wait{color:var(--amber-txt);background:color-mix(in srgb,var(--amber) 16%,transparent)}
+.fin-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 0;font-size:12.5px}
+.fin-row .k{color:var(--st-meta)}
+.fin-row .v{color:var(--ink-900);font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.fin-row .v small{color:var(--st-meta);font-weight:500}
+.fin-row.low .v{color:var(--amber-txt)}.fin-row.over .v{color:var(--now)}
+.fin-meter{height:4px;border-radius:3px;margin:5px 0 4px;background:color-mix(in srgb,var(--ink-400) 16%,transparent);overflow:hidden}
+.fin-meter i{display:block;height:100%;border-radius:3px;background:color-mix(in srgb,var(--ink-500) 70%,transparent)}
+.fin-meter.low i{background:var(--amber)}.fin-meter.over i{background:var(--now)}
+.fin-sub{font-size:11px;color:var(--st-meta);font-variant-numeric:tabular-nums}
+.fin-proj{margin:8px 0 2px;padding:7px 9px;border-radius:9px;background:var(--fill-soft);display:flex;flex-direction:column;gap:1px;font-size:12px;font-variant-numeric:tabular-nums}
+.fin-proj b{font-weight:600;color:var(--ink-900)}.fin-proj span{color:var(--st-meta)}
+.fin-proj.warn{background:color-mix(in srgb,var(--amber) 13%,transparent)}.fin-proj.warn span{color:var(--amber-txt);font-weight:600}
+.fin-more,.fin-link{display:inline-flex;align-items:center;gap:3px;min-height:30px;margin-top:4px;padding:0 2px;border:0;background:none;font:inherit;font-size:12px;font-weight:600;color:var(--cd-ink,#17738A);cursor:pointer}
+body.dark .fin-more,body.dark .fin-link{color:#5fd3e6}
+.fin-more svg{width:13px;height:13px;transition:transform .2s}
+.fin-more[aria-expanded="true"] svg{transform:rotate(180deg)}
+.fin-more:focus-visible,.fin-link:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:6px}
+.fin-detail{margin-top:4px;padding-top:6px;border-top:1px solid var(--glass-hairline)}
+.fin-note{margin:6px 0 2px;font-size:11.5px;line-height:1.4;color:var(--st-meta)}
+.fin-none{margin:0;font-size:12.5px;color:var(--st-meta)}
+
+/* Latest on a medication row: the last dose given (opens the dose panel) */
+#sheetInner .rl .rl-latest .rl-med{width:auto;height:auto;margin:0 0 0 -4px;padding:3px 4px;border-radius:7px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;place-items:initial;font:inherit;text-align:left;color:var(--st-meta);cursor:pointer;transform:none}
+#sheetInner .rl .rl-latest .rl-med:hover{transform:none;background:color-mix(in srgb,var(--ink-900) 6%,transparent)}
+#sheetInner .rl .rl-latest .rl-med:focus-visible{outline:2px solid var(--accent-ink);outline-offset:1px}
+#sheetInner .rl .rl-latest .rl-med.none b{color:var(--st-meta);font-weight:500}
+#sheetInner .rl .rl-latest .rl-care b{font-weight:500;color:var(--ink-700)}
+/* section bands: no completion badges; folded = where work waits + an explicit count */
+#sheetInner .sec-go{display:none}
+#sheetInner .gband .sec-h{cursor:default}
+#sheetInner .sec-dot{width:auto;height:auto;background:none;box-shadow:none}
+#sheetInner .sec-dot.overdue{display:inline-grid;place-items:center;width:30px;height:18px;border-radius:5px;background:var(--st-late-bg);color:var(--st-late-ic)}
+#sheetInner .sec-dot.overdue svg{width:11px;height:11px}
+#sheetInner .sec-dot.due{width:8px;height:8px;border-radius:50%;background:var(--st-due)}
+#sheetInner .gband.folded:not(.inf) .gsection{flex-wrap:wrap;align-content:center;row-gap:0;padding-top:5px;padding-bottom:5px}
+#sheetInner .sec-sum{order:10;flex:1 0 100%;padding-left:20px;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--st-meta);white-space:nowrap}
+#sheetInner .sec-sum.late{color:var(--amber-txt)}
+/* the View menu */
+.ts-view-btn{flex:0 0 auto!important;width:auto!important;height:38px;padding:0 13px!important;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.ts-view-btn svg{width:15px;height:15px}
+.vw-pop .wf-h{padding-top:10px}
+.vw-pop .wf-ck.rd{border-radius:50%}
+.vw-pop .wf-row.on .wf-ck.rd{box-shadow:inset 0 0 0 4px var(--surface-0)}
+.vw-pop .wf-row{min-height:44px}
+.vw-all{display:flex;gap:6px;padding:8px 0 4px}.vw-all .fp-clear{flex:1;margin:0}
+#flPop:has(.vw-pop){max-height:min(560px,86vh);overflow:auto}
+/* compact rows: more orders on screen, same values and ages */
+body.ts-dense #sheetInner .cell,body.ts-dense #sheetInner .grow[data-o] > .rl{min-height:38px}
+body.ts-dense #sheetInner .grow[data-o] > .rl{padding-top:2px;padding-bottom:2px}
+body.ts-dense #sheetInner .rl .rl-latest{margin-top:-2px;margin-bottom:-2px;padding-top:2px;padding-bottom:2px}
+body.ts-dense #sheetInner .rl .rl-name{font-size:12.5px;line-height:1.2}
+body.ts-dense #sheetInner .rl .rl-meta{font-size:10.5px;line-height:1.25;margin-top:0}
+body.ts-dense #sheetInner .rl-trend b{font-size:12px}
+body.ts-dense #sheetInner .rl-trend small{font-size:10px;line-height:1.1}
+body.ts-dense :is(#ctab-sheet) #sheetInner .mark{height:22px}
+body.ts-dense #sheetInner .cell > .mark::before{inset:1px}
+body.ts-dense #sheetInner .gband .gsection,body.ts-dense #sheetInner .gband .hcell.sec-h{min-height:28px}
+body.ts-dense #sheetInner .rl .rl-missed{height:14px;line-height:14px}
+@media (pointer:coarse){
+  body.ts-dense #sheetInner .cell,body.ts-dense #sheetInner .grow[data-o] > .rl{min-height:44px}
+  body.ts-dense :is(#ctab-sheet) #sheetInner .mark{height:34px}
+}
+
+/* Latest cell as a button: one value line, one age line ("More" when the value is a short form) */
+#sheetInner .rl .rl-latest button.rl-trend{appearance:none;border:0;background:none;font:inherit;text-align:left;cursor:pointer;margin:0 0 0 -4px;padding:3px 4px;border-radius:7px;width:calc(100% + 4px)}
+#sheetInner .rl .rl-latest button.rl-trend:hover{background:color-mix(in srgb,var(--ink-900) 6%,transparent)}
+#sheetInner .rl .rl-latest button.rl-trend:focus-visible{outline:2px solid var(--accent-ink);outline-offset:1px}
+#sheetInner .rl-trend small{display:block;white-space:nowrap}
+#sheetInner .rl-trend .rt-more{color:var(--cd-ink,#17738A);font-weight:600}
+body.dark #sheetInner .rl-trend .rt-more{color:#5fd3e6}
+/* the full-entry popover */
+.lt-pop{width:280px!important;padding:6px 14px 10px}
+.lt-pop .lt-v{font-size:17px;font-weight:700;line-height:1.3;color:var(--ink-900);margin:2px 0 2px;overflow-wrap:anywhere}
+.lt-pop .lt-v small{font-size:12px;font-weight:600;color:var(--st-meta,#636366)}
+.lt-pop .lt-m{font-size:12px;color:var(--st-meta,#636366);margin-bottom:8px}
+.lt-pop .lt-ch{display:flex;gap:6px;align-items:baseline;font-size:12.5px;font-weight:600;color:var(--ink-700);margin-bottom:8px}
+.lt-pop .lt-ch i{font-style:normal;font-weight:800}
+.lt-pop .lt-note{font-size:12.5px;color:var(--ink-900);margin-bottom:8px;white-space:pre-wrap}
+.lt-pop .lt-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:12.5px;border-bottom:1px solid var(--glass-hairline)}
+.lt-pop .lt-row span{color:var(--st-meta,#636366)}.lt-pop .lt-row b{font-weight:600;text-align:right}
+#flPop:has(.lt-pop){background:var(--surface-0);backdrop-filter:none;-webkit-backdrop-filter:none;max-height:min(460px,80vh);overflow:auto}
+
+/* legend: statuses first, then two detail keys (not statuses) */
+#legend .lg-sep{width:1px;height:16px;background:color-mix(in srgb,var(--ink-400) 25%,transparent)}
+#legend .lg-key{font-weight:500;color:var(--st-meta)}
+#legend .lg-glyph{display:inline-grid;place-items:center;min-width:14px;color:var(--ink-700)}
+#legend .lg-glyph svg{width:13px;height:13px}
+#legend .lg-arr{font-weight:800;font-size:12px}
+
+/* ═════════ section bar (store/view.js): every section, what's outstanding, one tap to get there ═════════ */
+.ts-secnav{flex:0 0 auto;display:flex;gap:6px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--glass-hairline);overflow-x:auto;scrollbar-width:none}
+.ts-secnav::-webkit-scrollbar{display:none}
+.ts-secnav:empty{display:none}
+.sn-chip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink-700);cursor:pointer;white-space:nowrap;transition:background .15s}
+.sn-chip:hover{background:var(--fill-soft)}
+.sn-chip.on{background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--ink-900)}
+.sn-chip:focus-visible{outline:2px solid var(--accent-ink);outline-offset:1px}
+.sn-ic{width:14px;height:14px;flex:none;color:var(--sec-ink,#17738A)}
+body.dark .sn-ic{color:var(--accent)}
+.sn-n{font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;font-variant-numeric:tabular-nums}
+.sn-n.late{background:var(--st-late-bg);color:var(--amber-txt)}
+body:not(.dark) .sn-n.late{color:#744a00}
+.sn-n.due{background:color-mix(in srgb,var(--st-due) 18%,transparent);color:#0e5a6b}
+body.dark .sn-n.due{color:#7fe0ee}
+.sn-n.none{color:var(--st-meta);font-weight:600;padding:1px 2px}
+.sn-f{font-size:11px;font-weight:500;color:var(--st-meta)}
+@media (pointer:coarse){.sn-chip{min-height:44px}}
+/* overdue out of view to the left */
+#sheetInner .rl .rl-off{position:absolute;left:calc(100% + 4px);top:50%;transform:translateY(-50%);z-index:2;height:20px;padding:0 7px;border:0;border-radius:6px;background:var(--surface-0);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--st-late) 55%,transparent);color:var(--amber-txt);font:inherit;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer}
+#sheetInner .rl .rl-off[hidden]{display:none}
+#sheetInner .rl .rl-off:hover{background:var(--st-late-bg)}
+#sheetInner .rl .rl-off:focus-visible{outline:2px solid var(--accent-ink);outline-offset:1px}
+@media (pointer:coarse){#sheetInner .rl .rl-off{height:32px}}
+
+/* steady row heights: the overdue count sits inside the meta line's height, the Latest button adds no height of its own */
+#sheetInner .rl .rl-missed{line-height:16px;vertical-align:0}
+#sheetInner .rl .rl-latest button.rl-trend,#sheetInner .rl .rl-latest .rl-med{padding-top:2px;padding-bottom:2px}
+
+/* ═════════ due-now pill + quiet done (Oct 2026) — the sheet keeps its own colours (navy / light surfaces, zebra rows, amber for overdue) ═════════
+   Due now = a solid teal pill with no glyph that breathes (one shared beat) · Overdue = the soft amber tile + amber clock (unchanged)
+   Done = the value or ✓ in gray, no tile · Scheduled = a small gray dot · Omitted = gray ⊘.
+   A completed task plays pill → circle → check → value once (store/chart.js tsJust). The now-line runs behind the pills. */
+body{--t-ink:var(--ink-900);--t-mid:#636366;--t-dim:#8e8e93;--t-due:#1A7C93;--t-due-ink:#ffffff}
+body.dark{--t-mid:#9fb5cc;--t-dim:#6f86a0;--t-due:#38BDD2;--t-due-ink:#03242c}
+#sheetInner{isolation:isolate}
+#sheetInner .nowline{z-index:-1}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.scheduled .mk-ring{width:6px;height:6px;box-shadow:none;background:var(--t-dim)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.scheduled .mk-min{color:var(--t-mid)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.due{background:var(--t-due);color:var(--t-due-ink);width:34px;height:20px;border-radius:10px;animation:ts-breathe 2.8s ease-in-out infinite}
+@keyframes ts-breathe{0%,100%{opacity:1}50%{opacity:.62}}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed{background:none;color:var(--t-mid)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed .mk-val{font-size:11.5px;font-weight:500;letter-spacing:0}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed.abn{color:var(--amber-txt)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed.abn .mk-val{font-weight:700}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed.abn.sev{color:var(--now)}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.skipped{background:none;color:var(--t-mid)}
+#completionDrawer .mark.cd-mk{width:34px}
+#completionDrawer .mark.cd-mk.due{animation:none}
+#legend .lg-mk.due{animation:none}
+body.ts-dense :is(#ctab-sheet) #sheetInner .mark.due{height:18px;border-radius:9px}
+/* hover / keyboard focus on a due-now cell: the pill stops breathing, and a thin icy-white light runs once around its edge (~1.2 s) */
+@property --ts-ang{syntax:'<angle>';inherits:false;initial-value:0deg}
+body{--t-rim:#38BDD2}body.dark{--t-rim:#d9fbff}
+.mk-rim{position:absolute;left:50%;top:50%;width:38px;height:24px;transform:translate(-50%,-50%);border-radius:12px;padding:1.5px;pointer-events:none;opacity:0;
+  background:conic-gradient(from var(--ts-ang),transparent 0deg 250deg,color-mix(in srgb,var(--t-rim) 0%,transparent) 270deg,var(--t-rim) 335deg,color-mix(in srgb,var(--t-rim) 0%,transparent) 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+body.ts-dense .mk-rim{height:22px;border-radius:11px}
+#sheetInner .cell:hover > .mark.due,#sheetInner .cell > .mark.due:focus-visible{animation:none;opacity:1}
+#sheetInner .cell:hover > .mark.due .mk-rim,#sheetInner .cell > .mark.due:focus-visible .mk-rim{animation:ts-rim 1.2s cubic-bezier(.45,0,.25,1) forwards}
+@keyframes ts-rim{0%{--ts-ang:0deg;opacity:0}12%{opacity:.9}80%{opacity:.9}100%{--ts-ang:360deg;opacity:0}}
+#legend .mk-rim,#completionDrawer .mk-rim{display:none}
+@media (prefers-reduced-motion:reduce){.mk-rim{display:none}}
+/* the completion: pill → circle → the check draws itself → the value takes its place (~2 s, once) */
+#sheetInner .mark.just{animation:none;overflow:visible}
+.da{position:relative;width:34px;height:20px;display:grid;place-items:center}
+.da .disc{position:absolute;top:0;bottom:0;left:50%;width:34px;transform:translateX(-50%);border-radius:10px;background:var(--t-due);
+  animation:da-gather .34s cubic-bezier(.32,.72,0,1) calc(var(--da-d,0ms) + .12s) both,da-fade .5s ease calc(var(--da-d,0ms) + .9s) forwards}
+@keyframes da-gather{from{width:34px}to{width:20px}}
+@keyframes da-fade{0%{opacity:1;transform:translateX(-50%) scale(1)}35%{transform:translateX(-50%) scale(1.12)}100%{opacity:0;transform:translateX(-50%) scale(.85)}}
+.da .da-ck{position:relative;width:13px;height:13px;color:var(--t-due-ink);animation:da-ink .45s ease calc(var(--da-d,0ms) + .9s) forwards}
+.da .da-ck path{stroke-dasharray:18;stroke-dashoffset:18;animation:da-draw .3s cubic-bezier(.65,0,.35,1) calc(var(--da-d,0ms) + .45s) forwards}
+@keyframes da-draw{to{stroke-dashoffset:0}}
+@keyframes da-ink{to{color:var(--t-mid)}}
+.da.val .da-ck{animation:da-ink .45s ease calc(var(--da-d,0ms) + .9s) forwards,da-out .3s ease calc(var(--da-d,0ms) + 1.65s) forwards}
+.da .v{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:3px;opacity:0;animation:da-in .35s ease calc(var(--da-d,0ms) + 1.8s) forwards;white-space:nowrap}
+@keyframes da-out{to{opacity:0;transform:scale(.8)}}
+@keyframes da-in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  :is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.due{animation:none}
+  .da .disc{display:none}.da *{animation:none!important}.da .da-ck{color:var(--t-mid)}.da .da-ck path{stroke-dashoffset:0}.da.val .da-ck{display:none}.da .v{opacity:1}
+}
+
+/* ═════════ overdue = a filled orange clock (Apple's clock.fill) — hover opens it to say how late, the minute hand turns once ═════════ */
+body{--od:#D97200;--od-ink:#ffffff}body.dark{--od:#FF9F0A;--od-ink:#ffffff}   /* the prototype's colours (Oct 2026 mockup A): white clock on orange */
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.overdue{background:none;color:var(--od)}
+.od{position:relative;display:inline-flex;align-items:center;gap:2px;height:18px;min-width:18px;border-radius:9px;background:var(--od);color:var(--od-ink);flex:none;
+  transition:padding .32s cubic-bezier(.32,.72,0,1)}
+.od .od-ic{width:18px;height:18px;flex:none;overflow:visible}
+.od .od-face{fill:none;stroke:var(--od-ink);stroke-width:1.6;opacity:0;transition:opacity .25s ease}
+.od .od-h,.od .od-m{fill:none;stroke:var(--od-ink);stroke-width:2.3;stroke-linecap:round;transform-box:view-box;transform-origin:12px 12px}
+.od .od-late{max-width:0;overflow:hidden;white-space:nowrap;font-size:11px;font-weight:700;letter-spacing:-.01em;opacity:0;font-variant-numeric:tabular-nums;
+  transition:max-width .32s cubic-bezier(.32,.72,0,1),opacity .18s ease}
+#sheetInner .cell:hover > .mark.overdue .od,#sheetInner .cell > .mark.overdue:focus-visible .od{padding-right:6px}
+#sheetInner .cell:hover > .mark.overdue .od-late,#sheetInner .cell > .mark.overdue:focus-visible .od-late{max-width:34px;opacity:1;transition-delay:0s,.08s}
+#sheetInner .cell:hover > .mark.overdue .od-face,#sheetInner .cell > .mark.overdue:focus-visible .od-face{opacity:.4}
+#sheetInner .cell:hover > .mark.overdue .od-m,#sheetInner .cell > .mark.overdue:focus-visible .od-m{animation:od-turn 1s cubic-bezier(.45,0,.25,1)}
+@keyframes od-turn{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+#sheetInner .cell:hover > .mark.overdue .mk-min,#sheetInner .cell > .mark.overdue:focus-visible .mk-min{display:none}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.overdue .mk-min{color:var(--amber-txt)}
+#legend .lg-mk.overdue{background:none}
+#completionDrawer .mark.cd-mk.overdue{background:none}
+/* folded section: the same filled clock marks the hours with overdue work */
+#sheetInner .sec-dot.overdue{width:16px;height:16px;border-radius:50%;background:var(--od);color:var(--od-ink)}
+#sheetInner .sec-dot.overdue svg{width:12px;height:12px}
+@media (prefers-reduced-motion:reduce){.od,.od .od-late,.od .od-face{transition:none}#sheetInner .cell .mark.overdue .od-m{animation:none!important}}
+/* hover without the gray square: the mark itself answers (pill rim light, overdue capsule; dot grows, done/omitted darken). Keyboard focus keeps its ring. */
+#sheetInner .cell > .mark:hover::before,body.dark #sheetInner .cell > .mark:hover::before{background:transparent}
+:is(#ctab-sheet) .mark.scheduled .mk-ring{transition:transform .18s cubic-bezier(.32,.72,0,1),background .18s}
+#sheetInner .cell:hover > .mark.scheduled .mk-ring{transform:scale(1.5);background:var(--t-mid)}
+#sheetInner .cell:hover > .mark.completed,#sheetInner .cell:hover > .mark.skipped{color:var(--ink-900)}
+@media (prefers-reduced-motion:reduce){:is(#ctab-sheet) .mark.scheduled .mk-ring{transition:none}}
+
+/* the row's overdue count: an orange badge at the right edge of the Order column, like an app's unread count */
+#sheetInner .grow.has-late > .rl > .rl-main{position:relative;padding-right:26px}
+#sheetInner .rl .rl-missed{position:absolute;right:6px;top:50%;transform:translateY(-50%);margin:0;min-width:16px;height:16px;padding:0 4.5px;border-radius:8px;
+  background:var(--od);color:var(--od-ink);font-size:10px;font-weight:700;line-height:16px;justify-content:center;font-variant-numeric:tabular-nums;vertical-align:0}
+#sheetInner .rl .rl-missed:hover{background:var(--od);filter:brightness(1.08)}
+#sheetInner .rl .rl-missed:focus-visible{outline:2px solid var(--od);outline-offset:2px}
+body.ts-dense #sheetInner .rl .rl-missed{min-width:16px;height:16px;line-height:16px;font-size:10px}
+@media (pointer:coarse){#sheetInner .rl .rl-missed::after{content:"";position:absolute;inset:-14px}}   /* same look, a 44-pt tap area */
+
+/* the overdue badge in motion (store/missed.js) */
+#sheetInner .rl .rl-missed{transition:transform .2s cubic-bezier(.32,.72,0,1)}
+#sheetInner .rl .rl-missed:hover,#sheetInner .rl .rl-missed:focus-visible{transform:translateY(-50%) scale(1.12);filter:none}
+#sheetInner .rl .rl-missed .bm-v{display:inline-block}
+#sheetInner .rl .rl-missed[data-from]::before{content:attr(data-from);position:absolute;left:0;right:0;top:0;text-align:center}
+#sheetInner .rl .rl-missed.bm-hold .bm-v{opacity:0}
+#sheetInner .rl .rl-missed.bm-down::before{animation:bm-out-down .22s ease forwards}#sheetInner .rl .rl-missed.bm-down .bm-v{animation:bm-in-down .26s cubic-bezier(.32,.72,0,1) both}
+#sheetInner .rl .rl-missed.bm-up::before{animation:bm-out-up .22s ease forwards}#sheetInner .rl .rl-missed.bm-up .bm-v{animation:bm-in-up .26s cubic-bezier(.32,.72,0,1) both}
+@keyframes bm-out-down{to{transform:translateY(8px);opacity:0}}@keyframes bm-in-down{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
+@keyframes bm-out-up{to{transform:translateY(-8px);opacity:0}}@keyframes bm-in-up{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+#sheetInner .rl .rl-missed.bm-pop{animation:bm-pop .5s cubic-bezier(.32,.72,0,1) both}
+@keyframes bm-pop{0%{transform:translateY(-50%) scale(0)}60%{transform:translateY(-50%) scale(1.2)}100%{transform:translateY(-50%) scale(1)}}
+.bm-ghost{z-index:400;min-width:16px;height:16px;padding:0 4.5px;border-radius:8px;box-sizing:border-box;background:var(--od);color:var(--od-ink);
+  font-size:10px;font-weight:700;line-height:16px;text-align:center;pointer-events:none;font-variant-numeric:tabular-nums}
+.bm-ghost.bm-leave{animation:bm-leave .34s cubic-bezier(.4,0,.6,1) forwards}
+@keyframes bm-leave{0%{transform:scale(1)}30%{transform:scale(1.12)}100%{transform:scale(0);opacity:0}}
+#sheetInner .mark.overdue .od.bm-nudge{animation:bm-nudge .42s cubic-bezier(.32,.72,0,1) both;animation-delay:var(--bm-d,0ms)}
+@keyframes bm-nudge{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+#sheetInner .mark.overdue .od.bm-arrive{animation:bm-arrive .5s cubic-bezier(.32,.72,0,1) both}
+@keyframes bm-arrive{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){#sheetInner .rl .rl-missed,#sheetInner .rl .rl-missed *,.bm-ghost,#sheetInner .mark.overdue .od{animation:none!important;transition:none!important}}
+
+/* ═════════ Continuous infusions · hour bars under the rate line (Oct 2026) ═════════
+   Each hour is a soft bar whose height is that hour's volume, the mL written inside it; the rate is one line across the top,
+   labelled only where it changes. Pause = break in the line, dotted on the floor. After now the rate continues dotted.
+   The dot on the now-line breathes with the due-now pills (same 2.8 s beat). Pointer: move along a line to read any moment. */
+#sheetInner{--ib-run:#1a9e6e;--ib-ink:#0f6b4a;--ib0:max(7px,calc(50% - 17px));--ih:22px}   /* centred in tall rows, on the floor in short ones */
+body.dark #sheetInner{--ib-run:#2fc48d;--ib-ink:#6fe0b3}
+body.ts-dense #sheetInner{--ib0:max(5px,calc(50% - 15px));--ih:18px}
+@property --k{syntax:'<number>';inherits:true;initial-value:1}   /* row scale, eased when a new highest rate rescales the day */
+#sheetInner .grow .hcells{--k:1}
+#sheetInner .ib-bar.cur,#sheetInner .ib-lbl.last{--k:1}
+#sheetInner .ib-bar{transform-origin:50% 100%}
+#sheetInner .cell.inf{padding:0;overflow:visible}
+#sheetInner .cell.inf .ib{position:absolute;inset:0;cursor:pointer}
+#sheetInner .ib>i,#sheetInner .ib>b,#sheetInner .ib>span{position:absolute;display:block;pointer-events:none}
+#sheetInner .ib-base{height:1px;bottom:calc(var(--ib0) - .5px);background:var(--ib-run);opacity:.18}
+#sheetInner .ib-bar{bottom:var(--ib0);height:calc(var(--ih) * var(--r) * var(--k));border-radius:3px 3px 0 0;
+  background:linear-gradient(to bottom,color-mix(in srgb,var(--ib-run) 30%,transparent),color-mix(in srgb,var(--ib-run) 6%,transparent))}
+#sheetInner .ib-ln{height:1.75px;bottom:calc(var(--ib0) + var(--ih) * var(--r) * var(--k) - .875px);background:var(--ib-run)}
+#sheetInner .ib-rs{width:1.75px;margin-left:-.875px;bottom:calc(var(--ib0) + var(--ih) * var(--lo) * var(--k) - .875px);height:calc(var(--ih) * (var(--hi) - var(--lo)) * var(--k) + 1.75px);background:var(--ib-run)}
+#sheetInner .ib-fut{height:1.5px;bottom:calc(var(--ib0) + var(--ih) * var(--r) - .75px);background:repeating-linear-gradient(90deg,var(--ib-run) 0 2px,transparent 2px 6px);opacity:.5}
+#sheetInner .ib-ps{height:1.5px;bottom:calc(var(--ib0) - .75px);background:repeating-linear-gradient(90deg,var(--st-ring) 0 2px,transparent 2px 5px);opacity:.85}
+#sheetInner .ib-v{left:0;right:0;bottom:calc(var(--ib0) + 3px);text-align:center;font-size:11px;font-weight:500;line-height:1;color:var(--st-meta);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+#sheetInner .ib-v.cur{right:auto;text-align:left;color:var(--ib-ink);font-weight:650}
+body.ts-dense #sheetInner .ib-v{font-size:10.5px;bottom:calc(var(--ib0) + 2px)}
+#sheetInner .ib-lbl{bottom:calc(var(--ib0) + var(--ih) * var(--r) * var(--k) + 2px);z-index:2;font-size:10.5px;font-weight:650;line-height:1.2;color:var(--ib-ink);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:-.005em}
+#sheetInner .ib-lbl.p{color:var(--st-ring);bottom:calc(var(--ib0) + 15px)}
+#sheetInner .ib-lbl svg{width:8px;height:8px;margin-right:3px;fill:currentColor;vertical-align:0}
+#sheetInner .ib-lbl svg:last-child{margin-right:0}
+#sheetInner .ib-tip{width:12px;height:12px;margin-left:-6px;bottom:calc(var(--ib0) + var(--ih) * var(--r) - 6px);border-radius:50%;background:var(--ib-run);box-shadow:0 0 0 2.5px var(--surface-0);z-index:4}
+#sheetInner .ib-tip::after{content:"";position:absolute;inset:-5px;border-radius:50%;background:var(--ib-run);opacity:0;animation:ib-halo 2.8s ease-in-out infinite;animation-delay:var(--bd,0ms)}   /* the halo keeps the due-now beat */
+#sheetInner .ib-tip.p{background:var(--st-ring)}
+#sheetInner .ib-tip.p::after{display:none}
+@keyframes ib-halo{0%,100%{opacity:0;transform:scale(.6)}50%{opacity:.28;transform:scale(1)}}
+#sheetInner .grow.is-draft .ib{opacity:.35}
+.ib-bub{position:fixed;z-index:9999;transform:translateX(-50%);padding:5px 9px;border-radius:8px;background:#1d1d1f;color:#fff;font-size:11.5px;font-weight:550;line-height:1.3;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.ib-bub b{font-weight:700}
+body.dark .ib-bub{background:#25344f;color:#e8f1fa;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.ib-hair{position:fixed;z-index:9998;width:1px;margin-left:-.5px;background:rgba(29,29,31,.35);pointer-events:none}
+body.dark .ib-hair{background:rgba(216,232,244,.35)}
+.ib-bub[hidden],.ib-hair[hidden]{display:none}
+/* drip: a drop for every 0.1 mL (cadence --cad, 2.8–30 s), falling from the dot into this hour's bar */
+#sheetInner .ib-drop{width:5px;height:5px;margin-left:-2.5px;bottom:calc(var(--ib0) + var(--ih) * var(--r) - 2.5px);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:var(--ib-run);z-index:3;opacity:0}
+#sheetInner .ib-drop.go{animation:ib-drip .75s cubic-bezier(.5,0,.75,0) both}
+@keyframes ib-drip{0%{opacity:0;transform:translateY(-1px) scale(.3)}18%{opacity:1;transform:translateY(3px) scale(1)}
+  82%{opacity:.9;transform:translateY(calc(var(--ih) * var(--r) * .6 + 3px)) scaleY(1.25)}100%{opacity:0;transform:translateY(calc(var(--ih) * var(--r) * .6 + 5px)) scale(.6)}}
+#sheetInner .ib-v.ib-tick{animation:ib-tick .45s cubic-bezier(.32,.72,0,1)}
+@keyframes ib-tick{from{transform:translateY(3px);opacity:.3}to{transform:none;opacity:1}}
+/* opening a sheet (once per sheet and day): bars rise left to right, the line draws, then the dot */
+#sheetInner.ib-open .ib-bar{transform-origin:50% 100%;animation:ib-rise .5s cubic-bezier(.32,.72,0,1) both;animation-delay:calc(var(--h) * 22ms)}
+#sheetInner.ib-open .ib-ln{transform-origin:0 50%;animation:ib-draw .2s linear both;animation-delay:calc(var(--h) * 22ms + 120ms)}
+#sheetInner.ib-open :is(.ib-rs,.ib-fut,.ib-ps,.ib-lbl,.ib-v,.ib-base){animation:ib-fade .35s ease both;animation-delay:calc(var(--h) * 22ms + 220ms)}
+#sheetInner.ib-open .ib-tip{animation:ib-pop .45s cubic-bezier(.34,1.56,.64,1) both;animation-delay:calc(var(--h) * 22ms + 380ms)}
+#sheetInner.ib-open .ib-drop{visibility:hidden}
+@keyframes ib-rise{from{transform:scaleY(0)}to{transform:none}}
+@keyframes ib-draw{from{transform:scaleX(0)}to{transform:none}}
+@keyframes ib-fade{from{opacity:0}}
+@keyframes ib-pop{from{transform:scale(0)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){#sheetInner .ib-tip,#sheetInner .ib-tip::after,#sheetInner .ib-v.ib-tick,#sheetInner.ib-open .ib *{animation:none!important}#sheetInner .ib-drop{display:none!important}}
+
+/* ═════════ Account card · the old Estimate Range look, collapsible, with motion (Oct 2026) ═════════
+   Classes from prototype.css (.est-range, .est-pill, .est-row, .est-bar …); light mode uses deeper teal/amber/green so small text passes 4.5:1. */
+.cbrief .est-card.fin2{--fin-card:var(--surface-0);--fin-head:#17738A;--fin-link:#17738A;--fin-ok:#0f7a55;--fin-ok-bg:rgba(26,158,110,.14);--fin-warn:#9a6200;--fin-warn-bg:rgba(232,168,48,.18);--fin-bad:#C93D24;--fin-bad-bg:rgba(232,100,74,.12);--fin-meta:#6e6e73}
+body.dark .cbrief .est-card.fin2{--fin-card:#131E34;--fin-head:#38BDD2;--fin-link:#5fd3e6;--fin-ok:#2fc48d;--fin-ok-bg:rgba(47,196,141,.14);--fin-warn:#F2C065;--fin-warn-bg:rgba(232,168,48,.16);--fin-bad:#FF7A5C;--fin-bad-bg:rgba(255,122,92,.14);--fin-meta:#9fb5cc}
+.cbrief .est-card.fin2 h4{color:var(--fin-head)}
+.fin2 .est{padding:6px 15px 10px}
+.fin2 button.est-range{display:block;width:100%;margin:6px 0 0;padding:2px 0;border:0;background:none;font:inherit;font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--ink-900);cursor:pointer;border-radius:8px;font-variant-numeric:tabular-nums}
+.fin2 button.est-range:focus-visible{outline:2px solid var(--fin-link);outline-offset:2px}
+.fin2 .est-pill{justify-content:center;white-space:nowrap;overflow:hidden}
+.fin2 .est-pill.ok{background:var(--fin-ok-bg);color:var(--fin-ok)}
+.fin2 .est-pill.warn{background:var(--fin-warn-bg);color:var(--fin-warn)}
+.fin2 .est-pill .tick{stroke-dasharray:14;stroke-dashoffset:0}
+.fin2 .est-pill.warn .tick{stroke-dashoffset:14}
+.fin2 .est-pill.ok .hands{opacity:0}
+.fin2 .est-row .v.amber{color:var(--fin-warn)}.fin2 .est-row .v.red{color:var(--fin-bad)}
+.fin2 .est-row .v small{color:var(--fin-meta);font-weight:500}
+.fin2 .est-proj{margin:2px 0 4px;padding:7px 10px;border-radius:10px;background:var(--fill-soft);font-size:12px;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;gap:1px}
+.fin2 .est-proj b{font-weight:700;color:var(--ink-900)}.fin2 .est-proj>span{color:var(--fin-meta)}
+.fin2 .est-proj.warn{background:var(--fin-warn-bg)}.fin2 .est-proj.warn>span{color:var(--fin-warn);font-weight:600}
+.fin2 .est-bar{margin:10px 7px 2px 0}
+.fin2 .est-fill.red{background:linear-gradient(90deg,#b5271b,var(--coral))}
+.fin2 .est-cap{right:-7px;background:var(--fin-card)}
+.fin2 .est-more{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-height:40px;margin:4px 0 -4px;border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--fin-link);cursor:pointer;border-radius:10px}
+.fin2 .est-more svg{width:13px;height:13px;transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.fin2.open .est-more svg{transform:rotate(180deg)}
+.fin2 .est-more:focus-visible{outline:2px solid var(--fin-link);outline-offset:-2px}
+.fin2 .est-x{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.32,.72,0,1)}
+.fin2 .est-x>div{overflow:hidden;min-height:0}
+.fin2.open .est-x{grid-template-rows:1fr}
+.fin2 .est-x .in>*{opacity:0;transform:translateY(-3px);transition:opacity .25s ease,transform .4s cubic-bezier(.32,.72,0,1)}
+.fin2.open .est-x .in>*{opacity:1;transform:none}
+.fin2.open .est-x .in>*:nth-child(2){transition-delay:.04s}.fin2.open .est-x .in>*:nth-child(3){transition-delay:.07s}.fin2.open .est-x .in>*:nth-child(4){transition-delay:.1s}
+.fin2.open .est-x .in>*:nth-child(5){transition-delay:.13s}.fin2.open .est-x .in>*:nth-child(6){transition-delay:.16s}.fin2.open .est-x .in>*:nth-child(7){transition-delay:.19s}
+.fin2.open .est-x .in>*:nth-child(n+8){transition-delay:.22s}
+.fin2 .est-ends{margin-top:10px}.fin2 .est-x .est-div{margin:12px 0 2px}
+.fin2 .est-note{margin-top:10px}
+.fin2 .est-note.bad{background:var(--fin-bad-bg);color:var(--fin-bad);font-weight:600}.fin2 .est-note.bad svg{color:var(--fin-bad)}
+.fin2 .est-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;text-align:left;color:var(--fin-meta)}
+.fin2 .fin-link{color:var(--fin-link)}
+.fin2.fin-empty .est{padding:10px 15px 14px;text-align:center}
+.fin2.fin-empty .fin-link{margin-top:6px}
+.fin-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* motion: rolling amounts */
+.fin2 .odo{display:inline-flex;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fin2 .odo .d{display:inline-block;height:1.25em;line-height:1.25em;overflow:hidden;vertical-align:top}
+.fin2 .odo .d i{display:block;font-style:normal;transition:transform .75s cubic-bezier(.32,.72,0,1)}
+.fin2 .odo .d i b{display:block;height:1.25em;font-weight:inherit;color:inherit}
+.fin2 .odo .c{display:inline-block;height:1.25em;line-height:1.25em}
+/* the bar glides (soft spring), one light passes along it; crossing into low/over sends one ring from the thumb */
+.fin2 .est-fill{transition:width .9s cubic-bezier(.34,1.32,.64,1)}
+.fin2 .est-fill .sheen{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.fin2 .est-fill .sheen::before{content:"";position:absolute;top:0;bottom:0;width:40%;left:-40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);opacity:0}
+.fin2 .est-fill.shine .sheen::before{animation:fin-sheen .9s cubic-bezier(.32,.72,0,1) .35s}
+@keyframes fin-sheen{0%{left:-40%;opacity:0}20%{opacity:1}100%{left:100%;opacity:0}}
+.fin2 .est-fill::before{content:"";position:absolute;right:-7px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;border:2px solid #dcae3c;opacity:0;pointer-events:none}
+.fin2 .est-fill.red::before{border-color:#d9472f}
+.fin2 .est-fill.ping::before{animation:fin-ping 1s cubic-bezier(.32,.72,0,1) .55s}
+@keyframes fin-ping{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(2.6)}}
+/* approval: green arrives, the clock hands fade, the check draws itself (the same check as charting a task) */
+.fin2 .est-pill.just{animation:fin-pill .6s cubic-bezier(.34,1.32,.64,1)}
+.fin2 .est-pill.just .hands{animation:fin-hands .25s ease both}
+.fin2 .est-pill.just .tick{animation:fin-tick .45s cubic-bezier(.32,.72,0,1) .2s both}
+.fin2 .est-pill.just .t{animation:fin-fade .3s ease .1s both}
+@keyframes fin-pill{0%{transform:scale(.94);background:var(--fin-warn-bg);color:var(--fin-warn)}40%{background:var(--fin-ok-bg);color:var(--fin-ok)}100%{transform:none}}
+@keyframes fin-hands{from{opacity:1}to{opacity:0}}
+@keyframes fin-tick{from{stroke-dashoffset:14}to{stroke-dashoffset:0}}
+@keyframes fin-fade{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.fin2 .est-fill,.fin2 .est-x,.fin2 .est-x .in>*,.fin2 .est-more svg,.fin2 .odo .d i{transition:none!important}.fin2 .est-fill .sheen::before,.fin2 .est-fill::before,.fin2 .est-pill.just,.fin2 .est-pill.just *{animation:none!important}}
+
+/* ═════════ Vitals tab · one trend per row (Oct 2026) ═════════
+   A calm line through the stay's readings (last 48 h) over the hospital's normal range (soft band), values written on the readings,
+   the latest in teal, amber / coral only outside the limits. Weight takes kg or lb. "Show only active" hides stopped vitals. */
+#ctab-vitals{--vc-line:#1A7C93;--vc-cur:#1A7C93;--vc-band:color-mix(in srgb,#1a9e6e 6.5%,transparent);--vc-band-ink:#2f7d5c;--vc-amber:#9a6200;--vc-coral:#C93D24;--vc-chip:color-mix(in srgb,var(--ink-400) 12%,transparent)}
+body.dark #ctab-vitals{--vc-line:#38BDD2;--vc-cur:#38BDD2;--vc-band:color-mix(in srgb,#2fc48d 11%,transparent);--vc-band-ink:#6fe0b3;--vc-amber:#F2C065;--vc-coral:#FF7A5C;--vc-chip:rgba(150,185,220,.14)}
+#ctab-vitals .v-row{grid-template-columns:160px minmax(0,1fr) auto;padding:6px 6px;min-height:68px}
+#ctab-vitals .v-row.is-dc .v-name{color:var(--st-meta)}
+#ctab-vitals .v-trend{overflow:visible}
+.v-chart{position:relative;height:60px;margin:0 18px}
+.v-chart svg{position:absolute;inset:0;width:100%;height:56px;overflow:visible}
+.v-band{fill:var(--vc-band)}
+.v-band-l{position:absolute;right:-16px;transform:translateX(100%);font-size:9.5px;font-weight:600;color:var(--vc-band-ink);white-space:nowrap;opacity:.9;font-variant-numeric:tabular-nums;display:none}
+.v-line{fill:none;stroke:var(--vc-line);stroke-width:1.75;stroke-linejoin:round;stroke-linecap:round;opacity:.55}
+.v-line.flat{stroke-dasharray:2 4;opacity:.45}
+.v-dot{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--surface-0);box-shadow:inset 0 0 0 1.75px var(--vc-line);outline:none;cursor:default}
+.v-dot.cur{width:10px;height:10px;margin:-5px 0 0 -5px;background:var(--vc-cur);box-shadow:0 0 0 2.5px var(--surface-0)}
+.v-dot.amber{box-shadow:inset 0 0 0 1.75px var(--vc-amber)}.v-dot.cur.amber{background:var(--vc-amber);box-shadow:0 0 0 2.5px var(--surface-0)}
+.v-dot.coral{box-shadow:inset 0 0 0 1.75px var(--vc-coral)}.v-dot.cur.coral{background:var(--vc-coral);box-shadow:0 0 0 2.5px var(--surface-0)}
+.v-dot:focus-visible{box-shadow:0 0 0 2px var(--surface-0),0 0 0 4px var(--vc-line)}
+.v-lab{position:absolute;transform:translateX(-50%);font-size:11px;font-weight:650;line-height:15px;padding:0 6px;border-radius:7px;background:var(--vc-chip);color:var(--ink-900);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:-.01em;pointer-events:none}
+.v-lab.l{transform:none;margin-left:-6px}.v-lab.r{transform:translateX(-100%);margin-left:6px}
+.v-lab.cur{background:var(--vc-cur);color:#fff}
+body.dark .v-lab.cur{color:#03242c}
+.v-lab.amber{color:var(--vc-amber);background:color-mix(in srgb,#E8A830 16%,transparent)}.v-lab.cur.amber{background:var(--vc-amber);color:#fff}
+body.dark .v-lab.cur.amber{color:#2a1a00}
+.v-lab.coral{color:var(--vc-coral);background:color-mix(in srgb,#FF453A 13%,transparent)}.v-lab.cur.coral{background:var(--vc-coral);color:#fff}
+.v-nd{display:inline-block;width:4px;height:4px;border-radius:50%;background:currentColor;margin-left:4px;vertical-align:2px;opacity:.7}
+.v-tl{position:absolute;bottom:-2px;transform:translateX(-50%);font-size:9.5px;color:var(--st-meta);white-space:nowrap;font-variant-numeric:tabular-nums}
+.v-tl.l{transform:none;margin-left:-4px}.v-tl.r{transform:translateX(-100%);margin-left:4px}
+/* show only active */
+.v-act{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--st-meta);cursor:pointer;margin-left:auto}
+.v-sw{position:relative;width:38px;height:23px;border-radius:12px;border:0;background:color-mix(in srgb,var(--ink-400) 30%,transparent);cursor:pointer;transition:background .2s;flex:none}
+.v-sw i{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .25s cubic-bezier(.32,.72,0,1)}
+.v-sw[aria-checked="true"]{background:#1a9e6e}.v-sw[aria-checked="true"] i{transform:translateX(15px)}
+.v-sw:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+.v-note.need{border-color:color-mix(in srgb,#E8A830 60%,transparent)}
+/* kg / lb */
+.lb-wrap{position:relative;display:inline-flex;align-items:center;gap:6px}
+.lb-seg{display:inline-flex;padding:2px;border-radius:8px;background:color-mix(in srgb,var(--ink-400) 13%,transparent)}
+.lb-seg button{border:0;background:none;font:inherit;font-size:11.5px;font-weight:600;color:var(--st-meta);padding:4px 8px;border-radius:6px;cursor:pointer;min-height:26px}
+.lb-seg button[aria-pressed="true"]{background:var(--surface-0);color:var(--ink-900);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.lb-hint{position:absolute;right:0;top:calc(100% + 6px);z-index:30;display:flex;align-items:center;gap:10px;padding:7px 8px 7px 12px;border-radius:11px;background:#1d1d1f;color:#fff;font-size:12px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.2);font-variant-numeric:tabular-nums}
+.lb-hint[hidden]{display:none}
+.lb-hint b{font-weight:700}
+.lb-hint button{border:0;background:#38BDD2;color:#03242c;font:inherit;font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer}
+body.dark .lb-hint{background:#25344f}
+
+/* ═════════ Order care · board alerts · stopped section (Oct 2026, from the Instinct review, Apple-calm) ═════════ */
+/* price in the order window and panel */
+.oc-price{display:flex;align-items:baseline;gap:8px;margin:8px 0 2px;padding:8px 12px;border-radius:11px;background:var(--fill-soft,rgba(120,120,128,.06));font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink-700)}
+.oc-price b{color:var(--ink-900);font-weight:700}.oc-price small{margin-left:auto;color:var(--st-meta);font-size:11.5px}
+.oc-price-k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--st-meta)}
+.oc-price.none{color:var(--st-meta)}
+#tsOrderSheet .oc-price{margin:10px 0 0}
+/* note required */
+.oc-req-row{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:12px 0 0;text-align:left;width:100%}
+.oc-req,#tsModal .oc-req{display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-start;gap:10px;align-self:flex-start;margin:0;font-size:13px;font-weight:600;color:var(--ink-900);cursor:pointer}
+.oc-req .v-sw{flex:none}
+.oc-req-p{width:100%;box-sizing:border-box;height:38px;border-radius:10px;border:1px solid var(--border,rgba(120,120,128,.24));background:var(--surface-0);color:var(--ink-900);font:inherit;font-size:13px;padding:0 12px}
+.oc-req-p:focus{outline:none;border-color:var(--accent-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.oc-req-p[hidden]{display:none}
+.oc-req-ro{margin-top:10px;font-size:12.5px;color:var(--amber-txt);font-weight:600}
+.cd-req-l{font-size:11px;font-weight:700;color:var(--amber-txt);margin-left:4px;text-transform:none;letter-spacing:0}
+.cd-need-note textarea{border-color:color-mix(in srgb,#E8A830 55%,transparent)!important}
+.bt-row.nr .bt-note{flex:0 0 200px;height:32px;border-radius:9px;border:1px solid color-mix(in srgb,#E8A830 55%,transparent);background:var(--surface-0);color:var(--ink-900);font:inherit;font-size:12.5px;padding:0 10px}
+/* the hard stop: "Order anyway" in red */
+#tsModal .ts-btn.primary.danger{background:#C93D24;border-color:#C93D24;color:#fff}
+body.dark #tsModal .ts-btn.primary.danger{background:#FF453A;border-color:#FF453A;color:#fff}
+/* owner handout */
+.oc-handout{display:inline-flex;align-items:center;gap:8px;margin-top:12px}
+.oc-handout svg{width:16px;height:16px}
+.oc-ho-form{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.oc-ho-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--st-meta)}
+.oc-ho-form input,.oc-ho-form textarea{border-radius:11px;border:1px solid var(--border,rgba(120,120,128,.24));background:var(--surface-0);color:var(--ink-900);font:inherit;font-size:14px;padding:9px 12px;resize:vertical}
+.oc-ho-form input:focus,.oc-ho-form textarea:focus{outline:none;border-color:var(--accent-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+/* copy treatments / vitals at the bottom of the sheet */
+#legend .lg-act{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:9px;border:0;background:color-mix(in srgb,var(--ink-400) 11%,transparent);color:var(--ink-900);font:inherit;font-size:12px;font-weight:600;cursor:pointer;margin-left:6px}
+#legend .lg-act:hover{background:color-mix(in srgb,var(--ink-400) 18%,transparent)}
+#legend .lg-act:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+#legend .lg-act svg{width:14px;height:14px}
+/* stopped & completed: quiet rows at the bottom */
+#sheetInner .grow[data-sec="Stopped & completed"] .rl-name{color:var(--st-meta)}
+#sheetInner .grow[data-sec="Stopped & completed"] .hcells{opacity:.6}
+/* board: alerts */
+.al-cell{cursor:pointer;border-radius:10px;align-content:center}
+.al-cell:hover{background:color-mix(in srgb,var(--ink-400) 8%,transparent)}
+.al-cell:focus-visible{outline:2px solid var(--accent-ink);outline-offset:-2px}
+.al-cell .al-row{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;line-height:1.3;color:var(--amber-txt);background:none;padding:1px 0}
+.al-cell .al-row svg{width:14px;height:14px;flex:none}
+.al-cell .al-row.crit{color:var(--now)}
+.al-cell .al-row.client{color:var(--sec-ink,#17738A)}
+body.dark .al-cell .al-row.client{color:#5fd3e6}
+.al-cell .al-row span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.al-cell .al-more{font-size:11px;color:var(--st-meta);padding-left:20px}
+.al-cell .al-empty{font-size:12px;color:var(--st-meta)}
+.al-menu{position:fixed;z-index:9000;width:360px;max-height:min(560px,calc(100vh - 24px));overflow:auto;padding:12px;border-radius:16px;background:var(--surface-0);box-shadow:0 18px 50px rgba(0,0,0,.22),0 0 0 1px var(--glass-hairline)}
+.al-menu .ts-tm-h{font-size:13px;font-weight:700;color:var(--ink-900);padding:2px 4px 8px}
+.al-curs{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.al-cur{display:flex;align-items:center;gap:8px;padding:7px 8px 7px 10px;border-radius:10px;background:color-mix(in srgb,#E8A830 13%,transparent);color:var(--amber-txt);font-size:13px;font-weight:600}
+.al-cur.crit{background:color-mix(in srgb,#FF453A 11%,transparent);color:var(--now)}
+.al-cur.client{background:color-mix(in srgb,#38BDD2 12%,transparent);color:var(--sec-ink,#17738A)}
+body.dark .al-cur.client{color:#5fd3e6}
+.al-cur svg{width:15px;height:15px;flex:none}.al-cur span{flex:1;min-width:0}.al-cur small{display:block;font-size:11px;font-weight:500;color:var(--st-meta)}
+.al-cur button{width:28px;height:28px;border:0;border-radius:8px;background:none;color:inherit;font-size:18px;line-height:1;cursor:pointer;opacity:.7}
+.al-cur button:hover{opacity:1;background:color-mix(in srgb,currentColor 12%,transparent)}
+.al-none{font-size:12.5px;color:var(--st-meta);margin:0 4px 8px}
+.al-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--st-meta);margin:10px 4px 6px}
+.al-picks{display:flex;flex-wrap:wrap;gap:6px}
+.al-pick{border:0;border-radius:999px;padding:6px 11px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;background:color-mix(in srgb,var(--ink-400) 11%,transparent);color:var(--ink-900);min-height:30px}
+.al-pick:hover{background:color-mix(in srgb,var(--ink-400) 19%,transparent)}
+.al-pick.c::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#38BDD2;margin-right:6px;vertical-align:1px}
+.al-pick.p::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8A830;margin-right:6px;vertical-align:1px}
+.al-type{display:flex;gap:6px;margin-top:12px}
+.al-type input:focus,.al-type select:focus{outline:none;border-color:var(--accent-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.al-type select,.al-type input{height:36px;border-radius:10px;border:1px solid var(--border,rgba(120,120,128,.24));background:var(--surface-0);color:var(--ink-900);font:inherit;font-size:13px;padding:0 10px}
+.al-type input{flex:1;min-width:0}
+.al-type button{height:36px;border:0;border-radius:10px;padding:0 14px;background:var(--accent-ink);color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+/* board: hover an hour */
+.sb-blk[tabindex]{cursor:default;outline:none}
+.sb-blk[tabindex]:focus-visible{box-shadow:0 0 0 2px var(--surface-0),0 0 0 4px var(--accent-ink)}
+.sb-pop{position:fixed;z-index:9500;min-width:220px;max-width:320px;padding:8px 6px 6px;border-radius:13px;background:rgba(29,29,31,.94);color:#fff;font-size:12.5px;box-shadow:0 14px 36px rgba(0,0,0,.28);pointer-events:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.sb-pop[hidden]{display:none}
+.sb-pop .sp-h{font-size:11px;font-weight:600;color:rgba(255,255,255,.62);padding:0 8px 6px}
+.sb-pop .sp-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px}
+.sb-pop .sp-row+.sp-row{border-top:1px solid rgba(255,255,255,.08)}
+.sb-pop .sp-row i{width:8px;height:8px;border-radius:50%;flex:none;background:#8e8e93}
+.sb-pop .sp-row.overdue i{background:#FF9F0A}.sb-pop .sp-row.due i{background:#38BDD2}.sb-pop .sp-row.scheduled i{background:transparent;box-shadow:inset 0 0 0 1.5px #aeaeb2}.sb-pop .sp-row.completed i{background:#30d158}
+.sb-pop .sp-n{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-pop .sp-t{color:rgba(255,255,255,.66);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sb-pop .sp-row.overdue .sp-t{color:#FFB340}
+/* sidebar weight tile */
+.cbrief .vit-wt{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.cbrief .vit-wt small{display:block;font-size:11px;color:var(--amber-txt);font-weight:600;margin-top:1px}
+.cbrief .vit-wt .wt-r{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.cbrief .wt-d{font-size:11px;color:var(--st-meta);font-weight:600;white-space:nowrap}
+.cbrief .wt-spark{width:120px;height:28px;overflow:visible}
+.cbrief .wt-spark polyline{fill:none;stroke:#1A7C93;stroke-width:1.75;stroke-linejoin:round;stroke-linecap:round}
+.cbrief .wt-spark .wt-fill{fill:color-mix(in srgb,#38BDD2 14%,transparent)}
+.cbrief .wt-spark circle{fill:#1A7C93;stroke:var(--surface-0);stroke-width:2}
+body.dark .cbrief .wt-spark polyline{stroke:#38BDD2}body.dark .cbrief .wt-spark circle{fill:#38BDD2}
+
+/* ═════════ grid tiles (Oct 2026, option A refined) — the grid is back, overdue and due-now are tiles of one size ═════════
+   Lines on every hour and every row (a stronger one at 7 AM / 7 PM, labelled Day / Night); no zebra. Overdue = a flat amber tile with the
+   orange clock (no glow at rest); more than 2 h late = stronger amber + a heavier edge (.late2). Due now = a teal tile of the same size.
+   Hover / focus: the tile grows to nearly fill its square and the glow appears. Hover an hour square: its row and hour light (store/gridtiles.js).
+   Hover an hour in the header: its open tasks light and "Chart N at …" appears. Charting plays tile → done circle → check → value. */
+body{--g-line:rgba(20,32,56,.085);--g-line-strong:rgba(20,32,56,.16);--g-shift:rgba(20,32,56,.26);
+  --g-l1bg:color-mix(in srgb,#F0B13C 15%,transparent);--g-l1rim:color-mix(in srgb,#D97200 36%,transparent);
+  --g-l2bg:color-mix(in srgb,#F0B13C 32%,transparent);--g-l2rim:color-mix(in srgb,#D97200 78%,transparent);
+  --g-hov:color-mix(in srgb,#F0A020 36%,transparent);--g-glow:0 6px 16px -6px rgba(217,114,0,.42);--g-dglow:0 6px 16px -6px rgba(26,124,147,.5);
+  --g-donebg:color-mix(in srgb,#5c6676 16%,transparent);--g-xh:color-mix(in srgb,#17738A 7%,transparent);--g-pill:#A85600;--g-pill-ink:#ffffff}
+body.dark{--g-line:rgba(150,178,214,.12);--g-line-strong:rgba(150,178,214,.2);--g-shift:rgba(150,178,214,.32);
+  --g-l1bg:color-mix(in srgb,#E8A830 13%,transparent);--g-l1rim:color-mix(in srgb,#E8A830 42%,transparent);
+  --g-l2bg:color-mix(in srgb,#F0A020 25%,transparent);--g-l2rim:color-mix(in srgb,#FF9F0A 82%,transparent);
+  --g-hov:color-mix(in srgb,#FF9F0A 30%,transparent);--g-glow:0 6px 18px -6px rgba(255,159,10,.6);--g-dglow:0 6px 18px -6px rgba(56,189,210,.7);
+  --g-donebg:color-mix(in srgb,#9aa8bf 22%,transparent);--g-xh:color-mix(in srgb,#38BDD2 8%,transparent);--g-pill:#FF9F0A;--g-pill-ink:#241300}
+/* the grid */
+#sheetInner .cell,#sheetInner .ghead .hcell,#sheetInner .gband .hcell.sec-h{border-right:1px solid var(--g-line)}
+#sheetInner .cell.q3,#sheetInner .ghead .hcell.q3{box-shadow:none}
+#sheetInner .cell.shift,#sheetInner .ghead .hcell.shift,#sheetInner .gband .hcells > .hcell:nth-child(8),#sheetInner .gband .hcells > .hcell:nth-child(20){box-shadow:inset 2px 0 0 var(--g-shift)}
+#sheetInner .grow[data-o]{border-bottom:1px solid var(--g-line)}
+#sheetInner .grow.zb:not(.is-draft) > .hcells{background:none}
+#sheetInner .grow.zb > .rl{box-shadow:none}
+#sheetInner .grow:not(.ghead):not(.gband) > .rl{border-right:1px solid var(--g-line-strong)}
+#sheetInner .ghead .hcells > .hcell.shift:nth-child(8) .hl::after{content:"Day"}
+#sheetInner .ghead .hcells > .hcell.shift:nth-child(20) .hl::after{content:"Night"}
+#sheetInner .ghead .hcell.shift .hl::after{display:block;margin-top:1px;font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--st-meta);opacity:.85}
+/* the tiles */
+#sheetInner .cell > .mark.overdue,#sheetInner .cell > .mark.due{width:42px;height:30px;padding:0;border-radius:8px;
+  transition:width .34s cubic-bezier(.32,.72,0,1),height .34s cubic-bezier(.32,.72,0,1),background .25s,box-shadow .25s}
+#sheetInner .cell > .mark.overdue{background:var(--g-l1bg);box-shadow:inset 0 0 0 1.5px var(--g-l1rim)}
+#sheetInner .cell > .mark.overdue.late2{background:var(--g-l2bg);box-shadow:inset 0 0 0 2px var(--g-l2rim)}
+#sheetInner .cell > .mark.overdue.off,#sheetInner .cell > .mark.due.off{gap:2px}
+#sheetInner .cell:hover > .mark.overdue,#sheetInner .cell > .mark.overdue:focus-visible{width:48px;height:38px;background:var(--g-hov);box-shadow:inset 0 0 0 2px var(--g-l2rim),var(--g-glow)}
+#sheetInner .cell:hover > .mark.due,#sheetInner .cell > .mark.due:focus-visible{width:48px;height:38px;box-shadow:var(--g-dglow)}
+body.ts-dense :is(#ctab-sheet) #sheetInner .cell > .mark.overdue,body.ts-dense :is(#ctab-sheet) #sheetInner .cell > .mark.due{height:26px;border-radius:8px}
+body.ts-dense :is(#ctab-sheet) #sheetInner .cell:hover > .mark.overdue,body.ts-dense :is(#ctab-sheet) #sheetInner .cell > .mark.overdue:focus-visible,
+body.ts-dense :is(#ctab-sheet) #sheetInner .cell:hover > .mark.due,body.ts-dense :is(#ctab-sheet) #sheetInner .cell > .mark.due:focus-visible{height:32px}
+#sheetInner .cell > .mark.due .mk-rim{width:48px;height:38px;border-radius:9px}
+body.ts-dense #sheetInner .cell > .mark.due .mk-rim{height:32px}
+/* lit by its hour in the header */
+#sheetInner .cell > .mark.overdue.lit{background:var(--g-hov);box-shadow:inset 0 0 0 2px var(--g-l2rim),var(--g-glow)}
+#sheetInner .cell > .mark.due.lit{box-shadow:var(--g-dglow);animation:none;opacity:1}
+.gx-pill{position:fixed;z-index:60;transform:translate(-50%,0) scale(.92);opacity:0;pointer-events:none;white-space:nowrap;background:var(--g-pill);color:var(--g-pill-ink);
+  font-size:12px;font-weight:700;letter-spacing:-.005em;padding:5px 10px;border-radius:13px;box-shadow:0 6px 16px -6px rgba(0,0,0,.45);transition:opacity .16s,transform .24s cubic-bezier(.32,.72,0,1)}
+.gx-pill.on{opacity:1;transform:translate(-50%,0) scale(1)}
+/* where the pointer is: the row (inset shadow keeps the sticky label opaque) and the hour (a tint on each square of the hour) */
+#sheetInner .grow.xr > .hcells{background:var(--g-xh)}
+#sheetInner .grow.xr > .rl{box-shadow:inset 0 0 0 999px var(--g-xh)}
+#sheetInner .grow[data-o] > .hcells > .xc{background-image:linear-gradient(var(--g-xh),var(--g-xh))}
+#sheetInner .ghead .hcell.xc .hl{color:var(--ink-900)}
+/* legend */
+#legend .lg-mk.overdue{background:var(--g-l1bg);box-shadow:inset 0 0 0 1.5px var(--g-l1rim)}
+#legend .lg-mk.overdue.late2{background:var(--g-l2bg);box-shadow:inset 0 0 0 2px var(--g-l2rim)}
+#legend .lg-mk.overdue .od{height:14px;min-width:14px}#legend .lg-mk.overdue .od .od-ic{width:14px;height:14px}
+/* the finish starts from the tile: tile → done circle → check → value */
+#sheetInner .cell > .mark.just{width:calc(100% - 6px)}
+.da{width:42px;height:30px}
+.da .disc{top:50%;bottom:auto;height:30px;width:42px;border-radius:8px;transform:translate(-50%,-50%);animation:da-gather2 .34s cubic-bezier(.32,.72,0,1) calc(var(--da-d,0ms) + .12s) both,da-fade2 .5s ease calc(var(--da-d,0ms) + .9s) forwards}
+body.ts-dense .da{height:26px}body.ts-dense .da .disc{height:26px}
+@keyframes da-gather2{from{width:42px;height:30px;border-radius:8px}to{width:22px;height:22px;border-radius:11px}}
+@keyframes da-fade2{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(1.12)}100%{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
+.da.od .disc{animation:da-gather-od .34s cubic-bezier(.32,.72,0,1) calc(var(--da-d,0ms) + .12s) both,da-fade2 .5s ease calc(var(--da-d,0ms) + .9s) forwards}
+@keyframes da-gather-od{from{width:42px;height:30px;border-radius:8px;background:var(--g-l1bg);box-shadow:inset 0 0 0 1.5px var(--g-l1rim)}to{width:22px;height:22px;border-radius:11px;background:var(--g-donebg);box-shadow:none}}
+.da.od .da-ck{color:var(--ink-900)}
+@media (prefers-reduced-motion:reduce){
+  #sheetInner .cell > .mark.overdue,#sheetInner .cell > .mark.due,.gx-pill{transition:none}
+}
+
 
 /* ===== LUNA voice (from Pravix Flow) ===== */
 

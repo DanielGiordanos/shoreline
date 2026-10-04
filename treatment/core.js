@@ -217,10 +217,10 @@ function renderDash(){
       <div class="sbc c-ward">${(window.tsWardSel&&tsWardSel(p))||`<select class="ward-sel" onchange="toast('${p.name.split(' ')[0]} → '+this.value)">${WARDS.map(w=>`<option ${w===p.ward?'selected':''}>${w}</option>`).join('')}</select>`}</div>
       <div class="sbc c-io"><div style="display:flex;align-items:center;gap:8px"><span class="io-badge" style="float:none;margin:0">${p.inout}</span><div><div class="io-date">${p.date}</div><div class="io-time">${p.time}</div></div></div></div>
       <div class="sbc c-timer">${p.techHTML||''}</div>
-      <div class="sbc c-alerts aa-cell" onclick="event.stopPropagation();openPatient(${i})" title="Alert Assist">${p.alerts.length?p.alerts.map(a=>`<div class="al-row ${a.t}">${IC.tri}${a.x}</div>`).join(''):'<span class="al-empty">— Add alert</span>'}<div class="aa-cell-hint">${IC.spark}Alert Assist</div></div>
+      ${window.tsAlertCell?tsAlertCell(p,i):`<div class="sbc c-alerts aa-cell" onclick="event.stopPropagation();openPatient(${i})" title="Alert Assist">${p.alerts.length?p.alerts.map(a=>`<div class="al-row ${a.t}">${IC.tri}${a.x}</div>`).join(''):'<span class="al-empty">— Add alert</span>'}<div class="aa-cell-hint">${IC.spark}Alert Assist</div></div>`}
     </div>`;
     const right = sbTx
-      ? `<div class="sb-hours">${hours.map(h=>{const b=p.blocks.find(x=>x.h===h);return `<div class="sb-hcell">${b?`<div class="sb-blk ${b.status}">${b.label}</div>`:''}</div>`;}).join('')}</div>`
+      ? `<div class="sb-hours">${hours.map(h=>{const b=p.blocks.find(x=>x.h===h);return `<div class="sb-hcell">${b?(window.tsBlkHTML?tsBlkHTML(b,p):`<div class="sb-blk ${b.status}">${b.label}</div>`):''}</div>`;}).join('')}</div>`
       : `<div class="sb-cage">
           <div class="cage-col c1"><div class="cage-line">${IC.cage}<span class="cp">${p.cage||'—'}</span>${IC.copy}</div><div class="cage-line">${IC.gear}${p.service}</div><div class="cage-line">${lsPill(p.ls)}</div></div>
           <div class="cage-col c2"><div class="cage-line">${IC.person}${p.owner}</div><div class="cage-line">${IC.phone}${p.phone}</div><div class="cage-line">${IC.home}<select class="cage-date"><option>Select Date</option></select></div></div>
@@ -270,44 +270,119 @@ function renderSheet(){
       <div class="order-search-wrapper"><div class="qadd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tsSearch" placeholder="Add order by name or ID…" autocomplete="off" onfocus="openTsDrop()" oninput="tsRender(this.value)" onkeydown="tsKey(event)"></div><div class="order-search-dropdown" id="tsDrop" style="display:none"></div></div>${window.tsSetsBtn?tsSetsBtn():''}
       <div class="day-nav ts-daynav">${window.tsDayNavHTML?tsDayNavHTML():'<button class="today">Today</button>'}</div>
       <div class="spacer" style="flex:1"></div>
-      <span id="tsDrafts" class="ts-seen-slot"></span><span id="tsSeen" class="ts-seen-slot"></span>
+      <span id="tsDrafts" class="ts-seen-slot"></span><span id="tsSeen" class="ts-seen-slot"></span><span id="tsView" class="ts-view-slot"></span>
       <button class="btn ghost" style="flex:0 0 auto;width:auto;height:38px;padding:0 14px" onclick="selectCTab('timeline')">Audit</button>
       
     </div>
+    <nav class="ts-secnav" id="tsSecNav" aria-label="Sections"></nav>
     <div class="treatment-grid-shell" id="sheetScroll"><div class="sheet-inner" id="sheetInner"></div></div>
     <div class="treatment-legend" id="legend"></div>
   </main>`;
   $('#ctab-sheet').innerHTML=patientCmdHTML()+`<section class="clinical-workspace">${sidebarBriefHTML()}${grid}</section>`;
   buildGrid();
 }
-/* ═══ GRID (the Vitals tab is store/vitals.js) ═══ */
-const MK_CHECK='<svg class="mk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
-function markContent(t,s){if(s==='completed')return t.value??MK_CHECK;if(s==='due')return '';if(s==='overdue')return '!';if(s==='skipped')return '–';if(s==='scheduled')return '·';return '';}
+/* ═══ GRID (the Vitals tab is store/vitals.js) ═══
+   One visual system for every task (Oct 2026 "clear grid"): each state has its own colour AND its own shape, and the legend is drawn
+   from the same definitions, so the two can never disagree.
+     Scheduled  ring, quiet          Due now  filled teal tile + dot     Overdue  filled amber tile + clock
+     Done       soft tile + ✓ (or the value charted)                  Omitted  soft grey tile + ⊘ (a reason was recorded)
+   A task off the hour shows its minutes (":30") next to the shape. Overdue tasks are counted once on the row ("2 overdue"). */
+const MK_CHECK='<svg class="mk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+const MK_CLOCK='<svg class="mk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+const MK_OMIT='<svg class="mk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/></svg>';
+function mkOd(late){return `<span class="od"><svg class="od-ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="od-face" cx="12" cy="12" r="7.6"/><path class="od-h" d="M12 12V7.6"/><path class="od-m" d="M12 12l3.4 2.2"/></svg>${late?`<span class="od-late">${late}</span>`:''}</span>`;}
+function mkLate(t){const d=Math.max(0,Math.round(nowMin()-t.sched));return d<60?d+'m':d<1440?Math.floor(d/60)+'h':Math.floor(d/1440)+'d';}
+const MK_STATES={   /* the single source for cells and legend */
+  scheduled:{word:'Scheduled',glyph:'<i class="mk-ring" aria-hidden="true"></i>'},
+  due:{word:'Due now',glyph:'<i class="mk-rim" aria-hidden="true"></i>'},   /* the solid teal pill is its own shape: no dot · mk-rim = the hover light that runs once around it */
+  overdue:{word:'Overdue',glyph:mkOd('')},   /* a filled orange clock; on hover it opens to say how late ("4h") while the minute hand turns once */
+  completed:{word:'Done',glyph:MK_CHECK},
+  skipped:{word:'Omitted',glyph:MK_OMIT}};
+/* completion: the cell plays pill → circle → the check draws itself → the reading takes its place (store/chart.js marks it via tsJust) */
+const MK_DRAW='<svg class="da-ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 12.5l3.5 3.5 7.5-8"/></svg>';
+const MK_BEAT=2800;   /* the due-now breath, ms — every pill shares one phase */
+const MK_ORDER=['due','overdue','scheduled','completed','skipped'];
+const GRID_LW=328;   /* the fixed left area: Order (216) + Latest (112) — base.js scrollToNow and store/move.js read it */
+const MK_LINES='<svg class="mk-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M5 8h14M5 12h14M5 16h9"/></svg>';
+let _mkCtx=null;
+/* does a charted value fit its cell in full? (no fragments like "Ate 2…": a long entry shows ✓ + lines and opens in full on selection) */
+function mkFits(txt){try{if(!_mkCtx){_mkCtx=document.createElement('canvas').getContext('2d');}const ff=getComputedStyle(document.body).fontFamily||'sans-serif';_mkCtx.font=`700 10px ${ff}`;return _mkCtx.measureText(String(txt)).width*0.985<=45;}catch(e){return String(txt).length<=6;}}
+function gEsc(v){return String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+/* what sits inside a mark: the state's shape, the minutes when off the hour, or the value charted */
+function markContent(t,s){const st=MK_STATES[s]||MK_STATES.scheduled;
+  if(s==='completed'){const v=t&&t.value!=null&&t.value!==''?String(t.value):'';if(!v)return st.glyph;if(mkFits(v))return `<span class="mk-val">${gEsc(v)}</span>`;const ab=window.tsAbbr?tsAbbr(v):'';return ab?`<span class="mk-val">${gEsc(ab)}</span>`:st.glyph+MK_LINES;}
+  const m=t?gridMin(t.sched):'',g=s==='overdue'&&t?mkOd(mkLate(t)):st.glyph;return g+(m&&s!=='skipped'?`<span class="mk-min">${m}</span>`:'');}
+function hourText(h){const L=hourLabel(h);return `${L.h} ${L.ap}M`;}
+function gridNowX(){return GRID_LW+(nowMin()/60)*54;}
 function buildGrid(){
-  const inner=$('#sheetInner');if(!inner)return;let html='';const nh=Math.floor(nowMin()/60);
-  html+=`<div class="grow ghead"><div class="rl"><span class="rl-name" style="color:var(--ink-400);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:800">Order</span></div><div class="hcells">`;
-  for(let h=0;h<24;h++){const L=hourLabel(h);html+=`<div class="hcell ${h===nh?'hour-now':''}" onclick="tsBatch(${h})" title="Chart everything at ${L.h} ${L.ap}M">${L.h}<span class="ampm">${L.ap}</span></div>`;}
+  const inner=$('#sheetInner');if(!inner)return;let html='';const nh=Math.floor(nowMin()/60);const past=document.body.classList.contains('ts-past-day');
+  html+=`<div class="grow ghead"><div class="rl"><span class="gh-col gh-order">Order</span><span class="gh-col gh-latest">Latest</span></div><div class="hcells">`;
+  for(let h=0;h<24;h++){html+=`<div class="hcell${h===nh&&!past?' hour-now':''}${h%3===0?' q3':''}${h===7||h===19?' shift':''}" onclick="tsBatch(${h})" title="Chart everything at ${hourText(h)}"><span class="hl">${hourText(h)}</span></div>`;}
+  if(!past)html+=`<div class="now-chip" style="left:${(nowMin()/60)*54}px">Now <b>${fmtTime(nowMin())}</b></div>`;
   html+=`</div></div>`;
-  SECTIONS.forEach(sec=>{const so=ORDERS.filter(o=>o.section===sec.key);if(!so.length)return;
+  /* stopped today and one-time treatments that are all done move to their own section at the bottom (Oct 2026, like a
+     "Discontinued / Completed" list): stopped orders keep what was charted, read only (store/orders.js tsStoppedToday) */
+  const GHOST=window.tsStoppedToday?tsStoppedToday():{orders:[],tasks:[]};
+  const doneOnce=past?[]:ORDERS.filter(o=>!o.dc&&!o.cont&&/^once$/i.test(String(o.freq||''))&&(()=>{const T=TASKS.filter(x=>x.orderId===o.id);return T.length&&T.every(x=>x.status);})());
+  const rowsOf=(sec,so,fold)=>{
+    so.forEach((o,ri)=>{const TK=o._ghost?GHOST.tasks:TASKS;
+      /* every overdue task of the row, counted once on the row; each one still sits at its own time in the grid */
+      const late=(!past&&!o.cont)?TK.filter(x=>x.orderId===o.id&&!x.status&&deriveStatus(x)==='overdue'):[];
+      const mchip=late.length?`<button type="button" class="rl-missed" onclick="event.stopPropagation();tsMissed('${o.id}')" title="${late.length} overdue — select to chart" aria-label="${late.length} overdue, select to chart" onmouseenter="tsBadgeNudge('${o.id}')" onfocus="tsBadgeNudge('${o.id}')"><span class="bm-v">${late.length}</span></button>`:'';   /* an orange count badge at the right of the order (Oct 2026, option A) */
+      html+=`<div class="grow${ri%2?' zb':''}${o.dc?' is-dc':''}${o.draft?' is-draft':''}${o.pin?' is-pin':''}${late.length?' has-late':''}${fold}" data-sec="${sec.key}" data-o="${o.id}"${late.length?` data-late="${late.map(x=>Math.round(x.sched)).join(',')}"`:''}><div class="rl" data-dc="${o.dc&&!o._ghost?(o.dc_reason==='error'?'Error':o.dc_reason==='rejected'?'Not approved':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">${window.tsRowLead?tsRowLead(o):''}${late.length?`<button type="button" class="rl-off" hidden onclick="event.stopPropagation();tsOffGo('${o.id}')"></button>`:''}`;   /* draft badge · pin · reorder grip (store/drafts.js, store/sortorder.js) */
+      /* Order column: name, then dose · route · frequency (or frequency · unit) and the overdue count. Latest column: the newest value and its age */
+      let latest='';
+      if(o.type==='med'){const d=medDose(o);html+=`<div class="rl-main"><div class="rl-name">${o.name}${(window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> · '+tsBrand(o.name)+'</span>':''}</div><div class="rl-meta">${d.mg}${o.conc?' · <b>'+d.volume+'</b>':''} · ${o.route} · ${o.freq}${mchip}</div></div>`;latest=window.tsMedLatest?tsMedLatest(o):'';}   /* last dose given (store/medsafe.js) */
+      else if(o.type==='fluid'){html+=`<div class="rl-main"><div class="rl-name">${window.tsInfName?tsInfName(o):o.name}</div><div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate} · ${o.kind==='cri'?'CRI':'IV'}</div></div>`;latest=window.tsInfLatest?tsInfLatest(o):'';}   /* given today · last line check (store/fluids.js) */
+      else if(o.type==='obs'||o.type==='diag'){html+=`<div class="rl-main"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}${mchip}</div></div>`;latest=window.tsRowTrend?tsRowTrend(o):'';}   /* the latest reading and how old it is (store/vitals.js) */
+      else{html+=`<div class="rl-main"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${mchip}</div></div>`;latest=window.tsCareLatest?tsCareLatest(o):'';}
+      if(o._ghost){const at=new Date(o.dc_at);latest=`<span class="rl-trend rl-stop" title="${gEsc((o.dc_reason==='error'?'Entered in error':'Stopped')+(o.dc_by_name?' by '+o.dc_by_name:''))}"><span class="rt-v"><b>${o.dc_reason==='error'?'Error':'Stopped'}</b></span><small>${fmtTime(at.getHours()*60+at.getMinutes())}</small></span>`;}
+      html+=`<div class="rl-latest">${latest||'<span class="rl-none" aria-label="Nothing yet">—</span>'}</div>`;
+      html+=`</div><div class="hcells">`;
+      if(o.cont&&o.kind&&window.tsInfCells){html+=tsInfCells(o);}else if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?String(o.rate||'').replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion('${o.id}',${h})">${lbl}</div></div>`;}}
+      else{for(let h=0;h<24;h++){const cc='cell'+(past?'':(h<nh?' past':h===nh?' now':''))+(h%3===0?' q3':'')+(h===7||h===19?' shift':'');const _c=TK.filter(x=>x.orderId===o.id&&Math.floor(x.sched/60)===h);const t=_c.find(x=>x.status)||_c.find(x=>x.sched===h*60)||_c[0];if(!t){html+=`<div class="${cc}"></div>`;continue;}
+        const s=deriveStatus(t),mv=t.movedFrom!=null,abn=s==='completed'&&t.severity?(t.severity>=2?' abn sev':' abn'):'',off=Math.round(t.sched)%60?' off':'';
+        const word=((MK_STATES[s]||{}).word||s)+(s==='overdue'?` (${mkLate(t).replace('m',' min').replace('h',' h').replace('d',' d')} late)`:''),extra=_c.length>1?` · ${_c.length} tasks this hour`:'';
+        const just=s==='completed'&&window.tsJust?tsJust(t.id):null;
+        let inner=markContent(t,s);
+        if(just){const hv=t.value!=null&&t.value!=='';inner=`<span class="da${hv?' val':''}${just.od?' od':''}${just.od2?' od2':''}" style="--da-d:${just.d}ms"><span class="disc"></span>${MK_DRAW}${hv?`<span class="v">${inner}</span>`:''}</span>`;}
+        const beat=s==='due'?` style="animation-delay:-${Date.now()%MK_BEAT}ms"`:'';
+        const l2=s==='overdue'&&nowMin()-t.sched>120?' late2':'';   /* more than 2 h late: the stronger tile (Oct 2026 grid tiles) */
+        html+=`<div class="${cc}"><button type="button" class="mark ${s}${l2}${abn}${off}${mv?' moved':''}${just?' just':''}" ${o._ghost?'data-g':'data-t'}="${t.id}" data-s="${s}"${beat} onclick="${o._ghost?`tsOrderPanel('${o.id}')`:`openCompletion('${t.id}')`}" title="${gEsc(o.name)} · ${fmtTime(t.sched)} · ${word}${s==='completed'&&t.value?' '+gEsc(t.value):''}${mv?' (moved from '+fmtTime(t.movedFrom)+')':''}${extra}" aria-label="${gEsc(o.name)}, ${fmtTime(t.sched)}, ${word}">${inner}</button></div>`;}}
+      html+=`</div></div>`;});
+  };
+  SECTIONS.forEach(sec=>{const so=ORDERS.filter(o=>o.section===sec.key&&doneOnce.indexOf(o)<0);if(!so.length)return;
     /* the section band comes from the store (store/sections.js: fold, hour summary, chart the hour, add to section) when it is loaded */
     html+=window.tsSecBand?tsSecBand(sec,so):`<div class="grow"><div class="gsection"><svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="${sec.icon}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="stitle">${sec.key}</span><span class="scount">${so.length}</span>${sec.key==='Continuous Infusions'&&window.tsInfTotal?tsInfTotal():''}</div></div>`;
     const fold=window.tsSecFolded&&tsSecFolded(sec.key)?' sec-folded':'';
-    so.forEach(o=>{html+=`<div class="grow${o.dc?' is-dc':''}${o.draft?' is-draft':''}${o.pin?' is-pin':''}${fold}" data-sec="${sec.key}" data-o="${o.id}"><div class="rl" data-dc="${o.dc?(o.dc_reason==='error'?'Error':o.dc_reason==='rejected'?'Not approved':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">${window.tsRowLead?tsRowLead(o):''}`;   /* draft badge · pin · reorder grip (store/drafts.js, store/sortorder.js) */
-      if(o.type==='med'){const d=medDose(o);html+=`<div style="min-width:0"><div class="rl-name">${o.name}${(window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> · '+tsBrand(o.name)+'</span>':''}</div><div class="rl-meta">${d.mg}${o.conc?' · <b>'+d.volume+'</b>':''} · ${o.freq}</div></div>${window.tsDoseClock?tsDoseClock(o):''}<span class="route-pill">${o.route}</span>`;}   /* the dose clock (store/medsafe.js) */
-      else if(o.type==='fluid'){html+=`<div style="min-width:0"><div class="rl-name">${window.tsInfName?tsInfName(o):o.name}</div><div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate}</div></div><span class="route-pill">${o.kind==='cri'?'CRI':'IV'}</span>`;}
-      else{html+=`<div style="min-width:0"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}</div></div>${window.tsRowTrend?tsRowTrend(o):''}`;}   /* the reading's trend (store/vitals.js) */
-      html+=`</div><div class="hcells">`;
-      if(o.cont&&o.kind&&window.tsInfCells){html+=tsInfCells(o);}else if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?String(o.rate||'').replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion('${o.id}',${h})">${lbl}</div></div>`;}}
-      else{for(let h=0;h<24;h++){const _c=TASKS.filter(x=>x.orderId===o.id&&Math.floor(x.sched/60)===h);const t=_c.find(x=>x.status)||_c.find(x=>x.sched===h*60)||_c[0];if(!t){html+=`<div class="cell"></div>`;continue;}const s=deriveStatus(t);if(s==='completed'&&t.severity){html+=`<div class="cell"><div class="mark abn ${t.severity>=2?'sev':''}" onclick="openCompletion('${t.id}')">${t.value}</div></div>`;continue;}const mv=t.movedFrom!=null;html+=`<div class="cell"><div class="mark ${s}${mv?' moved':''}" data-t="${t.id}" onclick="openCompletion('${t.id}')" title="${o.name} · ${fmtTime(t.sched)}${mv?' (moved from '+fmtTime(t.movedFrom)+')':''}">${markContent(t,s)}</div></div>`;}}
-      html+=`</div></div>`;});
+    rowsOf(sec,so,fold);
   });
+  {const stop=GHOST.orders.concat(doneOnce);if(stop.length){const sec={key:'Stopped & completed',icon:'M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z'};
+    html+=window.tsSecBand?tsSecBand(sec,stop):'';const fold=window.tsSecFolded&&tsSecFolded(sec.key)?' sec-folded':'';rowsOf(sec,stop,fold);}}
   {const old=inner.querySelector('.nowline');if(old)old.remove();}
   tsMorphHTML(inner,html);
-  const nl=document.createElement('div');nl.className='nowline';nl.style.left=`calc(240px + ${(nowMin()/60)*54}px)`;nl.innerHTML=`<div class="now-lbl">NOW ${fmtTime(nowMin())}</div>`;inner.appendChild(nl);
+  if(!past){const nl=document.createElement('div');nl.className='nowline';nl.style.left=`${gridNowX()}px`;inner.appendChild(nl);}
   renderLegend();
+  gridOffWire();gridOffPaint();
+  if(window.tsBadgeMotion)tsBadgeMotion(); if(window.tsInfMotion)tsInfMotion();   /* the overdue badge rolls / pops / leaves when its count changes (store/missed.js) */
+  if(window.tsSecNavPaint)tsSecNavPaint();
 }
-function renderLegend(){const items=[['completed','Completed','var(--status-completed)'],['scheduled','Scheduled','var(--status-scheduled)'],['due','Due','var(--status-due)'],['overdue','Overdue','var(--status-overdue)'],['skipped','Skipped','var(--status-skipped)']];
-  tsSetHTML($('#legend'),items.map(([k,l,c])=>`<div class="li"><span class="sw" style="color:${c}"></span>${l}</div>`).join('')+`<div style="flex:1"></div><div class="li" style="color:var(--ink-400)">Tap any cell to complete or edit</div>`);}
+/* overdue tasks scrolled out of view to the left: a "‹ 2 earlier" chip at the start of the row's visible hours (select it to scroll back) */
+function gridOffWire(){const sc=$('#sheetScroll');if(!sc||sc._offWired)return;sc._offWired=1;let raf=0;sc.addEventListener('scroll',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;gridOffPaint();if(window.tsSecNavSpy)tsSecNavSpy();});},{passive:true});}
+function gridOffPaint(){const sc=$('#sheetScroll');if(!sc)return;const x=sc.scrollLeft;
+  $$('#sheetInner .grow[data-late]').forEach(r=>{const b=r.querySelector('.rl-off');if(!b)return;const hid=r.dataset.late.split(',').map(Number).filter(m=>(Math.floor(m/60)+1)*54<=x+6);
+    if(hid.length){const t=`‹ ${hid.length} earlier`;if(b.textContent!==t)b.textContent=t;b.title=`${hid.length} overdue earlier today, out of view — select to scroll back`;b.setAttribute('aria-label',b.title);b.hidden=false;}else b.hidden=true;});}
+window.tsOffGo=function(id){const r=document.querySelector(`#sheetInner .grow[data-o="${id}"]`),sc=$('#sheetScroll');if(!r||!sc)return;const m=Math.min(...r.dataset.late.split(',').map(Number));sc.scrollTo({left:Math.max(0,Math.floor(m/60)*54-54),behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});};
+/* 8A · 2:30P — short time, used in titles */
+/* the column already names the hour, so a mark only shows minutes when the task is off the hour (":30") */
+function gridMin(min){const m=Math.round(min)%60;return m?':'+String(m).padStart(2,'0'):'';}
+function gridTime(min){min=Math.round(min);const h=Math.floor(min/60)%24,m=min%60,L=hourLabel(h);return L.h+(m?':'+String(m).padStart(2,'0'):'')+L.ap;}
+function renderLegend(){   /* drawn from MK_STATES, the same shapes the grid uses */
+  tsSetHTML($('#legend'),MK_ORDER.map(s=>`<div class="li"><span class="lg-mk mark ${s}" aria-hidden="true">${MK_STATES[s].glyph}</span>${MK_STATES[s].word}</div>`+(s==='overdue'?`<div class="li"><span class="lg-mk mark overdue late2" aria-hidden="true">${MK_STATES[s].glyph}</span>Over 2 h late</div>`:'')).join('')
+    +`<div class="li lg-off"><span class="lg-mk mark scheduled off" aria-hidden="true">${MK_STATES.scheduled.glyph}<span class="mk-min">:30</span></span>Off the hour</div>`
+    +`<div class="lg-sep" aria-hidden="true"></div><div class="li lg-key"><span class="lg-glyph">${MK_LINES}</span>More in the entry</div>`
+    +`<div class="li lg-key"><span class="lg-glyph lg-arr">↑↓</span>Latest vs the previous reading</div>`
+    +`<div style="flex:1"></div>${window.tsOcLegendActs?tsOcLegendActs():'<div class="li lg-hint">Select a cell to chart or see the full entry</div>'}`);}
 /* ═══ COMPLETION DRAWER ═══ */
 let activeTaskId=null;
 function drow(k,v){return `<div class="drow"><span class="k">${k}</span><span class="v">${v}</span></div>`;}
@@ -377,7 +452,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawers();clos
 function toast(msg){const el=document.createElement('div');el.className='ctoast';el.innerHTML=`<span class="tk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>${msg}`;$('#toastWrap').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateY(8px)';setTimeout(()=>el.remove(),300);},2600);}
 
 /* ═══ live clock tick ═══ */
-function tick(){if(currentCTab==='sheet'){const nl=$('#sheetInner .nowline');if(nl){nl.style.left=`calc(240px + ${(nowMin()/60)*54}px)`;const l=nl.querySelector('.now-lbl');if(l)l.textContent='NOW '+fmtTime(nowMin());}}}
+function tick(){if(currentCTab==='sheet'){const nl=$('#sheetInner .nowline');if(nl)nl.style.left=`${gridNowX()}px`;const c=$('#sheetInner .now-chip');if(c){c.style.left=`${(nowMin()/60)*54}px`;const b=c.querySelector('b');if(b)b.textContent=fmtTime(nowMin());}}}
 setInterval(tick,10000);
 
 /* ═══ init ═══ */

@@ -154,16 +154,17 @@ function buildToday(){
   TASKS=[]; var dk=dayKey(), marks=(curDoc&&curDoc.marks)||{};
   var adm=curDoc&&(curDoc.admitted_at||curDoc.created_at), from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
   ORDERS.forEach(function(o){ if(o.cont) return; freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m&&!o.ordered_at) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return; if(o.not_before&&!m&&dayKey(new Date(o.not_before))===dk&&min<isoToMin(o.not_before)) return;   /* not_before: no slot earlier than that on its day (store/weight.js) · the admission cutoff is for the starter orders; a doctor's order shows from the time they chose */
-    var at=slotMin(o,dk,min); TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:at,movedFrom:at!==min?min:null,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
+    var at=slotMin(o,dk,min); TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:at,movedFrom:at!==min?min:null,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,given:m?m.given||null:null,vol:m?m.vol||null:null,reason:m?m.reason||null:null,hist:m&&m.hist?m.hist:null,at:m?m.at||null:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
-    TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,severity:0,adhoc:true}); });
+    TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,given:m.given||null,vol:m.vol||null,reason:m.reason||null,hist:m.hist||null,at:m.at||null,severity:0,adhoc:true}); });
 }
 
 /* ---------- writing back only what changed ---------- */
 function markOf(t){ if(!t.status) return null; return {status:t.status,by:t.by||user().initials||null,min:t.completedMin!=null?Math.round(t.completedMin):null,
-  value:t.value!=null&&t.value!==''?String(t.value):null,notes:t.notes||null,orderId:t.orderId,sched:Math.round(t.sched)}; }
-function same(a,b){ var f=function(m){ return m?JSON.stringify([m.status,m.by,m.min,m.value,m.notes]):'null'; }; return f(a)===f(b); }
+  value:t.value!=null&&t.value!==''?String(t.value):null,notes:t.notes||null,orderId:t.orderId,sched:Math.round(t.sched),
+  given:t.given||null,vol:t.vol||null,reason:t.reason||null,hist:t.hist&&t.hist.length?t.hist:null}; }   /* given/vol: what was actually given · reason: why it wasn't done · hist: earlier versions (store/chart.js) */
+function same(a,b){ var f=function(m){ return m?JSON.stringify([m.status,m.by,m.min,m.value,m.notes,m.given||null,m.vol||null,m.reason||null,m.hist||null]):'null'; }; return f(a)===f(b); }
 var syncT=null, syncing=false;
 function scheduleSync(){ clearTimeout(syncT); syncT=setTimeout(sync,350); }
 function sync(){
@@ -226,17 +227,19 @@ function refreshPrototypeHeader(){ try{ refreshEstimate(); }catch(e){} try{ vLiv
 /* the prototype header's numbers, then every module's part (hook: header.refresh) */
 function refreshHeader(){ refreshPrototypeHeader(); emit('header.refresh'); }
 /* open the grid at "now" instead of midnight */
-function scrollToNow(){ var sh=document.getElementById('sheetScroll'); if(!sh) return; var x=240+(nowMin()/60)*54; sh.scrollLeft=Math.max(0,x-240-(sh.clientWidth-240)*0.35); }
+function scrollToNow(){ var sh=document.getElementById('sheetScroll'); if(!sh) return; var L=(typeof GRID_LW!=='undefined'?GRID_LW:240), x=L+(nowMin()/60)*54; sh.scrollLeft=Math.max(0,x-L-(sh.clientWidth-L)*0.35); }
 function rerender(){ try{ if(currentCTab==='sheet'){ if(curDoc&&renderedFor===CUR&&document.querySelector('#sheetInner')){ buildGrid(); refreshHeader(); } else { renderSheet(); renderedFor=curDoc?CUR:null; } } else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='rounds') renderRounds(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); else if(currentCTab==='charges'&&window.tsRenderCharges) tsRenderCharges(); }catch(e){ console.warn(e); } updateChip(); emit('rendered'); }
 
 /* ---------- IP Board: every active sheet ---------- */
 function blocksFor(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), out=[];
   var adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;   /* same rule as the sheet: nothing is due before admission */
-  for(var h=6;h<=20;h++){ var due=0, over=0, done=0, sched=0; if(h*60<from) continue;
+  for(var h=6;h<=20;h++){ var due=0, over=0, done=0, sched=0, items=[]; if(h*60<from) continue;
     Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont||(window.tsWfOk&&!tsWfOk(o))) return; var h0=freqTimes(o).find(function(x){ return Math.floor(slotMin(o,dk,x*60)/60)===h; }); if(h0==null) return;
-      var m=marks[dk+'_'+id+'_'+(h0*60)]; if(m&&m.status){ done++; return; } var t=slotMin(o,dk,h0*60); if(t>n+18) sched++; else if(t>=n-18) due++; else over++; });
+      var m=marks[dk+'_'+id+'_'+(h0*60)], t=slotMin(o,dk,h0*60), st=m&&m.status?(m.status==='skipped'?'skipped':'completed'):t>n+18?'scheduled':t>=n-18?'due':'overdue';
+      items.push({n:o.name,m:t,s:st,f:o.freq||''}); if(m&&m.status){ done++; return; } if(t>n+18) sched++; else if(t>=n-18) due++; else over++; });
     var tot=due+over+done+sched; if(!tot) continue;
-    out.push({h:h,status:over?'overdue':due?'due':sched?'scheduled':'completed',label:String(over||due||sched||done)}); }
+    items.sort(function(a,b){ var r={overdue:0,due:1,scheduled:2,completed:3,skipped:4}; return (r[a.s]-r[b.s])||(a.m-b.m); });
+    out.push({h:h,status:over?'overdue':due?'due':sched?'scheduled':'completed',label:String(over||due||sched||done),items:items}); }
   return out; }
 var SEX_LABEL={male_neutered:'MN',neutered_male:'MN',mn:'MN',female_spayed:'FS',spayed_female:'FS',fs:'FS',male_intact:'M',male:'M',m:'M',female_intact:'F',female:'F',f:'F',unknown:''};
 function sexLabel(x){ var k=String(x||'').toLowerCase().replace(/[\s-]+/g,'_'); return SEX_LABEL.hasOwnProperty(k)?SEX_LABEL[k]:(x||''); }
@@ -251,7 +254,7 @@ window.tsBoardList=function(board){ var my=board==='My Board';
     return {_id:s._id,name:((p.name||'')+' '+(p.last||'')).trim()||'Unnamed',sig:(my?(s.board==='OP'?'OP · ':'IP · '):'')+[p.age,sexLabel(p.sex),p.breed].filter(Boolean).join(' ')+(p.weight?' · '+p.weight+' kg':''),
       cage:p.location||'',ls:(['DNR','BLS','ALS','CPR'].indexOf(p.code)>=0?p.code:''),reason:p.reason||'—',dr:initialsOf(p.doctor),ward:p.location||'Treatment Area',inout:'IN',
       date:d?(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear():'',time:d?d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}).replace(' ',''):'',
-      alerts:(p.alerts||[]).map(function(x){ return {t:/dnr|caution|aggress|bite/i.test(x)?'crit':'warn',x:x}; }),service:p.service||'Emergency/Critical Care',
+      alerts:(p.alerts||[]).map(function(x){ return {t:/dnr|caution|aggress|bite/i.test(x)?'crit':'warn',x:x,own:1}; }).concat((p.client_alerts||[]).map(function(x){ return {t:'client',x:(x&&x.text)||String(x),own:1}; })),service:p.service||'Emergency/Critical Care',
       owner:p.owner||'—',phone:p.phone||'—',belongings:p.belongings||'',blocks:blocksFor(s._id===CUR&&curDoc?curDoc:s)}; });
   emit('board.rows',IPL); return IPL; };
 window.tsIPList=function(){ return window.tsBoardList('IP Board'); };
@@ -569,7 +572,7 @@ function redrawSheet(){ try{ renderSheet(); }catch(e){ try{ buildGrid(); }catch(
 function orderById(id){ return (ORDERS||[]).find(function(o){ return o.id===id; })||null; }
 /* rebuild the day's tasks without losing what was charted on screen but not saved yet (the save is debounced) */
 function rebuildTasks(){ var prev={}; (TASKS||[]).forEach(function(t){ if(t.key) prev[t.key]=t; }); buildTasks(); var have={};
-  TASKS.forEach(function(t){ have[t.key]=1; var p=prev[t.key]; if(p&&p!==t){ t.status=p.status; t.by=p.by; t.completedMin=p.completedMin; t.value=p.value; t.notes=p.notes; } });
+  TASKS.forEach(function(t){ have[t.key]=1; var p=prev[t.key]; if(p&&p!==t){ t.status=p.status; t.by=p.by; t.completedMin=p.completedMin; t.value=p.value; t.notes=p.notes; t.given=p.given; t.vol=p.vol; t.reason=p.reason; t.hist=p.hist; t.at=p.at; } });
   Object.keys(prev).forEach(function(k){ var p=prev[k]; if(!have[k]&&p.adhoc&&p.status&&orderById(p.orderId)){ p.order=orderById(p.orderId); TASKS.push(p); } }); }
 function addOrders(list){ emit('orders.adding',list); list.forEach(function(o){ ORDERS.push(o); }); try{ ORDERS.sort(orderCmp); }catch(e){} rebuildTasks(); redrawSheet(); sync(); emit('orders.added',list); return list; }   /* orders.adding: drafts.js marks an intern's orders as drafts */
 function updateOrder(id,patch){ var o=orderById(id); if(!o) return null; Object.assign(o,patch); rebuildTasks(); redrawSheet(); sync(); return o; }
@@ -1478,10 +1481,10 @@ on('tasks.build',function(){ if(!VIEW_DK) return false;
   var from=(adm&&dayKey(new Date(adm))===dk)?(new Date(adm)-dkDate(dk))/60000:-1;
   ORDERS.forEach(function(o){ if(o.cont) return; var oa=o.ordered_at?dayKey(new Date(o.ordered_at)):null; if(oa&&oa>dk) return;   /* ordered after this day */
     freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+o.id+'_'+min, m=marks[key]; if(min<from&&!m) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return; if(o.not_before&&!m&&dayKey(new Date(o.not_before))===dk&&min<(new Date(o.not_before)-dkDate(dk))/60000) return;
-      var at=slotMin(o,dk,min); TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:at,movedFrom:at!==min?min:null,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,severity:0}); }); });
+      var at=slotMin(o,dk,min); TASKS.push({id:key,key:key,orderId:o.id,order:o,sched:at,movedFrom:at!==min?min:null,status:m?m.status:null,by:m?m.by:null,completedMin:m&&m.min!=null?m.min:null,value:m?m.value:null,notes:m?m.notes:null,given:m?m.given||null:null,vol:m?m.vol||null:null,reason:m?m.reason||null:null,hist:m&&m.hist?m.hist:null,at:m?m.at||null:null,severity:0}); }); });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||TASKS.some(function(t){ return t.key===k; })) return; var m=marks[k]; if(!m) return;
     var o=ORDERS.find(function(x){ return x.id===m.orderId; }); if(!o) return;
-    TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,severity:0,adhoc:true}); });
+    TASKS.push({id:k,key:k,orderId:o.id,order:o,sched:m.sched!=null?m.sched:(m.min||0),status:m.status,by:m.by,completedMin:m.min,value:m.value,notes:m.notes,given:m.given||null,vol:m.vol||null,reason:m.reason||null,hist:m.hist||null,at:m.at||null,severity:0,adhoc:true}); });
   return true; });
 /* an older day's charting joins the composed sheet while it is on screen */
 on('compose',function(d){ if(d&&VIEW_DK&&curDays[VIEW_DK]) d.marks=Object.assign({},curDays[VIEW_DK],d.marks); });
@@ -1524,6 +1527,14 @@ var DC_REASONS=[{k:'discontinued',l:'Discontinued',d:'No longer needed'},{k:'cha
 function dcLabel(o){ return o&&o.dc?(o.dc_reason==='error'?'Entered in error':o.dc_reason==='rejected'?'Not approved':'Stopped'):''; }
 /* a discontinued order stays on the grid for the day it was stopped (and for earlier days looked back at) */
 function dcVisible(o){ if(!o||!o.dc||!o.dc_at) return false; var dk=window.tsViewDk?tsViewDk():dayKey(); return dayKey(new Date(o.dc_at))>dk; }   /* a stopped order leaves the grid on the day it was stopped; earlier days still show it as it ran */
+/* orders stopped on the day shown leave their section; the grid lists them under "Stopped & completed" with what was charted, read only */
+window.tsStoppedToday=function(){ var out={orders:[],tasks:[]}; if(!curDoc) return out; var dk=window.tsViewDk?tsViewDk():dayKey(), M=curDoc.marks||{};
+  Object.keys(curDoc.orders||{}).forEach(function(k){ var o=curDoc.orders[k]; if(!o||!o.dc||!o.dc_at||o.draft||dayKey(new Date(o.dc_at))!==dk) return;
+    if((ORDERS||[]).some(function(x){ return x.id===o.id; })) return;
+    var g=Object.assign({},o,{_ghost:true}), pre=dk+'_'+o.id+'_'; out.orders.push(g);
+    Object.keys(M).forEach(function(mk){ var m=M[mk]; if(!m||!m.status||mk.indexOf(pre)!==0) return; var slot=+mk.slice(pre.length); if(isNaN(slot)) return;
+      out.tasks.push({id:'g_'+mk,key:mk,orderId:o.id,order:g,sched:m.sched!=null?m.sched:slot,status:m.status,value:m.value,completedMin:m.min,by:m.by,notes:m.notes,reason:m.reason}); }); });
+  out.orders.sort(function(a,b){ return String(b.dc_at).localeCompare(String(a.dc_at)); }); return out; };
 /* no new slots after the stop time on the stop day; none at all on later days */
 function dcCut(o,dk){ if(!o||!o.dc||!o.dc_at) return Infinity; var at=new Date(o.dc_at), adk=dayKey(at); if(adk>dk) return Infinity; if(adk<dk) return -1;
   return at.getHours()*60+at.getMinutes(); }
@@ -1557,6 +1568,7 @@ window.tsOrderPanel=function(id){ var o=oFind(id); if(!o) return; if(claim('orde
     +slotDots(o)+(o.safety&&window.tsMsSafetyHTML?tsMsSafetyHTML(o):'')
     +'<div class="op-list">'+row('First dose',o.start!=null&&o.type==='med'?esc(fmtTime(o.start*60)):'')+row('Ordered by',who?esc(who)+(o.ordered_at?' · '+esc(fmtWhen(o.ordered_at)):''):'')
       +(window.tsMsPanelRows?tsMsPanelRows(o):'')+row('Dose source',esc(src))+row('Reference',o.ref&&o.ref.dose?esc(o.ref.dose+(o.ref.indication?' — '+o.ref.indication:'')):'')+row('Notes',o.notes?esc(o.notes):'')+'</div>'
+    +(window.tsOcPanelRows?tsOcPanelRows(o):'')   /* price · note required · owner handout (ordercare.js) */
     +(window.tsPinBtn?tsPinBtn(o):'')   /* pin to the top of its section (sortorder.js) */
     +(o.dc?'':(can?'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderChange(\''+esc(o.id)+'\')">Change…</button><button type="button" class="op-btn danger" onclick="tsOrderStopAsk(\''+esc(o.id)+'\')">Discontinue</button></div>'
       :'<p class="op-foot">'+((window.tsViewDk&&tsViewDk()!==dayKey())?'Go back to today to change orders.':'Only doctors can change or stop orders.')+'</p>'));
@@ -1830,6 +1842,57 @@ function soEnd(drop){ var d=soD; soD=null; if(!d) return; d.rows.forEach(functio
 document.addEventListener('pointerup',function(e){ if(soD&&e.pointerId===soD.pid) soEnd(true); },true);
 document.addEventListener('pointercancel',function(e){ if(soD&&e.pointerId===soD.pid) soEnd(false); },true);
 document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&soD) soEnd(false); });
+/* ═════════ TS MISSED — the row's overdue count ═════════
+   Core grid counts an order's overdue tasks once, on its row ("2 overdue"); each one still shows at its own time in the grid.
+   Tapping the count charts the overdue task (one) or lists them by time (several). */
+window.tsMissed=function(id){ var o=orderById(id); if(!o) return; 
+  var L=(TASKS||[]).filter(function(t){ return t.orderId===id&&!t.status&&deriveStatus(t)==='overdue'; }).sort(function(a,b){ return a.sched-b.sched; });
+  if(!L.length) return; if(L.length===1){ openCompletion(L[0].id); return; }
+  var html='<div class="op-head"><span class="op-ic ms-miss">'+MK_CLOCK+'</span><div><div class="op-kind">Overdue · '+L.length+'</div><h3>'+esc(o.name)+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<p class="op-lead">Not charted yet. Chart each one, or record why it wasn’t done.</p>'
+    +'<div class="op-list">'+L.map(function(t){ return '<div class="op-row"><span>'+esc(fmtTime(t.sched))+'</span><b><button type="button" class="op-btn mi-go" onclick="tsOrderClose();openCompletion(\''+esc(t.id)+'\')">Chart</button></b></div>'; }).join('')+'</div>'
+    +'<div class="op-actions one"><button type="button" class="op-btn" onclick="tsOrderClose()">Close</button></div>';
+  opShow(html); };
+
+/* ---------- the badge in motion (Oct 2026) ----------
+   hover a badge → that row's overdue clocks nudge one after another · charted → the number rolls down (after the cell's completion starts), at 0 the badge
+   lifts and shrinks away · a task turns overdue → its clock pops in, then the badge pops in or rolls up. The real text is always the current count
+   (the old number is a ::before), so readers and tests never see a stale value. Off under Reduce Motion; the first draw of a sheet never animates. */
+var BM={key:null,late:{},st:{},fx:[]};
+function bmOff(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+function bmQ(id){ return String(id).replace(/"/g,'\\"'); }
+function bmBadge(id){ return document.querySelector('#sheetInner .grow[data-o="'+bmQ(id)+'"] .rl-missed'); }
+function bmOd(tid){ return document.querySelector('#sheetInner .mark[data-t="'+bmQ(tid)+'"] .od'); }
+/* effects live in BM.fx and are re-applied after every redraw (the grid morphs in place and resets classes), until they run out */
+function bmApply(){ var now=Date.now();
+  BM.fx=BM.fx.filter(function(f){ return now<f.end; });
+  BM.fx.forEach(function(f){ var el=f.kind==='od'?bmOd(f.id):bmBadge(f.id); if(!el) return; var t=now-f.t0;
+    if(f.from!=null){ el.dataset.from=f.from; } if(f.vars) Object.keys(f.vars).forEach(function(k){ el.style.setProperty(k,f.vars[k]); });
+    var cls=f.hold&&t<f.hold?'bm-hold':f.cls; ['bm-hold','bm-up','bm-down','bm-pop','bm-nudge','bm-arrive'].forEach(function(c){ if(c!==cls&&(c===f.cls||c==='bm-hold')) el.classList.remove(c); });
+    if(t>=(f.start||0)) el.classList.add(cls); }); }
+function bmAdd(f){ f.t0=Date.now(); f.end=f.t0+(f.start||0)+(f.hold||0)+(f.ms||600); BM.fx=BM.fx.filter(function(x){ return !(x.kind===f.kind&&x.id===f.id); }); BM.fx.push(f); bmApply();
+  [f.start,f.hold&&f.hold+1].forEach(function(d){ if(d) setTimeout(bmApply,d); });
+  setTimeout(function(){ var el=f.kind==='od'?bmOd(f.id):bmBadge(f.id); bmApply(); if(el&&Date.now()>=f.end){ el.classList.remove(f.cls,'bm-hold'); if(f.from!=null) delete el.dataset.from; } },f.end-f.t0+20); }
+/* the last overdue is charted: a copy of the badge lifts and shrinks away over the row (outside the redrawn grid, so a redraw can't cut it short) */
+function bmGhost(id,from,hold){ if(bmOff()) return; var main=document.querySelector('#sheetInner .grow[data-o="'+bmQ(id)+'"] .rl-main'); if(!main) return; var r=main.getBoundingClientRect();
+  var g=document.createElement('span'); g.className='bm-ghost'; g.setAttribute('aria-hidden','true'); g.textContent=from;
+  g.style.cssText='position:fixed;left:'+(r.right-6-16)+'px;top:'+(r.top+r.height/2-8)+'px;transform:none'; document.body.appendChild(g);
+  setTimeout(function(){ g.classList.add('bm-leave'); setTimeout(function(){ g.remove(); },380); },hold||0); }
+window.tsBadgeMotion=function(){ var key=(typeof CUR!=='undefined'?CUR:'')+'|'+(window.tsViewDk?tsViewDk():''), first=BM.key!==key, late={}, st={};
+  [].forEach.call(document.querySelectorAll('#sheetInner .grow[data-o]'),function(r){ var b=r.querySelector('.rl-missed'); late[r.dataset.o]=b?(+b.textContent||0):0; });
+  [].forEach.call(document.querySelectorAll('#sheetInner .mark[data-t]'),function(m){ st[m.dataset.t]=m.dataset.s; });
+  if(first) BM.fx=[];
+  if(!first&&!bmOff()){
+    Object.keys(st).forEach(function(id){ if(st[id]==='overdue'&&BM.st[id]&&BM.st[id]!=='overdue') bmAdd({kind:'od',id:id,cls:'bm-arrive',ms:550}); });
+    Object.keys(late).forEach(function(id){ if(!(id in BM.late)) return; var a=BM.late[id], n=late[id]; if(a===n) return;
+      if(n>a) bmAdd(a?{kind:'b',id:id,cls:'bm-up',from:a,start:220,ms:380}:{kind:'b',id:id,cls:'bm-pop',start:220,ms:560});
+      else if(n) bmAdd({kind:'b',id:id,cls:'bm-down',from:a,hold:480,ms:380});
+      else bmGhost(id,a,480); }); }
+  else bmApply();
+  if(!first) bmApply();
+  BM.key=key; BM.late=late; BM.st=st; };
+window.tsBadgeNudge=function(id){ if(bmOff()) return; var r=document.querySelector('#sheetInner .grow[data-o="'+bmQ(id)+'"]'); if(!r) return;
+  [].forEach.call(r.querySelectorAll('.mark.overdue[data-t]'),function(m,k){ bmAdd({kind:'od',id:m.dataset.t,cls:'bm-nudge',vars:{'--bm-d':(k*70)+'ms'},ms:700}); }); };
 /* ═════════ TS WORKFLOW — the board filtered by the kind of work ═════════
    Board → Filters: Assistant (walks, feeding, water, cage care, weights) · Lab (diagnostics and bloodwork) · Controlled drugs ·
    Fluids & CRIs · Medications. With one or more on, the board lists only patients who have that work ordered, and the hour blocks count
@@ -2105,7 +2168,7 @@ function msChecks(v){ var x=RX&&RX.x; if(!x) return {flags:[],html:''}; var S=ms
 window.tsMsWhy=function(b){ if(!RX) return; RX.msWhy=RX.msWhy===b.textContent?null:b.textContent; msPaint(); if(RX.msWhy==='Other') setTimeout(function(){ var n=document.getElementById('msWhyNote'); if(n) n.focus(); },20); };
 function msPaint(){ var rg=document.getElementById('rxRange'); if(!rg||!RX) return; var v=msRead(); if(v.freq==='PRN') prnDefault(v); var c=msChecks(v); RX.msFlags=c.flags;
   rg.innerHTML=c.html; rg.style.display=c.html?'block':'none'; rg.className='rx-range ms'+(c.flags.some(function(f){ return f.tone==='crit'; })?' crit':c.flags.length?' warn':'');
-  prnPaint(v); }
+  prnPaint(v); try{ if(window.tsOcFoot) tsOcFoot(); }catch(e){} }
 on('rx.calc',msPaint);
 on('rx.opened',function(){ if(!RX) return; RX.msWhy=null; RX.msNote=''; RX.prnMin=null; RX.prnWhen=null; RX.prnText='';
   var f=document.getElementById('rxFreq'); if(f&&!f._ms){ f._ms=1; f.addEventListener('change',function(){ try{ tsRxCalc(); }catch(e){} }); } });
@@ -2146,9 +2209,9 @@ function msSameDrug(name){ var l=String(name||'').toLowerCase(), ids={}; (ORDERS
   .forEach(function(o){ if(o&&o.type==='med'&&String(o.name||'').toLowerCase()===l) ids[o.id]=o; }); return ids; }
 function msGiven(name){ var ids=msSameDrug(name), out=[], seen={}, today=dayKey(), t0=dkDate(today).getTime();
   (TASKS||[]).forEach(function(t){ if(t.status!=='completed'||!ids[t.orderId]) return; var ms=t0+(t.completedMin!=null?t.completedMin:t.sched)*60000; if(t.key) seen[t.key]=1;
-    out.push({at:ms,by:t.by||'',o:ids[t.orderId],notes:t.notes||''}); });
+    out.push({at:ms,by:t.by||'',o:ids[t.orderId],notes:t.notes||'',given:t.given||null}); });
   var M=(curDoc&&curDoc.marks)||{}; Object.keys(M).forEach(function(k){ var m=M[k]; if(seen[k]||!m||m.status!=='completed'||!ids[m.orderId]) return; var dk=k.slice(0,8); if(dk===today) return;
-    out.push({at:dkDate(dk).getTime()+(m.min!=null?m.min:(m.sched||0))*60000,by:m.by||'',o:ids[m.orderId],notes:m.notes||''}); });
+    out.push({at:dkDate(dk).getTime()+(m.min!=null?m.min:(m.sched||0))*60000,by:m.by||'',o:ids[m.orderId],notes:m.notes||'',given:m.given||null}); });
   return out.sort(function(a,b){ return b.at-a.at; }); }
 window.tsMsGiven=msGiven;
 function msPrnMin(o){ return (o&&o.prn&&o.prn.min)||null; }
@@ -2170,7 +2233,7 @@ window.tsMsState=msState;
 function msRing(frac,tone,label){ var r=8, c=2*Math.PI*r, f=Math.max(0,Math.min(1,frac||0));
   return '<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="'+r+'" class="dc-bg"/>'+(f>0?'<circle cx="11" cy="11" r="'+r+'" class="dc-fg" stroke-dasharray="'+(c*f).toFixed(2)+' '+c.toFixed(2)+'" transform="rotate(-90 11 11)"/>':'')+'</svg>'+(label?'<b>'+label+'</b>':''); }
 function msShort(ms){ var m=Math.max(0,Math.round(ms/60000)); return m<60?m+'m':Math.round(m/60)+'h'; }
-window.tsDoseClock=function(o){ if(!o||o.type!=='med'||o.dc||o.draft||!curDoc||(window.tsViewDk&&tsViewDk()!==dayKey())) return ''; var s=msState(o), tone='', frac=0, lbl='', tip='';
+function msTip(o,s){ var tone='', frac=0, lbl='', tip='';
   var lastT=s.last?'Last given '+msClock(s.last.at)+' ('+msAgoTxt(s.now-s.last.at)+(s.last.by?', '+s.last.by:'')+')':'Not given yet';
   if(s.prn){ if(!s.last){ tone='ok'; frac=1; tip=lastT+' · can give'; }
     else if(s.ok){ tone='ok'; frac=1; tip=lastT+' · can give again now'; }
@@ -2178,7 +2241,13 @@ window.tsDoseClock=function(o){ if(!o||o.type!=='med'||o.dc||o.draft||!curDoc||(
   else { if(s.late){ tone='late'; frac=1; tip=lastT+' · a dose is overdue'; }
     else if(s.next){ var a=s.last?s.last.at:s.next-(s.span||3600000); frac=(s.now-a)/Math.max(1,s.next-a); tone=s.next-s.now<=18*60000?'due':''; lbl=s.next-s.now<=18*60000?'':msShort(s.next-s.now); tip=lastT+' · next '+msClock(s.next)+(s.next>s.now?' (in '+msAgo(s.next-s.now)+')':' (due)'); }
     else { tone='done'; frac=s.last?1:0; tip=lastT+' · nothing more today'; } }
-  return '<button type="button" class="dose-clock '+tone+'" onclick="event.stopPropagation();tsDoseOpen(\''+esc(o.id)+'\')" title="'+esc(tip)+'" aria-label="'+esc(o.name+' — '+tip)+'">'+msRing(frac,tone,lbl)+'</button>'; };
+  return {tone:tone,frac:frac,lbl:lbl,tip:tip}; }
+window.tsDoseClock=function(o){ if(!o||o.type!=='med'||o.dc||o.draft||!curDoc||(window.tsViewDk&&tsViewDk()!==dayKey())) return ''; var s=msState(o), k=msTip(o,s);
+  return '<button type="button" class="dose-clock '+k.tone+'" onclick="event.stopPropagation();tsDoseOpen(\''+esc(o.id)+'\')" title="'+esc(k.tip)+'" aria-label="'+esc(o.name+' — '+k.tip)+'">'+msRing(k.frac,k.tone,k.lbl)+'</button>'; };
+/* the Latest column on a medication row: the last dose given and how long ago (opens the dose panel) */
+window.tsMedLatest=function(o){ if(!o||o.type!=='med'||o.draft||!curDoc||(window.tsViewDk&&tsViewDk()!==dayKey())) return ''; var s=msState(o), k=msTip(o,s), L=s.last;
+  var v=L?(L.given||medDose(L.o||o).mg):'Not given yet', d=L?Math.max(0,s.now-L.at):0, age=!L?(s.prn?'Can give':''):d<9e4?'just now':d<36e5?Math.round(d/6e4)+' min ago':d<864e5?Math.floor(d/36e5)+' h ago':Math.floor(d/864e5)+' d ago';
+  return '<button type="button" class="rl-trend rl-med dose-clock '+k.tone+(L?'':' none')+'" onclick="event.stopPropagation();tsDoseOpen(\''+esc(o.id)+'\')" title="'+esc(k.tip)+'" aria-label="'+esc(o.name+' — '+k.tip)+'"><span class="rt-v"><b>'+esc(v)+'</b></span>'+(age?'<small>'+esc(age)+'</small>':'')+'</button>'; };
 
 /* ---------- the dose panel: last 24 hours of this drug, and Give now for a PRN ---------- */
 var MS_EARLY=['Doctor approved','Pain not controlled — doctor aware','Other'];
@@ -2359,13 +2428,108 @@ function fmtAmt(n,b){ if(b==='mcg'&&n>=1000) return fmtR(n/1000)+' mg'; return f
 function fmtMl(n){ return Math.round(n).toLocaleString()+' mL'; }
 
 /* ---------- the grid ---------- */
-window.tsInfCells=function(o){ if(!isInf(o)) return ''; if(o.draft){ var dh=''; for(var q=0;q<24;q++) dh+='<div class="cell inf"><div class="inf-fill off" onclick="tsOrderPanel(\''+o.id+'\')"></div></div>'; return dh; } var dk=window.tsViewDk?tsViewDk():dayKey(), d0=dkDate(dk).getTime(), now=Date.now(), st=startMs(o)||d0, end=endMs(o), html='', prev=null;
-  for(var h=0;h<24;h++){ var hs=d0+h*3600000, he=hs+3600000, run=st<he&&end>hs, cls=!run?'off':(hs>now?'future':'on'), lbl='', tip='';
-    if(run){ var r=rateAt(o,Math.min(he-1,end-1)), key=r?r.v+'|'+r.u:''; var m=r?mlhrOf(o,r.v,r.u):null;
-      if(key!==prev){ lbl=r&&Number(r.v)===0?'Paused':(m!=null?fmtR(m):(r?fmtR(Number(r.v)):'')); prev=key; }
-      tip=(r?(Number(r.v)===0?'Paused':(m!=null?fmtR(m)+' mL/hr':r.v+' '+r.u)):'')+' · '+fmtTime(h*60); }
-    html+='<div class="cell inf"><div class="inf-fill '+cls+(lbl?' lbl':'')+'" onclick="tsInfPanel(\''+o.id+'\')"'+(tip?' title="'+esc(tip)+'"':'')+'>'+esc(lbl)+'</div></div>'; }
+/* Oct 2026 (option "hour bars"): each hour is a soft bar whose height is the volume given in it, with the hour's mL inside;
+   the rate runs across the top as one line, written only where it changes. A pause breaks the line (dotted on the floor, ‖ glyph).
+   After now the current rate continues as a dotted line; a dot on the now-line breathes with the due-now pills. */
+var IB_PAUSE='<svg viewBox="0 0 8 8" aria-hidden="true"><rect x="1" y=".5" width="2" height="7" rx=".8"/><rect x="5" y=".5" width="2" height="7" rx=".8"/></svg>';
+function ibVal(o,r){ if(!r||Number(r.v)===0) return 0; var m=mlhrOf(o,r.v,r.u); return m!=null?m:(Number(r.v)||0); }
+/* the day's run as pieces of one rate: [{a,b,r,val,p}] */
+function ibSegs(o,d0){ var d1=d0+86400000, st=Math.max(startMs(o)||d0,d0), en=Math.min(endMs(o),d1); if(!(en>st)) return [];
+  var cut=[st]; (o.rates||[]).forEach(function(r){ var t=tms(r.at); if(t>st&&t<en) cut.push(t); }); cut.sort(function(a,b){ return a-b; }); cut.push(en);
+  var S=[]; for(var i=0;i<cut.length-1;i++){ if(!(cut[i+1]>cut[i])) continue; var r=rateAt(o,cut[i]), v=ibVal(o,r), k=r?r.v+'|'+r.u:'';
+    var L=S[S.length-1]; if(L&&L.k===k){ L.b=cut[i+1]; continue; } S.push({a:cut[i],b:cut[i+1],r:r,val:v,p:!v,k:k}); }
+  return S; }
+function ibCad(mlhr){ return mlhr>0?Math.round(Math.max(2800,Math.min(30000,360000/mlhr))):0; }
+function ibNum(n){ return n>=10?Math.round(n).toString():(Math.round(n*10)/10).toString(); }
+function ibRate(o,g,full){ if(g.p) return 'Paused'; var r=g.r, m=r?mlhrOf(o,r.v,r.u):null;
+  if(o.kind==='cri') return r.v+' '+r.u; return m!=null?fmtR(m)+(full?' mL/hr':''):r.v+' '+r.u; }
+window.tsInfCells=function(o){ if(!isInf(o)) return ''; if(o.draft){ var dh=''; for(var q=0;q<24;q++) dh+='<div class="cell inf"><div class="inf-fill off" onclick="tsOrderPanel(\''+o.id+'\')"></div></div>'; return dh; }
+  var dk=window.tsViewDk?tsViewDk():dayKey(), d0=dkDate(dk).getTime(), now=Date.now(), S=ibSegs(o,d0), html='', HR=3600000;
+  var mx=Math.max.apply(null,S.map(function(g){ return g.val; }).concat([0]))||1, R=function(v){ return Math.max(0,Math.min(1,v/mx)).toFixed(3); };
+  var X=function(t,hs){ return Math.max(0,Math.min(100,(t-hs)/HR*100)).toFixed(2); }, cri=o.kind==='cri'&&o.conc==null;
+  for(var h=0;h<24;h++){ var hs=d0+h*HR, he=hs+HR, c='';
+    var P=S.filter(function(g){ return g.a<he&&g.b>hs; });
+    if(P.length){ var ra=Math.max(hs,P[0].a), rb=Math.min(he,P[P.length-1].b), pb=Math.min(rb,now), cur=now>=hs&&now<he;
+      c+='<i class="ib-base" style="left:'+X(ra,hs)+'%;right:'+(100-X(rb,hs))+'%"></i>';
+      /* the hour's bar and its volume */
+      if(pb>ra){ var w=0, run=0; P.forEach(function(g){ var a=Math.max(g.a,ra), b=Math.min(g.b,pb); if(b>a){ w+=g.val*(b-a); run+=b-a; } });
+        var lastP=null; P.forEach(function(g){ if(g.a<pb) lastP=g; });
+        var hv=cur?(lastP?lastP.val:0):(run?w/run:0), ml=volume(o,ra,pb), li=ra===hs?'1.5px':'0px', ri=(pb===he)?'1.5px':'0px';
+        if(hv>0) c+='<i class="ib-bar'+(cur?' cur':'')+'" style="--r:'+R(hv)+';left:calc('+X(ra,hs)+'% + '+li+');right:calc('+(100-X(pb,hs))+'% + '+ri+')"></i>';
+        if(!cri&&ml>=0.05) c+=cur?'<b class="ib-v cur" data-a="'+ra+'" style="left:calc('+X(now,hs)+'% + 7px)">'+ibNum(ml)+'</b>':'<b class="ib-v">'+ibNum(ml)+'</b>'; }
+      /* the rate line, its risers, pauses and the dotted line ahead */
+      var prev=null; P.forEach(function(g,gi){ var a=Math.max(g.a,hs), b=Math.min(g.b,he), pa=Math.min(a,now), pz=Math.min(b,now);
+        if(pz>a){ c+=g.p?'<i class="ib-ps" style="left:'+X(a,hs)+'%;right:'+(100-X(pz,hs))+'%"></i>':'<i class="ib-ln" style="--r:'+R(g.val)+';left:'+X(a,hs)+'%;right:'+(100-X(pz,hs))+'%"></i>'; }
+        if(b>Math.max(a,now)&&!g.p&&!(o.dc)) c+='<i class="ib-fut" style="--r:'+R(g.val)+';left:'+X(Math.max(a,now),hs)+'%;right:'+(100-X(b,hs))+'%"></i>';
+        var ix=S.indexOf(g), pg=S[ix-1];
+        if(g.a>=hs&&g.a<he){
+          if(pg&&!pg.p&&!g.p&&pg.b===g.a&&g.a<=now){ var lo=Math.min(pg.val,g.val), hi=Math.max(pg.val,g.val); c+='<i class="ib-rs" style="--lo:'+R(lo)+';--hi:'+R(hi)+';left:'+X(g.a,hs)+'%"></i>'; }
+          var shortP=g.p&&(Math.min(g.b,now)-g.a)<75*60000;
+          c+='<span class="ib-lbl'+(g.p?' p':'')+(ix===S.length-1?' last':'')+'" style="--r:'+R(g.p?0:g.val)+';left:calc('+X(g.a,hs)+'% + '+(ix?4:2)+'px)"'+(g.p?' aria-label="Paused"':'')+'>'+(g.p?IB_PAUSE:'')+(shortP?'':esc(ibRate(o,g,ix===0||g.p||(pg&&pg.p))))+'</span>'; } });
+      /* the now dot */
+      if(cur&&now>=P[0].a&&now<P[P.length-1].b){ var gn=null; P.forEach(function(g){ if(g.a<=now&&g.b>now) gn=g; });
+        if(gn) c+='<i class="ib-tip'+(gn.p?' p':'')+'" style="--r:'+R(gn.val)+';left:'+X(now,hs)+'%;--bd:-'+(Date.now()%2800)+'ms"></i>';
+        var cad=gn&&!gn.p&&!cri?ibCad(gn.val):0;   /* a drop for every 0.1 mL at this rate (2.8–30 s) */
+        if(cad) c+='<i class="ib-drop" style="--r:'+R(gn.val)+';left:'+X(now,hs)+'%;--cad:'+cad+'ms"></i>'; } }
+    html+='<div class="cell inf" data-h="'+h+'"><div class="ib" style="--h:'+h+'" onclick="tsInfPanel(\''+o.id+'\')">'+c+'</div></div>'; }
   return html; };
+/* Latest: what the line has given today, and when it was last checked */
+window.tsInfLatest=function(o){ if(!isInf(o)||o.draft) return ''; var dk=window.tsViewDk?tsViewDk():dayKey(), d0=dkDate(dk).getTime(), v=volume(o,d0,d0+86400000);
+  var C=(o.checks||[]).slice().sort(function(a,b){ return tms(b.at)-tms(a.at); })[0], age=C?Math.max(0,Math.round((Date.now()-tms(C.at))/60000)):null;
+  var ck=age==null?'Not checked yet':'Checked '+(age<2?'just now':age<60?age+' min ago':Math.floor(age/60)+' h ago');
+  if(v<0.05&&!C) return '';
+  return '<span class="rl-trend rl-inf" title="'+esc(o.name+' — '+fmtMl(v)+' given today'+(C?' · line checked '+fmtTime((tms(C.at)-d0)/60000)+(C.by?' by '+C.by:''):''))+'"><span class="rt-v"><b>'+(v>=10?fmtMl(v):ibNum(v)+' mL')+'</b></span><small>'+ck+'</small></span>'; };
+/* ---------- motion (Oct 2026: B + C) ----------
+   Opening a sheet: the hour bars rise left to right, the rate line draws over them, the dot pops in (once per sheet and day).
+   A rate change: the dot, the dotted line ahead and this hour's bar spring to the new height; the new rate fades in.
+   Running: a drop leaves the dot for every 0.1 mL and this hour's mL is re-read as it lands. Reduce Motion: none of it. */
+var IBM={key:'',last:{},openT:0};
+function ibStill(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+/* Web Animations, so a redraw of the sheet (which resets inline styles) can't cut a spring short */
+var IB_SPRING='cubic-bezier(.34,1.45,.64,1)';
+function ibSpring(el,from,fade,ms){ if(!el||!el.animate) return; el.animate([{transform:from},{transform:'none'}],{duration:ms,easing:IB_SPRING});
+  if(fade) el.animate([{opacity:0},{opacity:0,offset:.3},{opacity:1}],{duration:ms+200,easing:'ease'}); }
+window.tsInfMotion=function(){ var si=document.getElementById('sheetInner'); if(!si) return;
+  var dk=window.tsViewDk?tsViewDk():dayKey(), key=((curDoc&&curDoc.id)||'')+'|'+dk, still=ibStill();
+  var rows=[].slice.call(si.querySelectorAll('.grow[data-o]')).filter(function(r){ return r.querySelector('.cell.inf .ib'); });
+  if(key!==IBM.key){ IBM.key=key; IBM.last={}; if(rows.length&&!still){ IBM.openT=Date.now(); si.classList.add('ib-open'); clearTimeout(IBM.tm); IBM.tm=setTimeout(function(){ si.classList.remove('ib-open'); },1600); } }
+  var d0=dkDate(dk).getTime();
+  rows.forEach(function(row){ var id=row.getAttribute('data-o'), o=oFind(id); if(!o) return; var tip=row.querySelector('.ib-tip'), r=tip?parseFloat(tip.style.getPropertyValue('--r')):null, k=o.rate_v+'|'+o.rate_u+'|'+(o.rates||[]).length, L=IBM.last[id];
+    var mx=Math.max.apply(null,ibSegs(o,d0).map(function(g){ return g.val; }).concat([0]))||1;
+    /* a new highest rate rescales the day: the earlier hours ease down to their new heights */
+    if(L&&L.k!==k&&L.mx&&Math.abs(L.mx-mx)>1e-6&&!still){ var hc=row.querySelector('.hcells'); if(hc){ try{ hc.animate([{'--k':(mx/L.mx).toFixed(4)},{'--k':'1'}],{duration:700,easing:IB_SPRING}); }catch(e){} } }
+    if(L&&L.k!==k&&L.r!=null&&r!=null&&Math.abs(L.r-r)>.001&&!still){ var ih=parseFloat(getComputedStyle(si).getPropertyValue('--ih'))||22, dy=(r-L.r)*ih;
+      ibSpring(tip,'translateY('+dy.toFixed(1)+'px)',false,700);
+      [].forEach.call(row.querySelectorAll('.ib-fut,.ib-drop'),function(e){ ibSpring(e,'translateY('+dy.toFixed(1)+'px)',false,700); });
+      var cb=row.querySelector('.ib-bar.cur'); if(cb&&r>0){ ibSpring(cb,'scaleY('+(L.r/r).toFixed(3)+')',false,700); }
+      var lb=row.querySelectorAll('.ib-lbl.last'); if(lb.length) ibSpring(lb[lb.length-1],'translateY(3px)',true,500); }
+    IBM.last[id]={k:k,r:r,mx:mx}; }); };
+/* the drip: each drop is a 0.75 s fall started on the cadence; this hour's mL is re-read as it lands (it changes only when the volume does) */
+setInterval(function(){ if(document.hidden) return; var si=document.getElementById('sheetInner'); if(!si||si.classList.contains('ib-open')) return; var D=si.querySelectorAll('.ib-drop'); if(!D.length||ibStill()) return; var now=Date.now();
+  [].forEach.call(D,function(d){ var cad=parseFloat(d.style.getPropertyValue('--cad'))||0; if(!cad) return; var cyc=Math.floor(now/cad); if(d._c===cyc) return; var first=d._c==null; d._c=cyc; if(first) return;
+    d.classList.remove('go'); void d.offsetWidth; d.classList.add('go');
+    setTimeout(function(){ var el=d.isConnected&&d.parentNode.querySelector('.ib-v.cur'), row=el&&el.closest('.grow'), o=row&&oFind(row.getAttribute('data-o')); if(!o) return;
+      var t=ibNum(volume(o,+el.getAttribute('data-a'),Date.now())); if(t===el.textContent) return; el.textContent=t; el.classList.remove('ib-tick'); void el.offsetWidth; el.classList.add('ib-tick'); },600); }); },250);
+/* move along a line to read any moment: rate then, and how much had gone in today */
+(function(){ var bub=null, hair=null;
+  function hide(){ if(bub){ bub.hidden=true; hair.hidden=true; } }
+  function show(e){ var ib=e.target&&e.target.closest&&e.target.closest('#sheetInner .cell.inf .ib'); if(!ib){ hide(); return; }
+    var row=ib.closest('.grow'), o=row&&oFind(row.getAttribute('data-o')); if(!o||!isInf(o)||o.draft){ hide(); return; }
+    var cell=ib.parentNode, rc=cell.getBoundingClientRect(), rr=row.getBoundingClientRect(), h=+cell.getAttribute('data-h');
+    var dk=window.tsViewDk?tsViewDk():dayKey(), d0=dkDate(dk).getTime(), fr=Math.max(0,Math.min(.999,(e.clientX-rc.left)/rc.width)), mn=Math.round((h*60+fr*60)/5)*5, t=d0+mn*60000;
+    var S=ibSegs(o,d0), g=null, now=Date.now(), txt; S.forEach(function(s){ if(s.a<=t&&s.b>t) g=s; });
+    if(!S.length||t<S[0].a) txt=fmtTime(mn)+' · not started';
+    else if(!g) txt=fmtTime(mn)+' · stopped';
+    else if(t>now) txt=fmtTime(mn)+' · planned <b>'+esc(ibRate(o,g,true))+'</b>';
+    else { var m=g.r?mlhrOf(o,g.r.v,g.r.u):null; txt=fmtTime(mn)+' · <b>'+esc(ibRate(o,g,true))+'</b>'+(o.kind==='cri'&&!g.p&&m!=null?' ('+fmtR(m)+' mL/hr)':'')+' · '+(o.kind==='cri'&&o.conc==null?'':(function(v){ return v>=10?fmtMl(v):ibNum(v)+' mL'; })(volume(o,d0,t))+' so far today'); }
+    if(!bub){ bub=document.createElement('div'); bub.className='ib-bub'; bub.setAttribute('aria-hidden','true'); hair=document.createElement('div'); hair.className='ib-hair'; document.body.appendChild(hair); document.body.appendChild(bub); }
+    bub.innerHTML=txt.replace(/ · $/,''); bub.hidden=false; hair.hidden=false;
+    hair.style.left=e.clientX+'px'; hair.style.top=(rr.top+4)+'px'; hair.style.height=(rr.height-8)+'px';
+    var bw=bub.offsetWidth, x=Math.max(8+bw/2,Math.min(innerWidth-8-bw/2,e.clientX)), above=rr.top>40;
+    bub.style.left=x+'px'; bub.style.top=(above?rr.top-32:rr.bottom+6)+'px'; }
+  document.addEventListener('pointermove',function(e){ if(e.pointerType==='touch') return; show(e); },{passive:true});
+  document.addEventListener('scroll',hide,true); document.addEventListener('pointerdown',hide,true);
+})();
 window.tsInfName=function(o){ if(!isInf(o)) return esc(o.name); return esc(o.name)+(o.kind==='cri'?'<span class="rl-brand"> CRI</span>':'')+(o.additive?'<span class="rl-brand"> + '+esc(o.additive)+'</span>':''); };
 window.tsInfMeta=function(o){ if(!isInf(o)) return esc(o.rate||''); var kg=kgNow(), m=mlhrOf(o,o.rate_v,o.rate_u,kg);
   if(Number(o.rate_v)===0) return '<b>Paused</b>';
@@ -2771,10 +2935,10 @@ window.tsBatch=function(h,sec){ if(!CUR||!curDoc) return; if(window.tsViewDk&&ts
   var L=(TASKS||[]).filter(function(t){ return !t.status&&Math.floor(t.sched/60)===h&&t.order&&!t.order.dc&&!t.order.cont&&(!secName||t.order.section===secName); }).sort(function(a,b){ return (idx[a.orderId]-idx[b.orderId])||a.sched-b.sched; });
   if(!L.length){ toast((secName?esc(secName)+' at ':'Everything at ')+fmtTime(h*60)+' is charted'); return; }
   window._batch={h:h,sec:secName};
-  var rows=L.map(function(t){ var o=t.order, nv=needsValue(o);
-    return '<label class="bt-row'+(nv?' nv':'')+'"><input type="checkbox" class="bt-ck" data-id="'+esc(t.id)+'"'+(nv?'':' checked')+' onchange="tsBatchCount()"><span class="bt-box"></span>'
+  var rows=L.map(function(t){ var o=t.order, nv=needsValue(o), nr=!!o.note_req;
+    return '<label class="bt-row'+(nv?' nv':'')+(nr?' nr':'')+'"><input type="checkbox" class="bt-ck" data-id="'+esc(t.id)+'"'+(nv||nr?'':' checked')+' onchange="tsBatchCount()"><span class="bt-box"></span>'
       +'<span class="bt-what"><b>'+esc(o.name)+'</b><small>'+taskMeta(o)+(t.sched%60?' · '+esc(fmtTime(t.sched)):'')+'</small></span>'
-      +(nv?btField(t,o):'')+'</label>'; }).join('');
+      +(nv?btField(t,o):'')+(nr?'<input class="bt-note" data-id="'+esc(t.id)+'" placeholder="'+esc(o.note_prompt||'Note required')+'" aria-label="'+esc(o.name)+' note (required)" oninput="tsBatchVal(this)" onclick="event.preventDefault();this.focus()">':'')+'</label>'; }).join('');
   var html='<div class="op-head"><span class="op-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
     +'<div><div class="op-kind">Chart '+(secName?esc(secName)+' · ':'')+esc(fmtTime(h*60))+'</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
     +'<p class="op-lead">Untick anything that wasn’t done. Readings are added when you type a value.</p>'+(window.tsBtSayHTML?tsBtSayHTML():'')+'<div class="bt-list">'+rows+'</div>'
@@ -2782,12 +2946,15 @@ window.tsBatch=function(h,sec){ if(!CUR||!curDoc) return; if(window.tsViewDk&&ts
   opShow(html,'wide'); tsBatchCount(); setTimeout(function(){ var f=document.querySelector('#tsOrderSheet .bt-val'); if(f) f.focus(); },120); };
 window.tsBatchVal=function(inp){ var row=inp.closest('.bt-row'), ck=row&&row.querySelector('.bt-ck'); if(ck) ck.checked=!!inp.value.trim(); tsBatchCount(); };
 window.tsBatchCount=function(){ var n=document.querySelectorAll('#tsOrderSheet .bt-ck:checked').length, b=document.getElementById('btGo'); if(b){ b.textContent=n?'Complete '+n:'Complete'; b.disabled=!n; } };
-window.tsBatchGo=function(){ var B=window._batch||{}, me=user(), done=[], vals=[], wt=null;
+window.tsBatchGo=function(){ var B=window._batch||{}, me=user(), done=[], vals=[], wt=null, skipped=[];
   document.querySelectorAll('#tsOrderSheet .bt-ck:checked').forEach(function(ck){ var t=(TASKS||[]).find(function(x){ return x.id===ck.dataset.id; }); if(!t||t.status) return;
+    var ni=document.querySelector('#tsOrderSheet .bt-note[data-id="'+ck.dataset.id+'"]'), nt=ni?ni.value.trim():'';
+    if(t.order&&t.order.note_req&&!nt){ skipped.push(t.order.name); return; }
     var vi=document.querySelector('#tsOrderSheet .bt-val[data-id="'+ck.dataset.id+'"]'), v=vi?vi.value.trim():'';
-    t.status='completed'; t.completedMin=nowMin(); t.by=me.initials||null; t.value=v||null; done.push(t); vals.push(esc(t.order.name)+(v?' '+esc(v):''));
+    t.status='completed'; t.completedMin=nowMin(); t.by=me.initials||null; t.value=v||null; if(nt) t.notes=nt; done.push(t); vals.push(esc(t.order.name)+(v?' '+esc(v):''));
     });
-  if(!done.length) return; tsOrderClose();
+  if(skipped.length) setTimeout(function(){ toast(esc(skipped.join(', '))+' need'+(skipped.length>1?'':'s')+' a note first'); },done.length?1800:0);
+  if(!done.length) return; tsOrderClose(); if(window.tsJustCharted) tsJustCharted(done.map(function(t){ return t.id; }));
   logEvent('vital','Charted '+(B.sec?esc(B.sec)+' ':'')+esc(fmtTime(B.h*60))+' — '+vals.join(', '),me.initials);
   try{ buildGrid(); }catch(e){} sync();
   undoToast(done.length+' task'+(done.length>1?'s':'')+' charted · '+esc(fmtTime(B.h*60)),function(){ done.forEach(function(t){ t.status=null; t.completedMin=null; t.by=null; t.value=null; });
@@ -2869,18 +3036,20 @@ window.tsSecBand=function(sec,so){ var k=sec.key, f=tsSecFolded(k), inf=k==='Con
     +'<svg class="sicon" viewBox="0 0 24 24" fill="none"><path d="'+sec.icon+'" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     +'<span class="stitle">'+esc(k)+'</span><span class="scount">'+so.length+'</span>'+(inf&&window.tsInfTotal?tsInfTotal():'')
     +'<span class="sec-chev">'+SEC_CHEV+'</span>'
-    +(canOrderTS()&&!past?'<button type="button" class="sec-add" onclick="event.stopPropagation();tsSecAdd(\''+kq+'\')" onkeydown="event.stopPropagation()" aria-label="Add to '+esc(k)+'" title="Add to '+esc(k)+'">'+SEC_PLUS+'</button>':'')+'</div>';
-  var cells='';
+    +(canOrderTS()&&!past&&k!=='Stopped & completed'?'<button type="button" class="sec-add" onclick="event.stopPropagation();tsSecAdd(\''+kq+'\')" onkeydown="event.stopPropagation()" aria-label="Add to '+esc(k)+'" title="Add to '+esc(k)+'">'+SEC_PLUS+'</button>':'')+'</div>';
+  /* hour cells: no "✓ n" badges (they read as "the section is done"). Folded, a section shows where work is waiting — due or overdue, as the
+     grid's own shapes — and its title says exactly what it counts. */
+  var cells='', cnt={overdue:0,due:0};
   if(!inf){ var nh=Math.floor(nowMin()/60), ids={}, by=[], h; for(h=0;h<24;h++) by.push([]);
     so.forEach(function(o){ if(!o.cont&&!o.dc) ids[o.id]=1; });
     (TASKS||[]).forEach(function(t){ var hh=Math.floor(t.sched/60); if(ids[t.orderId]&&hh>=0&&hh<24) by[hh].push(t); });
-    for(h=0;h<24;h++){ var L=by[h], open=L.filter(function(t){ return !t.status; }), n={}, worst='', chart=open.length&&h<=nh+1&&!past;
-      L.forEach(function(t){ var s=deriveStatus(t); n[s]=(n[s]||0)+1; if(!worst||SEC_RANK[s]>SEC_RANK[worst]) worst=s; });
+    for(h=0;h<24;h++){ var L=by[h], n={}, worst='';
+      L.forEach(function(t){ if(t.status) return; var s=deriveStatus(t); if(s==='overdue'||s==='due'){ n[s]=(n[s]||0)+1; cnt[s]++; if(!worst||SEC_RANK[s]>SEC_RANK[worst]) worst=s; } });
       var tip=Object.keys(n).sort(function(a,b){ return SEC_RANK[b]-SEC_RANK[a]; }).map(function(s){ return n[s]+' '+SEC_WORD[s]; }).join(' · ');
-      cells+='<div class="hcell sec-h'+(chart?' can':'')+(h===nh&&!past?' now':'')+'"'
-        +(chart?' onclick="tsSecChart(\''+kq+'\','+h+')" title="Chart '+esc(k)+' at '+esc(fmtTime(h*60))+(tip?' — '+esc(tip):'')+'"':(tip?' title="'+esc(fmtTime(h*60))+' — '+esc(tip)+'"':''))+'>'
-        +(f&&worst?'<span class="sec-dot '+worst+(open.length>1?' n':'')+'">'+(open.length>1?open.length:'')+'</span>':'')
-        +(!f&&chart?'<span class="sec-go">'+SEC_CHECK+(open.length>1?'<b>'+open.length+'</b>':'')+'</span>':'')+'</div>'; } }
+      cells+='<div class="hcell sec-h'+(h===nh&&!past?' now':'')+'"'+(tip?' title="'+esc(fmtTime(h*60))+' — '+esc(tip)+'"':'')+'>'
+        +(f&&worst?'<span class="sec-dot '+worst+'" aria-hidden="true">'+(worst==='overdue'?MK_CLOCK:'')+'</span>':'')+'</div>'; } }
+  if(f&&!inf){ var sum=[cnt.overdue?cnt.overdue+' overdue':'',cnt.due?cnt.due+' due now':''].filter(Boolean).join(' · ');
+    head=head.replace('<span class="sec-chev">','<span class="sec-sum'+(cnt.overdue?' late':'')+'">'+(sum||'Nothing due')+'</span><span class="sec-chev">'); }
   return '<div class="grow gband'+(f?' folded':'')+(inf?' inf':'')+'" data-band="'+esc(k)+'">'+head+(cells?'<div class="hcells">'+cells+'</div>':'')+'</div>'; };
 
 window.tsSecToggle=function(k){ var m=secFolds(); if(m[k]) delete m[k]; else m[k]=1; secFoldSave(); try{ buildGrid(); }catch(e){}
@@ -2898,6 +3067,59 @@ window.tsScopeClear=function(silent){ if(!window.tsSearchScope) return; window.t
 
 /* the band sticks just under the hour header: its height, measured once it exists */
 on('rendered',function(){ var g=document.querySelector('#sheetInner .ghead'); if(g&&g.offsetHeight) document.documentElement.style.setProperty('--ts-ghead',g.offsetHeight+'px'); });   /* on the root: #sheetInner is rebuilt with each sheet */
+/* ═════════ TS VIEW — how much of the sheet fits on screen (Oct 2026) ═════════
+   One "View" button on the grid toolbar: Comfortable / Compact rows, and each section shown or collapsed (with Collapse all / Expand all),
+   so medications and patient care are a tap away under a heavy workload. Per person, on this device (localStorage).
+   Compact is the default and keeps values, ages and the 44-pt touch targets (styles/suite.css).
+   Section bar (above the grid): every section with what's outstanding (overdue · due now); select one to jump there (it opens if collapsed).
+   The bar follows the scroll, so it always shows which section you are in. */
+var VW_KEY='tsDense_v1';
+function vwDense(){ try{ return localStorage.getItem(VW_KEY)!=='0'; }catch(e){ return true; } }   /* compact unless the person chose Comfortable */
+function vwApply(){ try{ document.body.classList.toggle('ts-dense',vwDense()); }catch(e){} }
+vwApply();
+var VW_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
+function vwBtn(){ var folded=SECTIONS.filter(function(s){ return window.tsSecFolded&&tsSecFolded(s.key)&&(ORDERS||[]).some(function(o){ return o.section===s.key; }); }).length;
+  return '<button type="button" class="btn ghost ts-view-btn" aria-haspopup="true" onclick="tsViewOpen(this)" title="Row density and sections">'+VW_IC+'View'+(vwDense()?' · Compact':'')+(folded?' · '+folded+' collapsed':'')+'</button>'; }
+function vwPaint(){ var el=document.getElementById('tsView'); if(!el) return; var h=vwBtn(); if(el.innerHTML!==h) el.innerHTML=h; }
+on('sheet.drawn',vwPaint); on('rendered',vwPaint);
+function vwPopHTML(){ var d=vwDense(), S=SECTIONS.filter(function(s){ return (ORDERS||[]).some(function(o){ return o.section===s.key; }); });
+  var row=function(on,label,sub,click,role){ return '<button type="button" class="fp-row wf-row'+(on?' on':'')+'" role="'+role+'" aria-checked="'+on+'" onclick="'+click+'"><span class="fp-lab"><b>'+label+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</span><i class="wf-ck'+(role==='menuitemradio'?' rd':'')+'"></i></button>'; };
+  return '<div class="sb-filter-pop wf-pop vw-pop" role="menu" aria-label="View"><div class="wf-h">Rows</div>'
+    +row(!d,'Comfortable','Two lines per order, roomy','tsViewDense(0)','menuitemradio')+row(d,'Compact','More orders on screen','tsViewDense(1)','menuitemradio')
+    +'<div class="wf-h">Sections</div>'+S.map(function(s){ var n=(ORDERS||[]).filter(function(o){ return o.section===s.key; }).length, shown=!(window.tsSecFolded&&tsSecFolded(s.key));
+      return row(shown,esc(s.key),n+' order'+(n>1?'s':'')+(shown?'':' · collapsed'),'tsViewSec(\''+esc(s.key).replace(/'/g,"\\'")+'\')','menuitemcheckbox'); }).join('')
+    +'<div class="vw-all"><button type="button" class="fp-clear" onclick="tsViewAll(1)">Collapse all</button><button type="button" class="fp-clear" onclick="tsViewAll(0)">Expand all</button></div></div>'; }
+function vwRepaint(){ var p=document.getElementById('flPop'); if(p&&p.querySelector('.vw-pop')) p.innerHTML=vwPopHTML(); vwPaint(); }
+window.tsViewOpen=function(a){ _openPop(a,vwPopHTML()); };
+window.tsViewDense=function(on){ try{ localStorage.setItem(VW_KEY,on?'1':'0'); }catch(e){} vwApply(); try{ buildGrid(); }catch(e){} vwRepaint(); };
+window.tsViewSec=function(k){ tsSecToggle(k); vwRepaint(); };
+window.tsViewAll=function(fold){ SECTIONS.forEach(function(s){ var f=tsSecFolded(s.key); if((fold&&!f)||(!fold&&f)) tsSecToggle(s.key); }); vwRepaint(); };
+
+/* ---------- section bar ---------- */
+var VW_SHORT={'Basic Observation':'Observations','Continuous Infusions':'Infusions','Patient Care':'Patient care'};
+function vwOut(k){ var ids={}, n={overdue:0,due:0}; (ORDERS||[]).forEach(function(o){ if(o.section===k&&!o.cont&&!o.dc) ids[o.id]=1; });
+  (TASKS||[]).forEach(function(t){ if(!ids[t.orderId]||t.status) return; var s=deriveStatus(t); if(s==='overdue'||s==='due') n[s]++; }); return n; }
+window.tsSecNavPaint=function(){ var el=document.getElementById('tsSecNav'); if(!el) return; var past=window.tsViewDk&&tsViewDk()!==dayKey();
+  var S=SECTIONS.filter(function(s){ return (ORDERS||[]).some(function(o){ return o.section===s.key; }); });
+  var h=S.map(function(s){ var n=past?{overdue:0,due:0}:vwOut(s.key), f=window.tsSecFolded&&tsSecFolded(s.key), nm=VW_SHORT[s.key]||s.key, cnt=(ORDERS||[]).filter(function(o){ return o.section===s.key; }).length;
+      var parts=[n.overdue?n.overdue+' overdue':'',n.due?n.due+' due now':''].filter(Boolean);
+      return '<button type="button" class="sn-chip'+(f?' folded':'')+'" data-sec="'+esc(s.key)+'" onclick="tsSecGo(this.dataset.sec)" aria-label="'+esc(nm+', '+cnt+' orders'+(parts.length?', '+parts.join(', '):', nothing outstanding')+(f?', collapsed':''))+'">'
+        +'<svg class="sn-ic" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="'+s.icon+'" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sn-name">'+esc(nm)+'</span>'
+        +(n.overdue?'<span class="sn-n late">'+n.overdue+' overdue</span>':'')+(n.due?'<span class="sn-n due">'+n.due+' due</span>':'')+(!n.overdue&&!n.due?'<span class="sn-n none">'+cnt+'</span>':'')
+        +(f?'<span class="sn-f">collapsed</span>':'')+'</button>'; }).join('');
+  if(el.innerHTML!==h){ el.innerHTML=h; } tsSecNavSpy(); };
+window.tsSecNavSpy=function(){ var sc=document.getElementById('sheetScroll'), el=document.getElementById('tsSecNav'); if(!sc||!el) return; var head=document.querySelector('#sheetInner .ghead'), top=sc.scrollTop+(head?head.offsetHeight:0)+40, cur=null;
+  [].forEach.call(document.querySelectorAll('#sheetInner .gband'),function(b){ var r=b.nextElementSibling, y=r&&r.dataset&&r.dataset.sec===b.dataset.band&&r.offsetHeight?r.offsetTop:b.offsetTop; if(y<=top) cur=b.dataset.band; });
+  if(!cur){ var f=document.querySelector('#sheetInner .gband'); cur=f&&f.dataset.band; }
+  /* at the bottom the last sections can't reach the top: keep the one just chosen */
+  if(vwLastGo&&Date.now()-vwLastGo.t<4000&&sc.scrollTop+sc.clientHeight>=sc.scrollHeight-4) cur=vwLastGo.k;
+  [].forEach.call(el.querySelectorAll('.sn-chip'),function(c){ var on=c.dataset.sec===cur; c.classList.toggle('on',on); if(on) c.setAttribute('aria-current','true'); else c.removeAttribute('aria-current'); }); };
+var vwLastGo=null;
+window.tsSecGo=function(k){ vwLastGo={k:k,t:Date.now()}; if(window.tsSecFolded&&tsSecFolded(k)) tsSecToggle(k);
+  var sc=document.getElementById('sheetScroll'), head=document.querySelector('#sheetInner .ghead'), band=document.querySelector('#sheetInner .gband[data-band="'+String(k).replace(/"/g,'\\"')+'"]'); if(!sc||!band) return;
+  var row=band.nextElementSibling, bandH=band.offsetHeight, y=(row&&row.dataset.sec===k)?row.offsetTop-bandH:band.offsetTop;
+  sc.scrollTo({top:Math.max(0,y-(head?head.offsetHeight:0)),behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
+  setTimeout(function(){ var c=document.querySelector('#tsSecNav .sn-chip[data-sec="'+String(k).replace(/"/g,'\\"')+'"]'); tsSecNavSpy(); },450); };
 /* ═════════ TS MOVE — drag a treatment to another hour ═════════
    Drag an open cell (not charted yet) along its row to another hour — the patient is asleep, in imaging, being walked.
    Mouse / pen: press and drag. Touch: press and hold, then drag (a quick swipe still scrolls the grid).
@@ -2929,7 +3151,7 @@ function mvMove(x){ var d=mvD, sh=document.getElementById('sheetScroll'); if(!d|
   d.tag.className='mv-tag'+(why&&why!=='same'?' no':''); d.tag.innerHTML=why==='same'?esc(fmtTime(d.t.sched)):why?why:'→ '+esc(fmtTime(h*60));
   d.tag.style.left=(left+r.width/2)+'px'; d.tag.style.top=(r.top-8)+'px';
   /* near an edge of the grid: scroll it along */
-  if(sh){ var s=sh.getBoundingClientRect(), edge=48, v=x<s.left+240+edge?-1:x>s.right-edge?1:0; d.vx=v; if(v&&!d.raf) d.raf=requestAnimationFrame(mvTick); } }
+  if(sh){ var s=sh.getBoundingClientRect(), edge=48, v=x<s.left+(typeof GRID_LW!=='undefined'?GRID_LW:240)+edge?-1:x>s.right-edge?1:0; d.vx=v; if(v&&!d.raf) d.raf=requestAnimationFrame(mvTick); } }
 function mvTick(){ var d=mvD, sh=document.getElementById('sheetScroll'); if(!d||!d.on||!d.vx||!sh){ if(d) d.raf=null; return; } sh.scrollLeft+=d.vx*10; mvMove(d.lastX); d.raf=requestAnimationFrame(mvTick); }
 function mvEnd(drop){ var d=mvD; mvD=null; if(!d) return; clearTimeout(d.timer); document.removeEventListener('touchmove',mvBlock,{passive:false});
   if(!d.on) return; mvSwallow=true; setTimeout(function(){ mvSwallow=false; },350);
@@ -3313,6 +3535,11 @@ function chProject(until){ var now=chAllLines(), nowT=now.reduce(function(t,l){ 
   var tot=L.reduce(function(t,l){ return t+(l.total||0); },0), unp=L.filter(function(l){ return l.total==null; }).length;
   return {now:Math.round(nowT*100)/100,total:Math.round(tot*100)/100,add:Math.round((tot-nowT)*100)/100,unpriced:unp,lines:L}; }
 window.tsChProject=function(until){ return chProject(until); };
+/* one dose (or one charge) of an order, at this hospital's price — the order window and order panel show it (store/ordercare.js) */
+window.tsChReady=function(){ return chLoadPrices(); };
+window.tsChOrderPrice=function(o){ if(!o) return null; var cc=chOrderCode(o), k=String(o.name||'').trim().toLowerCase(); var p=chPriceOf({code:cc&&cc.c||'',item:(cc&&cc.item)||k});
+  return p!=null?{price:p,code:cc&&cc.c||''}:null; };
+window.tsChMoney=chMoney; window.tsChAdmin=function(){ return chAdmin(); };
 /* the horizons offered: 8 AM tomorrow (rounds), +24 h, +48 h */
 var CH_HZ=[['8am','8 AM tomorrow'],['24','In 24 h'],['48','In 48 h']], chHz='8am';
 function chHzTime(k){ if(k==='24') return Date.now()+864e5; if(k==='48') return Date.now()+1728e5; var d=new Date(); d.setDate(d.getDate()+(d.getHours()>=8?1:0)); d.setHours(8,0,0,0); return d.getTime(); }
@@ -3333,6 +3560,284 @@ window.tsEstPlan=function(){ chLoad().then(function(){ var lo=Math.max(1,parseIn
     set('esLow',r(A.total)); set('esHigh',r(B.total)); if(!(+((document.getElementById('esCur')||{}).value)>0)) set('esCur',A.now);
     var out=document.getElementById('epOut'); if(out) out.innerHTML='Low <b>'+chMoney(r(A.total))+'</b> ('+lo+' day'+(lo>1?'s':'')+') · high <b>'+chMoney(r(B.total))+'</b> ('+hi+' days) · charges so far '+chMoney(A.now)
       +(B.unpriced?'<br><span class="ch-need">'+B.unpriced+' line'+(B.unpriced>1?'s have':' has')+' no price yet and '+(B.unpriced>1?'aren’t':'isn’t')+' included</span>':''); }); };
+/* ═════════ TS FINANCE — the account card in the sheet sidebar (Oct 2026) ═════════
+   Quiet by default, so treatment stays the focus: the estimate range, whether the client approved it, and the deposit balance
+   (deposit − current charges) with one line tying the projection to that balance. Everything else is under "Details".
+   Projected = current charges (from the medical record) + what the sheet's orders add by 8 AM tomorrow (store/charges.js).
+   Data and editor unchanged: base.js estOf / applyEstimateToVisit / openEstimate. */
+var FIN_KEY='tsFinOpen_v1';
+function finOpen(){ try{ return localStorage.getItem(FIN_KEY)==='1'; }catch(e){ return false; } }
+/* Oct 2026: the old "Estimate Range" look again (range, approval pill, remaining + bar), with the rest folded under Details.
+   Details opens in place (no redraw) and is remembered per person. Motion answers changes only — nothing loops:
+   amounts roll digit by digit, the bar glides with a spring + one light along it, crossing into low/over sends one ring from the thumb,
+   approval turns the pill green as its check draws; opening a sheet, the bar fills once. Reduce Motion: none of it. */
+window.tsFinToggle=function(ev){ if(ev){ ev.stopPropagation(); ev.preventDefault(); } var o=!finOpen(); try{ localStorage.setItem(FIN_KEY,o?'1':'0'); }catch(e){}
+  var c=document.querySelector('#ctab-sheet .est-card.fin2'); if(!c){ try{ refreshEstimate(); }catch(e){} return; }
+  c.classList.toggle('open',o); var b=c.querySelector('.est-more'); if(b){ b.setAttribute('aria-expanded',String(o)); b.firstChild.nodeValue=o?'Hide details':'Details'; }
+  var x=c.querySelector('.est-x .in'); if(x) x.inert=!o; };
+function finMoney(n,cents){ return (n<0?'−':'')+'$'+Math.abs(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:cents?2:0,maximumFractionDigits:cents?2:0}); }
+function finProj(cur){ try{ if(!CH_PP_OK) return null; var t=chHzTime('8am'), P=chProject(t); if(!(P.add>0)) return null; return {at:chHzLabel(t).replace(/^tomorrow /,'').replace(':00',''),tomorrow:/^tomorrow/.test(chHzLabel(t)),add:P.add,total:cur+P.add,unpriced:P.unpriced}; }catch(e){ return null; } }
+function finRow(k,v,cls,odo){ return '<div class="est-row"><span class="k">'+k+'</span><span class="v'+(cls?' '+cls:'')+'"'+(odo?' data-odo="'+odo+'"':'')+'>'+v+'</span></div>'; }
+var FIN_CHK='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path class="hands" d="M12 7v5l3 2" fill="none" stroke="var(--fin-card)" stroke-width="2.2" stroke-linecap="round"/><path class="tick" d="M8 12.5l2.5 2.5 5.5-6" fill="none" stroke="var(--fin-card)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var FIN_INFO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>';
+var FIN_CHEV='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+window.estimateCard=function(){
+  applyEstimateToVisit(); var e=estOf(), edit=canEditEstimate(), open=finOpen();
+  if(!e) return '<div class="panel est-card fin2 fin-empty"><h4>Estimate Range</h4><div class="est"><div class="ts-est-none">No estimate on file</div>'
+    +(edit?'<button type="button" class="fin-link" onclick="openEstimate()">Add estimate</button>':'<div class="est-sub">A doctor adds the estimate.</div>')+'</div></div>';
+  var lo=VISIT.estLow, hi=VISIT.estHigh, cur=VISIT.estCurrent, dep=VISIT.estDeposit, hasDep=dep!=null&&dep>0, rem=hasDep?dep-cur:null, over=rem!=null&&rem<0;
+  var left=hasDep?Math.max(0,Math.min(100,rem/dep*100)):0, tone=!hasDep?'cyan':over?'red':left>25?'cyan':'amber', pending=VISIT.estApprovedBy==='Not yet approved';
+  var h='<h4>Estimate Range</h4><div class="est">'
+    +'<button type="button" class="est-range" onclick="event.stopPropagation();openEstimate()" aria-label="Estimate '+finMoney(lo,true)+' to '+finMoney(hi,true)+' — open the estimate">'+finMoney(lo,true)+' — '+finMoney(hi,true)+'</button>'
+    +'<div class="est-status"><span class="est-pill '+(pending?'warn':'ok')+'" data-appr="'+(pending?0:1)+'">'+FIN_CHK+'<span class="t">'+(pending?'Awaiting approval':'Approved')+'</span></span></div>'
+    +'<div class="est-div"></div>'
+    +finRow('Remaining',rem==null?'No deposit recorded':finMoney(rem,true),tone==='cyan'?'':tone,rem==null?'':'rem');
+  var P=finProj(cur);
+  if(P){ var pl=hasDep?dep-P.total:null, ph=P.total>hi;
+    h+='<div class="est-proj'+((pl!=null&&pl<0)||ph?' warn':'')+'"><b>By '+esc(P.at)+(P.tomorrow?' tomorrow':'')+': about <span data-odo="proj">'+finMoney(P.total)+'</span></b><span>'
+      +(pl==null?'No deposit to compare with':pl<0?finMoney(-pl)+' more than the deposit':finMoney(pl)+' of the deposit left')+(ph?' · above the high end':'')+'</span></div>'; }
+  if(hasDep) h+='<div class="est-bar" role="img" aria-label="'+(over?'Charges are past the deposit':Math.round(left)+'% of the deposit left')+'"><div class="est-fill '+tone+'" data-w="'+(over?100:left).toFixed(1)+'" data-tone="'+tone+'" style="width:'+(over?100:left).toFixed(1)+'%"><span class="sheen"></span></div>'+(over?'':'<div class="est-cap"></div>')+'</div>';
+  h+='<button type="button" class="est-more" aria-expanded="'+open+'" aria-controls="finX" onclick="tsFinToggle(event)">'+(open?'Hide details':'Details')+FIN_CHEV+'</button>'
+    +'<div class="est-x" id="finX"><div><div class="in"'+(open?'':' inert')+'>'
+    +(hasDep?'<div class="est-ends"><span><b>'+finMoney(0,true)+'</b>Used up</span><span class="hi"><b>'+finMoney(dep,true)+'</b>Deposit</span></div>':'')
+    +'<div class="est-div"></div>'
+    +finRow('Current charges',finMoney(cur,true),'','cur')+finRow('Deposit',hasDep?finMoney(dep,true):'—','',hasDep?'dep':'')
+    +(P?finRow('Added by '+esc(P.at)+' from orders','+'+finMoney(P.add,true)+(P.unpriced?' <small>('+P.unpriced+' without a price)</small>':'')):'')
+    +finRow('Approved by',pending?'—':esc(VISIT.estApprovedBy||'—'))+finRow('Approved at',pending?'—':esc(VISIT.estApprovedTime||'—'))+finRow('Client initials',esc(VISIT.estClientInitials||'—'))
+    +(VISIT.estPlan&&VISIT.estPlan!=='—'?finRow('Treatment plan',esc(VISIT.estPlan)):'')
+    +'<div class="est-note'+(over?' bad':'')+'">'+FIN_INFO+'<span>'+(over?'Charges are past the deposit. Collect an additional deposit before continuing.':'Stay near the low end when possible. Don’t exceed the high end without updated client authorization.')+'</span></div>'
+    +'<div class="est-foot"><button type="button" class="fin-link" onclick="event.stopPropagation();openEstimate()">'+(edit?'Update estimate':'View estimate')+'</button><span>Updated '+esc(VISIT.estLastUpdated||'—')+'</span></div>'
+    +'</div></div></div></div>';
+  try{ requestAnimationFrame(function(){ tsFinMotion(); }); }catch(x){}
+  return '<div class="panel est-card fin2'+(open?' open':'')+'" onclick="if(!event.target.closest(\'button\'))openEstimate()">'+h+'</div>'; };
+/* ---------- motion ---------- */
+var FM={key:null,v:{},w:null,tone:null,appr:null,pw:0};
+function finStill(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+var FIN_COL='0123456789'.split('').map(function(n){ return '<b>'+n+'</b>'; }).join('');
+/* roll an amount from its old text to its new one, aligned from the right; plain text again once it settles */
+function finRoll(el,from,to){ var ch=to.split(''), o=from.split(''), pad=ch.length-o.length, cols=[];
+  el.innerHTML='<span class="fin-sr">'+esc(to)+'</span><span class="odo" aria-hidden="true">'+ch.map(function(c,i){ if(!/\d/.test(c)) return '<span class="c">'+esc(c)+'</span>'; var k=i-pad, p=k>=0&&/\d/.test(o[k])?+o[k]:0;
+    return '<span class="d"><i style="transition:none;transform:translateY(-'+(p*1.25)+'em)" data-to="'+c+'">'+FIN_COL+'</i></span>'; }).join('')+'</span>';
+  void el.offsetWidth; var I=el.querySelectorAll('.d i'), n=I.length;
+  [].forEach.call(I,function(col,ix){ col.style.transition=''; col.style.transitionDelay=((n-1-ix)*35)+'ms'; col.style.transform='translateY(-'+(+col.getAttribute('data-to')*1.25)+'em)'; });
+  setTimeout(function(){ if(el.isConnected&&el.querySelector('.fin-sr')) el.textContent=to; },1300); }
+window.tsFinMotion=function(){ var c=document.querySelector('#ctab-sheet .est-card.fin2:not(.fin-empty)'); if(!c) return;
+  var key=(curDoc&&curDoc.id)||'', still=finStill(), f=c.querySelector('.est-fill'), pill=c.querySelector('.est-pill');
+  var vals={}; [].forEach.call(c.querySelectorAll('[data-odo]'),function(el){ var k=el.getAttribute('data-odo'); if(k) vals[k]=el.textContent; });
+  var w=f?parseFloat(f.getAttribute('data-w')):null, tone=f?f.getAttribute('data-tone'):null, appr=pill?pill.getAttribute('data-appr')==='1':null;
+  if(FM.key!==key){ FM.key=key;
+    if(f&&!still){ f.style.transition='none'; f.style.width='0%'; void f.offsetWidth; f.style.transition=''; f.style.width=w+'%'; f.classList.add('shine'); setTimeout(function(){ f.classList.remove('shine'); },1700); } }
+  else if(!still){
+    [].forEach.call(c.querySelectorAll('[data-odo]'),function(el){ var k=el.getAttribute('data-odo'), was=FM.v[k]; if(k&&was&&was!==vals[k]) finRoll(el,was,vals[k]); });
+    if(f&&FM.w!=null&&FM.w!==w){ f.style.transition='none'; f.style.width=FM.w+'%'; void f.offsetWidth; f.style.transition=''; f.style.width=w+'%'; f.classList.add('shine');
+      if(FM.tone&&tone!==FM.tone&&tone!=='cyan') f.classList.add('ping'); setTimeout(function(){ f.classList.remove('shine','ping'); },1800); }
+    if(pill&&FM.appr===false&&appr){ var w1=pill.getBoundingClientRect().width; pill.classList.add('just');
+      if(pill.animate&&FM.pw) pill.animate([{width:FM.pw+'px'},{width:w1+'px'}],{duration:500,easing:'cubic-bezier(.32,.72,0,1)'});
+      setTimeout(function(){ pill.classList.remove('just'); },1100); } }
+  FM.v=vals; FM.w=w; FM.tone=tone; FM.appr=appr; FM.pw=pill?pill.getBoundingClientRect().width:0; };
+/* ═════════ TS ORDER CARE — what the order window and the order panel add (Oct 2026) ═════════
+   · Price at the moment of ordering: this hospital's price for one dose (charge_codes/prices via store/charges.js) and about a day's worth.
+   · Hard stop: a dose outside the reference turns the button into a red "Order anyway"; it still needs a reason (store/medsafe.js).
+   · Note required: a doctor can make an order need a note every time it is charted (catheter site, injection site …). The chart drawer,
+     the Vitals tab and charting an hour all ask for it (store/chart.js · vitals.js · tasks.js).
+   · Owner handout: a one-page, plain-language sheet for a medication — what it's for, how much and how often — edited, then printed.
+   · Copy treatments / Copy vitals: the sheet's active orders (or the latest vitals) as text for the record or a message. */
+function ocFreqDay(f){ f=String(f||''); var m=/^q(\d+)h$/i.exec(f); if(m) return 24/(+m[1]); if(/^once$/i.test(f)) return 1; if(/^sid$/i.test(f)) return 1; if(/^bid$/i.test(f)) return 2; if(/^tid$/i.test(f)) return 3; return null; }
+function ocPriceHTML(o){ if(!window.tsChOrderPrice) return ''; var p=tsChOrderPrice(o), M=window.tsChMoney||function(n){ return '$'+n; };
+  if(!p) return '<div class="oc-price none"><span>No hospital price for '+esc(o.name)+' yet</span>'+(window.tsChAdmin&&tsChAdmin()?'<small>Set it in Charges</small>':'')+'</div>';
+  var n=ocFreqDay(o.freq), day=n&&n>1?' · about <b>'+M(Math.round(p.price*n*100)/100)+'</b> a day':'';
+  return '<div class="oc-price"><span class="oc-price-k">Charge</span><span><b>'+M(p.price)+'</b> a dose'+day+'</span>'+(p.code?'<small>'+esc(p.code)+'</small>':'')+'</div>'; }
+
+/* ---------- the medication order window ---------- */
+on('rx.opened',function(){ var c=document.getElementById('rxCalc'); if(!c||document.getElementById('rxPrice')) return;
+  var pr=document.createElement('div'); pr.id='rxPrice'; c.parentNode.insertBefore(pr,c.nextSibling);
+  var g=document.querySelector('#tsModal .tm-grid'); if(g){ var r=document.createElement('div'); r.className='oc-req-row';
+    r.innerHTML='<label class="oc-req"><button type="button" role="switch" id="rxNoteReq" class="v-sw" aria-checked="false" onclick="tsOcReqToggle(this)"><i></i></button><span>Require a note each time it’s given</span></label>'
+      +'<input id="rxNoteReqP" class="oc-req-p" placeholder="What should the note say? e.g. Injection site" hidden>';
+    g.parentNode.insertBefore(r,g.nextSibling); }
+  var ok=document.querySelector('#tsModal [data-ok]'); if(ok) ok.setAttribute('data-label',ok.textContent);
+  if(window.tsChReady) tsChReady().then(function(){ ocPaint(); }); });
+window.tsOcReqToggle=function(b){ var on=b.getAttribute('aria-checked')!=='true'; b.setAttribute('aria-checked',String(on)); var p=document.getElementById('rxNoteReqP'); if(p){ p.hidden=!on; if(on) p.focus(); } };
+function ocPaint(){ if(!RX) return; var el=document.getElementById('rxPrice'), v=function(id){ return ((document.getElementById(id)||{}).value||'').trim(); };
+  if(el) el.innerHTML=ocPriceHTML({name:RX.x.n,type:'med',route:v('rxRoute'),freq:v('rxFreq')});
+  window.tsOcFoot(); }
+/* the button says what will happen: a flagged dose is ordered "anyway", in red */
+window.tsOcFoot=function(){ var b=document.querySelector('#tsModal [data-ok]'); if(!b||!RX) return; var base=b.getAttribute('data-label')||b.textContent;
+  var flag=RX.msFlags&&RX.msFlags.length&&base==='Add to sheet';
+  b.textContent=flag?'Order anyway':base; b.classList.toggle('danger',!!flag); };
+on('rx.calc',ocPaint,100);
+on('rx.build',function(o){ var sw=document.getElementById('rxNoteReq'); if(sw&&sw.getAttribute('aria-checked')==='true'){ o.note_req=true; var p=((document.getElementById('rxNoteReqP')||{}).value||'').trim(); if(p) o.note_prompt=p; } });
+
+/* ---------- the order panel ---------- */
+window.tsOcPanelRows=function(o){ if(!o||o.dc) return ''; var h='';
+  if(o.type==='med'||o.type==='diag') h+=ocPriceHTML(o);
+  var can=canOrderTS()&&!(window.tsViewDk&&tsViewDk()!==dayKey());
+  if(can&&!o.cont) h+='<div class="oc-req-row in-panel"><label class="oc-req"><button type="button" role="switch" class="v-sw" aria-checked="'+(!!o.note_req)+'" onclick="tsOcReqSet(\''+esc(o.id)+'\',this)"><i></i></button><span>Require a note when charted</span></label>'
+    +'<input class="oc-req-p" id="ocReqP" placeholder="What should the note say? e.g. Catheter site and condition" value="'+esc(o.note_prompt||'')+'"'+(o.note_req?'':' hidden')+' onchange="tsOcReqPrompt(\''+esc(o.id)+'\',this.value)"></div>';
+  else if(o.note_req) h+='<div class="oc-req-ro">Needs a note when charted'+(o.note_prompt?' — '+esc(o.note_prompt):'')+'</div>';
+  if(o.type==='med') h+='<button type="button" class="op-btn oc-handout" onclick="tsOcHandout(\''+esc(o.id)+'\')"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h7l5 5v13H7z M14 3v5h5 M10 13h6 M10 17h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>Owner handout</button>';
+  return h; };
+window.tsOcReqSet=function(id,b){ var on=b.getAttribute('aria-checked')!=='true', me=user(), o=oFind(id); if(!o) return; b.setAttribute('aria-checked',String(on));
+  var p=document.getElementById('ocReqP'); if(p){ p.hidden=!on; if(on) setTimeout(function(){ p.focus(); },30); }
+  updateOrder(id,{note_req:on||null,note_prompt:on?(o.note_prompt||null):null});
+  logEvent('doctor','<b>'+esc(o.name)+'</b> — '+(on?'a note is now required when charted':'note no longer required'),me.initials); toast(on?'A note will be required when charted':'Note no longer required'); };
+window.tsOcReqPrompt=function(id,v){ var o=oFind(id); if(!o) return; v=String(v||'').trim(); if((o.note_prompt||'')===v) return; updateOrder(id,{note_prompt:v||null}); };
+
+/* ---------- owner handout ---------- */
+var OC_ROUTE={PO:'by mouth',SQ:'as an injection under the skin',SC:'as an injection under the skin',IM:'as an injection into the muscle',IV:'into the vein (given by our team)',Topical:'on the skin',Ophthalmic:'in the eye',Otic:'in the ear',Rectal:'rectally',Inhaled:'by inhaler',Intranasal:'in the nose',Transdermal:'on the skin of the ear'};
+function ocFreqWords(f){ f=String(f||''); var m=/^q(\d+)h$/i.exec(f); if(m){ var h=+m[1]; return h===24?'once a day':h===12?'twice a day, about every 12 hours':h===8?'three times a day, about every 8 hours':'every '+h+' hours'; }
+  return /^once$/i.test(f)?'once':/^prn$/i.test(f)?'only when needed, as your veterinarian explained':f; }
+window.tsOcHandout=function(id){ var o=oFind(id); if(!o) return; var d=medDose(o), br=window.tsBrand?tsBrand(o.name):'', p=(curDoc&&curDoc.patient)||{};
+  var how='Give '+d.mg+(o.conc&&d.volume?' ('+d.volume+')':'')+' '+(OC_ROUTE[o.route]||String(o.route||'').toLowerCase())+', '+ocFreqWords(o.freq)+'.';
+  var html='<div class="op-head"><span class="op-ic t-med"><svg viewBox="0 0 24 24" fill="none"><path d="M7 3h7l5 5v13H7z M14 3v5h5 M10 13h6 M10 17h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+    +'<div><div class="op-kind">Owner handout</div><h3>'+esc(o.name)+(br?' <span class="op-brand">'+esc(br)+'</span>':'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<p class="op-lead">Check and edit the wording, then print. Nothing here changes the order.</p>'
+    +'<div class="oc-ho-form"><label>What it’s for<input id="hoFor" value="'+esc((o.ref&&o.ref.indication)||'')+'" placeholder="e.g. Nausea and vomiting"></label>'
+    +'<label>How to give it<textarea id="hoHow" rows="2">'+esc(how)+'</textarea></label>'
+    +'<label>Next dose<input id="hoNext" placeholder="e.g. Tomorrow at 8 AM"></label>'
+    +'<label>Notes from your veterinarian<textarea id="hoNotes" rows="3" placeholder="Side effects to watch for, giving it with food …"></textarea></label></div>'
+    +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderPanel(\''+esc(o.id)+'\')">Back</button><button type="button" class="op-btn primary" onclick="tsOcHandoutPrint(\''+esc(o.id)+'\')">Print handout</button></div>';
+  opShow(html,'wide'); };
+window.tsOcHandoutPrint=function(id){ var o=oFind(id); if(!o) return; var p=(curDoc&&curDoc.patient)||{}, v=function(k){ return ((document.getElementById(k)||{}).value||'').trim(); }, br=window.tsBrand?tsBrand(o.name):'';
+  var me=user(), doc=o.ordered_by_name||me.name||'', pet=[p.name,p.last].filter(Boolean).join(' '), today=new Date().toLocaleDateString([], {month:'long',day:'numeric',year:'numeric'});
+  var sec=function(t,b){ return b?'<section><h2>'+esc(t)+'</h2><p>'+esc(b).replace(/\n/g,'<br>')+'</p></section>':''; };
+  var page='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(o.name)+' — '+esc(pet)+'</title><style>'
+    +'@page{margin:18mm}body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;color:#1d1d1f;margin:0}'
+    +'header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #d2d2d7;padding-bottom:14px;margin-bottom:22px}'
+    +'.hosp{font-size:12px;color:#6e6e73;letter-spacing:.02em}h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:6px 0 0}h1 small{font-size:16px;font-weight:500;color:#6e6e73;margin-left:8px}'
+    +'.pet{text-align:right;font-size:13px;color:#6e6e73}.pet b{display:block;font-size:17px;color:#1d1d1f}'
+    +'section{margin:0 0 18px}h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#17738A;margin:0 0 4px}p{margin:0}'
+    +'.how p{font-size:19px;font-weight:600;letter-spacing:-.01em}.box{margin-top:26px;padding:14px 16px;border-radius:12px;background:#f5f5f7;font-size:13.5px}'
+    +'footer{margin-top:28px;font-size:12px;color:#6e6e73;border-top:1px solid #d2d2d7;padding-top:10px;display:flex;justify-content:space-between}</style></head><body>'
+    +'<header><div><div class="hosp">'+esc(window.TS_HOSPITAL||'VCA Shoreline Veterinary Referral & Emergency Center')+'</div><h1>'+esc(o.name)+(br?'<small>'+esc(br)+'</small>':'')+'</h1></div>'
+    +'<div class="pet"><b>'+esc(pet)+'</b>'+esc([p.species,p.weight?p.weight+' kg':''].filter(Boolean).join(' · '))+'</div></header>'
+    +sec('What it’s for',v('hoFor'))+'<div class="how">'+sec('How to give it',v('hoHow'))+'</div>'+sec('Next dose',v('hoNext'))+sec('Notes from your veterinarian',v('hoNotes'))
+    +'<div class="box">Give this medicine exactly as directed, and don’t stop early or give extra unless your veterinarian tells you to. Call us right away if your pet vomits, stops eating, has trouble breathing, or seems unwell after a dose.</div>'
+    +'<footer><span>'+(doc?'Prescribed by '+esc(doc):'')+'</span><span>'+esc(today)+'</span></footer></body></html>';
+  var f=document.getElementById('ocPrint'); if(f) f.remove(); f=document.createElement('iframe'); f.id='ocPrint'; f.setAttribute('aria-hidden','true'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(f); var w=f.contentWindow; w.document.open(); w.document.write(page); w.document.close();
+  logEvent('comm','Owner handout printed — <b>'+esc(o.name)+'</b>',me.initials);
+  setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){ toast('Couldn’t open printing'); } },250); };
+
+/* ---------- copy treatments / copy vitals (bottom of the sheet) ---------- */
+function ocLast(o){ var L=(TASKS||[]).filter(function(t){ return t.orderId===o.id&&t.status==='completed'; }).sort(function(a,b){ return (b.completedMin||0)-(a.completedMin||0); })[0]; return L; }
+window.tsOcCopyTx=function(){ if(!curDoc) return; var by={}, order=[];
+  (ORDERS||[]).forEach(function(o){ if(!o||o.dc||o.draft) return; var k=o.section||'Other'; if(!by[k]){ by[k]=[]; order.push(k); }
+    var line; if(o.type==='med'){ var d=medDose(o); line=o.name+' '+d.mg+(o.conc&&d.volume?' ('+d.volume+')':'')+' '+(o.route||'')+' '+(o.freq||''); }
+    else if(o.cont&&o.kind) line=o.name+' '+(window.tsInfRateFor?tsInfRateFor(o):o.rate||'');
+    else line=o.name+' '+(o.freq||'');
+    var l=ocLast(o); if(l) line+=' — last '+(l.value?l.value+(o.unit?' '+o.unit:'')+' at ':'')+fmtTime(l.completedMin);
+    if(o.note_req) line+=' (note required)';
+    by[k].push('• '+line.replace(/\s+/g,' ').trim()); });
+  var txt=(VISIT.patient||'')+' — treatments '+new Date().toLocaleDateString([], {month:'numeric',day:'numeric'})+' '+fmtTime(nowMin())+'\n'+order.map(function(k){ return k+'\n'+by[k].join('\n'); }).join('\n\n');
+  try{ navigator.clipboard.writeText(txt).then(function(){ toast('Treatments copied'); },function(){ toast('Couldn’t copy'); }); }catch(e){ toast('Couldn’t copy'); }
+  window._ocLastCopy=txt; return txt; };
+window.tsOcLegendActs=function(){ var I='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.7"/></svg>';
+  return '<button type="button" class="lg-act" onclick="tsOcCopyTx()">'+I+'Copy treatments</button><button type="button" class="lg-act" onclick="tsVCopy()">'+I+'Copy vitals</button>'; };
+/* ═════════ TS ALERTS — short alerts on the board, about the patient and about the client (Oct 2026) ═════════
+   Patient alerts (sheet.patient.alerts, strings): "Caution — may bite", "Anxious", "Diabetic" …  — red when it's about safety.
+   Client alerts (sheet.patient.client_alerts, [{text, at, by}]): "Owner waiting for results", "Owner wants a call before procedures" …
+   Anyone signed in adds or clears them from the board's Alerts column (or the sheet header); every change is in the sheet's audit.
+   Trend / limit alerts from charted vitals (store/ops.js) still lead the list and are not edited here.
+   Board hour blocks: hover (or focus) a block to see that hour's tasks — name, time, done / due / late. */
+var AL_PAT=['Caution — may bite','Muzzle for handling','Anxious — Fear Free handling','Diabetic','Seizure history','Blind','Deaf','Brachycephalic — heat and sedation risk'];
+var AL_CLI=['Owner waiting for results','Owner wants updates — call after rounds','Owner visiting today','Call owner before any procedure','Financial approval needed before more care','Owner prefers text messages'];
+var AL_ICON={
+  crit:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5 2.8 19.5h18.4L12 3.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4.2M12 17v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.6" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.8v4.6M12 15.6v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  client:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.2" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M4.8 20c.9-3.6 3.8-5.6 7.2-5.6s6.3 2 7.2 5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'};
+function alSheet(id){ return (SHEETS||[]).find(function(x){ return x._id===id; })||null; }
+function alList(s){ var p=(s&&s.patient)||{}; return {pat:(p.alerts||[]).slice(),cli:(p.client_alerts||[]).map(function(x){ return (x&&x.text)?x:{text:String(x)}; })}; }
+/* the board cell: auto alerts (vitals) first, then the patient's, then the client's; tap to edit */
+window.tsAlertCell=function(p,i){ var A=p.alerts||[];
+  return '<div class="sbc c-alerts aa-cell al-cell" role="button" tabindex="0" onclick="event.stopPropagation();tsAlertEdit(\''+esc(p._id||'')+'\',this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();tsAlertEdit(\''+esc(p._id||'')+'\',this);}" title="Alerts — select to add or clear" aria-label="Alerts for '+esc(p.name||'')+': '+esc(A.map(function(a){ return a.x; }).join(', ')||'none')+'. Select to edit">'
+    +(A.length?A.slice(0,3).map(function(a){ return '<div class="al-row '+esc(a.t)+'">'+(AL_ICON[a.t]||AL_ICON.warn)+'<span>'+esc(a.x)+'</span></div>'; }).join('')+(A.length>3?'<div class="al-more">+'+(A.length-3)+' more</div>':'')
+      :'<span class="al-empty">+ Add alert</span>')+'</div>'; };
+/* the editor: current alerts with ×, then quick picks and a line to type one */
+window.tsAlertEdit=function(id,anchor){ var s=alSheet(id); if(!s){ toast('Open the patient first'); return; } var old=document.getElementById('tsAlMenu'); if(old) old.remove();
+  var p=s.patient||{}, L=alList(s), m=document.createElement('div'); m.id='tsAlMenu'; m.className='ts-menu al-menu show'; m.setAttribute('role','dialog'); m.setAttribute('aria-label','Alerts for '+(p.name||'patient'));
+  var cur=L.pat.map(function(t,k){ return '<div class="al-cur '+(/dnr|caution|aggress|bite|muzzle/i.test(t)?'crit':'warn')+'">'+(/dnr|caution|aggress|bite|muzzle/i.test(t)?AL_ICON.crit:AL_ICON.warn)+'<span>'+esc(t)+'</span>'+(t==='DNR'?'':'<button type="button" aria-label="Remove '+esc(t)+'" data-rm="p'+k+'">×</button>')+'</div>'; }).join('')
+    +L.cli.map(function(x,k){ return '<div class="al-cur client">'+AL_ICON.client+'<span>'+esc(x.text)+(x.by?'<small>'+esc(x.by)+(x.at?' · '+esc(fmtWhen(x.at)):'')+'</small>':'')+'</span><button type="button" aria-label="Remove '+esc(x.text)+'" data-rm="c'+k+'">×</button></div>'; }).join('');
+  var pick=function(arr,kind,have){ return arr.filter(function(t){ return have.indexOf(t)<0; }).map(function(t){ return '<button type="button" class="al-pick '+kind+'" data-add="'+kind+'" data-t="'+esc(t)+'">'+esc(t)+'</button>'; }).join(''); };
+  m.innerHTML='<div class="ts-tm-h">Alerts · '+esc(((p.name||'')+' '+(p.last||'')).trim())+'</div>'
+    +(cur?'<div class="al-curs">'+cur+'</div>':'<p class="al-none">No alerts yet.</p>')
+    +'<div class="al-h">About the patient</div><div class="al-picks">'+pick(AL_PAT,'p',L.pat)+'</div>'
+    +'<div class="al-h">About the client</div><div class="al-picks">'+pick(AL_CLI,'c',L.cli.map(function(x){ return x.text; }))+'</div>'
+    +'<div class="al-type"><select id="alKind" aria-label="Alert is about"><option value="c">Client</option><option value="p">Patient</option></select><input id="alText" placeholder="Type an alert…" maxlength="60"><button type="button" id="alAdd">Add</button></div>';
+  var re=function(){ m.remove(); try{ if(currentCTab==='dash') renderDash(); }catch(e){} var a=document.querySelector('.al-cell[onclick*="'+id+'"]'); tsAlertEdit(id,a||anchor); };
+  m.querySelectorAll('[data-rm]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); var k=b.dataset.rm; alSave(id,k[0]==='p'?'p':'c','rm',+k.slice(1)); re(); }; });
+  m.querySelectorAll('[data-add]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); alSave(id,b.dataset.add,'add',b.dataset.t); re(); }; });
+  var addTyped=function(){ var t=(m.querySelector('#alText').value||'').trim(); if(!t) return; alSave(id,m.querySelector('#alKind').value,'add',t); re(); };
+  m.querySelector('#alAdd').onclick=function(ev){ ev.stopPropagation(); addTyped(); }; m.querySelector('#alText').onkeydown=function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); addTyped(); } if(ev.key==='Escape') m.remove(); };
+  m.addEventListener('mousedown',function(ev){ ev.stopPropagation(); }); m.addEventListener('click',function(ev){ ev.stopPropagation(); });
+  document.body.appendChild(m); var r=(anchor||document.body).getBoundingClientRect(), w=360, hgt=m.offsetHeight;
+  m.style.left=Math.max(12,Math.min(window.innerWidth-w-12,r.left-20))+'px'; m.style.top=Math.max(12,Math.min(window.innerHeight-hgt-12,r.bottom+6))+'px';
+  setTimeout(function(){ document.addEventListener('mousedown',function h(ev){ if(!m.contains(ev.target)){ m.remove(); document.removeEventListener('mousedown',h); } }); },0);
+  setTimeout(function(){ var f=m.querySelector('#alText'); if(f) f.focus({preventScroll:true}); },40); };
+function alSave(id,kind,op,v){ var s=alSheet(id); if(!s) return; var p=s.patient||(s.patient={}), me=user(), now=new Date().toISOString(), field, list, desc;
+  if(kind==='p'){ list=(p.alerts||[]).slice(); if(op==='add'){ if(list.indexOf(v)>-1) return; list.push(v); desc='Alert added — <b>'+esc(v)+'</b>'; } else { desc='Alert cleared — <b>'+esc(list[v])+'</b>'; list.splice(v,1); } p.alerts=list; field='patient.alerts'; }
+  else { list=(p.client_alerts||[]).slice(); if(op==='add'){ if(list.some(function(x){ return x&&x.text===v; })) return; list.push({text:v,at:now,by:me.initials||null}); desc='Client alert added — <b>'+esc(v)+'</b>'; } else { desc='Client alert cleared — <b>'+esc((list[v]||{}).text||'')+'</b>'; list.splice(v,1); } p.client_alerts=list; field='patient.client_alerts'; }
+  if(id===CUR&&curDoc){ curDoc.patient=curDoc.patient||{}; curDoc.patient.alerts=p.alerts; curDoc.patient.client_alerts=p.client_alerts; if(kind==='p') VISIT.alerts=p.alerts||[]; }
+  var u={updated_at:now,updated_by:me.initials,audit:FV.arrayUnion({at:now,type:'comm',desc:desc,who:me.initials,uid:me.uid})}; u[field]=list;
+  DB.collection(COL).doc(id).update(u).catch(function(e){ console.warn(e); toast('Couldn’t save the alert'); });
+  try{ refreshHeader(); }catch(e){} }
+window.tsAlertSave=alSave;   /* tests */
+
+/* ---------- the hour block popover: that hour's tasks ---------- */
+var AL_WORD={overdue:'late',due:'due',scheduled:'',completed:'done',skipped:'not done'};
+window.tsBlkHTML=function(b,p){ var it=b.items||[], txt=it.map(function(x){ return x.n+' '+fmtTime(x.m)+(AL_WORD[x.s]?' '+AL_WORD[x.s]:''); }).join(', ');
+  return '<div class="sb-blk '+b.status+'" tabindex="0" data-hl="'+esc(hlabelSafe(b.h))+'" aria-label="'+esc(hlabelSafe(b.h)+' — '+txt)+'">'+b.label
+    +'<span class="sb-pop-src" hidden>'+it.map(function(x){ return '<div class="sp-row '+x.s+'"><i></i><span class="sp-n">'+esc(x.n)+'</span><span class="sp-t">'+esc(fmtTime(x.m))+(AL_WORD[x.s]?' · '+AL_WORD[x.s]:'')+'</span></div>'; }).join('')+'</span></div>'; };
+function hlabelSafe(h){ try{ return fmtTime(h*60); }catch(e){ return h+':00'; } }
+(function(){ var pop=null, cur=null;
+  function hide(){ if(pop) pop.hidden=true; cur=null; }
+  function show(b){ var src=b.querySelector('.sb-pop-src'); if(!src||!src.innerHTML.trim()){ hide(); return; } if(!pop){ pop=document.createElement('div'); pop.className='sb-pop'; pop.setAttribute('role','tooltip'); document.body.appendChild(pop); }
+    if(cur===b&&!pop.hidden) return; cur=b; var row=b.closest('.sb-row'), nm=row&&row.querySelector('.pt-nm'), h=b.closest('.sb-hcell');
+    pop.innerHTML='<div class="sp-h">'+(nm?esc(nm.textContent)+' · ':'')+esc(b.getAttribute('data-hl')||'')+'</div>'+src.innerHTML; pop.hidden=false;
+    var r=b.getBoundingClientRect(), w=pop.offsetWidth, hh=pop.offsetHeight, left=r.left-w-10; if(left<8) left=r.right+10; pop.style.left=Math.min(window.innerWidth-w-8,left)+'px'; pop.style.top=Math.max(8,Math.min(window.innerHeight-hh-8,r.top+r.height/2-hh/2))+'px'; }
+  document.addEventListener('mouseover',function(e){ var b=e.target.closest&&e.target.closest('#ctab-dash .sb-blk'); if(b) show(b); else if(cur) hide(); },{passive:true});
+  document.addEventListener('focusin',function(e){ var b=e.target.closest&&e.target.closest('#ctab-dash .sb-blk'); if(b) show(b); else if(cur) hide(); });
+  document.addEventListener('scroll',hide,true);
+})();
+/* ═══ GRID TILES (Oct 2026, option A refined) — the pointer's place on the grid, and charting a whole hour from its header ═══
+   · Hover any hour square: its order row and its hour column light faintly (the row through the sticky label with an inset shadow,
+     never a see-through background; the column with a faint tint on each of its squares).
+   · Hover an hour in the header: every open task in that hour lights, and a pill says "Chart 7 at 8 AM" (clicking the hour already
+     opens Chart all — store/tasks.js tsBatch). Future hours and hours with nothing open show no pill.
+   Classes are re-applied on the next pointer move after a redraw (tsMorphHTML resets them), so nothing here wraps the grid. */
+(function(){
+  var GX={row:null,col:-1,lit:-1,pill:null};
+  function inner(){ return document.getElementById('sheetInner'); }
+  function colOf(cell){ var p=cell&&cell.parentElement; if(!p) return -1; var i=0; for(var n=p.firstElementChild;n;n=n.nextElementSibling){ if(n===cell) return i; if(n.classList.contains('cell')||n.classList.contains('hcell')) i++; } return -1; }
+  /* the column: a class on each square of that hour (never an extra child of #sheetInner — tsMorphHTML rebuilds everything when the child count changes) */
+  function cols(col){ var el=inner(); if(!el) return []; return [].slice.call(el.querySelectorAll('.grow[data-o] > .hcells > :nth-child('+(col+1)+'), .ghead .hcells > .hcell:nth-child('+(col+1)+')')); }
+  function clearX(){ if(GX.row) GX.row.classList.remove('xr'); GX.row=null; var el=inner(); if(el) el.querySelectorAll('.xc').forEach(function(c){ c.classList.remove('xc'); }); GX.col=-1; }
+  function setX(row,col){ if(GX.row!==row){ if(GX.row) GX.row.classList.remove('xr'); GX.row=row; } if(row&&!row.classList.contains('xr')) row.classList.add('xr');
+    if(GX.col!==col){ var el=inner(); if(el) el.querySelectorAll('.xc').forEach(function(c){ c.classList.remove('xc'); }); GX.col=col; }
+    cols(col).forEach(function(c){ if(!c.classList.contains('xc')) c.classList.add('xc'); }); }
+  function openAt(h){ var nh=Math.floor(nowMin()/60); if(h>nh+1||typeof TASKS==='undefined'||!TASKS) return 0;
+    return TASKS.filter(function(t){ return !t.status&&Math.floor(t.sched/60)===h&&t.order&&!t.order.dc&&!t.order.cont; }).length; }
+  function unlit(){ var el=inner(); if(el) el.querySelectorAll('.mark.lit').forEach(function(m){ m.classList.remove('lit'); }); GX.lit=-1; if(GX.pill) GX.pill.classList.remove('on'); }
+  function applyLit(h){ var el=inner(); if(!el) return; el.querySelectorAll('.grow[data-o] > .hcells').forEach(function(r){ var c=r.children[h]; var m=c&&c.querySelector(':scope > .mark.overdue, :scope > .mark.due'); if(m&&!m.classList.contains('lit')) m.classList.add('lit'); }); }
+  function lightHour(hc,h){ if(GX.lit===h&&GX.pill&&GX.pill.classList.contains('on')){ applyLit(h); return; } unlit(); var n=openAt(h); if(!n||document.body.classList.contains('ts-past-day')) return; GX.lit=h;
+    applyLit(h);
+    if(!GX.pill){ GX.pill=document.createElement('div'); GX.pill.className='gx-pill'; GX.pill.setAttribute('aria-hidden','true'); document.body.appendChild(GX.pill); }
+    GX.pill.textContent='Chart '+n+' at '+hourText(h); var r=hc.getBoundingClientRect(); GX.pill.style.left=(r.left+r.width/2)+'px'; GX.pill.style.top=(r.bottom-6)+'px'; GX.pill.classList.add('on');
+    hc.setAttribute('title','Chart '+n+' at '+hourText(h)); }
+  document.addEventListener('mouseover',function(e){
+    var t=e.target; if(!t||!t.closest) return; var el=inner(); if(!el||!el.contains(t)){ if(GX.row||GX.col>-1) clearX(); if(GX.lit>-1) unlit(); return; }
+    var hc=t.closest('.ghead .hcell'); if(hc){ var h=colOf(hc); clearX(); if(h>-1) lightHour(hc,h); return; }
+    if(GX.lit>-1) unlit();
+    var cell=t.closest('.grow[data-o] > .hcells > .cell'); if(!cell){ if(!t.closest('.grow[data-o]')) clearX(); else { var rw=t.closest('.grow[data-o]'); if(GX.row!==rw){ clearX(); GX.row=rw; rw.classList.add('xr'); } } return; }
+    setX(cell.closest('.grow'),colOf(cell)); },{passive:true});
+  /* after a redraw the pointer may not move to a new element: re-apply on the next move over the same cell */
+  var gxRaf=0; document.addEventListener('mousemove',function(e){ if(gxRaf) return; gxRaf=requestAnimationFrame(function(){ gxRaf=0; if(GX.lit>-1) applyLit(GX.lit); if(!GX.row) return; if(!GX.row.isConnected){ clearX(); return; }
+    if(!GX.row.classList.contains('xr')) GX.row.classList.add('xr'); if(GX.col>-1){ var c=GX.row.querySelector('.hcells > :nth-child('+(GX.col+1)+')'); if(c&&!c.classList.contains('xc')) setX(GX.row,GX.col); } }); },{passive:true});
+  /* a redraw resets classes: while something is lit, a light keeper puts them back (stops as soon as nothing is) */
+  setInterval(function(){ if(GX.lit>-1) applyLit(GX.lit); if(GX.row){ if(!GX.row.isConnected){ clearX(); return; } if(!GX.row.classList.contains('xr')) GX.row.classList.add('xr'); if(GX.col>-1) cols(GX.col).forEach(function(c){ if(!c.classList.contains('xc')) c.classList.add('xc'); }); } },250);
+  document.addEventListener('scroll',function(){ if(GX.lit>-1) unlit(); },true);
+  window.addEventListener('blur',function(){ clearX(); unlit(); });
+})();
 /* ═════════ TS VITALS — the Vitals tab, from the sheet's real readings ═════════
    One row per monitoring order on the sheet (Basic observation first, then the rest of Monitoring and Diagnostics), its last three
    readings with time and who, colour only when a reading is outside the hospital limits (FLAG_RULES), and a Record box that charts
@@ -3347,7 +3852,7 @@ function vOrders(){ return (ORDERS||[]).filter(function(o){ return o&&!o.dc&&!o.
 /* every charted value for an order: what is saved (curDoc.marks) plus anything charted this second and not yet saved (TASKS) */
 function vReadings(o){ var out={}, d=curDoc||{}, marks=d.marks||{};
   var add=function(k,m,dk){ if(!m||m.status!=='completed'||m.value==null||String(m.value).trim()==='') return; var mn=m.min!=null?m.min:(m.sched||0);
-    out[k]={v:String(m.value),at:dkDate(dk).getTime()+mn*60000,s:m.sched||0,by:m.by||'',notes:m.notes||''}; };
+    out[k]={v:String(m.value),at:dkDate(dk).getTime()+mn*60000,s:m.sched||0,by:m.by||'',notes:m.notes||'',k:k}; };
   Object.keys(marks).forEach(function(k){ var m=marks[k]; if(m&&m.orderId===o.id&&/^\d{8}_/.test(k)) add(k,m,k.slice(0,8)); });
   (TASKS||[]).forEach(function(t){ if(t.orderId!==o.id||t.status!=='completed') return; var dk=(t.key&&/^\d{8}_/.test(t.key))?t.key.slice(0,8):viewDk(); add(t.key||t.id,{status:t.status,value:t.value,min:t.completedMin,sched:t.sched,by:t.by,notes:t.notes},dk); });
   return Object.keys(out).map(function(k){ return out[k]; }).sort(function(a,b){ return (a.at-b.at)||(a.s-b.s); }); }   /* same minute: the later slot is the newer reading */
@@ -3355,17 +3860,63 @@ function vWhen(ms){ var d=new Date(ms), t=new Date(), y=new Date(t.getFullYear()
   var hm=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}).replace(':00','').replace(' ','').replace('AM','A').replace('PM','P');
   return d.toDateString()===t.toDateString()?hm:d.toDateString()===y.toDateString()?'Yday '+hm:(d.getMonth()+1)+'/'+d.getDate()+' '+hm; }
 function vTone(o,v){ var r=ruleFor(o.name); if(!r) return ''; var n=numOf(v), s=n!=null?sevOf(r,n,sexSp(VISIT.species)):0; return s>=2?'coral':s===1?'amber':''; }
-function vRow(o){ var R=vReadings(o).slice(-3), past=vPast(), opts=V_OPTS[String(o.name).toLowerCase()];
-  var strip=R.length?'<div class="v-strip">'+R.map(function(r,i){ var last=i===R.length-1, tone=vTone(o,r.v);
-      return '<div class="v-pt" title="'+esc(r.v+(o.unit?' '+o.unit:'')+' · '+vWhen(r.at)+(r.by?' · '+r.by:'')+(r.notes?' · '+r.notes:''))+'"><span class="v-chip'+(last?' cur '+(tone||'cyan'):(tone?' '+tone:''))+'">'+esc(r.v)+'</span><span class="v-t">'+esc(vWhen(r.at))+'</span></div>'; }).join('<span class="v-dash"></span>')+'</div>'
-    :'<span class="v-empty">Nothing charted yet</span>';
+/* ---------- each row: an Apple-Health-style trend of the stay (last 48 h) ----------
+   Numbers: a calm line through every reading, the hospital's normal range as a soft band (FLAG_RULES), the value written on the
+   readings (all of them when there are 8 or fewer, otherwise the first, lowest, highest and latest), the latest in teal; amber / coral
+   only outside the limits. Words (MM, CRT, mentation): one dot per reading on a quiet line, the word shown where it changes and on the latest.
+   A reading with a note carries a small dot; hover or focus shows value, time, who and the note. */
+var V_ABN=/^(pale|white|cyanotic|injected|icteric|grey|gray|>2|dull|obtunded|stupor|comatose|abnormal|diarrhea|none)$/i;
+function vChart(o,R){ if(!R.length) return '<span class="v-empty">Nothing charted yet</span>';
+  var now=Date.now(), t1=Math.max(now,R[R.length-1].at), win=48*3600e3, Rw=R.filter(function(r){ return r.at>=t1-win; }); if(!Rw.length) Rw=R.slice(-1);
+  var t0=Math.min(Rw[0].at,t1-6*3600e3), X=function(t){ return 4+(t-t0)/Math.max(1,t1-t0)*92; };
+  var opts=V_OPTS[String(o.name).toLowerCase()], nums=!opts&&Rw.every(function(r){ return numOf(r.v)!=null; });
+  var rule=ruleFor(o.name), sp=sexSp(VISIT.species), lo=rule?lim(rule.lo,sp):null, hi=rule?lim(rule.hi,sp):null, TOP=22, BOT=42, mid=(TOP+BOT)/2;
+  var vals=nums?Rw.map(function(r){ return numOf(r.v); }):[], mn=nums?Math.min.apply(null,vals):0, mx=nums?Math.max.apply(null,vals):0;
+  var dlo=mn, dhi=mx; if(nums){ if(lo!=null&&lo>=mn-(mx-mn+1)*1.5) dlo=Math.min(dlo,lo); if(hi!=null&&hi<=mx+(mx-mn+1)*1.5) dhi=Math.max(dhi,hi); if(dhi===dlo){ dhi+=1; dlo-=1; } }
+  var Y=function(v){ return nums?BOT-(v-dlo)/(dhi-dlo)*(BOT-TOP):mid; };
+  var pts=Rw.map(function(r,i){ var v=nums?numOf(r.v):null; return {r:r,x:X(r.at),y:Y(v),v:v,i:i}; });
+  var show={}; if(pts.length<=8) pts.forEach(function(p){ show[p.i]=1; });
+  else { show[0]=1; show[pts.length-1]=1; if(nums){ var a=0,b=0; pts.forEach(function(p,k){ if(p.v<pts[a].v) a=k; if(p.v>pts[b].v) b=k; }); show[a]=1; show[b]=1; } }
+  if(!nums){ var prev=null; pts.forEach(function(p){ var w=String(p.r.v).toLowerCase(); if(w!==prev) show[p.i]=1; prev=w; }); }
+  var band=nums&&(lo!=null||hi!=null)?'<rect class="v-band" x="0" width="100" y="'+Y(hi!=null?Math.min(hi,dhi):dhi).toFixed(1)+'" height="'+Math.max(1,Y(lo!=null?Math.max(lo,dlo):dlo)-Y(hi!=null?Math.min(hi,dhi):dhi)).toFixed(1)+'"/>':'';
+  var line=pts.length>1?'<polyline class="v-line'+(nums?'':' flat')+'" vector-effect="non-scaling-stroke" points="'+pts.map(function(p){ return p.x.toFixed(2)+','+p.y.toFixed(1); }).join(' ')+'"/>':'';
+  var h='<div class="v-chart'+(nums?'':' words')+'" role="img" aria-label="'+esc(o.name)+': '+esc(Rw.map(function(r){ return r.v; }).join(', '))+'"><svg viewBox="0 0 100 56" preserveAspectRatio="none" aria-hidden="true">'+band+line+'</svg>';
+  if(band) h+='<span class="v-band-l" style="top:'+(Y(hi!=null?Math.min(hi,dhi):dhi)-1).toFixed(0)+'px">'+(lo!=null&&hi!=null?esc(lo+'–'+hi):hi!=null?'≤ '+esc(hi):'≥ '+esc(lo))+'</span>';
+  pts.forEach(function(p){ var last=p.i===pts.length-1, tone=nums?vTone(o,p.r.v):(V_ABN.test(String(p.r.v).trim())?'amber':''), tip=p.r.v+(o.unit?' '+o.unit:'')+' · '+vWhen(p.r.at)+(p.r.by?' · '+p.r.by:'')+(p.r.notes?' · '+p.r.notes:'');
+    h+='<span class="v-dot'+(last?' cur':'')+(tone?' '+tone:'')+'" style="left:'+p.x.toFixed(2)+'%;top:'+p.y.toFixed(1)+'px" tabindex="0" title="'+esc(tip)+'" aria-label="'+esc(tip)+'"></span>';
+    if(show[p.i]) h+='<span class="v-lab'+(last?' cur':'')+(tone?' '+tone:'')+(p.x>88?' r':p.x<10?' l':'')+'" style="left:'+p.x.toFixed(2)+'%;top:'+(p.y-19).toFixed(1)+'px">'+esc(vSummary(p.r.v).s)+(p.r.notes?'<i class="v-nd" aria-hidden="true"></i>':'')+'</span>'
+      +'<span class="v-tl'+(p.x>88?' r':p.x<10?' l':'')+'" style="left:'+p.x.toFixed(2)+'%">'+esc(vWhen(p.r.at))+'</span>'; });
+  return h+'</div>'; }
+/* weight: type pounds and it shows the kilograms ("35.3 lb = 16.0 kg · Use kg"); a kg number that only makes sense as pounds says so */
+var WT_LBK=2.20462;
+function lbParse(v){ var m=/^\s*(\d+(?:\.\d+)?)\s*(lbs?|pounds?|#|kg|kgs)?\s*$/i.exec(String(v||'')); if(!m) return null; return {n:parseFloat(m[1]),u:m[2]?(/^k/i.test(m[2])?'kg':'lb'):null}; }
+function vIsWeight(o){ return /^weight$/i.test(String(o&&o.name||'').trim()); }
+window.tsLbUnit=function(id,u){ var w=document.querySelector('[data-lb="'+id+'"]'); if(!w) return; w.setAttribute('data-u',u); [].forEach.call(w.querySelectorAll('.lb-seg button'),function(b){ b.setAttribute('aria-pressed',String(b.dataset.u===u)); }); tsLbHint(id); };
+window.tsLbHint=function(id){ var w=document.querySelector('[data-lb="'+id+'"]'), inp=document.getElementById(id), hint=w&&w.querySelector('.lb-hint'); if(!inp||!hint) return;
+  var p=lbParse(inp.value), u=(p&&p.u)||w.getAttribute('data-u')||'kg', f=function(n){ return (Math.round(n*10)/10).toString(); }, html='';
+  if(p&&p.n>0&&u==='lb') html='<span>'+f(p.n)+' lb = <b>'+f(p.n/WT_LBK)+' kg</b></span><button type="button" onclick="tsLbUse(\''+id+'\','+f(p.n/WT_LBK)+')">Use kg</button>';
+  else if(p&&p.n>0&&window.tsWtPlaus){ var q=tsWtPlaus(p.n); if(q&&q.fix) html='<span>'+esc(q.short)+' '+f(p.n)+' lb = <b>'+f(q.fix)+' kg</b></span><button type="button" onclick="tsLbUse(\''+id+'\','+q.fix+')">Use '+f(q.fix)+' kg</button>'; }
+  hint.innerHTML=html; hint.hidden=!html; };
+window.tsLbUse=function(id,kg){ var inp=document.getElementById(id); if(!inp) return; inp.value=String(kg); tsLbUnit(id,'kg'); inp.focus(); };
+/* the value to save, always in kg */
+window.tsLbKg=function(id,val){ var w=document.querySelector('[data-lb="'+id+'"]'), p=lbParse(val); if(!w||!p) return val; var u=p.u||w.getAttribute('data-u')||'kg';
+  return u==='lb'?(Math.round(p.n/WT_LBK*10)/10).toString():(p.u?String(p.n):val); };
+window.tsLbField=function(id,extra){ return '<span class="lb-wrap" data-lb="'+id+'" data-u="kg">'+extra+'<span class="lb-seg" role="group" aria-label="Unit"><button type="button" data-u="kg" aria-pressed="true" onclick="tsLbUnit(\''+id+'\',\'kg\')">kg</button><button type="button" data-u="lb" aria-pressed="false" onclick="tsLbUnit(\''+id+'\',\'lb\')">lb</button></span><span class="lb-hint" hidden></span></span>'; };
+function vRow(o){ var R=vReadings(o), past=vPast()||o.dc, opts=V_OPTS[String(o.name).toLowerCase()], wt=vIsWeight(o), need=o.note_req;
   var field=opts?'<input class="v-in" id="vin-'+esc(o.id)+'" list="vl-'+esc(o.id)+'" placeholder="Select"'+(past?' disabled':'')+'><datalist id="vl-'+esc(o.id)+'">'+opts.map(function(x){ return '<option>'+esc(x)+'</option>'; }).join('')+'</datalist>'
-    :'<input class="v-in" id="vin-'+esc(o.id)+'" inputmode="'+(o.unit?'decimal':'text')+'" placeholder="Value"'+(past?' disabled':'')+' onkeydown="if(event.key===\'Enter\')tsVRecord(\''+esc(o.id)+'\')">';
-  return '<div class="v-row"><div class="v-name">'+esc(o.name)+'<small>'+esc(o.freq||'')+'</small></div><div class="v-trend">'+strip+'</div>'
-    +(past?'<div class="v-input v-ro">View only</div>':'<div class="v-input">'+field+(o.unit?'<span class="v-unit">'+esc(o.unit)+'</span>':'')+'<input class="v-note" id="vnote-'+esc(o.id)+'" placeholder="Note (optional)"><button class="v-rec" onclick="tsVRecord(\''+esc(o.id)+'\')">Record</button></div>')+'</div>'; }
+    :'<input class="v-in" id="vin-'+esc(o.id)+'" inputmode="'+(o.unit&&!wt?'decimal':'text')+'" placeholder="Value"'+(past?' disabled':'')+(wt?' oninput="tsLbHint(\'vin-'+esc(o.id)+'\')"':'')+' onkeydown="if(event.key===\'Enter\')tsVRecord(\''+esc(o.id)+'\')">';
+  if(wt) field=tsLbField('vin-'+o.id,field); else if(o.unit) field+='<span class="v-unit">'+esc(o.unit)+'</span>';
+  return '<div class="v-row'+(o.dc?' is-dc':'')+'"><div class="v-name">'+esc(o.name)+'<small>'+(o.dc?'Stopped':esc(o.freq||''))+'</small></div><div class="v-trend">'+vChart(o,R)+'</div>'
+    +(past?'<div class="v-input v-ro">'+(o.dc?'Stopped':'View only')+'</div>':'<div class="v-input">'+field+'<input class="v-note'+(need?' need':'')+'" id="vnote-'+esc(o.id)+'" placeholder="'+(need?esc(o.note_prompt||'Note required'):'Note (optional)')+'"'+(need?' aria-required="true"':'')+'><button class="v-rec" onclick="tsVRecord(\''+esc(o.id)+'\')">Record</button></div>')+'</div>'; }
 function vInfRows(){ return (ORDERS||[]).filter(function(o){ return o&&o.cont&&o.kind&&!o.dc; }).map(function(o){
     return '<div class="v-row v-inf" onclick="tsInfPanel(\''+esc(o.id)+'\')"><div class="v-name">'+esc(o.name)+'<small>'+(o.kind==='cri'?'CRI':'IV fluids')+'</small></div><div class="v-trend"><span class="v-chip cur cyan">'+esc(o.rate||'')+'</span></div><div class="v-input v-ro">Open infusion ›</div></div>'; }).join(''); }
-function vRowsHTML(){ var q=vFilterQ.toLowerCase().trim(), L=vOrders().filter(function(o){ return !q||String(o.name).toLowerCase().indexOf(q)>-1; });
+var V_ACT_KEY='tsVActive_v1';
+function vOnlyActive(){ try{ return localStorage.getItem(V_ACT_KEY)!=='0'; }catch(e){ return true; } }
+window.tsVActive=function(on){ try{ localStorage.setItem(V_ACT_KEY,on?'1':'0'); }catch(e){} var sw=document.getElementById('vActSw'); if(sw) sw.setAttribute('aria-checked',String(on)); var el=document.getElementById('vRows'); if(el) el.innerHTML=vRowsHTML(); };
+/* stopped monitoring orders that were charted (shown when "Show only active" is off) */
+function vStopped(){ var O=(curDoc&&curDoc.orders)||{}, on={}; vOrders().forEach(function(o){ on[o.id]=1; });
+  return Object.keys(O).map(function(k){ return O[k]; }).filter(function(o){ return o&&o.dc&&!o.cont&&!on[o.id]&&(o.type==='obs'||o.type==='diag')&&vReadings(o).length; }); }
+function vRowsHTML(){ var q=vFilterQ.toLowerCase().trim(), L=vOrders().concat(vOnlyActive()?[]:vStopped()).filter(function(o){ return !q||String(o.name).toLowerCase().indexOf(q)>-1; });
   var basic=L.filter(function(o){ return o.section==='Basic Observation'; }), more=L.filter(function(o){ return o.section!=='Basic Observation'; }), inf=q?'':vInfRows();
   var sec=function(t,a){ return a?'<div class="v-sec-h"><span>'+t+'</span></div>'+a:''; };
   var html=sec('Basic observations',basic.map(vRow).join(''))+sec('Monitoring &amp; diagnostics',more.map(vRow).join(''))+sec('Fluids &amp; CRIs',inf);
@@ -3377,6 +3928,7 @@ window.renderVitals=function(){ var os=document.getElementById('ctab-sheet'); if
   el.innerHTML=patientCmdHTML()+'<section class="clinical-workspace vitals-mode"><main class="treatment-main vitals-main">'
     +'<div class="v-header"><button class="btn ghost" style="width:auto;height:34px;padding:0 12px;flex:0 0 auto" onclick="selectCTab(\'sheet\')">‹ Sheet</button>'
     +'<div class="v-filter">'+IC.search+'<input placeholder="Filter vitals by name" value="'+esc(vFilterQ)+'" oninput="tsVFilter(this.value)"></div><div class="v-title">VITALS</div><div class="spacer" style="flex:1"></div>'
+    +'<label class="v-act"><span>Show only active</span><button type="button" role="switch" id="vActSw" class="v-sw" aria-checked="'+vOnlyActive()+'" onclick="tsVActive(this.getAttribute(\'aria-checked\')!==\'true\')"><i></i></button></label>'
     +(vPast()?'<span class="v-pastnote">'+esc(dkLabel(tsViewDk()))+' · view only</span>':'')+'</div>'
     +(fl.length?'<div class="v-luna"><div class="v-luna-l"><div class="oc-luna-h">Trends &amp; limits</div><div class="v-luna-txt">'+fl.map(function(f){ return esc(f.text); }).join(' · ')+'</div></div></div>':'')
     +'<div class="v-scroll"><div id="vRows">'+vRowsHTML()+'</div></div>'
@@ -3386,6 +3938,8 @@ window.renderVitals=function(){ var os=document.getElementById('ctab-sheet'); if
 window.tsVRecord=function(oid){ if(vPast()){ toast('View only — go back to today to chart'); return; } if(!canChart()){ toast('Your role can’t chart'); return; }
   var o=orderById(oid), inp=document.getElementById('vin-'+oid), val=inp?inp.value.trim():''; if(!o) return; if(!val){ toast('Enter a value first'); if(inp) inp.focus(); return; }
   var note=((document.getElementById('vnote-'+oid)||{}).value||'').trim(), n=nowMin(), me=user();
+  if(o.note_req&&!note){ var ne=document.getElementById('vnote-'+oid); if(ne){ ne.focus(); ne.classList.add('cd-need'); } toast(esc(o.note_prompt||'This order needs a note')+' — add it to record'); return; }
+  if(vIsWeight(o)){ var kgv=tsLbKg('vin-'+oid,val); if(kgv!==val){ toast(esc(val)+' saved as '+esc(kgv)+' kg'); val=kgv; } }
   var t=(TASKS||[]).filter(function(x){ return x.orderId===oid&&!x.status&&Math.abs(x.sched-n)<=60; }).sort(function(a,b){ return Math.abs(a.sched-n)-Math.abs(b.sched-n); })[0];
   if(!t){ t={id:'v'+Date.now().toString(36),orderId:oid,order:o,sched:Math.round(n),severity:0}; TASKS.push(t); }
   t.status='completed'; t.completedMin=n; t.by=me.initials||null; t.value=val; t.notes=note||null;
@@ -3413,15 +3967,185 @@ on('task.charted',function(){ try{ refreshHeader(); }catch(e){} },50);
 /* ---------- the trend in a grid row's label (core buildGrid → window.tsRowTrend) ----------
    Monitoring and diagnostic rows: the latest reading, an arrow against the one before, and a small line of the last 24 h of numbers.
    Colour only when the latest reading is outside the hospital limits (FLAG_RULES: amber outside normal, coral critical). */
-window.tsRowTrend=function(o){ if(!o||o.dc||(o.type!=='obs'&&o.type!=='diag')) return ''; var R=vReadings(o); if(!R.length) return '';
-  var last=R[R.length-1], tone=vTone(o,last.v), P=R.filter(function(r){ return r.at>=last.at-864e5; }).map(function(r){ return {n:numOf(r.v),at:r.at,v:r.v}; }).filter(function(p){ return p.n!=null; }).slice(-8);
-  var arrow='', svg='';
-  if(P.length>=2&&numOf(last.v)!=null){ var a=P[P.length-2].n, b=P[P.length-1].n, eps=Math.max(Math.abs(a),1)*0.01; arrow=b>a+eps?'↑':b<a-eps?'↓':''; }
-  if(P.length>=2){ var lo=Math.min.apply(null,P.map(function(p){ return p.n; })), hi=Math.max.apply(null,P.map(function(p){ return p.n; })), W=34, H=14, n=P.length;
-    var pts=P.map(function(p,i){ return (1+i*(W-2)/(n-1)).toFixed(1)+','+(hi===lo?H/2:1.5+(1-(p.n-lo)/(hi-lo))*(H-3)).toFixed(1); });
-    svg='<svg class="rt-line" viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><polyline points="'+pts.join(' ')+'"/><circle cx="'+pts[n-1].split(',')[0]+'" cy="'+pts[n-1].split(',')[1]+'" r="1.8"/></svg>'; }
-  var tip=P.length?P.map(function(p){ return vWhen(p.at)+' '+p.v; }).join(' · '):vWhen(last.at)+' '+last.v;
-  return '<span class="rl-trend'+(tone?' '+tone:'')+'" title="'+esc(o.name+': '+tip+(o.unit?' '+o.unit:''))+'">'+svg+'<b>'+esc(last.v)+'</b>'+(arrow?'<i>'+arrow+'</i>':'')+'</span>'; };
+/* the Latest column: one value line + one age line, so every row keeps the same height.
+   A long entry gets a meaningful short form (QAR for "Quiet, alert, responsive", or its first clause) and a visible "More";
+   the cell is a button that opens the full entry, who charted it, and what the arrow means. ↑ ↓ = higher / lower than the previous reading. */
+var V_ABBR={'bright alert responsive':'BAR','bright alert and responsive':'BAR','quiet alert responsive':'QAR','quiet alert and responsive':'QAR'};
+var _vCtx=null;
+window.tsAbbr=function(v){ return V_ABBR[String(v||'').toLowerCase().replace(/[^a-z ]+/g,' ').replace(/\s+/g,' ').trim()]||''; };   /* core grid: a cell shows QAR for "Quiet, alert, responsive" */
+function vFits(t,px){ try{ if(!_vCtx) _vCtx=document.createElement('canvas').getContext('2d'); _vCtx.font='600 12.5px '+(getComputedStyle(document.body).fontFamily||'sans-serif'); return _vCtx.measureText(String(t)).width<=px; }catch(e){ return String(t).length<=11; } }
+function vSummary(v){ v=String(v).trim(); var W=80; if(vFits(v,W)) return {s:v,cut:false};
+  var a=V_ABBR[v.toLowerCase().replace(/[^a-z ]+/g,' ').replace(/\s+/g,' ').trim()]; if(a) return {s:a,cut:true};
+  var c=v.split(/\s*[,;(—–]\s*|\s+-\s+/)[0]; if(c&&c!==v&&vFits(c,W)) return {s:c,cut:true};
+  var w=v.split(/\s+/), o=''; for(var i=0;i<w.length;i++){ var n=o?o+' '+w[i]:w[i]; if(!vFits(n+'…',W)) break; o=n; } return {s:(o||v.slice(0,6))+'…',cut:true}; }
+function vAge(ms){ var a=Math.max(0,Date.now()-ms); return a<9e4?'just now':a<36e5?Math.round(a/6e4)+' min ago':a<864e5?Math.floor(a/36e5)+' h ago':Math.floor(a/864e5)+' d ago'; }
+function vMinOf(ms){ var d=new Date(ms); return d.getHours()*60+d.getMinutes(); }
+function vLast2(o){ var R=vReadings(o); if(!R.length) return null; var last=R[R.length-1], prev=null, nl=numOf(last.v);
+  for(var i=R.length-2;i>=0;i--){ if(numOf(R[i].v)!=null){ prev=R[i]; break; } }
+  var dir=''; if(prev&&nl!=null){ var a=numOf(prev.v), eps=Math.max(Math.abs(a),1)*0.01; dir=nl>a+eps?'up':nl<a-eps?'down':'same'; }
+  return {R:R,last:last,prev:prev,dir:dir}; }
+function vDirTxt(L,o){ if(!L.prev||!L.dir) return ''; var p=L.prev.v+(o.unit?' '+o.unit:'')+' at '+fmtTime(vMinOf(L.prev.at));
+  return L.dir==='up'?'Higher than the previous reading ('+p+')':L.dir==='down'?'Lower than the previous reading ('+p+')':'Same as the previous reading ('+p+')'; }
+window.tsRowTrend=function(o){ if(!o||o.dc||(o.type!=='obs'&&o.type!=='diag')) return ''; var L=vLast2(o); if(!L) return '';
+  var last=L.last, tone=vTone(o,last.v), sm=vSummary(last.v), arrow=L.dir==='up'?'↑':L.dir==='down'?'↓':'', dt=vDirTxt(L,o), age=vAge(last.at);
+  var lab=o.name+' latest: '+last.v+(o.unit?' '+o.unit:'')+', '+age+(dt?'. '+dt:'')+'. Select for the full entry';
+  return '<button type="button" class="rl-trend'+(tone?' '+tone:'')+(sm.cut?' cut':'')+'" onclick="event.stopPropagation();tsLatestOpen(\''+esc(o.id)+'\',this)" title="'+esc(last.v+(o.unit?' '+o.unit:'')+' · '+age+(dt?' · '+dt:''))+'" aria-label="'+esc(lab)+'">'
+    +'<span class="rt-v"><b>'+esc(sm.s)+'</b>'+(arrow?'<i aria-hidden="true">'+arrow+'</i>':'')+'</span><small>'+age+(sm.cut?'<span class="rt-more"> · More</span>':'')+'</small></button>'; };
+window.tsLatestOpen=function(id,anchor){ var o=orderById(id); if(!o) return; var L=vLast2(o); if(!L) return; var last=L.last, dt=vDirTxt(L,o), mn=vMinOf(last.at);
+  var hist=L.R.slice(-4,-1).reverse().map(function(r){ return '<div class="lt-row"><span>'+esc(fmtTime(vMinOf(r.at)))+'</span><b>'+esc(r.v)+'</b></div>'; }).join('');
+  var t=(TASKS||[]).find(function(x){ return x.id===last.k||x.key===last.k; });
+  _openPop(anchor,'<div class="sb-filter-pop wf-pop lt-pop" role="dialog" aria-label="'+esc(o.name)+' latest reading"><div class="wf-h">'+esc(o.name)+' · latest</div>'
+    +'<div class="lt-v">'+esc(last.v)+(o.unit?' <small>'+esc(o.unit)+'</small>':'')+'</div>'
+    +'<div class="lt-m">'+esc(fmtTime(mn))+' · '+vAge(last.at)+(last.by?' · '+esc(typeof chWho==='function'?chWho(last.by):last.by):'')+'</div>'
+    +(dt?'<div class="lt-ch '+L.dir+'"><i aria-hidden="true">'+(L.dir==='up'?'↑':L.dir==='down'?'↓':'=')+'</i>'+esc(dt)+'</div>':'')
+    +(last.notes?'<div class="lt-note">'+esc(last.notes)+'</div>':'')
+    +(hist?'<div class="wf-h">Earlier</div>'+hist:'')
+    +(t?'<button type="button" class="fp-clear" onclick="_closePop();openCompletion(\''+esc(t.id)+'\')">Open entry</button>':'')+'</div>'); };
+/* ═════════ TS CHART — the task drawer, matched to the task (Oct 2026) ═════════
+   Selecting a task never charts it. The drawer opens in one of three modes:
+     entry   not charted yet → a reading: one value field (Enter charts it) · a care task: "Mark done" · a medication: the order,
+             the dose and volume actually given, given-at time, given by → "Record dose"
+     omit    "Not done…" → a reason (required) and an optional note; the slot then shows ⊘ instead of the overdue clock
+     review  charted or omitted → what was recorded, scheduled time vs the time it was done, who, when it was saved,
+             and every earlier version (edits keep the old value in t.hist). Edit / Undo from here, never by accident.
+   Saved per slot (base.js markOf): status · value · min (time done) · by · notes · given · vol · reason · hist · at (time saved).
+   Past days open in review only (store/days.js). */
+var CH_REASONS={
+  med:['Held by doctor','NPO','Patient refused or would not take it','Vomited or could not give','Patient off the floor','Other'],
+  task:['Patient sleeping — not disturbed','Patient off the floor','Not tolerated','Not needed — doctor’s instruction','Other']};
+var chMode=null, chId=null;
+/* just charted: the grid plays the completion once (core grid.js reads tsJust); several at once (batch) ripple 70 ms apart */
+var CH_JUST={}, chJustT=null;
+window.tsJust=function(id){ var j=CH_JUST[id]; if(!j) return null; if(Date.now()-j.t>2600){ delete CH_JUST[id]; return null; } return j; };
+window.tsJustCharted=function(ids){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){} var now=Date.now();
+  (ids||[]).forEach(function(id,i){ var tk=chTask(id), late=tk?nowMin()-tk.sched:0; CH_JUST[id]={t:now,d:Math.min(i,10)*70,od:late>18,od2:late>120}; });   /* od: it was overdue, so the finish starts from the amber tile */
+  clearTimeout(chJustT); chJustT=setTimeout(function(){ CH_JUST={}; try{ buildGrid(); }catch(e){} },2800); };
+function chTask(id){ return (TASKS||[]).find(function(t){ return t.id===id; })||null; }
+function chPast(){ return !!(window.tsViewDk&&tsViewDk()!==dayKey()); }
+function chKind(o){ return o.type==='med'?'med':(o.type==='obs'||o.type==='diag')?'reading':'care'; }
+/* initials → the person's name (directory lists from the build, plus whoever is signed in) */
+function chWho(ini){ if(!ini) return '—'; var me=user(); if(me&&me.initials===ini&&me.name) return me.name+' ('+ini+')';
+  var S=window.TS_STAFF||{}, all=[].concat(S.doctors||[],S.techs||[],S.interns||[],S.liaisons||[]), ok=function(n){ return String(n).split(/\s+/).filter(Boolean).map(function(w){ return w[0]; }).join('').toUpperCase(); };
+  var hit=all.filter(function(n,i){ return ok(n)===String(ini).toUpperCase()&&all.indexOf(n)===i; }); return hit.length===1?hit[0]+' ('+ini+')':ini; }
+function chHM(min){ min=Math.max(0,Math.min(1439,Math.round(min||0))); var h=Math.floor(min/60), m=min%60; return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
+function chParseHM(v){ var m=/^(\d{1,2}):(\d{2})$/.exec(String(v||'')); return m?(+m[1])*60+(+m[2]):null; }
+function chWhen(iso){ try{ var d=new Date(iso); return d.toLocaleDateString([], {month:'short',day:'numeric'})+' · '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return '—'; } }
+function chDelta(done,sched){ var d=Math.round(done-sched); if(Math.abs(d)<2) return 'on time'; var a=Math.abs(d), t=a<60?a+' min':Math.floor(a/60)+' h'+(a%60?' '+(a%60)+' min':''); return t+(d>0?' after':' before')+' scheduled'; }
+function chMk(s){ var st=MK_STATES[s]||MK_STATES.scheduled; return '<span class="mark '+s+' cd-mk" aria-hidden="true">'+st.glyph+'</span>'; }
+function chHead(t,s){ var o=t.order, st=MK_STATES[s]||{};
+  var when=s==='completed'||s==='skipped'?'scheduled '+fmtTime(t.sched):(s==='overdue'?'was due '+fmtTime(t.sched):s==='due'?'due '+fmtTime(t.sched):'scheduled '+fmtTime(t.sched));
+  return '<div class="cd-state '+s+'">'+chMk(s)+'<span><b>'+esc(st.word||s)+'</b> · '+esc(when)+(t.movedFrom!=null?' <small>(moved from '+esc(fmtTime(t.movedFrom))+')</small>':'')+'</span></div>'; }
+function chRow(k,v){ return '<div class="drow"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+function chLast(o){ try{ var R=vReadings(o); if(!R.length) return ''; var r=R[R.length-1]; return '<div class="cd-last">Last reading <b>'+esc(r.v)+(o.unit?' '+esc(o.unit):'')+'</b> · '+esc(chWhen(new Date(r.at).toISOString()))+'</div>'; }catch(e){ return ''; } }
+function chBy(t){ return '<select id="cd-by" aria-label="Charted by">'+STAFF.map(function(x){ return '<option'+((t.by||STAFF[0])===x?' selected':'')+'>'+esc(x)+'</option>'; }).join('')+'</select>'; }
+
+/* ---------- entry: chart it ---------- */
+function chEntry(t,edit){ var o=t.order, k=chKind(o), s=deriveStatus(t), nm=Math.round(nowMin()), at=edit&&t.completedMin!=null?t.completedMin:nm, h=edit?'':chHead(t,s);
+  if(edit) h+='<div class="cd-editing">Editing the entry from '+esc(fmtTime(t.completedMin))+' · the earlier version is kept in its history</div>';
+  if(k==='med'){ var d=medDose(o); if(window.tsCdExtra) h+=tsCdExtra(t);
+    h+='<div class="cd-order"><div class="cd-order-l">Ordered</div><div class="cd-order-v"><b>'+esc(d.mg)+'</b>'+(o.conc?' · '+esc(d.volume):'')+' · '+esc(o.route||'')+' · '+esc(o.freq||'')+'</div>'+(o.conc_label?'<div class="cd-order-s">'+esc(o.conc_label)+'</div>':'')+'</div>'
+      +'<div class="field-2"><div class="field"><label for="cd-dose">Dose given</label><input id="cd-dose" value="'+esc(edit&&t.given?t.given:d.mg)+'" autocomplete="off"></div>'
+      +'<div class="field"><label for="cd-vol">Volume given</label><input id="cd-vol" value="'+esc(edit&&t.vol?t.vol:(o.conc?d.volume:''))+'" placeholder="—" autocomplete="off"></div></div>'; }
+  else if(k==='reading'){ var opts=(typeof V_OPTS!=='undefined')&&V_OPTS[String(o.name).toLowerCase()];
+    var wtx=/^weight$/i.test(String(o.name||'').trim())&&window.tsLbField, inp='<input id="cd-value" value="'+esc(edit?t.value||'':'')+'" placeholder="'+(o.name==='Temperature'?'102.1':opts?'Choose or type':'Value')+'"'+(opts?'':' inputmode="'+(o.unit&&!wtx?'decimal':'text')+'"')+(wtx?' oninput="tsLbHint(\'cd-value\')"':'')+' autocomplete="off" onkeydown="if(event.key===\'Enter\'){event.preventDefault();tsChartSave();}">';
+    h+=chLast(o)+'<div class="field cd-big"><label for="cd-value">Reading'+(o.unit&&!wtx?' ('+esc(o.unit)+')':'')+'</label>'+(wtx?tsLbField('cd-value',inp):inp)+'</div>'
+      +(opts?'<div class="cd-opts" role="group" aria-label="Common values">'+opts.map(function(v){ return '<button type="button" class="cd-opt" onclick="tsChOpt(this)">'+esc(v)+'</button>'; }).join('')+'</div>':''); }
+  h+='<div class="field-2"><div class="field"><label for="cd-at">'+(k==='med'?'Given at':'Done at')+'</label><input id="cd-at" type="time" value="'+chHM(at)+'" max="'+chHM(nm)+'"></div>'
+    +'<div class="field"><label for="cd-by">'+(k==='med'?'Given by':'Charted by')+'</label>'+chBy(t)+'</div></div>'
+    +(o.note_req?'<div class="field cd-need-note"><label for="cd-notes">Note <span class="cd-req-l">required</span></label><textarea id="cd-notes" rows="2" aria-required="true" placeholder="'+esc(o.note_prompt||'What did you find or do?')+'">'+esc(edit?t.notes||'':'')+'</textarea></div>'
+      :'<div class="field"><label for="cd-notes">Note <span class="cd-opt-l">optional</span></label><textarea id="cd-notes" rows="2" placeholder="Add a note…">'+esc(edit?t.notes||'':'')+'</textarea></div>');
+  return h; }
+function chEntryFoot(t,edit){ var k=chKind(t.order);
+  if(edit) return '<button class="btn ghost" onclick="tsChOpen(\''+esc(t.id)+'\',\'review\')">Cancel</button><button class="btn primary" onclick="tsChartSave()">Save changes</button>';
+  var go=k==='med'?'Record dose':k==='reading'?'Chart reading':'Mark done';
+  return '<button class="btn ghost" onclick="tsChOpen(\''+esc(t.id)+'\',\'omit\')">'+(k==='med'?'Not given…':'Not done…')+'</button><button class="btn primary" id="cdGo" onclick="tsChartSave()">'+MK_CHECK+go+'</button>'; }
+
+/* ---------- omit: record why it wasn't done ---------- */
+function chOmit(t){ var k=chKind(t.order), L=CH_REASONS[k==='med'?'med':'task'], cur=t.reason||'';
+  return chHead(t,deriveStatus(t))+'<p class="cd-lead">'+(k==='med'?'Record why this dose wasn’t given.':'Record why this wasn’t done.')+' The slot will show it as omitted, not overdue.</p>'
+    +'<div class="cd-reasons" role="radiogroup" aria-label="Reason">'+L.map(function(r){ return '<label class="cd-reason"><input type="radio" name="cdWhy" value="'+esc(r)+'"'+(cur===r?' checked':'')+' onchange="tsChWhy()"><span>'+esc(r)+'</span></label>'; }).join('')+'</div>'
+    +'<div class="field"><label for="cd-notes">Note <span class="cd-opt-l" id="cdNoteReq">optional</span></label><textarea id="cd-notes" rows="2" placeholder="Details, and who decided" oninput="tsChWhy()">'+esc(t.notes||'')+'</textarea></div>'
+    +'<div class="field"><label for="cd-by">Recorded by</label>'+chBy(t)+'</div>'; }
+function chOmitFoot(t){ return '<button class="btn ghost" onclick="tsChOpen(\''+esc(t.id)+'\',\''+(t.status?'review':'entry')+'\')">Back</button><button class="btn primary" id="cdGo" onclick="tsChOmitSave()" disabled>Record as '+(chKind(t.order)==='med'?'not given':'not done')+'</button>'; }
+window.tsChWhy=function(){ var r=document.querySelector('#cd-body input[name=cdWhy]:checked'), n=(document.getElementById('cd-notes')||{}).value||'', b=document.getElementById('cdGo'), req=document.getElementById('cdNoteReq');
+  var other=r&&r.value==='Other'; if(req) req.textContent=other?'required':'optional'; if(b) b.disabled=!r||(other&&!n.trim()); };
+
+/* ---------- review: what was recorded, by whom, when — and its history ---------- */
+function chReview(t){ var o=t.order, k=chKind(o), s=deriveStatus(t), h=chHead(t,s), d=k==='med'?medDose(o):null;
+  if(s==='completed'){
+    var big=k==='med'?esc(t.given||d.mg)+(t.vol?' · '+esc(t.vol):'')+' '+esc(o.route||''):k==='reading'?(t.value?esc(t.value)+(o.unit?' <small>'+esc(o.unit)+'</small>':''):'<span class="cd-none">No value recorded</span>'):'Done';
+    h+='<div class="cd-rec"><div class="cd-rec-l">'+(k==='med'?'Given':k==='reading'?'Recorded':'Completed')+'</div><div class="cd-rec-v">'+big+'</div></div>';
+    if(k==='med'&&t.given&&t.given!==d.mg) h+='<div class="cd-diff">Ordered '+esc(d.mg)+' — given '+esc(t.given)+'</div>';
+    h+='<div class="cd-rows">'+chRow('Scheduled',esc(fmtTime(t.sched)))+chRow(k==='med'?'Given at':'Done at',t.completedMin!=null?esc(fmtTime(t.completedMin))+' <small>'+esc(chDelta(t.completedMin,t.sched))+'</small>':'—')
+      +chRow(k==='med'?'Given by':'Charted by',esc(chWho(t.by)))+(t.at?chRow('Saved',esc(chWhen(t.at))):'')+'</div>'; }
+  else { h+='<div class="cd-rec omit"><div class="cd-rec-l">'+(k==='med'?'Not given':'Not done')+'</div><div class="cd-rec-v">'+esc(t.reason||'No reason recorded')+'</div></div>'
+      +'<div class="cd-rows">'+chRow('Scheduled',esc(fmtTime(t.sched)))+chRow('Recorded by',esc(chWho(t.by)))+(t.completedMin!=null?chRow('Recorded at',esc(fmtTime(t.completedMin))):'')+(t.at?chRow('Saved',esc(chWhen(t.at))):'')+'</div>'; }
+  if(t.notes) h+='<div class="cd-note"><div class="cd-rec-l">Note</div><p>'+esc(t.notes)+'</p></div>';
+  var H=(t.hist||[]).slice().reverse();
+  h+='<div class="cd-hist"><div class="cd-rec-l">History</div>'+(H.length?'':'<p class="cd-none">No changes since it was recorded.</p>')+H.map(function(v){
+    var what=v.status==='skipped'?'Not done · '+esc(v.reason||'—'):(v.given?esc(v.given)+(v.vol?' · '+esc(v.vol):''):v.value?esc(v.value):'Done');
+    return '<div class="cd-hrow"><b>'+what+'</b><span>Charted '+(v.min!=null?esc(fmtTime(v.min)):'—')+' by '+esc(v.by||'—')+' · changed '+esc(v.edit_at?chWhen(v.edit_at):'—')+' by '+esc(v.edit_by||'—')+'</span></div>'; }).join('')+'</div>';
+  return h; }
+function chReviewFoot(t){ if(chPast()) return '<div class="cd-viewonly">View only — this is a past day</div>';
+  if(!canChart()) return '<div class="cd-viewonly">Your role has view-only access to this task</div>';
+  return '<button class="btn ghost" onclick="tsChUndo()">'+(t.status==='completed'?'Undo charting':'Remove omission')+'</button><button class="btn primary" onclick="tsChOpen(\''+esc(t.id)+'\',\''+(t.status==='completed'?'edit':'omit')+'\')">Edit</button>'; }
+
+/* ---------- open ---------- */
+window.tsChOpen=function(id,mode){ var t=chTask(id); if(!t) return; var o=t.order; chId=id; activeTaskId=id;
+  if(!mode) mode=t.status?'review':'entry'; if((chPast()||!canChart())&&mode!=='review') mode=t.status?'review':'readonly'; chMode=mode;
+  var dr=document.getElementById('completionDrawer'); if(dr) dr.dataset.mode=mode;
+  $('#cd-title').textContent=o.name; $('#cd-sub').innerHTML=esc(o.section)+(o.type==='med'?' · '+esc(medDose(o).mg)+' '+esc(o.route||''):'')+(o.freq?' · '+esc(o.freq):'');
+  var body='', foot='';
+  if(mode==='entry'||mode==='edit'){ body=chEntry(t,mode==='edit'); foot=chEntryFoot(t,mode==='edit'); }
+  else if(mode==='omit'){ body=chOmit(t); foot=chOmitFoot(t); }
+  else if(mode==='readonly'){ body=chHead(t,deriveStatus(t))+'<p class="cd-lead">Not charted.</p>'; foot='<div class="cd-viewonly">'+(chPast()?'View only — this is a past day':'Your role has view-only access to this task')+'</div>'; }
+  else { body=chReview(t); foot=chReviewFoot(t); }
+  $('#cd-body').innerHTML=body; $('#cd-foot').innerHTML=foot; openDrawer('completionDrawer'); if(mode==='omit') tsChWhy();
+  setTimeout(function(){ var f=document.getElementById(mode==='omit'?'':'cd-value'); if(f&&mode!=='review') try{ f.focus({preventScroll:true}); f.select(); }catch(e){} },140); };
+on('completion.open',function(id){ if(!chTask(id)) return false; tsChOpen(id); return true; },-5);
+window.tsChOpt=function(b){ var i=document.getElementById('cd-value'); if(!i) return; i.value=b.textContent; [].forEach.call(document.querySelectorAll('#cd-body .cd-opt'),function(x){ x.classList.toggle('on',x===b); }); i.focus(); };
+
+/* ---------- save ---------- */
+function chSnap(t){ return {status:t.status,value:t.value||null,given:t.given||null,vol:t.vol||null,reason:t.reason||null,notes:t.notes||null,min:t.completedMin!=null?Math.round(t.completedMin):null,by:t.by||null,edit_at:new Date().toISOString(),edit_by:user().initials||null}; }
+function chKeep(t){ if(!t.status) return; var h=(t.hist||[]).slice(); h.push(chSnap(t)); t.hist=h.slice(-10); }
+function chAt(){ var nm=Math.round(nowMin()), v=chParseHM((document.getElementById('cd-at')||{}).value); if(v==null) return nm; if(v>nm){ toast('That time hasn’t happened yet — using now'); return nm; } return v; }
+function chDone(t,msg){ closeDrawers(); try{ buildGrid(); }catch(e){} try{ sync(); }catch(e){} toast(msg); }
+window.tsChartSave=function(){ var t=chTask(chId||activeTaskId); if(!t) return; if(chPast()){ toast('View only — go back to today to chart'); return; } if(!canChart()){ toast('Your role can’t chart'); return; }
+  var o=t.order, k=chKind(o), edit=t.status==='completed', val=(document.getElementById('cd-value')||{}).value, me=user();
+  val=val!=null?String(val).trim():null;
+  if(k==='reading'&&!val&&!edit){ var i=document.getElementById('cd-value'); if(i){ i.focus(); i.classList.add('cd-need'); } toast('Enter the reading, or choose “Not done…”'); return; }
+  if(o.note_req&&!String((document.getElementById('cd-notes')||{}).value||'').trim()){ var nn=document.getElementById('cd-notes'); if(nn){ nn.focus(); nn.classList.add('cd-need'); } toast((o.note_prompt?esc(o.note_prompt):'This order needs a note')+' — add it to chart'); return; }
+  if(val&&window.tsLbKg&&document.querySelector('[data-lb="cd-value"]')){ var kgv=tsLbKg('cd-value',val); if(kgv!==val) val=kgv; }
+  if(edit) chKeep(t);
+  t.status='completed'; t.completedMin=chAt(); t.by=(document.getElementById('cd-by')||{}).value||me.initials||t.by; t.notes=((document.getElementById('cd-notes')||{}).value||'').trim()||null; t.reason=null;
+  if(k==='reading') t.value=val||null;
+  if(k==='med'){ t.given=((document.getElementById('cd-dose')||{}).value||'').trim()||null; t.vol=((document.getElementById('cd-vol')||{}).value||'').trim()||null; }
+  var what=k==='med'?(t.given||medDose(o).mg)+(t.vol?' · '+t.vol:'')+' at '+fmtTime(t.completedMin):k==='reading'?(t.value||''):'';
+  logEvent(o.type==='obs'?'vital':o.type,'<b>'+esc(o.name)+'</b> '+(what?'— '+esc(what)+' ':'')+(edit?'corrected':k==='med'?'given':'completed'),t.by);
+  if(!edit) tsJustCharted([t.id]);
+  chDone(t,edit?'Changes saved · earlier version kept':o.name+(k==='med'?' recorded':' charted')); emit('task.charted',t); };
+window.tsChOmitSave=function(){ var t=chTask(chId||activeTaskId); if(!t) return; var r=document.querySelector('#cd-body input[name=cdWhy]:checked'); if(!r) return;
+  var n=((document.getElementById('cd-notes')||{}).value||'').trim(); if(r.value==='Other'&&!n){ toast('Add a note for “Other”'); return; }
+  if(t.status) chKeep(t); var me=user();
+  t.status='skipped'; t.reason=r.value; t.notes=n||null; t.by=(document.getElementById('cd-by')||{}).value||me.initials; t.completedMin=Math.round(nowMin()); t.value=null; t.given=null; t.vol=null;
+  logEvent('doctor','<b>'+esc(t.order.name)+'</b> '+esc(fmtTime(t.sched))+' not '+(chKind(t.order)==='med'?'given':'done')+' — '+esc(r.value)+(n?' ('+esc(n)+')':''),t.by);
+  chDone(t,t.order.name+' recorded as not '+(chKind(t.order)==='med'?'given':'done')); };
+window.tsChUndo=function(){ var t=chTask(chId||activeTaskId); if(!t||!t.status) return; var keep=chSnap(t), prevHist=(t.hist||[]).slice(), o=t.order, me=user();
+  chKeep(t); var hist=t.hist; t.status=null; t.completedMin=null; t.value=null; t.given=null; t.vol=null; t.reason=null; t.notes=null; t.by=null; t.hist=hist;
+  logEvent('doctor','<b>'+esc(o.name)+'</b> '+esc(fmtTime(t.sched))+' charting undone',me.initials);
+  closeDrawers(); try{ buildGrid(); }catch(e){} try{ sync(); }catch(e){}
+  undoToast(esc(o.name)+' '+esc(fmtTime(t.sched))+' cleared',function(){ t.status=keep.status; t.completedMin=keep.min; t.value=keep.value; t.given=keep.given; t.vol=keep.vol; t.reason=keep.reason; t.notes=keep.notes; t.by=keep.by; t.hist=prevHist.length?prevHist:null;
+    logEvent('doctor','<b>'+esc(o.name)+'</b> '+esc(fmtTime(t.sched))+' restored',me.initials); try{ buildGrid(); }catch(e){} try{ sync(); }catch(e){} }); };
+/* the core names, so every caller (tests, voice, older modules) goes through the same save */
+window.completeTask=function(){ var t=chTask(activeTaskId); if(t){ chId=t.id; if(!t.status&&chKind(t.order)==='reading'&&!document.getElementById('cd-value')) tsChOpen(t.id,'entry'); } return tsChartSave(); };
+window.saveTask=window.completeTask;
+window.undoTask=function(){ chId=activeTaskId; tsChUndo(); };
+window.setTaskStatus=function(st){ if(st==='delayed'){ toast('Drag the task to another hour to move it'); return; } var t=chTask(activeTaskId); if(t) tsChOpen(t.id,'omit'); };
+
+/* the Latest column on a care row: when it was last done today */
+window.tsCareLatest=function(o){ var L=(TASKS||[]).filter(function(t){ return t.orderId===o.id&&t.status==='completed'&&t.completedMin!=null; }).sort(function(a,b){ return b.completedMin-a.completedMin; })[0]; if(!L) return '';
+  var age=Math.max(0,Math.round(nowMin()-L.completedMin)), txt=age<2?'just now':age<60?age+' min ago':Math.floor(age/60)+' h ago';
+  return '<span class="rl-trend rl-care" title="'+esc(o.name+' — done '+fmtTime(L.completedMin)+(L.by?' by '+L.by:''))+'"><span class="rt-v"><b>Done</b></span><small>'+txt+'</small></span>'; };
 /* ═════════ TS PROBLEMS — the patient's problem list, Reminders-style ═════════
    Stored on the sheet as patient.problem_list = [{id, text, added_at, added_by, resolved_at?, resolved_by?}].
    Sheets that don't have one yet start from what Flow sent (patient.problems or the presenting reason); the first edit saves the list.
@@ -3538,10 +4262,20 @@ function weightTrendHTML(){ var R=[]; try{ R=readings(curDoc,/^weight$/i).map(fu
     +'<path class="trend-fill" d="M'+pts.join(' L')+' L'+x1+' '+base+' L'+x0+' '+base+' Z"/><path class="trend-line" d="M'+pts.join(' L')+'"/>'
     +xs.map(function(x,i){ return '<circle class="trend-dot'+(i===n-1?' current':'')+'" cx="'+x.toFixed(1)+'" cy="'+ys[i].toFixed(1)+'" r="'+(i===n-1?4:3)+'"><title>'+esc(lbl(R[i].at))+': '+R[i].v+' kg</title></circle>'; }).join('')
     +xs.map(function(x,i){ return '<text x="'+x.toFixed(1)+'" y="63" text-anchor="'+(i===0?'start':i===n-1?'end':'middle')+'">'+esc(lbl(R[i].at))+'</text>'; }).join('')+'</svg></div>'; }
+/* the weight tile: dosing weight, a sparkline of the charted weights and the change since the first (Oct 2026) */
+function wtTileHTML(kg){ var R=[]; try{ R=readings(curDoc,/^weight$/i).map(function(r){ return {v:parseFloat((String(r.v).match(/\d+(\.\d+)?/)||[])[0]),at:r.at}; }).filter(function(r){ return r.v>0; }); }catch(e){}
+  var spark='', d='';
+  if(R.length>=2){ R=R.slice(-8); var vals=R.map(function(r){ return r.v; }), lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals), n=R.length, W=120, H=28;
+    var pts=R.map(function(r,i){ return [(4+i*(W-8)/(n-1)).toFixed(1),(hi===lo?H/2:4+(1-(r.v-lo)/(hi-lo))*(H-8)).toFixed(1)]; });
+    spark='<svg class="wt-spark" viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><path class="wt-fill" d="M'+pts.map(function(p){ return p.join(' '); }).join(' L')+' L'+pts[n-1][0]+' '+H+' L'+pts[0][0]+' '+H+' Z"/><polyline points="'+pts.map(function(p){ return p.join(','); }).join(' ')+'"/>'
+      +'<circle cx="'+pts[n-1][0]+'" cy="'+pts[n-1][1]+'" r="3"/></svg>';
+    var ch=Math.round((vals[n-1]-vals[0])*10)/10, f=new Date(R[0].at); d='<span class="wt-d">'+(ch===0?'No change':(ch>0?'+':'−')+Math.abs(ch)+' kg')+' since '+(f.getMonth()+1)+'/'+f.getDate()+'</span>'; }
+  var last=R.length?R[R.length-1].v:null;
+  return '<div class="vit vit-wt" title="'+esc(R.map(function(r){ var x=new Date(r.at); return (x.getMonth()+1)+'/'+x.getDate()+' '+r.v+' kg'; }).join(' · '))+'"><div class="wt-l"><div class="k">Weight</div><div class="v">'+(kg?kg+' kg':'—')+'</div>'
+    +(last!=null&&kg&&Math.abs(last-kg)>=0.05?'<small>Charted '+esc(last)+' kg</small>':d?d:'')+'</div>'+(spark?'<div class="wt-r">'+spark+(last!=null&&kg&&Math.abs(last-kg)>=0.05?d:'')+'</div>':'')+'</div>'; }
 function vitalsCardInner(){ try{ vLive(); }catch(e){} var kg=Number(VISIT.weight)||0, sp=spKey()||'dog', val=function(x,u){ return x&&x!=='—'?esc(x)+(u?' '+u:''):'—'; };
-  var vit=[['Weight',kg?kg+' kg':'—'],['Temp',val(VISIT.temp,'°F')],['Heart rate',val(VISIT.hr,'bpm')],['Resp rate',val(VISIT.rr,'rpm')],['MM',val(VISIT.mm)],['CRT',val(VISIT.crt)],['Mentation',val(VISIT.mentation)],['Pain score',VISIT.pain&&VISIT.pain!=='—'?esc(VISIT.pain)+' / 4':'—']];
-  return '<h4>Vitals</h4><div class="vit-grid">'+vit.map(function(v){ return '<div class="vit"><div class="k">'+v[0]+'</div><div class="v">'+v[1]+'</div></div>'; }).join('')+'</div>'
-    +weightTrendHTML()
+  var vit=[['Temp',val(VISIT.temp,'°F')],['Heart rate',val(VISIT.hr,'bpm')],['Resp rate',val(VISIT.rr,'rpm')],['MM',val(VISIT.mm)],['CRT',val(VISIT.crt)],['Mentation',val(VISIT.mentation)],['Pain score',VISIT.pain&&VISIT.pain!=='—'?esc(VISIT.pain)+' / 4':'—']];
+  return '<h4>Vitals</h4>'+wtTileHTML(kg)+'<div class="vit-grid">'+vit.map(function(v){ return '<div class="vit"><div class="k">'+v[0]+'</div><div class="v">'+v[1]+'</div></div>'; }).join('')+'</div>'
     +(kg?'<div class="calc-row"><div class="calc-chip"><div class="k">BSA</div><div class="v">'+bsa(kg,sp).toFixed(2)+' m²</div></div><div class="calc-chip"><div class="k">RER</div><div class="v">'+Math.round(70*Math.pow(kg,0.75)).toLocaleString()+' kcal/day</div></div></div>':''); }
 function vitalsCardPaint(){ var el=document.getElementById('tsVitalsCard'); if(!el) return; var h=vitalsCardInner(); if(el.innerHTML!==h) el.innerHTML=h; }
 on('header.refresh',vitalsCardPaint);
