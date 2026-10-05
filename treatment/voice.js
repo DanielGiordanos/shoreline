@@ -257,7 +257,7 @@ function answer(q,o){
   return err(HELP); }
 
 /* ---------- actions ---------- */
-function rerender(){ try{ if(currentCTab==='sheet') buildGrid(); else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='rounds') renderRounds(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); }catch(e){} }
+function rerender(){ try{ if(currentCTab==='sheet') buildGrid(); else if(currentCTab==='vitals') renderVitals(); else if(currentCTab==='dash') renderDash(); else if(currentCTab==='timeline') renderTimeline(); else if(currentCTab==='notes') renderNotes(); }catch(e){} }
 function stepTitle(s){ if(s.op==='note') return 'Add note'; if(s.op==='hold') return 'Hold '+label(s.o); return (s.op==='chart'?'Chart ':'Mark done · ')+label(s.o); }
 function stepPath(s){ if(s.op==='note') return '<span class="fv-pill to">'+esc(s.text.length>90?s.text.slice(0,88)+'…':s.text)+'</span>';
   var t=s.t, from=t?(fmtTime(t.sched)+' · '+({overdue:'Overdue',due:'Due',scheduled:'Scheduled'}[st(t)]||'')):(s.o.freq==='PRN'?'PRN · now':'Extra · now');
@@ -388,11 +388,18 @@ function stop(){
 function typing(){ var a=document.activeElement, t=a&&a.tagName; return t==='INPUT'||t==='TEXTAREA'||t==='SELECT'||(a&&a.isContentEditable); }
 document.addEventListener('keydown',function(e){
   if(document.body.classList.contains('client-mode')) return;
-  if(ENABLED&&e.code==='Space'&&!typing()&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(!e.repeat){ if(listening&&tapMode) stop(); else start(false); } return; }
+  if(ENABLED&&e.code==='Space'&&!typing()&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(e.repeat) return;
+    if(listening&&tapMode){ stop(); return; }
+    /* on the Status Board a quick tap of space is Quick Look (store/boardview.js); holding it still talks */
+    if(window.tsBoardSpaceTap&&tsBoardSpaceTap('can')){ clearTimeout(spaceT); spaceT=setTimeout(function(){ spaceT=null; start(false); },230); return; }
+    start(false); return; }
   if(e.key==='Enter'&&panel&&panel.classList.contains('show')&&pending&&pending.steps&&!typing()){ e.preventDefault(); confirm(); return; }
   if(e.key==='Escape'&&panel&&panel.classList.contains('show')){ hide(); }
 },true);
-document.addEventListener('keyup',function(e){ if(e.code==='Space'&&listening&&!tapMode){ e.preventDefault(); stop(); } },true);
+var spaceT=null;
+document.addEventListener('keyup',function(e){ if(e.code!=='Space') return;
+  if(spaceT){ clearTimeout(spaceT); spaceT=null; e.preventDefault(); try{ tsBoardSpaceTap('tap'); }catch(err){} return; }
+  if(listening&&!tapMode){ e.preventDefault(); stop(); } },true);
 document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&(!talk||(e.target!==talk&&!talk.contains(e.target)))&&!(pending&&pending.steps)) hide(); },true);
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',build); else build();

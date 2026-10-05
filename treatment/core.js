@@ -25,7 +25,7 @@ function tsSetHTML(el,h){ if(el&&el._tsh!==h){ el.innerHTML=h; el._tsh=h; } }
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 
 /* theme + portal chrome */
-function toggleDark(){document.body.classList.toggle('dark');var d=document.body.classList.contains('dark');try{document.documentElement.style.background=d?'#080E1A':'#FFFFFF';}catch(e){}try{document.cookie='pvx_theme='+(d?'dark':'light')+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax';}catch(e){}try{document.cookie='pvx_theme='+(d?'dark':'light')+';path=/;max-age=31536000;SameSite=Lax';}catch(e){}}
+function toggleDark(){document.body.classList.toggle('dark');var d=document.body.classList.contains('dark');try{document.documentElement.style.background=d?'#080E1A':'#F2F4F8';}catch(e){}try{document.cookie='pvx_theme='+(d?'dark':'light')+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax';}catch(e){}try{document.cookie='pvx_theme='+(d?'dark':'light')+';path=/;max-age=31536000;SameSite=Lax';}catch(e){}}
 
 /* ── the clock: minutes since midnight (the store adds the clock of an earlier day being viewed) ── */
 function nowMin(){const d=new Date();return d.getHours()*60+d.getMinutes()+d.getSeconds()/60;}
@@ -60,14 +60,16 @@ NOTES=[{min:480,type:'nursing',author:'KM',role:'Technician',body:'Patient BAR t
 /* ═══ MODULE + TAB NAVIGATION ═══ */
 let currentCTab='dash', currentRole='tech';
 function selectCTab(tab){
+  if(!document.getElementById('ctab-'+tab)) tab='dash';   /* a tab that no longer exists (e.g. Medical Rounds) */
   currentCTab=tab;
   $$('#clinSwitcher .seg').forEach(c=>c.classList.toggle('active',c.dataset.ctab===tab));
   $$('.ctab').forEach(c=>c.classList.add('hidden'));
   $('#ctab-'+tab).classList.remove('hidden');
   $('#stage').classList.toggle('sheet-active',tab==='sheet'||tab==='vitals');
   closeBrief();
-  if(tab==='dash')renderDash();if(tab==='sheet')renderSheet();if(tab==='vitals')renderVitals();if(tab==='rounds')renderRounds();if(tab==='timeline')renderTimeline();if(tab==='notes')renderNotes();if(tab==='charges'&&window.tsRenderCharges)tsRenderCharges();if(tab==='tasks'&&window.tsRenderTasks)tsRenderTasks();
+  if(tab==='dash')renderDash();if(tab==='sheet')renderSheet();if(tab==='vitals')renderVitals();if(tab==='timeline')renderTimeline();if(tab==='notes')renderNotes();if(tab==='charges'&&window.tsRenderCharges)tsRenderCharges();if(tab==='tasks'&&window.tsRenderTasks)tsRenderTasks();
   $('#stage').scrollTop=0;
+  if(window.tsEmit) tsEmit('tab',tab);   /* store/lastview.js remembers it per person */
 }
 $$('#clinSwitcher .seg').forEach(b=>b.onclick=()=>selectCTab(b.dataset.ctab));
 
@@ -77,7 +79,7 @@ function spClass(species){return /^(cat|fel)/i.test(String(species||''))?'sp-fel
 function monogram(name){return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
 function ptBadge(name,species,style){return `<div class="pt-emoji ${spClass(species)}"${style?` style="${style}"`:''}>${monogram(name)}<span class="sp-tag">${spTag(species)}</span></div>`;}
 function kvr(k,v){return `<div class="kvrow"><span class="kk">${k}</span><span class="vv">${v}</span></div>`;}
-const DEPT={'ER':'Emergency Medicine','Emergency':'Emergency Medicine','IM':'Internal Medicine','SX':'Surgery','Surgery':'Surgery','Oncology':'Oncology','Neuro':'Neurology','Neurology':'Neurology'};
+const DEPT={'ER':'Emergency & Critical Care','ECC':'Emergency & Critical Care','Emergency':'Emergency & Critical Care','Emergency Medicine':'Emergency & Critical Care','Internal Medicine':'Internal Medicine','IM':'Internal Medicine','SX':'Surgery','Surgery':'Surgery','Oncology':'Oncology','Neuro':'Neurology','Neurology':'Neurology'};
 function deptName(d){return DEPT[d]||d;}
 function money(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function estimateCard(){
@@ -168,14 +170,49 @@ const IC={
   phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3 19.5 19.5 0 01-6-6A19.8 19.8 0 012 4.2 2 2 0 014 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8 9.6a16 16 0 006 6l1.2-1.1a2 2 0 012.1-.5c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg>',
   home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 21V12h6v9"/></svg>',
   flow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h8l-2 8 10-12h-8z"/></svg>',
+  bag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>',
+  chev:'<svg class="sb-chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 6.5 5 3.5l3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>',
+  hours:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 10h18M9 10v10M15 10v10"/></svg>',
   dotSm:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>',
   spark:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z"/><path d="M18 14l.9 2.6L21.5 17.5l-2.6.9L18 21l-.9-2.6L14.5 17.5l2.6-.9z"/></svg>',
 };
 const WARDS=['Room 1','Room 2','Room 3','Room 4','Room 5','Room 6','Room 7','Comfort Room','Lobby','Treatment Area','Surgery','Wards','Isolation','Internal Medicine','ICU'];
 let sbTx=true, sbBoard='IP Board';
+const SB_IND={}, SB_CNT={};
+/* after each render: the raised pill slides to the selected segment, and a count that changed rolls (old number out, new in) */
+function sbAfter(){ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* the now line starts under the column header, so its dot sits at the top of the first row instead of hiding behind the sticky header */
+  const nl=document.querySelector('#ctab-dash .sb-nowline'), hd=document.querySelector('#ctab-dash .sb-head'); if(nl&&hd) nl.style.top=hd.offsetHeight+'px';
+  ['sbBoards','sbView'].forEach(id=>{ const sg=document.getElementById(id); if(!sg) return; const ind=sg.querySelector('.sb-ind'), on=sg.querySelector('.sb-segb.on'); if(!ind||!on) return;
+    const x=on.offsetLeft, w=on.offsetWidth, first=!SB_IND[id]; SB_IND[id]={x,w};
+    if(first){ ind.style.transition='none'; ind.style.width=w+'px'; ind.style.transform='translateX('+x+'px)'; void ind.offsetWidth; ind.style.transition=''; }
+    else requestAnimationFrame(()=>{ ind.style.width=w+'px'; ind.style.transform='translateX('+x+'px)'; }); });
+  document.querySelectorAll('#sbBoards .sb-segb').forEach(b=>{ const c=b.querySelector('.sb-cnt'), k=b.dataset.board; if(!c) return; const n=+c.dataset.n, old=SB_CNT[k]; SB_CNT[k]=n;
+    if(old==null||old===n||reduce) return; const up=n>old, o=document.createElement('i'); o.className='out'; o.textContent=old; c.appendChild(o);
+    const nw=c.querySelector('i:not(.out)'); nw.style.transition='none'; nw.style.transform='translateY('+(up?'100%':'-100%')+')'; nw.style.opacity='0'; void nw.offsetWidth; nw.style.transition='';
+    requestAnimationFrame(()=>{ o.style.transform='translateY('+(up?'-100%':'100%')+')'; o.style.opacity='0'; nw.style.transform=''; nw.style.opacity=''; });
+    setTimeout(()=>o.remove(),520);
+    if(up&&k!==sbBoard&&performance.now()>5000){   /* not while the boards first fill in */ b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'),1700); } }); }
+/* hover a toolbar control for its name and shortcut, like a Mac menu */
+(function(){ let tip=null, t=null;
+  document.addEventListener('mouseover',e=>{ const el=e.target.closest&&e.target.closest('.sb-toolbar [data-tip]'); clearTimeout(t);
+    if(!el){ if(tip) tip.classList.remove('show'); return; }
+    t=setTimeout(()=>{ if(!tip){ tip=document.createElement('div'); tip.className='sb-tip'; tip.setAttribute('role','tooltip'); document.body.appendChild(tip); }
+      tip.innerHTML=el.dataset.tip+(el.dataset.key?`<kbd>${el.dataset.key}</kbd>`:''); const r=el.getBoundingClientRect();
+      tip.style.left=Math.max(8,Math.min(innerWidth-tip.offsetWidth-8,r.left+r.width/2-tip.offsetWidth/2))+'px'; tip.style.top=(r.bottom+8)+'px'; tip.classList.add('show'); },550); });
+  document.addEventListener('mousedown',()=>{ clearTimeout(t); if(tip) tip.classList.remove('show'); }); })();
+function sbHas(v){ v=String(v==null?'':v).trim(); return !!v&&v!=='—'&&v!=='-'; }
 function lsPill(ls){if(!ls)return '';const m={ALS:'ls-als',BLS:'ls-bls',DNR:'ls-dnr'}[ls]||'ls-als';return `<span class="ls-pill ${m}">${IC.heart}${ls}</span>`;}
-function toggleSbTx(){sbTx=!sbTx;renderDash();}
-function setSbBoard(b){sbBoard=b;renderDash();}
+let SB_MORPH=false;
+/* List ↔ Hours: the patients stay put; the hour blocks slide in one column after another, or fade out to the right before the list returns */
+function toggleSbTx(){ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches, sb=document.querySelector('#ctab-dash .sb');
+  const done=()=>{ renderDash(); if(window.tsEmit)tsEmit('board.view'); };
+  if(sbTx&&sb&&!reduce&&!sb.classList.contains('sb-hours-out')){ sb.querySelectorAll('#sbView .sb-segb').forEach((b,i)=>{ b.classList.toggle('on',i===0); b.setAttribute('aria-checked',i===0); }); sbAfter();
+    sb.classList.add('sb-hours-out'); setTimeout(()=>{ sbTx=false; done(); },210); return; }
+  if(sbTx&&sb&&sb.classList.contains('sb-hours-out')) return;
+  sbTx=!sbTx; SB_MORPH=sbTx&&!reduce; done(); }
+function setSbBoard(b){sbBoard=b;renderDash();if(window.tsEmit)tsEmit('board.view');}
 function openSbFilters(ev){ev.stopPropagation();if(window.tsSbFilters){tsSbFilters(ev.currentTarget);return;}   /* workflow filters (store/workflow.js) */
   const rows=[['Tx Status',IC.dotSm],['Doctor',IC.person],['Ward',IC.home],['Service',IC.gear],['Workflow',IC.flow],['Location',IC.cage]];
   _openPop(ev.currentTarget,`<div class="sb-filter-pop" style="width:236px;padding:6px 10px">${rows.map(([l,ic])=>`<div class="fp-row"><span class="fp-lab">${ic}${l}</span><span class="fp-add" onclick="toast('Add filter: ${l}')">+ Add</span></div>`).join('')}<button class="fp-clear" onclick="_closePop();toast('Filters cleared')">Clear Filters</button></div>`);
@@ -183,55 +220,58 @@ function openSbFilters(ev){ev.stopPropagation();if(window.tsSbFilters){tsSbFilte
 function renderDash(){
   const hours=[];for(let h=6;h<=20;h++)hours.push(h);
   const hlabel=h=>{const ap=h<12?'A':'P',hh=h%12||12;return hh+ap;};
-  const NOWH=Math.min(20,Math.max(6,new Date().getHours())), LEFTW=802, HW=46;
+  const NOWH=Math.min(20,Math.max(6,new Date().getHours())), LEFTW=900, HW=46;   /* LEFTW = the left columns' widths (suite.css: 280+120+140+160+200) */
   const LIVE=(sbBoard==='IP Board'||sbBoard==='OP Board'||sbBoard==='My Board')&&typeof tsBoardList==='function', IPL=LIVE?tsBoardList(sbBoard):null, OPB=sbBoard==='OP Board';
   const list=IPL||[];
   const empty=!list.length;
-  const boards=['My Board','OP Board','IP Board','Boarding','OTW'];
+  const boards=['My Board','OP Board','IP Board','Boarding'], FN=(window.tsWfCount&&tsWfCount())||0;
+  /* toolbar: title · boards (with counts) · List | Hours · Filters. The raised pill glides between segments (sbInd, after render). */
+  const CNT=(window.tsBoardCounts&&tsBoardCounts())||{}, BLAB={'My Board':'My Patients','OP Board':'Outpatients','IP Board':'Inpatients','Boarding':'Boarding'};
+  const seg=(id,items)=>`<div class="sb-seg" id="${id}" role="${id==='sbBoards'?'tablist':'radiogroup'}"><span class="sb-ind" aria-hidden="true" style="width:${(SB_IND[id]||{}).w||0}px;transform:translateX(${(SB_IND[id]||{}).x||0}px)"></span>${items}</div>`;
   const toolbar=`<div class="sb-toolbar">
-    <div class="sb-title"><div class="sb-back">${IC.back}</div><h2>Status Board</h2></div>
-    <div class="sb-txview">TX VIEW <div class="sb-switch ${sbTx?'on':''}" onclick="toggleSbTx()"></div></div>
-    <div class="sb-tabs">${boards.map(t=>`<div class="sb-tab ${t===sbBoard?'active':''}" onclick="setSbBoard('${t}')">${t}</div>`).join('')}</div>
+    <div class="sb-title"><h2>Status Board</h2></div>
+    ${seg('sbBoards',boards.map((t,k)=>{const on=t===sbBoard, n=CNT[t];return `<button type="button" class="sb-segb${on?' on':''}${n===0?' dim':''}" role="tab" aria-selected="${on}" data-board="${t}" data-tip="${BLAB[t]}" data-key="${k+1}" onclick="setSbBoard('${t}')">${BLAB[t]}${n!=null?`<span class="sb-cnt" data-n="${n}"><i>${n}</i></span>`:''}</button>`;}).join(''))}
     <div class="sb-tool-r">
-      <div class="sb-search">${IC.search}<input placeholder="Name or problem…"></div>
-      ${window.tsBoardTools?tsBoardTools():''}${window.tsWfChip?tsWfChip():''}<button class="sb-filters${window.tsWfOn&&tsWfOn()?' on':''}" onclick="openSbFilters(event)">${IC.filter} Filters</button>
+      ${window.tsFindChip?tsFindChip():''}${window.tsWfChip?tsWfChip():''}
+      ${seg('sbView',[['list','List',IC.list,!sbTx],['hours','Hours',IC.hours,sbTx]].map(([k,l,ic,on])=>`<button type="button" class="sb-segb${on?' on':''}" role="radio" aria-checked="${on}" data-tip="${l}" data-key="H" onclick="${on?'':'toggleSbTx()'}">${ic}${l}</button>`).join(''))}
+      <button type="button" class="sb-filters${FN?' on':''}" data-tip="Filters" onclick="openSbFilters(event)">${IC.filter}Filters<span class="sb-fb">${FN||''}</span></button>
     </div></div>`;
-  // header row
-  let head=`<div class="sb-row sb-head"><div class="sb-left">
-    <div class="sbc c-pt">Patients ${IC.caretUp}</div>
-    <div class="sbc c-dr">DR</div><div class="sbc c-ward">Ward</div><div class="sbc c-io">In / Out</div>
-    <div class="sbc c-timer">Tech</div><div class="sbc c-alerts">Alerts</div></div>`;
-  head+= sbTx
-    ? `<div class="sb-hours">${hours.map(h=>`<div class="sb-hcell${h===NOWH?' now':''}">${hlabel(h)}</div>`).join('')}</div>`
-    : `<div class="sb-cage"><div class="cage-head" style="width:650px">Cage Card Info</div></div>`;
+  // header row — Title Case column names; click one to sort (store/boardview.js remembers it per person)
+  const SORT=(window.tsSbSortState&&tsSbSortState())||null;
+  const COLS=[['nm','Patient','c-pt'],['ward','Ward','c-ward'],['stay','Stay','c-io'],['team','Care Team','c-team'],['al','Alerts','c-alerts']];
+  let head=`<div class="sb-row sb-head"><div class="sb-left">${COLS.map(([k,l,c])=>{const on=SORT&&SORT.k===k;
+    return `<div class="sbc ${c}">${window.tsSbSort?`<button type="button" class="sb-sorth${on?' on'+(SORT.d<0?' desc':''):''}" onclick="tsSbSort('${k}')" aria-sort="${on?(SORT.d>0?'ascending':'descending'):'none'}">${l}${IC.chev}</button>`:l}</div>`;}).join('')}</div>`;
+  head+= sbTx ? `<div class="sb-hours">${hours.map(h=>`<div class="sb-hcell${h===NOWH?' now':''}">${hlabel(h)}</div>`).join('')}</div>` : '';
+  if(sbTx&&!empty) head+=`<span class="sb-nowdot" aria-hidden="true" style="left:${LEFTW+(NOWH-6)*HW+HW/2}px"></span>`;   /* the dot rides on the sticky header, where the now line begins */
   head+=`</div>`;
-  const section=`<div class="sb-section"><span class="st">${sbBoard==='My Board'?'My patients':OPB?'Outpatients':'Inpatients'}</span><span class="sc">(${list.length})</span></div>`;
+  const gtitle=sbBoard==='My Board'?'My Patients':OPB?'Outpatients':'Inpatients';
+  const group=`<div class="sb-group"><h3>${gtitle}</h3><span class="sb-gn">${list.length}</span>${(window.tsBoardPills&&tsBoardPills())||''}</div>`;
   let rows='';
   list.forEach((p,i)=>{
+    const stay=p.stay?`<div class="sbc c-io sb-stay" title="${p.stay.tip}"><div class="io-day">${p.stay.day}</div>${p.stay.pct!=null?`<div class="sb-dtrack" aria-hidden="true"><i style="width:${(p.stay.pct*100).toFixed(1)}%"></i></div>`:''}<div class="io-time">${p.stay.since}</div></div>`
+      :`<div class="sbc c-io"><div class="io-date">${p.date}</div><div class="io-time">${p.time}</div></div>`;
     const left=`<div class="sb-left">
       <div class="sbc c-pt"><div class="pt-top">${p.pinned?IC.pin:''}${IC.dots}<span class="pt-nm">${p.name}</span></div>
         <div class="pt-sig2">${p.sig}</div>
-        <div class="pt-cage-line">${p.cage?`<span>(${p.cage})</span>`:''}${lsPill(p.ls)}${IC.vit}</div>
-        <div class="pt-reason">${p.reason}</div></div>
-      <div class="sbc c-dr"><span class="dr-box">${p.dr}</span></div>
+        <div class="pt-cage-line">${lsPill(p.ls)||'<span class="sb-nocode" title="No code status yet — set CPR or DNR in Flow">No code set</span>'}${IC.vit}</div>
+        ${p.reason&&p.reason!=='—'?`<div class="pt-reason">${p.reason}</div>`:''}</div>
       <div class="sbc c-ward">${(window.tsWardSel&&tsWardSel(p))||`<select class="ward-sel" onchange="toast('${p.name.split(' ')[0]} → '+this.value)">${WARDS.map(w=>`<option ${w===p.ward?'selected':''}>${w}</option>`).join('')}</select>`}</div>
-      <div class="sbc c-io"><div style="display:flex;align-items:center;gap:8px"><span class="io-badge" style="float:none;margin:0">${p.inout}</span><div><div class="io-date">${p.date}</div><div class="io-time">${p.time}</div></div></div></div>
-      <div class="sbc c-timer">${p.techHTML||''}</div>
+      ${stay}
+      ${window.tsTeamCell?tsTeamCell(p):`<div class="sbc c-team"><span class="dr-box">${p.dr}</span>${p.techHTML||''}</div>`}
       ${window.tsAlertCell?tsAlertCell(p,i):`<div class="sbc c-alerts aa-cell" onclick="event.stopPropagation();openPatient(${i})" title="Alert Assist">${p.alerts.length?p.alerts.map(a=>`<div class="al-row ${a.t}">${IC.tri}${a.x}</div>`).join(''):'<span class="al-empty">— Add alert</span>'}<div class="aa-cell-hint">${IC.spark}Alert Assist</div></div>`}
     </div>`;
     const right = sbTx
       ? `<div class="sb-hours">${hours.map(h=>{const b=p.blocks.find(x=>x.h===h);return `<div class="sb-hcell">${b?(window.tsBlkHTML?tsBlkHTML(b,p):`<div class="sb-blk ${b.status}">${b.label}</div>`):''}</div>`;}).join('')}</div>`
-      : `<div class="sb-cage">
-          <div class="cage-col c1"><div class="cage-line">${IC.cage}<span class="cp">${p.cage||'—'}</span>${IC.copy}</div><div class="cage-line">${IC.gear}${p.service}</div><div class="cage-line">${lsPill(p.ls)}</div></div>
-          <div class="cage-col c2"><div class="cage-line">${IC.person}${p.owner}</div><div class="cage-line">${IC.phone}${p.phone}</div><div class="cage-line">${IC.home}<select class="cage-date"><option>Select Date</option></select></div></div>
-          <div class="cage-col c3"><div class="cage-notes"><div class="lbl">Belongings / Notes</div>${p.belongings||'&nbsp;'}</div></div>
-        </div>`;
-    rows+=`<div class="sb-row" onclick="openPatient(${i})">${left}${right}</div>`;
+      : '';
+    const sel=window.tsBoardSel?tsBoardSel(p):p.cur;
+    rows+=`<div class="sb-row${sel?' sel':''}" data-id="${p._id||''}" onclick="${window.tsBoardClick?`tsBoardClick(${i},event)`:`openPatient(${i})`}" ondblclick="openPatient(${i})">${left}${right}</div>`;
   });
   if(empty) rows=sbBoard==='My Board'?`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No patients assigned to you yet. In Flow, open a patient and choose a <b>Technician</b>, or use the <b>+</b> in the Tech column on the IP or OP Board.</div>`:OPB?`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No outpatients in Treatment. Move a patient to Treatment in Flow and their sheet appears here.</div>`:IPL?`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No admitted patients yet. Admit a patient in Flow, or <a href="#" onclick="event.preventDefault();tsNewSheet()" style="color:var(--accent-ink);font-weight:600">start a new sheet</a>.</div>`:`<div style="padding:60px 20px;text-align:center;color:var(--ink-400);font-size:13.5px">No patients on the ${sbBoard}.</div>`;
   const nowline = (sbTx&&!empty)?`<div class="sb-nowline" style="left:${LEFTW+(NOWH-6)*HW+HW/2}px"></div>`:'';
-  const legend = sbTx?`<div class="sb-legend"><div class="li"><span class="dot" style="background:var(--gray)"></span>Completed</div><div class="li"><span class="dot" style="background:var(--green)"></span>Scheduled</div><div class="li"><span class="dot" style="background:var(--amber)"></span>Due</div><div class="li"><span class="dot" style="background:var(--coral)"></span>Overdue</div></div>`:'';
-  tsMorphHTML($('#ctab-dash'),`<div class="sb">${toolbar}${(window.tsLoadStrip&&tsLoadStrip())||''}<div class="sb-scroll"><div class="sb-inner">${head}${section}${rows}${nowline}</div></div>${legend}</div>`);
+  const keys = (!sbTx&&!empty&&window.tsBoardClick)?`<div class="sb-keys"><span><kbd>↑</kbd><kbd>↓</kbd>move</span><span><kbd>space</kbd>Quick Look</span><span><kbd>return</kbd>open sheet</span><span><kbd>esc</kbd>close</span><span>Click a row to peek · double-click to open</span></div>`:'';
+  const legend = sbTx?`<div class="sb-legend"><div class="li"><span class="dot sb-lg overdue"></span>Overdue</div><div class="li"><span class="dot sb-lg due"></span>Due</div><div class="li"><span class="dot sb-lg scheduled"></span>Scheduled</div><div class="li"><span class="sb-lg-done">2</span>Done</div></div>`:'';
+  tsMorphHTML($('#ctab-dash'),`<div class="sb${sbTx?'':' sb-list'}${SB_MORPH?' sb-hours-in':''}">${toolbar}${(window.tsLoadStrip&&tsLoadStrip())||''}<div class="sb-card">${group}<div class="sb-scroll"><div class="sb-inner">${head}${rows}${nowline}</div></div>${legend}${keys}</div></div>`);
+  sbAfter(); if(SB_MORPH){ SB_MORPH=false; setTimeout(()=>{ const sb=document.querySelector('#ctab-dash .sb'); if(sb) sb.classList.remove('sb-hours-in'); },900); }
 }
 function openPatient(i){ if(typeof tsOpenFromBoard==='function'&&tsOpenFromBoard(i)) return; selectCTab('sheet');}
 /* ═══ TREATMENT SHEET ═══ */
@@ -267,7 +307,7 @@ function renderSheet(){
   const grid=`<main class="treatment-main">
     <div class="treatment-toolbar">
       <button class="btn ghost brief-toggle" onclick="openBrief()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1.5"/><line x1="14" y1="7" x2="21" y2="7"/><line x1="14" y1="12" x2="21" y2="12"/><line x1="14" y1="17" x2="21" y2="17"/></svg>Patient info</button>
-      <div class="order-search-wrapper"><div class="qadd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tsSearch" placeholder="Add order by name or ID…" autocomplete="off" onfocus="openTsDrop()" oninput="tsRender(this.value)" onkeydown="tsKey(event)"></div><div class="order-search-dropdown" id="tsDrop" style="display:none"></div></div>${window.tsSetsBtn?tsSetsBtn():''}
+      <div class="order-search-wrapper"><div class="qadd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tsSearch" placeholder="Add an order or order set…" autocomplete="off" onfocus="openTsDrop()" oninput="tsRender(this.value)" onkeydown="tsKey(event)"></div><div class="order-search-dropdown" id="tsDrop" style="display:none"></div></div>${window.tsSetsBtn?tsSetsBtn():''}
       <div class="day-nav ts-daynav">${window.tsDayNavHTML?tsDayNavHTML():'<button class="today">Today</button>'}</div>
       <div class="spacer" style="flex:1"></div>
       <span id="tsDrafts" class="ts-seen-slot"></span><span id="tsSeen" class="ts-seen-slot"></span><span id="tsView" class="ts-view-slot"></span>
@@ -286,7 +326,7 @@ function renderSheet(){
    from the same definitions, so the two can never disagree.
      Scheduled  ring, quiet          Due now  filled teal tile + dot     Overdue  filled amber tile + clock
      Done       soft tile + ✓ (or the value charted)                  Omitted  soft grey tile + ⊘ (a reason was recorded)
-   A task off the hour shows its minutes (":30") next to the shape. Overdue tasks are counted once on the row ("2 overdue"). */
+   Oct 2026 simplification: no minutes label on the marks (":30") and no per-row overdue badge — the tiles and the section counts carry it. */
 const MK_CHECK='<svg class="mk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
 const MK_CLOCK='<svg class="mk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const MK_OMIT='<svg class="mk-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/></svg>';
@@ -311,14 +351,18 @@ function gEsc(v){return String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;',
 /* what sits inside a mark: the state's shape, the minutes when off the hour, or the value charted */
 function markContent(t,s){const st=MK_STATES[s]||MK_STATES.scheduled;
   if(s==='completed'){const v=t&&t.value!=null&&t.value!==''?String(t.value):'';if(!v)return st.glyph;if(mkFits(v))return `<span class="mk-val">${gEsc(v)}</span>`;const ab=window.tsAbbr?tsAbbr(v):'';return ab?`<span class="mk-val">${gEsc(ab)}</span>`:st.glyph+MK_LINES;}
-  const m=t?gridMin(t.sched):'',g=s==='overdue'&&t?mkOd(mkLate(t)):st.glyph;return g+(m&&s!=='skipped'?`<span class="mk-min">${m}</span>`:'');}
+  return s==='overdue'&&t?mkOd(mkLate(t)):st.glyph;}
+/* 12:06 PM with a small PM (numbers loud, the rest quiet — Oct 2026) */
+function fmtTimeAP(min){const t=fmtTime(min).split(' ');return `${t[0]}<small class="ap">${t[1]}</small>`;}
 function hourText(h){const L=hourLabel(h);return `${L.h} ${L.ap}M`;}
 function gridNowX(){return GRID_LW+(nowMin()/60)*54;}
+/* the Latest value rolls when it changes and its age fades (store/rowlook.js reads data-roll / data-roll-fade) */
+function gridRollMark(h,id){return h?h.replace(/<span class="rt-v"><b>([^<]*)/,(m,v)=>`<span class="rt-v"><b data-roll="lat-${id}"${/^[<>~≤≥]?\d/.test(v)?' class="ts-num"':''}>${v}`).replace(/<small( class="[^"]*")?>/,(m,c)=>`<small${c||''} data-roll-fade="age-${id}">`):h;}
 function buildGrid(){
-  const inner=$('#sheetInner');if(!inner)return;let html='';const nh=Math.floor(nowMin()/60);const past=document.body.classList.contains('ts-past-day');
+  const inner=$('#sheetInner');if(!inner)return;if(window.tsGridBefore)tsGridBefore(inner);let html='';const nh=Math.floor(nowMin()/60);const past=document.body.classList.contains('ts-past-day');
   html+=`<div class="grow ghead"><div class="rl"><span class="gh-col gh-order">Order</span><span class="gh-col gh-latest">Latest</span></div><div class="hcells">`;
   for(let h=0;h<24;h++){html+=`<div class="hcell${h===nh&&!past?' hour-now':''}${h%3===0?' q3':''}${h===7||h===19?' shift':''}" onclick="tsBatch(${h})" title="Chart everything at ${hourText(h)}"><span class="hl">${hourText(h)}</span></div>`;}
-  if(!past)html+=`<div class="now-chip" style="left:${(nowMin()/60)*54}px">Now <b>${fmtTime(nowMin())}</b></div>`;
+  if(!past)html+=`<div class="now-chip" style="left:${(nowMin()/60)*54}px">Now <b>${fmtTimeAP(nowMin())}</b></div>`;
   html+=`</div></div>`;
   /* stopped today and one-time treatments that are all done move to their own section at the bottom (Oct 2026, like a
      "Discontinued / Completed" list): stopped orders keep what was charted, read only (store/orders.js tsStoppedToday) */
@@ -328,16 +372,19 @@ function buildGrid(){
     so.forEach((o,ri)=>{const TK=o._ghost?GHOST.tasks:TASKS;
       /* every overdue task of the row, counted once on the row; each one still sits at its own time in the grid */
       const late=(!past&&!o.cont)?TK.filter(x=>x.orderId===o.id&&!x.status&&deriveStatus(x)==='overdue'):[];
-      const mchip=late.length?`<button type="button" class="rl-missed" onclick="event.stopPropagation();tsMissed('${o.id}')" title="${late.length} overdue — select to chart" aria-label="${late.length} overdue, select to chart" onmouseenter="tsBadgeNudge('${o.id}')" onfocus="tsBadgeNudge('${o.id}')"><span class="bm-v">${late.length}</span></button>`:'';   /* an orange count badge at the right of the order (Oct 2026, option A) */
+      const mchip='';   /* Oct 2026: no per-row overdue badge — the tiles and the section count say it once */
       html+=`<div class="grow${ri%2?' zb':''}${o.dc?' is-dc':''}${o.draft?' is-draft':''}${o.pin?' is-pin':''}${late.length?' has-late':''}${fold}" data-sec="${sec.key}" data-o="${o.id}"${late.length?` data-late="${late.map(x=>Math.round(x.sched)).join(',')}"`:''}><div class="rl" data-dc="${o.dc&&!o._ghost?(o.dc_reason==='error'?'Error':o.dc_reason==='rejected'?'Not approved':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">${window.tsRowLead?tsRowLead(o):''}${late.length?`<button type="button" class="rl-off" hidden onclick="event.stopPropagation();tsOffGo('${o.id}')"></button>`:''}`;   /* draft badge · pin · reorder grip (store/drafts.js, store/sortorder.js) */
       /* Order column: name, then dose · route · frequency (or frequency · unit) and the overdue count. Latest column: the newest value and its age */
       let latest='';
-      if(o.type==='med'){const d=medDose(o);html+=`<div class="rl-main"><div class="rl-name">${o.name}${(window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> · '+tsBrand(o.name)+'</span>':''}</div><div class="rl-meta">${d.mg}${o.conc?' · <b>'+d.volume+'</b>':''} · ${o.route} · ${o.freq}${mchip}</div></div>`;latest=window.tsMedLatest?tsMedLatest(o):'';}   /* last dose given (store/medsafe.js) */
-      else if(o.type==='fluid'){html+=`<div class="rl-main"><div class="rl-name">${window.tsInfName?tsInfName(o):o.name}</div><div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate} · ${o.kind==='cri'?'CRI':'IV'}</div></div>`;latest=window.tsInfLatest?tsInfLatest(o):'';}   /* given today · last line check (store/fluids.js) */
-      else if(o.type==='obs'||o.type==='diag'){html+=`<div class="rl-main"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}${mchip}</div></div>`;latest=window.tsRowTrend?tsRowTrend(o):'';}   /* the latest reading and how old it is (store/vitals.js) */
-      else{html+=`<div class="rl-main"><div class="rl-name">${o.name}</div><div class="rl-meta">${o.freq}${mchip}</div></div>`;latest=window.tsCareLatest?tsCareLatest(o):'';}
-      if(o._ghost){const at=new Date(o.dc_at);latest=`<span class="rl-trend rl-stop" title="${gEsc((o.dc_reason==='error'?'Entered in error':'Stopped')+(o.dc_by_name?' by '+o.dc_by_name:''))}"><span class="rt-v"><b>${o.dc_reason==='error'?'Error':'Stopped'}</b></span><small>${fmtTime(at.getHours()*60+at.getMinutes())}</small></span>`;}
-      html+=`<div class="rl-latest">${latest||'<span class="rl-none" aria-label="Nothing yet">—</span>'}</div>`;
+      /* Oct 2026: brand after the name in grey (no "·"), the dose is the one bold part of the line, a dot after the name when the order has instructions (store/rowlook.js) */
+      const nm=(n)=>{const ins=window.tsInsAttr?tsInsAttr(o):['',''];return `<div class="rl-name"${ins[0]}>${n}${ins[1]}</div>`;};
+      if(o.type==='med'){const d=medDose(o);html+=`<div class="rl-main">${nm(o.name+((window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> '+tsBrand(o.name)+'</span>':''))}<div class="rl-meta"><b>${d.mg}</b>${o.conc?' · '+d.volume:''} · ${o.route} · ${o.freq}${mchip}</div></div>`;latest=window.tsMedLatest?tsMedLatest(o):'';}   /* last dose given (store/medsafe.js) */
+      else if(o.type==='fluid'){html+=`<div class="rl-main">${nm(window.tsInfName?tsInfName(o):o.name)}<div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate} · ${o.kind==='cri'?'CRI':'IV'}</div></div>`;latest=window.tsInfLatest?tsInfLatest(o):'';}   /* given today · last line check (store/fluids.js) */
+      else if(o.type==='obs'||o.type==='diag'){html+=`<div class="rl-main">${nm(o.name)}<div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}${mchip}</div></div>`;latest=window.tsRowTrend?tsRowTrend(o):'';}   /* the latest reading and how old it is (store/vitals.js) */
+      else{html+=`<div class="rl-main">${nm(o.name)}<div class="rl-meta">${o.freq}${mchip}</div></div>`;latest=window.tsCareLatest?tsCareLatest(o):'';}
+      /* stopped: a quiet "Stopped" capsule, then when and by whom ("10 AM · Dr. Schiff") — the row is dimmed, never struck through */
+      if(o.dc&&o.dc_at){const at=new Date(o.dc_at),mn=at.getHours()*60+at.getMinutes(),w=o.dc_reason==='error'?'Error':o.dc_reason==='rejected'?'Not approved':'Stopped',who=window.tsDrShort?tsDrShort(o.dc_by_name||o.dc_by||''):'';latest=`<span class="rl-trend rl-stop" title="${gEsc((o.dc_reason==='error'?'Entered in error':w)+(o.dc_by_name?' by '+o.dc_by_name:'')+' · '+fmtTime(mn))}"><span class="rt-v"><span class="rl-cap">${w}</span></span><small>${window.tsClockShort?tsClockShort(mn):fmtTime(mn)}${who?' · '+gEsc(who):''}</small></span>`;}
+      html+=`<div class="rl-latest">${gridRollMark(latest,o.id)||'<span class="rl-none" aria-label="Nothing yet">—</span>'}</div>`;
       html+=`</div><div class="hcells">`;
       if(o.cont&&o.kind&&window.tsInfCells){html+=tsInfCells(o);}else if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?String(o.rate||'').replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion('${o.id}',${h})">${lbl}</div></div>`;}}
       else{for(let h=0;h<24;h++){const cc='cell'+(past?'':(h<nh?' past':h===nh?' now':''))+(h%3===0?' q3':'')+(h===7||h===19?' shift':'');const _c=TK.filter(x=>x.orderId===o.id&&Math.floor(x.sched/60)===h);const t=_c.find(x=>x.status)||_c.find(x=>x.sched===h*60)||_c[0];if(!t){html+=`<div class="${cc}"></div>`;continue;}
@@ -361,6 +408,7 @@ function buildGrid(){
     html+=window.tsSecBand?tsSecBand(sec,stop):'';const fold=window.tsSecFolded&&tsSecFolded(sec.key)?' sec-folded':'';rowsOf(sec,stop,fold);}}
   {const old=inner.querySelector('.nowline');if(old)old.remove();}
   tsMorphHTML(inner,html);
+  if(window.tsGridAfter)tsGridAfter(inner);   /* rows that open, glide or fold (store/rowlook.js) */
   if(!past){const nl=document.createElement('div');nl.className='nowline';nl.style.left=`${gridNowX()}px`;inner.appendChild(nl);}
   renderLegend();
   gridOffWire();gridOffPaint();
@@ -379,7 +427,6 @@ function gridMin(min){const m=Math.round(min)%60;return m?':'+String(m).padStart
 function gridTime(min){min=Math.round(min);const h=Math.floor(min/60)%24,m=min%60,L=hourLabel(h);return L.h+(m?':'+String(m).padStart(2,'0'):'')+L.ap;}
 function renderLegend(){   /* drawn from MK_STATES, the same shapes the grid uses */
   tsSetHTML($('#legend'),MK_ORDER.map(s=>`<div class="li"><span class="lg-mk mark ${s}" aria-hidden="true">${MK_STATES[s].glyph}</span>${MK_STATES[s].word}</div>`+(s==='overdue'?`<div class="li"><span class="lg-mk mark overdue late2" aria-hidden="true">${MK_STATES[s].glyph}</span>Over 2 h late</div>`:'')).join('')
-    +`<div class="li lg-off"><span class="lg-mk mark scheduled off" aria-hidden="true">${MK_STATES.scheduled.glyph}<span class="mk-min">:30</span></span>Off the hour</div>`
     +`<div class="lg-sep" aria-hidden="true"></div><div class="li lg-key"><span class="lg-glyph">${MK_LINES}</span>More in the entry</div>`
     +`<div class="li lg-key"><span class="lg-glyph lg-arr">↑↓</span>Latest vs the previous reading</div>`
     +`<div style="flex:1"></div>${window.tsOcLegendActs?tsOcLegendActs():'<div class="li lg-hint">Select a cell to chart or see the full entry</div>'}`);}
@@ -452,7 +499,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawers();clos
 function toast(msg){const el=document.createElement('div');el.className='ctoast';el.innerHTML=`<span class="tk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>${msg}`;$('#toastWrap').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateY(8px)';setTimeout(()=>el.remove(),300);},2600);}
 
 /* ═══ live clock tick ═══ */
-function tick(){if(currentCTab==='sheet'){const nl=$('#sheetInner .nowline');if(nl)nl.style.left=`${gridNowX()}px`;const c=$('#sheetInner .now-chip');if(c){c.style.left=`${(nowMin()/60)*54}px`;const b=c.querySelector('b');if(b)b.textContent=fmtTime(nowMin());}}}
+function tick(){if(currentCTab==='sheet'){const nl=$('#sheetInner .nowline');if(nl)nl.style.left=`${gridNowX()}px`;const c=$('#sheetInner .now-chip');if(c){c.style.left=`${(nowMin()/60)*54}px`;const b=c.querySelector('b');if(b){const t=fmtTimeAP(nowMin());if(b.innerHTML!==t)b.innerHTML=t;}}}}
 setInterval(tick,10000);
 
 /* ═══ init ═══ */
