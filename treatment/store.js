@@ -3492,9 +3492,15 @@ window.tsChCopy=function(){ var L=chAllLines().filter(function(l){ return l.code
   try{ navigator.clipboard.writeText(txt).then(function(){ toast(L.length+' line'+(L.length>1?'s':'')+' copied — code, quantity, description'); },function(){ toast('Couldn’t copy'); }); }catch(e){ toast('Couldn’t copy'); } };
 
 /* ---------- finding a code ---------- */
-function chSearch(q,limit){ q=String(q||'').trim().toLowerCase(); if(!q||!CH_CODES) return []; var words=q.split(/\s+/);
+/* how people say it → how WOOFware abbreviates it: "ultrasound" finds the US codes, "x-ray" the RAD codes */
+var CH_SYN=[[/^(ultrasounds?|ultrasonography|sono(gram)?|u\/s)$/,/\bus\b/],[/^(radiographs?|x-?rays?|xrays?|rads?)$/,/\brad\b/]];
+/* the code a plain request means (the hospital's call): "ultrasound" → 23.1 US Abdominal */
+var CH_PREFER=[[/^(abdominal |abdomen )?(ultrasound|us|u\/s)( abdominal| abdomen| of the abdomen)?$/i,'23.1']];
+function chWord(t,w){ if(t.indexOf(w)>-1) return true; for(var i=0;i<CH_SYN.length;i++) if(CH_SYN[i][0].test(w)) return CH_SYN[i][1].test(t); return false; }
+function chPreferred(q){ q=String(q||'').trim(); for(var i=0;i<CH_PREFER.length;i++) if(CH_PREFER[i][0].test(q)) return CH_PREFER[i][1]; return ''; }
+function chSearch(q,limit){ q=String(q||'').trim().toLowerCase(); if(!q||!CH_CODES) return []; var words=q.split(/\s+/), top=chPreferred(q);
   return CH_CODES.map(function(x){ var n=x.n.toLowerCase(), s;
-      if(x.c===q) s=0; else if(x.c.indexOf(q)===0) s=1; else if(n.indexOf(q)===0) s=2; else if(words.every(function(w){ return n.indexOf(w)>-1; })) s=3; else if(words.every(function(w){ return (n+' '+x.d.toLowerCase()).indexOf(w)>-1; })) s=5; else return null;
+      if(x.c===top) s=-1; else if(x.c===q) s=0; else if(x.c.indexOf(q)===0) s=1; else if(n.indexOf(q)===0) s=2; else if(words.every(function(w){ return chWord(n,w); })) s=3; else if(words.every(function(w){ return chWord(n+' '+String(x.d||'').toLowerCase(),w); })) s=5; else return null;
       return {x:x,s:s}; }).filter(Boolean).sort(function(a,b){ return a.s-b.s||a.x.n.length-b.x.n.length; }).slice(0,limit||40).map(function(r){ return r.x; }); }
 var chPickCtx=null;
 function chPicker(title,lead,ctx,q0){ chPickCtx=ctx;
@@ -3522,7 +3528,7 @@ window.tsChPick=function(oid,key){ var o=oid&&((curDoc.orders||{})[oid]);
   if(!o&&/^x_/.test(key||'')){ var xid=key.slice(2), x=((curDoc&&curDoc.charges_extra)||{})[xid]; if(!x) return;   /* an added charge (e.g. Exam) still without its code */
     chPicker(esc(x.name||'Charge'),'Type the WOOFware code for '+esc(x.name||'this charge')+'. '+(x.item?'It is remembered for every '+esc(x.name)+' from now on.':''),{xid:xid,item:x.item,name:x.name},''); return; }
   if(!o) return;
-  chPicker(esc(o.name),'Choose the code for '+esc(o.name)+'. Every charted '+(o.type==='med'?'administration':'reading')+' is listed with it.',{oid:oid,name:o.name},String(o.name||'').split(/[\s\/(]/)[0]); };
+  chPicker(esc(o.name),'Choose the code for '+esc(o.name)+'. Every charted '+(o.type==='med'?'administration':'reading')+' is listed with it.',{oid:oid,name:o.name},chPreferred(o.name)?String(o.name).trim():String(o.name||'').split(/[\s\/(]/)[0]); };   /* an order the hospital has a usual code for opens on it */
 window.tsChAdd=function(){ chPicker('Add a charge','For things the sheet doesn’t record — an exam, a catheter placement, a procedure.',{qty:true},''); };
 
 /* ---------- the code list: imported once by the owner (JSON from the Coding Handbook), stored behind sign-in ---------- */
