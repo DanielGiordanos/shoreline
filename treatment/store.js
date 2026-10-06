@@ -167,23 +167,43 @@ function markOf(t){ if(!t.status) return null; return {status:t.status,by:t.by||
 function same(a,b){ var f=function(m){ return m?JSON.stringify([m.status,m.by,m.min,m.value,m.notes,m.given||null,m.vol||null,m.reason||null,m.hist||null]):'null'; }; return f(a)===f(b); }
 var syncT=null, syncing=false;
 function scheduleSync(){ clearTimeout(syncT); syncT=setTimeout(sync,350); }
+/* the stored summary has nothing this one lacks (same day): writing ours can only add */
+function digestCovers(a,b){ if(!b||!b.dk) return true; if(a.dk!==b.dk) return a.dk>b.dk; var ad=a.done||{}, bd=b.done||{};
+  return Object.keys(bd).every(function(k){ return ad[k]===bd[k]; })&&Object.keys(ad).length>Object.keys(bd).length; }
+/* an order changed on screen: only the fields that changed are sent, so two people changing the same order at the same moment
+   (a doctor's new rate, a tech's infusion check) both keep their change — a list that only grew is added to, not replaced (30-user test, Oct 6 2026) */
+function orderDiff(id,c,old,upd){ var p='orders.'+id+'.', keys=Object.keys(c).concat(Object.keys(old||{})), ok=/^[A-Za-z_][A-Za-z0-9_]*$/;
+  if(!old||typeof old!=='object'||keys.some(function(k){ return !ok.test(k); })){ upd['orders.'+id]=c; return; }
+  Object.keys(c).forEach(function(k){ var a=c[k], b=old[k], sa=JSON.stringify(a); if(sa===JSON.stringify(b)) return;
+    if(Array.isArray(a)&&Array.isArray(b)&&b.length&&b.length<a.length&&JSON.stringify(a.slice(0,b.length))===JSON.stringify(b)&&!a.slice(b.length).some(Array.isArray)) upd[p+k]=U(a.slice(b.length));
+    else upd[p+k]=a; });
+  Object.keys(old).forEach(function(k){ if(!(k in c)) upd[p+k]=DEL; }); }
 function sync(){
-  if(!CUR||!curDoc||!DB||syncing||!AUTH||!AUTH.currentUser||!dayReady()||!allow('sync.allowed')) return; var upd={}, n=0, dk=dayKey(), me=user(), marks=curDoc.marks||(curDoc.marks={});
+  if(!CUR||!curDoc||!DB||!AUTH||!AUTH.currentUser||!dayReady()||!allow('sync.allowed')) return;   /* never wait for the previous save (30-user test, Oct 6 2026): a save skipped while another was still on its way was wiped by the next update from a colleague */ var upd={}, n=0, dk=dayKey(), me=user(), marks=curDoc.marks||(curDoc.marks={});
   /* charting goes to the day's own record (sheets/{id}/days/{YYYYMMDD}); the sheet itself stays small */
-  var dayUpd={}, dn=0, inbox=(curMain&&curMain.marks)||{};
+  var dayUpd={}, dn=0, inbox=(curMain&&curMain.marks)||{}, touched={};
   TASKS.forEach(function(t){ if(!t.key){ t.key=dk+'_'+t.orderId+'_x'+Math.round(t.sched); }
-    var m=markOf(t), old=marks[t.key]; if(same(m,old)) return;
+    var m=markOf(t), old=marks[t.key]; if(same(m,old)) return; touched[t.orderId]=1; if(old&&old.orderId) touched[old.orderId]=1;
     if(m){ m.at=new Date().toISOString(); m.uid=me.uid; } dayUpd[t.key]=m||DEL; if(inbox[t.key]) upd['marks.'+t.key]=DEL;
     marks[t.key]=m||undefined; if(!m) delete marks[t.key]; dn++; });
   /* a charted slot that no longer exists on screen (undo of an extra reading) is removed */
   var live={}; TASKS.forEach(function(t){ if(t.key) live[t.key]=1; });
   Object.keys(marks).forEach(function(k){ if(k.indexOf(dk+'_')!==0||live[k]) return; var m=marks[k]; if(!m||!ORDERS.some(function(o){ return o.id===m.orderId; })) return;
-    dayUpd[k]=DEL; if(inbox[k]) upd['marks.'+k]=DEL; delete marks[k]; dn++; });
+    dayUpd[k]=DEL; touched[m.orderId]=1; if(inbox[k]) upd['marks.'+k]=DEL; delete marks[k]; dn++; });
   if(dn) n++;
   /* the board's summary of this sheet (what's done today + the latest readings) */
-  var dg=computeDigest(marks); if(curMain&&liveDay[subDk]&&liveDay[prevDk(subDk)]&&JSON.stringify(dg)!==JSON.stringify(curMain.digest||null)){ upd.digest=dg; curMain.digest=dg; curDoc.digest=dg; n++; }
+  /* only what this person just charted goes into it — one slot, one order's latest readings — so people charting the same patient
+     at the same moment add to the summary instead of overwriting each other, and the 29 other open screens never rewrite it
+     (30-user test, Oct 6 2026). The whole summary is written only when it's missing or from another day. */
+  var dg=computeDigest(marks), od=curMain&&curMain.digest;
+  if(curMain&&liveDay[subDk]&&liveDay[prevDk(subDk)]&&JSON.stringify(dg)!==JSON.stringify(od||null)){
+    var fresh=!od||!od.dk||od.dk<dg.dk, part={}, okk=/^[A-Za-z0-9_]+$/, whole=fresh;
+    if(!fresh&&dn&&od.dk===dg.dk){ Object.keys(dayUpd).forEach(function(k){ if(k.indexOf(dg.dk+'_')===0){ var sk=k.slice(9); if(!okk.test(sk)) whole=true; part['digest.done.'+sk]=dg.done[sk]||DEL; } });
+      Object.keys(touched).forEach(function(o){ if(!okk.test(o)) whole=true; var v=dg.vit[o]; if(JSON.stringify(v||null)!==JSON.stringify((od.vit||{})[o]||null)) part['digest.vit.'+o]=v||DEL; }); }
+    if(whole&&(dn||digestCovers(dg,od))){ upd.digest=dg; n++; } else if(!whole&&Object.keys(part).length){ Object.assign(upd,part); n++; }
+    if(whole||Object.keys(part).length){ curMain.digest=dg; curDoc.digest=dg; } }
   var so=curDoc.orders||(curDoc.orders={}), seen={};
-  ORDERS.forEach(function(o){ seen[o.id]=1; var c=clean(o); if(JSON.stringify(c)!==JSON.stringify(so[o.id])){ upd['orders.'+o.id]=c; so[o.id]=c; n++; } });
+  ORDERS.forEach(function(o){ seen[o.id]=1; var c=clean(o); if(JSON.stringify(c)!==JSON.stringify(so[o.id])){ orderDiff(o.id,c,so[o.id],upd); so[o.id]=c; n++; } });
   Object.keys(so).forEach(function(id){ if(!seen[id]&&!so[id].dc){ so[id]=Object.assign({},so[id],{dc:true,dc_at:new Date().toISOString()}); upd['orders.'+id]=so[id]; n++; } });
   var newNotes=NOTES.filter(function(x){ return !x._srv; }), newAudit=AUDIT.filter(function(x){ return !x._srv; });
   if(newNotes.length){ upd.notes=U(newNotes.map(function(x){ x._srv=1; return {at:minToISO(x.min),type:x.type,author:x.author,role:x.role,body:x.body,uid:me.uid}; })); n++; }
@@ -2084,8 +2104,10 @@ function obxReplayOne(e){ var ref=DB.collection(COL).doc(e.sheet);
         if(m&&m.$fv==='del'){ if(!s||String(s.at||'')<=e.at) d[k]=m; return; }
         if(!s||String(s.at||'')<=String(m.at||'')) d[k]=m; });
       if(Object.keys(d).length) out.day=d; }
-    if(e.main){ var m={}; Object.keys(e.main).forEach(function(k){ if(k==='digest') return;
-        if(k.indexOf('orders.')===0){ var id=k.slice(7), so=srvOrders[id], mine=e.main[k]; if(so&&so.dc&&!(mine&&mine.dc)) return; if(so&&JSON.stringify(so)===JSON.stringify(mine)) return; }
+    if(e.main){ var m={}; Object.keys(e.main).forEach(function(k){ if(k==='digest'||k.indexOf('digest.')===0) return;
+        if(k.indexOf('orders.')===0){ var rest=k.slice(7), dot=rest.indexOf('.'), id=dot<0?rest:rest.slice(0,dot), f=dot<0?null:rest.slice(dot+1), so=srvOrders[id], mine=e.main[k];
+          if(f===null){ if(so&&so.dc&&!(mine&&mine.dc)) return; if(so&&JSON.stringify(so)===JSON.stringify(mine)) return; }
+          else { if(!so) return; if(so.dc&&f!=='dc'&&f!=='dc_at') return; if(!(mine&&mine.$fv)&&JSON.stringify(so[f])===JSON.stringify(mine)) return; } }   /* one field of an order (base.js orderDiff) */
         m[k]=e.main[k]; });
       if(out.day) m.digest_dirty=true;
       if(Object.keys(m).some(function(k){ return k!=='updated_at'&&k!=='updated_by'&&k!=='digest_dirty'; })||out.day) out.main=m; }
