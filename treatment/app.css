@@ -4973,3 +4973,41 @@ body.dark #tsOrderSheet .lw-es{background:rgba(255,255,255,.06)}
 .lang-pop .lang-row.on{background:color-mix(in srgb,var(--accent,#0a84ff) 10%,transparent)}
 .lang-pop .lang-row .fp-lab b{display:block;font-size:14px;font-weight:650;color:var(--ink-900,#111)}
 #tsOrderSheet .lw-ph{display:inline-block;min-width:16px;padding:0 4px;margin:0 1px;border-radius:5px;background:rgba(120,120,128,.16);font-style:normal;font-size:11.5px;font-weight:700;text-align:center;color:var(--ink-500,#8a8f98)}
+/* Approval mode: the graduation cap on the sheet toolbar (Oct 6 2026) */
+.ts-seen.dr-cap{width:34px;height:34px;padding:0;display:inline-grid;place-items:center;border-radius:10px;border:1px solid var(--line,rgba(120,120,128,.22));background:transparent;color:var(--ink-500,#8a8f98);cursor:pointer;transition:background .18s,color .18s,border-color .18s,transform .12s}
+.ts-seen.dr-cap svg{width:18px;height:18px}
+.ts-seen.dr-cap:hover{color:var(--ink-900,#111);border-color:color-mix(in srgb,var(--accent,#0a84ff) 45%,transparent)}
+.ts-seen.dr-cap:active{transform:scale(.94)}
+.ts-seen.dr-cap.on{background:var(--accent,#0a84ff);border-color:var(--accent,#0a84ff);color:#fff}
+.ts-seen.dr-cap.locked{cursor:default}
+/* ICU TV: every inpatient, done and due (Oct 6 2026) */
+#tsTv .tv-card{display:flex;flex-direction:column}
+#tsTv .tv-card.ok{--c:#3FA877}
+#tsTv .tv-card li.n b{font-weight:500;opacity:.75}
+#tsTv .tv-card li.n span{color:#9fb0c8}
+#tsTv .tv-done{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);font-size:clamp(14px,1.1vw,18px);color:#9fb0c8}
+#tsTv .tv-done b{color:#5CCB95;font-variant-numeric:tabular-nums}
+#tsTv .tv-n.ok{color:#5CCB95}
+/* Order window: More options (Oct 6 2026) */
+#tsModal .of-more{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(120,120,128,.08);cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink-900,#111)}
+#tsModal .of-more small{flex:1;min-width:0;font-weight:500;color:var(--ink-500,#8a8f98);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tsModal .of-more i{width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin:-4px 4px 0;transition:transform .2s;opacity:.6}
+#tsModal .of-more[aria-expanded="true"] i{transform:rotate(225deg);margin-top:4px}
+#tsModal .of-more:hover{background:rgba(120,120,128,.14)}
+#tsModal .of-more:focus-visible{outline:2px solid var(--accent,#0a84ff);outline-offset:2px}
+#tsModal .of-box{margin-top:10px}
+#tsModal .of-box .oc-req-row{margin-top:10px}
+body.dark #tsModal .of-more{color:#E8EDF6}
+/* Usage report (Oct 6 2026) */
+#tsOrderSheet .op-card.us{width:min(620px,100%);--ot-fill:rgba(120,120,128,.10);--ot-t3:#6e6e73}
+body.dark #tsOrderSheet .op-card.us{--ot-fill:rgba(120,120,128,.18);--ot-t3:#8a8f98}
+#tsOrderSheet .us-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+#tsOrderSheet .us-hero div{padding:12px 14px;border-radius:14px;background:var(--ot-fill)}
+#tsOrderSheet .us-hero b{display:block;font-family:var(--num);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+#tsOrderSheet .us-hero span{font-size:12px;color:var(--ot-t3);font-weight:600}
+#tsOrderSheet .us-row{display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;align-items:center;gap:10px;padding:6px 0;font-size:13.5px}
+#tsOrderSheet .us-row i{display:block;height:8px;border-radius:4px;background:var(--accent,#0a84ff)}
+#tsOrderSheet .us-row b{text-align:right;font-variant-numeric:tabular-nums}
+#tsOrderSheet .us-none{display:flex;flex-wrap:wrap;gap:6px}
+#tsOrderSheet .us-none span{padding:4px 10px;border-radius:9px;background:var(--ot-fill);font-size:12.5px;color:var(--ot-t3)}
+@media (max-width:520px){#tsOrderSheet .us-hero{grid-template-columns:1fr 1fr}#tsOrderSheet .us-row{grid-template-columns:minmax(0,1fr) 70px 40px}}

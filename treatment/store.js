@@ -1338,6 +1338,8 @@ function refreshLoc(){ document.querySelectorAll('.ts-loc-slot').forEach(functio
 on('header.refresh',refreshLoc);
 
 /* ═════════ TS HANDOFF — Current → Next doctor (the same handoff Rounds shows in Flow) ═════════
+   Oct 6 2026 (step 1 answers): doctors hand off in Rounds, so the sheet no longer hands off or asks for acknowledgement —
+   tsOpenHandoff only points to Rounds and the acknowledgement card is off. The header still shows the next doctor set in Rounds.
    Sheet:  patient.doctor (current) · patient.doctor_next {name,at,by} (planned) · handoffs[] (note, snapshot, acknowledgment; last 20)
    Flow:   visits.doctor_id (current = slug of the name) · visits.rounds.next {docId,name,at,by} (only when the visit is in Rounds)
    Doctors (and Daniel) hand off; everyone can read. The receiving doctor gets a card on the sheet until they acknowledge. */
@@ -1354,11 +1356,8 @@ function hoTime(iso){ try{ var d=new Date(iso); return d.toLocaleDateString([], 
 
 /* the header shows Current → Next (or "Hand off" when no next doctor is set) */
 on('visit',function(v,d){ var n=hoNext(d); v.doctorTo=n?n.name:v.doctorFrom; });
-window.tsDoctorChip=function(){ if(!CUR||!curDoc) return '<span class="pill soft">'+esc(String(VISIT.doctorFrom||'—').split(',')[0])+' → '+esc(String(VISIT.doctorTo||'—').split(',')[0])+'</span>';
-  var cur=hoCur(curDoc), n=hoNext(curDoc), p=hoPending(curDoc);
-  return '<button type="button" class="pill soft ts-ho-chip'+(n?' has-next':'')+(p?' pending':'')+'" onclick="tsOpenHandoff()" title="'+(n?'Next doctor set — tap to hand off':'Hand off to the next doctor')+'">'
-    +esc(cur||'No doctor')+' <span class="ho-arrow">→</span> '+(n?esc(n.name)+'<span class="hc-k next">Next</span>':'<span class="ho-muted">Hand off</span>')+(p?'<i class="ho-dot" title="Handoff not yet acknowledged"></i>':'')+'</button>'; };
-
+window.tsDoctorChip=function(){ var cur=CUR&&curDoc?hoCur(curDoc):String(VISIT.doctorFrom||'—').split(',')[0], n=CUR&&curDoc?hoNext(curDoc):null;
+  return '<span class="pill soft">'+esc(cur?drShort(cur):'—')+(n?' → '+esc(drShort(n.name)):'')+'</span>'; };   /* read-only: handoff happens in Rounds */
 /* what the next doctor needs at a glance, captured with the handoff */
 function hoSnapshot(){ var v=VISIT||{}, meds=[], alerts=[];
   try{ (ORDERS||[]).forEach(function(o){ if(o&&o.type==='med'&&!o.dc){ var d=window.medDose?medDose(o):{mg:''}; meds.push(o.name+' '+d.mg+' '+(o.route||'')+' '+(o.freq||'')); } }); }catch(e){}
@@ -1372,7 +1371,7 @@ function hoEntryHTML(h){ return '<div class="ho-entry"><div class="ho-entry-h"><
   +(h.summary?'<p><span>Summary</span>'+esc(h.summary)+'</p>':'')+(h.todo?'<p><span>To do / watch for</span>'+esc(h.todo)+'</p>':'')+snapHTML(h.snapshot)+'</div>'; }
 
 /* ---------- the handoff window ---------- */
-window.tsOpenHandoff=function(){ if(!CUR||!curDoc){ toast('Open a patient first'); return; }
+window.tsOpenHandoff=function(){ toast('Doctors hand off in Rounds'); return;  if(!CUR||!curDoc){ toast('Open a patient first'); return; }
   var cur=hoCur(curDoc), n=hoNext(curDoc), H=hoList(curDoc), last=H[H.length-1], v=VISIT||{};
   if(!canHandoff()){ modal('<h3>Handoff · '+esc(v.patient||'')+'</h3><p>Current doctor: <b>'+esc(cur||'—')+'</b>'+(n?' · next: <b>'+esc(n.name)+'</b>':'')+'</p>'
       +(last?hoEntryHTML(last):'<p class="ho-muted">No handoff yet.</p>')+'<p class="rx-warn rx-block">Only doctors can hand off a patient.</p>','Close',function(){ return true; }); return; }
@@ -1445,9 +1444,9 @@ window.tsHoAck=function(id){ if(!CUR) return; var ref=DB.collection(COL).doc(CUR
     t.update(ref,{handoffs:H,updated_at:now,audit:FV.arrayUnion({at:now,type:'doctor',desc:'Handoff acknowledged',who:me.initials,uid:me.uid})}); }); })
     .then(function(){ toast('Handoff acknowledged'); }).catch(function(e){ console.warn(e); toast('Couldn’t save'); });
   if(curDoc&&curDoc.handoffs) curDoc.handoffs=curDoc.handoffs.map(function(h){ return h.id===id?Object.assign({},h,{ack_at:now,ack_by:me.name}):h; }); refreshHo(); };
-function refreshHo(){ document.querySelectorAll('.ts-ho-slot').forEach(function(c){ var h=window.tsDoctorChip(); if(c.innerHTML!==h) c.innerHTML=h; }); try{ hoCard(); }catch(e){} emit('header.parts'); }
+function refreshHo(){ document.querySelectorAll('.ts-ho-slot').forEach(function(c){ var h=window.tsDoctorChip(); if(c.innerHTML!==h) c.innerHTML=h; }); emit('header.parts'); }
 on('header.refresh',refreshHo);
-setInterval(function(){ try{ hoCard(); }catch(e){} },3000);
+/* no acknowledgement card: handoffs are acknowledged in Rounds */
 
 /* ═════════ TS HEADER — calm, flat, instrument-panel header (Oct 2026) ═════════
    Name + signalment · big live vitals (value, unit, age, colour only when out of range, ▲▼ trend)
@@ -1507,8 +1506,9 @@ function infoHTML(d){ var p=(d&&d.patient)||{}, W=weightInfo(d), out=[];
     :item('Weight','<b class="tsh-amber">Not set</b>',{title:'Add a weight to calculate doses'}));
   out.push(item('Service','<b>'+esc(deptName(VISIT.dept))+'</b>'));
   if(d){ var cur=hoCur(d), n=hoNext(d), pend=hoPending(d);
-    out.push(item(n?'Doctor → Next':'Doctor','<b>'+esc(cur?drShort(cur):'—')+'</b>'+(n?'<span class="tsh-arrow">→</span><b class="tsh-accent">'+esc(drShort(n.name))+'</b>':'<small class="tsh-link">Hand off</small>')+(pend?'<i class="tsh-dot" title="Handoff not yet acknowledged"></i>':''),
-      {on:'tsOpenHandoff()',title:cur?(cur+(n?' → '+n.name+' (next)':'')+' · tap to hand off'):'Tap to set the doctor'}));
+    /* handoff lives in Rounds (Oct 6 2026, step 1 answers): the sheet only shows the doctor, and the next one when Rounds set it */
+    out.push(item(n?'Doctor → Next':'Doctor','<b>'+esc(cur?drShort(cur):'—')+'</b>'+(n?'<span class="tsh-arrow">→</span><b class="tsh-accent">'+esc(drShort(n.name))+'</b>':''),
+      {title:cur?(cur+(n?' → '+n.name+' (next, from Rounds)':'')):'Set the doctor in Flow'}));
     out.push(item('Tech',p.tech?'<b>'+esc(p.tech)+'</b>':'<small class="tsh-link">Assign</small>',{on:'tsPickTech(\''+CUR+'\',this)'}));
   } else out.push(item('Doctor','<b>'+esc(String(VISIT.doctorFrom||'—').split(',')[0])+'</b>'));
   var h=window.tsHoursIn(); out.push(item('Hospital day','<b>'+(h!=null?hospDay(h):esc(String(VISIT.day||'').replace(/^Day\s*/i,'')))+'</b>'+(h!=null?'<small>'+h+' h</small>':'')));
@@ -1655,7 +1655,7 @@ window.tsOrderPanel=function(id){ var o=oFind(id); if(!o) return; if(claim('orde
     +slotDots(o)+(o.safety&&window.tsMsSafetyHTML?tsMsSafetyHTML(o):'')
     +'<div class="op-list">'+row('First dose',o.start!=null&&o.type==='med'?esc(fmtTime(o.start*60)):'')+row('Ordered by',who?esc(who)+(o.ordered_at?' · '+esc(fmtWhen(o.ordered_at)):''):'')
       +(window.tsMsPanelRows?tsMsPanelRows(o):'')+row('Dose source',esc(src))+row('Reference',o.ref&&o.ref.dose?esc(o.ref.dose+(o.ref.indication?' — '+o.ref.indication:'')):'')+row('Instructions',o.notes?esc(o.notes):'')+'</div>'
-    +(can&&!o.dc&&window.tsInsSplitCount&&tsInsSplitOne(o)?'<button type="button" class="op-link rl-sp-btn" onclick="tsInsSplitOpen(\''+esc(o.id)+'\')">Shorten the name — keep the rest as instructions</button>':'')
+    /* "Shorten the name" tool deleted (Oct 6 2026, step 1 answers) */
     +(window.tsOcPanelRows?tsOcPanelRows(o):'')   /* price · note required · owner handout (ordercare.js) */
     +(window.tsPinBtn?tsPinBtn(o):'')   /* pin to the top of its section (sortorder.js) */
     +(o.dc?'':(can?'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderChange(\''+esc(o.id)+'\')">Change…</button><button type="button" class="op-btn danger" onclick="tsOrderStopAsk(\''+esc(o.id)+'\')">Discontinue</button></div>'
@@ -1728,8 +1728,10 @@ on('rx.added',function(n){ var old=window._opReplace; window._opReplace=null; if
 document.addEventListener('click',function(e){ if(window._opReplace&&e.target&&(e.target.matches('#tsModal .tm-scrim')||e.target.matches('#tsModal [data-x]'))) window._opReplace=null; },true);
 
 /* ═════════ TS DRAFTS — an intern's orders wait for a doctor's approval ═════════
-   Who drafts: Graduate Veterinarian Interns (window.TS_STAFF.interns, from the Directory titles at build time). The owner account can
-   try it from the toolbar in the preview (sessionStorage tsInternTry). Everyone else's orders go straight onto the sheet as before.
+   Who drafts: Graduate Veterinarian Interns (window.TS_STAFF.interns, from the Directory titles at build time), and — since Oct 6 2026
+   (step 1 answers) — anyone who orders and turns on the graduation cap on the sheet toolbar (residents, interns, a doctor who wants a
+   second pair of eyes): approval mode, on this device until the tab closes (sessionStorage tsInternTry). It has no "Intern mode" name,
+   only the cap. An intern the owner's list requires to draft sees the cap on and locked. Everyone else's orders go straight on.
    What is drafted: medications, IV fluids / CRIs and diagnostics (monitoring and patient care go straight on). An intern's Change… is a
    draft that replaces the running order only when approved (order.draft.replaces); an intern's rate change is order.rate_draft.
    Per intern (ts_settings/drafts, store below): drafts on or off, optionally "until" a date; the owner and the people the owner names change it
@@ -1738,8 +1740,8 @@ document.addEventListener('click',function(e){ if(window._opReplace&&e.target&&(
    in the toolbar and on the board; Approve · Edit · Not approved (with a reason). Every step is in the audit. */
 var DRAFT_TYPES={med:1,fluid:1,diag:1};
 var DRAFT_CAP='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5L2 9Z M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5 M22 9v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-window.tsIsDrafter=function(){ var r=staffRole(); if(r==='admin'){ try{ return sessionStorage.getItem('tsInternTry')==='1'; }catch(e){ return false; } }
-  var me=normName(user().name); return !!me&&((window.TS_STAFF||{}).interns||[]).some(function(n){ return normName(n)===me; })&&tsDraftOnFor(user().name); };
+function drRequired(){ var me=normName(user().name); return staffRole()!=='admin'&&!!me&&((window.TS_STAFF||{}).interns||[]).some(function(n){ return normName(n)===me; })&&tsDraftOnFor(user().name); }
+window.tsIsDrafter=function(){ if(drRequired()) return true; try{ return sessionStorage.getItem('tsInternTry')==='1'; }catch(e){ return false; } };
 function drCanApprove(){ return canOrderTS()&&!tsIsDrafter(); }
 function drMine(o){ var me=user(); return !!(o&&o.draft&&((o.draft.uid&&o.draft.uid===me.uid)||o.draft.by===me.initials)); }
 function drLine(o){ if(o.type==='med'){ var d=medDose(o); return d.mg+(o.route?' '+o.route:'')+(o.freq?' '+o.freq:''); }
@@ -1814,12 +1816,15 @@ window.tsDraftBadge=function(o){ if(!o) return ''; if(o.draft&&!o.dc) return '<s
   if(o.rate_draft&&!o.dc) return '<span class="dr-badge rate" title="Rate change waiting for approval">'+DRAFT_CAP+'Rate</span>'; return ''; };
 function drPaint(){ var el=document.getElementById('tsDrafts'); if(!el) return; var L=CUR&&curDoc?drList():[], drafter=tsIsDrafter(), admin=staffRole()==='admin', h='';
   if(L.length) h='<button type="button" class="ts-seen dr-pill'+(drafter?' mine':'')+'" onclick="tsDraftList()" title="Draft orders on this sheet">'+DRAFT_CAP+L.length+(drafter?' waiting for approval':' to approve')+'</button>';
-  if(admin&&drafter&&tsInternTrying()) h+='<button type="button" class="ts-seen dr-try on" onclick="tsInternTry()" title="Intern mode is on for this device — tap to turn it off (Settings turns it on)">Intern mode on</button>';   /* turned on from Settings (store/settings.js); shown only while it is on */
+  /* the graduation cap: approval mode (orders go to a doctor for approval). Locked on for interns the owner's list requires. */
+  if(CUR&&canOrderTS()){ var req=drRequired(), on=drafter;
+    h+='<button type="button" class="ts-seen dr-cap'+(on?' on':'')+(req?' locked':'')+'" onclick="tsInternTry()" aria-pressed="'+on+'" aria-label="'+(on?'Approval mode on: your orders go to a doctor for approval':'Approval mode off')+'" data-tip="'+(req?'Your orders need a doctor’s approval':on?'Your orders go to a doctor for approval · tap to turn off':'Ask a doctor to approve your orders')+'">'+DRAFT_CAP+'</button>'; }
   if(el.innerHTML!==h) el.innerHTML=h; }
 on('header.refresh',drPaint); on('rendered',drPaint); on('sheet.drawn',drPaint);
 window.tsInternTrying=function(){ try{ return sessionStorage.getItem('tsInternTry')==='1'; }catch(e){ return false; } };
-window.tsInternTry=function(){ try{ if(sessionStorage.getItem('tsInternTry')==='1') sessionStorage.removeItem('tsInternTry'); else sessionStorage.setItem('tsInternTry','1'); }catch(e){}
-  toast(tsIsDrafter()?'Intern mode — your orders are drafts':'Intern mode off'); drPaint(); };
+window.tsInternTry=function(){ if(drRequired()){ toast('Your orders need a doctor’s approval'); return; }
+  try{ if(sessionStorage.getItem('tsInternTry')==='1') sessionStorage.removeItem('tsInternTry'); else sessionStorage.setItem('tsInternTry','1'); }catch(e){}
+  toast(tsIsDrafter()?'Approval on — your orders go to a doctor for approval':'Approval off'); drPaint(); };
 window.tsDraftList=function(){ var L=drList(), can=drCanApprove(); if(!L.length){ tsOrderClose(); return; }
   var html='<div class="op-head"><span class="op-ic dr-ic">'+DRAFT_CAP+'</span><div><div class="op-kind">Drafts · '+L.length+'</div><h3>'+esc(VISIT.patient||'')+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
     +'<div class="op-list dr-list">'+L.map(function(o){ var d=o.draft||o.rate_draft, rate=!o.draft;
@@ -1884,7 +1889,7 @@ window.tsBoardTools=function(){ return drCanEdit()?'<button type="button" class=
 /* the order window tells an intern their orders need approval (rx.js · fluids.js emit order.window) */
 on('order.window',function(type){ if(!tsIsDrafter()||!DRAFT_TYPES[type]) return; var c=document.querySelector('#tsModal .tm-card'); if(!c||c.querySelector('.dr-note')) return;
   var s=DR_SET.interns[drKey(user().name)], until=s&&s.on!==false&&s.until?' until '+drUntilText(s.until):'', p=c.querySelector('p');
-  var h='<div class="dr-note">'+DRAFT_CAP+'<span>'+(staffRole()==='admin'?'Intern mode — this order':'Your orders need')+' '+(staffRole()==='admin'?'will be a draft for a doctor to approve.':'a doctor’s approval'+until+'.')+'</span></div>';
+  var h='<div class="dr-note">'+DRAFT_CAP+'<span>'+(drRequired()?'Your orders need a doctor’s approval'+until+'.':'This order goes to a doctor for approval.')+'</span></div>';
   if(p) p.insertAdjacentHTML('afterend',h); else c.insertAdjacentHTML('afterbegin',h); });
 /* ═════════ TS SORT ORDER — rows in the order the team wants them ═════════
    · Drag the grip at the left edge of a row label (it appears on hover) up or down within its section; arrow keys on the grip do the same.
@@ -1947,7 +1952,10 @@ window.tsBadgeMotion=function(){ var key=(typeof CUR!=='undefined'?CUR:'')+'|'+(
   if(first) BM.fx=[];
   else if(!bmOff()) Object.keys(st).forEach(function(id){ if(st[id]==='overdue'&&BM.st[id]&&BM.st[id]!=='overdue'){ BM.fx=BM.fx.filter(function(x){ return x.id!==id; }); BM.fx.push({id:id,cls:'bm-arrive',end:Date.now()+550}); } });
   bmApply(); BM.key=key; BM.st=st; };
-/* ═════════ TS WORKFLOW — the board filtered by the kind of work ═════════
+/* ═════════ TS WORKFLOW — board filters ═════════
+   Oct 6 2026 (step 1 answers): Filters keep only Doctor · Department · Location · Technician. "Show the work" (kinds of work) and
+   Treatment status were deleted; the code below for them is inert (wfSel is always empty) and can be removed in a later clean-up.
+   (Original notes:)
    Board → Filters: Assistant (walks, feeding, water, cage care, weights) · Lab (diagnostics and bloodwork) · Controlled drugs ·
    Fluids & CRIs · Medications. With one or more on, the board lists only patients who have that work ordered, and the hour blocks count
    only that work (base.js blocksFor asks tsWfOk). Per person, per browser (localStorage tsWf_v1) — a convenience, never shared.
@@ -1962,7 +1970,7 @@ var WF=[
   {k:'ctrl',l:'Controlled drugs',d:'Opioids, benzodiazepines, ketamine, phenobarbital…',t:function(o){ return (o.type==='med'||o.cont)&&(window.tsCtrlSched?!!tsCtrlSched(o.name):WF_CONTROLLED.test(String(o.name||'').trim())); }},
   {k:'inf',l:'Fluids & CRIs',d:'Anything running IV',t:function(o){ return !!o.cont; }},
   {k:'meds',l:'Medications',d:'Every medication order',t:function(o){ return o.type==='med'; }}];
-function wfSel(){ try{ var a=JSON.parse(localStorage.getItem(WF_KEY)||'{}'); return a[user().uid||'_']||[]; }catch(e){ return []; } }
+function wfSel(){ return []; }   /* kinds-of-work filter deleted (Oct 6 2026) */
 function wfSave(list){ try{ var a=JSON.parse(localStorage.getItem(WF_KEY)||'{}'); a[user().uid||'_']=list; localStorage.setItem(WF_KEY,JSON.stringify(a)); }catch(e){} }
 window.tsWfOn=function(){ return wfSel().length>0; };
 window.tsWfCount=function(){ return wfSel().length+flCount(); };
@@ -1976,11 +1984,11 @@ on('board.rows',function(list){ if(!tsWfOn()) return; for(var i=list.length-1;i>
    Within a category any ticked value matches (Dr. Schiff OR Dr. Moore); across categories all must match (Dr. Schiff AND ICU).
    Options come from the patients on the current board, each with its count. Per person, per browser (localStorage tsFilt_v1). */
 var FL_KEY='tsFilt_v1', FL_OPEN='', FL_OPTS={};
-var FL_GROUPS=[['st','Treatment status','Any status'],['dr','Doctor','Any doctor'],['tc','Technician','Any technician'],['wd','Ward','Any ward'],['sv','Service','Any service']];
+var FL_GROUPS=[['dr','Doctor','Any doctor'],['sv','Department','Any department'],['wd','Location','Any location'],['tc','Technician','Any technician']];
 var FL_ST=[['over','Overdue','Has tasks past due'],['due','Due now','Something due this hour'],['sched','Scheduled','More to do later today'],['clear','All caught up','Nothing overdue or due']];
 function flSel(){ try{ var a=JSON.parse(localStorage.getItem(FL_KEY)||'{}'); return a[user().uid||'_']||{}; }catch(e){ return {}; } }
 function flSave(v){ try{ var a=JSON.parse(localStorage.getItem(FL_KEY)||'{}'); a[user().uid||'_']=v; localStorage.setItem(FL_KEY,JSON.stringify(a)); }catch(e){} }
-function flCount(){ var F=flSel(); return Object.keys(F).reduce(function(n,k){ return n+((F[k]||[]).length); },0); }
+function flCount(){ var F=flSel(); return FL_GROUPS.reduce(function(n,G){ return n+((F[G[0]]||[]).length); },0); }
 function flBoardSheets(){ var b=(typeof sbBoard!=='undefined'&&sbBoard)||'IP Board'; return SHEETS.filter(function(s){ return b==='My Board'?isMine(s):boardOf(s)===b; }); }
 function flVal(s,g){ var p=s.patient||{};
   if(g==='dr') return p.doctor?'Dr. '+String(p.doctor).replace(/^dr\.?\s+/i,''):'No doctor';
@@ -2013,9 +2021,9 @@ window.tsWfChip=function(){ var S=wfSel(), F=flSel(), names=WF.filter(function(w
   if(!names.length) return '';
   return '<button type="button" class="sb-wf-chip" onclick="tsWfClear()" title="Showing only these patients — tap to show everything">'+esc(names.length>3?names.slice(0,2).join(' · ')+' +'+(names.length-2):names.join(' · '))+'<span aria-hidden="true">×</span></button>'; };
 function wfPopHTML(){ var S=wfSel(), F=flSel(); FL_OPTS=flOptions();
-  var work='<div class="wf-h">Show the work</div>'+WF.map(function(w){ var on=S.indexOf(w.k)>-1;
+  var work=''; void WF.map(function(w){ var on=S.indexOf(w.k)>-1;
       return '<button type="button" class="fp-row wf-row'+(on?' on':'')+'" onclick="tsWfToggle(\''+w.k+'\')" aria-pressed="'+on+'"><span class="fp-lab"><b>'+esc(w.l)+'</b><small>'+esc(w.d)+'</small></span><i class="wf-ck"></i></button>'; }).join('');
-  var more='<div class="wf-h">Patients</div>'+FL_GROUPS.map(function(G){ var g=G[0], vals=F[g]||[], open=FL_OPEN===g, opts=FL_OPTS[g]||[];
+  var more=FL_GROUPS.map(function(G){ var g=G[0], vals=F[g]||[], open=FL_OPEN===g, opts=FL_OPTS[g]||[];
       var sum=vals.length?vals.map(function(v){ return flLabel(g,v); }).join(', '):G[2];
       return '<button type="button" class="fp-row wf-row fl-grp'+(open?' open':'')+(vals.length?' set':'')+'" onclick="tsFlOpen(\''+g+'\')" aria-expanded="'+open+'"><span class="fp-lab"><b>'+esc(G[1])+'</b><small>'+esc(sum)+'</small></span><i class="fl-chev" aria-hidden="true"></i></button>'
         +(open?'<div class="fl-opts">'+(opts.length?opts.map(function(o,i){ var on=vals.indexOf(o.v)>-1;
@@ -2104,6 +2112,34 @@ window.addEventListener('offline',obxPaint);
 (function wait(){ if(AUTH&&AUTH.currentUser){ setTimeout(function(){ obxPaint(); obxReplay(); },2500); } else setTimeout(wait,1500); })();
 setInterval(function(){ if(!document.hidden) obxReplay(); },60000);
 
+/* ═════════ TS AUTO-UPDATE — open tabs update themselves (Oct 6 2026, step 1 answers; Tesla-style over-the-air) ═════════
+   Every 5 minutes, and whenever the tab comes back into view, the page asks the server for index.html and compares the build hashes
+   (core.js / store.js / app.css ?v=…) with the ones it is running. When a new version is live, the tab reloads itself at a safe moment:
+   right away if the tab is in the background, otherwise after 60 seconds with no typing or tapping — never while a window, panel or
+   field is open, and never while charting is still waiting to reach the database. The remembered view (lastview.js) reopens the same
+   tab and patient, and a short note says it updated. Nothing is lost: everything charted is already saved. */
+var AU={mine:null,pending:false,last:Date.now(),t:0};
+function auHashes(html){ var h={}; String(html||'').replace(/(core\.js|store\.js|app\.css|voice\.js|es\.js)\?v=([0-9a-f]+)/g,function(m,f,v){ h[f]=v; }); return h; }
+function auMine(){ if(AU.mine) return AU.mine; var h={}; [].forEach.call(document.querySelectorAll('script[src],link[href]'),function(el){ var u=el.getAttribute('src')||el.getAttribute('href')||''; var m=/(core\.js|store\.js|app\.css|voice\.js)\?v=([0-9a-f]+)/.exec(u); if(m) h[m[1]]=m[2]; }); AU.mine=h; return h; }
+function auCheck(){ if(AU.pending||!/^https?:/.test(location.protocol)) return; var mine=auMine(); if(!mine['core.js']&&!mine['store.js']) return;
+  fetch(location.pathname+'?au='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){ var live=auHashes(t);
+    if(!live['core.js']&&!live['store.js']) return;
+    var diff=['core.js','store.js','app.css','voice.js'].some(function(k){ return live[k]&&mine[k]&&live[k]!==mine[k]; });
+    if(diff){ AU.pending=true; auTry(); } }).catch(function(){}); }
+function auBusy(){ var m=document.getElementById('tsModal'); if(m&&m.classList.contains('show')) return true;
+  if(document.querySelector('.drawer.open,#tsOrderSheet.show,.ts-menu.show,#flPop,#tsTv')) return true;
+  var a=document.activeElement; if(a&&a.matches&&a.matches('input,textarea,select,[contenteditable="true"]')) return true;
+  try{ if(obxAll().length||Object.keys(OBX_LIVE||{}).length) return true; }catch(e){}
+  return false; }
+function auTry(){ if(!AU.pending) return; clearTimeout(AU.t);
+  var quiet=Date.now()-AU.last>=60000;
+  if((document.hidden||quiet)&&!auBusy()){ try{ sessionStorage.setItem('tsAuDone','1'); }catch(e){} location.reload(); return; }
+  AU.t=setTimeout(auTry,15000); }
+['pointerdown','keydown','wheel','touchstart'].forEach(function(ev){ addEventListener(ev,function(){ AU.last=Date.now(); },{passive:true,capture:true}); });
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') auCheck(); else if(AU.pending) auTry(); });
+setInterval(auCheck,5*60*1000); setTimeout(auCheck,30000);
+(function(){ var done=false; try{ done=sessionStorage.getItem('tsAuDone')==='1'; sessionStorage.removeItem('tsAuDone'); }catch(e){} if(done) setTimeout(function(){ try{ toast('Updated to the latest version'); }catch(e){} },2500); })();
+window.tsAutoUpdate={check:auCheck,state:function(){ return {pending:AU.pending,mine:auMine()}; }};
 /* ═════════ TS SAFETY — duplicate orders · weight changes ═════════
    Duplicate: opening a drug that is already running on the sheet says so at the top of the order window; adding it anyway needs a tick.
    Weight: charting a weight that differs from the dosing weight shows every weight-based dose before and after; a doctor decides
@@ -3902,8 +3938,7 @@ window.tsLevelsReport=function(){ if(!lvrOwner()) return; opShow(lvrHTML(),'lvr'
   lvrLoad(); };
 /* ═════════ TS SETTINGS — owner / admin tools, out of the clinical screens (Oct 2026) ═════════
    A gear beside the patient chip, shown only to the owner and admins, opens one sheet with:
-   · Intern mode — order as an intern would, on this device until the tab closes (store/drafts.js tsInternTry);
-     while it is on, an "Intern mode on" pill stays on the sheet toolbar to turn it off.
+   · (Intern mode moved to the graduation cap on the sheet toolbar, Oct 6 2026 — store/drafts.js.)
    · Intern drafts — which interns' orders need a doctor's approval (tsInternsOpen), for the people allowed to change it.
    · Lowered levels — the owner's report of hospitalization billed below the sheet's level (store/levels.js), the owner only.
    · Code list — how many codes are loaded and Import code list (.json) (store/charges.js tsChImport).
@@ -3922,23 +3957,21 @@ function stgHTML(){ var admin=staffRole()==='admin', trying=window.tsInternTryin
   var canDrafts=false; try{ canDrafts=drCanEdit(); }catch(e){}
   return '<div class="op-head"><span class="op-ic">'+STG_ICON+'</span><div><div class="op-kind">Owner &amp; admins</div><h3>Settings</h3></div><button type="button" class="op-x" onclick="tsSettingsClose()" aria-label="Close">×</button></div>'
     +'<div class="stg-list">'
-    +(admin?stgRow('Intern mode','Order as an intern would: your orders become drafts. Only on this device, until the tab closes.','<button type="button" class="stg-btn'+(trying?' on':'')+'" data-stg="intern" aria-pressed="'+(!!trying)+'">'+(trying?'Turn off':'Turn on')+'</button>'):'')
     +(canDrafts?stgRow('Intern drafts','Which interns’ orders need a doctor’s approval.','<button type="button" class="stg-btn" data-stg="drafts">Choose…</button>'):'')
     +(window.tsLevelsOwner&&tsLevelsOwner()?stgRow('Lowered levels','Hospitalization billed below the level the sheet worked out, by who lowered it. Only you see this.','<button type="button" class="stg-btn" data-stg="levels">Open report</button>'):'')
-    +(window.tsInsSplitCount&&canOrderTS()&&tsInsSplitCount()?stgRow('Long order names',tsInsSplitCount()+' on this sheet could be a short name with the rest kept as instructions. You see the list before anything changes.','<button type="button" class="stg-btn" data-stg="names">Review…</button>'):'')
     +(window.tsOnTime?stgRow('On-time report','Treatments on time, late and missed — by shift, ward and hour; antibiotics from order to first dose; how stays ended. Never by person.','<button type="button" class="stg-btn" data-stg="ontime">Open</button>'):'')
+    +(window.tsUsageReport?stgRow('Usage','Which parts of the app were used in the last 7 days, and taps per treatment. Never by person.','<button type="button" class="stg-btn" data-stg="usage">Open</button>'):'')
     +(window.tsSpanishWording?stgRow('Spanish wording','How the app reads in Español — clinical terms first. A correction here changes it for everyone.','<button type="button" class="stg-btn" data-stg="i18n">Review…</button>'):'')
     +stgRow('Code list',(info?esc(info):'Not loaded yet')+'. Import the WOOFware code list with its prices and fees.','<label class="stg-btn">Import (.json)<input type="file" accept=".json,application/json" hidden id="stgImport"></label>')
     +'</div>'; }
 function stgRender(){ if(!stgOn) return; var m=document.getElementById('tsOrderSheet'), card=m&&m.querySelector('.op-card.stg');
   if(!card||!m.classList.contains('show')){ opShow(stgHTML(),'stg'); card=document.querySelector('#tsOrderSheet .op-card.stg'); } else card.innerHTML=stgHTML();
   card.onclick=function(e){ var b=e.target.closest('[data-stg]'); if(!b) return; var k=b.getAttribute('data-stg');
-    if(k==='intern'){ tsInternTry(); stgRender(); }
-    else if(k==='drafts'){ stgOn=false; tsInternsOpen(); }
-    else if(k==='names'){ stgOn=false; tsInsSplitOpen(); }
+    if(k==='drafts'){ stgOn=false; tsInternsOpen(); }
     else if(k==='levels'){ stgOn=false; tsLevelsReport(); }
     else if(k==='ontime'){ stgOn=false; tsOnTime(1); }
-    else if(k==='i18n'){ stgOn=false; tsSpanishWording(); } };
+    else if(k==='i18n'){ stgOn=false; tsSpanishWording(); }
+    else if(k==='usage'){ stgOn=false; tsUsageReport(); } };
   var f=card.querySelector('#stgImport'); if(f) f.onchange=function(){ tsChImport(f); }; }
 window.tsSettingsOpen=function(){ if(!stgAllowed()) return; stgOn=true; stgRender(); try{ if(window.tsChCodesInfo&&!tsChCodesInfo()) chLoad().then(function(){ if(stgOn) stgRender(); }); }catch(e){} };   /* the code list loads on first use */
 window.tsSettingsClose=function(){ stgOn=false; tsOrderClose(); };
@@ -4212,6 +4245,30 @@ window.tsCopyMenu=function(btn){ var m=document.getElementById('tsCopyMenu'); if
   setTimeout(function(){ document.addEventListener('click',out,true); document.addEventListener('keydown',key); },0);
   m.onclick=function(e){ var b=e.target.closest('[data-c]'); if(!b) return; close(); if(b.getAttribute('data-c')==='tx') tsOcCopyTx(); else tsVCopy(); };
   var f=m.querySelector('button'); if(f) f.focus(); };
+/* ═════════ TS ORDER FAST — the medication order window, shorter (Oct 6 2026, step 1 answers: "change" the order window) ═════════
+   What every order needs stays in view: the reference / house doses, Dose, Route, Frequency, First dose, and the dose check.
+   Concentration, Instructions (with their snippets) and "Require a note each time it's given" fold under More options; the button
+   says what is set inside ("50 mg/mL · Instructions"), and it opens by itself when an order already has instructions or a required note.
+   Return in any field adds the order — with a house dose, ordering is: pick the drug, press return. */
+function ofSum(card){ var c=card.querySelector('#rxConc'), u=card.querySelector('#rxConcU'), n=card.querySelector('#rxNotes'), r=card.querySelector('#rxNoteReq'), out=[];
+  if(c&&c.value.trim()) out.push(c.value.trim()+' '+String((u&&u.textContent)||'').replace(/[()]/g,'').trim());
+  if(n&&n.value.trim()) out.push('Instructions'); if(r&&r.getAttribute('aria-checked')==='true') out.push('Note required');
+  return out; }
+function ofPaint(card){ var b=card.querySelector('.of-more'); if(!b) return; var s=ofSum(card); b.querySelector('small').textContent=s.length?s.join(' · '):'Concentration, instructions, required note'; }
+on('rx.opened',function(){ setTimeout(function(){ var card=document.querySelector('#tsModal .tm-card'); if(!card||card.querySelector('.of-more')) return;
+  var conc=card.querySelector('#rxConc'), notes=card.querySelector('#rxNotes'), req=card.querySelector('.oc-req-row'), main=card.querySelector('.tm-grid');
+  var labs=[conc&&conc.closest('label'),notes&&notes.closest('label')].filter(Boolean); if(!main||!labs.length) return;
+  var btn=document.createElement('button'); btn.type='button'; btn.className='of-more'; btn.setAttribute('aria-expanded','false'); btn.innerHTML='<span>More options</span><small></small><i aria-hidden="true"></i>';
+  var box=document.createElement('div'); box.className='of-box'; box.hidden=true; var g=document.createElement('div'); g.className='tm-grid of-grid'; labs.forEach(function(l){ g.appendChild(l); }); box.appendChild(g); if(req) box.appendChild(req);
+  var after=req&&!box.contains(req)?req:main; main.parentNode.insertBefore(btn,main.nextSibling); btn.parentNode.insertBefore(box,btn.nextSibling);
+  btn.onclick=function(){ var open=box.hidden; box.hidden=!open; btn.setAttribute('aria-expanded',String(open)); if(open){ var f=box.querySelector('input'); if(f) try{ f.focus({preventScroll:true}); }catch(e){} } };
+  if((notes&&notes.value.trim())||(card.querySelector('#rxNoteReq')||{getAttribute:function(){}}).getAttribute('aria-checked')==='true'){ box.hidden=false; btn.setAttribute('aria-expanded','true'); }
+  card.addEventListener('input',function(){ ofPaint(card); }); card.addEventListener('click',function(e){ if(e.target.closest('#rxNoteReq')) setTimeout(function(){ ofPaint(card); },0); });
+  ofPaint(card); setTimeout(function(){ ofPaint(card); },400); },90); });
+/* return adds the order (not from a textarea, a snippet chip or a select) */
+document.addEventListener('keydown',function(e){ if(e.key!=='Enter'||e.isComposing||e.shiftKey) return; var m=document.getElementById('tsModal'); if(!m||!m.classList.contains('show')) return;
+  var card=m.querySelector('.tm-card.rx-card'); if(!card||!card.contains(e.target)||!/^(INPUT)$/.test(e.target.nodeName)) return;
+  var ok=card.querySelector('[data-ok]'); if(ok&&!ok.disabled){ e.preventDefault(); ok.click(); } });
 /* ═════════ TS ALERTS — short alerts on the board, about the patient and about the client (Oct 2026) ═════════
    Patient alerts (sheet.patient.alerts, strings): "Caution — may bite", "Anxious", "Diabetic" …  — red when it's about safety.
    Client alerts (sheet.patient.client_alerts, [{text, at, by}]): "Owner waiting for results", "Owner wants a call before procedures" …
@@ -4281,12 +4338,9 @@ function hlabelSafe(h){ try{ return fmtTime(h*60); }catch(e){ return h+':00'; } 
    · Care Team: one column, doctor over technician, names not initials, each person with their own colour dot. The tech line still
      opens the tech picker (ops.js tsPickTech); hover either line for the full name and role.
    · Alerts: safety alerts in colour, client alerts as small chips under them (alerts.js cell, re-shaped here); "+ Add alert" on hover.
-   · Group title "Inpatients 2" with pills — CPR · DNR · CAUTION · OWNER WAITING — tap one to show only those patients.
+   · (Oct 6 2026, step 1 answers) No CPR · DNR · CAUTION · OWNER WAITING count pills: code status shows once, on each row.
    · Sorting: click a column name; again to reverse. Remembered per person, per browser (localStorage tsSbSort_v1 — a convenience).
-   · Keyboard on the board: ↑ ↓ move, space Quick Look, return opens the sheet, esc closes. Click a row to peek, double-click to open.
-     Space is also hold-to-talk (voice.js): on the board a quick tap peeks and holding it still listens.
-   · Quick Look: up next today, latest temperature · heart rate · respiratory rate (coloured outside FLAG_RULES), alerts, owner and
-     belongings — and Open Sheet.
+   · Click a row to open the sheet. Keyboard: ↑ ↓ move, return opens. (Quick Look was deleted Oct 6 2026 — step 1 answers.)
    Nothing here is saved to the sheet; it only reads what the board already has. */
 var BV_SORT_KEY='tsSbSort_v1', BV_PILL='', BV_SEL=null, BV_QL=false, BV_TALLY={}, BV_ROWS=[];
 var BV_COLORS=['#38BDD2','#4CC38A','#B28BEF','#F2A93B','#FF8A7A','#5B9DF5','#E879B9','#9BC53D'];
@@ -4316,7 +4370,7 @@ on('board.rows',function(list){ if(!BV_PILL) return; var f=BV_PILLS.find(functio
   for(var i=list.length-1;i>=0;i--){ if(!f[3](list[i])) list.splice(i,1); } },97);
 on('board.rows',function(list){ var S=bvSort(); list.sort(function(a,b){ var A=bvKey(a,S.k), B=bvKey(b,S.k); return (A<B?-1:A>B?1:0)*S.d||String(a.name).localeCompare(String(b.name)); });
   BV_ROWS=list; if(BV_SEL&&!list.some(function(r){ return r._id===BV_SEL; })){ BV_SEL=null; BV_QL=false; } },100);
-window.tsBoardPills=function(){ var h=BV_PILLS.map(function(p){ var n=BV_TALLY[p[0]]||0; if(!n) return '';
+window.tsBoardPills=function(){ return ''; var h=BV_PILLS.map(function(p){ var n=BV_TALLY[p[0]]||0; if(!n) return '';
     return '<button type="button" class="sb-pill'+(BV_PILL===p[0]?' on':'')+'" aria-pressed="'+(BV_PILL===p[0])+'" onclick="tsBoardPill(\''+p[0]+'\')"><i style="background:'+p[2]+'"></i>'+n+' '+p[1]+'</button>'; }).join('');
   return h?'<div class="sb-pills">'+h+'</div>':''; };
 window.tsBoardPill=function(k){ BV_PILL=BV_PILL===k?'':k; try{ renderDash(); }catch(e){} };
@@ -4338,8 +4392,7 @@ window.tsTeamCell=function(r){ var dr=bvDr(r.drName), t=r.techName;
 
 /* ---- selection, Quick Look, keyboard ---- */
 window.tsBoardSel=function(r){ return BV_SEL?r._id===BV_SEL:!!r.cur; };
-window.tsBoardClick=function(i,ev){ if(ev&&ev.detail>1) return; var r=BV_ROWS[i]; if(!r) return;
-  if(BV_SEL===r._id&&BV_QL){ BV_QL=false; } else { BV_SEL=r._id; BV_QL=true; } bvMark(); bvQL(); };
+window.tsBoardClick=function(i,ev){ if(ev&&ev.detail>1) return; var r=BV_ROWS[i]; if(!r) return; BV_SEL=r._id; BV_QL=false; openPatient(i); };   /* one click opens the sheet */
 function bvMark(){ var sel=BV_SEL||((BV_ROWS.find(function(r){ return r.cur; })||{})._id);
   document.querySelectorAll('#ctab-dash .sb-row[data-id]').forEach(function(el){ var on=el.getAttribute('data-id')===sel; el.classList.toggle('sel',on); el.classList.toggle('ql-open',on&&BV_QL);
     if(on&&!el.classList.contains('sb-head')){ try{ var sc=el.closest('.sb-scroll'), rr=el.getBoundingClientRect(), sr=sc.getBoundingClientRect(); if(rr.bottom>sr.bottom||rr.top<sr.top+40) el.scrollIntoView({block:'nearest'}); }catch(e){} } }); }
@@ -4354,7 +4407,8 @@ function bvVitals(d){ var sp=sexSp((d.patient||{}).species);
   return [['Temp','temp'],['HR','hr'],['RR','rr']].map(function(x){ var rule=FLAG_RULES.find(function(r){ return r.id===x[1]; }); var R=rule?readings(d,rule.match):[], l=R[R.length-1];
     if(!l) return {k:x[0],v:'—',ag:'not charted',sev:0}; var v=numOf(l.v);
     return {k:x[0],v:esc(l.v)+(rule.unit&&!/[a-z°%]/i.test(l.v)&&rule.id==='temp'?' °F':''),ag:l.at?ago(l.at):'',sev:v==null?0:sevOf(rule,v,sp)}; }); }
-function bvQL(){ var el=document.getElementById('tsQL'); if(!el){ el=document.createElement('aside'); el.id='tsQL'; el.className='ts-ql'; el.setAttribute('aria-label','Quick Look'); document.body.appendChild(el);
+function bvQL(){ var q=document.getElementById('tsQL'); if(q) q.remove(); return;   /* Quick Look deleted (Oct 6 2026) */
+  var el=document.getElementById('tsQL'); if(!el){ el=document.createElement('aside'); el.id='tsQL'; el.className='ts-ql'; el.setAttribute('aria-label','Quick Look'); document.body.appendChild(el);
     el.addEventListener('click',function(e){ if(e.target.closest('[data-qx]')){ BV_QL=false; bvMark(); bvQL(); } else if(e.target.closest('[data-qopen]')){ bvOpen(); } }); }
   var r=BV_ROWS.find(function(x){ return x._id===BV_SEL; }), s=r&&SHEETS.find(function(x){ return x._id===r._id; }), d=s&&(s._id===CUR&&curDoc?curDoc:s);
   if(!BV_QL||!r||!d||currentCTab!=='dash'){ el.classList.remove('show'); el.setAttribute('aria-hidden','true'); return; }
@@ -4377,7 +4431,7 @@ function bvKeyOk(t){ if(!bvBoardKeys()) return false; if(t&&t.closest&&t.closest
 function bvSpace(){ var i=BV_ROWS.findIndex(function(r){ return r._id===(BV_SEL||((BV_ROWS.find(function(x){ return x.cur; })||{})._id)); }); if(i<0) i=0;
   BV_SEL=BV_ROWS[i]._id; BV_QL=!BV_QL; bvMark(); bvQL(); }
 /* voice.js holds space for talking; on the board it asks first, and a quick tap comes back here */
-window.tsBoardSpaceTap=function(m){ var a=document.activeElement; if(m==='can') return bvKeyOk(a)&&!(a&&a.closest&&a.closest('button,a,[role="button"]')); if(m==='tap') bvSpace(); };
+window.tsBoardSpaceTap=function(m){ return false; };   /* space is only hold-to-talk now */
 /* toolbar keys on the board: 1–4 switch board (⌘1–⌘4 belong to the browser's tabs), H flips List ↔ Hours */
 document.addEventListener('keydown',function(e){ if(typeof currentCTab==='undefined'||currentCTab!=='dash'||e.metaKey||e.ctrlKey||e.altKey||e.isComposing||e.repeat) return;
   var t=e.target&&e.target.closest?e.target:null; if(t&&t.closest('input,textarea,select,[contenteditable="true"],.ts-menu,.op-sheet,#tsModal')) return;
@@ -4391,7 +4445,6 @@ document.addEventListener('keydown',function(e){ if(!bvBoardKeys()||e.metaKey||e
   if((e.key===' '||e.key==='Enter')&&t&&t.closest('button,a,[role="button"]')) return;   /* a focused button keeps its own space / return */
   var i=BV_ROWS.findIndex(function(r){ return r._id===(BV_SEL||((BV_ROWS.find(function(x){ return x.cur; })||{})._id)); });
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); i=i<0?0:Math.max(0,Math.min(BV_ROWS.length-1,i+(e.key==='ArrowDown'?1:-1))); BV_SEL=BV_ROWS[i]._id; bvMark(); if(BV_QL) bvQL(); }
-  else if(e.key===' '){ e.preventDefault(); bvSpace(); }
   else if(e.key==='Enter'){ if(i>-1){ e.preventDefault(); BV_SEL=BV_ROWS[i]._id; bvOpen(); } }
   else if(e.key==='Escape'){ if(BV_QL){ e.preventDefault(); BV_QL=false; bvMark(); bvQL(); } else if(BV_PILL){ BV_PILL=''; try{ renderDash(); }catch(err){} } } });
 on('tab',function(){ if(BV_QL){ BV_QL=false; } bvQL(); });
@@ -4963,8 +5016,8 @@ function rlSplit(name){ name=String(name||''); if(name.length<26) return null; v
   rest=rest.replace(/\s+and check\s+/i,' · check ').replace(/^./,function(c){ return c.toUpperCase(); });
   if(short.length<3||!rest) return null; return {name:short,ins:rest}; }
 function rlSplits(only){ return (ORDERS||[]).filter(function(o){ return !o.dc&&!o._ghost&&(!only||o.id===only); }).map(function(o){ var p=rlSplit(o.name); return p?{o:o,name:p.name,ins:p.ins+(rlIns(o)?' · '+rlIns(o):'')}:null; }).filter(Boolean); }
-window.tsInsSplitOne=function(o){ return !!rlSplit(o&&o.name); };
-window.tsInsSplitCount=function(){ try{ return rlSplits().length; }catch(e){ return 0; } };
+window.tsInsSplitOne=function(o){ return false; };   /* long-names tool deleted (Oct 6 2026) */
+window.tsInsSplitCount=function(){ return 0; };
 window.tsInsSplitOpen=function(only){ if(!canOrderTS()){ toast('Only doctors change orders'); return; } var L=rlSplits(only);
   if(!L.length){ toast('No long order names on this sheet'); return; }
   opShow('<div class="op-head"><div><div class="op-kind">Orders</div><h3>Shorten long names</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
@@ -5228,7 +5281,7 @@ on('rx.calc',function(){ try{ var sg=document.getElementById('rxSugg'), calc=doc
   var f=per?tot/dose:1, nd=nice/f, ndTxt=String(Math.round(nd*1e4)/1e4);
   ez.innerHTML='Easy amount: <button type="button" onclick="tsRxEasy('+ndTxt+')">'+fmtN(nice)+' '+esc(base)+(conc>0?' · '+fmtVol(nice/conc)+' mL':'')+'</button>'+(per?' <span>'+esc(fmtN(nice/kg))+' '+esc(base)+'/kg</span>':''); }catch(e){} });
 window.tsRxEasy=function(v){ var d=document.getElementById('rxDose'); if(!d) return; d.value=String(v); tsRxCalc(true); };
-/* ═════════ TS ICU DISPLAY — the overdue screen on the wall (Oct 2026, Instinct's "Overdue TV screen") ═════════
+/* ═════════ TS ICU DISPLAY — the inpatients on the ICU TV (Oct 2026; Oct 6: every inpatient, done and due — step 1 answers) ═════════
    A full-screen, read-only view for a TV in the ICU: every patient in the ward with treatments overdue or due now, the most late first,
    in type you can read across the room. Each card: name, cage, who's on it (Assign to me, or the tech), code status, then each overdue
    treatment and how late ("Temperature · 4 h late"), with C-II tags on controlled drugs; due-now treatments underneath in the accent.
@@ -5239,31 +5292,38 @@ var TV_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wid
 function tvWard(s){ return String(((s.patient||{}).location)||'Treatment Area'); }
 function tvLate(m){ m=Math.round(m); return m<60?m+' min late':m<120?'1 h '+(m-60)+' min late':Math.floor(m/60)+' h late'; }   /* across the room: minutes only while it's under 2 h */
 /* what's overdue / due now on one sheet, today (the board's own rules: nothing before admission, 18-minute due window) */
-function tvItems(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), late=[], due=[], adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
+function tvItems(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), late=[], due=[], next=[], done=0, last=null, adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
   Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont||o.draft) return;
-    freqTimes(o).forEach(function(h){ if(h*60<from) return; var t=slotMin(o,dk,h*60), m=marks[dk+'_'+id+'_'+(h*60)]; if(m&&m.status) return;
+    freqTimes(o).forEach(function(h){ if(h*60<from) return; var t=slotMin(o,dk,h*60), m=marks[dk+'_'+id+'_'+(h*60)];
+      if(m&&m.status){ if(m.status==='completed'){ done++; var at=m.min!=null?m.min:t; if(!last||at>last.t) last={n:o.name,t:at}; } return; }
       var it={n:o.name,t:t,c:window.tsCtrlSched?tsCtrlSched(o.type==='med'?o.name:''):''};
-      if(t<n-18) late.push(it); else if(t<=n+18) due.push(it); }); });
-  late.sort(function(a,b){ return a.t-b.t; }); due.sort(function(a,b){ return a.t-b.t; }); return {late:late,due:due}; }
+      if(t<n-18) late.push(it); else if(t<=n+18) due.push(it); else if(t<=n+120) next.push(it); }); });
+  late.sort(function(a,b){ return a.t-b.t; }); due.sort(function(a,b){ return a.t-b.t; }); next.sort(function(a,b){ return a.t-b.t; });
+  return {late:late,due:due,next:next,done:done,last:last}; }
+/* every inpatient in the ward (Oct 6 2026, step 1 answers: the ICU TV shows all inpatients, what is done and what needs doing) — most late first */
 function tvRows(){ var w=TV.ward, out=[]; (SHEETS||[]).forEach(function(s0){ var s=(s0._id===CUR&&curDoc)?curDoc:s0; if(s0.board==='OP') return; if(w&&w!=='All'&&tvWard(s0)!==w) return;
-    var I=tvItems(s); if(!I.late.length&&!I.due.length) return; var p=s0.patient||{};
+    var I=tvItems(s), p=s0.patient||{};
     out.push({s:s0,p:p,I:I,worst:I.late.length?nowMin()-I.late[0].t:-1}); });
-  return out.sort(function(a,b){ return b.worst-a.worst||b.I.due.length-a.I.due.length; }); }
+  return out.sort(function(a,b){ return b.worst-a.worst||b.I.due.length-a.I.due.length||String(a.p.name||'').localeCompare(String(b.p.name||'')); }); }
 function tvWards(){ var W={}; (SHEETS||[]).forEach(function(s){ if(s.board!=='OP') W[tvWard(s)]=(W[tvWard(s)]||0)+1; }); return Object.keys(W).sort(); }
-function tvCard(r){ var p=r.p, nm=((p.name||'')+' '+(p.last||'')).trim()||'Unnamed', c=window.tsClaimOf?tsClaimOf(r.s):null, who=c?(c.name||c.by):(p.tech||''), n=nowMin();
-  var worst=r.worst, cls=worst>=120?' l2':worst>=0?' l1':' due';
+function tvCard(r){ var p=r.p, nm=((p.name||'')+' '+(p.last||'')).trim()||'Unnamed', c=window.tsClaimOf?tsClaimOf(r.s):null, who=c?(c.name||c.by):(p.tech||''), n=nowMin(), I=r.I;
+  var worst=r.worst, cls=worst>=120?' l2':worst>=0?' l1':I.due.length?' due':' ok';
   var code=/^(DNR|CPR|BLS|ALS)$/.test(p.code||'')?'<span class="tv-code '+(p.code==='DNR'?'dnr':'cpr')+'">'+esc(p.code)+'</span>':'';
-  var line=function(it,isDue){ return '<li class="'+(isDue?'d':'')+'"><b>'+esc(it.n)+(it.c?'<span class="rl-ctrl">C-'+esc(it.c)+'</span>':'')+'</b><span>'+(isDue?'Due now':esc(tvLate(n-it.t)))+'</span></li>'; };
-  var L=r.I.late.slice(0,5), more=r.I.late.length-L.length;
+  var nm2=function(it){ return '<b>'+esc(it.n)+(it.c?'<span class="rl-ctrl">C-'+esc(it.c)+'</span>':'')+'</b>'; };
+  var L=I.late.slice(0,5), more=I.late.length-L.length;
+  var rows=L.map(function(it){ return '<li>'+nm2(it)+'<span>'+esc(tvLate(n-it.t))+'</span></li>'; }).join('')+(more>0?'<li class="m">+ '+more+' more overdue</li>':'')
+    +I.due.slice(0,3).map(function(it){ return '<li class="d">'+nm2(it)+'<span>Due now</span></li>'; }).join('');
+  if(!L.length&&!I.due.length) rows+=I.next.slice(0,2).map(function(it){ return '<li class="n">'+nm2(it)+'<span>'+esc(fmtTime(it.t))+'</span></li>'; }).join('')||'<li class="n"><b>Nothing more due in the next 2 hours</b></li>';
+  var foot='<div class="tv-done"><b>'+I.done+'</b> done today'+(I.last?' · last: '+esc(I.last.n)+' at '+esc(fmtTime(I.last.t)):'')+'</div>';
   return '<article class="tv-card'+cls+'"><header><div><h2>'+esc(nm)+'</h2><p>'+esc([p.species,p.breed].filter(Boolean).join(' · '))+'</p></div><div class="tv-meta">'+code+'<span class="tv-cage">'+esc(tvWard(r.s))+'</span></div></header>'
     +(who?'<div class="tv-who">'+(c?'With ':'Tech · ')+esc(who)+'</div>':'')
-    +'<ul>'+L.map(function(it){ return line(it,false); }).join('')+(more>0?'<li class="m">+ '+more+' more overdue</li>':'')+r.I.due.slice(0,3).map(function(it){ return line(it,true); }).join('')+'</ul></article>'; }
-function tvPaint(){ var el=document.getElementById('tsTv'); if(!el) return; var R=tvRows(), late=R.reduce(function(a,r){ return a+r.I.late.length; },0), due=R.reduce(function(a,r){ return a+r.I.due.length; },0);
+    +'<ul>'+rows+'</ul>'+foot+'</article>'; }
+function tvPaint(){ var el=document.getElementById('tsTv'); if(!el) return; var R=tvRows(), late=R.reduce(function(a,r){ return a+r.I.late.length; },0), due=R.reduce(function(a,r){ return a+r.I.due.length; },0), done=R.reduce(function(a,r){ return a+r.I.done; },0);
   var now=new Date(), clock=now.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-  el.querySelector('.tv-h').innerHTML='<div><h1>'+esc(TV.ward&&TV.ward!=='All'?TV.ward:'All wards')+'</h1><p>'+(R.length?'<b class="tv-n late">'+late+'</b> overdue · <b class="tv-n">'+due+'</b> due now · '+R.length+' patient'+(R.length>1?'s':''):'Overdue treatments')+'</p></div><div class="tv-clock">'+esc(clock)+'</div>';
-  el.querySelector('.tv-grid').innerHTML=R.length?R.map(tvCard).join(''):'<div class="tv-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9"/></svg><b>All caught up</b><span>Nothing overdue'+(TV.ward&&TV.ward!=='All'?' in '+esc(TV.ward):'')+'</span></div>'; }
+  el.querySelector('.tv-h').innerHTML='<div><h1>'+esc(TV.ward&&TV.ward!=='All'?TV.ward:'All wards')+'</h1><p>'+(R.length?'<b class="tv-n late">'+late+'</b> overdue · <b class="tv-n">'+due+'</b> due now · <b class="tv-n ok">'+done+'</b> done today · '+R.length+' patient'+(R.length>1?'s':''):'Inpatients')+'</p></div><div class="tv-clock">'+esc(clock)+'</div>';
+  el.querySelector('.tv-grid').innerHTML=R.length?R.map(tvCard).join(''):'<div class="tv-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9"/></svg><b>No inpatients'+(TV.ward&&TV.ward!=='All'?' in '+esc(TV.ward):'')+'</b><span>Patients appear here as soon as they are admitted</span></div>'; }
 window.tsTvOpen=function(ward){ TV.ward=ward||'ICU'; var el=document.getElementById('tsTv');
-  if(!el){ el=document.createElement('div'); el.id='tsTv'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Overdue treatments display'); document.body.appendChild(el); }
+  if(!el){ el=document.createElement('div'); el.id='tsTv'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Inpatients display'); document.body.appendChild(el); }
   el.innerHTML='<div class="tv-h"></div><div class="tv-grid"></div><footer><span>Updates live · read-only</span><button type="button" onclick="tsTvFull()">Full screen</button><button type="button" onclick="tsTvClose()">Exit</button></footer>';
   document.body.classList.add('tv-on'); tvPaint(); clearInterval(TV.t); TV.t=setInterval(tvPaint,20000);
   try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(function(l){ TV.lock=l; }).catch(function(){}); }catch(e){}
@@ -5278,9 +5338,9 @@ on('rendered',function(){ if(document.getElementById('tsTv')) tvPaint(); });
 (function(){ var m=/display=([^&]+)/.exec(location.hash||''); if(!m) return; var w=decodeURIComponent(m[1]), tries=0;
   (function go(){ if((SHEETS||[]).length||tries>40){ tsTvOpen(w); return; } tries++; setTimeout(go,500); })(); })();
 /* the board's Display button: pick the ward */
-window.tsTvBtn=function(){ return '<button type="button" class="sb-tvb" data-tip="Overdue display for a TV" onclick="tsTvPick(event)">'+TV_IC+'Display</button>'; };
+window.tsTvBtn=function(){ return '<button type="button" class="sb-tvb" data-tip="Inpatients on a TV" onclick="tsTvPick(event)">'+TV_IC+'Display</button>'; };
 window.tsTvPick=function(ev){ ev.stopPropagation(); var W=tvWards(); if(W.indexOf('ICU')<0) W.unshift('ICU');
-  _openPop(ev.currentTarget,'<div class="sb-filter-pop tv-pick" style="width:236px;padding:6px 8px"><div class="tv-pick-h">Overdue display</div>'
+  _openPop(ev.currentTarget,'<div class="sb-filter-pop tv-pick" style="width:236px;padding:6px 8px"><div class="tv-pick-h">Inpatients on a TV</div>'
     +W.concat(['All']).map(function(w){ return '<button type="button" class="fp-row" onclick="_closePop();tsTvOpen(\''+esc(w).replace(/'/g,"\\'")+'\')"><span class="fp-lab"><b>'+esc(w==='All'?'All wards':w)+'</b></span></button>'; }).join('')+'</div>'); };
 /* ═════════ TS ON-TIME REPORT — the hospital measured like a factory (Oct 2026) ═════════
    Settings → On-time report (owner & admins). For today or the last 7 days, every scheduled treatment on every sheet — open, and closed
@@ -5410,6 +5470,66 @@ window.tsSpanishWording=function(){ if(window.pvxLangLoad&&!window.I18N_ES){ pvx
   card.addEventListener('change',function(e){ var i=e.target.closest('.lw-es'); if(!i) return; var k=i.getAttribute('data-k'), v=i.value.trim(), X=pvxLangDict(), base=k.indexOf('#')>-1?X.T[k]:X.D[k];
     var hk=(k.match(/#/g)||[]).length, hv=(v.match(/#/g)||[]).length; if(v&&hk!==hv){ toast('Keep the '+hk+' #'+(hk===1?'':'s')+' — '+(hk===1?'it is':'they are')+' the number or time'); i.focus(); return; }
     if(!v||v===base) delete LW.map[k]; else LW.map[k]=v; lwSave(); var row=i.closest('.lw-row'); if(row) row.classList.toggle('own',k in LW.map); toast('Saved for everyone using Español'); }); };
+/* ═════════ TS USAGE — which parts of the app are used (Oct 6 2026, step 1: "requirements need evidence") ═════════
+   Counts uses of each part per hospital per day — never per person, never which patient: Firestore ts_usage/{hospital}_{YYYYMMDD}
+   {counts:{feature:n}, taps, charted, sessions}. Kept in memory and sent every 2 minutes and when the tab is hidden (FieldValue.increment,
+   so many tabs add up). "taps" (every tap or click in the app) ÷ "charted" (treatments recorded) is the taps-per-treatment number.
+   Settings → Usage shows the last 7 days next to the step-1 requirement names. Until the database rule for ts_usage is published the
+   counts are kept on this device only (localStorage tsUsage_v1). The feature ids match the requirement cards (b-hours, o-house …). */
+var US={c:{},taps:0,charted:0,sessions:1,local:false,t:0};
+var US_FN={ 'b-hours':['toggleSbTx'],'b-boards':['setSbBoard'],'b-list':['tsBoardClick'],'b-filter':['tsSbFilters','tsFlToggle'],'b-alerts':['tsAlertEdit'],'b-tv':['tsTvOpen'],'b-sort':['tsSbSort'],
+  'h-assign':['tsClaim'],'h-seen':['tsSeenOpen'],'s-money':['tsFinToggle','tsEstPlan'],'s-info':['tsProbAdd','tsProbToggle','tsProbEdit'],'s-vitals':['tsWcCopy'],
+  'g-secnav':['tsSecGo'],'g-reorder':['tsSortMove','tsPinToggle'],'g-move':['tsMoveTask'],'g-days':['tsDayPrev','tsDayNext'],'g-density':['tsViewDense'],'g-copy':['tsCopyMenu','tsOcCopyTx','tsVCopy'],'g-ins':['tsInsPop'],
+  'c-drawer':['tsChOpen'],'c-batch':['tsSecChart','tsBatchGo'],'c-take':['tsTakeOpen'],'c-reqnote':['tsOcReqToggle','tsOcReqSet'],'c-omit':['tsChOmitSave'],'c-crit':['tsVaNotify','tsVaRecheck'],
+  'o-search':['tsPick'],'o-sets':['tsSetOpen','tsSetApply'],'o-handout':['tsOcHandout'],'o-anyway':['tsMsWhy'],'x-check':['tsChargeCheck'],
+  'r-levels':['tsLevelsReport'],'r-ontime':['tsOnTime'],'r-wording':['tsSpanishWording'],'r-approval':['tsInternTry'],'p-lang':['pvxSetLang'] };
+var US_SEL=[['c-snips','.sn-bar .sn-chip'],['o-house','.rx-house'],['o-more','.of-more'],['b-work','.wl-pt,.wl-pth,.wl-row'],['h-alertpill','#subAlerts,.sub-alerts,[data-alerts-pill]'],['g-legend','#legend'],['g-audit','[onclick*="Audit"],[onclick*="audit"]']];
+var US_LABEL={'b-hours':'Hours view','b-boards':'Switch board','b-list':'Open a patient from the board','b-filter':'Filters','b-alerts':'Alerts column','b-tv':'ICU display','b-sort':'Sort the board','b-work':'Workload cards',
+  'h-assign':'Assign to me','h-seen':'Changes since you last looked','h-alertpill':'Alerts pill','s-money':'Estimate card','s-info':'Problem list','s-vitals':'Vitals card (copy weight)',
+  'g-secnav':'Section bar','g-reorder':'Reorder or pin rows','g-move':'Move a treatment to another hour','g-days':'Previous / next day','g-density':'Row density','g-copy':'Copy treatments / vitals','g-ins':'Instructions dot','g-legend':'Legend','g-audit':'Audit',
+  'c-drawer':'Charting panel','c-snips':'Note snippets','c-batch':'Chart an hour at once','c-take':'Take vitals','c-reqnote':'Require a note','c-omit':'Not given, with a reason','c-crit':'Critical reading: recheck / notify',
+  'o-search':'Order search pick','o-house':'House dose picked','o-sets':'Order sets','o-handout':'Owner handout','o-anyway':'Order anyway (reason)','o-more':'Order window: More options','x-check':'Charge check',
+  'r-levels':'Lowered levels report','r-ontime':'On-time report','r-wording':'Spanish wording','r-approval':'Approval mode (cap)','p-lang':'Language switch',
+  't-dash':'Tab: Dashboard','t-tasks':'Tab: Tasks','t-sheet':'Tab: Treatment sheet','t-vitals':'Tab: Vitals','t-timeline':'Tab: Timeline','t-charges':'Tab: Charges','t-notes':'Tab: Notes'};
+function usHit(k){ US.c[k]=(US.c[k]||0)+1; usSoon(); }
+function usSoon(){ if(!US.t) US.t=setTimeout(usFlush,120000); }
+function usDocId(){ return TENANT+'_'+dayKey(); }
+function usLocal(){ try{ var A=JSON.parse(localStorage.getItem('tsUsage_v1')||'{}'), id=usDocId(), d=A[id]||{counts:{},taps:0,charted:0,sessions:0};
+    Object.keys(US.c).forEach(function(k){ d.counts[k]=(d.counts[k]||0)+US.c[k]; }); d.taps+=US.taps; d.charted+=US.charted; d.sessions+=US.sessions; A[id]=d;
+    var keys=Object.keys(A).sort(); while(keys.length>14) delete A[keys.shift()]; localStorage.setItem('tsUsage_v1',JSON.stringify(A)); }catch(e){} }
+function usFlush(){ clearTimeout(US.t); US.t=0; if(!Object.keys(US.c).length&&!US.taps&&!US.charted&&!US.sessions) return;
+  var snap={c:US.c,taps:US.taps,charted:US.charted,sessions:US.sessions}; US.c={}; US.taps=0; US.charted=0; US.sessions=0;
+  if(US.local||typeof DB==='undefined'||!DB||!FV||!FV.increment){ var keep=US; US={c:snap.c,taps:snap.taps,charted:snap.charted,sessions:snap.sessions,local:true,t:0}; usLocal(); US={c:{},taps:0,charted:0,sessions:0,local:true,t:0}; return; }
+  var counts={}; Object.keys(snap.c).forEach(function(k){ counts[k]=FV.increment(snap.c[k]); });
+  var doc={hospital:TENANT,dk:dayKey(),counts:counts,updated_at:new Date().toISOString()}; if(snap.taps) doc.taps=FV.increment(snap.taps); if(snap.charted) doc.charted=FV.increment(snap.charted); if(snap.sessions) doc.sessions=FV.increment(snap.sessions);
+  try{ DB.collection('ts_usage').doc(usDocId()).set(doc,{merge:true}).catch(function(){ US.local=true; US.c=snap.c; US.taps+=snap.taps; US.charted+=snap.charted; US.sessions+=snap.sessions; usLocal(); US.c={}; US.taps=0; US.charted=0; US.sessions=0; }); }catch(e){} }
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') usFlush(); });
+addEventListener('pagehide',usFlush);
+/* taps anywhere in the app, and the parts that are tapped */
+document.addEventListener('pointerdown',function(e){ US.taps++; usSoon(); var t=e.target; if(!t||!t.closest) return;
+  US_SEL.forEach(function(x){ if(t.closest(x[1])) usHit(x[0]); }); },true);
+/* the parts reached through their functions: wrap them once everything has loaded */
+function usWrap(name,k){ var f=window[name]; if(typeof f!=='function'||f.__us) return; var w=function(){ try{ usHit(k); }catch(e){} return f.apply(this,arguments); }; w.__us=1; window[name]=w; }
+setTimeout(function(){ Object.keys(US_FN).forEach(function(k){ US_FN[k].forEach(function(n){ usWrap(n,k); }); });
+  var sel=window.selectCTab; if(typeof sel==='function'&&!sel.__us){ var w=function(t){ try{ usHit('t-'+t); }catch(e){} return sel.apply(this,arguments); }; w.__us=1; window.selectCTab=w; }
+  ['tsChartSave','tsBatchGo','tsTakeSave'].forEach(function(n){ var f=window[n]; if(typeof f!=='function'||f.__usc) return; var w=function(){ US.charted++; usSoon(); return f.apply(this,arguments); }; w.__usc=1; window[n]=w; }); },0);
+usSoon();
+/* Settings → Usage: the last 7 days */
+function usDays(n){ var out=[], d=new Date(); for(var i=0;i<n;i++){ out.push(dayKey(d)); d.setDate(d.getDate()-1); } return out; }
+function usRead(dks){ var local=(function(){ try{ return JSON.parse(localStorage.getItem('tsUsage_v1')||'{}'); }catch(e){ return {}; } })();
+  var jobs=dks.map(function(dk){ var id=TENANT+'_'+dk; return (DB?DB.collection('ts_usage').doc(id).get().then(function(s){ return s&&s.exists?s.data():null; }).catch(function(){ return null; }):Promise.resolve(null)).then(function(d){ return [d,local[id]]; }); });
+  return Promise.all(jobs).then(function(L){ var T={counts:{},taps:0,charted:0,sessions:0}; L.forEach(function(pair){ pair.forEach(function(d){ if(!d) return;
+    Object.keys(d.counts||{}).forEach(function(k){ T.counts[k]=(T.counts[k]||0)+(+d.counts[k]||0); }); T.taps+=+d.taps||0; T.charted+=+d.charted||0; T.sessions+=+d.sessions||0; }); });
+    Object.keys(US.c).forEach(function(k){ T.counts[k]=(T.counts[k]||0)+US.c[k]; }); T.taps+=US.taps; T.charted+=US.charted; T.sessions+=US.sessions; return T; }); }
+window.tsUsageReport=function(){ opShow('<div class="op-head"><div><div class="op-kind">Owner &amp; admins · last 7 days</div><h3>Usage</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div><p class="op-lead">Counting…</p>','us');
+  usRead(usDays(7)).then(function(T){ var c=document.querySelector('#tsOrderSheet .op-card.us'); if(!c) return;
+    var all=Object.keys(US_LABEL), used=all.filter(function(k){ return T.counts[k]; }).sort(function(a,b){ return T.counts[b]-T.counts[a]; }), unused=all.filter(function(k){ return !T.counts[k]; });
+    var max=used.length?T.counts[used[0]]:1, tpt=T.charted?Math.round(T.taps/T.charted*10)/10:null;
+    c.innerHTML='<div class="op-head"><div><div class="op-kind">Owner &amp; admins · last 7 days</div><h3>Usage</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+      +'<div class="us-hero"><div><b>'+(tpt==null?'—':tpt)+'</b><span>taps per treatment charted</span></div><div><b>'+T.charted+'</b><span>treatments charted</span></div><div><b>'+T.sessions+'</b><span>times opened</span></div></div>'
+      +'<div class="ot-sec">Used</div>'+(used.length?used.map(function(k){ return '<div class="us-row"><span>'+esc(US_LABEL[k])+'</span><i style="width:'+Math.max(3,T.counts[k]/max*100)+'%"></i><b>'+T.counts[k]+'</b></div>'; }).join(''):'<p class="ot-none">Nothing counted yet.</p>')
+      +'<div class="ot-sec">Not used in 7 days</div>'+(unused.length?'<div class="us-none">'+unused.map(function(k){ return '<span>'+esc(US_LABEL[k])+'</span>'; }).join('')+'</div>':'<p class="ot-none">Everything was used.</p>')
+      +'<p class="ot-foot">Counts per hospital per day — never per person or patient. Parts nobody uses are candidates to delete (step 2).</p>'; }); };
 /* ═════════ TS CHART — the task drawer, matched to the task (Oct 2026) ═════════
    Selecting a task never charts it. The drawer opens in one of three modes:
      entry   not charted yet → a reading: one value field (Enter charts it) · a care task: "Mark done" · a medication: the order,
