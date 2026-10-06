@@ -247,7 +247,7 @@ window.tsSexLabel=sexLabel;
 function initialsOf(n){ var w=String(n||'').replace(/^dr\.?\s+/i,'').split(/[\s,]+/).filter(Boolean); return w.length?w.map(function(x){ return x[0]; }).join('').slice(0,3).toUpperCase():'—'; }
 function boardOf(s){ return s.board==='OP'?'OP Board':'IP Board'; }   /* sheets made before boards existed are inpatients */
 /* My Board: patients where the signed-in person is the technician (set in Flow or the Tech column) or the doctor */
-function isMine(s){ var me=normName(user().name), p=s.patient||{}; return !!me&&(normName(p.tech)===me||normName(p.doctor)===me); }
+function isMine(s){ var me=normName(user().name), p=s.patient||{}; return !!me&&(normName(p.tech)===me||normName(p.doctor)===me||!!(window.tsClaimMine&&tsClaimMine(s))); }   /* + assigned to me (store/assign.js) */
 window.tsIsMyBoard=function(){ return typeof sbBoard!=='undefined'&&sbBoard==='My Board'; };
 /* the board's Stay column: inpatients by hospital day (day 2 starts at 24 h, as the sheet and charges count it) and hours in; outpatients by time in */
 function stayOf(d,op){ if(!d||isNaN(d)) return null; var now=new Date(), ms=Math.max(0,now-d), h=Math.floor(ms/3600000), m=Math.floor(ms/60000)%60;
@@ -363,15 +363,24 @@ function renderMenu(){
   var cb=menu.querySelector('[data-close]'); if(cb) cb.onclick=function(){ menu.classList.remove('show'); closeSheetFlow(); };
 }
 /* closing a sheet: the charge check (store/chargecheck.js) goes first when the sheet has charges; the close itself is tsCloseSheet */
-function closeSheetFlow(){ if(!CUR) return; if(window.tsChargeCheck&&window.tsChargeCheck()) return; closeSheetAsk(); }
-function closeSheetAsk(){ var nm=VISIT.patient;
-  modal('<h3>Close '+esc(nm)+'’s sheet?</h3><p>The sheet leaves the IP Board. Everything charted stays saved.</p>'
-    +'<div class="ts-seg" id="tsCloseWhy"><button type="button" class="on" data-v="discharged">Discharged</button><button type="button" data-v="transferred">Transferred</button><button type="button" data-v="deceased">Deceased</button><button type="button" data-v="cancelled">Admitted in error</button></div>',
-    'Close sheet',function(){ var b=document.querySelector('#tsCloseWhy .on'); tsCloseSheet(b?b.getAttribute('data-v'):'discharged'); });
-  document.querySelectorAll('#tsCloseWhy button').forEach(function(b){ b.onclick=function(){ document.querySelectorAll('#tsCloseWhy button').forEach(function(x){ x.classList.remove('on'); }); b.classList.add('on'); }; });
+function closeSheetFlow(){ if(!CUR) return; TS_CPR=false; if(window.tsChargeCheck&&window.tsChargeCheck()) return; closeSheetAsk(); }
+/* how the stay ended (Oct 2026): one tap when the sheet closes, saved as outcome = {k, label, cpr, at, by, hospital} — the start of
+   learning across hospitals (early-warning scores need outcomes). The old closed_reason is still written for older reports. */
+var TS_OUTCOMES=[['home','Went home'],['transfer','Transferred'],['euth','Euthanasia'],['died','Died'],['ama','Left against advice'],['error','Admitted in error']];
+var TS_OUT_LEGACY={home:'discharged',transfer:'transferred',euth:'deceased',died:'deceased',ama:'discharged',error:'cancelled'}, TS_CPR=false;
+window.tsOutcomeRow=function(sel,attr){ attr=attr||'data-v'; return '<div class="ts-out" role="radiogroup" aria-label="How the stay ended">'+TS_OUTCOMES.map(function(x){ return '<button type="button" role="radio" '+attr+'="'+x[0]+'" aria-checked="'+(sel===x[0])+'" class="'+(sel===x[0]?'on':'')+'">'+x[1]+'</button>'; }).join('')+'</div>'
+  +'<label class="ts-cpr"><input type="checkbox" '+(TS_CPR?'checked ':'')+'onchange="TS_CPR=this.checked"> CPR during this stay</label>'; };
+window.TS_CPR_SET=function(v){ TS_CPR=!!v; };
+function closeSheetAsk(){ var nm=VISIT.patient, sel=null;
+  modal('<h3>Close '+esc(nm)+'’s sheet?</h3><p>The sheet leaves the IP Board. Everything charted stays saved. How did the stay end?</p><div id="tsCloseWhy">'+tsOutcomeRow(null)+'</div>',
+    'Close sheet',function(){ if(!sel){ toast('Choose how the stay ended'); var r=document.querySelector('#tsCloseWhy .ts-out'); if(r){ r.classList.remove('shake'); void r.offsetWidth; r.classList.add('shake'); } return false; } tsCloseSheet(sel); });
+  document.querySelectorAll('#tsCloseWhy .ts-out button').forEach(function(b){ b.onclick=function(){ sel=b.getAttribute('data-v'); document.querySelectorAll('#tsCloseWhy .ts-out button').forEach(function(x){ var on=x===b; x.classList.toggle('on',on); x.setAttribute('aria-checked',String(on)); }); }; });
 }
 /* extra: more fields saved with the close (the charge check record); note: added to the audit line; after(ok) when the write settles */
 window.tsCloseSheet=function(why,extra,note,after){ var id=CUR, me=user(), nm=VISIT.patient; if(!id) return;
+  var oc=TS_OUT_LEGACY[why]?{k:why,label:(TS_OUTCOMES.filter(function(x){ return x[0]===why; })[0]||[,why])[1],cpr:!!TS_CPR,at:new Date().toISOString(),by:me.name||me.initials||null,hospital:TENANT}:null;
+  if(oc){ extra=Object.assign({outcome:oc},extra||{}); note=oc.label+(oc.cpr?' · CPR during stay':'')+(note?' · '+note:''); why=TS_OUT_LEGACY[why]; }
+  extra=Object.assign({closed_on:dayKey()},extra||{});
   sync(); DB.collection(COL).doc(id).update(Object.assign({status:'closed',closed_reason:why,closed_at:new Date().toISOString(),closed_by:me.name||null,
     audit:FV.arrayUnion({at:new Date().toISOString(),type:'doctor',desc:'Sheet closed — '+why+(note?' · '+note:''),who:me.initials,uid:me.uid})},extra||{}))
     .then(function(){ closeCurrent(); selectCTab('dash'); toast(nm+' closed'); if(after) after(true); })
@@ -410,7 +419,7 @@ function showGate(kind){ if(!gate){ gate=document.createElement('div'); gate.id=
     :'<div class="tg-card"><b>Sign in to continue</b><span>Treatment Sheets uses your Pravix Flow account. Sign in on Flow, then come back to this page.</span><a class="ts-btn primary" href="https://shoreline.pravix.app/">Open Flow to sign in</a></div>';
   gate.classList.add('show'); }
 function hideGate(){ if(gate) gate.classList.remove('show'); }
-if(AUTH){ AUTH.onAuthStateChanged(function(u){ if(u){ hideGate(); var ini=user().initials; if(ini&&ini!=='—'){ var i=STAFF.indexOf(ini); if(i>-1) STAFF.splice(i,1); STAFF.unshift(ini); } listen(); applyRole(); if(CUR&&!liveCur) openSheet(CUR,false,true); rerender(); }
+if(AUTH){ AUTH.onAuthStateChanged(function(u){ if(u){ try{ if(window.pvxLangUser) pvxLangUser(u.uid); }catch(e){} hideGate(); var ini=user().initials; if(ini&&ini!=='—'){ var i=STAFF.indexOf(ini); if(i>-1) STAFF.splice(i,1); STAFF.unshift(ini); } listen(); applyRole(); if(CUR&&!liveCur) openSheet(CUR,false,true); rerender(); }
   else { clearCache(); unsubAllCur(); SHEETS=[]; CUR=null; curDoc=null; curMain=null; reset(); try{ rerender(); }catch(e){} showGate('signin'); } }); }
 else { showGate('rules'); }
 
@@ -630,7 +639,7 @@ function nextDueText(o){ if(o.draft) return 'draft — waiting for a doctor to a
   if(ts.length) return 'first '+fmtTime(ts[0]*60)+' (overdue)';
   var iv=FREQ_INT[o.freq]; if(iv){ var nx=(o.start+iv)%24; return 'next '+fmtTime(nx*60)+' tomorrow'; } return 'scheduled'; }
 function revealOrder(o){ setTimeout(function(){ var rows=document.querySelectorAll('#sheetInner .rl-name'), el=null;
-    rows.forEach(function(r){ if(!el&&(r.firstChild?r.firstChild.textContent:r.textContent).trim()===o.name) el=r; }); if(!el) return; var row=el.closest('.grow')||el;
+    rows.forEach(function(r){ if(!el&&pvxEn(r.firstChild||r).trim()===o.name) el=r; }); if(!el) return; var row=el.closest('.grow')||el;
     try{ row.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){ row.scrollIntoView(); } row.classList.add('ts-flash'); setTimeout(function(){ row.classList.remove('ts-flash'); },2400); },120); }
 /* ---------- monitoring & patient-care catalog: suggested frequencies, nothing assumed ---------- */
 var OBS=[
@@ -688,9 +697,12 @@ window.tsRender=function(q){ var raw=(q||'').trim(); q=raw.toLowerCase(); var ht
   var row=function(key,label,meta){ var k=rows.length; rows.push(key);
     return '<button class="ts-item" data-i="'+k+'" onmouseenter="tsHi('+k+')" onmousedown="event.preventDefault();tsPick(\''+esc(key.replace(/\\/g,'\\\\').replace(/'/g,"\\'"))+'\')"><span>'+label+'</span>'+(meta?'<small class="ts-meta">'+meta+'</small>':'')+'</button>'; };
   if(q){
-    var hits=(scope&&scope!=='Medications')?[]:DRUGS.map(function(x,i){ var r=drugScore(x,q); return {i:i,s:r.s,b:r.b}; }).filter(function(h){ return h.s<9; })
+    var QS=window.tsQs?tsQs(q):[q];   /* Spanish too: the English it stands for (store/bilingual.js) */
+    var hits=(scope&&scope!=='Medications')?[]:DRUGS.map(function(x,i){ var r={s:9,b:null}; QS.forEach(function(qq){ var t=drugScore(x,qq); if(t.s<r.s) r=t; });
+        if(r.s>=9&&window.tsSkelHit&&tsSkelHit(x.n,q)) r={s:5,b:null};   /* ampicilina → Ampicillin */
+        return {i:i,s:r.s,b:r.b}; }).filter(function(h){ return h.s<9; })
       .sort(function(a,b){ return a.s-b.s||DRUGS[a.i].n.localeCompare(DRUGS[b.i].n); }).slice(0,scope?10:6);
-    var obs=(scope&&!sT)?[]:OBS.map(function(x,i){ return {i:i,s:(sT&&x.t!==sT)?9:scoreName(x.n,q,x.k)}; }).filter(function(h){ return h.s<9; }).sort(function(a,b){ return a.s-b.s; }).slice(0,scope?10:6);
+    var obs=(scope&&!sT)?[]:OBS.map(function(x,i){ return {i:i,s:(sT&&x.t!==sT)?9:Math.min.apply(null,QS.map(function(qq){ return scoreName(x.n,qq,x.k); }))}; }).filter(function(h){ return h.s<9; }).sort(function(a,b){ return a.s-b.s; }).slice(0,scope?10:6);
     var obsFirst=obs.length&&(!hits.length||obs[0].s<hits[0].s);
     var medHTML='', obsHTML='', careHTML='';
     hits.forEach(function(h){ var x=DRUGS[h.i], n=sp?x.r.filter(function(e){ return e.s.indexOf(sp)>-1; }).length:x.r.length;
@@ -730,7 +742,7 @@ function openObsOrder(x){
     +(x.custom?'<div class="tm-grid"><label class="wide">Order<input id="obName" value="'+esc(x.n)+'"></label><label>Section<select id="obSec">'+[['obs','Monitoring'],['care','Patient Care'],['diag','Diagnostics']].map(function(o){ return '<option value="'+o[0]+'"'+(x.t===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select></label><label>Unit<input id="obUnit" placeholder="Optional"></label></div>':'')
     +(x.f.length?'<div class="rx-lbl">Suggested</div><div class="rx-chips">'+x.f.map(function(f){ return chip(f,true); }).join('')+'</div>':'')
     +'<div class="rx-lbl">'+(x.f.length?'Other':'Frequency')+'</div><div class="rx-chips">'+more.map(function(f){ return chip(f,false); }).join('')+'</div>'
-    +'<div class="tm-grid" style="margin-top:14px"><label>First check<select id="obStart">'+hrs+'</select></label><label>Instructions<input id="obNotes" placeholder="Optional — how, or when to call"></label></div>',
+    +'<div class="tm-grid" style="margin-top:14px"><label>First check<select id="obStart">'+hrs+'</select></label><label>Instructions<input id="obNotes" placeholder="Optional — how, or when to call">'+(window.tsSnipBar?tsSnipBar('obNotes','care'):'')+'</label></div>',
     ex?'Update order':'Add to sheet', function(){ return tsObsSubmit(x,ex); });
   window._obsFreq=''; emit('order.window',x.t==='diag'?'diag':x.t||'obs');
 }
@@ -782,7 +794,7 @@ function openMedOrder(i){
     +'<label>Frequency<select id="rxFreq"><option value="">Choose…</option>'+opt(FREQS,'')+'</select></label>'
     +'<label>First dose<select id="rxStart">'+hrs+'</select></label>'
     +'<label>Concentration <span id="rxConcU">(mg/mL)</span><input id="rxConc" inputmode="decimal" placeholder="Optional" oninput="tsRxConcEdit()"></label>'
-    +'<label>Instructions<input id="rxNotes" placeholder="Optional — e.g. give with food"></label>'
+    +'<label>Instructions<input id="rxNotes" placeholder="Optional — e.g. give with food">'+(window.tsSnipBar?tsSnipBar('rxNotes','med'):'')+'</label>'
     +'</div><div class="rx-stock" id="rxStock" style="display:none"></div><div class="rx-calc" id="rxCalc">Enter a dose to calculate</div><div class="rx-sugg" id="rxSugg"></div><div class="rx-range" id="rxRange"></div><div id="rxPrn" style="display:none"></div>'
     +(canOrder?'':'<p class="rx-warn rx-block">Signed in as <b>'+esc(user().name||'—')+'</b>. Only doctors can place medication orders.</p>'),
     canOrder?'Add to sheet':'Close', function(){ return canOrder?tsRxSubmit():true; });
@@ -814,7 +826,7 @@ window.tsRxCalc=function(edited){ var el=document.getElementById('rxCalc'), rg=d
   var kg=Number(VISIT.weight)||0, sp=spKey(), per=unit.split('/')[1];
   if(!(dose>0)){ el.textContent='Enter a dose to calculate'; el.className='rx-calc'; }
   else if(per&&!kg){ el.textContent='Add a weight to calculate the total dose'; el.className='rx-calc'; }
-  else { var tot=doseTotal(dose,unit,kg,sp); el.innerHTML='= <b>'+fmtN(tot)+' '+base+'</b>'+(per?' for '+kg+' kg':'')+(per==='m²'?' · BSA '+bsa(kg,sp).toFixed(2)+' m²':'')+(conc>0?' · <b>'+(tot/conc).toFixed(2)+' mL</b>':''); el.className='rx-calc ok'; }
+  else { var tot=doseTotal(dose,unit,kg,sp); el.innerHTML='= <b>'+fmtN(tot)+' '+base+'</b>'+(per?' for '+kg+' kg':'')+(per==='m²'?' · BSA '+bsa(kg,sp).toFixed(2)+' m²':'')+(conc>0?' · <b>'+fmtVol(tot/conc)+' mL</b>':''); el.className='rx-calc ok'; }
   var e=RX&&RX.sel, s=RX&&RX.suggested;
   if(sg){ sg.innerHTML=(e&&s&&!RX.touched)?'Suggested from the reference'+(s.range?' (low end of '+esc(e.do)+')':'')+' — confirm or change the dose.':''; sg.style.display=sg.innerHTML?'block':'none'; }
   /* the dose bar, 24-hour total, overlapping drugs and PRN rules (store/medsafe.js) */
@@ -1038,6 +1050,62 @@ function drugScore(x,q){ var s=scoreName(x.n,q), b=null;
   brandsOf(x.n).forEach(function(br){ var t=scoreName(br,q); if(t<s){ s=t; b=br; } });
   return {s:s,b:b}; }
 
+/* ═════════ TS SEARCH IN BOTH LANGUAGES — type it in Spanish, find it in English (Oct 2026) ═════════
+   Add order, the order sets, fluids & CRIs and the patient search understand Spanish as well as English, for everyone
+   (no setting needed): "temperatura" finds Temperature, "presión" Blood pressure, "glucosa" Blood glucose, "paseo" Walk,
+   "vómitos" Vomiting check and the Parvovirus set, "suero" IV fluids, "gato" every cat on the board.
+   Drug names match by how they sound, so the Spanish spelling finds the English one: ampicilina → Ampicillin,
+   buprenorfina → Buprenorphine, fentanilo → Fentanyl, dexametasona → Dexamethasone, hidromorfona → Hydromorphone.
+   Accents never matter (vomito = vómito, Jose = José). What's ordered is still the English name — the record stays English. */
+/* lowercase, no accents */
+function tsFold(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,''); }
+window.tsFold=tsFold;
+/* how a drug name sounds, the same in both languages: ph→f, th→t, y→i, z and soft c → s, doubled letters once, no final vowel */
+function tsSkel(s){ s=tsFold(s).replace(/[^a-z]/g,''); if(!s) return '';
+  s=s.replace(/ph/g,'f').replace(/th/g,'t').replace(/y/g,'i').replace(/z/g,'s').replace(/c(?=[ei])/g,'s').replace(/qu/g,'k').replace(/ck/g,'k').replace(/h/g,'');
+  s=s.replace(/(.)\1+/g,'$1'); return s.replace(/[aeo]$/,''); }
+window.tsSkel=tsSkel;
+/* Spanish words → the English the catalog, sets and sheets use (folded Spanish · English, | between alternatives) */
+var BL_ES={
+  'temperatura':'temperature','fiebre':'fever|temperature','frecuencia cardiaca':'heart rate','pulso':'heart rate|pulse','latidos':'heart rate',
+  'frecuencia respiratoria':'respiratory rate','respiracion':'respiratory|breathing','esfuerzo respiratorio':'respiratory effort','disnea':'dyspnea|respiratory effort',
+  'presion arterial':'blood pressure','presion':'blood pressure','tension arterial':'blood pressure','glucosa':'glucose|blood glucose','glicemia':'glucose|blood glucose','glucemia':'glucose|blood glucose','azucar':'glucose|sugar',
+  'saturacion':'spo2|saturation','oximetria':'spo2|pulse ox','dolor':'pain','escala de dolor':'pain score','estado mental':'mentation','mentacion':'mentation','neurologico':'neuro','examen neurologico':'neuro check',
+  'mucosas':'mucous membranes','membranas mucosas':'mucous membranes','tllc':'crt','llenado capilar':'crt','electrocardiograma':'ecg','ecg':'ecg',
+  'orina':'urine','produccion de orina':'urine output','diuresis':'urine output','hematocrito':'pcv','lactato':'lactate|lactated','electrolitos':'electrolytes','potasio':'potassium','sodio':'sodium',
+  'quimica':'chem|chemistry','bioquimica':'chem|chemistry','hemograma':'cbc','analisis de sangre':'bloodwork','sangre':'blood','gases':'blood gas','gasometria':'blood gas','cetonas':'ketone','cuerpos cetonicos':'ketone',
+  'peso':'weight','pesar':'weight|weigh','hidratacion':'hydration','deshidratacion':'dehydration','vomito':'vomit|vomiting','vomitos':'vomit|vomiting','nausea':'nausea','nauseas':'nausea','apetito':'appetite','comer':'eating|appetite',
+  'incision':'incision','herida':'incision|wound','cateter':'catheter','cateter iv':'iv catheter','via':'catheter|line','comida':'food','alimentar':'feed|food','alimento':'food','agua':'water','beber':'water|drink',
+  'paseo':'walk','pasear':'walk','caminar':'walk','sacar':'walk','girar':'turn','voltear':'turn','cambiar de lado':'turn','vejiga':'bladder','vaciar vejiga':'express bladder','ojo':'eye','ojos':'eye','lubricacion ocular':'eye lubrication',
+  'compresa fria':'cold compress','hielo':'cold compress','compresa tibia':'warm compress','compresa caliente':'warm compress','calor':'warm compress','fisioterapia':'physical therapy','rehabilitacion':'physical therapy',
+  'oxigeno':'oxygen','jaula de oxigeno':'oxygen cage','jaula':'cage','limpiar':'clean','limpieza':'clean','cama':'bedding',
+  'ecografia':'ultrasound','ultrasonido':'ultrasound','eco':'ultrasound','radiografia':'radiograph|x-ray|rad','rayos x':'radiograph|x-ray|rad','placas':'radiograph|rad',
+  'fluidos':'fluid|fluids','fluidoterapia':'fluid|fluids','suero':'fluid|fluids|saline','sueros':'fluid|fluids','solucion salina':'saline|nacl','salina':'saline|nacl','suero fisiologico':'saline|nacl','ringer':'lrs|lactated','ringer lactato':'lrs|lactated',
+  'dextrosa':'dextrose','infusion':'cri|infusion','infusion continua':'cri','irc':'cri','goteo':'cri|fluid',
+  'cloruro de potasio':'potassium chloride|kcl','adrenalina':'epinephrine','acido tranexamico':'tranexamic','vitamina k':'vitamin k','vitamina b':'b vitamins','insulina':'insulin',
+  'ingreso':'admit','ingreso uci':'icu admit','uci':'icu','cuidados intensivos':'icu','postoperatorio':'post op','post operatorio':'post op','cirugia':'surgery|post op','fractura':'fracture','ortopedia':'orthopedic',
+  'parvo':'parvo','diarrea':'diarrhea','pancreatitis':'pancreatitis','diabetes':'diabetes|dka','diabetico':'diabetic|dka','cetoacidosis':'dka|ketoacidosis','cad':'dka',
+  'convulsion':'seizure','convulsiones':'seizure','epilepsia':'epilepsy|seizure','obstruccion uretral':'urethral obstruction','obstruccion':'obstruction|blocked','gato obstruido':'blocked cat','torsion gastrica':'gdv','dilatacion gastrica':'gdv','vovulo':'gdv',
+  'aislamiento':'isolation','salas':'wards','sala':'wards','perro':'dog|canine','perra':'dog|canine','canino':'canine|dog','gato':'cat|feline','gata':'cat|feline','felino':'feline|cat',
+  'macho':'male|mn|mi','hembra':'female|fs|fi','anemia':'anemia','hemorragia':'bleeding|hemorrhage|hemo','sangrado':'bleeding','trauma':'trauma','golpe de calor':'heat stroke','intoxicacion':'toxicity|toxin|ingestion','cuerpo extrano':'foreign body',
+  'tos':'cough','neumonia':'pneumonia','insuficiencia renal':'kidney|renal','rinon':'kidney|renal','higado':'liver|hepatic','corazon':'heart|cardiac','insuficiencia cardiaca':'chf|heart failure','masa':'mass','piometra':'pyometra','alergia':'allergic|allergy','mordida':'bite','cojera':'lameness|lame',
+  'set':'set','sets':'sets','set de ordenes':'order set'
+};
+var BL_KEYS=null, BL_DICT=false;
+function blKeys(){ if(BL_KEYS&&BL_DICT===!!window.I18N_ES) return BL_KEYS; BL_DICT=!!window.I18N_ES; BL_KEYS=Object.keys(BL_ES).map(function(k){ return {k:k,v:BL_ES[k].split('|')}; });
+  /* the interface dictionary, when it's loaded: "Glucosa en sangre" → Blood glucose, "Revisar catéter IV" → Check IV catheter … */
+  try{ var D=window.I18N_ES||{}; Object.keys(D).forEach(function(en){ if(/[#*]/.test(en)||en.length>40||/[.?!:]$/.test(en)) return; var es=tsFold(D[en]).replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); if(es.length<3||es===tsFold(en)) return;
+    BL_KEYS.push({k:es,v:[en.toLowerCase()]}); }); }catch(e){}
+  return BL_KEYS; }
+/* the English a (possibly Spanish) query stands for — prefix of a Spanish word or phrase, 3 letters or more */
+window.tsEsAlts=function(q){ var f=tsFold(q).replace(/\s+/g,' ').trim(); if(f.length<3) return [];
+  var out=[]; blKeys().forEach(function(e){ var hit=e.k.indexOf(f)===0||(f.length>=4&&(' '+e.k).indexOf(' '+f)>-1)||(f.indexOf(e.k+' ')===0&&e.k.length>=4);
+    if(hit) e.v.forEach(function(v){ if(out.indexOf(v)<0&&v!==f) out.push(v); }); });
+  return out.slice(0,12); };
+/* every way to read the query: as typed, without accents, and the English it stands for */
+window.tsQs=function(q){ q=String(q||'').trim().toLowerCase(); if(!q) return []; var out=[q], f=tsFold(q); if(f!==q) out.push(f); (window.tsEsAlts(q)||[]).forEach(function(a){ if(out.indexOf(a)<0) out.push(a); }); return out; };
+/* a drug name the query sounds like (4 letters or more): "ampicilina" → Ampicillin */
+window.tsSkelHit=function(name,q){ var sq=tsSkel(q); if(sq.length<4) return false; var sn=tsSkel(name); return sn.indexOf(sq)===0||(sq.length>=6&&sq.indexOf(sn)===0&&sn.length>=5); };
 /* ═════════ #6 TREND ALERTS + #10 WORKLOAD ═════════
    Alert limits are hospital workflow defaults (not diagnoses) — review with the medical director and adjust FLAG_RULES. */
 var FLAG_RULES=[
@@ -1454,7 +1522,7 @@ window.tsHeaderHTML=function(){ var d=hdrDoc(), v=VISIT||{};
   return '<section class="clinical-patient-header tsh" id="tsHdr">'
     +'<div class="tsh-top">'
       +'<button type="button" class="tsh-back" onclick="selectCTab(\'dash\')" aria-label="Back to patients" title="Back to patients"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
-      +'<div class="tsh-id"><div class="tsh-name"><span>'+esc(v.patient||'')+'</span><span class="tsh-pid">'+esc(v.vcode||('V-'+(v.id||'')))+'</span><span class="tsh-live-slot">'+liveHTML(d)+'</span></div>'
+      +'<div class="tsh-id"><div class="tsh-name"><span>'+esc(v.patient||'')+'</span><span class="tsh-pid">'+esc(v.vcode||('V-'+(v.id||'')))+'</span><span class="tsh-claim">'+(window.tsClaimHTML?tsClaimHTML(d):'')+'</span><span class="tsh-live-slot">'+liveHTML(d)+'</span></div>'
         +'<div class="tsh-sig">'+sig+'</div></div>'
       +'<div class="tsh-mini">'+miniHTML(d)+'</div>'
       +'<div class="tsh-vitals">'+(d?vitalsHTML(d):'')+'</div>'
@@ -1474,7 +1542,7 @@ function refreshHdr(){ var h=document.getElementById('tsHdr'), d=hdrDoc(); if(!h
   var set=function(sel,html){ var el=h.querySelector(sel); if(el&&el.innerHTML!==html) el.innerHTML=html; };
   var nm=h.querySelector('.tsh-name > span:first-child'); if(nm&&nm.textContent!==(VISIT.patient||'')) nm.textContent=VISIT.patient||'';
   var sg=[VISIT.species,VISIT.breed,VISIT.sex,VISIT.age].filter(function(x){ return x&&x!=='—'; }).map(esc).join('<span class="tsh-sep"></span>'); set('.tsh-sig',sg);
-  set('.tsh-vitals',vitalsHTML(d)); set('.tsh-info',infoHTML(d)); set('.tsh-mini',miniHTML(d)); set('.tsh-live-slot',liveHTML(d)); }
+  set('.tsh-vitals',vitalsHTML(d)); set('.tsh-info',infoHTML(d)); set('.tsh-mini',miniHTML(d)); set('.tsh-live-slot',liveHTML(d)); if(window.tsClaimHTML) set('.tsh-claim',tsClaimHTML(d)); }
 on('header.refresh',refreshHdr,10); on('header.parts',refreshHdr);   /* runs after the other parts have refreshed */
 setInterval(function(){ try{ if(!document.hidden) refreshHdr(); }catch(e){} },30000);
 /* collapse while the grid is scrolled; expand back at the top (with a little hysteresis) */
@@ -1712,7 +1780,7 @@ window.tsDraftRejectAsk=function(id){ var o=oFind(id); if(!o) return; window._dr
     +'<input id="drNote" class="op-note" placeholder="Note for the intern (optional)">'
     +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderPanel(\''+esc(id)+'\')">Back</button><button type="button" class="op-btn danger solid" onclick="tsDraftReject(\''+esc(id)+'\')">Not approved</button></div>';
   opShow(html); };
-window.tsDraftWhy=function(b){ document.querySelectorAll('#tsOrderSheet .dr-why .rx-chip').forEach(function(x){ x.classList.toggle('on',x===b); }); window._drWhy=b.textContent; };
+window.tsDraftWhy=function(b){ document.querySelectorAll('#tsOrderSheet .dr-why .rx-chip').forEach(function(x){ x.classList.toggle('on',x===b); }); window._drWhy=pvxEn(b); };
 window.tsDraftReject=function(id){ var o=oFind(id); if(!o||!drCanApprove()) return; var note=((document.getElementById('drNote')||{}).value||'').trim(), why=[window._drWhy,note].filter(Boolean).join(' — ');
   tsOrderClose(); tsStopOrder(id,'rejected',why||null); toast(esc(o.name)+' not approved'); setTimeout(drPaint,400); };
 window.tsDraftWithdraw=function(id){ var o=oFind(id); if(!o||!drMine(o)) return; tsOrderClose(); tsStopOrder(id,'error','Draft withdrawn'); toast('Draft withdrawn'); setTimeout(drPaint,400); };
@@ -1891,7 +1959,7 @@ var WF=[
   {k:'assist',l:'Assistant',d:'Walks, feeding, water, cage care, weights',
     t:function(o){ var n=String(o.name||''); return (o.type==='care'&&!/catheter|fluid|oxygen|physical therapy/i.test(n))||(o.type==='obs'&&/^(food|water|weight|appetite)/i.test(n)); }},
   {k:'lab',l:'Lab',d:'Diagnostics and bloodwork',t:function(o){ return o.type==='diag'||(o.type==='obs'&&WF_LAB.test(String(o.name||''))); }},
-  {k:'ctrl',l:'Controlled drugs',d:'Opioids, benzodiazepines, ketamine, phenobarbital…',t:function(o){ return (o.type==='med'||o.cont)&&WF_CONTROLLED.test(String(o.name||'').trim()); }},
+  {k:'ctrl',l:'Controlled drugs',d:'Opioids, benzodiazepines, ketamine, phenobarbital…',t:function(o){ return (o.type==='med'||o.cont)&&(window.tsCtrlSched?!!tsCtrlSched(o.name):WF_CONTROLLED.test(String(o.name||'').trim())); }},
   {k:'inf',l:'Fluids & CRIs',d:'Anything running IV',t:function(o){ return !!o.cont; }},
   {k:'meds',l:'Medications',d:'Every medication order',t:function(o){ return o.type==='med'; }}];
 function wfSel(){ try{ var a=JSON.parse(localStorage.getItem(WF_KEY)||'{}'); return a[user().uid||'_']||[]; }catch(e){ return []; } }
@@ -2177,18 +2245,21 @@ function msChecks(v){ var x=RX&&RX.x; if(!x) return {flags:[],html:''}; var S=ms
     var where=tone==='ok'?(S.lo===S.hi?'at the reference dose':((v.dose-S.lo)/(S.hi-S.lo)<1/3?'low end':(v.dose-S.lo)/(S.hi-S.lo)>2/3?'high end':'mid-range')):'';
     var say=tone==='ok'?'In range'+(who?' for '+esc(who):'')+' · '+where
       :(v.dose>S.hi?'Above':'Below')+' the '+(who?esc(who)+' ':'')+'range'+(v.dose>S.hi?' · '+msN(v.dose/S.hi)+'× the top':'');
-    if(tone!=='ok') flags.push({k:'range',tone:tone,t:(v.dose>S.hi?'Above':'Below')+' the reference ('+rng+')'});
-    var zl=pc(S.lo), zw=Math.max(1.5,pc(S.hi)-zl);
-    html+='<div class="ms-bar '+tone+'"><div class="ms-track"><span class="ms-zone" style="left:'+zl+'%;width:'+zw+'%"></span><i class="ms-mk" style="left:'+pc(v.dose)+'%"></i></div>'
+    /* house doses (store/housedose.js): outside the book but within what our doctors order here → said, not flagged */
+    var H=window.tsHouseRange?tsHouseRange(x.n,v.route,sp,v.unit):null, inH=H&&v.dose>=H.lo*0.95-1e-9&&v.dose<=H.hi*1.05+1e-9;
+    if(tone!=='ok'&&inH){ tone='house'; say='Within what’s ordered here ('+esc(H.lo===H.hi?msN(H.lo):msN(H.lo)+'–'+msN(H.hi))+' '+esc(v.unit)+', '+H.n+' orders) · '+(v.dose>S.hi?'above':'below')+' the reference'; top=Math.max(top,H.hi*1.15); }
+    if(tone!=='ok'&&tone!=='house') flags.push({k:'range',tone:tone,t:(v.dose>S.hi?'Above':'Below')+' the reference ('+rng+')'});
+    var zl=pc(S.lo), zw=Math.max(1.5,pc(S.hi)-zl), hz=H?'<span class="ms-zone hz" style="left:'+pc(H.lo)+'%;width:'+Math.max(1.5,pc(H.hi)-pc(H.lo))+'%" title="Ordered here"></span>':'';
+    html+='<div class="ms-bar '+tone+'"><div class="ms-track">'+hz+'<span class="ms-zone" style="left:'+zl+'%;width:'+zw+'%"></span><i class="ms-mk" style="left:'+pc(v.dose)+'%"></i></div>'
       +'<div class="ms-scale"><span style="left:'+zl+'%">'+esc(msN(S.lo))+'</span>'+(S.hi!==S.lo?'<span style="left:'+(zl+zw)+'%">'+esc(msN(S.hi))+'</span>':'')+'</div>'
       +'<div class="ms-say"><b>'+say+'</b><span>Reference '+esc(rng)+'</span></div></div>'; }
   else if(v.dose>0&&x.r.some(function(e){ return e.d&&(!sp||e.s.indexOf(sp)>-1); })&&!S) html+='<div class="ms-line">No '+(sp?msSpWord(sp)+' ':'')+'reference dose in '+esc(v.unit)+' — the range can’t be checked.</div>';
   /* the 24-hour total */
   var per=msPerDay(v.freq,v.freq==='PRN'?RX.prnMin:null);
-  if(S&&S.day&&v.dose>0&&per){ var T=msTotal(x.n,v.unit,{n:per,dose:v.dose}), over=T.tot>S.day*1.0001;
-    if(over||T.parts.length) html+='<div class="ms-line'+(over?' warn':'')+'"><b>24 h'+(v.freq==='PRN'?' if given as often as allowed':'')+': '+esc(msN(T.tot))+' '+esc(v.unit)+'</b>'
+  if(S&&S.day&&v.dose>0&&per){ var T=msTotal(x.n,v.unit,{n:per,dose:v.dose}), over=T.tot>S.day*1.0001, Hd=window.tsHouseRange?tsHouseRange(x.n,v.route,sp,v.unit):null, inHd=Hd&&v.dose<=Hd.hi*1.05+1e-9;
+    if(over||T.parts.length) html+='<div class="ms-line'+(over&&!inHd?' warn':'')+'"><b>24 h'+(v.freq==='PRN'?' if given as often as allowed':'')+': '+esc(msN(T.tot))+' '+esc(v.unit)+'</b>'
       +(T.parts.length?' · with '+T.parts.map(function(p){ return esc(p.o.name+' '+p.txt.trim()); }).join(', '):'')+' · reference max '+esc(msN(S.day))+' '+esc(v.unit)+'/day</div>';
-    if(over) flags.push({k:'day',tone:'warn',t:'24-hour total '+msN(T.tot)+' '+v.unit+' (reference max '+msN(S.day)+')'}); }
+    if(over&&!inHd) flags.push({k:'day',tone:'warn',t:'24-hour total '+msN(T.tot)+' '+v.unit+' (reference max '+msN(S.day)+')'}); }
   /* overlapping drugs */
   msOverlaps(x.n).forEach(function(f){ flags.push({k:'overlap',tone:f.tone,t:f.t+' ('+f.with+')'});
     html+='<div class="ms-line '+f.tone+'"><b>'+esc(f.t)+'</b> · '+esc(f.with)+' is on the sheet</div>'; });
@@ -2197,7 +2268,7 @@ function msChecks(v){ var x=RX&&RX.x; if(!x) return {flags:[],html:''}; var S=ms
   if(flags.length) html+='<div class="ms-why"><div class="ms-why-h">Reason to go ahead</div><div class="rx-chips">'+MS_WHY.map(function(w){ return '<button type="button" class="rx-chip'+(RX.msWhy===w?' on':'')+'" onclick="tsMsWhy(this)">'+esc(w)+'</button>'; }).join('')+'</div>'
     +(RX.msWhy==='Other'?'<input id="msWhyNote" class="ms-note" placeholder="Why this dose?" value="'+esc(RX.msNote||'')+'" oninput="RX.msNote=this.value">':'')+'</div>';
   return {flags:flags,html:html}; }
-window.tsMsWhy=function(b){ if(!RX) return; RX.msWhy=RX.msWhy===b.textContent?null:b.textContent; msPaint(); if(RX.msWhy==='Other') setTimeout(function(){ var n=document.getElementById('msWhyNote'); if(n) n.focus(); },20); };
+window.tsMsWhy=function(b){ if(!RX) return; var bt=pvxEn(b); RX.msWhy=RX.msWhy===bt?null:bt; msPaint(); if(RX.msWhy==='Other') setTimeout(function(){ var n=document.getElementById('msWhyNote'); if(n) n.focus(); },20); };
 function msPaint(){ var rg=document.getElementById('rxRange'); if(!rg||!RX) return; var v=msRead(); if(v.freq==='PRN') prnDefault(v); var c=msChecks(v); RX.msFlags=c.flags;
   rg.innerHTML=c.html; rg.style.display=c.html?'block':'none'; rg.className='rx-range ms'+(c.flags.some(function(f){ return f.tone==='crit'; })?' crit':c.flags.length?' warn':'');
   prnPaint(v); try{ if(window.tsOcFoot) tsOcFoot(); }catch(e){} }
@@ -2233,7 +2304,7 @@ function prnPaint(v){ var el=document.getElementById('rxPrn'); if(!el||!RX) retu
     +((PRN_WHEN.find(function(w){ return w.l===RX.prnWhen; })||{}).rx?'<div class="ms-line ok">Charting a reading that meets this puts the dose on the sheet as due.</div>':'')+'</div>';
   el.innerHTML=h; el.style.display='block'; }
 window.tsPrnEvery=function(n){ if(!RX) return; RX.prnMin=n; RX.prnAuto=false; msPaint(); };
-window.tsPrnWhen=function(b){ if(!RX) return; var l=b.textContent; RX.prnWhen=RX.prnWhen===l?null:l; msPaint(); if(RX.prnWhen==='Other') setTimeout(function(){ var n=document.getElementById('prnText'); if(n) n.focus(); },20); };
+window.tsPrnWhen=function(b){ if(!RX) return; var l=pvxEn(b); RX.prnWhen=RX.prnWhen===l?null:l; msPaint(); if(RX.prnWhen==='Other') setTimeout(function(){ var n=document.getElementById('prnText'); if(n) n.focus(); },20); };
 
 /* ---------- doses given: this drug, today and yesterday (saved charting + anything charted this second) ---------- */
 function msNowMs(){ return dkDate(dayKey()).getTime()+nowMin()*60000; }
@@ -2308,7 +2379,7 @@ window.tsDoseOpen=function(id,early){ var o=orderById(id)||oFind(id); if(!o) ret
     +'<div><div class="op-kind">Dose clock · '+esc(medDose(o).mg)+' '+esc(o.route||'')+' '+esc(o.freq||'')+'</div><h3>'+esc(o.name)+'</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
     +'<div class="op-hero">'+hero+status+'</div>'+(o.safety?msSafetyHTML(o):'')+(rule?'<div class="op-list">'+rule+'</div>':'')+list+act;
   opShow(html); window._dcWhy=null; };
-window.tsDoseWhy=function(b){ document.querySelectorAll('#tsOrderSheet .ms-why .rx-chip').forEach(function(x){ x.classList.toggle('on',x===b); }); window._dcWhy=b.textContent;
+window.tsDoseWhy=function(b){ document.querySelectorAll('#tsOrderSheet .ms-why .rx-chip').forEach(function(x){ x.classList.toggle('on',x===b); }); window._dcWhy=pvxEn(b);
   var n=document.getElementById('dcWhyNote'); if(n){ n.style.display=window._dcWhy==='Other'?'block':'none'; if(window._dcWhy==='Other') n.focus(); } };
 window.tsDoseGive=function(id,early){ var o=orderById(id); if(!o||!canChart()) return; var me=user(), n=nowMin(), why='';
   if(early){ why=window._dcWhy||''; if(why==='Other') why=((document.getElementById('dcWhyNote')||{}).value||'').trim(); if(!why){ toast('Choose a reason'); return; } }
@@ -2647,7 +2718,7 @@ window.tsInfCheckAsk=function(id){ var o=oFind(id); if(!o) return;
     +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsInfPanel(\''+esc(o.id)+'\')">Back</button><button type="button" class="op-btn primary" onclick="tsInfCheckSave(\''+esc(o.id)+'\')">Log check</button></div>';
   opShow(html); };
 window.tsInfCheckSave=function(id){ var o=(ORDERS||[]).find(function(x){ return x.id===id; }); if(!o) return;
-  var chips=[].map.call(document.querySelectorAll('#tsOrderSheet .inf-chips .rx-chip.on'),function(b){ return b.textContent; }), extra=((document.getElementById('infChkNote')||{}).value||'').trim();
+  var chips=[].map.call(document.querySelectorAll('#tsOrderSheet .inf-chips .rx-chip.on'),function(b){ return pvxEn(b); }), extra=((document.getElementById('infChkNote')||{}).value||'').trim();
   var note=chips.concat(extra?[extra]:[]).join(' · '), me=user(), now=new Date().toISOString();
   logEvent('care','Infusion check — <b>'+esc(o.name)+'</b> '+esc(rateStr(o))+(note?' · '+esc(note):''),me.initials);
   tsOrderClose(); updateOrder(id,{checks:(o.checks||[]).concat([{at:now,by:me.initials,note:note||null}]).slice(-24)}); toast('Check logged · '+esc(o.name)); };
@@ -2677,9 +2748,9 @@ window.tsOpenFluidOrder=function(name){ if(!CUR||!curDoc){ toast('Open a patient
     +'<label>Rate<span class="rx-dose"><input id="flV" inputmode="decimal" placeholder="Rate" oninput="tsFlCalc()"><select id="flU" onchange="tsFlCalc()">'+unitOpts(FLUID_UNITS,'mL/hr')+'</select></span></label>'
     +'<label>Start<select id="flStart">'+hourOpts()+'</select></label>'
     +'<label class="wide">Additive<input id="flAdd" placeholder="Optional — e.g. KCl 20 mEq/L"></label></div>'
-    +'<div class="rx-chips fl-add">'+ADDITIVES.map(function(a){ return '<button type="button" class="rx-chip" onclick="document.getElementById(\'flAdd\').value=this.textContent">'+esc(a)+'</button>'; }).join('')+'</div>'
+    +'<div class="rx-chips fl-add">'+ADDITIVES.map(function(a){ return '<button type="button" class="rx-chip" onclick="document.getElementById(\'flAdd\').value=pvxEn(this)">'+esc(a)+'</button>'; }).join('')+'</div>'
     +(mt?'<div class="rx-lbl">Maintenance · '+(spKey()==='cat'?'80':'132')+' × kg<sup>0.75</sup> per day</div><div class="rx-chips">'+[1,1.5,2].map(function(f){ return '<button type="button" class="rx-chip" onclick="tsFlMaint('+f+')">'+f+'× · '+fmtR(mt*f)+' mL/hr</button>'; }).join('')+'</div>':'')
-    +'<div class="tm-grid" style="margin-top:12px"><label class="wide">Instructions<input id="flNotes" placeholder="Optional"></label></div>'
+    +'<div class="tm-grid" style="margin-top:12px"><label class="wide">Instructions<input id="flNotes" placeholder="Optional">'+(window.tsSnipBar?tsSnipBar('flNotes','fluid'):'')+'</label></div>'
     +'<div class="rx-calc" id="flCalc">Enter a rate</div>'
     +(can?'':'<p class="rx-warn rx-block">Signed in as <b>'+esc(user().name||'—')+'</b>. Only doctors can order fluids.</p>'),
     can?'Start fluids':'Close', function(){ return can?flSubmit():true; });
@@ -2704,7 +2775,7 @@ window.tsOpenCriOrder=function(name){ if(!CUR||!curDoc){ toast('Open a patient f
     +'<label>Start<select id="crStart">'+hourOpts()+'</select></label>'
     +'<label class="wide">Carrier<input id="crCar" placeholder="Optional — e.g. in 0.9% NaCl"></label></div>'
     +'<div class="rx-stock" id="crStock" style="display:none"></div>'
-    +'<div class="tm-grid" style="margin-top:12px"><label class="wide">Instructions<input id="crNotes" placeholder="Optional"></label></div>'
+    +'<div class="tm-grid" style="margin-top:12px"><label class="wide">Instructions<input id="crNotes" placeholder="Optional">'+(window.tsSnipBar?tsSnipBar('crNotes','fluid'):'')+'</label></div>'
     +'<div class="rx-calc" id="crCalc">Enter a dose to calculate</div>'
     +(can?'':'<p class="rx-warn rx-block">Signed in as <b>'+esc(user().name||'—')+'</b>. Only doctors can order CRIs.</p>'),
     can?'Start CRI':'Close', function(){ return can?criSubmit():true; });
@@ -2734,14 +2805,15 @@ function criSubmit(){ var g=function(id){ return ((document.getElementById(id)||
 on('search.extra',infSearch);
 function infSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.display==='none'||!DRUGS) return; var scope=window.tsSearchScope||''; if(scope&&scope!=='Continuous Infusions') return; q=String(q||'').trim().toLowerCase(); var rows=[];
   if(!q&&scope){ rows.push(['inf:fluid:','IV fluids','LRS · Plasma-Lyte · Normosol-R · 0.9% NaCl']); CRI_DRUGS.forEach(function(c){ rows.push(['inf:cri:'+c[0],c[0]+' CRI',c[1]]); }); }
-  if(q){ if(FLUID_KEYS.indexOf(' '+q)>-1||FLUIDS.some(function(f){ return f.toLowerCase().indexOf(q)>-1; })) rows.push(['inf:fluid:','IV fluids','LRS · Plasma-Lyte · Normosol-R · 0.9% NaCl']);
-    var qq=q.replace(/\s*\bcri$/,'').trim();
-    CRI_DRUGS.forEach(function(c){ var l=c[0].toLowerCase(); if(q==='cri'||(qq&&(l.indexOf(qq)===0||(' '+l).indexOf(' '+qq)>-1))) rows.push(['inf:cri:'+c[0],c[0]+' CRI',c[1]]); }); }
+  if(q){ var QS=window.tsQs?tsQs(q):[q];   /* Spanish too (store/bilingual.js): "suero", "ringer", "fentanilo" */
+    if(QS.some(function(x){ return FLUID_KEYS.indexOf(' '+x)>-1||FLUIDS.some(function(f){ return f.toLowerCase().indexOf(x)>-1; }); })) rows.push(['inf:fluid:','IV fluids','LRS · Plasma-Lyte · Normosol-R · 0.9% NaCl']);
+    var cri=QS.indexOf('cri')>-1;
+    CRI_DRUGS.forEach(function(c){ var l=c[0].toLowerCase(); if(cri||QS.some(function(x){ var qq=x.replace(/\s*\b(cri|irc)$/,'').trim(); return qq&&(l.indexOf(qq)===0||(' '+l).indexOf(' '+qq)>-1||(window.tsSkelHit&&tsSkelHit(c[0],qq))); })) rows.push(['inf:cri:'+c[0],c[0]+' CRI',c[1]]); }); }
   else if(!scope) rows.push(['inf:fluid:','IV fluids','rate in mL/hr or mL/kg/hr']);
-  rows=rows.slice(0,scope?20:q==='cri'?8:4); if(!rows.length) return;
+  rows=rows.slice(0,scope?20:(q==='cri'||q==='irc')?8:4); if(!rows.length) return;
   var k0=tsRows.length, html='<div class="ts-cat">Fluids &amp; CRIs</div>'+rows.map(function(r,j){ tsRows.push(r[0]);
     return '<button class="ts-item" data-i="'+(k0+j)+'" onmouseenter="tsHi('+(k0+j)+')" onmousedown="event.preventDefault();tsPick(\''+esc(r[0]).replace(/'/g,"\\'")+'\')"><span>'+esc(r[1])+'</span><small class="ts-meta">'+esc(r[2])+'</small></button>'; }).join('');
-  var custom=[].find.call(d.querySelectorAll('.ts-cat'),function(c){ return c.textContent==='Custom'; });
+  var custom=[].find.call(d.querySelectorAll('.ts-cat'),function(c){ return pvxEn(c)==='Custom'; });
   if(custom) custom.insertAdjacentHTML('beforebegin',html); else d.insertAdjacentHTML('beforeend',html); }
 on('pick',function(key){ if(key.indexOf('inf:')!==0) return false; var p=key.split(':'); if(p[1]==='cri') tsOpenCriOrder(p.slice(2).join(':')); else tsOpenFluidOrder(); return true; });
 
@@ -2874,7 +2946,8 @@ function undoSet(S,ids,changed){ if(!CUR||!curDoc) return; sync(); var me=user()
 /* ---------- order search: type "parvo", "dka", "set"… ---------- */
 on('search.extra',setSearch);
 function setSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.display==='none'||!DRUGS||window.tsSearchScope) return; q=String(q||'').trim().toLowerCase();
-  var hits=q?ORDER_SETS.filter(function(s){ return q==='set'||q==='sets'||q==='order set'||s.name.toLowerCase().indexOf(q)===0||(' '+s.k+' ').indexOf(' '+q)>-1; }):[];
+  var QS=window.tsQs?tsQs(q):[q];   /* Spanish too: "convulsiones" → Seizure watch */
+  var hits=q?ORDER_SETS.filter(function(s){ return QS.some(function(x){ return x==='set'||x==='sets'||x==='order set'||s.name.toLowerCase().indexOf(x)===0||(' '+s.k+' ').indexOf(' '+x)>-1; }); }):[];
   var rows=q?hits.slice(0,4).map(function(s){ return ['set:'+s.id,s.name,'Order set · '+s.items.length+' orders']; }):[['sets:','Browse order sets',ORDER_SETS.length+' sets · ICU admit, Parvovirus, DKA…']];
   if(!rows.length) return; var k0=tsRows.length;
   var html='<div class="ts-cat">Order sets</div>'+rows.map(function(r,j){ tsRows.push(r[0]); return '<button class="ts-item" data-i="'+(k0+j)+'" onmouseenter="tsHi('+(k0+j)+')" onmousedown="event.preventDefault();tsPick(\''+esc(r[0])+'\')"><span>'+esc(r[1])+'</span><small class="ts-meta">'+esc(r[2])+'</small></button>'; }).join('');
@@ -2883,7 +2956,7 @@ function setSearch(q){ var d=document.getElementById('tsDrop'); if(!d||d.style.d
     [].forEach.call(d.querySelectorAll('.ts-item[data-i]'),function(b){ var i=+b.getAttribute('data-i')+n; b.setAttribute('data-i',i); b.setAttribute('onmouseenter','tsHi('+i+')'); });
     html=html.replace(/data-i="(\d+)"/g,function(_,i){ return 'data-i="'+(i-k0)+'"'; }).replace(/tsHi\((\d+)\)/g,function(_,i){ return 'tsHi('+(i-k0)+')'; });
     d.insertAdjacentHTML('afterbegin',html); tsIdx=0; try{ tsMark(); }catch(e){} return; }
-  var custom=[].find.call(d.querySelectorAll('.ts-cat'),function(c){ return c.textContent==='Custom'; });
+  var custom=[].find.call(d.querySelectorAll('.ts-cat'),function(c){ return pvxEn(c)==='Custom'; });
   if(custom) custom.insertAdjacentHTML('beforebegin',html); else d.insertAdjacentHTML('beforeend',html); }
 on('pick',function(key){ if(key.indexOf('set:')!==0&&key!=='sets:') return false; var si=document.getElementById('tsSearch'); if(si) si.blur();
   if(key==='sets:') tsSets(); else tsSetOpen(key.slice(4)); return true; });
@@ -3312,7 +3385,7 @@ function chLoadPrices(){ if(CH_PP) return CH_PP; var col=chDB(); if(!col) return
     col.doc('prices').get().then(function(s){ var d=s.exists?s.data():{}; CH_PRICES={codes:d.codes||{},items:d.items||{},fees:d.fees||{}};   /* fees: WOOFware's fee per invoice entry (e.g. the injection fee), added once per entry on top of unit price × quantity */ },function(){})])
     .then(function(){ CH_PP_OK=true; try{ refreshHeader(); }catch(e){} }); return CH_PP; }
 on('header.refresh',function(){ if(!CH_PP&&CUR&&curDoc) chLoadPrices(); if(!CH_CODES&&!CH_P&&CUR&&curDoc) chLoad().then(function(L){ if(L&&L.length) try{ refreshHeader(); }catch(e){} }); });
-function chName(code,fallback){ var x=CH_IX[code]; return x?x.n:(fallback||''); }
+function chName(code,fallback){ var x=CH_IX[code]; return (x&&x.n)||fallback||(code?'Code '+code:''); }   /* a code with a price but no name yet: say the code, never "undefined" */
 
 /* ---------- the patient ---------- */
 function chSp(){ var s=String(VISIT.species||(curDoc&&curDoc.patient&&curDoc.patient.species)||'').toLowerCase();
@@ -3672,8 +3745,8 @@ window.tsEstPlan=function(){ chLoad().then(function(){ var lo=Math.max(1,parseIn
    (charge_check.open, charge_review:true). Every close through here saves charge_check = {at, by, lines, total, entered, waived, open, anyway, lowered}.
    Hours billed below the level the sheet works out (the doctor lowered it) show as a note with the dollars, and are saved for the owner's report. */
 var CC_WHY=['Doctor waived','Included in another charge','Entered under another code','Charted in error'];
-var CC_CLOSE=[['discharged','Discharged'],['transferred','Transferred'],['deceased','Deceased'],['cancelled','Admitted in error']];
-var ccBack=false, ccOn=false, ccAsk='', ccCode='', ccWhy='discharged', ccAny=false, ccPrev={r:0,b:0,tot:0,ent:0,left:0}, ccMine={};
+var CC_CLOSE=TS_OUTCOMES;   /* how the stay ended (store/base.js) */
+var ccBack=false, ccOn=false, ccAsk='', ccCode='', ccWhy=null, ccAny=false, ccPrev={r:0,b:0,tot:0,ent:0,left:0}, ccMine={};
 var CC_CK='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.4l2.9 2.9L12.6 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 function ccLines(){ return chAllLines().filter(function(l){ return l.qty>0; }); }
@@ -3686,7 +3759,7 @@ function ccSuggest(l){ if(!l.oid||l.code) return null; var o=(curDoc.orders||{})
 function ccQty(q,u){ return q+(/^(hr|mL|tab|cap)$/.test(u||'')?' '+u:''); }
 
 window.tsChargeCheck=function(){ if(!CUR||!curDoc) return false; if(!ccLines().length) return false;
-  ccOn=true; ccAsk=''; ccCode=''; ccWhy='discharged'; ccAny=false; ccMine={}; ccPrev={r:0,b:0,tot:0,ent:0,left:0}; ccRender(true); return true; };
+  ccOn=true; ccAsk=''; ccCode=''; ccWhy=null; ccAny=false; ccMine={}; ccPrev={r:0,b:0,tot:0,ent:0,left:0}; ccRender(true); return true; };
 window.tsCcClose=function(){ ccOn=false; tsOrderClose(); };
 
 function ccRowHTML(l){ var d=chDiff(l), sg=l.warn&&!l.code?ccSuggest(l):null, k=esc(l.key);
@@ -3720,11 +3793,11 @@ function ccHTML(){ var L=ccLines(), O=L.filter(ccIsOpen), R=L.filter(function(l)
         +(l.waived?'<s>'+chMoney(l.total)+'</s>':'<span class="cc-ra">'+(l.total!=null?chMoney(l.total):'—')+'</span>')
         +(m?'<button type="button" class="cc-undo" data-undo="'+esc(l.key)+'">Undo</button>':'')+'</div>'; }).join('')+'</details>':'');
   var foot='<div class="cc-foot'+(fin?' fin':'')+'">'
-    +(fin?'<div class="cc-reason" role="group" aria-label="Why the sheet is closing">'+CC_CLOSE.map(function(x){ return '<button type="button" data-why="'+x[0]+'" aria-pressed="'+(ccWhy===x[0])+'">'+x[1]+'</button>'; }).join('')+'</div>'
+    +(fin?'<div class="cc-outcome"><div class="cc-out-h">How did the stay end?</div>'+tsOutcomeRow(ccWhy,'data-why')+'</div>'
       :'<button type="button" class="cc-btn" data-all="1"'+(O.some(function(l){ return l.code||!l.warn; })?'':' disabled')+'>Mark all entered</button>'+(adm?'<button type="button" class="cc-link" data-any="1" aria-expanded="'+ccAny+'">Close anyway…</button>':'<span class="cc-note">Only the owner or an admin can close with charges open.</span>'))
     +'<span class="cc-sp"></span><button type="button" class="cc-btn '+(fin?'ok':'pri')+'" data-shut="1"'+(fin?'':' disabled')+'>'+(fin?'Close sheet':'Close sheet · '+n+' left')+'</button>'
     +(!fin&&ccAny&&adm?'<div class="cc-any"><p><b>Close with charges not entered?</b> The sheet closes now and the '+n+' open charge'+(n>1?'s go':' goes')+' to the charges review for the morning.</p>'
-      +'<textarea id="ccAnyWhy" rows="2" placeholder="Why now? e.g. Client left at 3 AM, WOOFware down"></textarea>'
+      +'<div class="cc-out-h">How did the stay end?</div>'+tsOutcomeRow(ccWhy,'data-why')+'<textarea id="ccAnyWhy" rows="2" placeholder="Why now? e.g. Client left at 3 AM, WOOFware down"></textarea>'
       +'<div class="cc-anyr"><button type="button" class="cc-btn" data-any="1">Cancel</button><button type="button" class="cc-btn pri" data-anygo="1" disabled>Close and send to review</button></div></div>':'')
     +'</div>';
   var LW=chLowered(), low=LW.length?'<div class="cc-low" role="note"><div class="cc-low-h"><b>Hospitalization level lowered</b><span>'+chMoney(LW.reduce(function(t,x){ return t+x.diff; },0))+' below the sheet’s level</span></div>'
@@ -3760,13 +3833,14 @@ function ccClick(e){ var b=e.target.closest('button'); if(!b||b.disabled) return
     document.querySelectorAll('#tsOrderSheet .cc-row').forEach(function(r,i){ if(O.some(function(l){ return l.key===r.getAttribute('data-row'); })) setTimeout(function(){ r.classList.add('gone'); },i*45); });
     tsChAll(); setTimeout(function(){ ccRender(); },O.length*45+320); }
   else if(b.getAttribute('data-any')){ ccAny=!ccAny; ccRender(); }
-  else if((k=b.getAttribute('data-why'))){ ccWhy=k; ccRender(); }
+  else if((k=b.getAttribute('data-why'))){ ccWhy=k; document.querySelectorAll('#tsOrderSheet .ts-out button').forEach(function(x){ var on=x.getAttribute('data-why')===k; x.classList.toggle('on',on); x.setAttribute('aria-checked',String(on)); }); }   /* in place: keeps a reason being typed */
   else if(b.getAttribute('data-anygo')){ var ta=document.getElementById('ccAnyWhy'); ccFinish((ta&&ta.value||'').trim()); }
   else if(b.getAttribute('data-shut')) ccFinish(null); }
 on('ch.coded',function(){ if(!ccOn||!ccBack) return; ccBack=false; setTimeout(function(){ ccCode=''; if(ccOn&&CUR) ccRender(true); },60); });
 
 function ccFinish(anyway){ var L=ccLines(), O=L.filter(ccIsOpen), S=ccSums(L), me=user(), now=new Date().toISOString(), nm=VISIT.patient||'Patient';
   if(O.length&&!(anyway&&chAdmin())) return;
+  if(!ccWhy){ toast('Choose how the stay ended'); var r=document.querySelector('#tsOrderSheet .ts-out'); if(r){ r.classList.remove('shake'); void r.offsetWidth; r.classList.add('shake'); } return; }
   var W=L.filter(function(l){ return l.waived; });
   var rec={at:now,by:me.initials||'',lines:L.length,total:S.tot,entered:S.ent,
     waived:W.map(function(l){ return {key:l.key,code:l.code||'',name:l.name||'',why:l.waived.why||'',amt:l.total}; }),
@@ -3852,6 +3926,8 @@ function stgHTML(){ var admin=staffRole()==='admin', trying=window.tsInternTryin
     +(canDrafts?stgRow('Intern drafts','Which interns’ orders need a doctor’s approval.','<button type="button" class="stg-btn" data-stg="drafts">Choose…</button>'):'')
     +(window.tsLevelsOwner&&tsLevelsOwner()?stgRow('Lowered levels','Hospitalization billed below the level the sheet worked out, by who lowered it. Only you see this.','<button type="button" class="stg-btn" data-stg="levels">Open report</button>'):'')
     +(window.tsInsSplitCount&&canOrderTS()&&tsInsSplitCount()?stgRow('Long order names',tsInsSplitCount()+' on this sheet could be a short name with the rest kept as instructions. You see the list before anything changes.','<button type="button" class="stg-btn" data-stg="names">Review…</button>'):'')
+    +(window.tsOnTime?stgRow('On-time report','Treatments on time, late and missed — by shift, ward and hour; antibiotics from order to first dose; how stays ended. Never by person.','<button type="button" class="stg-btn" data-stg="ontime">Open</button>'):'')
+    +(window.tsSpanishWording?stgRow('Spanish wording','How the app reads in Español — clinical terms first. A correction here changes it for everyone.','<button type="button" class="stg-btn" data-stg="i18n">Review…</button>'):'')
     +stgRow('Code list',(info?esc(info):'Not loaded yet')+'. Import the WOOFware code list with its prices and fees.','<label class="stg-btn">Import (.json)<input type="file" accept=".json,application/json" hidden id="stgImport"></label>')
     +'</div>'; }
 function stgRender(){ if(!stgOn) return; var m=document.getElementById('tsOrderSheet'), card=m&&m.querySelector('.op-card.stg');
@@ -3860,7 +3936,9 @@ function stgRender(){ if(!stgOn) return; var m=document.getElementById('tsOrderS
     if(k==='intern'){ tsInternTry(); stgRender(); }
     else if(k==='drafts'){ stgOn=false; tsInternsOpen(); }
     else if(k==='names'){ stgOn=false; tsInsSplitOpen(); }
-    else if(k==='levels'){ stgOn=false; tsLevelsReport(); } };
+    else if(k==='levels'){ stgOn=false; tsLevelsReport(); }
+    else if(k==='ontime'){ stgOn=false; tsOnTime(1); }
+    else if(k==='i18n'){ stgOn=false; tsSpanishWording(); } };
   var f=card.querySelector('#stgImport'); if(f) f.onchange=function(){ tsChImport(f); }; }
 window.tsSettingsOpen=function(){ if(!stgAllowed()) return; stgOn=true; stgRender(); try{ if(window.tsChCodesInfo&&!tsChCodesInfo()) chLoad().then(function(){ if(stgOn) stgRender(); }); }catch(e){} };   /* the code list loads on first use */
 window.tsSettingsClose=function(){ stgOn=false; tsOrderClose(); };
@@ -3901,10 +3979,12 @@ on('chip',function(){ if(!lvDone) setTimeout(lvRestore,0); });
    A typed command (voice.js: "bupe done", "open vitals") wins: its hint shows and no patient list does. */
 var FIND_Q='', FIND_SEL=0, FIND_EL=null;
 function findBox(){ return document.getElementById('globalSearch'); }
-function findHay(s){ var p=s.patient||{}; return [p.name,p.last,p.owner,p.reason,p.location,p.doctor,p.breed].filter(Boolean).join(' ').toLowerCase(); }
+function findHay(s){ var p=s.patient||{}; return (window.tsFold||function(x){ return x.toLowerCase(); })([p.name,p.last,p.owner,p.reason,p.location,p.doctor,p.breed,p.species,(p.problems||[]).map(function(x){ return x&&(x.name||x.text||x); }).join(' ')].filter(Boolean).join(' ')); }
 function findNm(s){ var p=s.patient||{}; return ((p.name||'')+' '+(p.last||'')).trim()||'Unnamed'; }
-function findList(q){ q=String(q||'').trim().toLowerCase(); if(!q) return []; var W=q.split(/\s+/);
-  return SHEETS.filter(function(s){ var h=findHay(s); return W.every(function(w){ return h.indexOf(w)>-1; }); })
+/* each word as typed or, in Spanish, the English it stands for ("vómitos" finds a patient admitted for vomiting, "gato" every cat) */
+function findWord(h,w){ if(h.indexOf(w)>-1) return true; var A=(window.tsEsAlts&&w.length>=4)?tsEsAlts(w):[]; return A.some(function(a){ return h.indexOf(a)>-1; }); }
+function findList(q){ q=(window.tsFold||function(x){ return x.toLowerCase(); })(String(q||'').trim()); if(!q) return []; var W=q.split(/\s+/), H=(window.tsEsAlts&&q.length>=4)?tsEsAlts(q):[];
+  return SHEETS.filter(function(s){ var h=findHay(s); return W.every(function(w){ return findWord(h,w); })||H.some(function(a){ return h.indexOf(a)>-1; }); })
     .sort(function(a,b){ var A=findNm(a).toLowerCase().indexOf(q)===0?0:1, B=findNm(b).toLowerCase().indexOf(q)===0?0:1; return A-B; }); }
 function findOnBoard(){ return typeof currentCTab!=='undefined'&&currentCTab==='dash'; }
 function findCmd(){ var h=[].slice.call(document.querySelectorAll('.ts-cmd-hint.show')).filter(function(x){ return x!==FIND_EL; }); return h.length>0; }
@@ -4049,7 +4129,7 @@ function ocPaint(){ if(!RX) return; var el=document.getElementById('rxPrice'), v
   if(el) el.innerHTML=ocPriceHTML({name:RX.x.n,type:'med',route:v('rxRoute'),freq:v('rxFreq')});
   window.tsOcFoot(); }
 /* the button says what will happen: a flagged dose is ordered "anyway", in red */
-window.tsOcFoot=function(){ var b=document.querySelector('#tsModal [data-ok]'); if(!b||!RX) return; var base=b.getAttribute('data-label')||b.textContent;
+window.tsOcFoot=function(){ var b=document.querySelector('#tsModal [data-ok]'); if(!b||!RX) return; var base=b.getAttribute('data-label')||pvxEn(b);
   var flag=RX.msFlags&&RX.msFlags.length&&base==='Add to sheet';
   b.textContent=flag?'Order anyway':base; b.classList.toggle('danger',!!flag); };
 on('rx.calc',ocPaint,100);
@@ -4245,7 +4325,8 @@ window.tsBoardPill=function(k){ BV_PILL=BV_PILL===k?'':k; try{ renderDash(); }ca
 window.tsTeamCell=function(r){ var dr=bvDr(r.drName), t=r.techName;
   return '<div class="sbc c-team">'+(dr?'<div class="tm-p" title="Doctor · Dr. '+esc(String(r.drName).replace(/^dr\.?\s+/i,''))+'"><i style="background:'+bvColor(r.drName)+'"></i>'+esc(dr)+'</div>':'<div class="tm-p none">No doctor</div>')
     +'<button type="button" class="tm-p tm-tech'+(t?'':' none')+'" title="'+(t?'Technician · '+esc(t)+' — tap to change':'Assign a tech')+'" onclick="event.stopPropagation();tsPickTech(\''+esc(r._id||'')+'\',this)">'
-    +(t?'<i style="background:'+bvColor(t)+'"></i>'+esc(bvShort(t)):'+ Assign tech')+'</button></div>'; };
+    +(t?'<i style="background:'+bvColor(t)+'"></i>'+esc(bvShort(t)):'+ Assign tech')+'</button>'
+    +(function(){ if(!window.tsClaimChip) return ''; var d=(r._id===CUR&&curDoc)?curDoc:(SHEETS||[]).find(function(x){ return x._id===r._id; }); return d?tsClaimChip(d):''; })()+'</div>'; };   /* who's on it now (store/assign.js) */
 /* alerts.js draws the cell; client alerts become chips under the safety ones */
 (function(){ var base=window.tsAlertCell; if(!base) return;
   window.tsAlertCell=function(p,i){ var html=base(p,i), cl=(p.alerts||[]).filter(function(a){ return a.t==='client'; });
@@ -4989,6 +5070,346 @@ function rlTick(){ if(document.hidden||typeof currentCTab==='undefined'||current
   [].forEach.call(inner.querySelectorAll(':scope > .grow[data-o]'),function(r){ var o=orderById(r.getAttribute('data-o')); if(!o||o.dc) return; var c=r.querySelector('.rl-latest'); if(!c) return;
     var h=rlLatestHTML(o); if(c._rlh===h) return; c._rlh=h; tsMorphHTML(c,h); }); }
 setInterval(function(){ try{ rlTick(); }catch(e){} },15000);
+/* ═════════ TS CONTROLLED DRUGS — seen everywhere they're ordered (Oct 2026) ═════════
+   Federal DEA schedules for the controlled drugs a small-animal hospital orders. Shown as a quiet "C-II" tag after the name on the sheet,
+   a line in the order window and in the charting window ("record the dose and any waste in the controlled drug log"), a tag on the ICU
+   overdue display, and the board's Controlled drugs filter (store/workflow.js asks tsCtrlSched). State-scheduled drugs (e.g. gabapentin
+   in some states) can be added to CTRL_SCHED. Nothing here dispenses or logs — the controlled drug log stays where it is. */
+var CTRL_SCHED={methadone:'II',hydromorphone:'II',morphine:'II',fentanyl:'II',oxymorphone:'II',hydrocodone:'II',remifentanil:'II',alfentanil:'II',pentobarbital:'II',codeine:'II',
+  buprenorphine:'III',ketamine:'III','tiletamine / zolazepam':'III',telazol:'III',
+  butorphanol:'IV',tramadol:'IV',midazolam:'IV',diazepam:'IV',alprazolam:'IV',lorazepam:'IV',alfaxalone:'IV',phenobarbital:'IV',
+  pregabalin:'V'};
+window.tsCtrlSched=function(name){ var n=String(name||'').trim().toLowerCase(); if(!n) return '';
+  if(CTRL_SCHED[n]) return CTRL_SCHED[n];
+  var k=Object.keys(CTRL_SCHED).find(function(x){ return n.indexOf(x+' ')===0||n.indexOf(x+'(')===0||n.indexOf(x+',')===0; }); return k?CTRL_SCHED[k]:''; };
+function ctrlOf(o){ return o&&(o.type==='med'||o.cont)?tsCtrlSched(o.name):''; }
+/* the sheet: a quiet tag after the name */
+window.tsCtrlBadge=function(o){ var s=ctrlOf(o); return s?'<span class="rl-ctrl" title="Controlled drug · Schedule '+s+'">C-'+s+'</span>':''; };
+/* charting a controlled drug */
+window.tsCtrlLine=function(o){ var s=ctrlOf(o); if(!s) return '';
+  return '<div class="ctrl-line"><span class="rl-ctrl">C-'+s+'</span>Controlled drug · Schedule '+s+' — record the dose and any waste in the controlled drug log</div>'; };
+/* the order window: the same line under the drug's name */
+on('rx.opened',function(){ setTimeout(function(){ try{ var x=RX&&RX.x; if(!x) return; var s=tsCtrlSched(x.n); if(!s) return; var c=document.querySelector('#tsModal .tm-card');
+  if(!c||c.querySelector('.ctrl-line')) return; var p=c.querySelector('h3+p')||c.querySelector('h3'); if(!p) return;
+  p.insertAdjacentHTML('afterend','<div class="ctrl-line"><span class="rl-ctrl">C-'+s+'</span>Controlled drug · Schedule '+s+' — sign it out in the controlled drug log</div>'); }catch(e){} },40); });
+/* ═════════ TS ASSIGN TO ME — "I'm on this patient" (Oct 2026, Instinct's Assign to Me) ═════════
+   A pill beside the patient's name: "Assign to me" → "With you · since 12:06 PM". Everyone else sees "With Amber H." on the sheet and on the
+   board (Care Team column), so two people don't treat the same patient at once. It never locks anyone out: tapping someone else's pill offers
+   "Take over" (shift change), tapping your own releases it. A claim older than 12 h is treated as released. My Patients includes the patients
+   assigned to you. Saved on the sheet as claim = {by, name, uid, at} (null when released), with a line in the audit. */
+var AS_TTL=12*3600e3;
+var AS_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
+function asOf(d){ var c=d&&d.claim; if(!c||!c.at) return null; var t=Date.parse(c.at); if(!(t>0)||Date.now()-t>AS_TTL) return null; return c; }
+function asMine(c){ if(!c) return false; var me=user(); return !!((me.uid&&c.uid&&c.uid===me.uid)||(me.name&&normName(c.name)===normName(me.name))); }
+function asShort(n){ var w=String(n||'').replace(/^dr\.?\s+/i,'').trim().split(/\s+/); return w.length>1?w[0]+' '+w[w.length-1][0]+'.':(w[0]||'—'); }
+function asClock(iso){ try{ var d=new Date(iso); return window.tsClockShort?tsClockShort(d.getHours()*60+d.getMinutes()):fmtTime(d.getHours()*60+d.getMinutes()); }catch(e){ return ''; } }
+window.tsClaimOf=function(d){ return asOf(d); };
+window.tsClaimMine=function(d){ return asMine(asOf(d)); };
+/* the header pill */
+window.tsClaimHTML=function(d){ if(!d||(window.tsViewDk&&tsViewDk()!==dayKey())) return ''; var c=asOf(d), mine=asMine(c);
+  if(!c) return '<button type="button" class="as-pill" onclick="tsClaim()" title="Let the team know you’re working on this patient">'+AS_IC+'Assign to me</button>';
+  return '<button type="button" class="as-pill on'+(mine?' mine':'')+'" onclick="tsClaim()" title="'+esc(mine?'Assigned to you — tap to release':'Assigned to '+(c.name||c.by)+' — tap to take over')+'">'+AS_IC
+    +(mine?'With you':'With '+esc(asShort(c.name||c.by)))+'<small>since '+esc(asClock(c.at))+'</small></button>'; };
+/* the board's Care Team cell: who's on it right now */
+window.tsClaimChip=function(d){ var c=asOf(d); if(!c) return ''; var mine=asMine(c);
+  return '<div class="as-chip'+(mine?' mine':'')+'" title="'+esc((mine?'With you':'With '+(c.name||c.by))+' since '+asClock(c.at))+'">'+AS_IC+(mine?'With you':esc(asShort(c.name||c.by)))+'</div>'; };
+function asSave(rec,why){ if(!CUR||!curDoc) return; var me=user(), now=new Date().toISOString();
+  curDoc.claim=rec; if(curMain&&curMain!==curDoc) curMain.claim=rec; var s=(SHEETS||[]).find(function(x){ return x._id===CUR; }); if(s&&s!==curDoc) s.claim=rec;
+  var u={claim:rec,updated_at:now}; try{ u.audit=FV.arrayUnion({at:now,type:'care',desc:why,who:me.initials,uid:me.uid}); }catch(e){}
+  try{ tsCommit(CUR,u); }catch(e){ console.warn(e); }
+  try{ refreshHeader(); }catch(e){} try{ if(currentCTab==='dash') renderDash(); }catch(e){} }
+window.tsClaim=function(force){ if(!CUR||!curDoc) return; var c=asOf(curDoc), me=user(), now=new Date().toISOString(), pt=VISIT.patient||'this patient';
+  if(c&&asMine(c)){ asSave(null,'Released <b>'+esc(pt)+'</b>'); toast(esc(pt)+' released'); return; }
+  if(c&&!force){ opShow('<div class="op-head"><span class="op-ic">'+AS_IC+'</span><div><div class="op-kind">Assigned</div><h3>Take over from '+esc(asShort(c.name||c.by))+'?</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+      +'<p class="op-lead">'+esc(c.name||c.by)+' has been on '+esc(pt)+' since '+esc(asClock(c.at))+'. Taking over tells the team you’re on this patient now — check with them first if they’re mid-treatment.</p>'
+      +'<div class="op-actions"><button type="button" class="op-btn" onclick="tsOrderClose()">Cancel</button><button type="button" class="op-btn primary" onclick="tsOrderClose();tsClaim(true)">Take over</button></div>','as-take'); return; }
+  asSave({by:me.initials||null,name:me.name||null,uid:me.uid||null,at:now},(c?'Took over <b>'+esc(pt)+'</b> from '+esc(c.name||c.by):'Assigned <b>'+esc(pt)+'</b> to themselves'));
+  toast(c?'You’ve taken over '+esc(pt):esc(pt)+' is assigned to you'); };
+/* ═════════ TS SNIPPETS — the phrases people type every day, one tap away (Oct 2026, Instinct's Snippets) ═════════
+   A row of chips under every Instructions field (medications, monitoring & care, fluids & CRIs) and under the Note when charting.
+   Tap one: it goes into the field (after " · " when there's already text); a "…" in the snippet is selected so you just type the number.
+   "+ Save" keeps what's in the field as a new snippet for everyone (hospital-wide, Firestore ts_settings/snippets; on this device only
+   until that database rule is published). A saved snippet shows a small × on hover to remove it. */
+var SN_DEF={
+  med:['Give with food','Give on an empty stomach','Give until gone','Dilute 1:1 with sterile saline','Give slowly over 15 min','Give over 30 min','Hold if sedate — call doctor','Hold if vomiting — call doctor','Call doctor before giving'],
+  care:['Leash walk, 5 minutes','Sling for the back legs','No stairs','Check the site for swelling or redness','Warm compress, 10 minutes','Call doctor if below …','Call doctor if above …','Offer food — record how much'],
+  fluid:['Check the line hourly','Flush the line before and after','Dedicated line','Protect from light','Call doctor if the pump alarms twice','Recheck rate after the next weight'],
+  note:['Tolerated well','Resisted — will retry','Ate well','Did not eat','Vomited ×1','Comfortable, resting','Site clean and dry','Doctor aware']};
+var SN={custom:[],live:false,local:false};
+function snLocal(){ try{ return JSON.parse(localStorage.getItem('tsSnip_v1')||'[]'); }catch(e){ return []; } }
+function snListen(){ if(SN.live||typeof DB==='undefined'||!DB) return; SN.live=true;
+  try{ DB.collection('ts_settings').doc('snippets').onSnapshot(function(s){ var d=(s&&s.exists&&s.data())||{}; SN.custom=(d.list||[]).filter(function(x){ return x&&x.t; }); snPaint(); },function(){ SN.local=true; SN.custom=snLocal(); snPaint(); }); }
+  catch(e){ SN.local=true; SN.custom=snLocal(); } }
+function snFor(ctx){ var own=SN.custom.filter(function(x){ return !x.ctx||x.ctx===ctx; }).map(function(x){ return {t:x.t,own:1}; });
+  return own.concat((SN_DEF[ctx]||[]).filter(function(t){ return !own.some(function(o){ return o.t===t; }); }).map(function(t){ return {t:t}; })); }
+function snChips(ctx){ return snFor(ctx).map(function(x){ return '<button type="button" class="sn-chip'+(x.own?' own':'')+'" data-t="'+esc(x.t)+'">'+esc(x.t)+(x.own?'<i class="sn-x" data-x="'+esc(x.t)+'" title="Remove this snippet" aria-label="Remove">×</i>':'')+'</button>'; }).join(''); }
+window.tsSnipBar=function(id,ctx){ snListen(); return '<div class="sn-bar" data-for="'+esc(id)+'" data-ctx="'+esc(ctx)+'" role="group" aria-label="Snippets">'+snChips(ctx)+'<button type="button" class="sn-chip sn-save" data-save="1" title="Keep what’s in the field as a snippet for everyone">+ Save</button></div>'; };
+function snPaint(){ [].forEach.call(document.querySelectorAll('.sn-bar'),function(b){ var save=b.querySelector('.sn-save'); b.innerHTML=snChips(b.getAttribute('data-ctx'))+(save?save.outerHTML:''); }); }
+function snWrite(list){ SN.custom=list; snPaint();
+  if(SN.local||typeof DB==='undefined'||!DB){ try{ localStorage.setItem('tsSnip_v1',JSON.stringify(list)); }catch(e){} return; }
+  try{ DB.collection('ts_settings').doc('snippets').set({list:list,updated_at:new Date().toISOString(),updated_by:user().name||null},{merge:true})
+    .catch(function(e){ SN.local=true; try{ localStorage.setItem('tsSnip_v1',JSON.stringify(list)); }catch(_){} toast('Saved on this device — the database rule for shared snippets isn’t published yet'); }); }catch(e){} }
+function snInsert(f,t){ var v=f.value||'', sep=/\S$/.test(v)?(f.tagName==='TEXTAREA'&&/\n$/.test(v)?'':' · '):'', start=v.length+sep.length; f.value=v+sep+t; f.focus();
+  var k=t.indexOf('…'); if(k>-1){ try{ f.setSelectionRange(start+k,start+k+1); }catch(e){} } else { try{ f.setSelectionRange(f.value.length,f.value.length); }catch(e){} }
+  f.dispatchEvent(new Event('input',{bubbles:true})); }
+document.addEventListener('mousedown',function(e){ if(e.target.closest&&e.target.closest('.sn-bar button')) e.preventDefault(); },true);   /* keep the caret in the field */
+document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.sn-bar button'); if(!b) return; e.preventDefault(); e.stopPropagation();
+  var bar=b.closest('.sn-bar'), f=document.getElementById(bar.getAttribute('data-for')), ctx=bar.getAttribute('data-ctx');
+  var x=e.target.closest('.sn-x'); if(x){ var t0=x.getAttribute('data-x'); snWrite(SN.custom.filter(function(s){ return s.t!==t0; })); toast('Snippet removed'); return; }
+  if(!f) return;
+  if(b.hasAttribute('data-save')){ var t=String(f.value||'').trim(); if(!t){ toast('Type the phrase first, then Save'); f.focus(); return; } if(t.length>90){ toast('Keep snippets short — under 90 characters'); return; }
+    if(snFor(ctx).some(function(s){ return s.t.toLowerCase()===t.toLowerCase(); })){ toast('That’s already a snippet'); return; }
+    snWrite([{t:t,ctx:ctx,by:user().name||null,at:new Date().toISOString()}].concat(SN.custom).slice(0,60)); toast('Saved as a snippet for everyone'); return; }
+  snInsert(f,b.getAttribute('data-t')); },true);
+/* ═════════ TS HOUSE DOSES — the order window learns what our doctors actually order (Oct 2026) ═════════
+   For each drug + route + species, the doses ordered here (per kg) are kept: from every open sheet, plus a running log of the last 30 orders
+   (Firestore ts_settings/house_doses — this session only until that database rule is published). With 3 or more orders, the order window
+   shows a "House" line at the top of the reference doses — "30 mg/kg · IV · q8h · Usually ordered here · 6 orders · Dr. Kraenzlin" — and
+   starts from it instead of the reference's low end (the median of what was ordered, so one odd order doesn't move it).
+   Easy amount: when the calculated dose is an awkward number (15.6 mg), the window offers the nearby amount doctors write (15 mg) —
+   to the nearest 5 at 10 mg and over, 0.5 from 1 to 10, 0.05 under 1 — one tap, and the per-kg dose is adjusted to match.
+   It only suggests: the doctor confirms every dose, and the safety checks (range, duplicates, daily max) run as before. */
+var HD={log:{},live:false,local:false,idx:{}};
+var HD_ROUTES=['IV','SQ','IM','PO','Rectal','Intranasal','Topical','Ophthalmic','Otic','Inhaled','Transdermal'];
+function hdSp(s){ s=String(s||''); return /^(cat|fel)/i.test(s)?'cat':/^(dog|can)/i.test(s)?'dog':''; }
+function hdKey(name,route,sp){ return (String(name||'').trim().toLowerCase()+'_'+String(route||'').toUpperCase()+'_'+(sp||'')).replace(/[^a-z0-9_]+/gi,'-'); }
+function hdListen(){ if(HD.live||typeof DB==='undefined'||!DB) return; HD.live=true;
+  try{ DB.collection('ts_settings').doc('house_doses').onSnapshot(function(s){ var d=(s&&s.exists&&s.data())||{}; if(d.log) HD.log=d.log; },function(){ HD.local=true; }); }catch(e){ HD.local=true; } }
+/* one order → {id, pk (dose per kg), b (base unit), f, by, at, kg} */
+function hdEntry(o,kg){ if(!o||o.type!=='med'||o.draft||o.dc_reason==='error'||o.dc_reason==='rejected') return null; var dose=Number(o.dose); if(!(dose>0)||!o.route) return null;
+  var unit=String(o.unit||'mg/kg'), base=unit.split('/')[0], per=unit.split('/')[1], pk=null;
+  if(per==='kg') pk=dose; else if(per==='lb') pk=dose*2.20462; else if(!per&&kg>0) pk=dose/kg; if(!(pk>0)) return null;
+  return {id:o.id||'',pk:Math.round(pk*1e4)/1e4,b:base,f:o.freq||'',by:o.ordered_by_name||o.ordered_by||'',at:o.ordered_at||'',kg:kg||null,h:typeof TENANT!=='undefined'?TENANT:''}; }
+/* everything we know for a drug + route + species: the log, plus the orders on every open sheet */
+function hdAll(name,route,sp){ var k=hdKey(name,route,sp), out={}, n=String(name||'').trim().toLowerCase();
+  (HD.log[k]||[]).forEach(function(e){ if(e&&e.pk>0) out[e.id||Math.random()]=e; });
+  var seen={}; [].concat(typeof curDoc!=='undefined'&&curDoc?[curDoc]:[],SHEETS||[]).forEach(function(s){ if(!s||seen[s._id||'cur']) return; seen[s._id||'cur']=1; var p=s.patient||{}; if(hdSp(p.species)!==sp) return;
+    var kg=Number(p.weight)||0; Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||String(o.name||'').trim().toLowerCase()!==n||String(o.route||'').toUpperCase()!==String(route).toUpperCase()) return;
+      var e=hdEntry(o,kg); if(e&&!out[e.id]) out[e.id]=e; }); });
+  return Object.keys(out).map(function(k){ return out[k]; }); }
+function hdMedian(a){ a=a.slice().sort(function(x,y){ return x-y; }); var m=Math.floor(a.length/2); return a.length%2?a[m]:(a[m-1]+a[m])/2; }
+function hdMode(a){ var c={}, best='', bn=0; a.forEach(function(x){ if(!x) return; c[x]=(c[x]||0)+1; if(c[x]>bn){ bn=c[x]; best=x; } }); return best; }
+window.tsHouseDose=function(name,route,sp){ var E=hdAll(name,route,sp); if(!E.length) return null; var base=hdMode(E.map(function(e){ return e.b; })); E=E.filter(function(e){ return e.b===base; });
+  if(E.length<3) return null; var pk=hdMedian(E.map(function(e){ return e.pk; })), dr=[], nk=hdNice(pk); if(nk>0&&Math.abs(nk-pk)/pk<=0.03) pk=nk;   /* 1.95 → 2: the round number they mean */ E.slice().sort(function(a,b){ return a.at<b.at?1:-1; }).forEach(function(e){ var d=e.by&&window.tsDrShort?tsDrShort(e.by):e.by; if(d&&dr.indexOf(d)<0) dr.push(d); });
+  return {n:E.length,pk:pk<1?Math.round(pk*1000)/1000:pk<10?Math.round(pk*100)/100:Math.round(pk*10)/10,b:base,f:hdMode(E.map(function(e){ return e.f; })),dr:dr}; };
+/* the doses ordered here (lowest–highest), for the safety bar: in this range a dose outside the book isn't flagged */
+window.tsHouseRange=function(name,route,sp,unit){ var per=String(unit||'').split('/'); if(per[1]!=='kg'||!sp) return null; var E=hdAll(name,route,sp).filter(function(e){ return e.b===per[0]; }); if(E.length<3) return null;
+  var v=E.map(function(e){ return e.pk; }); return {lo:Math.min.apply(null,v),hi:Math.max.apply(null,v),n:E.length}; };
+window.tsHouseLearn=function(o,sp,kg){ var e=hdEntry(o,kg); if(!e||!sp) return; var k=hdKey(o.name,o.route,sp), L=(HD.log[k]||[]).filter(function(x){ return x&&x.id!==e.id; }).concat([e]).slice(-30); HD.log[k]=L;
+  if(HD.local||typeof DB==='undefined'||!DB) return; var patch={log:{}}; patch.log[k]=L; patch.updated_at=new Date().toISOString();
+  try{ DB.collection('ts_settings').doc('house_doses').set(patch,{merge:true}).catch(function(){ HD.local=true; }); }catch(_){ HD.local=true; } };
+on('rx.added',function(o){ try{ tsHouseLearn(o,spKey(),Number(VISIT.weight)||0); }catch(e){} });
+/* the order window: House lines on top of the reference doses */
+function hdFreqH(f){ var m=/^q(\d+)h$/.exec(f||''); return m?+m[1]:null; }
+function hdFmt(v){ return v<1?String(Math.round(v*1000)/1000):v<10?String(Math.round(v*100)/100):String(Math.round(v*10)/10); }
+on('rx.opened',function(){ hdListen(); setTimeout(function(){ try{ if(!RX||!RX.x) return; var sp=spKey(); if(!sp) return; var box=document.querySelector('#tsModal .rx-refs'); if(!box) return;
+  HD.idx={}; var html='';
+  HD_ROUTES.forEach(function(r){ var h=tsHouseDose(RX.x.n,r,sp); if(!h) return; var hh=hdFreqH(h.f);
+    var rn=Object.keys(ROUTE).find(function(k){ return ROUTE[k]===r; })||'', e={do:hdFmt(h.pk)+' '+h.b+'/kg',ro:r,rn:rn,fo:h.f,i:'Usually ordered here',d:[h.pk,h.pk,h.b,'kg'],h:hh?[hh,hh]:null,once:h.f==='Once',house:h,s:[sp]};
+    RX.mine.push(e); var k=RX.mine.length-1; HD.idx[r]=k;
+    html+='<button type="button" class="rx-ref rx-house" data-k="m'+k+'" onclick="tsRxPick(\'m\','+k+')"><b>'+esc(e.do)+'</b><span>'+esc([r,h.f].filter(Boolean).join(' · '))+'</span>'
+      +'<small>Usually ordered here · '+h.n+' orders'+(h.dr.length?' · '+esc(h.dr.slice(0,2).join(', '))+(h.dr.length>2?' +'+(h.dr.length-2):''):'')+'</small><span class="rx-tag house">House</span></button>'; });
+  if(!html) return; box.insertAdjacentHTML('afterbegin',html);
+  /* start from the house dose for the route already chosen — or, with no reference dose, the house dose ordered most */
+  var r0=(document.getElementById('rxRoute')||{}).value, pick=HD.idx[r0];
+  if(pick==null&&!RX.sel){ var best=null; Object.keys(HD.idx).forEach(function(r){ var e=RX.mine[HD.idx[r]]; if(!best||e.house.n>best.house.n) best=e; }); if(best) pick=RX.mine.indexOf(best); }
+  if(pick!=null) tsRxPick('m',pick); }catch(e){ console.warn('[house doses]',e); } },70); });
+(function(){ var base=window.tsRxRoute; if(!base) return; window.tsRxRoute=function(){ var r=(document.getElementById('rxRoute')||{}).value;
+  if(RX&&r&&HD.idx[r]!=null&&!(RX.sel&&RX.sel.house&&routeOf(RX.sel)===r)){ tsRxPick('m',HD.idx[r]); return; } return base.apply(this,arguments); }; })();
+/* suggestion line + easy amount */
+function hdNice(v){ var s=v>=10?5:v>=1?0.5:v>=0.1?0.05:0.005; return Math.round(v/s)*s; }
+on('rx.calc',function(){ try{ var sg=document.getElementById('rxSugg'), calc=document.getElementById('rxCalc'); if(!calc) return;
+  if(sg&&RX&&RX.sel&&RX.sel.house&&!RX.touched){ var h=RX.sel.house; sg.innerHTML='Usually ordered here — '+h.n+' orders'+(h.dr.length?' ('+esc(h.dr.slice(0,3).join(', '))+')':'')+' · confirm or change the dose.'; sg.style.display='block'; }
+  var ez=document.getElementById('rxEasy'); if(!ez){ calc.insertAdjacentHTML('afterend','<div class="rx-easy" id="rxEasy"></div>'); ez=document.getElementById('rxEasy'); }
+  var dose=parseFloat((document.getElementById('rxDose')||{}).value), unit=(document.getElementById('rxUnit')||{}).value||'mg/kg', conc=parseFloat((document.getElementById('rxConc')||{}).value);
+  var kg=Number(VISIT.weight)||0, per=unit.split('/')[1], base=unit.split('/')[0]; ez.innerHTML='';
+  if(!(dose>0)||(per&&!kg)||per==='m²') return; var tot=doseTotal(dose,unit,kg,spKey()), nice=hdNice(tot); if(!(nice>0)) return;
+  var diff=Math.abs(nice-tot)/tot; if(diff<0.004||diff>0.06) return;
+  var f=per?tot/dose:1, nd=nice/f, ndTxt=String(Math.round(nd*1e4)/1e4);
+  ez.innerHTML='Easy amount: <button type="button" onclick="tsRxEasy('+ndTxt+')">'+fmtN(nice)+' '+esc(base)+(conc>0?' · '+fmtVol(nice/conc)+' mL':'')+'</button>'+(per?' <span>'+esc(fmtN(nice/kg))+' '+esc(base)+'/kg</span>':''); }catch(e){} });
+window.tsRxEasy=function(v){ var d=document.getElementById('rxDose'); if(!d) return; d.value=String(v); tsRxCalc(true); };
+/* ═════════ TS ICU DISPLAY — the overdue screen on the wall (Oct 2026, Instinct's "Overdue TV screen") ═════════
+   A full-screen, read-only view for a TV in the ICU: every patient in the ward with treatments overdue or due now, the most late first,
+   in type you can read across the room. Each card: name, cage, who's on it (Assign to me, or the tech), code status, then each overdue
+   treatment and how late ("Temperature · 4 h late"), with C-II tags on controlled drugs; due-now treatments underneath in the accent.
+   It updates by itself (live data + a 20-second tick), keeps the screen awake, and shows a calm "All caught up" when nothing is waiting.
+   Open it from the board (Display → ICU) or with the address …/treatment/#display=ICU (bookmark it on the TV). Esc or Exit closes it. */
+var TV={ward:null,t:0,lock:null};
+var TV_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>';
+function tvWard(s){ return String(((s.patient||{}).location)||'Treatment Area'); }
+function tvLate(m){ m=Math.round(m); return m<60?m+' min late':m<120?'1 h '+(m-60)+' min late':Math.floor(m/60)+' h late'; }   /* across the room: minutes only while it's under 2 h */
+/* what's overdue / due now on one sheet, today (the board's own rules: nothing before admission, 18-minute due window) */
+function tvItems(s){ var dk=dayKey(), marks=s.marks||{}, n=nowMin(), late=[], due=[], adm=s.admitted_at||s.created_at, from=(adm&&dayKey(new Date(adm))===dk)?isoToMin(adm):-1;
+  Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont||o.draft) return;
+    freqTimes(o).forEach(function(h){ if(h*60<from) return; var t=slotMin(o,dk,h*60), m=marks[dk+'_'+id+'_'+(h*60)]; if(m&&m.status) return;
+      var it={n:o.name,t:t,c:window.tsCtrlSched?tsCtrlSched(o.type==='med'?o.name:''):''};
+      if(t<n-18) late.push(it); else if(t<=n+18) due.push(it); }); });
+  late.sort(function(a,b){ return a.t-b.t; }); due.sort(function(a,b){ return a.t-b.t; }); return {late:late,due:due}; }
+function tvRows(){ var w=TV.ward, out=[]; (SHEETS||[]).forEach(function(s0){ var s=(s0._id===CUR&&curDoc)?curDoc:s0; if(s0.board==='OP') return; if(w&&w!=='All'&&tvWard(s0)!==w) return;
+    var I=tvItems(s); if(!I.late.length&&!I.due.length) return; var p=s0.patient||{};
+    out.push({s:s0,p:p,I:I,worst:I.late.length?nowMin()-I.late[0].t:-1}); });
+  return out.sort(function(a,b){ return b.worst-a.worst||b.I.due.length-a.I.due.length; }); }
+function tvWards(){ var W={}; (SHEETS||[]).forEach(function(s){ if(s.board!=='OP') W[tvWard(s)]=(W[tvWard(s)]||0)+1; }); return Object.keys(W).sort(); }
+function tvCard(r){ var p=r.p, nm=((p.name||'')+' '+(p.last||'')).trim()||'Unnamed', c=window.tsClaimOf?tsClaimOf(r.s):null, who=c?(c.name||c.by):(p.tech||''), n=nowMin();
+  var worst=r.worst, cls=worst>=120?' l2':worst>=0?' l1':' due';
+  var code=/^(DNR|CPR|BLS|ALS)$/.test(p.code||'')?'<span class="tv-code '+(p.code==='DNR'?'dnr':'cpr')+'">'+esc(p.code)+'</span>':'';
+  var line=function(it,isDue){ return '<li class="'+(isDue?'d':'')+'"><b>'+esc(it.n)+(it.c?'<span class="rl-ctrl">C-'+esc(it.c)+'</span>':'')+'</b><span>'+(isDue?'Due now':esc(tvLate(n-it.t)))+'</span></li>'; };
+  var L=r.I.late.slice(0,5), more=r.I.late.length-L.length;
+  return '<article class="tv-card'+cls+'"><header><div><h2>'+esc(nm)+'</h2><p>'+esc([p.species,p.breed].filter(Boolean).join(' · '))+'</p></div><div class="tv-meta">'+code+'<span class="tv-cage">'+esc(tvWard(r.s))+'</span></div></header>'
+    +(who?'<div class="tv-who">'+(c?'With ':'Tech · ')+esc(who)+'</div>':'')
+    +'<ul>'+L.map(function(it){ return line(it,false); }).join('')+(more>0?'<li class="m">+ '+more+' more overdue</li>':'')+r.I.due.slice(0,3).map(function(it){ return line(it,true); }).join('')+'</ul></article>'; }
+function tvPaint(){ var el=document.getElementById('tsTv'); if(!el) return; var R=tvRows(), late=R.reduce(function(a,r){ return a+r.I.late.length; },0), due=R.reduce(function(a,r){ return a+r.I.due.length; },0);
+  var now=new Date(), clock=now.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  el.querySelector('.tv-h').innerHTML='<div><h1>'+esc(TV.ward&&TV.ward!=='All'?TV.ward:'All wards')+'</h1><p>'+(R.length?'<b class="tv-n late">'+late+'</b> overdue · <b class="tv-n">'+due+'</b> due now · '+R.length+' patient'+(R.length>1?'s':''):'Overdue treatments')+'</p></div><div class="tv-clock">'+esc(clock)+'</div>';
+  el.querySelector('.tv-grid').innerHTML=R.length?R.map(tvCard).join(''):'<div class="tv-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9"/></svg><b>All caught up</b><span>Nothing overdue'+(TV.ward&&TV.ward!=='All'?' in '+esc(TV.ward):'')+'</span></div>'; }
+window.tsTvOpen=function(ward){ TV.ward=ward||'ICU'; var el=document.getElementById('tsTv');
+  if(!el){ el=document.createElement('div'); el.id='tsTv'; el.setAttribute('role','dialog'); el.setAttribute('aria-label','Overdue treatments display'); document.body.appendChild(el); }
+  el.innerHTML='<div class="tv-h"></div><div class="tv-grid"></div><footer><span>Updates live · read-only</span><button type="button" onclick="tsTvFull()">Full screen</button><button type="button" onclick="tsTvClose()">Exit</button></footer>';
+  document.body.classList.add('tv-on'); tvPaint(); clearInterval(TV.t); TV.t=setInterval(tvPaint,20000);
+  try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(function(l){ TV.lock=l; }).catch(function(){}); }catch(e){}
+  try{ history.replaceState(null,'',location.pathname+location.search+'#display='+encodeURIComponent(TV.ward)); }catch(e){} };
+window.tsTvClose=function(){ var el=document.getElementById('tsTv'); if(el) el.remove(); document.body.classList.remove('tv-on'); clearInterval(TV.t); TV.t=0;
+  try{ if(TV.lock) TV.lock.release(); }catch(e){} TV.lock=null; try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+  try{ if(/display=/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search); }catch(e){} };
+window.tsTvFull=function(){ try{ var d=document.documentElement; (d.requestFullscreen||d.webkitRequestFullscreen).call(d); }catch(e){} };
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.getElementById('tsTv')) tsTvClose(); });
+on('rendered',function(){ if(document.getElementById('tsTv')) tvPaint(); });
+/* …/#display=ICU opens straight into the display once the patients have loaded */
+(function(){ var m=/display=([^&]+)/.exec(location.hash||''); if(!m) return; var w=decodeURIComponent(m[1]), tries=0;
+  (function go(){ if((SHEETS||[]).length||tries>40){ tsTvOpen(w); return; } tries++; setTimeout(go,500); })(); })();
+/* the board's Display button: pick the ward */
+window.tsTvBtn=function(){ return '<button type="button" class="sb-tvb" data-tip="Overdue display for a TV" onclick="tsTvPick(event)">'+TV_IC+'Display</button>'; };
+window.tsTvPick=function(ev){ ev.stopPropagation(); var W=tvWards(); if(W.indexOf('ICU')<0) W.unshift('ICU');
+  _openPop(ev.currentTarget,'<div class="sb-filter-pop tv-pick" style="width:236px;padding:6px 8px"><div class="tv-pick-h">Overdue display</div>'
+    +W.concat(['All']).map(function(w){ return '<button type="button" class="fp-row" onclick="_closePop();tsTvOpen(\''+esc(w).replace(/'/g,"\\'")+'\')"><span class="fp-lab"><b>'+esc(w==='All'?'All wards':w)+'</b></span></button>'; }).join('')+'</div>'); };
+/* ═════════ TS ON-TIME REPORT — the hospital measured like a factory (Oct 2026) ═════════
+   Settings → On-time report (owner & admins). For today or the last 7 days, every scheduled treatment on every sheet — open, and closed
+   in that time — is counted once:
+     on time  charted within 30 min of its scheduled time      late     charted more than 30 min after
+     missed   not charted, more than 60 min past (today) / at all (earlier days)      omitted  not given, with a reason
+   Shown by shift (Day 7 AM–7 PM · Night), by ward, by kind (medications, monitoring, patient care, diagnostics), by hour of the day
+   (where the late and missed ones pile up), and the time from ordering an antibiotic to its first dose. Teams, not people: nothing is
+   counted per person. Outcomes (how stays ended, from the close) are listed for the same days.
+   The numbers come from the sheets themselves (each day's charting in sheets/{id}/days/{dk}); a day's summary is also kept in
+   ts_stats/{hospital}_{dk} for longer trends once that database rule is published. */
+var OT={days:1,busy:false,res:null};
+var OT_LATE=30, OT_MISS=60;
+var OT_ABX=/^(ampicillin|ampicillin \/ sulbactam|ampicillin-sulbactam|cefazolin|cefoxitin|ceftazidime|ceftiofur|cefpodoxime|cefovecin|cephalexin|enrofloxacin|marbofloxacin|pradofloxacin|metronidazole|clindamycin|amoxicillin|amoxicillin \/ clavulanate|amoxicillin-clavulanate|gentamicin|amikacin|doxycycline|minocycline|meropenem|imipenem|chloramphenicol|trimethoprim|azithromycin|penicillin|ticarcillin|piperacillin)/i;
+var OT_KIND={med:'Medications',obs:'Monitoring',care:'Patient care',diag:'Diagnostics'};
+function otDks(n){ var out=[], d=new Date(); for(var i=0;i<n;i++){ out.push(dayKey(d)); d.setDate(d.getDate()-1); } return out; }
+function otBlank(){ return {on:0,late:0,miss:0,omit:0}; }
+function otAdd(b,k){ b[k]++; }
+function otPct(b){ var t=b.on+b.late+b.miss; return t?Math.round(b.on/t*100):null; }
+/* one sheet, one day: every slot the sheet had, and what happened to it */
+function otDay(s,dk,marks,R){ var now=nowMin(), today=dk===dayKey(), adm=s.admitted_at||s.created_at, admDk=adm?dayKey(new Date(adm)):null; if(admDk&&admDk>dk) return;
+  if(s.closed_at&&dayKey(new Date(s.closed_at))<dk) return;
+  var from=admDk===dk?isoToMin(adm):-1, to=s.closed_at&&dayKey(new Date(s.closed_at))===dk?isoToMin(s.closed_at):1440, ward=((s.patient||{}).location)||'Treatment Area';
+  Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.cont||o.draft||o.dc_reason==='error'||o.dc_reason==='rejected') return; if(o.ordered_at&&dayKey(new Date(o.ordered_at))>dk) return;
+    var kind=OT_KIND[o.type]?o.type:'care';
+    freqTimes(o).forEach(function(h){ var min=h*60, key=dk+'_'+id+'_'+min, m=marks[key]; if(!m&&(min<from||min>=to)) return; if(o.dc&&!m&&min>=dcCut(o,dk)) return;
+      if(!m&&o.ordered_at&&dayKey(new Date(o.ordered_at))===dk&&min<isoToMin(o.ordered_at)-30&&!(o.start!=null&&h>=o.start)) return;
+      var t=slotMin(o,dk,min), st;
+      if(m&&m.status==='completed'){ var d=(m.min!=null?m.min:t)-t; st=d<=OT_LATE?'on':'late'; }
+      else if(m&&(m.status==='skipped'||m.status==='held')) st='omit';
+      else { if(today&&t>now-OT_MISS) return; st='miss'; }
+      var sh=(t>=7*60&&t<19*60)?'Day':'Night', hr=Math.max(0,Math.min(23,Math.floor(t/60)));
+      otAdd(R.all,st); otAdd(R.shift[sh],st); (R.ward[ward]=R.ward[ward]||otBlank())[st]++; otAdd(R.kind[kind],st); if(st==='late'||st==='miss') R.hour[hr]++; R.slots++; R.pts[s._id||'cur']=1;
+      if(!R.days[dk]) R.days[dk]=otBlank(); R.days[dk][st]++; }); });
+  /* the first dose of each antibiotic ordered that day */
+  Object.keys(s.orders||{}).forEach(function(id){ var o=s.orders[id]; if(!o||o.type!=='med'||!o.ordered_at||dayKey(new Date(o.ordered_at))!==dk||!OT_ABX.test(String(o.name||'').trim())) return;
+    var first=null; Object.keys(marks).forEach(function(k){ var m=marks[k]; if(!m||m.orderId!==id||m.status!=='completed') return; var mn=m.min!=null?m.min:m.sched; if(mn!=null&&(first==null||mn<first)) first=mn; });
+    var om=isoToMin(o.ordered_at); R.abx.push({n:o.name,p:((s.patient||{}).name||''),wait:first!=null?Math.max(0,Math.round(first-om)):null,dk:dk}); }); }
+function otMarks(s,dk,dayDoc){ var M={}, a=(s.marks)||{}, b=(dayDoc&&dayDoc.marks)||{}; Object.keys(a).forEach(function(k){ if(k.indexOf(dk+'_')===0) M[k]=a[k]; }); Object.keys(b).forEach(function(k){ M[k]=b[k]; }); return M; }
+function otRun(n){ var dks=otDks(n), R={all:otBlank(),shift:{Day:otBlank(),Night:otBlank()},ward:{},kind:{med:otBlank(),obs:otBlank(),care:otBlank(),diag:otBlank()},hour:[],days:{},abx:[],out:{},slots:0,pts:{},sheets:0,dks:dks};
+  for(var h=0;h<24;h++) R.hour.push(0);
+  var open=(SHEETS||[]).map(function(s){ return (s._id===CUR&&curDoc)?Object.assign({},s,curDoc,{_id:s._id}):s; });
+  var closedQ=DB.collection(COL).where('tenant_id','==',TENANT).where('status','==','closed').where('closed_on','in',dks).get().then(function(q){ var L=[]; q.forEach(function(d){ L.push(Object.assign({_id:d.id},d.data())); }); return L; }).catch(function(){ return []; });
+  return closedQ.then(function(closed){ var all=open.concat(closed.filter(function(c){ return !open.some(function(o){ return o._id===c._id; }); })); 
+    closed.forEach(function(c){ var oc=c.outcome; var k=oc&&oc.label?oc.label:({discharged:'Went home',transferred:'Transferred',deceased:'Died or euthanasia',cancelled:'Admitted in error'})[c.closed_reason]||'Closed'; R.out[k]=(R.out[k]||0)+1; if(oc&&oc.cpr) R.out['CPR during stay']=(R.out['CPR during stay']||0)+1; });
+    var jobs=[]; all.forEach(function(s){ dks.forEach(function(dk){ jobs.push(dayRef(s._id,dk).get().then(function(d){ return d&&d.exists?d.data():null; }).catch(function(){ return null; }).then(function(dd){ otDay(s,dk,otMarks(s,dk,dd),R); })); }); });
+    return Promise.all(jobs); }).then(function(){ R.sheets=Object.keys(R.pts).length; otKeep(R); return R; }); }
+/* each finished day's summary, for longer trends later (best effort) */
+function otKeep(R){ R.dks.forEach(function(dk){ if(dk===dayKey()||!R.days[dk]) return; try{ DB.collection('ts_stats').doc(TENANT+'_'+dk).set({hospital:TENANT,dk:dk,ontime:R.days[dk],updated_at:new Date().toISOString()},{merge:true}).catch(function(){}); }catch(e){} }); }
+/* ---------- the report ---------- */
+function otBar(label,b,sub){ var t=b.on+b.late+b.miss, p=otPct(b); if(!t&&!b.omit) return '';
+  var w=function(x){ return t?(x/t*100).toFixed(1):0; };
+  return '<div class="ot-row"><div class="ot-l"><b>'+esc(label)+'</b><small>'+(sub?esc(sub)+' · ':'')+t+' due'+(b.omit?' · '+b.omit+' omitted':'')+'</small></div>'
+    +'<div class="ot-bar" role="img" aria-label="'+esc(label+': '+(p==null?'—':p+'% on time')+', '+b.late+' late, '+b.miss+' missed')+'"><i class="on" style="width:'+w(b.on)+'%"></i><i class="late" style="width:'+w(b.late)+'%"></i><i class="miss" style="width:'+w(b.miss)+'%"></i></div>'
+    +'<div class="ot-p'+(p!=null&&p<80?' low':'')+'">'+(p==null?'—':p+'<small>%</small>')+'</div></div>'; }
+function otMed(a){ if(!a.length) return null; a=a.slice().sort(function(x,y){ return x-y; }); var m=Math.floor(a.length/2); return a.length%2?a[m]:Math.round((a[m-1]+a[m])/2); }
+function otMins(m){ return m<60?m+' min':Math.floor(m/60)+' h'+(m%60?' '+(m%60)+' min':''); }
+function otHTML(R){ var p=otPct(R.all), t=R.all.on+R.all.late+R.all.miss, period=OT.days===1?'Today so far':'Last 7 days';
+  var hmax=Math.max.apply(null,R.hour)||1, busy=R.hour.indexOf(Math.max.apply(null,R.hour));
+  var hours='<div class="ot-hours" role="img" aria-label="Late and missed treatments by hour">'+R.hour.map(function(v,h){ return '<span title="'+esc(fmtTime(h*60))+' · '+v+' late or missed" style="height:'+Math.max(2,v/hmax*100)+'%" class="'+(h===busy&&v?'pk':'')+'"></span>'; }).join('')+'</div>'
+    +'<div class="ot-hax"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span></div>';
+  var W=R.abx.filter(function(x){ return x.wait!=null; }).map(function(x){ return x.wait; }), med=otMed(W), in60=W.filter(function(x){ return x<=60; }).length;
+  var slow=R.abx.filter(function(x){ return x.wait==null||x.wait>60; }).sort(function(a,b){ return (b.wait==null?1e9:b.wait)-(a.wait==null?1e9:a.wait); }).slice(0,3);
+  var trend=OT.days>1?'<div class="ot-trend">'+R.dks.slice().reverse().map(function(dk){ var b=R.days[dk]||otBlank(), q=otPct(b), d=dkDate(dk); return '<div><em><span style="height:'+(q==null?0:Math.max(3,q))+'%" class="'+(q==null?'nil':q<80?'low':'')+'"></span></em><b>'+(q==null?'—':q+'%')+'</b><small>'+['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+'</small></div>'; }).join('')+'</div>':'';
+  var outs=Object.keys(R.out);
+  return '<div class="op-head"><div><div class="op-kind">Hospital · '+esc(period)+'</div><h3>On-time report</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<div class="ot-seg" role="tablist"><button type="button" class="'+(OT.days===1?'on':'')+'" onclick="tsOnTime(1)">Today</button><button type="button" class="'+(OT.days===7?'on':'')+'" onclick="tsOnTime(7)">7 days</button></div>'
+    +(t?'<div class="ot-hero"><div class="ot-big'+(p<80?' low':'')+'">'+p+'<small>%</small></div><div><b>on time</b><span>'+R.all.on+' on time · '+R.all.late+' late · '+R.all.miss+' missed'+(R.all.omit?' · '+R.all.omit+' omitted':'')+'</span><span>'+t+' treatments due · '+R.sheets+' patient'+(R.sheets===1?'':'s')+'</span></div></div>':'<p class="op-lead">Nothing was due '+(OT.days===1?'yet today':'in these 7 days')+'.</p>')
+    +trend
+    +(t?'<div class="ot-sec">By shift</div>'+otBar('Day',R.shift.Day,'7 AM – 7 PM')+otBar('Night',R.shift.Night,'7 PM – 7 AM')
+      +'<div class="ot-sec">By ward</div>'+Object.keys(R.ward).sort().map(function(w){ return otBar(w,R.ward[w]); }).join('')
+      +'<div class="ot-sec">By kind</div>'+['med','obs','care','diag'].map(function(k){ return otBar(OT_KIND[k],R.kind[k]); }).join('')
+      +'<div class="ot-sec">Late and missed, by hour'+(R.hour[busy]?' · most at '+esc(fmtTime(busy*60).replace(':00','')):'')+'</div>'+hours:'')
+    +'<div class="ot-sec">Antibiotics · order to first dose</div>'+(R.abx.length?'<div class="ot-abx"><div><b>'+(med==null?'—':esc(otMins(med)))+'</b><span>median</span></div><div><b>'+in60+' of '+R.abx.length+'</b><span>within 1 hour</span></div></div>'
+      +(slow.length?'<div class="ot-slow">'+slow.map(function(x){ return '<div><span>'+esc(x.n)+' · '+esc(x.p)+'</span><b>'+(x.wait==null?'not given yet':esc(otMins(x.wait)))+'</b></div>'; }).join('')+'</div>':''):'<p class="ot-none">No antibiotics ordered '+(OT.days===1?'today':'in these 7 days')+'.</p>')
+    +'<div class="ot-sec">How stays ended</div>'+(outs.length?'<div class="ot-out">'+outs.map(function(k){ return '<span><b>'+R.out[k]+'</b>'+esc(k)+'</span>'; }).join('')+'</div>':'<p class="ot-none">No sheets closed '+(OT.days===1?'today':'in these 7 days')+'.</p>')
+    +'<p class="ot-foot">On time = charted within 30 min of the scheduled time; missed = not charted more than an hour after. Counted by shift and ward — never by person.</p>'; }
+window.tsOnTime=function(days){ OT.days=days||OT.days||1; if(OT.busy) return; OT.busy=true;
+  var m=document.getElementById('tsOrderSheet'), card=m&&m.querySelector('.op-card.ot');
+  if(!card||!m.classList.contains('show')) opShow('<div class="op-head"><div><div class="op-kind">Hospital</div><h3>On-time report</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div><p class="op-lead">Counting…</p>','ot');
+  otRun(OT.days).then(function(R){ OT.busy=false; OT.res=R; var c=document.querySelector('#tsOrderSheet .op-card.ot'); if(c) c.innerHTML=otHTML(R); })
+    .catch(function(e){ OT.busy=false; console.warn('[on-time]',e); toast('Couldn’t build the report — try again'); }); };
+/* ═════════ TS SPANISH WORDING — the hospital corrects its own Spanish (Oct 2026) ═════════
+   Settings → Spanish wording (owner & admins): every phrase the app shows, English beside its Spanish, clinical terms first.
+   Change a Spanish line and it changes for everyone using Español, at once (Firestore ts_settings/i18n — on this device only until that
+   database rule is published). Reset puts the built-in wording back. "Clinical terms" lists the words to check first (tagged in
+   app/i18n/es.tsv); "Changed" lists the hospital's own corrections. Only the interface: the record is never translated. */
+var LW={map:{},live:false,local:false,q:'',tab:'clin',busy:0};
+function lwLocal(){ try{ return JSON.parse(localStorage.getItem('tsI18n_v1')||'{}'); }catch(e){ return {}; } }
+function lwListen(){ if(LW.live) return; LW.live=true;
+  if(typeof DB==='undefined'||!DB){ LW.local=true; LW.map=lwLocal(); pvxLangOverrides(LW.map); return; }
+  try{ DB.collection('ts_settings').doc('i18n').onSnapshot(function(s){ var d=(s&&s.exists&&s.data())||{}; LW.map=d.es||{}; if(window.pvxLangOverrides) pvxLangOverrides(LW.map); if(LW.open) lwPaint(); },
+    function(){ LW.local=true; LW.map=lwLocal(); if(window.pvxLangOverrides) pvxLangOverrides(LW.map); }); }catch(e){ LW.local=true; LW.map=lwLocal(); } }
+/* the hospital's corrections only matter to people using Español: listen once someone is */
+if(window.pvxLang&&pvxLang()==='es') setTimeout(lwListen,0);
+window.addEventListener('pvx-lang',function(e){ if(e.detail==='es') lwListen(); });
+on('rendered',function(){ if(window.pvxLang&&pvxLang()==='es') lwListen(); });
+function lwSave(){ var map=LW.map;
+  if(LW.local||typeof DB==='undefined'||!DB){ try{ localStorage.setItem('tsI18n_v1',JSON.stringify(map)); }catch(e){} pvxLangOverrides(map); return; }
+  try{ DB.collection('ts_settings').doc('i18n').set({es:map,updated_at:new Date().toISOString(),updated_by:user().name||null})
+    .catch(function(){ LW.local=true; try{ localStorage.setItem('tsI18n_v1',JSON.stringify(map)); }catch(_){} pvxLangOverrides(map); toast('Saved on this device — the database rule for shared wording isn’t published yet'); }); }catch(e){}
+  pvxLangOverrides(map); }
+function lwRows(){ var X=pvxLangDict(), tags=window.I18N_ES_TAGS||{}, q=LW.q.trim().toLowerCase(), out=[];
+  var all={}; Object.keys(X.D).forEach(function(k){ all[k]=X.D[k]; }); Object.keys(X.T).forEach(function(k){ all[k]=X.T[k]; }); Object.keys(LW.map).forEach(function(k){ if(!(k in all)) all[k]=''; });
+  Object.keys(all).forEach(function(k){ var own=LW.map[k], es=own!=null?own:all[k], clin=tags[k]==='clinical';
+    if(LW.tab==='clin'&&!clin) return; if(LW.tab==='mine'&&own==null) return;
+    if(q&&k.toLowerCase().indexOf(q)<0&&String(es).toLowerCase().indexOf(q)<0) return;
+    out.push({k:k,es:es,base:all[k],own:own!=null,clin:clin}); });
+  var key=function(x){ return x.k.replace(/[#*@]\d?/g,'').replace(/^[^A-Za-z]+/,'').toLowerCase(); }; return out.sort(function(a,b){ return key(a)<key(b)?-1:key(a)>key(b)?1:0; }); }
+function lwEn(k){ return esc(k).replace(/#\d?/g,'<i class="lw-ph" title="a number or time">#</i>').replace(/[*@]/g,'<i class="lw-ph" title="a name or anything typed">…</i>'); }
+function lwRow(r){ var es=window.pvxLang&&pvxLang()==='es'; return '<div class="lw-row'+(r.own?' own':'')+'" translate="no"><div class="lw-en">'+lwEn(r.k)+(r.clin?'<span class="lw-tag">'+(es?'Clínico':'Clinical')+'</span>':'')+'</div>'
+  +'<input class="lw-es" data-k="'+esc(r.k)+'" value="'+esc(r.es)+'" aria-label="Spanish for '+esc(r.k)+'" spellcheck="true" lang="es">'
+  +(r.own?'<button type="button" class="lw-reset" data-reset="'+esc(r.k)+'" title="'+(es?'Volver al texto original':'Back to the built-in wording')+'">'+(es?'Restablecer':'Reset')+'</button>':'<span class="lw-sp"></span>')+'</div>'; }
+function lwList(){ var R=lwRows(), N=R.length, shown=R.slice(0,250);
+  return (N?shown.map(lwRow).join('')+(N>250?'<p class="lw-more">'+(N-250)+' more — search to narrow the list.</p>':''):'<p class="lw-none">'+(LW.tab==='mine'?'No corrections yet.':'Nothing matches.')+'</p>'); }
+function lwHTML(){ var n=Object.keys(LW.map).length;
+  return '<div class="op-head"><div><div class="op-kind">Owner &amp; admins · Español</div><h3>Spanish wording</h3></div><button type="button" class="op-x" onclick="tsOrderClose()" aria-label="Close">×</button></div>'
+    +'<p class="op-lead">How the app reads in Español, for everyone who uses it. Change a line and it updates at once. The record itself is never translated — names, orders, doses and notes stay as typed. <b># is a number or a time</b>; keep it where it belongs.</p>'
+    +'<div class="lw-bar"><div class="ot-seg lw-seg"><button type="button" data-tab="clin" class="'+(LW.tab==='clin'?'on':'')+'">Clinical terms</button><button type="button" data-tab="all" class="'+(LW.tab==='all'?'on':'')+'">All</button><button type="button" data-tab="mine" class="'+(LW.tab==='mine'?'on':'')+'">Changed'+(n?' · '+n:'')+'</button></div>'
+    +'<input id="lwQ" class="lw-q" type="search" placeholder="Search English or Spanish" value="'+esc(LW.q)+'" autocomplete="off"></div>'
+    +'<div class="lw-list" id="lwList">'+lwList()+'</div>'; }
+function lwPaint(){ var l=document.getElementById('lwList'); if(l) l.innerHTML=lwList(); }
+window.tsSpanishWording=function(){ if(window.pvxLangLoad&&!window.I18N_ES){ pvxLangLoad(function(){ if(window.I18N_ES) tsSpanishWording(); else toast('Couldn’t load the Spanish wording — try again'); }); return; } lwListen(); LW.open=true; opShow(lwHTML(),'lw'); var card=document.querySelector('#tsOrderSheet .op-card.lw'); if(!card) return;
+  card.addEventListener('click',function(e){ var t=e.target.closest('[data-tab]'); if(t){ LW.tab=t.getAttribute('data-tab'); card.querySelectorAll('.lw-seg button').forEach(function(b){ b.classList.toggle('on',b===t); }); lwPaint(); return; }
+    var r=e.target.closest('[data-reset]'); if(r){ delete LW.map[r.getAttribute('data-reset')]; lwSave(); lwPaint(); toast('Back to the built-in wording'); } });
+  card.addEventListener('input',function(e){ if(e.target.id==='lwQ'){ LW.q=e.target.value; clearTimeout(LW.busy); LW.busy=setTimeout(lwPaint,120); } });
+  card.addEventListener('change',function(e){ var i=e.target.closest('.lw-es'); if(!i) return; var k=i.getAttribute('data-k'), v=i.value.trim(), X=pvxLangDict(), base=k.indexOf('#')>-1?X.T[k]:X.D[k];
+    var hk=(k.match(/#/g)||[]).length, hv=(v.match(/#/g)||[]).length; if(v&&hk!==hv){ toast('Keep the '+hk+' #'+(hk===1?'':'s')+' — '+(hk===1?'it is':'they are')+' the number or time'); i.focus(); return; }
+    if(!v||v===base) delete LW.map[k]; else LW.map[k]=v; lwSave(); var row=i.closest('.lw-row'); if(row) row.classList.toggle('own',k in LW.map); toast('Saved for everyone using Español'); }); };
 /* ═════════ TS CHART — the task drawer, matched to the task (Oct 2026) ═════════
    Selecting a task never charts it. The drawer opens in one of three modes:
      entry   not charted yet → a reading: one value field (Enter charts it) · a care task: "Mark done" · a medication: the order,
@@ -5031,6 +5452,7 @@ function chBy(t){ return '<select id="cd-by" aria-label="Charted by" onchange="t
 function chEntry(t,edit){ var o=t.order, k=chKind(o), s=deriveStatus(t), nm=Math.round(nowMin()), at=edit&&t.completedMin!=null?t.completedMin:nm, h=edit?'':chHead(t,s);
   if(edit) h+='<div class="cd-editing">Editing the entry from '+esc(fmtTime(t.completedMin))+' · the earlier version is kept in its history</div>';
   if(window.tsInsBlock) h+=tsInsBlock(o);   /* the order's instructions, always at the top (store/rowlook.js) */
+  if(window.tsCtrlLine) h+=tsCtrlLine(o);   /* controlled drug: log it (store/controlled.js) */
   if(k==='med'){ var d=medDose(o); if(window.tsCdExtra) h+=tsCdExtra(t);
     h+='<div class="cd-order"><div class="cd-order-l">Ordered</div><div class="cd-order-v"><b>'+esc(d.mg)+'</b>'+(o.conc?' · '+esc(d.volume):'')+' · '+esc(o.route||'')+' · '+esc(o.freq||'')+'</div>'+(o.conc_label?'<div class="cd-order-s">'+esc(o.conc_label)+'</div>':'')+'</div>'
       +'<div class="field-2"><div class="field"><label for="cd-dose">Dose given</label><input id="cd-dose" value="'+esc(edit&&t.given?t.given:d.mg)+'" autocomplete="off"></div>'
@@ -5042,15 +5464,15 @@ function chEntry(t,edit){ var o=t.order, k=chKind(o), s=deriveStatus(t), nm=Math
   h+='<div class="cd-when"><button type="button" class="cd-when-b" id="cdWhenB" onclick="tsCdWhen()" aria-expanded="false" aria-controls="cdWhenF"><span id="cdWhenT">'+chWhenLine(k,edit?at:null,t.by||STAFF[0])+'</span><span class="cd-when-c">Change</span></button>'   /* Oct 2026: "Now · DG" — tap to change the time or who */
     +'<div class="field-2 cd-when-f" id="cdWhenF" hidden><div class="field"><label for="cd-at">'+(k==='med'?'Given at':'Done at')+'</label><input id="cd-at" type="time" value="'+chHM(at)+'" max="'+chHM(nm)+'" oninput="tsCdWhenSync()"></div>'
     +'<div class="field"><label for="cd-by">'+(k==='med'?'Given by':'Charted by')+'</label>'+chBy(t)+'</div></div></div>'
-    +(o.note_req?'<div class="field cd-need-note"><label for="cd-notes">Note <span class="cd-req-l">required</span></label><textarea id="cd-notes" rows="2" aria-required="true" placeholder="'+esc(o.note_prompt||'What did you find or do?')+'">'+esc(edit?t.notes||'':'')+'</textarea></div>'
-      :'<div class="field"><label for="cd-notes">Note <span class="cd-opt-l">optional</span></label><textarea id="cd-notes" rows="2" placeholder="Add a note…">'+esc(edit?t.notes||'':'')+'</textarea></div>');
+    +(o.note_req?'<div class="field cd-need-note"><label for="cd-notes">Note <span class="cd-req-l">required</span></label><textarea id="cd-notes" rows="2" aria-required="true" placeholder="'+esc(o.note_prompt||'What did you find or do?')+'">'+esc(edit?t.notes||'':'')+'</textarea>'+(window.tsSnipBar?tsSnipBar('cd-notes','note'):'')+'</div>'
+      :'<div class="field"><label for="cd-notes">Note <span class="cd-opt-l">optional</span></label><textarea id="cd-notes" rows="2" placeholder="Add a note…">'+esc(edit?t.notes||'':'')+'</textarea>'+(window.tsSnipBar?tsSnipBar('cd-notes','note'):'')+'</div>');
   return h; }
 /* the drawer's one-line time and who: "Now · DG", or the time charted when editing */
 function chWhenLine(k,min,by){ return (k==='med'?'Given ':'Done ')+'<b>'+(min==null?'now':esc(fmtTime(min)))+'</b> · '+esc(by||''); }
 window.tsCdWhen=function(){ var f=document.getElementById('cdWhenF'), b=document.getElementById('cdWhenB'); if(!f) return; f.hidden=!f.hidden; if(b){ b.setAttribute('aria-expanded',String(!f.hidden)); b.classList.toggle('open',!f.hidden); }
   if(!f.hidden){ var i=document.getElementById('cd-at'); if(i) setTimeout(function(){ i.focus(); },30); } };
 window.tsCdWhenSync=function(){ var T=document.getElementById('cdWhenT'), at=document.getElementById('cd-at'), by=document.getElementById('cd-by'); if(!T||!at) return;
-  var v=chParseHM(at.value), nm=Math.round(nowMin()), med=/^Given/.test(T.textContent); T.innerHTML=chWhenLine(med?'med':'',v==null||v===nm?null:v,by?by.value:''); };
+  var v=chParseHM(at.value), nm=Math.round(nowMin()), med=/^Given/.test(pvxEn(T)); T.innerHTML=chWhenLine(med?'med':'',v==null||v===nm?null:v,by?by.value:''); };
 function chEntryFoot(t,edit){ var k=chKind(t.order);
   if(edit) return '<button class="btn ghost" onclick="tsChOpen(\''+esc(t.id)+'\',\'review\')">Cancel</button><button class="btn primary" onclick="tsChartSave()">Save changes</button>';
   var go=k==='med'?'Record dose':k==='reading'?'Chart reading':'Mark done';
@@ -5099,7 +5521,7 @@ window.tsChOpen=function(id,mode){ var t=chTask(id); if(!t) return; var o=t.orde
   $('#cd-body').innerHTML=body; $('#cd-foot').innerHTML=foot; openDrawer('completionDrawer'); if(mode==='omit') tsChWhy();
   setTimeout(function(){ var f=document.getElementById(mode==='omit'?'':'cd-value'); if(f&&mode!=='review') try{ f.focus({preventScroll:true}); f.select(); }catch(e){} },140); };
 on('completion.open',function(id){ if(!chTask(id)) return false; tsChOpen(id); return true; },-5);
-window.tsChOpt=function(b){ var i=document.getElementById('cd-value'); if(!i) return; i.value=b.textContent; [].forEach.call(document.querySelectorAll('#cd-body .cd-opt'),function(x){ x.classList.toggle('on',x===b); }); i.focus(); };
+window.tsChOpt=function(b){ var i=document.getElementById('cd-value'); if(!i) return; i.value=pvxEn(b); [].forEach.call(document.querySelectorAll('#cd-body .cd-opt'),function(x){ x.classList.toggle('on',x===b); }); i.focus(); };
 
 /* ---------- save ---------- */
 function chSnap(t){ return {status:t.status,value:t.value||null,given:t.given||null,vol:t.vol||null,reason:t.reason||null,notes:t.notes||null,min:t.completedMin!=null?Math.round(t.completedMin):null,by:t.by||null,edit_at:new Date().toISOString(),edit_by:user().initials||null}; }

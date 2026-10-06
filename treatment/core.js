@@ -1,3 +1,142 @@
+/* ═════════ PRAVIX LANGUAGE — English / Español, each person's own choice (Oct 2026) ═════════
+   The language button beside the theme toggle: English or Español. It belongs to the person, not the computer — saved with their sign-in
+   (Firestore ts_prefs/{uid}; on this device per person until that database rule is published), so on a shared workstation each person
+   gets their own language after signing in. Before anyone signs in, the sign-in screen uses the language last used on this device.
+   How it works: the app is written in English; in Español, every piece of interface text is swapped for its Spanish as it appears
+   (a dictionary of phrases, app/i18n/es.tsv, plus patterns for the ones with numbers in them: "12 min late" → "12 min de retraso").
+   Only the interface changes. What people type and save — names, orders, doses, notes, instructions — stays exactly as typed, and the
+   record, copies and exports stay in English, so everyone reads the same chart. Drug names are never translated.
+   Anything inside translate="no" is left alone. Owner & admins can correct any Spanish wording for the whole hospital
+   (Settings → Spanish wording; Firestore ts_settings/i18n), and those corrections win over the built-in dictionary. */
+(function(){
+var L={lang:'en',D:null,T:null,W:[],over:{},overT:{},nodes:new Set(),els:new Set(),orig:new WeakMap(),aorig:new WeakMap(),obs:null,cache:new Map(),harvest:!!window.__i18nHarvest,keep:new Set(),seen:new Map(),uid:''};
+var ATTRS=['placeholder','title','aria-label','data-tip','alt'];
+var NOPE='[translate="no"],script,style,textarea,code,[contenteditable="true"],.notranslate';
+/* three kinds of entry: exact phrases; # for a number or time ("Due in # min"); * for a name or anything typed ("Reorder *", "Mark * done") */
+function dict(){ if(L.D&&L.src===window.I18N_ES) return; var src=window.I18N_ES||{}; L.src=window.I18N_ES; L.D=Object.create(null); L.T=Object.create(null); L.W=L.W.filter(function(w){ return w.own; });
+  for(var k in src) put(k,src[k],false); wsort(); L.cache.clear(); }
+/* the Spanish dictionary (es.js) loads only for people who use it */
+function need(cb){ if(window.I18N_ES){ cb(); return; } var src=(window.PVX_LANG_SRC||{}).es; if(!src||/\{\{/.test(src)){ cb(); return; }
+  var el=document.getElementById('pvxLangEs'); if(!el){ el=document.createElement('script'); el.id='pvxLangEs'; el.src=src; el.async=true; document.head.appendChild(el); }
+  var done=false, fin=function(){ if(done) return; done=true; cb(); }; el.addEventListener('load',fin); el.addEventListener('error',fin); setTimeout(function(){ if(window.I18N_ES) fin(); },0); }
+window.pvxLangLoad=need;
+function isW(k){ return /[*@]/.test(k); }
+function put(k,v,own){ if(isW(k)){ L.W=L.W.filter(function(w){ return w.k!==k; }); L.W.push({k:k,v:v,re:wre(k),n:k.replace(/[*@#\s]/g,'').length}); }
+  else if(k.indexOf('#')>-1){ if(own) L.overT[k]=v; else L.T[k]=v; } else { if(own) L.over[k]=v; else L.D[k]=v; } }
+function wre(k){ return new RegExp('^'+k.split(/([*@#])/).map(function(p){ return (p==='*'||p==='@')?'(.+?)':p==='#'?'(\\d+(?::\\d{2})?(?:[.,]\\d+)?(?:\\s?[AP]M\\b)?)':p.replace(/[.?+^$()[\]{}|\\]/g,'\\$&'); }).join('')+'$'); }
+function wsort(){ L.W.sort(function(a,b){ return b.n-a.n; }); }
+function wild(s,depth,gen){ for(var i=0;i<L.W.length;i++){ var w=L.W[i]; if(!!gen!==(w.n===0)) continue; var m=w.re.exec(s); if(!m) continue;
+    var parts=w.k.split(/([*@#])/).filter(function(p){ return p==='*'||p==='@'||p==='#'; }), stars=[], nums=[];   /* @ = typed text, kept exactly */
+    parts.forEach(function(p,j){ var c=m[j+1]; if(p==='#') nums.push(c); else if(p==='@') stars.push(c); else { var x=depth<3?tr1(c,depth+1):null; if(x==null&&depth<3) x=trSplit(c,0); stars.push(x==null?c:x); } });
+    var si=0, ST='\u0001'; return fill(w.v.replace(/[*@]/g,function(){ return ST+(si++)+ST; }),nums).replace(/\u0001(\d+)\u0001/g,function(m,d){ return stars[+d]; }); }
+  return null; }
+/* numbers and clock times become # so one entry covers them all: "Due in 12 min" → "Due in # min" */
+var NUM=/(^|[^A-Za-z0-9#])(\d+(?::\d{2})?(?:[.,]\d+)?(?:\s?[AP]M\b)?)/g;
+function tok(s){ var v=[]; var k=s.replace(NUM,function(m,pre,n){ v.push(n); return pre+'#'; }); return {k:k,v:v}; }
+/* [one|many] picks by the number just before it: "# atrasad[o|os]" → "1 atrasado", "3 atrasados" */
+function fill(t,v){ var i=0, last=null;
+  return t.split(/(#\d?|\[[^\]|]*\|[^\]]*\])/).map(function(p){
+    if(p==='#'){ last=v[i++]; return last!=null?last:''; }
+    if(/^#\d$/.test(p)){ last=v[+p.charAt(1)-1]; return last!=null?last:''; }
+    var m=/^\[([^\]|]*)\|([^\]]*)\]$/.exec(p); if(m) return (last!=null&&parseFloat(String(last).replace(',','.'))===1)?m[1]:m[2];
+    return p; }).join(''); }
+function look(s){ var o=L.over[s]; if(o!=null) return o; var d=L.D[s]; return d!=null?d:null; }
+function lookT(k){ var o=L.overT[k]; if(o!=null) return o; var d=L.T[k]; return d!=null?d:null; }
+/* patients' and staff names are never translated, even when a name is also a word ("Pink", "Walk") */
+function keepNames(){ var k=new Set(), S=[]; try{ S=(window.__tsStore&&__tsStore.sheets)||[]; }catch(e){}
+  S.forEach(function(x){ var p=(x&&x.patient)||{}; [p.name,p.last,((p.name||'')+' '+(p.last||'')).trim()].forEach(function(n){ if(n) k.add(String(n).trim()); }); });
+  try{ var DR=(window.PRAVIX_DRUGS&&PRAVIX_DRUGS.d)||[]; DR.forEach(function(d){ if(d&&d.n) k.add(d.n); (d.b||[]).forEach(function(b){ if(typeof b==='string') k.add(b); }); }); }catch(e){}   /* drug names (and brands) are never translated */
+  var st=window.TS_STAFF||{}; Object.keys(st).forEach(function(r){ (Array.isArray(st[r])?st[r]:[]).forEach(function(n){ if(typeof n==='string') k.add(n); }); });
+  if(k.size!==L.keep.size){ L.keep=k; L.cache.clear(); } }
+setInterval(function(){ if(L.obs) keepNames(); },10000);
+function tr1(s,depth){ if(L.keep.has(s)) return null; var r=look(s); if(r!=null) return r;
+  var t=tok(s); if(t.v.length){ r=lookT(t.k); if(r!=null) return fill(r,t.v); } else if(s.indexOf('#')>-1){ r=lookT(s); if(r!=null) return r; }   /* text that shows a literal # */
+  if(L.W.length){ r=wild(s,depth); if(r!=null) return r; }
+  /* "Saved." · "Notes:" · "Choose…" · "(2)" — try without the punctuation around it */
+  if(depth<2){ var m=/^([(\[“"]?)(.*?)([:…?!.)\]”"]*)$/.exec(s); if(m&&(m[1]||m[3])&&m[2]&&m[2]!==s){ r=tr1(m[2],depth+1); if(r!=null) return m[1]+r+m[3]; }
+    /* First letter capitalised in a sentence ("Due now" vs "due now") */
+    var lc=s.charAt(0).toLowerCase()+s.slice(1); if(lc!==s){ r=look(lc); if(r!=null) return r.charAt(0).toUpperCase()+r.slice(1); } }
+  return null; }
+function note(s){ if(!L.harvest||!/[A-Za-z]{2}/.test(s)) return; var k=tok(s).k; L.seen.set(k,(L.seen.get(k)||0)+1); }
+/* a sentence the dictionary doesn't hold whole is taken apart: first at · — | → /, then at commas, then at sentence ends, then at a colon */
+var SEPS=[/(\s*[·•|—–→]\s*|\s+\/\s+)/,/(,\s+)/,/(\.\s+(?=[A-Z]))/,/(:\s+)/];
+var ABBR=/\b(Dr|Mr|Mrs|Ms|St|vs|approx|e\.g|i\.e)\. /g;
+function trSplit(s,lvl){ for(var l=lvl;l<SEPS.length;l++){ var parts=(l===2?s.replace(ABBR,'$1\u2024 '):s).split(SEPS[l]); if(parts.length<2) continue;
+    if(l===2) parts=parts.map(function(p){ return p.replace(/\u2024/g,'.'); });
+    var any=false; parts=parts.map(function(p,i){ if(i%2||!/[A-Za-z]/.test(p)) return p; var tp=p.trim(), x=tr1(tp,0); if(x==null) x=trSplit(tp,l+1); if(x==null&&L.W.length) x=wild(tp,0,true); if(x==null){ if(l+1>=SEPS.length||!SEPS.slice(l+1).some(function(r){ return r.test(tp); })) note(tp); return p; } any=true; return p.replace(tp,x); });
+    return any?parts.join(''):null; }
+  return null; }
+function trCore(core){ var r=tr1(core,0); if(r!=null) return r; r=trSplit(core,0); if(r==null&&L.W.length) r=wild(core,0,true);   /* last: "<name> <number> <unit>" */
+  if(r==null&&!SEPS.some(function(x){ return x.test(core); })) note(core); return r; }
+function tr(s){ if(L.cache.has(s)) return L.cache.get(s); var m=/^(\s*)([\s\S]*?)(\s*)$/.exec(s), out=s;
+  if(m[2]&&/[A-Za-z]/.test(m[2])&&m[2].length<400){ var r=trCore(m[2]); if(r!=null) out=m[1]+r+m[3]; }
+  L.cache.set(s,out); return out; }
+function blocked(el){ return !el||!el.closest||!!el.closest(NOPE); }
+function blockedA(el){ return !el||!el.closest||(el.nodeName==='TEXTAREA'?blocked(el.parentElement):!!el.closest(NOPE)); }   /* a textarea's placeholder is interface; what's typed in it isn't */
+function doText(n){ var v=n.data, rec=L.orig.get(n); if(rec&&v===rec.es) return; if(!/[A-Za-z]/.test(v)) return;
+  var pe=n.parentElement; if(!pe||blocked(pe)||(pe.closest('head')&&pe.nodeName!=='TITLE')) return;
+  if(L.harvest&&L.lang!=='es'){ tr(v); return; }
+  var es=tr(v); if(es===v) return;
+  if(pe.nodeName==='OPTION'&&!pe.hasAttribute('value')) pe.setAttribute('value',pe.textContent);   /* <option>Pink</option>: the value stays "Pink" */
+  L.orig.set(n,{en:v,es:es}); L.nodes.add(n); n.data=es; }
+function doAttr(el,a){ var v=el.getAttribute(a); if(!v||!/[A-Za-z]/.test(v)) return; var R=L.aorig.get(el); if(R&&R[a]&&R[a].es===v) return;
+  if(blockedA(el)) return; if(L.harvest&&L.lang!=='es'){ tr(v); return; }
+  var es=tr(v); if(es===v) return; R=R||{}; R[a]={en:v,es:es}; L.aorig.set(el,R); L.els.add(el); el.setAttribute(a,es); }
+function walk(root){ if(!root) return; if(root.nodeType===3){ doText(root); return; } if(root.nodeType!==1&&root.nodeType!==9) return;
+  if(root.nodeType===1&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(root.nodeName)) return;
+  var tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null), n; while((n=tw.nextNode())) doText(n);
+  ATTRS.forEach(function(a){ if(root.hasAttribute&&root.hasAttribute(a)) doAttr(root,a); if(root.querySelectorAll) root.querySelectorAll('['+a+']').forEach(function(el){ doAttr(el,a); }); }); }
+function start(){ if(L.obs||(L.lang==='es'&&!window.I18N_ES)) return; dict(); keepNames(); walk(document.documentElement);
+  L.obs=new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ var m=ms[i]; if(m.type==='childList') m.addedNodes.forEach(walk); else if(m.type==='characterData') doText(m.target); else if(m.type==='attributes') doAttr(m.target,m.attributeName); } });
+  L.obs.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTRS}); }
+function stop(){ if(L.obs){ L.obs.disconnect(); L.obs=null; }
+  L.nodes.forEach(function(n){ var r=L.orig.get(n); if(r&&n.data===r.es) n.data=r.en; L.orig.delete(n); }); L.nodes.clear();
+  L.els.forEach(function(el){ var R=L.aorig.get(el)||{}; for(var a in R) if(el.getAttribute(a)===R[a].es) el.setAttribute(a,R[a].en); L.aorig.delete(el); }); L.els.clear(); }
+setInterval(function(){ L.nodes.forEach(function(n){ if(!n.isConnected) L.nodes.delete(n); }); L.els.forEach(function(e){ if(!e.isConnected) L.els.delete(e); }); },60000);
+function apply(lang){ lang=lang==='es'?'es':'en'; L.lang=lang; document.documentElement.lang=lang;
+  if(lang==='es') need(function(){ if(L.lang!=='es') return; dict(); stop(); start(); document.documentElement.classList.remove('i18n-wait'); });
+  else { document.documentElement.classList.remove('i18n-wait'); stop(); if(L.harvest) need(start); }
+  paintBtn(); try{ window.dispatchEvent(new CustomEvent('pvx-lang',{detail:lang})); }catch(e){} }
+/* ---------- saving the choice ---------- */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function cookie(v){ try{ document.cookie='pvx_lang='+v+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax'; }catch(e){} try{ document.cookie='pvx_lang='+v+';path=/;max-age=31536000;SameSite=Lax'; }catch(e){} }
+function db(){ try{ return (typeof DB!=='undefined'&&DB)||null; }catch(e){ return null; } }
+window.pvxLang=function(){ return L.lang; };
+/* the English an element showed before translation — for code that reads a chip's text as a value, so the record stays English */
+window.pvxEn=function(el){ if(!el) return ''; if(el.nodeType===3){ var r=L.orig.get(el); return r&&el.data===r.es?r.en:el.data; }
+  var out='', tw=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null), n; while((n=tw.nextNode())){ var q=L.orig.get(n); out+=q&&n.data===q.es?q.en:n.data; } return out; };
+window.pvxT=function(s){ if(L.lang!=='es') return s; dict(); return tr(String(s)); };   /* for text drawn outside the page (canvas, prompts, voice) */
+window.pvxSetLang=function(lang,quiet){ lang=lang==='es'?'es':'en'; lsSet('pvx_lang',lang); cookie(lang); if(L.uid) lsSet('pvx_lang_'+L.uid,lang);
+  var d=db(); if(d&&L.uid){ try{ d.collection('ts_prefs').doc(L.uid).set({lang:lang,updated_at:new Date().toISOString()},{merge:true}).catch(function(){}); }catch(e){} }
+  apply(lang); if(!quiet&&window.toast) toast(lang==='es'?'Español':'English'); };
+/* after sign-in: this person's language (their own saved choice, else English) */
+window.pvxLangUser=function(uid){ L.uid=uid||''; if(!uid) return; var mine=lsGet('pvx_lang_'+uid); apply(mine||'en'); if(mine) lsSet('pvx_lang',mine);
+  var d=db(); if(!d) return; try{ d.collection('ts_prefs').doc(uid).get().then(function(s){ var x=s&&s.exists&&s.data(); if(x&&(x.lang==='es'||x.lang==='en')&&x.lang!==L.lang&&L.uid===uid){ lsSet('pvx_lang_'+uid,x.lang); lsSet('pvx_lang',x.lang); apply(x.lang); } }).catch(function(){}); }catch(e){} };
+/* hospital corrections (Settings → Spanish wording) */
+window.pvxLangOverrides=function(map){ dict(); L.over={}; L.overT={}; L.W=L.W.filter(function(w){ return !w.own; });
+  var src=window.I18N_ES||{}; Object.keys(src).forEach(function(k){ if(isW(k)&&!L.W.some(function(w){ return w.k===k; })) put(k,src[k],false); });   /* a reset puts the built-in pattern back */
+  Object.keys(map||{}).forEach(function(k){ var v=map[k]; if(typeof v!=='string'||!v.trim()) return; put(k,v,true); if(isW(k)) L.W[L.W.length-1].own=true; }); wsort();
+  L.cache.clear(); if(L.lang==='es'&&window.I18N_ES){ stop(); start(); } };
+window.pvxLangTr=function(s){ dict(); return tr(String(s)); };   /* the Spanish for s, whatever the current language (Spanish wording editor, tests) */
+window.pvxLangDict=function(){ dict(); var T={}; for(var k in L.T) T[k]=L.T[k]; (window.I18N_ES&&Object.keys(I18N_ES)||[]).forEach(function(k){ if(isW(k)) T[k]=I18N_ES[k]; }); return {D:L.D,T:T,over:L.over,overT:L.overT}; };
+window.__i18nDump=function(){ var o={}; L.seen.forEach(function(v,k){ if(look(k)==null&&lookT(k)==null) o[k]=v; }); return o; };
+/* ---------- the button ---------- */
+var GLOBE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>';
+function paintBtn(){ var b=document.getElementById('pvxLangBtn'); if(!b) return; b.querySelector('b').textContent=L.lang==='es'?'ES':'EN'; b.setAttribute('aria-label',L.lang==='es'?'Idioma: Español':'Language: English'); }
+function mkBtn(){ if(document.getElementById('pvxLangBtn')) return; var host=document.querySelector('.nav-right'), tt=host&&host.querySelector('.theme-toggle'); if(!host) return;
+  var b=document.createElement('button'); b.type='button'; b.id='pvxLangBtn'; b.className='pvx-lang'; b.setAttribute('translate','no'); b.innerHTML=GLOBE+'<b>EN</b>';
+  b.onclick=function(e){ e.stopPropagation(); if(typeof _openPop!=='function'){ pvxSetLang(L.lang==='es'?'en':'es'); return; }
+    var row=function(k,lab,sub){ return '<button type="button" class="fp-row lang-row'+(L.lang===k?' on':'')+'" data-lang="'+k+'" role="menuitemradio" aria-checked="'+(L.lang===k)+'"><span class="fp-lab"><b>'+lab+'</b><small>'+sub+'</small></span>'+(L.lang===k?'<svg class="lang-ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>':'')+'</button>'; };
+    var pop=_openPop(b,'<div class="lang-pop" translate="no" role="menu"><div class="lang-h">'+(L.lang==='es'?'Idioma':'Language')+'</div>'+row('en','English','Interface in English')+row('es','Español','Interfaz en español')+'<p class="lang-f">'+(L.lang==='es'?'Solo para ti. Lo que se escribe en el expediente no cambia.':'Just for you. What’s written in the record doesn’t change.')+'</p></div>');
+    pop.querySelectorAll('[data-lang]').forEach(function(x){ x.onclick=function(){ _closePop(); pvxSetLang(x.getAttribute('data-lang')); }; }); };
+  host.insertBefore(b,tt||host.firstChild); paintBtn(); }
+/* first paint: the device's last language (the sign-in screen), then the person's own once they sign in */
+var first=lsGet('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1])||'en';
+function boot(){ mkBtn(); apply(first); }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+setTimeout(function(){ document.documentElement.classList.remove('i18n-wait'); },1500);
+})();
 
 /* ═══════════════════════════════════════════════════════════════
    TREATMENT SHEETS · CORE UI (from the Flow Clinical prototype)
@@ -234,7 +373,7 @@ function renderDash(){
     <div class="sb-tool-r">
       ${window.tsFindChip?tsFindChip():''}${window.tsWfChip?tsWfChip():''}
       ${seg('sbView',[['list','List',IC.list,!sbTx],['hours','Hours',IC.hours,sbTx]].map(([k,l,ic,on])=>`<button type="button" class="sb-segb${on?' on':''}" role="radio" aria-checked="${on}" data-tip="${l}" data-key="H" onclick="${on?'':'toggleSbTx()'}">${ic}${l}</button>`).join(''))}
-      <button type="button" class="sb-filters${FN?' on':''}" data-tip="Filters" onclick="openSbFilters(event)">${IC.filter}Filters<span class="sb-fb">${FN||''}</span></button>
+      ${window.tsTvBtn?tsTvBtn():''}<button type="button" class="sb-filters${FN?' on':''}" data-tip="Filters" onclick="openSbFilters(event)">${IC.filter}Filters<span class="sb-fb">${FN||''}</span></button>
     </div></div>`;
   // header row — Title Case column names; click one to sort (store/boardview.js remembers it per person)
   const SORT=(window.tsSbSortState&&tsSbSortState())||null;
@@ -377,7 +516,7 @@ function buildGrid(){
       /* Order column: name, then dose · route · frequency (or frequency · unit) and the overdue count. Latest column: the newest value and its age */
       let latest='';
       /* Oct 2026: brand after the name in grey (no "·"), the dose is the one bold part of the line, a dot after the name when the order has instructions (store/rowlook.js) */
-      const nm=(n)=>{const ins=window.tsInsAttr?tsInsAttr(o):['',''];return `<div class="rl-name"${ins[0]}>${n}${ins[1]}</div>`;};
+      const nm=(n)=>{const ins=window.tsInsAttr?tsInsAttr(o):['',''];return `<div class="rl-name"${ins[0]}>${n}${window.tsCtrlBadge?tsCtrlBadge(o):''}${ins[1]}</div>`;};   /* C-II tag on controlled drugs (store/controlled.js) */
       if(o.type==='med'){const d=medDose(o);html+=`<div class="rl-main">${nm(o.name+((window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> '+tsBrand(o.name)+'</span>':''))}<div class="rl-meta"><b>${d.mg}</b>${o.conc?' · '+d.volume:''} · ${o.route} · ${o.freq}${mchip}</div></div>`;latest=window.tsMedLatest?tsMedLatest(o):'';}   /* last dose given (store/medsafe.js) */
       else if(o.type==='fluid'){html+=`<div class="rl-main">${nm(window.tsInfName?tsInfName(o):o.name)}<div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate} · ${o.kind==='cri'?'CRI':'IV'}</div></div>`;latest=window.tsInfLatest?tsInfLatest(o):'';}   /* given today · last line check (store/fluids.js) */
       else if(o.type==='obs'||o.type==='diag'){html+=`<div class="rl-main">${nm(o.name)}<div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}${mchip}</div></div>`;latest=window.tsRowTrend?tsRowTrend(o):'';}   /* the latest reading and how old it is (store/vitals.js) */
@@ -419,7 +558,7 @@ function buildGrid(){
 function gridOffWire(){const sc=$('#sheetScroll');if(!sc||sc._offWired)return;sc._offWired=1;let raf=0;sc.addEventListener('scroll',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;gridOffPaint();if(window.tsSecNavSpy)tsSecNavSpy();});},{passive:true});}
 function gridOffPaint(){const sc=$('#sheetScroll');if(!sc)return;const x=sc.scrollLeft;
   $$('#sheetInner .grow[data-late]').forEach(r=>{const b=r.querySelector('.rl-off');if(!b)return;const hid=r.dataset.late.split(',').map(Number).filter(m=>(Math.floor(m/60)+1)*54<=x+6);
-    if(hid.length){const t=`‹ ${hid.length} earlier`;if(b.textContent!==t)b.textContent=t;b.title=`${hid.length} overdue earlier today, out of view — select to scroll back`;b.setAttribute('aria-label',b.title);b.hidden=false;}else b.hidden=true;});}
+    if(hid.length){const t=`‹ ${hid.length} earlier`;if(pvxEn(b)!==t)b.textContent=t;b.title=`${hid.length} overdue earlier today, out of view — select to scroll back`;b.setAttribute('aria-label',b.title);b.hidden=false;}else b.hidden=true;});}
 window.tsOffGo=function(id){const r=document.querySelector(`#sheetInner .grow[data-o="${id}"]`),sc=$('#sheetScroll');if(!r||!sc)return;const m=Math.min(...r.dataset.late.split(',').map(Number));sc.scrollTo({left:Math.max(0,Math.floor(m/60)*54-54),behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});};
 /* 8A · 2:30P — short time, used in titles */
 /* the column already names the hour, so a mark only shows minutes when the task is off the hour (":30") */
