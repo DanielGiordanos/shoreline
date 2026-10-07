@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261002-0441-8c510068">
+<meta name="flow-build" content="20261007-0457-09504c14">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5293,6 +5293,36 @@ body.client-mode #fvStalePill,body.tv-mode #fvStalePill,body.client-mode #fvStal
 }
 @media (prefers-reduced-motion:reduce){#fvStalePill,#fvStale .fs-card,#fvStale .fs-scrim,.card.fv-remote{animation:none}}
 </style>
+<style id="rd-rank-css">
+/* Rounds order — drag to rank (Oct 2026). No color-mix(): older hospital browsers. */
+.rd-row{position:relative;}
+.rd-grip{position:absolute;left:0;top:0;bottom:0;width:11px;border:0;padding:0;background:none;display:flex;align-items:center;justify-content:center;
+color:var(--ink-400);opacity:0;cursor:grab;touch-action:none;transition:opacity .15s var(--ease),color .15s var(--ease);z-index:1;}
+.rd-grip svg{width:6px;height:11px;fill:currentColor;}
+.rd-row:hover>.rd-grip,.rd-grip:focus-visible{opacity:1;}
+.rd-grip:hover{color:var(--rc);}
+.rd-grip:focus-visible{outline:2px solid var(--rc);outline-offset:-2px;border-radius:6px;}
+@media(hover:none){.rd-grip{display:none;}}   /* touch: press and hold the row */
+.rd-secgroup[data-sec]>.rd-row{-webkit-touch-callout:none;}
+.rd-secgroup.rd-sorting>.rd-row{transition:transform .22s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease);animation:none;}
+.rd-secgroup.rd-sorting>.rd-row.rd-lift{transition:none;z-index:6;box-shadow:var(--panel-shadow-lg),0 0 0 1px var(--rc-line);}
+body.rd-dragging,body.rd-dragging *{cursor:grabbing!important;user-select:none;-webkit-user-select:none;}
+</style>
+<style id="fx-round2-css">
+/* flow-round2-oct6 — client CPR/DNR request; confirm dialogs above the Add Patient window. No color-mix(): older hospital browsers. */
+#confirmScrim{z-index:99;}
+#confirmBox{z-index:100;}
+.fx-rr{display:inline-flex;align-items:center;gap:4px 6px;flex-wrap:wrap;margin:4px 0 0 8px;padding:4px 5px 4px 10px;border-radius:12px;
+border:1px solid var(--amber);font-size:12px;font-weight:600;line-height:1.2;color:var(--ink-900,inherit);vertical-align:middle;}
+.fx-rr-t b{color:var(--amber);}
+.fx-rr-t small{font-weight:500;opacity:.7;}
+.fx-rr button{border:0;border-radius:999px;padding:3px 9px;font:inherit;font-size:11.5px;cursor:pointer;}
+.fx-rr-ok{background:var(--amber);color:#1a1300;}
+.fx-rr-no{background:none;color:inherit;opacity:.75;}
+.fx-rr-no:hover{opacity:1;}
+.fx-rr button:focus-visible{outline:2px solid var(--amber);outline-offset:1px;}
+.fx-rr-chip{display:inline-block;margin-left:5px;padding:0 5px;border-radius:5px;border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:700;line-height:15px;vertical-align:middle;}
+</style>
 </head>
 <body>
 <script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#FFFFFF';}catch(e){}}window.__pvxPaintCanvas=paint;try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
@@ -6107,9 +6137,7 @@ timezone:'America/New_York',
  
 theme: {
 mode:'dark',
-primary:'#0C2952',
-accent:'var(--accent)',
-accent2:'var(--accent-2)'
+primary:'#0C2952'
 },
 
  
@@ -6279,8 +6307,9 @@ var el = document.body || document.documentElement;
 if (!el) return;
 var s = el.style;
 if (theme.primary) s.setProperty('--brand-navy', theme.primary);
-if (theme.accent)  s.setProperty('--accent',     theme.accent);
-if (theme.accent2) s.setProperty('--accent-2',   theme.accent2);
+var real=function(v){ return v&&!/^\s*var\(/.test(String(v)); };   /* var(--accent) on --accent = invalid everywhere */
+if (real(theme.accent))  s.setProperty('--accent',     theme.accent);
+if (real(theme.accent2)) s.setProperty('--accent-2',   theme.accent2);
 };
 })();
 
@@ -6529,7 +6558,7 @@ arrival_time: _toISO(p.arrival) || new Date().toISOString(),
 discharged_at: _toISO(p.completedAt),
 track_code: p.trackCode||null,
 timeline: (p.timeline||[]).map(function(e){ return { label:e.label, at:_toISO(e.at) }; }),
-resus_pref: p.resusPref||null, resus_status: p.resusStatus||null, resus_recorded_at: _toISO(p.resusRecordedAt),
+resus_pref: (p.resusRequest&&p.resusRequest.pref)||p.resusPref||null, resus_status: p.resusRequest?'client_selected':(p.resusStatus||null), resus_recorded_at: p.resusRequest?(p.resusRequest.at||null):_toISO(p.resusRecordedAt),
 updated_at: new Date().toISOString()
 };
 }
@@ -6583,12 +6612,14 @@ public_token: p.publicToken || null, track_code: p.trackCode || null,
 
 resus_pref: p.resusPref || null, resus_status: p.resusStatus || null,
 resus_recorded_at: _toISO(p.resusRecordedAt), resus_source: p.resusSource || null,
+resus_request: (p.resusRequest&&p.resusRequest.pref)?{ pref:p.resusRequest.pref, at:p.resusRequest.at||null }:null, resus_request_dismissed: p.resusRequestDismissed || null,
 resus_history: Array.isArray(p.resusHistory) ? p.resusHistory.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:_toISO(h.at), by:h.by||null }; }) : [],
 crit_taken_at: _toISO(p.critTakenAt), crit_taken_by: p.critTakenBy || null, crit_taken_uid: p.critTakenUid || null, waiting_on: p.waitingOn || null, stale_keep_until: _toISO(p.staleKeepUntil), ms_roomed_at: _toISO(p.msRoomedAt), ms_doctor_at: _toISO(p.msDoctorAt),
 is_active: !(p.completed===true || p.active===false || p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized')
 };
 }
-function mapToApp(r){
+function mapToApp(r){ return fxCleanPatient(_fxMapToApp(r)); }
+function _fxMapToApp(r){
 const full=(r.patient_name||'').trim();
 const arrival = r.arrival_time ? new Date(r.arrival_time) : new Date();
 const completedAt = r.discharged_at ? new Date(r.discharged_at) : null;
@@ -6605,10 +6636,11 @@ timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new 
 arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt, critTakenAt: r.crit_taken_at? new Date(r.crit_taken_at): null, critTakenBy: r.crit_taken_by||null, critTakenUid: r.crit_taken_uid||null, waitingOn: (r.waiting_on&&r.waiting_on.text)?r.waiting_on:null, staleKeepUntil: r.stale_keep_until?new Date(r.stale_keep_until):null, msRoomedAt: r.ms_roomed_at?new Date(r.ms_roomed_at):null, msDoctorAt: r.ms_doctor_at?new Date(r.ms_doctor_at):null, viewing: r.viewing||null, lastBy: r.last_by||null, lastByUid: r.last_by_uid||null, lastAt: r.last_at||null,
 examStartedAt: r.exam_started_at? new Date(r.exam_started_at): null, examStartedByDoctorId: r.exam_started_by||null, examWaitMinutes: (typeof r.exam_wait_min==='number'? r.exam_wait_min : null),
 totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null,
-resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusSource:r.resus_source||null, resusHistory:Array.isArray(r.resus_history)?r.resus_history.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:h.at?new Date(h.at):null, by:h.by||null }; }):[], resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
+resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusSource:r.resus_source||null, resusHistory:Array.isArray(r.resus_history)?r.resus_history.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:h.at?new Date(h.at):null, by:h.by||null }; }):[], resusRequest:(r.resus_request&&r.resus_request.pref)?{ pref:r.resus_request.pref, at:r.resus_request.at||null }:null, resusRequestDismissed:r.resus_request_dismissed||null, resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
 };
 }
-function mapSafeToApp(r){
+function mapSafeToApp(r){ return fxCleanPatient(_fxMapSafeToApp(r)); }
+function _fxMapSafeToApp(r){
 const full=(r.patient_name||'').trim();
 return { id:r.id||r.public_token, name: full.split(/\s+/)[0]||'', last: full.split(/\s+/).slice(1).join(' '),
 species:r.species||'', breed:r.breed||'', age:r.age||'', birthday:r.birthday||'', ageEstimated:!!r.age_estimated, prio:r.prio||r.priority||3, status:r.status||'Waiting',
@@ -6675,14 +6707,15 @@ currentAlert = (row && row.active && row.show_client!==false) ? row : null;
 loadAndSubscribe: async function(){
 await Promise.all([ Backend.refetch(), Backend.loadShifts(), Backend.loadAlert() ]);
 try{ FlowIntakeStore._attach(DB); }catch(e){}
+try{ fxLobbySync(); }catch(e){}
 
 if(Backend.unsubVisits){ try{ Backend.unsubVisits(); }catch(e){} }
 Backend.unsubVisits = DB.collection('visits').where('tenant_id','==',TENANT_ID)
 .onSnapshot(function(snap){
 _persistLock = true;
 PATIENTS = snap.docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
-Backend._mergeResus();
 Backend._lastRows = PATIENTS.map(mapToDb);
+Backend._mergeResus();
 _persistLock = false;
 Backend.setConn('live');
 try{ if(typeof scheduleRender==='function'){ scheduleRender(function(){ try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} }); } else { if(typeof renderAll==='function') renderAll();
@@ -6732,7 +6765,7 @@ if(!_commOpen) _unreadMsgs.add(p.id);
 loadThread(p); return;
 }
 if(p){ _unreadMsgs.add(p.id);
-try{ notify('New message from family', (p.name+' '+(p.last||'')).trim()+' · open to reply', {icon:'info', color:'#0A84FF'}); }catch(e){}
+try{ notify('New message from family', bcEsc((p.name+' '+(p.last||'')).trim())+' · open to reply', {icon:'info', color:'#0A84FF'}); }catch(e){}
 try{ renderTable(); renderBoard(); }catch(e){} }
 });
 Backend._msgWarm = false;
@@ -6740,7 +6773,7 @@ Backend._msgWarm = false;
 },
 _pubResus:{}, _msgSeen:{}, _msgWarm:true,
 _mergeResus: function(){
-try{ PATIENTS.forEach(function(p){ const r=Backend._pubResus[p.publicToken]; if(r){ p.resusPref=r.pref; p.resusStatus=r.status; p.resusRecordedAt=r.at?new Date(r.at):null; } }); }catch(e){}
+try{ PATIENTS.forEach(function(p){ fxResusFromPub(p, Backend._pubResus[p.publicToken]); }); }catch(e){}   /* never straight onto the badge */
 },
 refetch: async function(){
 _persistLock = true;
@@ -6751,8 +6784,8 @@ PATIENTS = snap.docs.map(function(d){ return mapToApp(Object.assign({ id:d.id },
 const pub = await DB.collection('pub').where('tenant_id','==',TENANT_ID).get();
 Backend._pubResus = {};
 pub.docs.forEach(function(d){ const v=d.data(); if(v.resus_pref) Backend._pubResus[d.id]={ pref:v.resus_pref, status:v.resus_status||'client_selected', at:v.resus_recorded_at||null }; });
-Backend._mergeResus();
 Backend._lastRows = PATIENTS.map(mapToDb);
+Backend._mergeResus();
 if(Backend.conn!=='live') Backend.setConn('live');
 }catch(e){ Backend.setConn('error'); }
 try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
@@ -6770,7 +6803,7 @@ try{ renderAlert(); }catch(e){}
 }, function(){ Backend.setConn('error'); });
 
 if(Backend.unsubPubLobby){ try{ Backend.unsubPubLobby(); }catch(e){} }
-Backend.unsubPubLobby = DB.collection('pub').where('tenant_id','==',TENANT_ID)
+Backend.unsubPubLobby = DB.collection('lobby').where('tenant_id','==',TENANT_ID)
 .onSnapshot(async function(snap){
 _persistLock = true;
 PATIENTS = snap.docs.map(function(d){ return mapSafeToApp(Object.assign({ id:d.id }, d.data())); })
@@ -6808,9 +6841,10 @@ const batch = DB.batch();
 changed.forEach(function(p){
 if(typeof fvSaveVisit==='function') fvSaveVisit(batch,p,prev); else batch.set(DB.collection('visits').doc(String(p.id)), mapToDb(p));
 batch.set(DB.collection('pub').doc(p.publicToken), safeProjection(p), { merge:true });
+fxLobbyWrite(batch,p);
 batch.set(DB.collection('codes').doc(String(p.trackCode).toUpperCase()), { public_token:p.publicToken, tenant_id:TENANT_ID, is_active:!p.completed }, { merge:true });
 });
-try{ await batch.commit(); }catch(err){ if(typeof fvSaveFallback==='function') await fvSaveFallback(changed); else throw err; }
+try{ await batch.commit(); }catch(err){ changed.forEach(function(p){ delete _fxLobby[String(p.id)]; }); if(typeof fvSaveFallback==='function') await fvSaveFallback(changed); else throw err; }
 Backend._lastRows = LIVE.map(mapToDb);
 if(Backend.conn!=='live') Backend.setConn('live');
 }catch(e){ Backend.setConn('error'); }
@@ -6896,7 +6930,8 @@ window.addEventListener('online',  function(){ if(Backend.mode==='staff'){ Backe
 let filters = {status:null, prio:null, doctor:null, liaison:null};
  
 const HOSP_TZ = (function(){ try{ return (window.Pravix && Pravix.getHospitalSettings) ? (Pravix.getHospitalSettings().timezone||'America/New_York') :'America/New_York'; }catch(e){ return'America/New_York'; } })();
-function _hospDayKey(d){ try{ return new Intl.DateTimeFormat('en-CA',{timeZone:HOSP_TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(d)); }catch(e){ return new Date(d).toDateString(); } }
+let _hospFmt=null;   /* built once (it was built per call — the slowest part of every render) */
+function _hospDayKey(d){ try{ if(!_hospFmt) _hospFmt=new Intl.DateTimeFormat('en-CA',{timeZone:HOSP_TZ,year:'numeric',month:'2-digit',day:'2-digit'}); return _hospFmt.format(new Date(d)); }catch(e){ return new Date(d).toDateString(); } }
 
 
 
@@ -6923,11 +6958,11 @@ let currentView ='dashboard';
 
 
 
-function initials(p){const a=(p.name||'').trim()[0]||'';const b=(p.last||'').trim()[0]||'';return (a+b).toUpperCase();}
+function initials(p){const a=(p.name||'').trim()[0]||'';const b=(p.last||'').trim()[0]||'';return bcEsc((a+b).toUpperCase());}
 function spCls(p){return p.species==='Feline'?'sp-fel':'sp-can';}
 function spTag(p){return p.species==='Feline'?'FEL':'CAN';}
  
-function pmInitial(p){ return ((p&&p.name?String(p.name):'').trim()[0]||'?').toUpperCase(); }
+function pmInitial(p){ return bcEsc(((p&&p.name?String(p.name):'').trim()[0]||'?').toUpperCase()); }
 function speciesCode(p){ if(!p||!p.species) return''; const s=String(p.species).trim().toLowerCase();
 const map={feline:'FEL',cat:'FEL',canine:'CAN',dog:'CAN',avian:'AVI',bird:'AVI',reptile:'REP',rabbit:'RAB',exotic:'EXO',other:'EXO'};
 return map[s]||'OTH'; }
@@ -7155,7 +7190,7 @@ startAt: opts.pending?null:now, endAt:null, updatedAt:now, updatedBy:CURRENT_USE
 if(!opts.pending && !role.multi) ctCurrent(p,roleId).forEach(x=>ctEndAssignment(p,x,'replaced'));
 ctList(p).push(a);
 p.timeline.push({ label: opts.pending?('Handoff proposed · '+role.label):(role.label+' assigned'), at:new Date(), meta: staff.name+' · '+CURRENT_USER });
-notify(opts.pending?'Handoff proposed':'Care team updated',`${staff.name} → ${p.name} (${role.label})`, {icon:'doctor', color:'var(--accent)'});
+notify(opts.pending?'Handoff proposed':'Care team updated',`${staff.name} → ${bcEsc(p.name)} (${role.label})`, {icon:'doctor', color:'var(--accent)'});
 renderAll(); if(activePatient===p.id) fillDrawer(p);
 return a;
 }
@@ -7166,7 +7201,7 @@ if(role.mirror){ if(a.staffKind!=='doctor'){ toast('Primary clinician must be an
 if(!role.multi) ctCurrent(p,a.role).forEach(x=>ctEndAssignment(p,x,'handed off'));
 a.status='current'; a.startAt=new Date().toISOString(); a.confirmedBy=CURRENT_USER; a.confirmedAt=a.startAt; ctTouch(a);
 p.timeline.push({ label:'Handoff confirmed · '+role.label, at:new Date(), meta:a.staffName+' · confirmed by '+CURRENT_USER });
-notify('Handoff confirmed',`${a.staffName} now ${role.label.toLowerCase()} for ${p.name}`, {icon:'doctor', color:'var(--s-admitted)'});
+notify('Handoff confirmed',`${a.staffName} now ${role.label.toLowerCase()} for ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--s-admitted)'});
 renderAll(); if(activePatient===p.id) fillDrawer(p);
 }
 function ctDecline(p, aid){
@@ -7332,7 +7367,7 @@ p.doctor=id;
 try{ ctSyncPrimary(p); }catch(e){}
 const d=doc(id);
 p.timeline.push({label:'Doctor assigned', at:new Date(), meta:d.name});
-notify('Doctor assigned',`${d.name} → ${p.name}`, {icon:'doctor', color:'var(--accent)'});
+notify('Doctor assigned',`${d.name} → ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--accent)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function assignLiaison(p,id){
@@ -7340,14 +7375,14 @@ if(p.liaison===id) return;
 p.liaison=id;
 const l=liaison(id);
 p.timeline.push({label: l?'Liaison assigned':'Liaison removed', at:new Date(), meta: l?l.name:''});
-notify(l?'Liaison assigned':'Liaison removed', l?`${l.name} → ${p.name}`:p.name, {icon:'liaison', color:'var(--purple)'});
+notify(l?'Liaison assigned':'Liaison removed', l?`${l.name} → ${bcEsc(p.name)}`:p.name, {icon:'liaison', color:'var(--purple)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function setPriority(p,level){
 if(p.prio===level) return;
 p.prio=level;
 p.timeline.push({label:`Priority set to P${level}`, at:new Date(), meta:PRIO_LABEL[level]});
-notify('Priority updated',`${p.name} · P${level} · ${PRIO_LABEL[level]}`, {icon:'info', color:PRIO[level].c});
+notify('Priority updated',`${bcEsc(p.name)} · P${level} · ${PRIO_LABEL[level]}`, {icon:'info', color:PRIO[level].c});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 
@@ -7362,7 +7397,7 @@ else if(ev.key==='Escape'){ ev.preventDefault(); el._cancel=true; el.blur(); }
 };
 el.onblur=()=>{
 if(el._cancel){ el._cancel=false; el.textContent=el.dataset.orig; return; }
-const v=el.textContent.trim();
+const v=fxClean(el.textContent,true).trim();
 if(v===el.dataset.orig.trim()) return;
 commit(v);
 };
@@ -7502,7 +7537,7 @@ return`<article class="command-kpi kpi-in command-kpi--${m.k}"
           <span class="command-kpi__chip"></span>
         </div>
         <div class="command-kpi__value">0</div>
-        <div class="command-kpi__sub">${c.sub}</div>
+        <div class="command-kpi__sub">${bcEsc(c.sub)}</div>
       </article>`;}).join('');
 }
 const els=[...row.children];
@@ -7596,8 +7631,8 @@ const sev=it.sev; const accent=SEV_ACCENT[sev]||'var(--s-diagnostics)';
 const nm=it.p?it.p.name:''; let rest=it.t; if(nm && rest.indexOf(nm)===0) rest=rest.slice(nm.length).trim();
 const patient=nm||it.t; const issue=nm?rest:'';
 const parts=String(it.s||'').split(' \u00b7 ');
-const secHTML=parts.length>1 ?`<strong>${parts[0]}</strong> \u00b7 ${parts.slice(1).join(' \u00b7 ')}`: (it.s||'');
-return`<div class="attn-item${i===0?' primary':''}" data-pid="${it.p?it.p.id:''}" data-room="${it.room||''}" data-intake="${it.intakeId||''}" data-key="${it.key}" style="--accent:${accent};animation-delay:${i*40}ms"><div class="copy"><div class="primary-line"><span class="patient">${patient}</span>${issue?`<span class="issue">${issue}</span>`:''}</div><div class="secondary">${secHTML}</div></div>${sev==='red'?`<div class="overdue-badge" role="status" aria-label="Overdue"><span class="overdue-icon" aria-hidden="true">!</span><span class="overdue-text">OVERDUE</span></div>`:sev==='orange'?`<div class="high-badge" role="status" aria-label="High priority"><span class="high-icon" aria-hidden="true">!</span><span class="high-text">HIGH</span></div>`:sev==='blue'?`<div class="review-badge" role="status" aria-label="Diagnostics ready for review"><span class="review-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5 2.5h6"/><path d="M6 2.5v3.1L3.8 10a2.4 2.4 0 0 0 2.1 3.5h4.2a2.4 2.4 0 0 0 2.1-3.5L10 5.6V2.5"/><path d="M5 9h6"/></svg></span><span class="review-text">REVIEW</span></div>`:sev==='green'?`<div class="ready-badge" role="status" aria-label="Ready"><span class="ready-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8.2 6.4 11.5 13 4.8"/></svg></span><span class="ready-text">READY</span></div>`:sev==='warn'?`<div class="room-open-badge" role="status" aria-label="Room open"><span class="room-open-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.5 13.5V2.5h7v11"/><path d="M10.5 3.5 7 4.5v8l3.5 1"/><circle cx="8.7" cy="8.7" r="0.45" fill="currentColor" stroke="none"/><path d="M2.5 13.5h11"/></svg></span><span class="room-open-text">OPEN</span></div>`:sev==='yellow'?`<div class="watch-badge" role="status" aria-label="Watch"><span class="watch-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M1.8 8s2.3-4 6.2-4 6.2 4 6.2 4-2.3 4-6.2 4S1.8 8 1.8 8Z"/><circle cx="8" cy="8" r="1.8"/></svg></span><span class="watch-text">WATCH</span></div>`:`<div class="severity">${SEV_LABEL[sev]||''}</div>`}<div class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div><button class="attn-clear" title="Clear this alert" aria-label="Clear alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+const secHTML=parts.length>1 ?`<strong>${bcEsc(parts[0])}</strong> \u00b7 ${bcEsc(parts.slice(1).join(' \u00b7 '))}`: bcEsc(it.s||'');
+return`<div class="attn-item${i===0?' primary':''}" data-pid="${it.p?it.p.id:''}" data-room="${it.room||''}" data-intake="${bcEsc(it.intakeId||'')}" data-key="${bcEsc(it.key)}" style="--accent:${accent};animation-delay:${i*40}ms"><div class="copy"><div class="primary-line"><span class="patient">${bcEsc(patient)}</span>${issue?`<span class="issue">${bcEsc(issue)}</span>`:''}</div><div class="secondary">${secHTML}</div></div>${sev==='red'?`<div class="overdue-badge" role="status" aria-label="Overdue"><span class="overdue-icon" aria-hidden="true">!</span><span class="overdue-text">OVERDUE</span></div>`:sev==='orange'?`<div class="high-badge" role="status" aria-label="High priority"><span class="high-icon" aria-hidden="true">!</span><span class="high-text">HIGH</span></div>`:sev==='blue'?`<div class="review-badge" role="status" aria-label="Diagnostics ready for review"><span class="review-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5 2.5h6"/><path d="M6 2.5v3.1L3.8 10a2.4 2.4 0 0 0 2.1 3.5h4.2a2.4 2.4 0 0 0 2.1-3.5L10 5.6V2.5"/><path d="M5 9h6"/></svg></span><span class="review-text">REVIEW</span></div>`:sev==='green'?`<div class="ready-badge" role="status" aria-label="Ready"><span class="ready-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8.2 6.4 11.5 13 4.8"/></svg></span><span class="ready-text">READY</span></div>`:sev==='warn'?`<div class="room-open-badge" role="status" aria-label="Room open"><span class="room-open-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.5 13.5V2.5h7v11"/><path d="M10.5 3.5 7 4.5v8l3.5 1"/><circle cx="8.7" cy="8.7" r="0.45" fill="currentColor" stroke="none"/><path d="M2.5 13.5h11"/></svg></span><span class="room-open-text">OPEN</span></div>`:sev==='yellow'?`<div class="watch-badge" role="status" aria-label="Watch"><span class="watch-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M1.8 8s2.3-4 6.2-4 6.2 4 6.2 4-2.3 4-6.2 4S1.8 8 1.8 8Z"/><circle cx="8" cy="8" r="1.8"/></svg></span><span class="watch-text">WATCH</span></div>`:`<div class="severity">${SEV_LABEL[sev]||''}</div>`}<div class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div><button class="attn-clear" title="Clear this alert" aria-label="Clear alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
 }).join('');
 el.querySelectorAll('.attn-item').forEach(n=>n.onclick=()=>{ if(n.dataset.intake) openIntakeReview(n.dataset.intake); else if(n.dataset.pid) openDrawer(n.dataset.pid); else if(n.dataset.room) switchView('rooms'); });
 el.querySelectorAll('.attn-clear').forEach(btn=>btn.onclick=(e)=>{ e.stopPropagation(); dismissAlert(btn.closest('.attn-item').dataset.key); });
@@ -7765,7 +7800,7 @@ const state = isDoctorBlocked(x.d.id)
 : {label:'Accepting Cases', cls:''};
 
 const longest=x.longest
-?`Longest: ${x.longest.name} · ${fmtWait(waitMinutes(x.longest))}`
+?`Longest: ${bcEsc(x.longest.name)} · ${fmtWait(waitMinutes(x.longest))}`
 :'No active cases';
 
 return`<div class="wd-row ${x.load===0?'is-idle':''}" data-doctor="${x.d.id}" title="View ${docShort(x.d.id)}">
@@ -7912,7 +7947,7 @@ body.innerHTML=rows.map(p=>{
 const w=waitMinutes(p);const wc=w>120?'crit':w>45?'warn':'';
 return`<tr data-pid="${p.id}">
       <td><div class="pt-cell">${mono(p,'patient-medallion patient-medallion--compact')}
-        <div class="nm"><b>${p.name} ${p.last}${resusBadge(p)}${recBadge(p)}${msgBadge(p)}</b><span>${p.species} · ${formatPatientAge(p)}</span></div></div></td>
+        <div class="nm"><b>${bcEsc(p.name)} ${bcEsc(p.last)}${resusBadge(p)}${recBadge(p)}${msgBadge(p)}</b><span>${bcEsc(p.species)} · ${formatPatientAge(p)}</span></div></div></td>
       <td><div class="reason" title="${bcEsc((p.reasonProblems&&p.reasonProblems.length)?problemsToString(p.reasonProblems):(p.reason||''))}">${bcEsc(compactProblems(p))}</div></td>
       <td>${p.doctor==='unassigned'?'<span class="muted">Unassigned</span>':`<span class="doctag">${docAv(p.doctor)}${doc(p.doctor).name}</span>`}</td>
       <td><span class="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${p.room}</span></td>
@@ -7952,7 +7987,7 @@ function cardHTML(p){
 const w=waitMinutes(p);const wc=w>120?'crit':w>45?'warn':'';
 return`<div class="card" draggable="true" data-pid="${p.id}">
     <span class="edge" style="background:${PRIO[p.prio].c}"></span>
-    <div class="c-top">${mono(p,'patient-medallion patient-medallion--compact')}<b>${p.name} ${p.last}${msgBadge(p)}</b>
+    <div class="c-top">${mono(p,'patient-medallion patient-medallion--compact')}<b>${bcEsc(p.name)} ${bcEsc(p.last)}${msgBadge(p)}</b>
       <span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:10px">${PRIO[p.prio].l}</span></div>
     <div class="c-reason">${bcEsc(compactProblems(p))}</div>
     ${usFlag(p)}${typeof fvWaitChip==='function'?fvWaitChip(p):''}${typeof fvPresenceChip==='function'?fvPresenceChip(p):''}
@@ -7960,7 +7995,7 @@ return`<div class="card" draggable="true" data-pid="${p.id}">
       <span class="loc" style="font-size:12px">${p.room}</span></div>
       <span class="wait ${wc}" style="font-size:12px">${fmtWait(w)}</span></div>
     <div class="card-expand">
-      <div class="row"><span>Owner</span><b>${p.owner}</b></div>
+      <div class="row"><span>Owner</span><b>${bcEsc(p.owner)}</b></div>
       <div class="row"><span>Arrived</span><b>${fmtTime(p.arrival)}</b></div>
       <div class="row"><span>Liaison</span><b>${liaison(p.liaison)?liaison(p.liaison).name:'—'}</b></div>
       ${ctCardAction(p)}
@@ -8008,7 +8043,7 @@ if(newStatus==='Ultrasound'&& !p.ultrasound){
 p.ultrasound = { study:'Abdominal Ultrasound', clinicalQuestion:'', status:'incomplete', requestStatus:'incomplete', requestedAt:null, createdAt:at };
 }
 const done = ['Diagnostics','Ultrasound','Procedure'].includes(old) ?`${old} completed`:`Moved to ${newStatus}`;
-notify(done,`${p.name} · now in ${p.room}`, {icon:'move', color:STATUSES[newStatus].color});
+notify(done,`${bcEsc(p.name)} · now in ${p.room}`, {icon:'move', color:STATUSES[newStatus].color});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 
 if(newStatus==='Ultrasound'&& (!p.ultrasound || p.ultrasound.status!=='requested')){
@@ -8111,7 +8146,7 @@ p.ultrasound.requestStatus='ready';
 if(typeof p.ultrasound.queuePosition!=='number') p.ultrasound.queuePosition=usNextQueuePos();
 }
 p.timeline.push({label:_usWasReady?'Ultrasound request updated':'Ultrasound requested', at:new Date(), meta:p.ultrasound.study});
-try{ notify('Sent to Ultrasound', (p.name+' '+(p.last||'')).trim()+' · '+p.ultrasound.study, {icon:'flask', color:'var(--accent)'}); }catch(e){}
+try{ notify('Sent to Ultrasound', bcEsc((p.name+' '+(p.last||'')).trim())+' · '+bcEsc(p.ultrasound.study), {icon:'flask', color:'var(--accent)'}); }catch(e){}
 closeUltrasound();
 renderAll();
 }
@@ -8228,7 +8263,11 @@ const u=p&&p.ultrasound; if(!u) return null;
 if(u.requestStatus) return u.requestStatus;
 return (u.status==='requested') ?'ready':'incomplete';
 }
-function usActiveCases(){ return PATIENTS.filter(p=>p.ultrasound && isActive(p)); }
+function usActiveCases(){ return PATIENTS.filter(p=>p.ultrasound && usOpenCase(p)); }
+/* the case's own status decides (admitting the patient doesn't end the request); it ends when the scan is completed or the patient leaves */
+function usOpenCase(p){ const st=usEff(p); if(!st||st==='completed') return false; if(isActive(p)) return true; if(p.status!=='Admitted') return false;
+  if(p.rounds) return !p.rounds.outcome;   /* on Rounds: while the admission is open */
+  const t=p.completedAt?new Date(p.completedAt).getTime():0; return !!t&&Date.now()-t<48*3600e3; }   /* not on Rounds: 48 h after admission */
 function usQueue(){
 return usActiveCases().filter(p=>['ready','next','accepted'].includes(usEff(p))).sort((a,b)=>{
 const qa=a.ultrasound.queuePosition, qb=b.ultrasound.queuePosition;
@@ -8306,7 +8345,7 @@ usTimeline(p,(u.study||'Abdominal Ultrasound')+' completed', drName(u.performing
 if(u.criticalFinding) usTimeline(p,'Critical ultrasound finding flagged', drName(u.performingDoctor));
 if(u.doctorDiscussionNeeded){
 usTimeline(p,'Doctor discussion requested', drName(u.performingDoctor)+' → '+docShort(p.doctor));
-notify('Discussion requested', drName(u.performingDoctor)+' requests discussion regarding '+p.name+"’s ultrasound", {icon:'info', color:'var(--s-ultrasound)'});
+notify('Discussion requested', drName(u.performingDoctor)+' requests discussion regarding '+bcEsc(p.name)+"’s ultrasound", {icon:'info', color:'var(--s-ultrasound)'});
 }
 if(u.criticalFinding) notify('Critical finding', p.name+' · flagged by '+drName(u.performingDoctor), {icon:'info', color:'var(--priority-p1)'});
 notify('Ultrasound completed', p.name+' · '+fmtTime(stamp)+' · '+drName(u.performingDoctor), {icon:'check', color:'var(--s-admitted)'});
@@ -9368,7 +9407,7 @@ p.totalTimeInHospital=p.totalMin;
 p.timeline.push({label: cfg.tlLabel, at:stamp, meta:`From ${old}`});
 try{ rdOnFlowComplete(p, finalStatus); }catch(e){}
 
-notify(cfg.title,`${p.name} · ${p.hid}`, {icon: cfg.icon, color: cfg.color});
+notify(cfg.title,`${bcEsc(p.name)} · ${p.hid}`, {icon: cfg.icon, color: cfg.color});
 if(oldRoom && oldRoom!=='Lobby') notify(`${oldRoom} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
@@ -9388,7 +9427,7 @@ const list=document.getElementById('czList'); if(!list) return;
 const arch=archiveList();
 list.innerHTML = arch.length ? arch.map(p=>`
     <div class="cz-item" data-pid="${p.id}">${mono(p)}
-      <div class="cz-main"><div class="cz-name">${p.name} ${p.last}</div>
+      <div class="cz-main"><div class="cz-name">${bcEsc(p.name)} ${bcEsc(p.last)}</div>
         <div class="cz-sub">${p.doctor==='unassigned'?'No doctor':docShort(p.doctor)} · ${fmtWait(p.totalMin||0)} total</div></div>
       <div class="cz-rt"><span class="pill st-${p.status.toLowerCase()}"><span class="d"></span>${p.status}</span>
         <span class="cz-time">${p.completedAt?fmtTime(p.completedAt):''}</span></div>
@@ -9418,11 +9457,11 @@ showConfirm(`Mark ${p.name} ${p.last} as ${verb}?`, okLabel,
 function moveRoom(p,newRoom){
 const old=p.room;
 if(old===newRoom) return;
-const stamp=new Date(now.getTime());
+const stamp=new Date();
 p.room=newRoom;
 p.roomSince=stamp;
 p.timeline.push({label:`Moved from ${old} to ${newRoom}`, at:stamp, meta:''});
-notify('Patient moved',`${p.name} · ${old} → ${newRoom}`, {icon:'move', color:STATUSES[p.status].color});
+notify('Patient moved',`${bcEsc(p.name)} · ${old} → ${newRoom}`, {icon:'move', color:STATUSES[p.status].color});
 if(old!=='Lobby'&& !PATIENTS.some(x=>x.id!==p.id && isActive(x) && x.room===old))
 notify(`${old} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
@@ -9447,7 +9486,7 @@ ok.classList.remove('is-confirming','is-success');
 const scrim=document.getElementById('confirmScrim'), box=document.getElementById('confirmBox');
 const close=()=>{scrim.classList.remove('open');box.classList.remove('open');};
 scrim.classList.add('open');box.classList.add('open');
-document.getElementById('confirmCancel').onclick=close;
+{ const cb=document.getElementById('confirmCancel'); cb.textContent=opts.cancelLabel||'Cancel'; cb.onclick=()=>{ close(); if(opts.onCancel) opts.onCancel(); }; }
 document.getElementById('confirmScrim').onclick=close;
 if(opts.fancyConfirm){
 
@@ -9493,7 +9532,7 @@ return`<div class="room ${waiting?'occupied':''}" data-room="${rm}" data-room-na
         ${waiting?`<div class="room-accent" style="background:var(--s-waiting)"></div>`:''}
         <div class="r-top"><div><div class="r-name">Lobby</div><div class="r-spec">Waiting area</div></div>
           <span class="r-state ${waiting?'clean':'avail'}">${waiting?waiting+' Waiting':'Empty'}</span></div>
-        ${waiting?occupants.slice(0,3).map(p=>`<div class="r-pt r-drag" draggable="true" data-pid="${p.id}" style="margin-bottom:8px">${mono(p,'patient-medallion patient-medallion--compact','width:30px;height:30px;font-size:11px')}<div class="info"><b>${p.name}</b><span>${fmtWait(waitMinutes(p))} · ${PRIO[p.prio].l}</span></div></div>`).join('')+(waiting>3?`<div class="muted" style="font-size:12px;margin-top:4px">+${waiting-3} more</div>`:''):`<div class="r-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>No patients waiting</div>`}
+        ${waiting?occupants.slice(0,3).map(p=>`<div class="r-pt r-drag" draggable="true" data-pid="${p.id}" style="margin-bottom:8px">${mono(p,'patient-medallion patient-medallion--compact','width:30px;height:30px;font-size:11px')}<div class="info"><b>${bcEsc(p.name)}</b><span>${fmtWait(waitMinutes(p))} · ${PRIO[p.prio].l}</span></div></div>`).join('')+(waiting>3?`<div class="muted" style="font-size:12px;margin-top:4px">+${waiting-3} more</div>`:''):`<div class="r-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>No patients waiting</div>`}
       </div>`;
 }
 const p=occupants[0];
@@ -9509,7 +9548,7 @@ return`<div class="room occupied r-drag" draggable="true" data-pid="${p.id}" dat
       <div class="room-accent" style="background:${STATUSES[p.status].color}"></div>
       <div class="r-top"><div><div class="r-name">${rm}</div>${spec?`<div class="r-spec">${spec}</div>`:'<div class="r-spec">&nbsp;</div>'}</div>
         <span class="r-state busy">In Use</span></div>
-      <div class="r-pt">${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b>${p.name} ${p.last}</b><span>${p.species} · ${bcEsc(compactProblems(p).slice(0,26))}${compactProblems(p).length>26?'…':''}</span></div></div>
+      <div class="r-pt">${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b>${bcEsc(p.name)} ${bcEsc(p.last)}</b><span>${bcEsc(p.species)} · ${bcEsc(compactProblems(p).slice(0,26))}${compactProblems(p).length>26?'…':''}</span></div></div>
       <div class="r-foot"><div class="dctr">${p.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(p.doctor)+doc(p.doctor).name}</div>
         <div class="r-right"><span class="r-timer ${rcls}" title="Time in ${rm}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(p.status)}</div></div>
     </div>`;
@@ -9541,13 +9580,13 @@ return`<div class="room" data-room-name="Treatment">
 const lead=occ[0], rmin=roomMinutes(lead);
 const rows = occ.slice(1,4).map(p=>`
       <div class="r-pt r-drag" draggable="true" data-pid="${p.id}" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--glass-hairline)">
-        ${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b>${p.name} ${p.last}</b><span>${p.species} · ${p.status}</span></div></div>`).join('');
+        ${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b>${bcEsc(p.name)} ${bcEsc(p.last)}</b><span>${bcEsc(p.species)} · ${p.status}</span></div></div>`).join('');
 const more = occ.length>4 ?`<div class="muted" style="font-size:12px;margin-top:6px">+${occ.length-4} more in treatment</div>`:'';
 return`<div class="room occupied" data-room-name="Treatment">
       <div class="room-accent" style="background:#2FB6B9"></div>
       <div class="r-top"><div><div class="r-name">Treatment</div><div class="r-spec">ICU • Treatment • Wards</div></div>
         <span class="r-state busy">In Use</span></div>
-      <div class="r-pt r-drag" draggable="true" data-pid="${lead.id}">${mono(lead,'patient-medallion patient-medallion--compact')}<div class="info"><b>${lead.name} ${lead.last}</b><span>${lead.species} · ${bcEsc(compactProblems(lead).slice(0,26))}${compactProblems(lead).length>26?'…':''}</span></div></div>
+      <div class="r-pt r-drag" draggable="true" data-pid="${lead.id}">${mono(lead,'patient-medallion patient-medallion--compact')}<div class="info"><b>${bcEsc(lead.name)} ${bcEsc(lead.last)}</b><span>${bcEsc(lead.species)} · ${bcEsc(compactProblems(lead).slice(0,26))}${compactProblems(lead).length>26?'…':''}</span></div></div>
       ${rows}${more}
       <div class="r-foot"><div class="dctr">${lead.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(lead.doctor)+doc(lead.doctor).name}</div>
         <div class="r-right"><span class="r-timer" title="Time in Treatment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(lead.status)}</div></div>
@@ -9653,8 +9692,8 @@ const inLoc=roomMinutes(p), total=waitMinutes(p);
 return`<div class="loc-pt r-drag" draggable="true" data-pid="${p.id}">
       ${mono(p,'patient-medallion patient-medallion--compact')}
       <div class="lp-main">
-        <div class="lp-name">${p.name} ${p.last}</div>
-        <div class="lp-reason">${p.species} · ${p.reason}</div>
+        <div class="lp-name">${bcEsc(p.name)} ${bcEsc(p.last)}</div>
+        <div class="lp-reason">${bcEsc(p.species)} · ${bcEsc(p.reason)}</div>
         <div class="lp-tags"><span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:10px">${PRIO[p.prio].l}</span>${statusPill(p.status)}
           ${p.doctor==='unassigned'?'<span class="muted" style="font-size:12px">No doctor assigned</span>':`<span class="lp-doc">${docAv(p.doctor)}${doc(p.doctor).name}</span>`}</div>
         <div class="lp-meta"><span>${loc}: <b>${fmtWait(inLoc)}</b></span><span>Hospital: <b>${fmtWait(total)}</b></span></div>
@@ -9692,17 +9731,17 @@ function defaultRecords(){ return {status:'not_requested', pdvm:'', method:'', n
 function getRecords(p){ if(!p.records) p.records=defaultRecords(); return p.records; }
 function requestRecords(p){
 const r=getRecords(p); if(r.status!=='not_requested') return;
-const at=new Date(now.getTime());
+const at=new Date();
 r.status='requested'; r.requestedBy=CURRENT_USER; r.requestedAt=at;
 r.history.push({status:'requested', by:CURRENT_USER, at});
 p.timeline.push({label:'pDVM records requested', at, meta:CURRENT_USER});
 recExpanded=true;
-notify('Records requested',`${p.name} · pDVM records`, {icon:'info', color:'#3B82C4'});
+notify('Records requested',`${bcEsc(p.name)} · pDVM records`, {icon:'info', color:'#3B82C4'});
 renderAll(); if(activePatient===p.id) fillDrawer(p);
 }
 function setRecordStatus(p, status){
 const r=getRecords(p); if(r.status===status) return;
-r.status=status; r.history.push({status, by:CURRENT_USER, at:new Date(now.getTime())});
+r.status=status; r.history.push({status, by:CURRENT_USER, at:new Date()});
 renderAll(); if(activePatient===p.id) fillDrawer(p);
 }
 function cprPill(p){
@@ -9747,10 +9786,12 @@ return { mount:mount, stop:stop };
 function setResusPref(p, pref){
 if(!p || (pref!=='CPR'&& pref!=='DNR') || p.resusPref===pref) return;
 const at=new Date();
+try{ if(p.publicToken&&p.resusPref) (_fxStaffResus[p.publicToken]=_fxStaffResus[p.publicToken]||{})[fxResusKey(p.resusPref,p.resusRecordedAt)]=1; }catch(e){}   /* the state being replaced */
 p.resusPref=pref;
 p.resusStatus='confirmed';
 p.resusSource='staff_flow';
 p.resusRecordedAt=at;
+p.resusRequest=null;   /* staff decided */
 if(!Array.isArray(p.resusHistory)) p.resusHistory=[];
 p.resusHistory.push({ pref:pref, source:'staff_flow', at:at.toISOString(), by:CURRENT_USER });
 if(Array.isArray(p.timeline)) p.timeline.push({ label:'Resuscitation preference: '+pref, at:at, meta:'Updated · '+CURRENT_USER });
@@ -9798,7 +9839,8 @@ const when = p.resusRecordedAt?fmtTime(p.resusRecordedAt):'';
 const title=('Resuscitation: DNR · '+conf+(when?' · '+when:'')).replace(/"/g,'&quot;');
 return'<span class="dnr-pill" role="button" tabindex="0" aria-label="Resuscitation: DNR — tap to change" title="'+title+'"><span class="flatline" aria-hidden="true"><svg class="flatline-svg" viewBox="0 0 76 26" preserveAspectRatio="xMidYMid meet"><path class="flatline-base" d="M1 13 H75"/><path class="flatline-live" d="M1 13 H75"/><circle class="flatline-dot" cx="1" cy="13" r="1.7"/></svg></span><span class="label">DNR</span></span>';
 }
-function resusBadge(p, big){
+function resusBadge(p, big){ return _fxResusBadge(p,big)+fxResusReqChip(p); }
+function _fxResusBadge(p, big){
 if(!p.resusPref) return'';
 const cls=p.resusPref==='CPR'?'cpr':'dnr';
 const conf = p.resusStatus==='confirmed'?'Confirmed by staff':'Client preference recorded';
@@ -9808,7 +9850,8 @@ return`<span class="resus-badge ${cls}${big?' big':''}" title="${title.replace(/
 }
 const RESUS_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 8-6-16-3 8H2"/></svg>';
  
-function resusPill(p){
+function resusPill(p){ return _fxResusPill(p)+fxResusReqHTML(p); }
+function _fxResusPill(p){
 if(!p.resusPref) return'<span class="resus-set" role="button" tabindex="0" aria-label="Set resuscitation preference — CPR or DNR" title="Set resuscitation (CPR / DNR)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-5 3 10 2-7 1.5 2H21"/></svg><span>Resuscitation</span></span>';
 if(p.resusPref==='CPR') return cprPill(p);
 if(p.resusPref==='DNR') return dnrPill(p);
@@ -9978,11 +10021,11 @@ t.vitals=vitals; t.assess=assess;
 t.chief=document.getElementById('triEditChief').value.split(',').map(s=>s.trim()).filter(Boolean);
 t.history=document.getElementById('triEditHistory').value.trim();
 t.by=document.getElementById('triEditBy').value.trim()||'Daniel Giordano';
-t.at=fmtTime(new Date(now.getTime()));
+t.at=fmtTime(new Date());
 t.status='complete';
 closeTriageEdit();
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
-notify('Triage updated',`${p.name} · ${p.hid}`, {icon:'info', color:'var(--accent)'});
+notify('Triage updated',`${bcEsc(p.name)} · ${p.hid}`, {icon:'info', color:'var(--accent)'});
 }
 function fillDrawer(p){
 const _dePc=(typeof PRIO_CLR!=='undefined')?(PRIO_CLR[p.prio]||PRIO_CLR[3]):null;
@@ -10005,7 +10048,7 @@ document.getElementById('dTags').innerHTML='';
 document.getElementById('dClin').innerHTML=clinBar(p);
 const w=waitMinutes(p);
 document.getElementById('dGrid').innerHTML=`
-    <div class="d-cell editable-hint"><div class="k">Owner</div><div class="v" id="dOwner">${p.owner}</div></div>
+    <div class="d-cell editable-hint"><div class="k">Owner</div><div class="v" id="dOwner">${bcEsc(p.owner)}</div></div>
     <div class="d-cell"><div class="k">Priority</div><div id="prioMount" style="margin-top:5px"></div></div>
     <div class="d-cell"><div class="k">Arrival</div><div class="v">${fmtTime(p.arrival)}</div></div>
     <div class="d-cell"><div class="k">Time in hospital</div><div class="v">${fmtWait(w)}</div></div>
@@ -10203,8 +10246,8 @@ const prev = intakePatient.intake ? intakePatient.intake.status :'not_started';
 intakeDraft.status = finalStatus || (prev==='complete'?'complete':'in_progress');
 intakePatient.intake = intakeDraft;
 const p=intakePatient, label=finalStatus==='complete'?'Triage intake completed':'Triage intake saved';
-p.timeline.push({label, at:new Date(now.getTime()), meta:''});
-notify(label,`${p.name} ${p.last}`, {icon:'check', color:'var(--s-exam)'});
+p.timeline.push({label, at:new Date(), meta:''});
+notify(label,`${bcEsc(p.name)} ${bcEsc(p.last)}`, {icon:'check', color:'var(--s-exam)'});
 closeIntake();
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
@@ -10266,8 +10309,8 @@ return`<div class="cl-card priority-p${p.prio}" style="--gc:${pc.c};--gcrgb:${pc
           <div class="cl-photo patient-medallion ${spCls(p)}">${monoInner(p)}</div>
           <span class="cl-prio" style="background:${pr.c};color:${pr.t}">P${p.prio}</span>
         </div>
-        <div class="cl-name">${p.name} ${p.last}</div>
-        <div class="cl-meta">${p.breed} · ${formatPatientAge(p)}</div>
+        <div class="cl-name">${bcEsc(p.name)} ${bcEsc(p.last)}</div>
+        <div class="cl-meta">${bcEsc(p.breed)} · ${formatPatientAge(p)}</div>
       </div>
       ${clientVJourney(p)}
     </div>
@@ -10316,7 +10359,7 @@ c.textContent=fmtTime(now); if(d) d.textContent=now.toLocaleDateString('en-US',{
 let clPage=0, clPages=1, clRotateTimer=null;
 function renderClient(animate){
 const grid=document.getElementById('clGrid'); if(!grid) return;
-const list=PATIENTS.filter(isActive).sort((a,b)=> a.prio-b.prio || waitMinutes(b)-waitMinutes(a));
+const list=PATIENTS.filter(p=>isActive(p)&&p.status!=='Hospitalized').sort((a,b)=> a.prio-b.prio || waitMinutes(b)-waitMinutes(a));
 const _clT=document.getElementById('clSecTitle'); if(_clT) _clT.textContent = list.length?'Pets Currently Receiving Care':'No pets are currently listed.';
 const PER=8;
 clPages=Math.max(1,Math.ceil(list.length/PER));
@@ -10429,6 +10472,7 @@ for(var i=0;i<cbs.length;i++){ try{ cbs[i](); }catch(e){ console.error('post-ren
 function flushRender(){ _runQueuedRender(); }
 var _renderQueued=false, _renderAfter=[];
 function renderAll(){
+try{ now.setTime(Date.now()); }catch(e){}
 renderKPIs();renderAttention();renderClientQueue();renderOps();
 renderFilterBar();renderTable();renderBoard();renderRooms();renderComplete();
 if(currentView==='client') renderClient();
@@ -10454,7 +10498,103 @@ const BREED_PINS={Feline:["Domestic Shorthair","Domestic Medium Hair","Domestic 
 let bcResults=[], bcHl=-1, bcOpen=false;
 const bcPanel=()=>document.getElementById('apBreedPanel');
 const bcInput=()=>document.getElementById('apBreed');
-function bcEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+/* ═════════ flow-round2-oct6 ═════════ */
+function bcEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+/* Text that can come from the public check-in iPad. Every display point escapes, so ordinary characters (< > & quotes)
+   are never touched; only control characters (→ a space; line breaks kept where asked) and invisible zero-width /
+   direction-override characters (removed) go. Joiners stay, so emoji sequences survive. */
+function fxClean(v,lines){ if(typeof v!=='string') return v;
+  return v.replace(lines?/[\u0000-\u0008\u000B-\u001F\u007F-\u009F\u2028\u2029]/g:/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g,' ')
+    .replace(/[\u200B\u202A-\u202E\u2066-\u2069\uFEFF]/g,''); }
+function fxCleanPatient(o){ if(!o) return o;
+  ['name','last','owner','ownerPhone','breed','species','sex','age','ageDisplay','weight','referringHospital'].forEach(k=>{ if(typeof o[k]==='string') o[k]=fxClean(o[k]); });
+  ['reason','transferNotes'].forEach(k=>{ if(typeof o[k]==='string') o[k]=fxClean(o[k],true); });
+  if(Array.isArray(o.reasonProblems)) o.reasonProblems.forEach(x=>{ if(x&&typeof x==='object'){ ['label','originalInput','durationText','frequencyText','onsetText'].forEach(k=>{ if(typeof x[k]==='string') x[k]=fxClean(x[k]); }); } });
+  return o; }
+
+/* Already checked in? Same pet name and the same owner or phone, on a visit that hasn't ended. */
+function fxKey(v){ const t=String(v==null?'':v).toLowerCase().replace(/\s+/g,' ').trim(); return t==='—'?'':t; }
+function fxDigits(v){ return String(v==null?'':v).replace(/\D/g,'').slice(-10); }
+function fxDupFind(f){
+  const nm=fxKey((f.name||'')+' '+(f.last||'')); if(!nm) return null; const ow=fxKey(f.owner), ph=fxDigits(f.ownerPhone);
+  return PATIENTS.find(p=>!p.completed&&!isCompleted(p)&&fxKey((p.name||'')+' '+(p.last||''))===nm
+    &&((ow&&fxKey(p.owner)===ow)||(ph.length>=7&&fxDigits(p.ownerPhone)===ph)))||null; }
+function fxDupAsk(f,go){
+  const ex=fxDupFind(f); if(!ex) return false;
+  const nm=((ex.name||'')+' '+(ex.last||'')).trim();
+  showConfirm(nm+' is already checked in','Open existing',()=>{ closeAddPatient(); openDrawer(ex.id); },
+    {sub:'Owner '+(ex.owner||'—')+' · '+(ex.status||'')+' · '+(ex.room||'Lobby')+(ex.arrival instanceof Date?' · arrived '+fmtTime(ex.arrival):'')+'. Add another visit only if this is a different pet.',
+     cancelLabel:'Add anyway', onCancel:go});
+  return true; }
+function fxCommitChecked(f){ if(fxDupAsk(f,()=>commitPatient(f))) return null; return commitPatient(f); }
+
+/* Lobby screen: a display-only copy per visit in `lobby/{visit id}` — never the tracker token. Written where pub is written,
+   removed when the visit ends or the patient is hospitalized (the lobby lists the pets being seen in the ER). */
+var _fxLobby={};   /* visit id → what the lobby doc holds ('' = none) */
+function fxLobbyOn(p){ return !!p&&!p._demo&&isActive(p)&&p.status!=='Hospitalized'; }
+function lobbyProjection(p){ const t=p.timeline||[], last=t.length?t[t.length-1].at:p.arrival;
+  return { tenant_id:TENANT_ID, patient_name:((p.name||'')+' '+(p.last||'')).trim(), species:p.species||null, breed:p.breed||null,
+    age:formatPatientAge(p)||p.age||null, age_estimated:true, status:p.status||'Waiting', prio:p.prio||3,
+    doctor_id:(p.doctor&&p.doctor!=='unassigned')?p.doctor:null, arrival_time:_toISO(p.arrival)||null,
+    timeline:last?[{at:_toISO(last)}]:[], is_active:true }; }
+function fxCanon(o){ return JSON.stringify(Object.keys(o||{}).sort().reduce((a,k)=>{ a[k]=o[k]; return a; },{})); }
+function fxLobbyRef(id){ return DB.collection('lobby').doc(String(id)); }
+function fxLobbyWrite(batch,p){ const id=String(p.id), ref=fxLobbyRef(id);
+  if(fxLobbyOn(p)){ const d=lobbyProjection(p), j=fxCanon(d); if(_fxLobby[id]===j) return; batch.set(ref,d); _fxLobby[id]=j; }
+  else if(_fxLobby[id]!==''){ batch.delete(ref); _fxLobby[id]=''; } }
+async function fxLobbySync(){   /* once per staff load: add what's missing, drop what's left over */
+  if(!DB||Backend.mode!=='staff') return;
+  try{
+    const snap=await DB.collection('lobby').where('tenant_id','==',TENANT_ID).get(), have={};
+    snap.docs.forEach(d=>{ have[d.id]=fxCanon(d.data()); });
+    PATIENTS.forEach(p=>{ if(!p._demo) _fxLobby[String(p.id)]=(have[String(p.id)]!==undefined)?have[String(p.id)]:''; });
+    const b=DB.batch(); let n=0;
+    Object.keys(have).forEach(id=>{ if(!PATIENTS.some(p=>String(p.id)===id&&fxLobbyOn(p))){ b.delete(fxLobbyRef(id)); _fxLobby[id]=''; n++; } });
+    PATIENTS.forEach(p=>{ if(fxLobbyOn(p)&&n<450){ const d=lobbyProjection(p), j=fxCanon(d); if(_fxLobby[String(p.id)]!==j){ b.set(fxLobbyRef(p.id),d); _fxLobby[String(p.id)]=j; n++; } } });
+    if(n) await b.commit();
+  }catch(e){}
+}
+
+/* CPR/DNR from the family's tracker (pub) is a request: staff confirm it before it becomes the badge.
+   No clock comparison (a family phone's clock can be behind the staff record): a pub value is ignored only when it is
+   exactly a state staff had on record — the current one, one in the history, or one this screen replaced (a stale copy of
+   our own write still on its way out of pub). */
+var _fxStaffResus={};   /* tracker token → { 'CPR|<iso>':1 } states this screen replaced */
+function fxIso(v){ if(!v) return ''; try{ if(v.toDate) v=v.toDate(); const d=new Date(v); return isNaN(d.getTime())?String(v):d.toISOString(); }catch(e){ return String(v); } }
+function fxResusKey(pref,at){ return (pref||'')+'|'+fxIso(at); }
+function fxStaffKnows(p,pref,at){ const k=fxResusKey(pref,at);
+  if(fxResusKey(p.resusPref,p.resusRecordedAt)===k) return true;
+  if((p.resusHistory||[]).some(h=>h&&h.source!=='client_tracker'&&fxResusKey(h.pref,h.at)===k)) return true;
+  return !!(_fxStaffResus[p.publicToken]&&_fxStaffResus[p.publicToken][k]); }
+function fxResusFromPub(p,r){
+  if(!p||!r) return; const pref=normalizeResusPref(r.pref); if(!pref) return;
+  const at=fxIso(r.at)||null;
+  if(pref===p.resusPref){ if(p.resusRequest&&!fxStaffKnows(p,pref,at)) p.resusRequest=null; return; }   /* the family went back to what's on record */
+  if(p.resusRequest&&p.resusRequest.pref===pref) return;                                                 /* already waiting */
+  if(p.resusRequestDismissed===fxResusKey(pref,at)) return;                                              /* staff dismissed this one */
+  if(fxStaffKnows(p,pref,at)) return;                                                                    /* our own earlier record */
+  p.resusRequest={pref:pref, at:at};
+}
+function fxResusReqHTML(p){ const q=p&&p.resusRequest; if(!q) return '';
+  return '<span class="fx-rr" role="group" aria-label="Client request — confirm"><span class="fx-rr-t">Client request — confirm <b>'+bcEsc(q.pref)+'</b>'
+    +(q.at?'<small> · '+bcEsc(fmtTime(new Date(q.at)))+'</small>':'')+'</span>'
+    +'<button type="button" class="fx-rr-ok" data-rr="ok">Confirm '+bcEsc(q.pref)+'</button><button type="button" class="fx-rr-no" data-rr="no">Dismiss</button></span>'; }
+function fxResusReqChip(p){ const q=p&&p.resusRequest; if(!q) return '';
+  return '<span class="fx-rr-chip" title="Client request — confirm in the patient panel">'+bcEsc(q.pref)+'?</span>'; }
+function fxResusAccept(p){ const q=p&&p.resusRequest; if(!q) return;
+  if(!Array.isArray(p.resusHistory)) p.resusHistory=[];
+  p.resusHistory.push({ pref:q.pref, source:'client_tracker', at:q.at||new Date().toISOString(), by:null });
+  if(p.resusPref===q.pref){ p.resusRequest=null; p.resusStatus='confirmed'; scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); }); }
+  else setResusPref(p,q.pref);
+  if(Array.isArray(p.timeline)) p.timeline.push({ label:'Client resuscitation request confirmed: '+q.pref, at:new Date(), meta:'Confirmed · '+CURRENT_USER }); }
+function fxResusDismiss(p){ const q=p&&p.resusRequest; if(!q) return;
+  p.resusRequestDismissed=fxResusKey(q.pref,q.at); p.resusRequest=null;
+  if(Array.isArray(p.timeline)) p.timeline.push({ label:'Client resuscitation request dismissed: '+q.pref, at:new Date(), meta:'Kept '+(p.resusPref||'not set')+' · '+CURRENT_USER });
+  scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); }); }
+document.addEventListener('click',function(e){ const b=e.target.closest&&e.target.closest('[data-rr]'); if(!b) return;
+  e.preventDefault(); e.stopPropagation(); const p=PATIENTS.find(x=>x.id===activePatient); if(!p) return;
+  if(b.dataset.rr==='ok') fxResusAccept(p); else fxResusDismiss(p); },true);
+
 function breedSpecies(){ const el=document.getElementById('apSpecies'); const v=el?el.value:''; return v==='Feline'?'Feline':(v==='Canine'?'Canine':null); }
 function breedSource(){ const sp=breedSpecies(); return sp==='Feline'?FELINE_BREEDS.map(b=>b.name):(sp==='Canine'?CANINE_BREEDS:null); }
 
@@ -10979,12 +11119,14 @@ document.getElementById('apModal').classList.remove('open');
 
 
 function commitPatient(fields){
+fields=fxCleanPatient(Object.assign({},fields));   /* flow-round2-oct6: no control or invisible override characters */
 const p = patient(fields);
 PATIENTS.push(p);
+if(p.status==='Hospitalized'){ try{ rdEnroll(p); }catch(e){} }   /* a direct admit is on Rounds from the start */
 closeAddPatient();
 renderAll();
 const full=((fields.name||'')+(fields.last?' '+fields.last:'')).trim();
-notify('✓ '+full+' added successfully',
+notify('✓ '+bcEsc(full)+' added successfully',
 'Priority P'+fields.prio+' · '+(fields.status==='Hospitalized'?'In Treatment':'Awaiting assignment'),
 {icon:'discharge', color:'var(--s-admitted)'});
 const pid=p.id;
@@ -11005,11 +11147,11 @@ let room, status;
 if(apArrivalType==='hospitalized'){ room='Treatment'; status='Hospitalized'; }
 else { room = apLocation ||'Lobby'; status='Waiting'; }
 const arrivalLabel = apArrivalType==='transfer'?'ER transfer': (apArrivalType==='hospitalized'?'Direct admit':'Walk-in');
-const at=new Date(now.getTime());
+const at=new Date();
 
 { const rin=document.getElementById('apReason'); if(rin && rin.value.trim()){ splitComplaints(rin.value.trim()).forEach(function(seg){ apProblems.push(parseProblem(seg)); }); rin.value=''; } }
 const reasonStr = apProblems.length ? problemsToString(apProblems) :'Reason not specified';
-commitPatient({
+fxCommitChecked({
 name:first, last:last, species:val('apSpecies')||'—', age:val('apAge')||'—',
 birthday:'', ageEstimated:true, ageDisplay:(val('apAge')||''),
 breed:val('apBreed')||'—', owner:val('apOwner')||'—', ownerPhone:val('apPhone'),
@@ -11414,7 +11556,7 @@ if(apPrio==null){ toast('Select a medical priority (P1 / P2 / P3)'); return; }
 const id=apReviewIntakeId;
 const r=FlowIntakeStore.getIntake(id)||{};
 const parts=name.split(/\s+/); const first=parts.shift(); const last=parts.join(' ');
-const at=new Date(now.getTime());
+const at=new Date();
 const room=apLocation||'Lobby';
 const rp=r.patient||{};
 const exactDOB=(rp.birthday && !rp.birthdayEstimated)?rp.birthday:'';
@@ -11459,9 +11601,9 @@ at:(fields.resusRecordedAt||at),
 meta: changed ? ('Client selected '+cr.pref+' · CSR changed to '+finalPref+' during review')
 :'Owner selected during client check-in'});
 }
-apReviewIntakeId=null; apReviewResus='';
-commitPatient(fields);
-FlowIntakeStore.completeIntake(id);
+const fin=()=>{ apReviewIntakeId=null; apReviewResus=''; commitPatient(fields); FlowIntakeStore.completeIntake(id); };
+if(fxDupAsk(fields,fin)) return;   /* already checked in? */
+fin();
 }
 
 
@@ -12381,7 +12523,7 @@ function renderSearch(q){
 const box=document.getElementById('searchResults');
 if(!q.trim()){ closeSearch(); return; }
 const all=searchIndex(q);
-if(!all.length){ box.innerHTML=`<div class="sr-inner"><div class="sr-none">No matches for “${q}”</div></div>`; box.classList.add('open'); positionSearchResults(); searchFlat=[]; return; }
+if(!all.length){ box.innerHTML=`<div class="sr-inner"><div class="sr-none">No matches for “${bcEsc(q)}”</div></div>`; box.classList.add('open'); positionSearchResults(); searchFlat=[]; return; }
 const ql=q.trim().toLowerCase();
 let kinds=['Patient','Doctor','Liaison','Room'];
 if(/^(room|lobby|comfort)/.test(ql) || ROOMS.some(r=>r.toLowerCase()===ql)) kinds=['Room','Patient','Doctor','Liaison'];
@@ -12392,7 +12534,7 @@ html+=`<div class="sr-group"><div class="sr-label">${k}${g.length>1?'s':''}</div
 g.forEach(r=>{ searchFlat.push(r);
 const av = r.icon ?`<span class="sr-ic" style="background:${r.color}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ATTN_ICONS.room}</svg></span>`
 :`<span class="sr-ic" style="background:${r.color}">${r.initials}</span>`;
-html+=`<div class="sr-item" data-i="${idx}">${av}<div class="sr-main"><div class="sr-t">${r.title}</div><div class="sr-s">${r.sub}</div></div><div class="sr-kind">${r.kind}</div></div>`; idx++;
+html+=`<div class="sr-item" data-i="${idx}">${av}<div class="sr-main"><div class="sr-t">${bcEsc(r.title)}</div><div class="sr-s">${bcEsc(r.sub)}</div></div><div class="sr-kind">${r.kind}</div></div>`; idx++;
 });
 html+='</div>';
 });
@@ -12443,12 +12585,13 @@ mesh.style.transform = document.body.classList.contains('dark') ?`translateY(${s
 
 let _lastMin=-1;
 setInterval(()=>{
-now.setSeconds(now.getSeconds()+1);
+now.setTime(Date.now());   /* flow-fixes-oct6: the real time, so a missed tick is never lost */
 if(currentApp==='flow'&&currentView==='dashboard'){renderKPIs();}
 if(currentApp==='flow'&&currentView==='client'){ updateClientClock(); }
 const mins=Math.floor(now.getTime()/60000);
 if(mins!==_lastMin){
 _lastMin=mins;
+try{ updateDashDate(); }catch(e){}
 if(currentApp==='flow'&&currentView==='dashboard') renderOps();
 if(currentView==='rooms') renderRooms();
 if(currentApp==='ultrasound') renderUltrasound();
@@ -12458,10 +12601,11 @@ if(currentApp==='flow'&&currentView==='client') renderClient();
 },1000);
 
 
-document.getElementById('dashDate').innerHTML =
-(now.toLocaleDateString('en-US',{weekday:'long'}) +', ').toUpperCase()
-+'<span class="dd-md" style="font-weight:var(--weight-bold)">'+ now.toLocaleDateString('en-US',{month:'long',day:'numeric'}).toUpperCase() +'</span>'
-+' • HOSPITAL OPERATIONS';
+function updateDashDate(){ const el=document.getElementById('dashDate'); if(!el) return; const d=new Date();
+el.innerHTML=(d.toLocaleDateString('en-US',{weekday:'long'}) +', ').toUpperCase()
++'<span class="dd-md" style="font-weight:var(--weight-bold)">'+ d.toLocaleDateString('en-US',{month:'long',day:'numeric'}).toUpperCase() +'</span>'
++' • HOSPITAL OPERATIONS'; }
+updateDashDate();
 
 
 
@@ -12616,7 +12760,7 @@ return {
 admittedAt:iso(r.admittedAt), admittedBy:r.admittedBy||null, admittedById:r.admittedById||null,
 enrolledBy:r.enrolledBy||null, admittingService:r.admittingService||null,
 service:r.service||'ecc', location:r.location||null,
-acuity:r.acuity||'stable', newAdmit:!!r.newAdmit,
+acuity:r.acuity||'stable', newAdmit:!!r.newAdmit, rank:(typeof r.rank==='number'&&isFinite(r.rank))?r.rank:null, rankSec:(typeof r.rankSec==='string'&&r.rankSec)?r.rankSec:null,
 admitType:RD_ADMIT_TYPES[r.admitType]?r.admitType:'clinical',
 assessment:r.assessment||'',
 
@@ -12661,7 +12805,7 @@ function rdToApp(r){ return rdNorm(r); }
 
 
 function rdActive(){
-return PATIENTS.filter(p=>p.status==='Admitted'&& p.rounds && !p.rounds.outcome)
+return PATIENTS.filter(p=>(p.status==='Admitted'||p.status==='Hospitalized')&& p.rounds && !p.rounds.outcome)
 .sort((a,b)=>rdDate(b.rounds.admittedAt)-rdDate(a.rounds.admittedAt));
 }
 function rdCensus(){ return rdActive().filter(p=>(p.rounds.admitType||'clinical')==='clinical'); }
@@ -12777,11 +12921,14 @@ function rdBalance(p){ const a=rdAuthRead(p);
 if(!a||a.estimate==null||a.deposited==null) return null;
 return a.estimate-a.deposited; }
 function rdMoney(v){ return v==null?'—':('$'+Math.round(v).toLocaleString()); }
+var RD_AUTH_SOON_H=12;   /* flow-round2-oct6: one "expiring" cutoff for the panel, the chips, the summary and the handoff */
+function rdOwnerLine(p){ const due=rdOwnerDue(p); if(!due) return ''; const c=p.rounds.comms||{}, d=rdDate(c.lastAt);
+return 'Owner update '+due+' overdue — '+(d?('last '+fmtTime(d)+' '+d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(c.lastBy?' by '+c.lastBy:'')):'no update since admission'); }
 function rdAuthState(p){
 const total=rdAuthHours(p); if(!total) return null;
 const elapsed=(Date.now()-rdDate(p.rounds.admittedAt).getTime())/3600000;
 const remaining=total-elapsed;
-return {total:total,elapsed:elapsed,remaining:remaining,status:remaining<0?'over':(remaining<=6?'expiring':'ok')};
+return {total:total,elapsed:elapsed,remaining:remaining,status:remaining<0?'over':(remaining<=RD_AUTH_SOON_H?'expiring':'ok')};
 }
 function rdBillDrift(p){
 const a=rdAuthRead(p); if(!a) return null;
@@ -12887,7 +13034,7 @@ care:(p.doctor&&p.doctor!=='unassigned')?[{id:rdId(),docId:p.doctor,name:rdDocSh
 audit:[{at:rdIso(at),by:CURRENT_USER,what:'Enrolled in Rounds from Flow'}]
 });
 p.timeline.push({label:'Enrolled in Rounds', at:at, meta:rdSvc(svc).label});
-try{ notify('Added to Rounds', rdFullName(p)+' · New Admit · '+rdSvc(svc).label, {icon:'info', color:'var(--accent)'}); }catch(e){}
+try{ notify('Added to Rounds', rdEsc(rdFullName(p))+' · New Admit · '+rdSvc(svc).label, {icon:'info', color:'var(--accent)'}); }catch(e){}
 }
 function rdOnFlowComplete(p, finalStatus){
 if(finalStatus==='Admitted'){ rdEnroll(p); return; }
@@ -12906,6 +13053,7 @@ p.timeline.push({label:type, at:new Date(), meta:'Rounds · '+rdActorName()});
 rdSnapshotToday(p);
 rdExpanded=null;
 rdTouch(p,'Admission ended · '+type);
+if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p, type==='Euthanized'?'Euthanized':'Discharged'); }catch(e){} }   /* a direct admit leaves Flow too */
 }, {sub:'The admission closes and moves to the Rounds archive. The full record is preserved.', fancyConfirm:type==='Discharged'});
 }
 function rdSetLocation(p,loc){
@@ -13024,7 +13172,9 @@ if(openT.length) s.push('Next: '+openT.slice(0,3).map(t=>t.label+(t.due?(' · '+
 const conts=(r.contingencies||[]).filter(x=>x.active!==false);
 if(conts.length) s.push('Standing orders: '+conts.map(x=>'if '+x.trigger.toLowerCase()+' → '+x.action).join('; ')+'.');
 const c=r.comms||{};
-if(c.lastAt) s.push('Owner last updated '+rdT(c.lastAt)+(c.lastBy?(' by '+c.lastBy):'')+(c.next?('; next — '+c.next):'')+'.');
+const odue=rdOwnerLine(p);
+if(odue) s.push(odue+(c.next?('; next — '+c.next):'')+'.');
+else if(c.lastAt) s.push('Owner last updated '+rdT(c.lastAt)+(c.lastBy?(' by '+c.lastBy):'')+(c.next?('; next — '+c.next):'')+'.');
 else if(c.next) s.push('Owner update planned — '+c.next+'.');
 else if(rdOwnerDue(p)) s.push('Owner update is due.');
 return s.join('\n');
@@ -13042,8 +13192,9 @@ const conts=(r.contingencies||[]).filter(x=>x.active!==false);
 if(conts.length) s.push('Contingencies: '+conts.map(x=>'if '+x.trigger.toLowerCase()+' → '+x.action).join('; ')+'.');
 if((r.flags||[]).length) s.push('Flags: '+r.flags.map(f=>f.label).join(', ')+'.');
 const as=rdAuthState(p);
-if(as&&as.status!=='ok') s.push(as.status==='over'?'Authorization exceeded — owner conversation needed.':'Authorization expires within '+Math.max(1,Math.round(as.remaining))+'h.');
+if(as&&as.status!=='ok') s.push(as.status==='over'?'Authorization exceeded — owner conversation needed.':'Authorization expires in '+fmtWait(Math.max(0,Math.round(as.remaining*60)))+'.');
 const c=r.comms||{};
+{ const odue=rdOwnerLine(p); if(odue) s.push(odue+'.'); }
 if(c.next) s.push('Owner expects an update '+c.next.toLowerCase()+'.');
 if(c.window) s.push('Owner constraint: '+c.window+'.');
 return s.join('\n');
@@ -13394,7 +13545,7 @@ const st=rdAuthState(p);
 const total=st?Math.round(st.total):rdAuthHours(p);
 const used=st?Math.max(0,st.elapsed):0;
 const remain=st?st.remaining:null;
-const status=!st?'unset':(st.status==='over'?'expired':(st.remaining<=12?'expiring':'authorized'));
+const status=!st?'unset':(st.status==='over'?'expired':(st.status==='expiring'?'expiring':'authorized'));
 const statusLabel=status==='expired'?'EXPIRED':status==='expiring'?'EXPIRING SOON':status==='authorized'?'AUTHORIZED':'NOT SET';
 const high=a.estimate!=null?+a.estimate:null;
 const low=(a.estimateLow!=null?+a.estimateLow:(high!=null?Math.round(high*.8):null));
@@ -13417,7 +13568,7 @@ hist.sort((x,y)=>String(y.at).localeCompare(String(x.at)));
 const attention=[];
 if(high!=null&&charges!=null&&charges>high) attention.push({red:true,title:'Current charges are '+rdMoney(charges-high)+' above estimate',detail:'Approved high end '+rdMoney(high)+' · Current charges '+rdMoney(charges)+'.'});
 if(depositRequired!=null&&depositShortfall>0) attention.push({red:false,title:'Deposit is '+rdMoney(depositShortfall)+' below the 75% minimum',detail:'75% of the Low End is '+rdMoney(depositRequired)+' · Current deposit '+rdMoney(deposit||0)+'.'});
-if(st&&remain<=12) attention.push({red:remain<=0,title:remain<=0?'Care authorization has expired':'Care authorization expires in '+fmtWait(Math.max(0,Math.round(remain*60))),detail:remain<=0?'Updated authorization is needed before continued care.':'Renew before the approved care window ends.'});
+if(st&&remain<=RD_AUTH_SOON_H) attention.push({red:remain<=0,title:remain<=0?'Care authorization has expired':'Care authorization expires in '+fmtWait(Math.max(0,Math.round(remain*60))),detail:remain<=0?'Updated authorization is needed before continued care.':'Renew before the approved care window ends.'});
 
 return`<div class="rd-auth-stack">
   <div class="rd-sec rd-authsec rd-authpro rd-authfull ${status==='expiring'?'is-expiring':''} ${status==='expired'?'is-over':''}">
@@ -13441,7 +13592,7 @@ return`<div class="rd-auth-stack">
       <div class="rd-careauth-pane">
         <div class="rd-authpro-head"><span>Care Authorization</span><span class="rd-carestatus s-${status}">${statusLabel}${remain!=null&&status!=='authorized'?' · '+fmtWait(Math.max(0,Math.round(remain*60))):''}</span></div>
         <div class="rd-careauth-title">${st?(Math.round(used)+' of '+total+' hours used'):'No care authorization set'}</div>
-        ${st?`<div class="rd-caremetrics"><div><b>${total}h</b><span>Total Authorized</span></div><div><b>${Math.floor(used)}h ${Math.round((used%1)*60)}m</b><span>Used</span></div><div><b>${remain>=0?fmtWait(Math.round(remain*60)):'Expired'}</b><span>Remaining</span></div></div>`:''}
+        ${st?`<div class="rd-caremetrics"><div><b>${total}h</b><span>Total Authorized</span></div><div><b>${Math.floor(Math.round(used*60)/60)}h ${Math.round(used*60)%60}m</b><span>Used</span></div><div><b>${remain>=0?fmtWait(Math.round(remain*60)):'Expired'}</b><span>Remaining</span></div></div>`:''}
         <div class="rd-extend-label">Extend care authorization</div>
         <div class="rd-extend-group">
           <button class="rd-btn slim" data-act="auth-add" data-key="24" data-pid="${pid}">+24 Hours</button>
@@ -13658,7 +13809,16 @@ return`<div class="rd-work" data-pid="${pid}">
 }
 
  
-function rdSectionsHTML(list){
+
+/* ═════════ ROUNDS ORDER — drag patients into the order you round on them (Oct 2026) ═════════
+   Each section (New Admits, then each department) lists its patients in p.rounds.rank order — the team's order, saved for
+   everyone, with the section it was set in (p.rounds.rankSec): a rank from another section doesn't count. Patients not placed
+   yet come first, newest first (a transfer into a section is seen, then placed). The grip at a
+   row's left edge drags it within its section (mouse, pen or touch); arrow keys on the grip move it one place; Esc cancels.
+   Start Rounds walks the same order. Off while searching or filtering by a count (that would order a subset). */
+function rdRankOf(p,sec){ const r=p.rounds; return (r.rank!=null&&r.rankSec===sec)?r.rank:null; }   /* a rank only counts in the section it was set in */
+function rdRankCmp(a,b,sec){ const x=rdRankOf(a,sec), y=rdRankOf(b,sec); if(x==null&&y==null) return 0; if(x==null) return -1; if(y==null) return 1; return x-y; }
+function rdGroupsOf(list){
 const groups=[];
 const newAdmits=list.filter(p=>p.rounds.newAdmit);
 if(rdSvcFilter==='all'&&!rdKpiFilter&&newAdmits.length) groups.push({key:'new',label:'New Admits',list:newAdmits,cls:'sec-new'});
@@ -13666,6 +13826,99 @@ RD_SERVICES.forEach(s=>{
 const l=list.filter(p=>p.rounds.service===s.key&&!(groups.length&&groups[0].key==='new'&&p.rounds.newAdmit));
 if(l.length) groups.push({key:s.key,label:s.label,list:l});
 });
+groups.forEach(g=>{ g.list=g.list.slice().sort((a,b)=>rdRankCmp(a,b,g.key)); });   /* stable: the unplaced keep newest-first */
+return groups;
+}
+function rdCanRank(){ return !rdQuery.trim()&&!rdKpiFilter; }
+const RD_GRIP='<svg viewBox="0 0 8 14" aria-hidden="true"><circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/></svg>';
+function rdRankGrip(html,p,g){
+if(!rdCanRank()||g.list.length<2||rdExpanded===p.id) return html;
+const b=`<button type="button" class="rd-grip" data-pid="${p.id}" aria-label="Move ${rdEsc(rdFullName(p))} in the rounds order — drag, or use the arrow keys" title="Drag to set the rounds order" onpointerdown="rdRankDown(event,this)" onkeydown="rdRankKey(event,this)">${RD_GRIP}</button>`;
+return html.replace('<div class="rd-rowmain"',b+'<div class="rd-rowmain"');
+}
+function rdRankSave(sec,pids,movedPid,to){
+let changed=0; pids.forEach((pid,i)=>{ const q=rdFind(pid); if(q&&q.rounds&&(q.rounds.rank!==i*10||q.rounds.rankSec!==sec)){ q.rounds.rank=i*10; q.rounds.rankSec=sec; changed++; } });
+if(!changed) return false;
+const p=rdFind(movedPid), g=sec==='new'?'New Admits':((RD_SERVICES.find(s=>s.key===sec)||{}).label||'');
+rdTouch(p,'Rounds order — moved '+(to===0?'to the top':'to #'+(to+1))+(g?' in '+g:''),true);
+return true;
+}
+function rdRankMove(pid,delta){
+const row=document.querySelector('#rdList .rd-row[data-pid="'+pid+'"]'), grp=row&&row.closest('.rd-secgroup'); if(!grp) return;
+const pids=[...grp.querySelectorAll(':scope > .rd-row')].map(r=>r.dataset.pid), from=pids.indexOf(pid), to=Math.max(0,Math.min(pids.length-1,from+delta));
+if(from<0||to===from) return; pids.splice(from,1); pids.splice(to,0,pid);
+if(rdRankSave(grp.dataset.sec,pids,pid,to)) setTimeout(()=>{ const g=document.querySelector('#rdList .rd-grip[data-pid="'+pid+'"]'); if(g) g.focus(); },30);
+}
+function rdRankKey(e,btn){ if(e.key!=='ArrowUp'&&e.key!=='ArrowDown') return; e.preventDefault(); e.stopPropagation(); rdRankMove(btn.dataset.pid,e.key==='ArrowUp'?-1:1); }
+function rdScroller(el){ for(let n=el&&el.parentElement;n&&n!==document.body;n=n.parentElement){ const o=getComputedStyle(n).overflowY; if((o==='auto'||o==='scroll')&&n.scrollHeight>n.clientHeight) return n; } return document.scrollingElement||document.documentElement; }
+window.rdRk=null;
+function rdRankLetGo(d){ window.rdRk=null; if(d&&d.pending) setTimeout(()=>{ if(!window.rdRk) renderRdCensus(true); },0); }   /* a save that arrived during a press shows now (after the click) */
+/* start: the grip (keyboard users, or anyone who finds it) lifts at once; the row itself lifts once a mouse or pen moves it
+   10 px up or down (a shaky click stays a click), or — on touch, so a swipe still scrolls — after a 350 ms press-and-hold */
+function rdRankStart(e,row,how){
+const grp=row.closest('.rd-secgroup'); if(!grp) return;
+const rows=[...grp.querySelectorAll(':scope > .rd-row')], g0=grp.getBoundingClientRect().top;
+const box=rows.map(r=>{ const b=r.getBoundingClientRect(); return {top:b.top-g0,bot:b.bottom-g0,h:b.height}; });   /* group coordinates: scrolling doesn't change them */
+const from=rows.indexOf(row), gap=rows.length>1?Math.max(0,box[1].top-box[0].bot):8;
+window.rdRk={pid:row.dataset.pid,sec:grp.dataset.sec,grp,row,rows,box,from,to:from,gap,y0:e.clientY-g0,x0:e.clientX,cy0:e.clientY,t0:e.target,y:e.clientY,pid0:e.pointerId,moved:false,
+  armed:how!=='touch',how,sc:rdScroller(grp),raf:0,hold:0};
+const d=window.rdRk;
+if(how==='touch') d.hold=setTimeout(()=>{ if(window.rdRk!==d) return; d.armed=true; d.y0=d.y-d.grp.getBoundingClientRect().top; rdRankLift(d); try{ navigator.vibrate&&navigator.vibrate(8); }catch(_){} },350);
+if(how==='grip') rdRankLift(d);
+}
+function rdRankLift(d){ if(d.moved) return; d.moved=true; d.row.classList.add('rd-lift'); d.grp.classList.add('rd-sorting'); document.body.classList.add('rd-dragging');
+  try{ d.row.setPointerCapture(d.pid0); }catch(_){} }
+function rdRankDown(e,btn){ if(e.button!==0||!rdCanRank()) return; e.preventDefault(); e.stopPropagation(); const row=btn.closest('.rd-row'); if(row) rdRankStart(e,row,'grip'); }
+document.addEventListener('pointerdown',e=>{
+if(window.rdRk||e.button!==0||!rdCanRank()) return;
+const row=e.target.closest&&e.target.closest('#rdList .rd-secgroup[data-sec] > .rd-row'); if(!row||rdExpanded===row.dataset.pid) return;
+if(e.target.closest('button,input,select,textarea,a,label,[contenteditable],.rd-menu')) return;   /* the row's own menus and links keep working */
+if(row.parentNode.querySelectorAll(':scope > .rd-row').length<2) return;
+if(e.pointerType==='mouse') e.preventDefault();   /* no text selection while dragging; the click still opens the row */
+rdRankStart(e,row,e.pointerType==='touch'?'touch':'mouse');
+},true);
+document.addEventListener('touchmove',e=>{ const d=window.rdRk; if(d&&d.armed&&d.how==='touch') e.preventDefault(); },{passive:false,capture:true});   /* a lifted row, not the page, follows the finger */
+function rdRankLayout(){
+const d=window.rdRk; if(!d) return; const gy=d.y-d.grp.getBoundingClientRect().top, b=d.box, f=b[d.from];
+let dy=gy-d.y0; dy=Math.max(b[0].top-f.top-24,Math.min(b[b.length-1].bot-f.bot+24,dy));
+if(!d.moved){ if(!d.armed||Math.abs(dy)<10||Math.abs(d.y-d.cy0)<10) return; rdRankLift(d); }   /* the pointer itself must travel 10 px (not the list scrolling under it) */
+let to=d.from;   /* a neighbour gives way once the dragged row's leading edge passes its middle (rows differ in height) */
+if(dy>0) b.forEach((x,j)=>{ if(j>d.from&&(x.top+x.bot)/2<f.bot+dy) to++; }); else if(dy<0) b.forEach((x,j)=>{ if(j<d.from&&(x.top+x.bot)/2>f.top+dy) to--; });
+d.to=to;
+const H=f.h+d.gap; d.row.style.transform='translateY('+dy+'px) scale(1.01)';   /* lifted: a touch larger, with a shadow */
+d.rows.forEach((r,j)=>{ if(j===d.from) return; let s=0; if(d.from<to&&j>d.from&&j<=to) s=-H; else if(d.from>to&&j>=to&&j<d.from) s=H; r.style.transform=s?'translateY('+s+'px)':''; });
+}
+function rdRankAuto(){   /* near the top or bottom edge, the list scrolls by itself */
+const d=window.rdRk; if(!d){ return; } d.raf=0; const vh=window.innerHeight, edge=80;
+const v=d.y<edge?-(edge-d.y)/3:d.y>vh-edge?(d.y-(vh-edge))/3:0;
+if(v&&d.moved){ d.sc.scrollTop+=v; rdRankLayout(); d.raf=requestAnimationFrame(rdRankAuto); }
+}
+document.addEventListener('pointermove',e=>{ const d=window.rdRk; if(!d||e.pointerId!==d.pid0) return; d.y=e.clientY;
+  if(!d.armed){ if(Math.abs(e.clientY-(d.y0+d.grp.getBoundingClientRect().top))>8||Math.abs(e.clientX-d.x0)>8){ clearTimeout(d.hold); rdRankLetGo(d); } return; }   /* moved before the hold: it's a scroll */
+  rdRankLayout(); if(d.moved){ e.preventDefault(); if(!d.raf) d.raf=requestAnimationFrame(rdRankAuto); } },true);
+let rdRkSwallow=0;   /* the click that ends a drag doesn't also open the row (unless a mouse let go back in the row's own slot) */
+document.addEventListener('click',e=>{ if(rdRkSwallow&&Date.now()-rdRkSwallow<600){ rdRkSwallow=0; e.stopPropagation(); e.preventDefault(); } },true);
+function rdRankEnd(drop){
+const d=window.rdRk; if(!d) return; clearTimeout(d.hold); if(d.raf) cancelAnimationFrame(d.raf);
+if(!d.moved){ rdRankLetGo(d); return; }   /* a plain click or tap: nothing to undo */
+const reopen=(drop&&d.how==='mouse'&&d.to===d.from&&d.t0&&d.t0.isConnected)?d.t0:null;   /* a wobbly mouse click that ends in its own slot is still a click */
+rdRkSwallow=Date.now();   /* the browser's click lands on the row that held the pointer, so for a wobbly click it is replaced below */
+const moved=d.to!==d.from, reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const finish=()=>{ window.rdRk=null; document.body.classList.remove('rd-dragging');
+if(drop&&moved){ const pids=d.rows.map(r=>r.dataset.pid); pids.splice(d.from,1); pids.splice(d.to,0,d.pid); if(rdRankSave(d.sec,pids,d.pid,d.to)) return; }
+d.rows.forEach(r=>{ r.style.transform=''; }); d.row.classList.remove('rd-lift'); d.grp.classList.remove('rd-sorting');
+if(reopen){ rdRkSwallow=0; try{ reopen.click(); }catch(_){} }   /* open the row, as the click would have */
+renderRdCensus(true); };
+if(!reduce){ const b=d.box, f=b[d.from], off=!(drop&&moved)?0:d.to>d.from?b[d.to].bot-f.bot:b[d.to].top-f.top;   /* settle into the slot (or glide home) */
+d.row.style.transition='transform .16s var(--ease)'; d.row.style.transform='translateY('+off+'px)'; if(!(drop&&moved)) d.rows.forEach(r=>{ if(r!==d.row) r.style.transform=''; }); setTimeout(finish,160); }
+else finish();
+}
+document.addEventListener('pointerup',e=>{ if(window.rdRk&&e.pointerId===window.rdRk.pid0) rdRankEnd(true); },true);
+document.addEventListener('pointercancel',e=>{ if(window.rdRk&&e.pointerId===window.rdRk.pid0) rdRankEnd(false); },true);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&window.rdRk){ e.stopPropagation(); rdRankEnd(false); } },true);
+
+function rdSectionsHTML(list){
+const groups=rdGroupsOf(list);
 if(!groups.length){
 if(rdCensus().length) return`<div class="rd-emptystate"><b>No matching patients</b><p>Adjust the filters above to see the census.</p></div>`;
 return`<div class="rd-emptystate"><b>No patients in Rounds</b><p>Patients moved to <b>Admitted</b> in Flow appear here automatically — no rounds sheet to maintain.</p>
@@ -13673,15 +13926,16 @@ return`<div class="rd-emptystate"><b>No patients in Rounds</b><p>Patients moved 
 }
 return groups.map(g=>{
 const collapsed=!!rdCollapse[g.key];
-return`<div class="rd-secgroup ${g.cls||''} ${collapsed?'collapsed':''}">
+return`<div class="rd-secgroup ${g.cls||''} ${collapsed?'collapsed':''}" data-sec="${g.key}">
       <button class="rd-sechead" data-act="sec-toggle" data-key="${g.key}">
         <span class="tri">${collapsed?'▶':'▼'}</span><span class="t">${g.label}</span><span class="n">${g.list.length}</span></button>
-      ${collapsed?'':g.list.map(p=>rdRowHTML(p,g.key==='new')).join('')}
+      ${collapsed?'':g.list.map(p=>rdRankGrip(rdRowHTML(p,g.key==='new'),p,g)).join('')}
     </div>`;
 }).join('');
 }
 function renderRdCensus(force){
 const list=document.getElementById('rdList'); if(!list) return;
+if(window.rdRk){ window.rdRk.pending=true; return; }   /* shown once the press ends */
 if(!force&&(rdEditingInside('view-rd-census')||document.querySelector('.rd-menu'))) return;
  
 try{ let synced=false; rdActive().forEach(p=>{ if(rdSyncFromPravix(p)) synced=true; if(rdSyncCare(p)) synced=true; }); if(synced) persist(); }catch(e){}
@@ -14031,7 +14285,7 @@ if(e.key==='Escape'&&!typing&&rdExpanded){ rdExpanded=null; renderRdCensus(true)
 function rdActorLabel(){ const el=document.getElementById('rdActor'); if(el) el.innerHTML='Rounding as <b>'+rdEsc(rdActorName())+'</b>'; }
 
  
-function rdModeList(){ return rdFiltered(); }
+function rdModeList(){ return rdGroupsOf(rdFiltered()).reduce((a,g)=>a.concat(g.list),[]); }
 function rdSetStartBtn(on){ const b=document.getElementById('rdStartBtn'); if(b){ b.classList.toggle('is-running', !!on); b.setAttribute('aria-pressed', on?'true':'false'); } }
 function rdStartMode(){
 if(!rdCensus().length) return;
@@ -15300,7 +15554,7 @@ function tagTimeline(p,from){ if(via!=='voice'&&via!=='typed') return; var tl=p.
   for(var k=from;k<tl.length;k++){ var e=tl[k]; if(e&&!e.fvTagged){ e.fvTagged=1; e.meta=(e.meta?e.meta+' · ':'')+(via==='typed'?'typed command':'voice')+(u?' · '+u:''); } } }
 function setWaiting(p,text){ var at=new Date(); p.waitingOn=text?{text:String(text).slice(0,40), at:at.toISOString(), by:userName()}:null;
   (p.timeline=p.timeline||[]).push({label:text?'Waiting on '+text:'Waiting-on flag cleared', at:at, meta:''});
-  try{ notify(text?'Waiting on '+text:'Flag cleared', pName(p), {icon:'info', color:'var(--accent)'}); }catch(e){}
+  try{ notify(text?'Waiting on '+esc(text):'Flag cleared', esc(pName(p)), {icon:'info', color:'var(--accent)'}); }catch(e){}
   try{ scheduleRender(function(){ try{ if(activePatient===p.id) fillDrawer(p); }catch(e){} }); }catch(e){ try{ renderAll(); }catch(_){} } }
 /* Small chip on the Flow card; click it to clear (with Undo). */
 window.fvWaitChip=function(p){ var w=p&&p.waitingOn; if(!w||!w.text) return ''; var mins=Math.max(0,Math.round((Date.now()-new Date(w.at).getTime())/60000));
@@ -15565,7 +15819,7 @@ function tick(){
       if(!p.lastByUid||p.lastByUid===u.uid||Date.now()-ms(p.lastAt)>20000) return;
       var msg=describe(p,old);
       var card=document.querySelector('.card[data-pid="'+p.id+'"]'); if(card){ card.classList.remove('fv-remote'); void card.offsetWidth; card.classList.add('fv-remote'); }
-      if(open&&activePatient===p.id){ flashMsg=msg; clearTimeout(flashT); flashT=setTimeout(function(){ flashMsg=''; tick(); },8000); try{ notify(msg,'',{icon:'info', color:'var(--accent)'}); }catch(e){} } });
+      if(open&&activePatient===p.id){ flashMsg=msg; clearTimeout(flashT); flashT=setTimeout(function(){ flashMsg=''; tick(); },8000); try{ notify(esc(msg),'',{icon:'info', color:'var(--accent)'}); }catch(e){} } });
     warm=true;
     if(bar){ var p=open?PATIENTS.find(function(x){ return x.id===activePatient; }):null, vs=p?viewers(p):[], html='';
       if(flashMsg) html='<span class="dot live"></span>'+esc(flashMsg);
