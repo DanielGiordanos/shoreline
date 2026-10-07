@@ -6288,6 +6288,318 @@ window.sidebarBriefHTML=function(){ var p=(curDoc&&curDoc.patient)||{}, kg=Numbe
   on('header.refresh',function(){ setTimeout(motion,0); });
   on('sheet.opening',function(){ WC={id:null,n:0,kg:null,P:null,now:0}; });
 })();
+/* ═════════ TS PATIENT TABS — the patients you're working on, one row under the menu (Oct 2026) ═════════
+   Safari-style tabs: one recessed bar, tabs share the width, the patient you're on is a raised tile that slides.
+   • Each tab: a dog or cat (outline; solid on the open tab) inside a ring — the ring fills with what's been charted ÷ what's been due so
+     far today (the board's rules: nothing before admission, 18-minute due window); amber while something is overdue, blue when only due
+     now, green when caught up, and one small pulse when it closes. One number beside the name only when it matters (amber overdue, blue due now).
+   • Your own patients (Assign to me — the doctor, tech, or supervising doctor: isMine) open as tabs automatically (⋯ → turn off); anything
+     you open another way (the patient menu, the board, a link) joins as a recent tab; up to 8 unpinned — the oldest recent one goes first.
+   • Pin keeps a tab (pinned tabs shrink to the initial at the start of the row); × or middle-click closes; drag to reorder (iPad: press and
+     hold); right-click for pin / move / close. ⌥1–9 jumps, ⌥←/→ next / previous, ⇧⌘←/→ moves the focused tab.
+   • A discharged patient's tab fades ("· Discharged") and clears itself the next day. Closing one of your own patients' tabs keeps it
+     closed while they're admitted.
+   • Saved per person in ts_prefs/{uid} (tabs, tabs_auto, tabs_closed) — the same document as the language — plus this device for an
+     instant start. iPad: the row scrolls sideways. Phone: one bar (the patient you're on + "N open") that opens the list. */
+(function(){
+var MAX_AUTO=8;
+var PIN='<svg class="pt-pin" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M10.6 1.4a1 1 0 0 1 1.4 0l2.6 2.6a1 1 0 0 1 0 1.4l-.9.9a1 1 0 0 1-1 .25L10.4 8.8l.3 2.3a1 1 0 0 1-.28.84l-.6.6a.5.5 0 0 1-.7 0L6.5 9.9 3 13.4a.7.7 0 1 1-1-1l3.5-3.5-2.6-2.6a.5.5 0 0 1 0-.7l.6-.6a1 1 0 0 1 .84-.28l2.3.3L9.7 2.9a1 1 0 0 1 .25-1z"/></svg>';
+var X='<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+var PLUS='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+var MORE='<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="3.5" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.5" cy="8" r="1.4"/></svg>';
+var STACK='<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="6" width="11" height="11" rx="2.5"/><path d="M7 3.5h7.5A2.5 2.5 0 0 1 17 6v7.5"/></svg>';
+var CHK='<svg class="pt-chk" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+var PINO='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M10.6 1.4a1 1 0 0 1 1.4 0l2.6 2.6a1 1 0 0 1 0 1.4l-.9.9a1 1 0 0 1-1 .25L10.4 8.8l.3 2.3a1 1 0 0 1-.28.84l-.6.6a.5.5 0 0 1-.7 0L6.5 9.9 3 13.4M6.5 9.9 2.9 6.3a.5.5 0 0 1 0-.7l.6-.6a1 1 0 0 1 .84-.28l2.3.3L9.7 2.9a1 1 0 0 1 .25-1z"/></svg>';
+
+function sheetById(id){ if(CUR===id&&curDoc) return curDoc; return SHEETS.find(function(s){ return s._id===id; })||null; }
+function listed(id){ return SHEETS.some(function(s){ return s._id===id; }); }
+
+/* overdue / due now, the board's rules (nothing before admission, 18-minute due window) */
+function counts(s){
+  var out={late:0,due:0,sched:0,done:0,pct:1}; if(!s||!s.orders||typeof freqTimes!=='function') return out;
+  var dk=dayKey(), marks=s.marks||{}, n=nowMin(), adm=s.admitted_at||s.created_at, from=-1;
+  if(adm){ var a=new Date(adm); if(dayKey(a)===dk) from=a.getHours()*60+a.getMinutes(); }
+  Object.keys(s.orders).forEach(function(id){ var o=s.orders[id]; if(!o||o.dc||o.cont||o.draft) return;
+    var hs=[]; try{ hs=freqTimes(o,dk,marks)||[]; }catch(e){}
+    hs.forEach(function(h){ var t=h*60; if(t<from) return; var m=marks[dk+'_'+id+'_'+t];
+      if(t<=n+18) out.sched++;   /* the ring: charted ÷ scheduled so far today (due-now counts as scheduled) */
+      if(m&&m.status){ if(t<=n+18) out.done++; return; }
+      if(t<n-18) out.late++; else if(t<=n+18) out.due++; }); });
+  out.pct=out.sched?Math.min(1,out.done/out.sched):1;
+  return out; }
+/* R2 ring (Oct 7 2026): fill = charted so far today; colour = state (amber overdue · blue due now · green caught up); one pulse when it closes */
+var RING_R=10.5, RING_C=2*Math.PI*RING_R, lastPct={};
+function ringSvg(c){ var col=c.late?'late':c.due?'due':'ok';
+  return '<svg class="pt-ring pt-ring-'+col+'" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="'+RING_R+'" class="pt-rt"/><circle cx="13" cy="13" r="'+RING_R+'" class="pt-rv" style="stroke-dasharray:'+RING_C.toFixed(2)+'"/></svg>'; }
+
+/* ---------- state: ts_prefs/{uid} (tabs, tabs_auto, tabs_closed), so the tabs follow the person to any computer ---------- */
+var T={tabs:[], auto:true, closed:{}};   /* tab: {id, pinned, mine, gone, gone_day, name, last, loc, species} — the names are kept so a discharged tab can still be labelled */
+function tab(id){ return T.tabs.find(function(t){ return t.id===id; }); }
+function label(t){ var s=sheetById(t.id), p=(s&&s.patient)||{}; if(s){ t.name=p.name||t.name; t.last=p.last||t.last; t.loc=p.location||t.loc; t.species=p.species||t.species; } var nm=p.name||t.name||'Patient', last=p.last||t.last||''; var sp=String(p.species||t.species||'').toLowerCase(); return {nm:nm,last:last,short:nm+(last?' '+last[0]+'.':''),full:(nm+' '+last).trim(),loc:p.location||t.loc||'',sp:/fel|cat/.test(sp)?'fel':/can|dog/.test(sp)?'can':''}; }
+function ensure(id,why){ var t=tab(id); if(t) return t;
+  t={id:id,pinned:false,mine:why==='mine',fresh:true}; T.tabs.push(t);
+  /* more than 8: the oldest tab that isn't pinned, isn't yours and isn't open goes first */
+  var extra=T.tabs.filter(function(x){ return !x.pinned; }).length-MAX_AUTO;
+  for(var i=0;i<T.tabs.length&&extra>0;i++){ var x=T.tabs[i]; if(!x.pinned&&!x.mine&&x.id!==id&&x.id!==curId()){ T.tabs.splice(i,1); i--; extra--; } }
+  return t; }
+function curId(){ return CUR; }
+
+/* ---------- the row ---------- */
+var row,scroll,track,hl,tip,pop,lastCur=null,lastSig='';
+function build(){
+  var sub=document.querySelector('.subnav'); if(!sub||row) return;
+  row=document.createElement('div'); row.className='pt-row'; row.setAttribute('aria-label','Open patients');
+  row.innerHTML='<div class="pt-scroll"><div class="pt-track" role="tablist" aria-label="Open patients"><div class="pt-hl off"></div></div></div>'
+    +'<div class="pt-phone"></div>'
+    +'<button type="button" class="pt-btn pt-add" aria-label="Add a patient tab" title="Add a patient tab">'+PLUS+'<span class="pt-addl">Add patient</span></button>'
+    +'<button type="button" class="pt-btn pt-more" aria-label="Tab options" title="Tab options">'+MORE+'</button>';
+  sub.after(row);
+  /* the species glyphs (icon A, Oct 7 2026): outline + solid, drawn once (original artwork) */
+  var defs=document.createElement('div'); defs.setAttribute('aria-hidden','true'); defs.style.cssText='position:absolute;width:0;height:0;overflow:hidden';
+  defs.innerHTML='<svg width="0" height="0"><defs><mask id="ptfe1" maskUnits="userSpaceOnUse" x="-2" y="-2" width="28" height="28"><rect x="-2" y="-2" width="28" height="28" fill="#fff"/><circle cx="9.8" cy="10.2" r="1.05" fill="#000"/><circle cx="14.2" cy="10.2" r="1.05" fill="#000"/><path d="M11 12.9h2c.5 0 .7.5.4.9l-1 .95c-.25.25-.6.25-.85 0l-1-.95c-.35-.4-.1-.9.45-.9z" fill="#000"/></mask> <mask id="ptfg1" maskUnits="userSpaceOnUse" x="-2" y="-2" width="28" height="28"><rect x="-2" y="-2" width="28" height="28" fill="#fff"/><path d="M7 8.6C7 5.9 9.2 4.2 12 4.2s5 1.7 5 4.4v5.1c0 3.5-2.2 6-5 6s-5-2.5-5-6z" fill="#000" stroke="#000" stroke-width="2.2"/></mask><mask id="ptfe2" maskUnits="userSpaceOnUse" x="-2" y="-2" width="28" height="28"><rect x="-2" y="-2" width="28" height="28" fill="#fff"/><circle cx="9.3" cy="13.1" r="1.05" fill="#000"/><circle cx="14.7" cy="13.1" r="1.05" fill="#000"/><path d="M11.2 15.2h1.6c.4 0 .6.4.3.7l-.8.7c-.2.2-.5.2-.6 0l-.8-.7c-.3-.3-.1-.7.3-.7z" fill="#000"/></mask><symbol id="pt-dog-l" viewBox="0 0 24 24"><path d="M7 8.6C7 5.9 9.2 4.2 12 4.2s5 1.7 5 4.4v5.1c0 3.5-2.2 6-5 6s-5-2.5-5-6z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 4.9C6 4.1 3.6 5.4 3.1 8.4l-.6 3.9c-.2 1.4 1.1 2.3 2.3 1.6L7 12.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.4 4.9c2.6-.8 5 .5 5.5 3.5l.6 3.9c.2 1.4-1.1 2.3-2.3 1.6L17 12.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.8" cy="10.2" r="1" fill="currentColor"/><circle cx="14.2" cy="10.2" r="1" fill="currentColor"/><path d="M11 12.9h2c.5 0 .7.5.4.9l-1 .95c-.25.25-.6.25-.85 0l-1-.95c-.35-.4-.1-.9.45-.9z" fill="currentColor"/></symbol><symbol id="pt-cat-l" viewBox="0 0 24 24"><path d="M5.3 10.5 5 4.9c0-.7.6-1 1.1-.6l3.6 3.4c1.5-.4 3.1-.4 4.6 0l3.6-3.4c.5-.4 1.1-.1 1.1.6l-.3 5.6c.8 1 1.2 2.1 1.2 3.3 0 3.4-3.4 5.8-7.9 5.8s-7.9-2.4-7.9-5.8c0-1.2.4-2.3 1.2-3.3z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.3" cy="13.1" r="1" fill="currentColor"/><circle cx="14.7" cy="13.1" r="1" fill="currentColor"/><path d="M11.2 15.2h1.6c.4 0 .6.4.3.7l-.8.7c-.2.2-.5.2-.6 0l-.8-.7c-.3-.3-.1-.7.3-.7z" fill="currentColor"/></symbol><symbol id="pt-dog-s" viewBox="0 0 24 24"> <g mask="url(#ptfg1)"><path d="M8.6 4.9C6 4.1 3.6 5.4 3.1 8.4l-.6 3.9c-.2 1.4 1.1 2.3 2.3 1.6L7 12.6L7 8.6z" fill="currentColor" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/><path d="M15.4 4.9c2.6-.8 5 .5 5.5 3.5l.6 3.9c.2 1.4-1.1 2.3-2.3 1.6L17 12.6L17 8.6z" fill="currentColor" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round"/></g> <path d="M7 8.6C7 5.9 9.2 4.2 12 4.2s5 1.7 5 4.4v5.1c0 3.5-2.2 6-5 6s-5-2.5-5-6z" fill="currentColor" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" mask="url(#ptfe1)"/></symbol><symbol id="pt-cat-s" viewBox="0 0 24 24"> <path d="M5.3 10.5 5 4.9c0-.7.6-1 1.1-.6l3.6 3.4c1.5-.4 3.1-.4 4.6 0l3.6-3.4c.5-.4 1.1-.1 1.1.6l-.3 5.6c.8 1 1.2 2.1 1.2 3.3 0 3.4-3.4 5.8-7.9 5.8s-7.9-2.4-7.9-5.8c0-1.2.4-2.3 1.2-3.3z" fill="currentColor" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" mask="url(#ptfe2)"/></symbol></defs></svg>';
+  document.body.appendChild(defs);
+  scroll=row.querySelector('.pt-scroll'); track=row.querySelector('.pt-track'); hl=row.querySelector('.pt-hl');
+  tip=document.createElement('div'); tip.className='pt-tip'; document.body.appendChild(tip);
+  pop=document.createElement('div'); pop.className='pt-pop'; pop.setAttribute('role','menu'); document.body.appendChild(pop);
+  row.querySelector('.pt-add').onclick=function(e){ e.stopPropagation(); openAdd(this); };
+  row.querySelector('.pt-more').onclick=function(e){ e.stopPropagation(); openMore(this); };
+  document.addEventListener('pointerdown',function(e){ if(pop.classList.contains('show')&&!pop.contains(e.target)) closePop(); },true);
+  document.addEventListener('keydown',keys,true);
+  window.addEventListener('resize',function(){ moveHl(false); });
+  scroll.addEventListener('scroll',function(){ hideTip(); },{passive:true});
+  }
+
+function sig(){ return JSON.stringify([curId(),T.tabs.map(function(t){ var c=counts(sheetById(t.id)), l=label(t); return [t.id,t.pinned,t.gone,c.late,c.due,Math.round(c.pct*100),l.short,l.loc]; })]); }
+function pinnedFirst(){ var a=T.tabs.filter(function(t){ return t.pinned; }), b=T.tabs.filter(function(t){ return !t.pinned; }); T.tabs=a.concat(b); }
+function render(force){
+  if(!row) return; pinnedFirst(); var s=sig(); if(!force&&s===lastSig) return; lastSig=s;
+  var cur=curId(), before={};
+  track.querySelectorAll('.pt-tab').forEach(function(el){ before[el.dataset.id]=el.getBoundingClientRect().left; });
+  track.querySelectorAll('.pt-tab').forEach(function(el){ el.remove(); });
+  T.tabs.forEach(function(t,i){
+    var l=label(t), c=t.gone?{late:0,due:0}:counts(sheetById(t.id)), el=document.createElement('div');
+    el.className='pt-tab'+(t.id===cur?' cur':'')+(t.pinned?' pinned':'')+(t.gone?' gone':'')+(t.fresh?' enter':''); t.fresh=false;
+    el.dataset.id=t.id; el.setAttribute('role','presentation');
+    var badge=c.late?'<span class="pt-n late" aria-hidden="true">'+c.late+'</span>':c.due?'<span class="pt-n due" aria-hidden="true">'+c.due+'</span>':'';
+    var aria=l.full+(l.loc?', '+l.loc:'')+(c.late?', '+c.late+' overdue':'')+(c.due?', '+c.due+' due now':'')+(t.pinned?', pinned':'')+(t.gone?', discharged':'')+(i<9?', Option '+(i+1):'');
+    /* regular tabs: a dog or cat glyph; pinned tabs keep the initial (it's all they show, so it has to tell them apart) */
+    var glyph=t.pinned?'<span class="pt-av'+(l.sp?' '+l.sp:'')+'" aria-hidden="true">'+esc((l.nm||'?')[0].toUpperCase())+'</span>'
+      :(l.sp?['l','s'].map(function(v){ return '<svg class="pt-sp pt-sp-'+v+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#pt-'+(l.sp==='fel'?'cat':'dog')+'-'+v+'"/></svg>'; }).join(''):'<span class="pt-av" aria-hidden="true">'+esc((l.nm||'?')[0].toUpperCase())+'</span>');   /* icon A: outline, solid on the open tab */
+    var av='<span class="pt-rw" data-id="'+esc(t.id)+'" data-p="'+(t.gone?1:c.pct).toFixed(4)+'">'+ringSvg(t.gone?{late:0,due:0}:c)+glyph+'</span>';
+    el.innerHTML='<button type="button" class="pt-x" tabindex="-1" aria-label="Close '+esc(l.nm)+'’s tab">'+X+'</button>'
+      +'<button type="button" class="pt-main" role="tab" aria-selected="'+(t.id===cur)+'" tabindex="'+(t.id===cur?0:-1)+'" aria-label="'+esc(aria)+'">'
+      +av+(t.pinned?'':'<span class="pt-nm"><span translate="no">'+esc(l.short)+'</span>'+(t.gone?'<span class="pt-gl"> · Discharged</span>':'')+'</span>')+badge+'</button>';
+    track.appendChild(el); wire(el,t);
+  });
+  /* FLIP: tabs that moved slide to their new place */
+  track.querySelectorAll('.pt-tab').forEach(function(el){ var b=before[el.dataset.id]; if(b==null) return; var dx=b-el.getBoundingClientRect().left; if(Math.abs(dx)<1) return;
+    el.style.transition='none'; el.style.transform='translateX('+dx+'px)'; requestAnimationFrame(function(){ el.style.transition='transform .34s var(--pt-ease)'; el.style.transform=''; }); });
+  if(!T.tabs.length&&!track.querySelector('.pt-empty')){ var em=document.createElement('div'); em.className='pt-empty'; em.textContent='Your patients appear here — open one, or use Add patient.'; track.appendChild(em); }
+  if(T.tabs.length){ var e0=track.querySelector('.pt-empty'); if(e0) e0.remove(); }
+  animRings();
+  moveHl(lastCur!==null&&lastCur!==cur); lastCur=cur;
+  phone(); persist(); }
+function animRings(){
+  var red=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  track.querySelectorAll('.pt-rw').forEach(function(w){ var id=w.dataset.id, p=+w.dataset.p, v=w.querySelector('.pt-rv'); if(!v) return;
+    var prev=lastPct.hasOwnProperty(id)?lastPct[id]:0;   /* first paint fills from empty */
+    v.style.transition='none'; v.style.strokeDashoffset=(RING_C*(1-prev)).toFixed(2); v.getBoundingClientRect();
+    requestAnimationFrame(function(){ v.style.transition=red?'none':'stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1), stroke .3s'; v.style.strokeDashoffset=(RING_C*(1-p)).toFixed(2); });
+    if(lastPct.hasOwnProperty(id)&&prev<1&&p>=1&&!red){ w.classList.remove('pt-pulse'); w.getBoundingClientRect(); w.classList.add('pt-pulse'); }
+    lastPct[id]=p; }); }
+function moveHl(scrollTo){
+  var el=track.querySelector('.pt-tab.cur'); if(!el){ hl.classList.add('off'); return; }
+  hl.classList.remove('off'); hl.style.width=el.offsetWidth+'px'; hl.style.transform='translateX('+el.offsetLeft+'px)';
+  if(scrollTo!==false){ var l=el.offsetLeft, r=l+el.offsetWidth; if(l<scroll.scrollLeft+12||r>scroll.scrollLeft+scroll.clientWidth-24) scroll.scrollTo({left:Math.max(0,l-scroll.clientWidth/3),behavior:'smooth'}); } }
+
+function go(t){
+  if(t.gone){ toastAct(label(t).nm+' was discharged — the tab clears itself tomorrow.','Close tab',function(){ closeTab(t.id); }); return; }
+  if(curId()!==t.id) openSheet(t.id,true); else { try{ window.selectCTab&&selectCTab('sheet'); }catch(e){} }
+  setTimeout(function(){ render(true); },30); }
+function closeTab(id){
+  var i=T.tabs.findIndex(function(t){ return t.id===id; }); if(i<0) return; var t=T.tabs[i];
+  var el=track.querySelector('.pt-tab[data-id="'+CSS.escape(id)+'"]');
+  var finish=function(){ T.tabs.splice(T.tabs.indexOf(t),1);
+    if(id===curId()){ var nx=T.tabs[i]||T.tabs[i-1]; if(nx&&!nx.gone) openSheet(nx.id,true); }
+    render(true); };
+  if(el&&!matchMedia('(prefers-reduced-motion: reduce)').matches){ el.style.transition='opacity .16s, max-width .22s var(--pt-ease), padding .22s'; el.style.maxWidth=el.offsetWidth+'px';
+    requestAnimationFrame(function(){ el.style.opacity='0'; el.style.maxWidth='0px'; el.style.overflow='hidden'; }); setTimeout(finish,220); }
+  else finish(); }
+function togglePin(id){ var t=tab(id); if(!t) return; t.pinned=!t.pinned; render(true); say(t.pinned?label(t).nm+' stays in your tabs':label(t).nm+' unpinned'); }
+
+/* ---------- tab gestures: click · ✕ · middle-click · right-click menu · drag (mouse) · press-and-hold (touch) ---------- */
+function wire(el,t){
+  var main=el.querySelector('.pt-main'), x=el.querySelector('.pt-x');
+  x.onclick=function(e){ e.stopPropagation(); closeTab(t.id); };
+  el.addEventListener('auxclick',function(e){ if(e.button===1&&!t.pinned){ e.preventDefault(); closeTab(t.id); } });
+  el.addEventListener('contextmenu',function(e){ e.preventDefault(); tabMenu(t,el); });
+  el.addEventListener('mouseenter',function(){ if(!drag) showTip(t,el); });
+  el.addEventListener('mouseleave',hideTip);
+  main.addEventListener('pointerdown',function(e){ if(e.pointerType!=='mouse'||e.button!==0) return; startPress(e,el,t,false); });
+  main.addEventListener('touchstart',function(e){ if(e.touches.length===1) startPress(e.touches[0],el,t,true); },{passive:true});
+  main.addEventListener('keydown',function(e){
+    var i=T.tabs.indexOf(t);
+    if((e.key==='ArrowRight'||e.key==='ArrowLeft')&&!e.altKey){ e.preventDefault(); var j=i+(e.key==='ArrowRight'?1:-1);
+      if(e.shiftKey&&(e.metaKey||e.ctrlKey)){ move(i,j); focusTab(t.id); return; }   /* ⇧⌘←/→ moves the tab */
+      var n=T.tabs[j]; if(n) focusTab(n.id); }
+    if(e.key==='Delete'||e.key==='Backspace'){ if(!t.pinned){ e.preventDefault(); closeTab(t.id); } }
+    if(e.key==='ContextMenu'||(e.key==='F10'&&e.shiftKey)){ e.preventDefault(); tabMenu(t,el); } });
+  main.onclick=function(e){ if(suppress){ suppress=false; return; } go(t); };
+}
+function focusTab(id){ var b=track.querySelector('.pt-tab[data-id="'+CSS.escape(id)+'"] .pt-main'); if(b){ track.querySelectorAll('.pt-main').forEach(function(m){ m.tabIndex=-1; }); b.tabIndex=0; b.focus(); } }
+function move(i,j){ if(j<0||j>=T.tabs.length||i===j) return; var t=T.tabs.splice(i,1)[0]; T.tabs.splice(j,0,t); render(true); }
+
+var drag=null, suppress=false;
+function startPress(p,el,t,touch){
+  var st={el:el,t:t,x0:p.clientX,y0:p.clientY,touch:touch,lifted:false,moved:false,timer:null,grab:0};
+  if(touch){ st.timer=setTimeout(function(){ lift(st); try{ navigator.vibrate&&navigator.vibrate(8); }catch(e){} },320); el.classList.add('press'); }
+  var mv=function(ev){ var q=ev.touches?ev.touches[0]:ev; var dx=q.clientX-st.x0, dy=q.clientY-st.y0;
+      if(!st.lifted){ if(touch){ if(Math.abs(dx)>8||Math.abs(dy)>8){ clearTimeout(st.timer); el.classList.remove('press'); cleanup(); } return; }
+        if(Math.abs(dx)>5){ lift(st); } else return; }
+      if(ev.cancelable) ev.preventDefault(); st.moved=true; dragMove(st,q.clientX); },
+      up=function(){ clearTimeout(st.timer); el.classList.remove('press');
+        if(st.lifted){ if(st.moved){ suppress=!touch; drop(st); } else { drop(st); if(touch){ suppress=true; tabMenu(t,el); setTimeout(function(){ suppress=false; },400); } } }
+        cleanup(); },
+      cleanup=function(){ window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('touchmove',mv); window.removeEventListener('touchend',up); window.removeEventListener('touchcancel',up); };
+  if(touch){ window.addEventListener('touchmove',mv,{passive:false}); window.addEventListener('touchend',up); window.addEventListener('touchcancel',up); }
+  else { window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); }
+}
+function lift(st){ st.lifted=true; drag=st; hideTip(); var el=st.el; el.classList.remove('press'); el.classList.add('lift');
+  st.start=el.offsetLeft; st.grab=st.x0-el.getBoundingClientRect().left; st.sx=scroll.scrollLeft; hl.classList.add('off'); }
+function dragMove(st,cx){
+  var el=st.el, tr=track.getBoundingClientRect(), want=cx-tr.left-st.grab;   /* where the tab's left edge should be, in track coordinates */
+  /* auto-scroll near the edges (iPad / narrow screens) */
+  var sr=scroll.getBoundingClientRect(); if(cx>sr.right-30) scroll.scrollLeft+=8; else if(cx<sr.left+30) scroll.scrollLeft-=8;
+  var tabs=[].slice.call(track.querySelectorAll('.pt-tab')), i=tabs.indexOf(el), mid=want+el.offsetWidth/2;
+  /* swap with a neighbour once the dragged tab's middle passes the neighbour's middle */
+  var same=function(n){ return n&&n.classList.contains('pinned')===el.classList.contains('pinned'); };
+  var nb=tabs[i+1]; if(same(nb)&&mid>nb.offsetLeft+nb.offsetWidth/2){ flipSwap(nb,function(){ track.insertBefore(nb,el); }); }
+  var pb=tabs[i-1]; if(same(pb)&&mid<pb.offsetLeft+pb.offsetWidth/2){ flipSwap(pb,function(){ track.insertBefore(el,pb); }); }
+  el.style.transform='translateX('+(want-el.offsetLeft)+'px)'; }
+function flipSwap(other,doIt){ var b=other.offsetLeft; doIt(); var dx=b-other.offsetLeft; other.style.transition='none'; other.style.transform='translateX('+dx+'px)';
+  requestAnimationFrame(function(){ other.style.transition='transform .26s var(--pt-ease)'; other.style.transform=''; }); }
+function drop(st){ var el=st.el; drag=null;
+  var ids=[].slice.call(track.querySelectorAll('.pt-tab')).map(function(n){ return n.dataset.id; });
+  T.tabs.sort(function(a,b){ return ids.indexOf(a.id)-ids.indexOf(b.id); });
+  el.style.transition='transform .3s var(--pt-ease), box-shadow .2s'; el.style.transform=''; setTimeout(function(){ el.classList.remove('lift'); el.style.transition=''; render(true); },300);
+  setTimeout(function(){ moveHl(false); },10); }
+
+/* ---------- tooltip ---------- */
+var tipT=null;
+function showTip(t,el){ clearTimeout(tipT); tipT=setTimeout(function(){ if(drag) return; var l=label(t), c=t.gone?{late:0,due:0}:counts(sheetById(t.id)), i=T.tabs.indexOf(t);
+  var line=t.gone?'Discharged · clears tomorrow morning':[c.late?c.late+' overdue':'',c.due?c.due+' due now':'',(!c.late&&!c.due)?'Nothing due':'',c.sched?Math.round(c.pct*100)+'% charted today':''].filter(Boolean).join(' · ');
+  tip.innerHTML='<b>'+esc(l.full)+'</b>'+(i<9?'<span class="k">⌥'+(i+1)+'</span>':'')+'<span class="m">'+esc([l.loc,line].filter(Boolean).join(' · '))+(t.pinned?' · Pinned':'')+'</span>';
+  var r=el.getBoundingClientRect(); tip.style.left=Math.max(8,Math.min(r.left,innerWidth-270))+'px'; tip.style.top=(r.bottom+8)+'px'; tip.classList.add('show'); },450); }
+function hideTip(){ clearTimeout(tipT); if(tip) tip.classList.remove('show'); }
+
+/* ---------- menus ---------- */
+function place(anchor,alignRight){ var r=anchor.getBoundingClientRect(); pop.style.top=(r.bottom+8)+'px';
+  var w=Math.max(pop.offsetWidth,240); pop.style.left=Math.max(8,Math.min(alignRight?r.right-w:r.left,innerWidth-w-8))+'px'; pop.style.transformOrigin=alignRight?'top right':'top left';
+  requestAnimationFrame(function(){ pop.classList.add('show'); var f=pop.querySelector('.pt-mi'); if(f) f.focus({preventScroll:true}); }); }
+function closePop(){ pop.classList.remove('show'); }
+function items(list){ return list.map(function(it){ if(it==='-') return '<div class="pt-psep"></div>'; if(it.h) return '<div class="pt-ph">'+esc(it.h)+'</div>';
+  return '<button type="button" role="menuitem" class="pt-mi'+(it.on?' on':'')+'" data-k="'+esc(it.k)+'">'+(it.icon||'')+'<span class="pt-tx">'+it.html+'</span>'+(it.kbd?'<span class="pt-k">'+esc(it.kbd)+'</span>':'')+'</button>'; }).join(''); }
+function bind(map){ pop.querySelectorAll('[data-k]').forEach(function(b){ b.onclick=function(){ closePop(); var f=map[b.dataset.k]; if(f) f(); }; }); }
+function tabMenu(t,el){ hideTip(); var l=label(t), i=T.tabs.indexOf(t);
+  pop.innerHTML=items([{h:l.full},
+    {k:'pin',icon:PINO,html:t.pinned?'Unpin':'Pin — keep this tab'},
+    {k:'left',html:'Move left',kbd:'⇧⌘←'},{k:'right',html:'Move right',kbd:'⇧⌘→'},'-',
+    {k:'others',html:'Close other tabs'},{k:'close',html:t.pinned?'Unpin and close':'Close tab'}]);
+  bind({pin:function(){ togglePin(t.id); },left:function(){ move(i,i-1); },right:function(){ move(i,i+1); },
+    others:function(){ T.tabs.forEach(function(x){ if(x!==t&&!x.pinned&&x.mine) T.closed[x.id]=1; }); T.tabs=T.tabs.filter(function(x){ return x===t||x.pinned; }); if(curId()!==t.id&&!t.gone) openSheet(t.id,true); render(true); },
+    close:function(){ closeTab(t.id); }}); place(el,false); }
+function openAdd(btn){ var open={}; T.tabs.forEach(function(t){ open[t.id]=1; });
+  var rest=SHEETS.filter(function(s){ return !open[s._id]; });
+  var list=[{h:'Admitted patients'}].concat(rest.map(function(s){ var p=s.patient||{}, c=counts(s);
+    return {k:'o:'+s._id,icon:'<span class="pt-av">'+esc((p.name||'?')[0].toUpperCase())+'</span>',html:'<b>'+esc(((p.name||'')+' '+(p.last||'')).trim())+'</b><small>'+esc([p.location,c.late?c.late+' overdue':c.due?c.due+' due now':''].filter(Boolean).join(' · '))+'</small>'}; }));
+  pop.innerHTML=items(list)+(rest.length?'':'<div class="pt-me">Every admitted patient is already open.</div>');
+  var map={}; rest.forEach(function(s){ map['o:'+s._id]=function(){ ensure(s._id,'recent'); openSheet(s._id,true); render(true); }; }); bind(map); place(btn,true); }
+function openMore(btn){
+  pop.innerHTML=items([{k:'auto',icon:CHK,on:T.auto,html:'Open my patients automatically<small>Assign to me · your doctor or tech patients</small>'},'-',
+    {k:'closeall',html:'Close all except pinned'},'-',{h:'Shortcuts'},{k:'',html:'Go to tab 1–9',kbd:'⌥1–9'},{k:'',html:'Next / previous tab',kbd:'⌥→ ⌥←'},{k:'',html:'Move a tab',kbd:'⇧⌘← →'}]);
+  bind({auto:function(){ T.auto=!T.auto; if(T.auto) T.closed={}; render(true); say(T.auto?'Your patients open here automatically':'Only the patients you open'); },
+    closeall:function(){ T.tabs.forEach(function(x){ if(!x.pinned&&x.id!==curId()&&x.mine) T.closed[x.id]=1; }); T.tabs=T.tabs.filter(function(t){ return t.pinned||t.id===curId(); }); render(true); }}); place(btn,true); }
+
+/* ---------- keyboard: ⌥1–9 · ⌥←/→ (e.code, so it works on a Mac where ⌥1 types ¡) ---------- */
+function keys(e){
+  if(!e.altKey||e.metaKey||e.ctrlKey) return; var el=document.activeElement, typing=el&&(/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)||el.isContentEditable);
+  var m=/^Digit([1-9])$/.exec(e.code||'');
+  if(m){ var t=T.tabs[Number(m[1])-1]; if(t){ e.preventDefault(); e.stopPropagation(); go(t); } return; }
+  if((e.code==='ArrowRight'||e.code==='ArrowLeft')&&!typing){ var i=T.tabs.findIndex(function(x){ return x.id===curId(); }), d=e.code==='ArrowRight'?1:-1;
+    for(var k=1;k<=T.tabs.length;k++){ var n=T.tabs[(i+d*k+T.tabs.length*9)%T.tabs.length]; if(n&&!n.gone){ e.preventDefault(); e.stopPropagation(); go(n); return; } } } }
+
+/* ---------- phone: the patient you're on + "N open" → a sheet ---------- */
+var sheet,scrim;
+function phone(){ var box=row.querySelector('.pt-phone'), t=tab(curId()), l=t?label(t):null, c=t?counts(sheetById(t.id)):{late:0,due:0};
+  var anyLate=T.tabs.some(function(x){ return x.id!==curId()&&!x.gone&&counts(sheetById(x.id)).late; });
+  box.innerHTML='<button type="button" class="pt-cur" aria-label="Open patients">'+(t&&t.pinned?PIN:'')+'<span class="pt-nm"'+(l?' translate="no"':'')+'>'+esc(l?l.short:'No patient open')+'</span>'+(l&&l.loc?'<span class="pt-loc">'+esc(l.loc)+'</span>':'')
+    +(c.late?'<span class="pt-n late">'+c.late+'</span>':c.due?'<span class="pt-n due">'+c.due+'</span>':'')+'</button>'
+    +'<button type="button" class="pt-open" aria-label="'+T.tabs.length+' open patients">'+(anyLate?'<span class="dot" aria-hidden="true"></span>':'')+STACK+T.tabs.length+' open</button>';
+  box.querySelectorAll('button').forEach(function(b){ b.onclick=openSheetList; });
+  if(sheet&&sheet.classList.contains('show')) fillSheet(); }
+function openSheetList(){ if(!sheet){ scrim=document.createElement('div'); scrim.className='pt-scrim'; sheet=document.createElement('div'); sheet.className='pt-sheet'; sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Open patients');
+    document.body.appendChild(scrim); document.body.appendChild(sheet); scrim.onclick=closeSheetList; }
+  fillSheet(); requestAnimationFrame(function(){ scrim.classList.add('show'); sheet.classList.add('show'); }); }
+function closeSheetList(){ scrim.classList.remove('show'); sheet.classList.remove('show'); }
+function fillSheet(){ var cur=curId(), open={};
+  var li=function(s,t){ var p=(s&&s.patient)||{}, l=t?label(t):{full:((p.name||'')+' '+(p.last||'')).trim(),loc:p.location,nm:p.name}, c=(t&&t.gone)?{late:0,due:0}:counts(s), id=t?t.id:s._id;
+    var sub=t&&t.gone?'Discharged · clears tomorrow':[l.loc,c.late?c.late+' overdue':'',c.due?c.due+' due now':''].filter(Boolean).join(' · ')||'Nothing due';
+    return '<div class="pt-li'+(id===cur?' cur':'')+(t&&t.gone?' gone':'')+'"><button type="button" class="pt-go" data-go="'+esc(id)+'"><span class="pt-av">'+esc((l.nm||l.full||'?')[0].toUpperCase())+'</span><span class="pt-tx"><b>'+esc(l.full)+'</b><small>'+esc(sub)+'</small></span>'
+      +(c.late?'<span class="pt-n late">'+c.late+'</span>':c.due?'<span class="pt-n due">'+c.due+'</span>':'')+'</button>'
+      +(!t?'<span class="pt-ib" aria-hidden="true"></span><span class="pt-ib" aria-hidden="true"></span>'
+         :(t.gone?'<span class="pt-ib" aria-hidden="true"></span>':'<button type="button" class="pt-ib'+(t.pinned?' on':'')+'" data-pin="'+esc(id)+'" aria-label="'+(t.pinned?'Unpin':'Pin')+'">'+(t.pinned?PIN.replace('pt-pin',''):PINO)+'</button>')
+          +(t.pinned?'<span class="pt-ib" aria-hidden="true"></span>':'<button type="button" class="pt-ib" data-x="'+esc(id)+'" aria-label="Close tab">'+X.replace('viewBox','style="width:12px;height:12px" viewBox')+'</button>'))+'</div>'; };
+  T.tabs.forEach(function(t){ open[t.id]=1; });
+  var rest=SHEETS.filter(function(s){ return !open[s._id]; });
+  sheet.innerHTML='<div class="pt-grab"></div><div class="pt-sh"><b>'+T.tabs.length+' open</b><button type="button" data-done="1">Done</button></div>'
+    +T.tabs.map(function(t){ return li(sheetById(t.id),t); }).join('')
+    +(rest.length?'<div class="pt-sub">Other admitted patients</div>'+rest.map(function(s){ return li(s,null); }).join(''):'');
+  sheet.querySelector('[data-done]').onclick=closeSheetList;
+  sheet.querySelectorAll('[data-go]').forEach(function(b){ b.onclick=function(){ var id=b.dataset.go, t=tab(id); if(t&&t.gone){ go(t); return; } if(!t) ensure(id,'recent'); closeSheetList(); openSheet(id,true); setTimeout(function(){ render(true); },30); }; });
+  sheet.querySelectorAll('[data-pin]').forEach(function(b){ b.onclick=function(){ togglePin(b.dataset.pin); fillSheet(); }; });
+  sheet.querySelectorAll('[data-x]').forEach(function(b){ b.onclick=function(){ closeTab(b.dataset.x); setTimeout(fillSheet,260); }; }); }
+
+/* ---------- small helpers ---------- */
+function say(m){ try{ window.toast?window.toast(m):0; }catch(e){} }
+function toastAct(msg,act,fn){ var w=document.getElementById('toastWrap'); if(!w){ say(msg); return; } var el=document.createElement('div'); el.className='ctoast';
+  el.innerHTML='<span>'+esc(msg)+'</span> <button type="button" style="all:unset;margin-left:10px;font-weight:700;cursor:pointer;color:var(--accent-2,#4DC8E0)">'+esc(act)+'</button>';
+  el.querySelector('button').onclick=function(){ fn(); el.remove(); }; w.appendChild(el); setTimeout(function(){ el.style.opacity='0'; setTimeout(function(){ el.remove(); },300); },4200); }
+
+/* ---------- saving: ts_prefs/{uid}, and this device for an instant start ---------- */
+var uid='', lastSaved='', saveT=null, loaded=false;
+function snap(){ return {tabs:T.tabs.map(function(t){ var o={id:t.id}; ['pinned','mine','gone','gone_day','name','last','loc','species'].forEach(function(k){ if(t[k]!=null&&t[k]!==false&&t[k]!=='') o[k]=t[k]; }); return o; }),tabs_auto:T.auto,tabs_closed:T.closed}; }
+function persist(){ if(!uid||!loaded) return; var s=JSON.stringify(snap()); if(s===lastSaved) return; lastSaved=s;
+  try{ localStorage.setItem('ts_tabs_'+uid,s); }catch(e){}
+  clearTimeout(saveT); saveT=setTimeout(function(){ if(!DB||!uid) return; try{ var d=JSON.parse(lastSaved); d.tabs_at=new Date().toISOString(); DB.collection('ts_prefs').doc(uid).set(d,{merge:true}).catch(function(e){ console.warn('[tabs] save failed',e&&e.code); }); }catch(e){} },700); }
+function adopt(d){ if(!d) return; if(Array.isArray(d.tabs)) T.tabs=d.tabs.filter(function(t){ return t&&t.id; }).map(function(t){ var o={}; for(var k in t) o[k]=t[k]; return o; });
+  if(typeof d.tabs_auto==='boolean') T.auto=d.tabs_auto; if(d.tabs_closed&&typeof d.tabs_closed==='object') T.closed=d.tabs_closed; }
+function load(u){ uid=u; loaded=false; T={tabs:[],auto:true,closed:{}};
+  try{ var c=localStorage.getItem('ts_tabs_'+u); if(c) adopt(JSON.parse(c)); }catch(e){}
+  lastSaved=JSON.stringify(snap()); loaded=true; render(true);
+  if(DB) try{ DB.collection('ts_prefs').doc(u).get().then(function(s){ if(uid!==u) return; var d=s&&s.exists&&s.data(); if(d&&Array.isArray(d.tabs)){ adopt(d); lastSaved=JSON.stringify(snap()); try{ localStorage.setItem('ts_tabs_'+u,lastSaved); }catch(e){} render(true); } }).catch(function(){}); }catch(e){} }
+
+/* ---------- keeping the row in step with the hospital ---------- */
+var listSeen=0;
+function tick(){ if(!row||!uid) return; var dk=dayKey(), cur=curId();
+  if(SHEETS.length) listSeen++;
+  /* your patients, unless you closed their tab while they're here */
+  if(T.auto&&listSeen>1) SHEETS.forEach(function(s){ if(!tab(s._id)&&!T.closed[s._id]&&isMine(s)) ensure(s._id,'mine'); });
+  /* opened another way (the patient menu, the board, a link) */
+  if(cur&&!tab(cur)&&listed(cur)){ ensure(cur,'recent'); delete T.closed[cur]; }
+  if(listSeen>2){
+    T.tabs.forEach(function(t){ var here=listed(t.id); if(!here&&!t.gone){ label(t); t.gone=true; t.gone_day=dk; } else if(here&&t.gone){ t.gone=false; delete t.gone_day; } });
+    T.tabs=T.tabs.filter(function(t){ return !(t.gone&&t.gone_day&&t.gone_day!==dk); });   /* discharged: gone the next day */
+    Object.keys(T.closed).forEach(function(id){ if(!listed(id)) delete T.closed[id]; }); }
+  render(false); }
+/* closing one of your own patients keeps it closed while they're admitted */
+var _close=closeTab; closeTab=function(id){ var t=tab(id); if(t&&(t.mine||isMine(sheetById(id)||{}))) T.closed[id]=1; _close(id); };
+
+function start(){ build();
+  if(AUTH) AUTH.onAuthStateChanged(function(u){ if(u&&u.uid!==uid) load(u.uid); else if(!u){ uid=''; T={tabs:[],auto:true,closed:{}}; render(true); } });
+  setInterval(tick,1000); setInterval(function(){ render(true); },30000); }   /* counts and rings move with the clock */
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+window.__tsTabs={get state(){ return T; }, render:function(){ render(true); }, tick:tick};   /* for tests */
+})();
 window.__tsStore={removeNote:removeNote, sync:sync, get cur(){ return CUR; }, get doc(){ return curDoc; }, get sheets(){ return SHEETS; }, openSheet:openSheet, dayKey:dayKey,
   /* for tests and the preview only */ infAdd:function(){ return infAdd.apply(null,arguments); }, infBuild:function(){ return infBuild.apply(null,arguments); }, addOrders:function(L){ return addOrders(L); }, stopOrder:function(){ return stopOrder.apply(null,arguments); }, get tasks(){ return TASKS; }, volume:function(o,a,b){ return volume(o,a,b); }};
 })();
