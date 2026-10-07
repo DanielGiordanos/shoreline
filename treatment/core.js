@@ -137,6 +137,13 @@ function boot(){ mkBtn(); apply(first); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 setTimeout(function(){ document.documentElement.classList.remove('i18n-wait'); },1500);
 })();
+/* escape text for HTML — anything a person typed (core/notes.js, core/board.js, core/timeline.js) */
+function hEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+/* markup the app stored itself (audit lines: "<b>Maropitant</b> given"): its bare <b> <i> <em> <strong> <small> <br> stay, any other tag
+   shows as text — so a line written by an older version or another app can't run anything (Oct 2026) */
+function hSafe(v){return String(v==null?'':v).replace(/<(?!\/?(?:b|i|em|strong|small|br)\s*\/?>)/gi,'&lt;');}
+/* a value inside an inline handler: onclick="f(${hJs(id)})" (a quoted, escaped JS string) */
+function hJs(v){return hEsc(JSON.stringify(String(v==null?'':v)));}
 
 /* ═══════════════════════════════════════════════════════════════
    TREATMENT SHEETS · CORE UI (from the Flow Clinical prototype)
@@ -186,8 +193,23 @@ const SECTIONS=[
   {key:'Diagnostics',icon:'M9 3v6l-5 9a2 2 0 002 3h12a2 2 0 002-3l-5-9V3M8 3h8'},
 ];
 const FREQ_INT={q1h:1,q2h:2,q4h:4,q6h:6,q8h:8,q12h:12,q24h:24,SID:24,BID:12,TID:8,QID:6};
-function freqTimes(o){if(o.draft)return [];   /* a draft order (store/drafts.js) has no slots until a doctor approves it */
-  if(['PRN','Continuous','Until discontinued','Custom'].includes(o.freq))return [];if(o.freq==='Once')return [o.start];const int=FREQ_INT[o.freq]||24,out=[];for(let h=o.start;h<24;h+=int)out.push(h);return out;}
+/* the hours an order is due on day dk (YYYYMMDD; today if left out). Oct 2026 fix: a schedule keeps its rhythm across midnight —
+   q8h started at 3 PM is 3 PM and 11 PM that day, then 7 AM · 3 PM · 11 PM every day after (before: it restarted at 3 PM daily and
+   lost the overnight doses). The schedule's day is o.start_at (set whenever the first dose is chosen) or, for older orders, ordered_at.
+   "Once" is due only on that day — or later, while it still hasn't been charted (pass the sheet's marks), so a missed one stays late.
+   Once charted, the order carries once_done={dk,key,at} (store/base.js sync), so it stays done on every screen and every later day. */
+var SCHED_DK={};
+function schedDay(o){ var iso=o.start_at||o.ordered_at; if(!iso) return null; var k=SCHED_DK[iso]; if(k) return k; var d=new Date(iso); if(isNaN(d)) return null;
+  k=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'); SCHED_DK[iso]=k; return k; }
+function onceCharted(o,marks){ if(!marks) return false; var tail='_'+o.id+'_'; for(var k in marks){ var m=marks[k]; if(m&&m.status&&k.indexOf(tail)===8) return true; } return false; }
+function freqTimes(o,dk,marks){if(o.draft)return [];   /* a draft order (store/drafts.js) has no slots until a doctor approves it */
+  if(['PRN','Continuous','Until discontinued','Custom'].includes(o.freq))return [];
+  var a=schedDay(o); if(!dk){ var t=new Date(); dk=t.getFullYear()+String(t.getMonth()+1).padStart(2,'0')+String(t.getDate()).padStart(2,'0'); }
+  if(a&&dk<a) return [];
+  if(o.freq==='Once'){ var od=o.once_done; if(od&&od.dk) return (dk===a||dk===od.dk)?[o.start]:[];   /* charted (Oct 2026): its own day and the day it was charted — never again, whatever days are loaded */
+    return (!a||dk===a||!onceCharted(o,marks)&&marks)?[o.start]:[]; }   /* older orders without once_done: from the marks at hand */
+  const int=FREQ_INT[o.freq]||24,out=[]; let h=(a&&dk===a)?o.start:((o.start%int)+int)%int;   /* the first day from the chosen hour; after it, the same rhythm from midnight */
+  for(;h<24;h+=int)out.push(h);return out;}
 
 let TASKS=[],AUDIT=[],NOTES=[],TASK_SEQ=0;
 function deriveStatus(t){if(t.status==='completed')return 'completed';if(t.status==='held'||t.status==='skipped')return 'skipped';if(t.status==='delayed')return 'scheduled';const n=nowMin();if(t.sched>n+18)return 'scheduled';if(t.sched>=n-18)return 'due';return 'overdue';}
@@ -390,14 +412,14 @@ function renderDash(){
     const stay=p.stay?`<div class="sbc c-io sb-stay" title="${p.stay.tip}"><div class="io-day">${p.stay.day}</div>${p.stay.pct!=null?`<div class="sb-dtrack" aria-hidden="true"><i style="width:${(p.stay.pct*100).toFixed(1)}%"></i></div>`:''}<div class="io-time">${p.stay.since}</div></div>`
       :`<div class="sbc c-io"><div class="io-date">${p.date}</div><div class="io-time">${p.time}</div></div>`;
     const left=`<div class="sb-left">
-      <div class="sbc c-pt"><div class="pt-top">${p.pinned?IC.pin:''}${IC.dots}<span class="pt-nm">${p.name}</span></div>
-        <div class="pt-sig2">${p.sig}</div>
+      <div class="sbc c-pt"><div class="pt-top">${p.pinned?IC.pin:''}${IC.dots}<span class="pt-nm">${hEsc(p.name)}</span></div>
+        <div class="pt-sig2">${hEsc(p.sig)}</div>
         <div class="pt-cage-line">${lsPill(p.ls)||'<span class="sb-nocode" title="No code status yet — set CPR or DNR in Flow">No code set</span>'}${IC.vit}</div>
-        ${p.reason&&p.reason!=='—'?`<div class="pt-reason">${p.reason}</div>`:''}</div>
-      <div class="sbc c-ward">${(window.tsWardSel&&tsWardSel(p))||`<select class="ward-sel" onchange="toast('${p.name.split(' ')[0]} → '+this.value)">${WARDS.map(w=>`<option ${w===p.ward?'selected':''}>${w}</option>`).join('')}</select>`}</div>
+        ${p.reason&&p.reason!=='—'?`<div class="pt-reason">${hEsc(p.reason)}</div>`:''}</div>
+      <div class="sbc c-ward">${(window.tsWardSel&&tsWardSel(p))||`<select class="ward-sel" onchange="toast('Ward → '+this.value)">${WARDS.map(w=>`<option ${w===p.ward?'selected':''}>${w}</option>`).join('')}</select>`}</div>
       ${stay}
-      ${window.tsTeamCell?tsTeamCell(p):`<div class="sbc c-team"><span class="dr-box">${p.dr}</span>${p.techHTML||''}</div>`}
-      ${window.tsAlertCell?tsAlertCell(p,i):`<div class="sbc c-alerts aa-cell" onclick="event.stopPropagation();openPatient(${i})" title="Alert Assist">${p.alerts.length?p.alerts.map(a=>`<div class="al-row ${a.t}">${IC.tri}${a.x}</div>`).join(''):'<span class="al-empty">— Add alert</span>'}<div class="aa-cell-hint">${IC.spark}Alert Assist</div></div>`}
+      ${window.tsTeamCell?tsTeamCell(p):`<div class="sbc c-team"><span class="dr-box">${hEsc(p.dr)}</span>${p.techHTML||''}</div>`}
+      ${window.tsAlertCell?tsAlertCell(p,i):`<div class="sbc c-alerts aa-cell" onclick="event.stopPropagation();openPatient(${i})" title="Alert Assist">${p.alerts.length?p.alerts.map(a=>`<div class="al-row ${a.t}">${IC.tri}${hEsc(a.x)}</div>`).join(''):'<span class="al-empty">— Add alert</span>'}<div class="aa-cell-hint">${IC.spark}Alert Assist</div></div>`}
     </div>`;
     const right = sbTx
       ? `<div class="sb-hours">${hours.map(h=>{const b=p.blocks.find(x=>x.h===h);return `<div class="sb-hcell">${b?(window.tsBlkHTML?tsBlkHTML(b,p):`<div class="sb-blk ${b.status}">${b.label}</div>`):''}</div>`;}).join('')}</div>`
@@ -446,7 +468,7 @@ function renderSheet(){
   const grid=`<main class="treatment-main">
     <div class="treatment-toolbar">
       <button class="btn ghost brief-toggle" onclick="openBrief()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1.5"/><line x1="14" y1="7" x2="21" y2="7"/><line x1="14" y1="12" x2="21" y2="12"/><line x1="14" y1="17" x2="21" y2="17"/></svg>Patient info</button>
-      <div class="order-search-wrapper"><div class="qadd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tsSearch" placeholder="Add an order or order set…" autocomplete="off" onfocus="openTsDrop()" oninput="tsRender(this.value)" onkeydown="tsKey(event)"></div><div class="order-search-dropdown" id="tsDrop" style="display:none"></div></div>${window.tsSetsBtn?tsSetsBtn():''}
+      <div class="order-search-wrapper"><div class="qadd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="tsSearch" placeholder="Add treatment or template…" autocomplete="off" onfocus="openTsDrop()" oninput="tsRender(this.value)" onkeydown="tsKey(event)"></div><div class="order-search-dropdown" id="tsDrop" style="display:none"></div></div>${window.tsSetsBtn?tsSetsBtn():''}
       <div class="day-nav ts-daynav">${window.tsDayNavHTML?tsDayNavHTML():'<button class="today">Today</button>'}</div>
       <div class="spacer" style="flex:1"></div>
       <span id="tsDrafts" class="ts-seen-slot"></span><span id="tsSeen" class="ts-seen-slot"></span><span id="tsView" class="ts-view-slot"></span>
@@ -506,26 +528,28 @@ function buildGrid(){
   /* stopped today and one-time treatments that are all done move to their own section at the bottom (Oct 2026, like a
      "Discontinued / Completed" list): stopped orders keep what was charted, read only (store/orders.js tsStoppedToday) */
   const GHOST=window.tsStoppedToday?tsStoppedToday():{orders:[],tasks:[]};
-  const doneOnce=past?[]:ORDERS.filter(o=>!o.dc&&!o.cont&&/^once$/i.test(String(o.freq||''))&&(()=>{const T=TASKS.filter(x=>x.orderId===o.id);return T.length&&T.every(x=>x.status);})());
+  const _d=new Date(),todayK=_d.getFullYear()+String(_d.getMonth()+1).padStart(2,'0')+String(_d.getDate()).padStart(2,'0');
+  const doneOnce=past?[]:ORDERS.filter(o=>!o.dc&&!o.cont&&!o.draft&&/^once$/i.test(String(o.freq||''))&&(schedDay(o)||'')<=todayK&&(()=>{const T=TASKS.filter(x=>x.orderId===o.id&&!x.adhoc);return !T.length||T.every(x=>x.status);})());   /* no slot today = given on an earlier day (core freqTimes) — a Once that starts tomorrow isn't done (Oct 2026) */
   const rowsOf=(sec,so,fold)=>{
     so.forEach((o,ri)=>{const TK=o._ghost?GHOST.tasks:TASKS;
       /* every overdue task of the row, counted once on the row; each one still sits at its own time in the grid */
       const late=(!past&&!o.cont)?TK.filter(x=>x.orderId===o.id&&!x.status&&deriveStatus(x)==='overdue'):[];
       const mchip='';   /* Oct 2026: no per-row overdue badge — the tiles and the section count say it once */
-      html+=`<div class="grow${ri%2?' zb':''}${o.dc?' is-dc':''}${o.draft?' is-draft':''}${o.pin?' is-pin':''}${late.length?' has-late':''}${fold}" data-sec="${sec.key}" data-o="${o.id}"${late.length?` data-late="${late.map(x=>Math.round(x.sched)).join(',')}"`:''}><div class="rl" data-dc="${o.dc&&!o._ghost?(o.dc_reason==='error'?'Error':o.dc_reason==='rejected'?'Not approved':'Stopped'):''}" onclick="tsOrderPanel('${o.id}')" title="Order details">${window.tsRowLead?tsRowLead(o):''}${late.length?`<button type="button" class="rl-off" hidden onclick="event.stopPropagation();tsOffGo('${o.id}')"></button>`:''}`;   /* draft badge · pin · reorder grip (store/drafts.js, store/sortorder.js) */
+      html+=`<div class="grow${ri%2?' zb':''}${o.dc?' is-dc':''}${o.draft?' is-draft':''}${o.pin?' is-pin':''}${late.length?' has-late':''}${fold}" data-sec="${hEsc(sec.key)}" data-o="${hEsc(o.id)}"${late.length?` data-late="${late.map(x=>Math.round(x.sched)).join(',')}"`:''}><div class="rl" data-dc="${o.dc&&!o._ghost?(o.dc_reason==='error'?'Error':o.dc_reason==='rejected'?'Not approved':'Stopped'):''}" onclick="tsOrderPanel(${hJs(o.id)})" title="Order details">${window.tsRowLead?tsRowLead(o):''}${late.length?`<button type="button" class="rl-off" hidden onclick="event.stopPropagation();tsOffGo(${hJs(o.id)})"></button>`:''}`;   /* draft badge · pin · reorder grip (store/drafts.js, store/sortorder.js) */
       /* Order column: name, then dose · route · frequency (or frequency · unit) and the overdue count. Latest column: the newest value and its age */
       let latest='';
-      /* Oct 2026: brand after the name in grey (no "·"), the dose is the one bold part of the line, a dot after the name when the order has instructions (store/rowlook.js) */
+      /* Oct 2026: brand after the name in grey (no "·"), the dose is the one bold part of the line, a dot after the name when the order has instructions (store/rowlook.js).
+         Everything a person typed (name, dose unit, route, frequency, rate) is escaped here — the row is HTML (Oct 2026 audit) */
       const nm=(n)=>{const ins=window.tsInsAttr?tsInsAttr(o):['',''];return `<div class="rl-name"${ins[0]}>${n}${window.tsCtrlBadge?tsCtrlBadge(o):''}${ins[1]}</div>`;};   /* C-II tag on controlled drugs (store/controlled.js) */
-      if(o.type==='med'){const d=medDose(o);html+=`<div class="rl-main">${nm(o.name+((window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> '+tsBrand(o.name)+'</span>':''))}<div class="rl-meta"><b>${d.mg}</b>${o.conc?' · '+d.volume:''} · ${o.route} · ${o.freq}${mchip}</div></div>`;latest=window.tsMedLatest?tsMedLatest(o):'';}   /* last dose given (store/medsafe.js) */
-      else if(o.type==='fluid'){html+=`<div class="rl-main">${nm(window.tsInfName?tsInfName(o):o.name)}<div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):o.rate} · ${o.kind==='cri'?'CRI':'IV'}</div></div>`;latest=window.tsInfLatest?tsInfLatest(o):'';}   /* given today · last line check (store/fluids.js) */
-      else if(o.type==='obs'||o.type==='diag'){html+=`<div class="rl-main">${nm(o.name)}<div class="rl-meta">${o.freq}${o.unit?' · '+o.unit:''}${mchip}</div></div>`;latest=window.tsRowTrend?tsRowTrend(o):'';}   /* the latest reading and how old it is (store/vitals.js) */
-      else{html+=`<div class="rl-main">${nm(o.name)}<div class="rl-meta">${o.freq}${mchip}</div></div>`;latest=window.tsCareLatest?tsCareLatest(o):'';}
+      if(o.type==='med'){const d=medDose(o);html+=`<div class="rl-main">${nm(hEsc(o.name)+((window.tsBrand&&tsBrand(o.name))?'<span class="rl-brand"> '+hEsc(tsBrand(o.name))+'</span>':''))}<div class="rl-meta"><b>${hEsc(d.mg)}</b>${o.conc?' · '+hEsc(d.volume):''} · ${hEsc(o.route)} · ${hEsc(o.freq)}${mchip}</div></div>`;latest=window.tsMedLatest?tsMedLatest(o):'';}   /* last dose given (store/medsafe.js) */
+      else if(o.type==='fluid'){html+=`<div class="rl-main">${nm(window.tsInfName?tsInfName(o):hEsc(o.name))}<div class="rl-meta">${window.tsInfMeta?tsInfMeta(o):hEsc(o.rate)} · ${o.kind==='cri'?'CRI':'IV'}</div></div>`;latest=window.tsInfLatest?tsInfLatest(o):'';}   /* given today · last line check (store/fluids.js) */
+      else if(o.type==='obs'||o.type==='diag'){html+=`<div class="rl-main">${nm(hEsc(o.name))}<div class="rl-meta">${hEsc(o.freq)}${o.unit?' · '+hEsc(o.unit):''}${mchip}</div></div>`;latest=window.tsRowTrend?tsRowTrend(o):'';}   /* the latest reading and how old it is (store/vitals.js) */
+      else{html+=`<div class="rl-main">${nm(hEsc(o.name))}<div class="rl-meta">${hEsc(o.freq)}${mchip}</div></div>`;latest=window.tsCareLatest?tsCareLatest(o):'';}
       /* stopped: a quiet "Stopped" capsule, then when and by whom ("10 AM · Dr. Schiff") — the row is dimmed, never struck through */
       if(o.dc&&o.dc_at){const at=new Date(o.dc_at),mn=at.getHours()*60+at.getMinutes(),w=o.dc_reason==='error'?'Error':o.dc_reason==='rejected'?'Not approved':'Stopped',who=window.tsDrShort?tsDrShort(o.dc_by_name||o.dc_by||''):'';latest=`<span class="rl-trend rl-stop" title="${gEsc((o.dc_reason==='error'?'Entered in error':w)+(o.dc_by_name?' by '+o.dc_by_name:'')+' · '+fmtTime(mn))}"><span class="rt-v"><span class="rl-cap">${w}</span></span><small>${window.tsClockShort?tsClockShort(mn):fmtTime(mn)}${who?' · '+gEsc(who):''}</small></span>`;}
       html+=`<div class="rl-latest">${gridRollMark(latest,o.id)||'<span class="rl-none" aria-label="Nothing yet">—</span>'}</div>`;
       html+=`</div><div class="hcells">`;
-      if(o.cont&&o.kind&&window.tsInfCells){html+=tsInfCells(o);}else if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?String(o.rate||'').replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion('${o.id}',${h})">${lbl}</div></div>`;}}
+      if(o.cont&&o.kind&&window.tsInfCells){html+=tsInfCells(o);}else if(o.cont){const nowH=nowMin()/60;for(let h=0;h<24;h++){let cls=h<o.start?'off':(h<=nowH?'on':'future');let lbl=h===o.start?String(o.rate||'').replace(' mL/hr',''):'';html+=`<div class="cell inf"><div class="inf-fill ${cls}" onclick="openInfusion(${hJs(o.id)},${h})">${hEsc(lbl)}</div></div>`;}}
       else{for(let h=0;h<24;h++){const cc='cell'+(past?'':(h<nh?' past':h===nh?' now':''))+(h%3===0?' q3':'')+(h===7||h===19?' shift':'');const _c=TK.filter(x=>x.orderId===o.id&&Math.floor(x.sched/60)===h);const t=_c.find(x=>x.status)||_c.find(x=>x.sched===h*60)||_c[0];if(!t){html+=`<div class="${cc}"></div>`;continue;}
         const s=deriveStatus(t),mv=t.movedFrom!=null,abn=s==='completed'&&t.severity?(t.severity>=2?' abn sev':' abn'):'',off=Math.round(t.sched)%60?' off':'';
         const word=((MK_STATES[s]||{}).word||s)+(s==='overdue'?` (${mkLate(t).replace('m',' min').replace('h',' h').replace('d',' d')} late)`:''),extra=_c.length>1?` · ${_c.length} tasks this hour`:'';
@@ -534,7 +558,7 @@ function buildGrid(){
         if(just){const hv=t.value!=null&&t.value!=='';inner=`<span class="da${hv?' val':''}${just.od?' da-late':''}" style="--da-d:${just.d}ms"><span class="disc"></span>${MK_DRAW}${hv?`<span class="v">${inner}</span>`:''}</span>`;}
         const beat=s==='due'?` style="animation-delay:-${Date.now()%MK_BEAT}ms"`:'';
         const l2=s==='overdue'&&nowMin()-t.sched>120?' late2':'';   /* more than 2 h late: the stronger tile (Oct 2026 grid tiles) */
-        html+=`<div class="${cc}"><button type="button" class="mark ${s}${l2}${abn}${off}${mv?' moved':''}${just?' just':''}" ${o._ghost?'data-g':'data-t'}="${t.id}" data-s="${s}"${beat} onclick="${o._ghost?`tsOrderPanel('${o.id}')`:`openCompletion('${t.id}')`}" title="${gEsc(o.name)} · ${fmtTime(t.sched)} · ${word}${s==='completed'&&t.value?' '+gEsc(t.value):''}${mv?' (moved from '+fmtTime(t.movedFrom)+')':''}${extra}" aria-label="${gEsc(o.name)}, ${fmtTime(t.sched)}, ${word}">${inner}</button></div>`;}}
+        html+=`<div class="${cc}"><button type="button" class="mark ${s}${l2}${abn}${off}${mv?' moved':''}${just?' just':''}" ${o._ghost?'data-g':'data-t'}="${hEsc(t.id)}" data-s="${s}"${beat} onclick="${o._ghost?`tsOrderPanel(${hJs(o.id)})`:`openCompletion(${hJs(t.id)})`}" title="${gEsc(o.name)} · ${fmtTime(t.sched)} · ${word}${s==='completed'&&t.value?' '+gEsc(t.value):''}${mv?' (moved from '+fmtTime(t.movedFrom)+')':''}${extra}" aria-label="${gEsc(o.name)}, ${fmtTime(t.sched)}, ${word}">${inner}</button></div>`;}}
       html+=`</div></div>`;});
   };
   SECTIONS.forEach(sec=>{const so=ORDERS.filter(o=>o.section===sec.key&&doneOnce.indexOf(o)<0);if(!so.length)return;
@@ -613,29 +637,40 @@ function tsKey(e){if(e.key==='ArrowDown'){e.preventDefault();tsIdx=Math.min(tsRo
   else if(e.key==='ArrowUp'){e.preventDefault();tsIdx=Math.max(0,tsIdx-1);tsMark();}
   else if(e.key==='Enter'){e.preventDefault();if(tsIdx>=0&&tsRows[tsIdx])tsPick(tsRows[tsIdx]);}
   else if(e.key==='Escape'){closeTsDrop();const si=$('#tsSearch');if(si)si.blur();}}
-/* ═══ TIMELINE ═══ */
+/* ═══ TIMELINE ═══ (Oct 2026: a heading for each day; who and the time are escaped. desc is built by the app with user text escaped —
+   it keeps its <b>; any other tag in a stored line shows as text, core hSafe.) */
 let tlFilter='all';
 function renderTimeline(){
   const filters=[['all','All events'],['med','Medications'],['vital','Vitals'],['fluid','Fluids'],['note','Notes'],['doctor','Doctor actions'],['care','Nursing care'],['diag','Diagnostics'],['comm','Communication']];
-  let items=AUDIT.slice();NOTES.forEach(n=>items.push({min:n.min,type:'note',desc:`${n.type.charAt(0).toUpperCase()+n.type.slice(1)} note added`,who:n.author}));
+  let items=AUDIT.slice();NOTES.forEach(n=>items.push({min:n.min,type:'note',desc:hEsc(`${n.type.charAt(0).toUpperCase()+n.type.slice(1)} note added`),who:n.author}));
   if(tlFilter!=='all')items=items.filter(i=>i.type===tlFilter);items.sort((a,b)=>b.min-a.min);
   $('#ctab-timeline').innerHTML=`<div class="tl-filters">${filters.map(([k,l])=>`<button class="chip ${k===tlFilter?'active':''}" onclick="tlFilter='${k}';renderTimeline()">${l}</button>`).join('')}</div>
-    <div class="panel" style="padding:20px 22px"><div class="timeline">${items.map(i=>`<div class="tl-item ${i.type}"><div class="tl-time">${fmtTime(i.min)}</div><div class="tl-desc">${i.desc}</div><div class="tl-who">${i.who?(i.who.startsWith('Dr.')?i.who:'by '+i.who):''}</div></div>`).join('')}</div></div>`;
+    <div class="panel" style="padding:20px 22px"><div class="timeline">${(()=>{let last=null;return items.map(i=>{const k=Math.floor(i.min/1440),h=k!==last?`<div class="tl-day">${hEsc(dayHead(i.min))}</div>`:'';last=k;return h+`<div class="tl-item ${hEsc(i.type)}"><div class="tl-time">${hEsc(clockOfMin(i.min))}</div><div class="tl-desc">${hSafe(i.desc)}</div><div class="tl-who">${i.who?hEsc(String(i.who).startsWith('Dr.')?i.who:'by '+i.who):''}</div></div>`;}).join('');})()}</div></div>`;
 }
 function logEvent(type,desc,who){AUDIT.push({min:nowMin(),type,desc,who});}
-/* ═══ NOTES ═══ */
-function renderNotes(){const sorted=[...NOTES].sort((a,b)=>b.min-a.min);
-  $('#ctab-notes').innerHTML=`<button class="btn primary" style="width:auto;height:40px;padding:0 18px;margin-bottom:16px" onclick="openDrawer('noteDrawer')">+ Add Note</button>
-    ${sorted.map(n=>`<div class="cnote"><div class="nh"><span class="ntype ${n.type}">${n.type}</span><span class="nmeta"><b style="color:var(--ink-900)">${n.author}</b> · ${n.role} · ${fmtTime(n.min)}</span></div><div class="nbody">${n.body}</div></div>`).join('')}`;
+/* ═══ NOTES ═══ (Oct 2026: rebuilt from the prototype — the signed-in author and role, every note's day, and the text shown exactly as
+   typed: escaped, never run as HTML. Before, every note was signed "DG" and a note could carry live HTML.) */
+/* the day a sheet minute (minutes from today's midnight; negative = an earlier day) falls on, as a heading */
+function dayOfMin(min){const d=new Date();d.setHours(0,0,0,0);return new Date(d.getTime()+Math.floor(min/1440)*86400000);}
+function dayHead(min){const k=Math.floor(min/1440);if(k===0)return 'Today';if(k===-1)return 'Yesterday';
+  return dayOfMin(min).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});}
+function clockOfMin(min){return fmtTime(((Math.round(min)%1440)+1440)%1440);}
+function meNow(){const m=(window.tsMeFull&&tsMeFull())||{};return {who:m.name||m.initials||'—',ini:m.initials||'—',role:m.role||''};}
+function renderNotes(){const sorted=[...NOTES].sort((a,b)=>b.min-a.min);let last=null,html='';
+  sorted.forEach(n=>{const k=Math.floor(n.min/1440);if(k!==last){html+=`<div class="cnote-day">${hEsc(dayHead(n.min))}</div>`;last=k;}
+    html+=`<div class="cnote"><div class="nh"><span class="ntype ${hEsc(n.type)}">${hEsc(n.type)}</span><span class="nmeta"><b style="color:var(--ink-900)">${hEsc(n.author)}</b>${n.role?' · '+hEsc(n.role):''} · ${hEsc(clockOfMin(n.min))}</span></div><div class="nbody">${hEsc(n.body)}</div></div>`;});
+  $('#ctab-notes').innerHTML=`<button class="btn primary" style="width:auto;height:40px;padding:0 18px;margin-bottom:16px" onclick="openDrawer('noteDrawer')">+ Add Note</button>`+(html||'<div class="cnote-empty">No notes yet</div>');
 }
-function submitNote(){const body=$('#note-body').value.trim();if(!body){toast('Write a note first');return;}const type=$('#note-type').value;NOTES.push({min:nowMin(),type,author:'DG',role:currentRole.charAt(0).toUpperCase()+currentRole.slice(1),body});logEvent('note',`${type} note added`,'DG');$('#note-body').value='';closeDrawers();renderNotes();toast('Note saved');}
+function submitNote(){const body=$('#note-body').value.trim();if(!body){toast('Write a note first');return;}const type=$('#note-type').value,me=meNow();
+  NOTES.push({min:nowMin(),at:new Date().toISOString(),type,author:me.who,role:me.role,body});logEvent('note',`${hEsc(type)} note added`,me.ini);$('#note-body').value='';closeDrawers();renderNotes();toast('Note saved');}
 /* ═══ DRAWERS / TOAST / ROLE ═══ */
 function openDrawer(id){$('#scrim').classList.add('show');$('#'+id).classList.add('open');}
 function closeDrawers(){$('#scrim').classList.remove('show');$$('.drawer').forEach(d=>d.classList.remove('open'));}
 function openBrief(){const b=$('#clinSidebar');if(b)b.classList.add('open');$('#briefScrim').classList.add('show');}
 function closeBrief(){const b=$('#clinSidebar');if(b)b.classList.remove('open');$('#briefScrim').classList.remove('show');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDrawers();closeBrief();_closePop();closeModal();}});
-function toast(msg){const el=document.createElement('div');el.className='ctoast';el.innerHTML=`<span class="tk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>${msg}`;$('#toastWrap').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateY(8px)';setTimeout(()=>el.remove(),300);},2600);}
+/* msg may carry a typed name ("Linda closed"): only the bare markup hSafe allows is kept (Oct 2026) */
+function toast(msg){const el=document.createElement('div');el.className='ctoast';el.innerHTML=`<span class="tk"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>${hSafe(msg)}`;$('#toastWrap').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateY(8px)';setTimeout(()=>el.remove(),300);},2600);}
 
 /* ═══ live clock tick ═══ */
 function tick(){if(currentCTab==='sheet'){const nl=$('#sheetInner .nowline');if(nl)nl.style.left=`${gridNowX()}px`;const c=$('#sheetInner .now-chip');if(c){c.style.left=`${(nowMin()/60)*54}px`;const b=c.querySelector('b');if(b){const t=fmtTimeAP(nowMin());if(b.innerHTML!==t)b.innerHTML=t;}}}}

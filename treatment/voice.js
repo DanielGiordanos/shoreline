@@ -287,7 +287,7 @@ function apply(s){
   if(listening){ sessionId++; stop(); }
   var by=me(), n=nowMin(), undo;
   try{
-    if(s.op==='note'){ NOTES.push({min:n,type:'nursing',author:by,role:(typeof currentRole!=='undefined'?currentRole.charAt(0).toUpperCase()+currentRole.slice(1):'Technician'),body:s.text});
+    if(s.op==='note'){ var mf=(window.tsMeFull&&tsMeFull())||{}; NOTES.push({min:n,type:'nursing',author:mf.name||by,role:mf.role||'',body:s.text});
       logEvent('note','nursing note added',by); var nn=NOTES[NOTES.length-1], ai=AUDIT.length-1;
       undo=function(){ if(window.__tsStore&&__tsStore.removeNote) __tsStore.removeNote(nn.body,nn.min); else { var i=NOTES.indexOf(nn); if(i>-1) NOTES.splice(i,1); } try{ logEvent('note','nursing note removed (undo)',by); }catch(e){} }; }
     else{
