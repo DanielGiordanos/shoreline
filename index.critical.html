@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261007-0457-09504c14">
+<meta name="flow-build" content="20261008-0215-60d315b1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5323,6 +5323,166 @@ border:1px solid var(--amber);font-size:12px;font-weight:600;line-height:1.2;col
 .fx-rr button:focus-visible{outline:2px solid var(--amber);outline-offset:1px;}
 .fx-rr-chip{display:inline-block;margin-left:5px;padding:0 5px;border-radius:5px;border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:700;line-height:15px;vertical-align:middle;}
 </style>
+<style id="fg-css">
+/* ═════════ patient-flags-oct7 · staff only (never on the lobby, Client Display or family tracker) ═════════ */
+:root{--fg-red:#FF3B30;--fg-orange:#FF9500;--fg-purple:#AF52DE;--fg-green:#34C759;--fg-blue:#007AFF;
+  --fg-ring:#fff;--fg-fill:rgba(120,120,128,.14);--fg-l1:#0B1424;--fg-l2:rgba(60,60,67,.62);--fg-sheet:#fff;--fg-sep:rgba(60,60,67,.16);
+  --fg-spring:cubic-bezier(.34,1.56,.64,1);--fg-ease:cubic-bezier(.32,.72,0,1)}
+body.dark{--fg-red:#FF453A;--fg-orange:#FF9F0A;--fg-purple:#BF5AF2;--fg-green:#30D158;--fg-blue:#0A84FF;
+  --fg-ring:#172440;--fg-fill:rgba(120,140,170,.16);--fg-l1:#fff;--fg-l2:rgba(235,235,245,.6);--fg-sheet:#14203a;--fg-sep:rgba(77,200,224,.10)}
+i.fg-t,i.fg-cap,.fg-cap i,i.fg-w{font-style:normal}
+.fg-cap>i{color:#fff;font-size:inherit;font-weight:inherit;line-height:1}
+i.fg-w{display:inline-flex}
+.fg-k-safe{--fc:var(--fg-red)} .fg-k-hand{--fc:var(--fg-orange)} .fg-k-med{--fc:var(--fg-purple)} .fg-k-iso{--fc:var(--fg-green)} .fg-k-own{--fc:var(--fg-blue)}
+.fg-t{width:20px;height:20px;border-radius:5.5px;display:inline-grid;place-items:center;flex:0 0 auto;color:#fff;background:var(--fc)}
+.fg-t svg{width:12.5px;height:12.5px;display:block}
+.fg-t.l{width:28px;height:28px;border-radius:7.5px} .fg-t.l svg{width:17px;height:17px}
+.fg-t.s{width:16px;height:16px;border-radius:4.5px} .fg-t.s svg{width:10px;height:10px}
+.fg-cap{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px 0 6px;border-radius:10px;background:var(--fg-red);color:#fff;font-weight:600;font-size:12px;line-height:1;font-family:inherit;white-space:nowrap;position:relative;letter-spacing:-.005em}
+.fg-cap svg{width:11px;height:11px;flex:0 0 auto}
+.fg-cap.s{height:16px;padding:0 6px 0 5px;font-size:10.5px;border-radius:8px} .fg-cap.s svg{width:9px;height:9px}
+/* board card: Safety written out, the rest a stack that fans out on hover */
+.fg-fl{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:8px 0 2px;min-height:20px}
+.fg-stk{display:inline-flex;align-items:center;flex-wrap:wrap}
+.fg-si{display:inline-flex;align-items:center;height:20px;border-radius:10px;margin-left:-5px;transition:margin .4s var(--fg-spring),background .25s;transition-delay:calc(var(--i,0)*30ms)}
+.fg-si:first-child{margin-left:0}
+.fg-si .fg-t{box-shadow:0 0 0 2px var(--fg-ring);transition:box-shadow .25s}
+.fg-si>em{font-style:normal;font-size:12px;font-weight:600;color:var(--fg-l1);max-width:0;opacity:0;overflow:hidden;white-space:nowrap;transition:max-width .45s var(--fg-spring),opacity .22s,padding .4s var(--fg-spring);transition-delay:calc(var(--i,0)*30ms)}
+.card:hover .fg-stk,.card:focus-within .fg-stk{gap:4px}
+.card:hover .fg-si,.card:focus-within .fg-si{margin-left:0;background:var(--fg-fill)}
+.card:hover .fg-si .fg-t,.card:focus-within .fg-si .fg-t{box-shadow:none}
+.card:hover .fg-si>em,.card:focus-within .fg-si>em{max-width:150px;opacity:1;padding:0 8px 0 6px}
+.card:not(:hover):not(:focus-within) .fg-si,.card:not(:hover):not(:focus-within) .fg-si>em{transition-delay:0s}
+.fg-new{animation:fgPop .38s var(--fg-spring) both}
+@keyframes fgPop{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
+.fg-cap.fg-pulse,.fg-t.fg-pulse{position:relative;animation:fgBump .5s var(--fg-spring) .3s 1 both}
+.fg-cap.fg-pulse::after,.fg-t.fg-pulse::after{content:"";position:absolute;inset:0;border-radius:inherit;animation:fgRing 1s var(--fg-ease) .3s 1 both;pointer-events:none}
+@keyframes fgBump{0%{transform:none}40%{transform:scale(1.08)}100%{transform:none}}
+@keyframes fgRing{0%{box-shadow:0 0 0 0 rgba(255,69,58,.6)}100%{box-shadow:0 0 0 10px rgba(255,69,58,0)}}
+/* patients table + rooms: compact */
+.fg-inl{display:inline-flex;align-items:center;gap:3px;margin-left:7px;vertical-align:-3px}
+.fg-room{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:8px 0 0 42px}
+/* drawer section */
+.fg-sec{margin:0 0 18px}
+.fg-hd{display:flex;align-items:baseline;justify-content:space-between}
+.fg-hd .sect-title{margin-bottom:10px}
+.fg-link{all:unset;cursor:pointer;font-size:14px;font-weight:500;color:var(--fg-blue);padding:2px 4px;border-radius:6px}
+.fg-link:focus-visible{outline:2px solid var(--fg-blue);outline-offset:2px}
+.fg-group{background:var(--glass-strong);border:1px solid var(--glass-border);border-radius:var(--r-md,14px);overflow:hidden}
+.fg-row{display:flex;align-items:center;gap:11px;min-height:46px;padding:0 12px;position:relative;max-height:80px;transition:max-height .34s var(--fg-ease),opacity .22s,min-height .34s var(--fg-ease),padding .34s var(--fg-ease)}
+.fg-row+.fg-row::before{content:"";position:absolute;left:51px;right:0;top:0;height:1px;background:var(--fg-sep)}
+.fg-row.gone{max-height:0;min-height:0;opacity:0;padding-top:0;padding-bottom:0}
+.fg-row .fg-tx{flex:1;min-width:0;padding:8px 0}
+.fg-row .fg-tx b{display:block;font-size:14.5px;font-weight:600;color:var(--fg-l1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fg-row .fg-tx small{display:block;font-size:12px;color:var(--fg-l2);margin-top:1px}
+.fg-min{all:unset;visibility:hidden;cursor:pointer;width:0;overflow:hidden;display:grid;place-items:center;transition:width .25s var(--fg-ease),margin .25s;margin-right:-11px;flex:0 0 auto}
+.fg-min svg{width:20px;height:20px;transition:transform .25s var(--fg-ease)}
+.fg-sec.edit .fg-min{width:20px;margin-right:0;visibility:visible}
+.fg-row.arm .fg-min svg{transform:rotate(-90deg)}
+.fg-del{all:unset;visibility:hidden;cursor:pointer;height:30px;padding:0;max-width:0;overflow:hidden;border-radius:15px;background:var(--fg-red);color:#fff;font-weight:600;font-size:13px;line-height:30px;font-family:inherit;white-space:nowrap;transition:max-width .3s var(--fg-ease),padding .3s var(--fg-ease)}
+.fg-row.arm .fg-del{max-width:90px;padding:0 13px;visibility:visible}
+.fg-add{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:11px;width:100%;min-height:46px;padding:0 12px;color:var(--fg-blue);font-size:14.5px;font-weight:600;position:relative}
+.fg-add svg{width:20px;height:20px;flex:0 0 auto}
+.fg-row+.fg-add::before{content:"";position:absolute;left:51px;right:0;top:0;height:1px;background:var(--fg-sep)}
+.fg-add:focus-visible,.fg-opt:focus-visible{outline:2px solid var(--fg-blue);outline-offset:-2px}
+/* picker */
+.fg-sheet{margin-top:10px;background:var(--fg-sheet);border:1px solid var(--glass-border);border-radius:16px;padding:12px;box-shadow:0 18px 40px -18px rgba(0,0,0,.45);animation:fgIn .32s var(--fg-ease)}
+@keyframes fgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fg-search{display:flex;align-items:center;gap:7px;height:36px;border-radius:10px;background:var(--fg-fill);padding:0 10px;color:var(--fg-l2)}
+.fg-search svg{width:15px;height:15px;flex:0 0 auto}
+.fg-search input{all:unset;flex:1;font-size:14.5px;color:var(--fg-l1)}
+.fg-search input::placeholder{color:var(--fg-l2)}
+.fg-seg{display:flex;background:var(--fg-fill);border-radius:9px;padding:2px;margin:10px 0 2px}
+.fg-seg button{all:unset;cursor:pointer;flex:1;text-align:center;font-weight:600;font-size:13px;line-height:1;font-family:inherit;color:var(--fg-l1);padding:7px 0;border-radius:7px;transition:background .2s}
+.fg-seg button.on{background:var(--fg-ring);box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
+body.dark .fg-seg button.on{background:#2a3958}
+.fg-opts{max-height:260px;overflow:auto;margin-top:6px;overscroll-behavior:contain}
+.fg-sh{font-size:11.5px;font-weight:700;color:var(--fg-l2);text-transform:uppercase;letter-spacing:.04em;margin:10px 4px 4px}
+.fg-opt{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 8px;border-radius:9px;font-size:14.5px;color:var(--fg-l1)}
+.fg-opt:hover{background:var(--fg-fill)}
+.fg-opt .fg-lb{flex:1}
+.fg-opt svg.fg-ck{width:16px;height:16px;flex:0 0 auto}
+.fg-opt svg.fg-ck path{stroke-dasharray:16;stroke-dashoffset:16;transition:stroke-dashoffset .28s var(--fg-ease)}
+.fg-opt.on svg.fg-ck path{stroke-dashoffset:0;transition:stroke-dashoffset .32s var(--fg-ease) .04s}
+.fg-opt.on .fg-t{animation:fgBump .45s var(--fg-spring) 1}
+.fg-new-as{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 6px;font-size:13px;color:var(--fg-l2)}
+.fg-new-as button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 9px 0 5px;border-radius:14px;background:var(--fg-fill);color:var(--fg-l1);font-size:12.5px;font-weight:600}
+.fg-sheet-ft{display:flex;justify-content:flex-end;margin-top:8px}
+/* check-in notification */
+.fg-ntf{position:fixed;top:86px;right:22px;z-index:9000;width:min(380px,calc(100vw - 32px));display:flex;gap:11px;background:var(--fg-sheet);color:var(--fg-l1);border:1px solid var(--glass-border);border-radius:22px;padding:13px 15px;
+  box-shadow:0 22px 50px -16px rgba(0,0,0,.55);transform:translateY(-140%);opacity:0;transition:transform .55s var(--fg-spring),opacity .3s}
+.fg-ntf.show{transform:none;opacity:1}
+.fg-ntf.out{transform:translateY(-120%) scale(.96);opacity:0;transition:transform .4s var(--fg-ease),opacity .3s}
+.fg-ntf .fg-app{width:36px;height:36px;border-radius:9px;background:linear-gradient(180deg,#2B4A9E,#1A2F6E);display:grid;place-items:center;flex:0 0 auto;color:#fff}
+.fg-ntf .fg-app svg{width:20px;height:20px}
+.fg-ntf .fg-bd{flex:1;min-width:0}
+.fg-ntf .fg-nh{display:flex;justify-content:space-between;font-size:12px;color:var(--fg-l2);letter-spacing:.02em}
+.fg-ntf b{display:block;font-size:15px;font-weight:600;margin:1px 0 2px}
+.fg-ntf p{margin:0 0 8px;font-size:14px;line-height:1.3}
+.fg-ntf .fg-rw{display:flex;gap:4px;flex-wrap:wrap}
+.fg-acts{display:flex;gap:8px;margin-top:11px}
+.fg-pill{all:unset;cursor:pointer;height:32px;padding:0 15px;border-radius:16px;font-weight:600;font-size:14px;line-height:32px;font-family:inherit}
+.fg-pill.p{background:var(--fg-blue);color:#fff} .fg-pill.g{background:var(--fg-fill);color:var(--fg-blue)}
+.fg-pill:focus-visible{outline:2px solid var(--fg-blue);outline-offset:2px}
+.fg-fly{position:fixed;z-index:9001;pointer-events:none;margin:0}
+.notes .fg-ntf{position:relative;top:auto;right:auto;width:auto;pointer-events:auto;background:var(--glass-strong);border-radius:18px;transform:translateY(-16px)}
+.notes .fg-ntf.show{transform:none}
+.notes .fg-ntf.out{transform:translateY(-10px) scale(.97)}
+@media (prefers-reduced-motion:reduce){
+  .fg-si,.fg-si>em,.fg-row,.fg-min,.fg-del,.fg-ntf,.fg-ntf.out{transition-duration:.15s!important;transition-timing-function:linear!important;transition-delay:0s!important}
+  .fg-ntf{transform:none} .fg-ntf.out{transform:none}
+  .fg-new,.fg-sheet,.fg-opt.on .fg-t{animation:fgFade .2s linear both}
+  .fg-cap.fg-pulse,.fg-cap.fg-pulse::after,.fg-t.fg-pulse::after{animation:none}
+  .fg-cap.fg-pulse{animation:fgDim .6s linear 1}
+}
+@keyframes fgFade{from{opacity:0}to{opacity:1}}
+@keyframes fgDim{0%,100%{opacity:1}50%{opacity:.55}}
+</style>
+<style id="rd-gaps-css">
+/* Rounds gaps (Oct 2026): CPR/DNR · tasks — no color-mix */
+.rd-chip.resus{letter-spacing:.05em}
+.rd-chip.resus.cpr{color:#15612E;background:rgba(21,97,46,.10)}
+.rd-chip.resus.dnr{color:#5E2E83;background:rgba(94,46,131,.10)}
+.rd-chip.resus.req{color:#9A5B00;background:rgba(255,159,10,.12);border:1px dashed rgba(255,159,10,.55)}
+.rd-chip.resus.unset{color:var(--ink-400);background:transparent;border:1px dashed var(--ink-300);font-weight:700}
+body.dark .rd-chip.resus.cpr{color:#4CBE7A;background:rgba(76,190,122,.14)}
+body.dark .rd-chip.resus.dnr{color:#B98BE0;background:rgba(139,77,181,.18)}
+body.dark .rd-chip.resus.req{color:#FFB340}
+.rd-chip.resus.big{display:inline-block;font-size:12px;padding:3px 9px;border-radius:8px;margin:0 8px 0 0;vertical-align:middle}
+.rd-fact.resus.cpr{color:#15612E;background:rgba(21,97,46,.10)}
+.rd-fact.resus.dnr{color:#5E2E83;background:rgba(94,46,131,.10)}
+.rd-fact.resus.unset{color:var(--ink-500);background:transparent;border:1px dashed var(--ink-300)}
+.rd-fact.resus i{font-style:normal;font-weight:600;color:#9A5B00}
+body.dark .rd-fact.resus.cpr{color:#4CBE7A;background:rgba(76,190,122,.14)}
+body.dark .rd-fact.resus.dnr{color:#B98BE0;background:rgba(139,77,181,.18)}
+body.dark .rd-fact.resus i{color:#FFB340}
+.rd-tasklist{display:flex;flex-direction:column}
+.rd-task .ck{display:grid;place-items:center;padding:0;color:#fff}
+.rd-task .ck svg{width:11px;height:11px}
+.rd-task .ck.on{background:var(--rc);border-color:var(--rc)}
+.rd-task.done .t{color:var(--ink-400);font-weight:600;text-decoration:line-through;text-decoration-color:var(--ink-300)}
+.rd-task .ck:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(56,189,210,.25)}
+.rdm-task{display:flex;align-items:center;gap:10px}
+.rdm-ck{all:unset;cursor:pointer;flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.6px solid currentColor;opacity:.55;transition:opacity .15s ease,transform .12s ease}
+.rdm-ck:hover{opacity:1}.rdm-ck:active{transform:scale(.92)}
+.rdm-ck:focus-visible{opacity:1;box-shadow:0 0 0 3px rgba(56,189,210,.3)}
+body.rd-display .rd-task .ck{pointer-events:none}
+</style>
+<style id="fv-admit-css">
+/* OP sheet → Admit on the board card (no color-mix) */
+.fv-adm{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 2px;padding:5px 5px 5px 10px;border-radius:10px;background:rgba(56,189,210,.08);border:1px solid rgba(56,189,210,.22)}
+.fv-adm-l{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--ink-700)}
+.fv-adm-l svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;opacity:.8}
+.fv-adm-b{all:unset;cursor:pointer;height:24px;padding:0 12px;border-radius:12px;background:#0A84FF;color:#fff;font-size:12px;font-weight:700;line-height:24px;transition:transform .12s ease,filter .15s ease}
+.fv-adm-b:hover{filter:brightness(1.08)}.fv-adm-b:active{transform:scale(.96)}
+.fv-adm-b:focus-visible{box-shadow:0 0 0 3px rgba(10,132,255,.35)}
+body.dark .fv-adm{background:rgba(56,189,210,.10);border-color:rgba(56,189,210,.28)}
+body.dark .fv-adm-l{color:var(--ink-500)}
+.disposition-card .dc-note{display:block;font-size:11px;font-weight:600;opacity:.7;margin-top:2px}
+.disposition-card .dc-note[hidden]{display:none}
+.fv-kg{margin-top:5px;font-size:12px;font-weight:700;color:var(--accent,#38BDD2);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.fv-adm-b{transition:none}}
+</style>
 </head>
 <body>
 <script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#FFFFFF';}catch(e){}}window.__pvxPaintCanvas=paint;try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
@@ -5794,6 +5954,7 @@ border:1px solid var(--amber);font-size:12px;font-weight:600;line-height:1.2;col
   </div>
   <div class="drawer-body">
     <div class="clin-bar" id="dClin"></div>
+    <div id="flagsMount"></div>
     <div class="assign-pair">
       <div><p class="sect-title">Assigned doctor</p><div id="docAssignMount"></div></div>
       <div><p class="sect-title">Liaison <span class="opt">· optional</span></p><div id="liaAssignMount"></div></div>
@@ -5815,7 +5976,7 @@ border:1px solid var(--amber);font-size:12px;font-weight:600;line-height:1.2;col
       <div class="disposition-actions" id="dispActions" role="group" aria-label="Patient disposition">
         <button class="disposition-card admit" type="button" data-disp="admit" aria-label="Admit patient — move to inpatient care">
           <span class="dc-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 21V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v17"/><path d="M3 21h16"/><circle cx="11" cy="12" r="1"/></svg></span>
-          <span class="dc-body"><span class="dc-title">Admit</span></span>
+          <span class="dc-body"><span class="dc-title">Admit</span><span class="dc-note" id="dAdmitNote" hidden>Sheet → inpatient · Rounds</span></span>
           <span class="dc-arrow admit" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7L17 17"/><path d="M17 11v6h-6"/></svg></span>
         </button>
         <button class="disposition-card discharge" type="button" data-disp="discharge" aria-label="Discharge patient — complete active visit">
@@ -6542,6 +6703,10 @@ function genToken(){ try{ return crypto.randomUUID(); }catch(e){ return'tok-'+Da
 
 
 
+function fxVisitEnd(p){   /* how the visit ended, for the family tracker — Rounds outcome first, then Flow's final status */
+  const o=p.rounds&&p.rounds.outcome&&p.rounds.outcome.type;
+  if(o){ if(o==='Euthanized'||o==='Deceased') return 'loss'; if(o==='Transferred') return 'transferred'; if(o==='Discharged') return 'home'; return 'ended'; }
+  if(p.status==='Euthanized') return 'loss'; if(p.status==='Discharged') return 'home'; return null; }
 function safeProjection(p){
 const docName = (p.doctor && p.doctor!=='unassigned') ? (doc(p.doctor).name||null) : null;
 const liaName = p.liaison ? ((liaison(p.liaison)||{}).name||null) : null;
@@ -6557,6 +6722,7 @@ prio: p.prio||3, priority: p.prio||3, is_active: !p.completed,
 arrival_time: _toISO(p.arrival) || new Date().toISOString(),
 discharged_at: _toISO(p.completedAt),
 track_code: p.trackCode||null,
+visit_end: fxVisitEnd(p),
 timeline: (p.timeline||[]).map(function(e){ return { label:e.label, at:_toISO(e.at) }; }),
 resus_pref: (p.resusRequest&&p.resusRequest.pref)||p.resusPref||null, resus_status: p.resusRequest?'client_selected':(p.resusStatus||null), resus_recorded_at: p.resusRequest?(p.resusRequest.at||null):_toISO(p.resusRecordedAt),
 updated_at: new Date().toISOString()
@@ -6615,6 +6781,8 @@ resus_recorded_at: _toISO(p.resusRecordedAt), resus_source: p.resusSource || nul
 resus_request: (p.resusRequest&&p.resusRequest.pref)?{ pref:p.resusRequest.pref, at:p.resusRequest.at||null }:null, resus_request_dismissed: p.resusRequestDismissed || null,
 resus_history: Array.isArray(p.resusHistory) ? p.resusHistory.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:_toISO(h.at), by:h.by||null }; }) : [],
 crit_taken_at: _toISO(p.critTakenAt), crit_taken_by: p.critTakenBy || null, crit_taken_uid: p.critTakenUid || null, waiting_on: p.waitingOn || null, stale_keep_until: _toISO(p.staleKeepUntil), ms_roomed_at: _toISO(p.msRoomedAt), ms_doctor_at: _toISO(p.msDoctorAt),
+flags: (typeof fgToDb==='function'?fgToDb(p.flags):[]),
+ts_sheet: (p.tsSheet&&p.tsSheet.board)?{board:p.tsSheet.board,at:p.tsSheet.at||null}:null,
 is_active: !(p.completed===true || p.active===false || p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized')
 };
 }
@@ -6635,7 +6803,7 @@ triage:r.triage||null, intake:r.intake||null, records:recToApp(r.records), ultra
 timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new Date(e.at): new Date(), meta:e.meta||''}; }),
 arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt, critTakenAt: r.crit_taken_at? new Date(r.crit_taken_at): null, critTakenBy: r.crit_taken_by||null, critTakenUid: r.crit_taken_uid||null, waitingOn: (r.waiting_on&&r.waiting_on.text)?r.waiting_on:null, staleKeepUntil: r.stale_keep_until?new Date(r.stale_keep_until):null, msRoomedAt: r.ms_roomed_at?new Date(r.ms_roomed_at):null, msDoctorAt: r.ms_doctor_at?new Date(r.ms_doctor_at):null, viewing: r.viewing||null, lastBy: r.last_by||null, lastByUid: r.last_by_uid||null, lastAt: r.last_at||null,
 examStartedAt: r.exam_started_at? new Date(r.exam_started_at): null, examStartedByDoctorId: r.exam_started_by||null, examWaitMinutes: (typeof r.exam_wait_min==='number'? r.exam_wait_min : null),
-totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null,
+totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null, tsSheet:(r.ts_sheet&&r.ts_sheet.board)?{board:r.ts_sheet.board,at:r.ts_sheet.at||null}:null, flags:(typeof fgToApp==='function'?fgToApp(r.flags):[]),
 resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusSource:r.resus_source||null, resusHistory:Array.isArray(r.resus_history)?r.resus_history.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:h.at?new Date(h.at):null, by:h.by||null }; }):[], resusRequest:(r.resus_request&&r.resus_request.pref)?{ pref:r.resus_request.pref, at:r.resus_request.at||null }:null, resusRequestDismissed:r.resus_request_dismissed||null, resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
 };
 }
@@ -6710,11 +6878,10 @@ try{ FlowIntakeStore._attach(DB); }catch(e){}
 try{ fxLobbySync(); }catch(e){}
 
 if(Backend.unsubVisits){ try{ Backend.unsubVisits(); }catch(e){} }
-Backend.unsubVisits = DB.collection('visits').where('tenant_id','==',TENANT_ID)
-.onSnapshot(function(snap){
+Backend.unsubVisits = fvVisitsListen(function(docs){
 _persistLock = true;
-PATIENTS = snap.docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
-Backend._lastRows = PATIENTS.map(mapToDb);
+PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
+Backend._lastRows = fvRowsCopy(PATIENTS);
 Backend._mergeResus();
 _persistLock = false;
 Backend.setConn('live');
@@ -6778,13 +6945,13 @@ try{ PATIENTS.forEach(function(p){ fxResusFromPub(p, Backend._pubResus[p.publicT
 refetch: async function(){
 _persistLock = true;
 try{
-const snap = await DB.collection('visits').where('tenant_id','==',TENANT_ID).get();
-PATIENTS = snap.docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); });
+const docs = await fvVisitsGet();
+PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); });
 
 const pub = await DB.collection('pub').where('tenant_id','==',TENANT_ID).get();
 Backend._pubResus = {};
 pub.docs.forEach(function(d){ const v=d.data(); if(v.resus_pref) Backend._pubResus[d.id]={ pref:v.resus_pref, status:v.resus_status||'client_selected', at:v.resus_recorded_at||null }; });
-Backend._lastRows = PATIENTS.map(mapToDb);
+Backend._lastRows = fvRowsCopy(PATIENTS);
 Backend._mergeResus();
 if(Backend.conn!=='live') Backend.setConn('live');
 }catch(e){ Backend.setConn('error'); }
@@ -6820,11 +6987,44 @@ lobbyLoad: async function(){ }
 };
 
 
+
+/* ═════════ VISITS — open visits + the last 30 days, not every visit ever (Oct 2026) ═════════
+   Flow listened to every visit ever recorded: fine at first, slower every month. Now three live queries, merged by visit:
+     open (is_active) · in the hospital (Admitted / Hospitalized — is_active is false for those) · saved in the last 30 days (last_at).
+   The last one needs a composite index (visits: tenant_id ↑ last_at ↑). Until it exists, or if any query is refused, Flow falls
+   back to the full list it always used, so nothing goes missing; the console says why. Older visits are read only when needed:
+   fvVisitHistory() (Rounds archive) and fvVisitsByName() (flags from a visit more than 30 days ago). */
+var FV_RECENT_DAYS=30;
+function fvVisitsAll(){ return DB.collection('visits').where('tenant_id','==',TENANT_ID); }
+function fvVisitQueries(){ var b=fvVisitsAll(), cut=new Date(Date.now()-FV_RECENT_DAYS*864e5).toISOString();
+  return [b.where('is_active','==',true), b.where('status','in',['Admitted','Hospitalized']), b.where('last_at','>=',cut)]; }
+function fvMerge(lists){ var seen={}, out=[]; lists.forEach(function(L){ (L||[]).forEach(function(d){ if(!seen[d.id]){ seen[d.id]=1; out.push(d); } }); }); return out; }
+function fvVisitsListen(onDocs,onErr,opts){ opts=opts||{};
+  var qs=fvVisitQueries(), parts=qs.map(function(){ return null; }), cache=qs.map(function(){ return false; }), subs=[], full=null, dead=false, t=null;
+  function flush(){ t=null; if(dead||full) return; Backend._visitsMode='recent'; onDocs(fvMerge(parts),{fromCache:cache.some(Boolean)}); }
+  function fallback(err){ if(dead||full) return; console.warn('[visits] loading the full list instead —',(err&&err.message)||err);
+    subs.forEach(function(u){ try{ u(); }catch(e){} }); subs=[]; Backend._visitsMode='all';
+    full=fvVisitsAll().onSnapshot(opts,function(s){ onDocs(s.docs,{fromCache:!!s.metadata.fromCache}); },onErr||function(){}); }
+  qs.forEach(function(q,i){ subs.push(q.onSnapshot(opts,function(s){ parts[i]=s.docs; cache[i]=!!s.metadata.fromCache;
+      if(parts.every(function(x){ return x!==null; })&&!t) t=setTimeout(flush,0); },   /* one change seen by two queries (a discharge) lands as one update */
+    function(err){ fallback(err); })); });
+  return function(){ dead=true; if(t) clearTimeout(t); subs.forEach(function(u){ try{ u(); }catch(e){} }); if(full) try{ full(); }catch(e){} }; }
+function fvVisitsGet(){ return Promise.all(fvVisitQueries().map(function(q){ return q.get(); })).then(function(S){ Backend._visitsMode='recent'; return fvMerge(S.map(function(s){ return s.docs; })); })
+  .catch(function(err){ console.warn('[visits] loading the full list instead —',(err&&err.message)||err); Backend._visitsMode='all'; return fvVisitsAll().get().then(function(s){ return s.docs; }); }); }
+var _fvHist=null;
+function fvVisitHistory(){ if(_fvHist&&Date.now()-_fvHist.at<10*60000) return _fvHist.p;
+  var p=fvVisitsAll().get().then(function(s){ return s.docs.map(function(d){ return mapToApp(Object.assign({id:d.id},d.data())); }); }); _fvHist={at:Date.now(),p:p}; p.catch(function(){ _fvHist=null; }); return p; }
+function fvVisitsByName(full){ var n=String(full||'').trim().replace(/\s+/g,' '); if(!n) return Promise.resolve([]);
+  var tc=n.toLowerCase().replace(/(^|[\s'-])(\S)/g,function(m,a,b){ return a+b.toUpperCase(); }), v=[n,tc,n.toUpperCase(),n.toLowerCase()].filter(function(x,i,A){ return A.indexOf(x)===i; });
+  return fvVisitsAll().where('patient_name','in',v).get().then(function(s){ return s.docs.map(function(d){ return mapToApp(Object.assign({id:d.id},d.data())); }); }); }
+
 function loadState(){ try{ Backend.init(); }catch(e){ if(SB) Backend.setConn('error'); } }
 
 
 
 
+/* Oct 2026 — a copy, never the live objects: triage / intake are edited in place, and a live reference made every later change invisible */
+function fvRowsCopy(list){ return (list||[]).map(function(p){ try{ return JSON.parse(JSON.stringify(mapToDb(p))); }catch(e){ return mapToDb(p); } }); }
 function persist(){
 if(_persistLock || Backend.mode!=='staff'|| !DB) return;
 
@@ -6845,7 +7045,7 @@ fxLobbyWrite(batch,p);
 batch.set(DB.collection('codes').doc(String(p.trackCode).toUpperCase()), { public_token:p.publicToken, tenant_id:TENANT_ID, is_active:!p.completed }, { merge:true });
 });
 try{ await batch.commit(); }catch(err){ changed.forEach(function(p){ delete _fxLobby[String(p.id)]; }); if(typeof fvSaveFallback==='function') await fvSaveFallback(changed); else throw err; }
-Backend._lastRows = LIVE.map(mapToDb);
+Backend._lastRows = fvRowsCopy(LIVE);
 if(Backend.conn!=='live') Backend.setConn('live');
 }catch(e){ Backend.setConn('error'); }
 }, 250);
@@ -7947,7 +8147,7 @@ body.innerHTML=rows.map(p=>{
 const w=waitMinutes(p);const wc=w>120?'crit':w>45?'warn':'';
 return`<tr data-pid="${p.id}">
       <td><div class="pt-cell">${mono(p,'patient-medallion patient-medallion--compact')}
-        <div class="nm"><b>${bcEsc(p.name)} ${bcEsc(p.last)}${resusBadge(p)}${recBadge(p)}${msgBadge(p)}</b><span>${bcEsc(p.species)} · ${formatPatientAge(p)}</span></div></div></td>
+        <div class="nm"><b>${bcEsc(p.name)} ${bcEsc(p.last)}${resusBadge(p)}${recBadge(p)}${msgBadge(p)}${typeof fgInline==='function'?fgInline(p):''}</b><span>${bcEsc(p.species)} · ${formatPatientAge(p)}</span></div></div></td>
       <td><div class="reason" title="${bcEsc((p.reasonProblems&&p.reasonProblems.length)?problemsToString(p.reasonProblems):(p.reason||''))}">${bcEsc(compactProblems(p))}</div></td>
       <td>${p.doctor==='unassigned'?'<span class="muted">Unassigned</span>':`<span class="doctag">${docAv(p.doctor)}${doc(p.doctor).name}</span>`}</td>
       <td><span class="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${p.room}</span></td>
@@ -7989,7 +8189,7 @@ return`<div class="card" draggable="true" data-pid="${p.id}">
     <span class="edge" style="background:${PRIO[p.prio].c}"></span>
     <div class="c-top">${mono(p,'patient-medallion patient-medallion--compact')}<b>${bcEsc(p.name)} ${bcEsc(p.last)}${msgBadge(p)}</b>
       <span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:10px">${PRIO[p.prio].l}</span></div>
-    <div class="c-reason">${bcEsc(compactProblems(p))}</div>
+    <div class="c-reason">${bcEsc(compactProblems(p))}</div>${typeof fgCard==='function'?fgCard(p):''}${typeof fvAdmitChip==='function'?fvAdmitChip(p):''}
     ${usFlag(p)}${typeof fvWaitChip==='function'?fvWaitChip(p):''}${typeof fvPresenceChip==='function'?fvPresenceChip(p):''}
     <div class="c-meta"><div class="l">${p.doctor==='unassigned'?'<span class="muted" style="font-size:12px">No doctor</span>':docAv(p.doctor)}${p.liaison?liaAv(p.liaison):''}${ctAvRow(p)}
       <span class="loc" style="font-size:12px">${p.room}</span></div>
@@ -9549,6 +9749,7 @@ return`<div class="room occupied r-drag" draggable="true" data-pid="${p.id}" dat
       <div class="r-top"><div><div class="r-name">${rm}</div>${spec?`<div class="r-spec">${spec}</div>`:'<div class="r-spec">&nbsp;</div>'}</div>
         <span class="r-state busy">In Use</span></div>
       <div class="r-pt">${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b>${bcEsc(p.name)} ${bcEsc(p.last)}</b><span>${bcEsc(p.species)} · ${bcEsc(compactProblems(p).slice(0,26))}${compactProblems(p).length>26?'…':''}</span></div></div>
+      ${typeof fgRoom==='function'?fgRoom(p):''}
       <div class="r-foot"><div class="dctr">${p.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(p.doctor)+doc(p.doctor).name}</div>
         <div class="r-right"><span class="r-timer ${rcls}" title="Time in ${rm}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(p.status)}</div></div>
     </div>`;
@@ -9587,7 +9788,7 @@ return`<div class="room occupied" data-room-name="Treatment">
       <div class="r-top"><div><div class="r-name">Treatment</div><div class="r-spec">ICU • Treatment • Wards</div></div>
         <span class="r-state busy">In Use</span></div>
       <div class="r-pt r-drag" draggable="true" data-pid="${lead.id}">${mono(lead,'patient-medallion patient-medallion--compact')}<div class="info"><b>${bcEsc(lead.name)} ${bcEsc(lead.last)}</b><span>${bcEsc(lead.species)} · ${bcEsc(compactProblems(lead).slice(0,26))}${compactProblems(lead).length>26?'…':''}</span></div></div>
-      ${rows}${more}
+      ${typeof fgRoom==='function'?fgRoom(lead):''}${rows}${more}
       <div class="r-foot"><div class="dctr">${lead.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(lead.doctor)+doc(lead.doctor).name}</div>
         <div class="r-right"><span class="r-timer" title="Time in Treatment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(lead.status)}</div></div>
     </div>`;
@@ -10773,12 +10974,14 @@ function parseWeightInput(raw){
 if(raw==null) return {valid:false, empty:true};
 const s = String(raw).trim().toLowerCase();
 if(s==='') return {valid:false, empty:true};
-const nums = s.match(/-?\d+(?:\.\d+)?/g) || [];
 const bad = {valid:false, error:'Enter weight in kg or lb.'};
+{ const lo=s.match(/^(\d+(?:\.\d+)?)\s*(?:lb|lbs|pounds?|#)\s*(\d+(?:\.\d+)?)\s*(?:oz|ounces?)$/);   /* 12 lb 8 oz */
+  if(lo){ const kg0=convertLbToKg(parseFloat(lo[1])+parseFloat(lo[2])/16); return kg0>0?{valid:true,kg:Math.round(kg0*100)/100,display:formatWeightKg(kg0,true),lb:true}:bad; } }
+const nums = s.match(/-?\d+(?:\.\d+)?/g) || [];
 if(nums.length!==1) return bad;
 const n = parseFloat(nums[0]);
 if(!isFinite(n) || n<=0) return bad;
-const unit = s.replace(nums[0],'').replace(/[^a-z]/g,'');
+const unit = /#/.test(s) ? 'lb' : s.replace(nums[0],'').replace(/[^a-z]/g,'');   /* 44# = 44 lb */
 let kg, converted=false;
 if(/^(lb|lbs|pound|pounds)$/.test(unit)){ kg = convertLbToKg(n); converted=true; }
 else if(/^(kg|kgs|kilo|kilos|kilogram|kilograms)$/.test(unit) || unit===''){ kg = n; }
@@ -12662,7 +12865,7 @@ const RD_SERIES_META={pcv:{label:'PCV/TS',pair:true},na:{label:'Na'},k:{label:'K
  
 const RD_STALE_RE=/\b(today|tonight|tomorrow|this (?:morning|afternoon|evening)|in the (?:am|pm)|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
 function rdStale(text,createdAt){ if(!text||!createdAt) return false; if(!RD_STALE_RE.test(String(text))) return false;
-try{ return rdDayKey(createdAt)<rdDayKey(new Date()); }catch(e){ return false; } }
+try{ return rdRoundsDay(createdAt)<rdRoundsDay(new Date()); }catch(e){ return false; } }
 
  
 let currentRdView='census';
@@ -12725,15 +12928,20 @@ const RD_QUEUE_DEFS=[{key:'recheck',label:'Rechecks'},{key:'dropoff',label:'Drop
 let rdQueues={recheck:[],dropoff:[],opus:[]};
 try{ const q=JSON.parse(localStorage.getItem(RD_QUEUE_KEY))||{}; RD_QUEUE_DEFS.forEach(d=>{ if(Array.isArray(q[d.key])) rdQueues[d.key]=q[d.key]; }); }catch(e){}
 function rdSaveQueues(){ try{ localStorage.setItem(RD_QUEUE_KEY,JSON.stringify(rdQueues)); }catch(e){} }
-function rdPruneQueues(){ let ch=false; const today=rdDayKey(new Date());
+function rdPruneQueues(){ let ch=false; const today=rdRoundsDay(new Date());
 RD_QUEUE_DEFS.forEach(d=>{ const before=rdQueues[d.key].length;
-rdQueues[d.key]=rdQueues[d.key].filter(x=>!(x.done&&x.doneAt&&rdDayKey(x.doneAt)<today));
+rdQueues[d.key]=rdQueues[d.key].filter(x=>!(x.done&&x.doneAt&&rdRoundsDay(x.doneAt)<today));
 if(rdQueues[d.key].length!==before) ch=true; });
 if(ch) rdSaveQueues(); }
 
  
-let rdShift=(function(){ const h=new Date().getHours(); return (h>=5&&h<13)?'morning':(h>=13&&h<21)?'evening':'overnight'; })();
-function rdReviewKey(){ return rdDayKey(new Date())+':'+rdShift; }
+function rdShiftAuto(d){ const h=(d||new Date()).getHours(); return (h>=5&&h<13)?'morning':(h>=13&&h<21)?'evening':'overnight'; }
+let rdShift=rdShiftAuto(), rdShiftSeen=rdShift;
+/* Oct 2026 — the rounds day starts at 5 AM, so the overnight shift's reviews, done tasks and "ended today" stay put at midnight.
+   The shift follows the clock: a shift picked by hand holds until the next shift starts. */
+function rdRoundsDay(v){ const d=rdDate(v)||new Date(); return _hospDayKey(new Date(d.getTime()-5*3600000)); }
+function rdReviewKey(){ return rdRoundsDay(new Date())+':'+rdShift; }
+setInterval(function(){ const a=rdShiftAuto(); if(a===rdShiftSeen) return; rdShiftSeen=a; rdShift=a; try{ renderRdCensus(); }catch(e){} },30000);
 function rdReviewed(p){ const r=p.rounds; return (r&&r.review&&r.review[rdReviewKey()])||null; }
 
  
@@ -12763,6 +12971,7 @@ service:r.service||'ecc', location:r.location||null,
 acuity:r.acuity||'stable', newAdmit:!!r.newAdmit, rank:(typeof r.rank==='number'&&isFinite(r.rank))?r.rank:null, rankSec:(typeof r.rankSec==='string'&&r.rankSec)?r.rankSec:null,
 admitType:RD_ADMIT_TYPES[r.admitType]?r.admitType:'clinical',
 assessment:r.assessment||'',
+clientId:r.clientId?String(r.clientId):null, petId:(r.petId||r.employeeId)?String(r.petId||r.employeeId):null,
 
 
 care:(r.care||[]).map(c=>({id:c.id||rdId(),docId:c.docId||null,name:c.name||'',at:iso(c.at),by:c.by||null})),
@@ -12773,7 +12982,7 @@ problems:(r.problems||[]).map(x=>({id:x.id||rdId(),label:x.label||'',active:x.ac
 events:(r.events||[]).map(x=>({id:x.id||rdId(),at:iso(x.at),text:x.text||'',by:x.by||null,kind:x.kind||'clinical'})),
 diagnostics:(r.diagnostics||[]).map(x=>({id:x.id||rdId(),name:x.name||'',result:x.result||'',status:x.status||'pending',at:iso(x.at),due:x.due||null,discussed:!!x.discussed,createdAt:iso(x.createdAt)})),
 treatments:(r.treatments||[]).map(x=>({id:x.id||rdId(),name:x.name||'',detail:x.detail||''})),
-tasks:(r.tasks||[]).map(x=>({id:x.id||rdId(),label:x.label||'',due:x.due||null,assignee:x.assignee||null,status:x.status||'pending',doneAt:iso(x.doneAt),urgent:!!x.urgent,createdAt:iso(x.createdAt)})),
+tasks:(r.tasks||[]).map(x=>({id:x.id||rdId(),label:x.label||'',due:x.due||null,assignee:x.assignee||null,status:x.status||'pending',doneAt:iso(x.doneAt),doneBy:x.doneBy||null,urgent:!!x.urgent,createdAt:iso(x.createdAt)})),
 contingencies:(r.contingencies||[]).map(c=>({id:c.id||rdId(),trigger:c.trigger||'',action:c.action||'',active:c.active!==false,by:c.by||null,at:iso(c.at)})),
 flags:(r.flags||[]).map(f=>({id:f.id||rdId(),label:f.label||'',kind:f.kind||'safety'})),
 series:(function(){ const src=r.series||{}, out={}; Object.keys(src).forEach(k=>{ if(!RD_SERIES_META[k]) return;
@@ -12811,7 +13020,7 @@ return PATIENTS.filter(p=>(p.status==='Admitted'||p.status==='Hospitalized')&& p
 function rdCensus(){ return rdActive().filter(p=>(p.rounds.admitType||'clinical')==='clinical'); }
 function rdHolds(){ return rdActive().filter(p=>(p.rounds.admitType||'clinical')!=='clinical'); }
 function rdEndedToday(){
-return PATIENTS.filter(p=>p.rounds && p.rounds.outcome && p.rounds.outcome.at && isTodayHosp(rdDate(p.rounds.outcome.at)))
+return PATIENTS.filter(p=>p.rounds && p.rounds.outcome && p.rounds.outcome.at && rdRoundsDay(p.rounds.outcome.at)===rdRoundsDay(new Date()))
 .sort((a,b)=>rdDate(b.rounds.outcome.at)-rdDate(a.rounds.outcome.at));
 }
 function rdPendingItems(p){
@@ -13033,6 +13242,7 @@ handoff:null, financial:null, outcome:null,
 care:(p.doctor&&p.doctor!=='unassigned')?[{id:rdId(),docId:p.doctor,name:rdDocShort(p.doctor),at:rdIso(at),by:CURRENT_USER}]:[],
 audit:[{at:rdIso(at),by:CURRENT_USER,what:'Enrolled in Rounds from Flow'}]
 });
+try{ if(typeof fvRoundsPrefill==='function') fvRoundsPrefill(p,at); }catch(e){ console.warn('[rounds prefill]',e); }
 p.timeline.push({label:'Enrolled in Rounds', at:at, meta:rdSvc(svc).label});
 try{ notify('Added to Rounds', rdEsc(rdFullName(p))+' · New Admit · '+rdSvc(svc).label, {icon:'info', color:'var(--accent)'}); }catch(e){}
 }
@@ -13510,6 +13720,7 @@ return`<div class="rd-row acu-${r.acuity} ${open?'open':''} ${r.newAdmit?'is-new
       <div class="rd-main">
         <div class="rd-l1">
           <span class="rd-name">${rdEsc(rdFullName(p))}</span>
+          ${rdResusChip(p)}
           ${r.newAdmit?`<span class="rd-chip new">NEW ADMIT${inNewSection?' · '+rdAgo(r.admittedAt):''}</span>`:''}
           ${r.acuity==='critical'?`<span class="rd-chip crit">CRITICAL</span>`:''}
           ${rdFlagChips(p)}
@@ -13697,6 +13908,7 @@ return`<div class="rd-work" data-pid="${pid}">
           </div>
           <div class="rd-case-strip">
             <div class="rd-ov-facts">
+              <button class="rd-fact resus ${p.resusPref==='CPR'?'cpr':p.resusPref==='DNR'?'dnr':'unset'}" data-act="resus-menu" data-pid="${pid}" title="Change CPR / DNR">${p.resusPref||'Set CPR / DNR'}${p.resusRequest&&p.resusRequest.pref&&p.resusRequest.pref!==p.resusPref?` <i>· family chose ${rdEsc(p.resusRequest.pref)}</i>`:''}</button>
               <button class="rd-fact" data-act="svc-menu" data-pid="${pid}" title="Change service">${rdEsc(rdSvc(r.service).label)}</button>
               <button class="rd-fact" data-act="loc-menu" data-pid="${pid}" title="Change location">${rdEsc(rdNormLoc(r.location)||'Set location')}</button>
               <span class="rd-fact plain day">Hospital Day ${rdDayNum(p)}</span>
@@ -13770,6 +13982,8 @@ return`<div class="rd-work" data-pid="${pid}">
     <div class="rd-colR">
 
       ${rdAuthHTML(p)}
+
+      ${rdTasksHTML(p)}
 
       <div class="rd-sec rd-owner-compact">
         <div class="rd-owner-compact-grid">
@@ -13917,6 +14131,29 @@ document.addEventListener('pointerup',e=>{ if(window.rdRk&&e.pointerId===window.
 document.addEventListener('pointercancel',e=>{ if(window.rdRk&&e.pointerId===window.rdRk.pid0) rdRankEnd(false); },true);
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&window.rdRk){ e.stopPropagation(); rdRankEnd(false); } },true);
 
+
+/* ═════════ ROUNDS GAPS (Oct 2026) — CPR/DNR · tasks · archive reads older visits on demand ═════════ */
+function rdResusChip(p,big){ const v=p.resusPref, q=p.resusRequest&&p.resusRequest.pref, b=big?' big':'';
+  const ask=q&&q!==v?`<span class="rd-chip resus req${b}" title="The family chose ${rdEsc(q)} on the tracker — confirm">${rdEsc(q)}?</span>`:'';
+  if(v==='CPR'||v==='DNR') return `<span class="rd-chip resus ${v.toLowerCase()}${b}" title="${v==='CPR'?'Resuscitate':'Do not resuscitate'} · ${p.resusStatus==='confirmed'?'confirmed by staff':'client preference'}">${v}</span>`+ask;
+  return ask||`<span class="rd-chip resus unset${b}" title="No CPR / DNR recorded">CPR/DNR?</span>`; }
+function rdTaskDoneToday(t){ return t.status==='done'&&!!t.doneAt&&rdRoundsDay(t.doneAt)===rdRoundsDay(new Date()); }
+function rdTasksHTML(p){ const r=p.rounds, pid=p.id, T=r.tasks||[], open=T.filter(t=>t.status!=='done'), done=T.filter(rdTaskDoneToday);
+  const ck='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const row=t=>{ const d=t.status==='done', sub=d?('Done '+rdT(t.doneAt)+(t.doneBy?' · '+rdEsc(t.doneBy):'')):[t.due?rdEsc(t.due):'',t.assignee?rdEsc(t.assignee):''].filter(Boolean).join(' · ');
+    return `<div class="rd-task ${t.urgent&&!d?'urgent':''} ${d?'done':''}"><button type="button" class="ck ${d?'on':''}" data-act="task-toggle" data-pid="${pid}" data-id="${t.id}" aria-pressed="${d}" aria-label="${d?'Reopen':'Mark done'} — ${rdEsc(t.label)}">${d?ck:''}</button>`
+      +`<div class="b"><span class="t">${rdEsc(t.label)}</span>${sub?`<span class="s">${sub}</span>`:''}</div><button class="x" data-act="task-del" data-pid="${pid}" data-id="${t.id}" title="Remove">✕</button></div>`; };
+  return `<div class="rd-sec rd-tasks"><div class="rd-sec-h">Tasks${open.length?`<span class="sub">${open.length} open</span>`:''}</div>`
+    +(open.length||done.length?`<div class="rd-tasklist">${open.map(row).join('')}${done.map(row).join('')}</div>`:'<div class="rd-empty-line">No tasks.</div>')
+    +rdSecAdd(pid,'task','+ Add task — “repeat PCV at 6am”')+'</div>'; }
+/* the archive also shows admissions older than what Flow keeps loaded (read once, when the archive opens) */
+let rdOld=null, rdOldLoading=false;
+function rdArchivePool(){ const have={}, L=PATIENTS.filter(p=>{ have[p.id]=1; return !!p.rounds; });
+  if(rdOld) rdOld.forEach(p=>{ if(!have[p.id]&&p.rounds) L.push(p); });
+  else if(!rdOldLoading&&typeof fvVisitHistory==='function'&&typeof Backend!=='undefined'&&Backend._visitsMode==='recent'){ rdOldLoading=true;
+    fvVisitHistory().then(list=>{ rdOld=list; rdOldLoading=false; try{ renderRdArchive(); }catch(e){} }).catch(()=>{ rdOldLoading=false; }); }
+  return L; }
+
 function rdSectionsHTML(list){
 const groups=rdGroupsOf(list);
 if(!groups.length){
@@ -13982,7 +14219,7 @@ rdEndedPrev=ended.length;
  
 function renderRdArchive(){
 const host=document.getElementById('rdArchiveBody'); if(!host) return;
-const withR=PATIENTS.filter(p=>p.rounds);
+const withR=rdArchivePool();
 const days={};
 withR.forEach(p=>{
 Object.keys((p.rounds.snapshots)||{}).forEach(k=>{ days[k]=1; });
@@ -14076,7 +14313,8 @@ case'ev-del': r.events=r.events.filter(e=>e.id!==id); rdTouch(p,'Event removed')
 case'diag-toggle':{ const d=r.diagnostics.find(x=>x.id===id); if(d){ d.status=d.status==='completed'?'pending':'completed'; d.at=d.status==='completed'?rdIso(new Date()):null; rdTouch(p,d.name+' · '+d.status); } break; }
 case'diag-del': r.diagnostics=r.diagnostics.filter(x=>x.id!==id); rdTouch(p,'Diagnostic removed'); break;
 case'tx-del':{ const t=r.treatments.find(x=>x.id===id); r.treatments=r.treatments.filter(x=>x.id!==id); rdTouch(p,'Treatment discontinued'+(t?(' · '+t.name):'')); break; }
-case'task-toggle':{ const t=r.tasks.find(x=>x.id===id); if(t){ t.status=t.status==='done'?'pending':'done'; t.doneAt=t.status==='done'?rdIso(new Date()):null; rdTouch(p,'Task '+(t.status==='done'?'completed':'reopened')+' · '+t.label); } break; }
+case'resus-menu':{ if(!p) break; rdMenu(el,[{label:'CPR — resuscitate',value:'CPR',on:p.resusPref==='CPR'},{label:'DNR — do not resuscitate',value:'DNR',on:p.resusPref==='DNR'}],v=>{ if(p.resusPref===v&&!p.resusRequest) return; setResusPref(p,v); rdTouch(p,'CPR/DNR · '+v); }); break; }
+case'task-toggle':{ const t=r.tasks.find(x=>x.id===id); if(t){ t.status=t.status==='done'?'pending':'done'; t.doneAt=t.status==='done'?rdIso(new Date()):null; t.doneBy=t.status==='done'?rdActorName():null; rdTouch(p,'Task '+(t.status==='done'?'completed':'reopened')+' · '+t.label); } break; }
 case'task-del': r.tasks=r.tasks.filter(x=>x.id!==id); rdTouch(p,'Task removed'); break;
 case'comm-mark': r.comms.lastAt=rdIso(new Date()); r.comms.lastBy=rdActorName(); r.comms.next=null;
 p.timeline.push({label:'Owner updated', at:new Date(), meta:rdActorName()}); rdTouch(p,'Owner updated'); break;
@@ -14326,7 +14564,7 @@ const c=r.comms||{};
 ov.innerHTML=`
     <div class="rdm-top">
       <span class="rdm-prog">${rdModeIdx+1} OF ${list.length}</span>
-      <div class="rdm-title"><span class="rdm-name">${rdEsc(rdFullName(p))}</span>
+      <div class="rdm-title"><span class="rdm-name">${rdEsc(rdFullName(p))}</span>${rdResusChip(p,true)}
         <span class="rdm-sub">${rdEsc(rdSvc(r.service).label)} · ${rdEsc(r.location||'—')} · Hospital Day ${rdDayNum(p)} · <i style="color:${RD_ACUITY[r.acuity].color}">${RD_ACUITY[r.acuity].label}</i>${(function(){const a=rdAuthState(p);return a?(' · <i class="'+(a.status!=='ok'?'warn':'')+'">'+Math.round(a.elapsed)+'h / '+a.total+'h auth</i>'):'';})()}</span>
         ${(function(){ const cur=rdCareCurrent(p), ad=rdCareAdmit(p); if(!cur) return '';
           return `<span class="rdm-care">${ad&&ad.id!==cur.id?('Admitted by '+rdEsc(rdCareName(ad)||'—')+' &nbsp;→&nbsp; '):''}<b>${rdEsc(rdCareName(cur)||'—')}</b>${ad&&ad.id!==cur.id?(' since '+rdT(cur.at)):''}</span>`; })()}
@@ -14339,7 +14577,7 @@ ov.innerHTML=`
       <div class="rdm-sec"><h4>Diagnostics</h4>${doneD.slice(-6).map(d=>`<div class="r"><span>✓</span>${rdEsc(d.name)}${d.result?(' — '+rdEsc(rdModeDetail?d.result:(d.result.length>60?d.result.slice(0,60)+'…':d.result))):''}</div>`).join('')||'<div class="q">None completed</div>'}
         ${pendD.length?`<div class="r pend"><span>…</span>Pending: ${pendD.map(d=>rdEsc(d.name)).join(', ')}</div>`:''}</div>
       <div class="rdm-sec"><h4>Current Treatment</h4>${(r.treatments||[]).map(t=>`<div class="r">${rdEsc(t.name)}${t.detail?` <i>${rdEsc(t.detail)}</i>`:''}</div>`).join('')||'<div class="q">None entered</div>'}</div>
-      <div class="rdm-sec"><h4>Next</h4>${pendT.map(t=>`<div class="r"><span>${t.due?rdEsc(t.due):'—'}</span>${rdEsc(t.label)}</div>`).join('')||'<div class="q">Nothing pending</div>'}</div>
+      <div class="rdm-sec"><h4>Next</h4>${pendT.map(t=>`<div class="r rdm-task"><button type="button" class="rdm-ck" data-a="task" data-id="${t.id}" aria-label="Mark done — ${rdEsc(t.label)}"></button><span>${t.due?rdEsc(t.due):'—'}</span>${rdEsc(t.label)}</div>`).join('')||'<div class="q">Nothing pending</div>'}</div>
       <div class="rdm-sec"><h4>Owner Communication</h4>
         <div class="r"><span>Last</span>${c.lastAt?(rdT(c.lastAt)+(c.lastBy?(' · '+rdEsc(c.lastBy)):'')):'Not yet'}</div>
         ${c.next?`<div class="r"><span>Next</span>${rdEsc(c.next)}</div>`:''}
@@ -14358,7 +14596,8 @@ ov.onclick=e=>{ const b=e.target.closest('[data-a]'); if(!b) return;
 if(b.dataset.a==='exit') rdExitMode();
 else if(b.dataset.a==='prev') rdModeNav(-1);
 else if(b.dataset.a==='next') rdModeNav(1);
-else if(b.dataset.a==='rev') rdModeReview(); };
+else if(b.dataset.a==='rev') rdModeReview();
+else if(b.dataset.a==='task'){ const t=(r.tasks||[]).find(x=>x.id===b.dataset.id); if(t&&t.status!=='done'){ t.status='done'; t.doneAt=rdIso(new Date()); t.doneBy=rdActorName(); rdTouch(p,'Task completed · '+t.label); rdModeRender(); } } };
 }
 
  
@@ -15141,13 +15380,13 @@ window.addEventListener('offline',function(){ state.online=false; state.offlineS
 function watch(){
   try{
     if(LOBBY||typeof DB==='undefined'||!DB||typeof TENANT_ID==='undefined') return;
-    DB.collection('visits').where('tenant_id','==',TENANT_ID).onSnapshot({includeMetadataChanges:true},function(snap){
-      state.pending=snap.docs.filter(function(d){ return d.metadata.hasPendingWrites; }).length;
-      var fc=!!snap.metadata.fromCache;
+    fvVisitsListen(function(docs,meta){   /* the same queries as the main list: Firestore shares them, nothing is read twice */
+      state.pending=docs.filter(function(d){ return d.metadata.hasPendingWrites; }).length;
+      var fc=!!(meta&&meta.fromCache);
       if(fc&&!state.fromCache) state.cacheSince=Date.now();
       state.fromCache=fc; if(!fc) state.cacheSince=0;
       render();
-    },function(){});
+    },function(){},{includeMetadataChanges:true});
   }catch(e){}
 }
 try{ if(typeof AUTH!=='undefined'&&AUTH&&AUTH.onAuthStateChanged){ var started=false; AUTH.onAuthStateChanged(function(u){ if(u&&!started){ started=true; watch(); } }); } }catch(e){}
@@ -15834,6 +16073,262 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers:viewers, tick:tick};
 })();
 </script>
+<script>
+/* ═════════ patient-flags-oct7 ═════════
+   Staff-only patient flags (Safety · Handling · Medical · Isolation · Owner). Stored on visits/{id}.flags
+   [{id,k,t,scope:'always'|'visit',by,at,from}]. "Always" flags carry to the pet's next visit at check-in;
+   "This visit" flags stay with the visit. Never written to pub/ or lobby/ (those projections list their fields). */
+(function(){
+var FK={safe:'Safety',hand:'Handling',med:'Medical',iso:'Isolation',own:'Owner'}, ORDER=['safe','hand','med','iso','own'];
+var CAT={safe:['Bites','Muzzle','Dog aggressive','Scratches'],hand:['Fear Free','Hard stick','Sedate','E-collar'],
+  med:['MDR1','No hydromorphone','Diabetic','Seizures'],iso:['Parvo','Ringworm','Kennel cough'],own:['Call first','Spanish','Approve estimate']};
+var G={
+ safe:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.13 1.9a1 1 0 0 1 1.74 0l6.02 10.6A1 1 0 0 1 14.02 14H1.98a1 1 0 0 1-.87-1.5zM8 5.2a.85.85 0 0 0-.85.9l.2 3.6a.65.65 0 0 0 1.3 0l.2-3.6A.85.85 0 0 0 8 5.2zm0 6.1a.85.85 0 1 0 0 1.7.85.85 0 0 0 0-1.7z"/></svg>',
+ hand:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.4 1.3c.55 0 1 .45 1 1v4.3h.5V3c0-.55.45-1 1-1s1 .45 1 1v4.3h.4V4.4c0-.5.4-.9.9-.9s.9.4.9.9v5.1c0 3-2.2 5.2-5 5.2-1.9 0-3.1-.8-4.2-2.3L2 9.4c-.4-.5-.3-1.1.2-1.4.45-.3 1-.2 1.4.2l1.3 1.4V3c0-.55.45-1 1-1s1 .45 1 1v3.6h.5V2.3c0-.55.45-1 1-1z" transform="translate(-.6 0)"/></svg>',
+ med:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M6.9 1.6h2.2v4.1l3.55-2.05 1.1 1.9L10.2 7.6l3.55 2.05-1.1 1.9L9.1 9.5v4.1H6.9V9.5l-3.55 2.05-1.1-1.9L5.8 7.6 2.25 5.55l1.1-1.9L6.9 5.7z"/></svg>',
+ iso:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.2l5.4 2v4.3c0 3.3-2.3 5.8-5.4 6.9C4.9 13.3 2.6 10.8 2.6 7.5V3.2z"/></svg>',
+ own:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.2 1.6c.5-.1 1 .2 1.2.7l.9 2.3c.2.45 0 1-.4 1.25l-1 .65a8.6 8.6 0 0 0 4.6 4.6l.65-1c.25-.4.8-.6 1.25-.4l2.3.9c.5.2.8.7.7 1.2l-.3 1.6c-.1.6-.7 1-1.3 1C6.6 14.3 1.7 9.4 1.6 3.2c0-.6.4-1.2 1-1.3z"/></svg>'};
+var MINUS='<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="11" fill="var(--fg-red)"/><rect x="5.5" y="10" width="11" height="2" rx="1" fill="#fff"/></svg>';
+var PLUS='<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="11" fill="var(--fg-green)"/><rect x="5.5" y="10" width="11" height="2" rx="1" fill="#fff"/><rect x="10" y="5.5" width="2" height="11" rx="1" fill="#fff"/></svg>';
+var MAG='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="m10.4 10.4 3.4 3.4"/></svg>';
+var CK='<svg class="fg-ck" viewBox="0 0 16 16" fill="none" stroke="var(--fg-blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+var APP='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h7.2a5.2 5.2 0 0 1 0 10.4H9.6V20H6zm3.6 3.3v3.8h3.4a1.9 1.9 0 0 0 0-3.8z"/></svg>';
+function E(s){ return (typeof bcEsc==='function')?bcEsc(s):String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function C(s){ return (typeof fxClean==='function')?fxClean(s):s; }
+function uid(){ return 'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function iso(d){ try{ return d?new Date(d).toISOString():null; }catch(e){ return null; } }
+function who(){ try{ return (typeof CURRENT_USER==='string'&&CURRENT_USER)?CURRENT_USER:'Staff'; }catch(e){ return 'Staff'; } }
+function L(p){ return (p&&Array.isArray(p.flags))?p.flags:[]; }
+function S(p){ return L(p).slice().sort(function(a,b){ return ORDER.indexOf(a.k)-ORDER.indexOf(b.k); }); }
+function reduce(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+
+/* Firestore ↔ app */
+window.fgToDb=function(a){ return Array.isArray(a)?a.filter(function(f){ return f&&f.t; }).slice(0,30).map(function(f){
+  return {id:String(f.id||uid()),k:FK[f.k]?f.k:'own',t:String(f.t).slice(0,40),scope:f.scope==='visit'?'visit':'always',by:f.by||null,at:iso(f.at),from:f.from||null}; }):[]; };
+window.fgToApp=function(a){ return Array.isArray(a)?a.filter(function(f){ return f&&f.t; }).map(function(f){
+  return {id:String(f.id||uid()),k:FK[f.k]?f.k:'own',t:C(String(f.t)),scope:f.scope==='visit'?'visit':'always',by:f.by?C(String(f.by)):null,at:f.at?new Date(f.at):null,from:f.from||null}; }):[]; };
+
+/* atoms */
+function tile(k,cls){ return '<i class="fg-t fg-k-'+k+(cls?' '+cls:'')+'">'+G[k]+'</i>'; }
+function cap(t,cls){ return '<i class="fg-cap'+(cls?' '+cls:'')+'">'+G.safe+'<i>'+E(t)+'</i></i>'; }
+var SEEN={}, PULSE=null;
+function recent(d){ return d&&(Date.now()-new Date(d).getTime())<120000; }
+function isNew(p,f){ var key=p.id+'|'+f.id; if(SEEN[key]) return false; SEEN[key]=1; return recent(f.at)||recent(p.arrival)||(f.from&&recent(p.arrival)); }
+
+/* board card */
+window.fgCard=function(p){ var a=S(p); if(!a.length) return ''; var s=a.filter(function(f){ return f.k==='safe'; }), o=a.filter(function(f){ return f.k!=='safe'; });
+  return '<div class="fg-fl" aria-label="Flags: '+E(a.map(function(f){ return f.t; }).join(', '))+'">'
+   +s.map(function(f){ var n=isNew(p,f); return cap(f.t,n?'fg-new fg-pulse':''); }).join('')
+   +(o.length?'<span class="fg-stk">'+o.map(function(f,i){ return '<span class="fg-si'+(isNew(p,f)?' fg-new':'')+'" style="--i:'+i+'" title="'+E(f.t)+'">'+tile(f.k)+'<em>'+E(f.t)+'</em></span>'; }).join('')+'</span>':'')+'</div>'; };
+/* patients table (inline after the name) and rooms */
+function compact(p,small){ var a=S(p); if(!a.length) return ''; var s=a.filter(function(f){ return f.k==='safe'; }), o=a.filter(function(f){ return f.k!=='safe'; });
+  return s.map(function(f){ return cap(f.t,small?'s':''); }).join('')+o.map(function(f){ return '<i class="fg-w" title="'+E(FK[f.k]+': '+f.t)+'">'+tile(f.k,small?'s':'')+'</i>'; }).join(''); }
+window.fgInline=function(p){ var h=compact(p,true); return h?'<span class="fg-inl">'+h+'</span>':''; };
+window.fgRoom=function(p){ var h=compact(p,false); return h?'<div class="fg-room">'+h+'</div>':''; };
+
+/* mutations */
+function save(p){ try{ renderAll(); }catch(e){} }
+function add(p,k,t,scope){ t=C(String(t||'')).trim().slice(0,40); if(!t) return;
+  if(L(p).some(function(f){ return f.t.toLowerCase()===t.toLowerCase(); })) return;
+  p.flags=L(p).concat([{id:uid(),k:FK[k]?k:'own',t:t,scope:scope==='visit'?'visit':'always',by:who(),at:new Date(),from:null}]);
+  try{ p.timeline.push({label:'Flag added',at:new Date(),meta:t}); }catch(e){}
+  save(p); }
+function remove(p,id){ var f=L(p).find(function(x){ return x.id===id; }); if(!f) return;
+  p.flags=L(p).filter(function(x){ return x.id!==id; });
+  try{ p.timeline.push({label:'Flag removed',at:new Date(),meta:f.t}); }catch(e){}
+  save(p); }
+window.fgAdd=add; window.fgRemove=remove;
+
+/* drawer section */
+var ST={pid:null,edit:false,sheet:false,scope:'always',touched:false,q:''};
+function when(d){ if(!d) return ''; var x=new Date(d), t=new Date(); try{
+  if(x.toDateString()===t.toDateString()) return x.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  return x.toLocaleDateString([], {month:'short',day:'numeric'}); }catch(e){ return ''; } }
+function sectionHTML(p){ var a=S(p), pulse=PULSE===p.id; PULSE=null;
+  var h='<div class="fg-sec'+(ST.edit?' edit':'')+'" id="fgSec"><div class="fg-hd"><p class="sect-title">Flags</p>'
+   +(a.length?'<button type="button" class="fg-link" data-fg="edit">'+(ST.edit?'Done':'Edit')+'</button>':'')+'</div><div class="fg-group">';
+  h+=a.map(function(f){ var meta=[f.scope==='visit'?'This visit':'Always', f.by?E(f.by):'', when(f.at)].filter(Boolean).join(' · ');
+    return '<div class="fg-row" data-id="'+E(f.id)+'"><button type="button" class="fg-min" data-fg="arm" aria-label="Remove '+E(f.t)+'">'+MINUS+'</button>'
+     +tile(f.k,'l'+(pulse&&f.k==='safe'?' fg-pulse':''))+'<div class="fg-tx"><b'+(f.k==='safe'?' style="color:var(--fg-red)"':'')+'>'+E(f.t)+'</b><small>'+E(FK[f.k])+' · '+meta+'</small></div>'
+     +'<button type="button" class="fg-del" data-fg="del">Remove</button></div>'; }).join('');
+  h+='<button type="button" class="fg-add" data-fg="add" aria-expanded="'+ST.sheet+'">'+PLUS+'<span>Add Flag</span></button></div>';
+  if(ST.sheet) h+=sheetHTML(p);
+  return h+'</div>'; }
+function sheetHTML(p){ var have={}; L(p).forEach(function(f){ have[f.t.toLowerCase()]=1; }); var q=ST.q.trim().toLowerCase(), any=false;
+  var opts=ORDER.map(function(k){ var items=CAT[k].filter(function(t){ return !q||t.toLowerCase().indexOf(q)>-1; }); if(!items.length) return ''; any=true;
+    return '<div class="fg-sh">'+FK[k]+'</div>'+items.map(function(t){ return '<button type="button" class="fg-opt'+(have[t.toLowerCase()]?' on':'')+'" data-fg="opt" data-k="'+k+'" data-t="'+E(t)+'">'+tile(k)+'<span class="fg-lb">'+E(t)+'</span>'+CK+'</button>'; }).join(''); }).join('');
+  var custom=q&&!CAT.safe.concat(CAT.hand,CAT.med,CAT.iso,CAT.own).some(function(t){ return t.toLowerCase()===q; });
+  return '<div class="fg-sheet" role="dialog" aria-label="Add flag"><label class="fg-search">'+MAG+'<input id="fgQ" placeholder="Search or new flag" value="'+E(ST.q)+'" autocomplete="off" aria-label="Search or new flag"></label>'
+   +'<div class="fg-seg" role="group" aria-label="Keep the flag"><button type="button" data-fg="scope" data-s="always" class="'+(ST.scope==='always'?'on':'')+'">Always</button><button type="button" data-fg="scope" data-s="visit" class="'+(ST.scope==='visit'?'on':'')+'">This Visit</button></div>'
+   +'<div class="fg-opts">'+opts+(custom?'<div class="fg-new-as">Add “'+E(ST.q.trim())+'” as'+ORDER.map(function(k){ return '<button type="button" data-fg="new" data-k="'+k+'">'+tile(k,'s')+FK[k]+'</button>'; }).join('')+'</div>':'')
+   +(!any&&!custom?'<div class="fg-new-as">No matches</div>':'')+'</div>'
+   +'<div class="fg-sheet-ft"><button type="button" class="fg-pill g" data-fg="close">Done</button></div></div>'; }
+function mountFor(p){ var m=document.getElementById('flagsMount'); if(!m||!p) return; if(ST.pid!==p.id){ ST={pid:p.id,edit:false,sheet:false,scope:'always',touched:false,q:''}; }
+  var hadFocus=document.activeElement&&document.activeElement.id==='fgQ', pos=hadFocus?document.activeElement.selectionStart:null, sc=m.querySelector('.fg-opts'), top=sc?sc.scrollTop:0;
+  m.innerHTML=sectionHTML(p);
+  var ns=m.querySelector('.fg-opts'); if(ns) ns.scrollTop=top;
+  var qi=m.querySelector('#fgQ'); if(qi){ qi.oninput=function(){ ST.q=qi.value; mountFor(p); };
+    qi.onkeydown=function(e){ if(e.key==='Escape'){ ST.sheet=false; ST.q=''; mountFor(p); m.querySelector('[data-fg="add"]').focus(); }
+      if(e.key==='Enter'&&ST.q.trim()){ var first=m.querySelector('.fg-opt:not(.on)'); if(first) first.click(); else { var nb=m.querySelector('[data-fg="new"][data-k="own"]'); if(nb) nb.click(); } } };
+    if(hadFocus){ qi.focus(); try{ qi.setSelectionRange(pos,pos); }catch(e){} } } }
+window.fgMount=function(p){ try{ mountFor(p); }catch(e){} };
+document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#flagsMount [data-fg]'); if(!b) return;
+  var p=PATIENTS.find(function(x){ return x.id===ST.pid; }); if(!p) return; var act=b.dataset.fg, row=b.closest('.fg-row');
+  if(act==='edit'){ ST.edit=!ST.edit; if(!ST.edit) document.querySelectorAll('#flagsMount .fg-row.arm').forEach(function(r){ r.classList.remove('arm'); }); var sec=document.getElementById('fgSec'); sec.classList.toggle('edit',ST.edit); b.textContent=ST.edit?'Done':'Edit'; return; }
+  if(act==='arm'){ var was=row.classList.contains('arm'); document.querySelectorAll('#flagsMount .fg-row.arm').forEach(function(r){ r.classList.remove('arm'); }); if(!was) row.classList.add('arm'); return; }
+  if(act==='del'){ var id=row.dataset.id; row.style.maxHeight=row.offsetHeight+'px'; void row.offsetWidth; row.classList.add('gone');
+    setTimeout(function(){ remove(p,id); if(!L(p).length) ST.edit=false; mountFor(p); }, reduce()?160:340); return; }
+  if(act==='add'){ ST.sheet=!ST.sheet; ST.q=''; ST.touched=false; ST.scope='always'; mountFor(p); if(ST.sheet){ var qi=document.getElementById('fgQ'); if(qi) qi.focus(); } return; }
+  if(act==='close'){ ST.sheet=false; ST.q=''; mountFor(p); return; }
+  if(act==='scope'){ ST.scope=b.dataset.s; ST.touched=true; b.parentNode.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on',x===b); }); return; }
+  if(act==='opt'){ var t=b.dataset.t, k=b.dataset.k, ex=L(p).find(function(f){ return f.t.toLowerCase()===t.toLowerCase(); });
+    if(ex){ remove(p,ex.id); b.classList.remove('on'); }
+    else { add(p,k,t,ST.touched?ST.scope:(k==='iso'?'visit':ST.scope)); b.classList.add('on'); }
+    setTimeout(function(){ mountFor(p); }, 380); return; }
+  if(act==='new'){ add(p,b.dataset.k,ST.q,ST.touched?ST.scope:(b.dataset.k==='iso'?'visit':ST.scope)); ST.q=''; mountFor(p); var qi2=document.getElementById('fgQ'); if(qi2) qi2.focus(); return; }
+});
+
+/* check-in: "Always" flags from the pet's last visit come forward */
+function key(v){ return String(v==null?'':v).toLowerCase().replace(/\s+/g,' ').trim(); }
+function digits(v){ return String(v==null?'':v).replace(/\D/g,'').slice(-10); }
+function priorFlags(p,pool){ var nm=key((p.name||'')+' '+(p.last||'')); if(!nm) return null; var ow=key(p.owner), ph=digits(p.ownerPhone);
+  var prev=(pool||PATIENTS).filter(function(x){ return x!==p&&x.id!==p.id&&L(x).length&&key((x.name||'')+' '+(x.last||''))===nm&&((ow&&key(x.owner)===ow)||(ph.length>=7&&digits(x.ownerPhone)===ph)); })
+    .sort(function(a,b){ return new Date(b.arrival||0)-new Date(a.arrival||0); });
+  for(var i=0;i<prev.length;i++){ var al=L(prev[i]).filter(function(f){ return f.scope!=='visit'; }); if(al.length) return {from:prev[i],flags:al}; }
+  return null; }
+function carry(p){ if(L(p).length) return; var pr=priorFlags(p); if(!pr){ older(p); return; } carryFrom(p,pr); }
+/* not in the last 30 days Flow keeps loaded: look up this pet's older visits by name (one small read) */
+function older(p){ if(typeof fvVisitsByName!=='function'||typeof Backend==='undefined'||Backend._visitsMode!=='recent') return;
+  fvVisitsByName((p.name||'')+' '+(p.last||'')).then(function(list){ var cur=PATIENTS.find(function(x){ return x.id===p.id; })||p; if(L(cur).length) return;
+    var pr=priorFlags(cur,list); if(pr) carryFrom(cur,pr); }).catch(function(e){ console.warn('[flags] older visits',e); }); }
+function carryFrom(p,pr){
+  p.flags=pr.flags.map(function(f){ return {id:uid(),k:f.k,t:f.t,scope:'always',by:f.by||null,at:f.at||null,from:String(pr.from.id)}; });
+  try{ p.timeline.push({label:'Flags from last visit',at:new Date(),meta:p.flags.map(function(f){ return f.t; }).join(', ')}); }catch(e){}
+  save(p); notifyCheckin(p); }
+window.fgCarry=carry;
+if(typeof commitPatient==='function'){ var _commit=commitPatient;
+  window.commitPatient=function(){ var before={}; PATIENTS.forEach(function(x){ before[x.id]=1; }); var r=_commit.apply(this,arguments);
+    try{ PATIENTS.filter(function(x){ return !before[x.id]; }).forEach(carry); }catch(e){} return r; }; }
+
+function notifyCheckin(p){ var old=document.querySelector('.fg-ntf'); if(old) old.remove();
+  var a=S(p), s=a.filter(function(f){ return f.k==='safe'; }), n=a.length, nm=((p.name||'')+' '+(p.last||'')).trim();
+  var lead=s.length?s[0].t:a[0].t, rest=n-1;
+  var el=document.createElement('div'); el.className='fg-ntf'; el.setAttribute('role','status');
+  el.innerHTML='<span class="fg-app">'+APP+'</span><div class="fg-bd"><div class="fg-nh"><span>FLOW · CHECK-IN</span><span>now</span></div><b>'+E(nm)+' is here</b>'
+   +'<p>'+E(lead)+(rest?' and '+rest+' more flag'+(rest>1?'s':''):'')+' from the last visit.</p><div class="fg-rw">'+compact(p,false)+'</div>'
+   +'<div class="fg-acts"><button type="button" class="fg-pill p" data-n="keep">Keep Flags</button><button type="button" class="fg-pill g" data-n="review">Review</button></div></div>';
+  var wrap=document.getElementById('notes'); (wrap||document.body).appendChild(el); requestAnimationFrame(function(){ requestAnimationFrame(function(){ el.classList.add('show'); }); });
+  var gone=false, timer=setTimeout(function(){ close(); }, 20000);
+  function close(){ if(gone) return; gone=true; clearTimeout(timer); el.classList.add('out'); setTimeout(function(){ el.remove(); }, 450); }
+  el.querySelector('[data-n="review"]').onclick=function(){ close(); try{ ST={pid:p.id,edit:true,sheet:false,scope:'always',touched:false,q:''}; openDrawer(p.id); }catch(e){} };
+  el.querySelector('[data-n="keep"]').onclick=function(){ var to=document.querySelector('.card[data-pid="'+(window.CSS&&CSS.escape?CSS.escape(p.id):p.id)+'"] .fg-fl'), from=el.querySelectorAll('.fg-rw>*');
+    var r=to&&to.getBoundingClientRect(), vis=r&&r.width&&r.top<innerHeight&&r.bottom>0;
+    if(!vis||reduce()||!Element.prototype.animate){ close(); return; }
+    var targets=to.querySelectorAll('.fg-cap,.fg-si'), done=0;
+    [].forEach.call(from,function(src,i){ var a=src.getBoundingClientRect(), t=targets[i]||to, b=t.getBoundingClientRect(), c=src.cloneNode(true);
+      c.classList.add('fg-fly'); c.style.left=a.left+'px'; c.style.top=a.top+'px'; document.body.appendChild(c); src.style.opacity=0;
+      var dx=b.left-a.left, dy=b.top-a.top;
+      var an=c.animate([{transform:'translate(0,0) scale(1)'},{transform:'translate('+dx*.5+'px,'+(dy*.5-30)+'px) scale(1.12)',offset:.5},{transform:'translate('+dx+'px,'+dy+'px) scale(1)'}],{duration:640,delay:i*45,easing:'cubic-bezier(.32,.72,0,1)',fill:'forwards'});
+      an.onfinish=function(){ c.remove(); if(++done===from.length){ var card=to.closest('.card'); if(card){ card.classList.remove('just-added'); void card.offsetWidth; card.classList.add('just-added'); setTimeout(function(){ card.classList.remove('just-added'); },750); } } }; });
+    setTimeout(close,140); };
+}
+window.fgNotifyCheckin=notifyCheckin;
+
+/* drawer hooks: section on every fill, Safety pulses once when the patient is opened */
+if(typeof fillDrawer==='function'){ var _fill=fillDrawer; window.fillDrawer=function(p){ var r=_fill.apply(this,arguments); try{ mountFor(p); }catch(e){} return r; }; }
+if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=function(pid){ PULSE=pid; return _open.apply(this,arguments); }; }
+})();
+</script>
+
+<script>
+/* ═════════ FLOW — Diagnostics → treatment sheet · Admit · Rounds pre-fill · lb→kg as you type (Oct 2026) ═════════
+   · A patient moved to Diagnostics gets an outpatient treatment sheet; from an exam room (Room 1–7, Comfort Room) they also move to Treatment.
+   · Once a visit has an outpatient sheet, its board card shows Admit: the sheet becomes inpatient and the patient joins Rounds, filled in
+     from the visit (reason, triage, intake, flags, ultrasound, and the treatments already on the sheet).
+   · Weight typed in pounds shows its kg as you type, and is stored in kg. */
+(function(){
+  function esc(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function cur(p){ return (p&&PATIENTS.find(function(x){ return x.id===p.id; }))||p; }
+  function active(p){ try{ return isActive(p); }catch(e){ return p&&!p.completed; } }
+  function inRoom(p){ var r=String(p&&p.room||''); return r!=='Lobby'&&r!=='Treatment'&&/room/i.test(r); }
+
+  /* the module (Flow → Treatment Sheets) reports what each sheet is now */
+  window.fvSheetSeen=function(p,res,board){ var q=cur(p); if(!q) return;
+    var b=(res==='closed'||res==='undone')?null:(res==='promoted'||res==='reopened')?'IP':(res==='demoted')?'OP':(board||null);
+    if(!b&&!q.tsSheet) return; if(q.tsSheet&&q.tsSheet.board===b) return;
+    q.tsSheet=b?{board:b,at:new Date().toISOString()}:null; try{ scheduleRender(function(){ if(activePatient===q.id) fillDrawer(q); }); }catch(e){} };
+  function hasOP(p){ return !!(p&&p.tsSheet&&p.tsSheet.board==='OP'&&active(p)&&p.status!=='Hospitalized'); }
+
+  /* Diagnostics: make the outpatient sheet; from a room, go to Treatment (the Treatment move makes the sheet itself) */
+  if(typeof moveStatus==='function'){ var _ms=moveStatus;
+    window.moveStatus=moveStatus=function(p,newStatus){ var was=p&&p.status, r=_ms.apply(this,arguments);
+      try{ if(p&&newStatus==='Diagnostics'&&was!=='Diagnostics'&&p.status==='Diagnostics'&&active(p)){
+        if(inRoom(p)&&typeof moveRoom==='function') moveRoom(p,'Treatment');   /* the move to Treatment makes the sheet */
+        else if(!p._demo&&window.fvAdmitSheet&&fvAdmitSheet.ensure) fvAdmitSheet.ensure(p,'OP'); } }catch(e){ console.warn('[flow diagnostics]',e); }
+      return r; }; }
+
+  /* Admit from the card */
+  window.fvAdmitChip=function(p){ if(!hasOP(p)) return '';
+    return '<div class="fv-adm" data-pid="'+esc(p.id)+'"><span class="fv-adm-l"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 10h6M9 14h4"/></svg>OP sheet</span>'
+      +'<button type="button" class="fv-adm-b" draggable="false" onclick="event.stopPropagation();fvAdmitAsk(\''+esc(p.id)+'\')" aria-label="Admit '+esc(p.name||'patient')+'">Admit</button></div>'; };
+  window.fvAdmitAsk=function(id){ var p=PATIENTS.find(function(x){ return String(x.id)===String(id); }); if(!p||!active(p)) return;
+    var nm=((p.name||'')+' '+(p.last||'')).trim();
+    showConfirm('Admit '+nm+'?','Admit Patient',function(){ var q=cur(p); if(!q||!active(q)) return; completePatient(q,'Admitted'); },
+      {sub:'The outpatient treatment sheet becomes inpatient, and '+(p.name||'the patient')+' joins Rounds with the visit filled in.'}); };
+  document.addEventListener('mousedown',function(e){ if(e.target.closest&&e.target.closest('.fv-adm-b')) e.stopPropagation(); },true);
+
+  /* drawer: the Admit card says what it will do; a visit from before this change is checked once */
+  var looked={};
+  if(typeof fillDrawer==='function'){ var _fd=fillDrawer;
+    window.fillDrawer=fillDrawer=function(p){ var r=_fd.apply(this,arguments);
+      try{ var n=document.getElementById('dAdmitNote'); if(n) n.hidden=!hasOP(p);
+        if(p&&!p._demo&&!p.tsSheet&&!looked[p.id]&&active(p)&&typeof DB!=='undefined'&&DB&&window.fvAdmitSheet&&fvAdmitSheet.id){ looked[p.id]=1;
+          DB.collection('sheets').doc(fvAdmitSheet.id(p)).get().then(function(s){ var d=s.exists&&s.data(); if(d&&d.status==='active') fvSheetSeen(p,'exists',d.board||'IP'); }).catch(function(){}); } }catch(e){}
+      return r; }; }
+
+  /* Rounds pre-fill (called by rdEnroll) */
+  function triAt(p,t){ var base=p.arrival?new Date(p.arrival):new Date(), m=String(t&&t.at||'').match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i); if(!m) return base;
+    var h=+m[1]%12; if(m[3]&&/p/i.test(m[3])) h+=12; var d=new Date(base); d.setHours(h,+m[2],0,0); if(p.arrival&&d<new Date(p.arrival)-60000) d.setDate(d.getDate()+1); if(d>new Date()) d=new Date(); return d; }
+  function num(v){ var m=String(v==null?'':v).match(/-?\d+(\.\d+)?/); return m?parseFloat(m[0]):null; }
+  window.fvRoundsPrefill=function(p,at){ var r=p.rounds; if(!r) return; var t=p.triage||{}, v=t.vitals||{}, a=t.assess||{}, k=p.intake||{}, cap=(typeof rdCap==='function')?rdCap:function(x){ return x; };
+    /* working assessment: reason for visit (+ how long) */
+    if(!r.assessment){ var why=[p.reason||k.complaint||'', k.duration?('× '+k.duration):''].filter(Boolean).join(' '); if(why) r.assessment=cap(why); }
+    /* problems: intake complaint + triage chief complaints */
+    var have={}; (r.problems||[]).forEach(function(x){ have[String(x.label).toLowerCase()]=1; });
+    [].concat(String(k.complaint||'').split(/\s*,\s*/),t.chief||[]).map(function(x){ return String(x||'').trim(); }).filter(Boolean).forEach(function(x){ var l=cap(x); if(have[l.toLowerCase()]) return; have[l.toLowerCase()]=1; r.problems.push({id:rdId(),label:l,active:true,resolvedAt:null}); });
+    /* triage: one event + trend points at the triage time */
+    var ta=triAt(p,t), parts=[];
+    [['temp','T'],['hr','HR'],['rr','RR'],['weight','']].forEach(function(x){ if(v[x[0]]) parts.push((x[1]?x[1]+' ':'')+v[x[0]]); });
+    [['mentation','Mentation'],['mm','MM'],['crt','CRT']].forEach(function(x){ if(a[x[0]]) parts.push(x[1]+' '+a[x[0]]); });
+    if(parts.length) r.events.push({id:rdId(),at:rdIso(ta),text:'Triage — '+parts.join(' · ')+(t.by?' ('+t.by+')':''),by:t.by||null,kind:'clinical'});
+    r.series=r.series||{}; ['temp','hr','rr'].forEach(function(key){ var n=num(v[key]); if(n==null) return; (r.series[key]=r.series[key]||[]).push({at:rdIso(ta),v:n,v2:null}); });
+    /* intake: owner history, meds, allergies, what was abnormal */
+    var bits=[]; if(k.history) bits.push(String(k.history).trim());
+    try{ (TRIAGE_Q||[]).forEach(function(q){ var ans=k.q&&k.q[q.key]; if(ans&&ans!==q.normal){ var base=q.label.replace(/\?$/,''), lab=ans==='no'?'Not '+base.toLowerCase():((typeof TRIAGE_SHORT!=='undefined'&&TRIAGE_SHORT[q.key])||base); bits.push(lab+(k.qnotes&&k.qnotes[q.key]?' ('+k.qnotes[q.key]+')':'')); } }); }catch(e){}
+    if(k.medications) bits.push('Meds: '+k.medications); if(k.allergies) bits.push('Allergies: '+k.allergies); if(k.conditions) bits.push('History: '+k.conditions);
+    if(bits.length) r.events.push({id:rdId(),at:rdIso(p.arrival?new Date(p.arrival):at),text:'Intake — '+bits.join(' · '),by:null,kind:'clinical'});
+    /* safety / handling flags from Flow */
+    var fl={}; (r.flags||[]).forEach(function(f){ fl[f.label]=1; });
+    (Array.isArray(p.flags)?p.flags:[]).forEach(function(f){ if(f&&(f.k==='safe'||f.k==='hand')&&f.t&&!fl[f.t]){ fl[f.t]=1; r.flags.push({id:rdId(),label:f.t,kind:'safety'}); } });
+    r.events.sort(function(x,y){ return new Date(x.at)-new Date(y.at); });
+    /* treatments already on the treatment sheet arrive once the sheet is inpatient */
+    if(!r.treatments.length) setTimeout(function(){ fvRoundsTreatments(p); },1800); };
+  function rxLine(o){ var bits=[]; if(o.dose!=null&&o.dose!=='') bits.push(o.dose+(o.unit?' '+o.unit:'')); if(o.rate) bits.push(o.rate+(o.rate_u?' '+o.rate_u:' mL/hr')); if(o.route) bits.push(o.route); if(o.freq&&o.freq!=='CRI') bits.push(o.freq); return bits.join(' · '); }
+  window.fvRoundsTreatments=function(p){ try{ if(typeof DB==='undefined'||!DB||!window.fvAdmitSheet) return;
+    DB.collection('sheets').doc(fvAdmitSheet.id(p)).get().then(function(s){ var d=s.exists&&s.data(); if(!d) return; var q=cur(p); if(!q.rounds||q.rounds.outcome||q.rounds.treatments.length) return;
+      var O=d.orders||{}, L=Object.keys(O).map(function(id){ return O[id]; }).filter(function(o){ return o&&!o.dc&&!o.draft&&(o.type==='med'||o.cont||o.type==='fluid'||o.kind)&&!/^d\d+$/.test(String(o.id||'')); });
+      if(!L.length) return; L.forEach(function(o){ q.rounds.treatments.push({id:rdId(),name:o.name||'Treatment',detail:rxLine(o)}); });
+      rdTouch(q,'Treatments from the treatment sheet · '+L.length); }).catch(function(e){ console.warn('[rounds treatments]',e); }); }catch(e){} };
+
+  /* weight in pounds: its kg as you type */
+  function kgHint(el){ var h=el.parentNode&&el.parentNode.querySelector('.fv-kg'); var r=(typeof parseWeightInput==='function')?parseWeightInput(el.value):null;
+    var show=!!(r&&r.valid&&(r.lb||/lb|pound|#/i.test(el.value)));
+    if(!show){ if(h) h.remove(); return; } if(!h){ h=document.createElement('div'); h.className='fv-kg'; h.setAttribute('aria-live','polite'); el.insertAdjacentElement('afterend',h); }
+    h.textContent='= '+r.display; }
+  document.addEventListener('input',function(e){ var el=e.target; if(el&&el.matches&&el.matches('#apWeight, #triEditBody [data-vk="weight"]')) kgHint(el); },true);
+  document.addEventListener('blur',function(e){ var el=e.target; if(el&&el.matches&&el.matches('#apWeight, #triEditBody [data-vk="weight"]')) setTimeout(function(){ var h=el.parentNode&&el.parentNode.querySelector('.fv-kg'); if(h&&/kg\s*$/i.test(el.value)) h.remove(); },0); },true);
+})();
+</script>
 <script>window.FV_TECHS=["Felisha Barnes", "Tanneil Buchanan", "Stephanie Cseh", "Erin Cummings", "Chris Densky", "Nelson Diaz", "Alexis Distasio", "Lizzy Dixon", "Catherine Fappiano", "Brandy Fellin", "Viviana Fonseca", "Lauren Francione", "Amber Horvath", "Kimberly Hulme", "Danielle Infante", "Amanda Inzitari", "Danielle Kiley", "Malyssa Kubik", "Carly Kudola", "Amanda Van Kuren", "Ann LeStrange", "Janitza Lopez", "Gabrielle Lungarini", "Lindsay Martin", "Myranda May", "Sam Mitchell", "Bethany Oczkowski", "Gabriella Palumbo", "Rachel Pieger", "Malachi Quinones", "Allie Rodriguez", "Christina Rodriguez", "Delahla Rosario", "Vanessa Ruiz", "Stacey Smith", "Ally Tewksbury", "Courtney Thieke", "Shelsey Vega", "Paola Velazquez", "Dharianna Villa", "Lauren Whitney", "Jordain Williams"];</script>
 <script>
 /* ═══ FLOW → TREATMENT SHEETS ═══
@@ -15927,10 +16422,10 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
     opts=opts||{};
     if(!ready()||!p) return Promise.resolve(null);
     var id=sheetId(p); if(id==='v_') return Promise.resolve(null);
-    var ref=DB.collection(COL).doc(id), who=me(), now=new Date(), FV=firebase.firestore.FieldValue, pt=patientFor(p), nm=esc((pt.name+' '+pt.last).trim());
+    var ref=DB.collection(COL).doc(id), who=me(), now=new Date(), FV=firebase.firestore.FieldValue, pt=patientFor(p), nm=esc((pt.name+' '+pt.last).trim()), outB=board;
     return DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(snap.exists){
-        var d=snap.data()||{}, cur=d.board||'IP';
+        var d=snap.data()||{}, cur=d.board||'IP'; outB=cur;
         if(d.status==='active'){
           var promote=(board==='IP'&&cur==='OP'), upd={}, have=d.orders||{}, std=defaultOrders(now.getHours(),promote?'IP':cur);
           Object.keys(std).forEach(function(k){ if(!have[k]) upd['orders.'+k]=std[k]; });   /* sheets made before a standard order existed / admission adds the rest */
@@ -15942,7 +16437,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
             if(promote){ upd.board='IP'; upd.ip_at=now.toISOString(); upd.updated_by=who.initials; upd.audit=FV.arrayUnion(audit('Admitted from Flow — moved to IP Board',who,now)); }
             if(writeDays(t,id,g,now.toISOString())) upd.digest_dirty=true;
             if(Object.keys(upd).length){ upd.updated_at=now.toISOString(); t.update(ref,upd); }
-            return promote?'promoted':'exists'; });
+            if(promote) outB='IP'; return promote?'promoted':'exists'; });
         }
         if(opts.createOnly||board!=='IP') return 'closed';
         t.update(ref,{status:'active',board:'IP',ip_at:now.toISOString(),closed_at:FV.delete(),closed_reason:FV.delete(),updated_at:now.toISOString(),updated_by:who.initials,
@@ -15959,7 +16454,9 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
       writeDays(t,id,byDay(triageMarks(p,doc.orders,who)),now.toISOString());
       var re0=roundsEst(p); if(re0) doc.estimate={low:re0.low,high:re0.high,current:re0.current||0,deposit:re0.deposit,approved_by:'Client — in person',approved_at:null,initials:'',plan:'',updated_at:now.toISOString(),updated_by:who.initials,updated_by_name:who.name,source:'rounds'};
       t.set(ref,doc); return 'created';
-    }); }).then(function(res){ if(!opts.quiet) announce(p,id,res,board); return res; })
+    }); }).then(function(res){ if(!opts.quiet) announce(p,id,res,board);
+      try{ if(window.fvSheetSeen&&res&&res!=='error'&&res!=='closed') fvSheetSeen(p,res,outB); }catch(e){}   /* the visit remembers its sheet (Admit on OP cards) */
+      return res; })
       .catch(function(e){ if(!opts.quiet) fail(p,e); return 'error'; });
   }
 
@@ -15972,7 +16469,8 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
       if(d.status!=='active'||(d.board||'IP')!=='OP') return;
       t.update(ref,{status:'closed',closed_at:now.toISOString(),closed_reason:String(why||'discharged').toLowerCase(),updated_at:now.toISOString(),updated_by:who.initials,
         audit:firebase.firestore.FieldValue.arrayUnion(audit(why+' in Flow — sheet closed',who,now))});
-    }); }).catch(function(e){ console.warn('[flow→sheet close]',e); });
+      return 'closed';
+    }); }).then(function(r){ try{ if(r==='closed'&&window.fvSheetSeen) fvSheetSeen(p,'closed'); }catch(e){} }).catch(function(e){ console.warn('[flow→sheet close]',e); });
   }
 
   /* Undo of an Admit: an OP sheet that was promoted goes back to the OP Board; a sheet made by the admit closes
@@ -15989,7 +16487,7 @@ window.__fvOps={staleList:staleList, openSheet:openSheet, ranked:ranked, viewers
       t.update(ref,{status:'closed',closed_at:now.toISOString(),closed_reason:'Admission undone',updated_at:now.toISOString(),updated_by:who.initials,
         audit:FV.arrayUnion(audit('Admission undone in Flow — sheet closed',who,now))});
       return 'undone';
-    }); }).then(function(r){ if(r==='kept'){ try{ notify('Treatment sheet kept',esc(p.name||'')+' · it already has charting',{icon:'info',color:'var(--accent)'}); }catch(e){} } })
+    }); }).then(function(r){ try{ if((r==='demoted'||r==='undone')&&window.fvSheetSeen) fvSheetSeen(p,r,r==='demoted'?'OP':null); }catch(e){} if(r==='kept'){ try{ notify('Treatment sheet kept',esc(p.name||'')+' · it already has charting',{icon:'info',color:'var(--accent)'}); }catch(e){} } })
       .catch(function(e){ console.warn('[flow→sheet undo]',e); });
   }
 
