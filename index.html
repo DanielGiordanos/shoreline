@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261008-0215-60d315b1">
+<meta name="flow-build" content="20261008-0349-f9aa36b5">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5469,19 +5469,9 @@ body.dark .rd-fact.resus i{color:#FFB340}
 body.rd-display .rd-task .ck{pointer-events:none}
 </style>
 <style id="fv-admit-css">
-/* OP sheet → Admit on the board card (no color-mix) */
-.fv-adm{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 2px;padding:5px 5px 5px 10px;border-radius:10px;background:rgba(56,189,210,.08);border:1px solid rgba(56,189,210,.22)}
-.fv-adm-l{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--ink-700)}
-.fv-adm-l svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;opacity:.8}
-.fv-adm-b{all:unset;cursor:pointer;height:24px;padding:0 12px;border-radius:12px;background:#0A84FF;color:#fff;font-size:12px;font-weight:700;line-height:24px;transition:transform .12s ease,filter .15s ease}
-.fv-adm-b:hover{filter:brightness(1.08)}.fv-adm-b:active{transform:scale(.96)}
-.fv-adm-b:focus-visible{box-shadow:0 0 0 3px rgba(10,132,255,.35)}
-body.dark .fv-adm{background:rgba(56,189,210,.10);border-color:rgba(56,189,210,.28)}
-body.dark .fv-adm-l{color:var(--ink-500)}
 .disposition-card .dc-note{display:block;font-size:11px;font-weight:600;opacity:.7;margin-top:2px}
 .disposition-card .dc-note[hidden]{display:none}
 .fv-kg{margin-top:5px;font-size:12px;font-weight:700;color:var(--accent,#38BDD2);font-variant-numeric:tabular-nums}
-@media (prefers-reduced-motion:reduce){.fv-adm-b{transition:none}}
 </style>
 </head>
 <body>
@@ -6803,7 +6793,7 @@ triage:r.triage||null, intake:r.intake||null, records:recToApp(r.records), ultra
 timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new Date(e.at): new Date(), meta:e.meta||''}; }),
 arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt, critTakenAt: r.crit_taken_at? new Date(r.crit_taken_at): null, critTakenBy: r.crit_taken_by||null, critTakenUid: r.crit_taken_uid||null, waitingOn: (r.waiting_on&&r.waiting_on.text)?r.waiting_on:null, staleKeepUntil: r.stale_keep_until?new Date(r.stale_keep_until):null, msRoomedAt: r.ms_roomed_at?new Date(r.ms_roomed_at):null, msDoctorAt: r.ms_doctor_at?new Date(r.ms_doctor_at):null, viewing: r.viewing||null, lastBy: r.last_by||null, lastByUid: r.last_by_uid||null, lastAt: r.last_at||null,
 examStartedAt: r.exam_started_at? new Date(r.exam_started_at): null, examStartedByDoctorId: r.exam_started_by||null, examWaitMinutes: (typeof r.exam_wait_min==='number'? r.exam_wait_min : null),
-totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null, tsSheet:(r.ts_sheet&&r.ts_sheet.board)?{board:r.ts_sheet.board,at:r.ts_sheet.at||null}:null, flags:(typeof fgToApp==='function'?fgToApp(r.flags):[]),
+totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null, admitRequest:(r.admit_request&&r.admit_request.at)?r.admit_request:null, tsSheet:(r.ts_sheet&&r.ts_sheet.board)?{board:r.ts_sheet.board,at:r.ts_sheet.at||null}:null, flags:(typeof fgToApp==='function'?fgToApp(r.flags):[]),
 resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusSource:r.resus_source||null, resusHistory:Array.isArray(r.resus_history)?r.resus_history.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:h.at?new Date(h.at):null, by:h.by||null }; }):[], resusRequest:(r.resus_request&&r.resus_request.pref)?{ pref:r.resus_request.pref, at:r.resus_request.at||null }:null, resusRequestDismissed:r.resus_request_dismissed||null, resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
 };
 }
@@ -8189,7 +8179,7 @@ return`<div class="card" draggable="true" data-pid="${p.id}">
     <span class="edge" style="background:${PRIO[p.prio].c}"></span>
     <div class="c-top">${mono(p,'patient-medallion patient-medallion--compact')}<b>${bcEsc(p.name)} ${bcEsc(p.last)}${msgBadge(p)}</b>
       <span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:10px">${PRIO[p.prio].l}</span></div>
-    <div class="c-reason">${bcEsc(compactProblems(p))}</div>${typeof fgCard==='function'?fgCard(p):''}${typeof fvAdmitChip==='function'?fvAdmitChip(p):''}
+    <div class="c-reason">${bcEsc(compactProblems(p))}</div>${typeof fgCard==='function'?fgCard(p):''}
     ${usFlag(p)}${typeof fvWaitChip==='function'?fvWaitChip(p):''}${typeof fvPresenceChip==='function'?fvPresenceChip(p):''}
     <div class="c-meta"><div class="l">${p.doctor==='unassigned'?'<span class="muted" style="font-size:12px">No doctor</span>':docAv(p.doctor)}${p.liaison?liaAv(p.liaison):''}${ctAvRow(p)}
       <span class="loc" style="font-size:12px">${p.room}</span></div>
@@ -16267,16 +16257,6 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
         else if(!p._demo&&window.fvAdmitSheet&&fvAdmitSheet.ensure) fvAdmitSheet.ensure(p,'OP'); } }catch(e){ console.warn('[flow diagnostics]',e); }
       return r; }; }
 
-  /* Admit from the card */
-  window.fvAdmitChip=function(p){ if(!hasOP(p)) return '';
-    return '<div class="fv-adm" data-pid="'+esc(p.id)+'"><span class="fv-adm-l"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 10h6M9 14h4"/></svg>OP sheet</span>'
-      +'<button type="button" class="fv-adm-b" draggable="false" onclick="event.stopPropagation();fvAdmitAsk(\''+esc(p.id)+'\')" aria-label="Admit '+esc(p.name||'patient')+'">Admit</button></div>'; };
-  window.fvAdmitAsk=function(id){ var p=PATIENTS.find(function(x){ return String(x.id)===String(id); }); if(!p||!active(p)) return;
-    var nm=((p.name||'')+' '+(p.last||'')).trim();
-    showConfirm('Admit '+nm+'?','Admit Patient',function(){ var q=cur(p); if(!q||!active(q)) return; completePatient(q,'Admitted'); },
-      {sub:'The outpatient treatment sheet becomes inpatient, and '+(p.name||'the patient')+' joins Rounds with the visit filled in.'}); };
-  document.addEventListener('mousedown',function(e){ if(e.target.closest&&e.target.closest('.fv-adm-b')) e.stopPropagation(); },true);
-
   /* drawer: the Admit card says what it will do; a visit from before this change is checked once */
   var looked={};
   if(typeof fillDrawer==='function'){ var _fd=fillDrawer;
@@ -16329,6 +16309,29 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
   document.addEventListener('blur',function(e){ var el=e.target; if(el&&el.matches&&el.matches('#apWeight, #triEditBody [data-vk="weight"]')) setTimeout(function(){ var h=el.parentNode&&el.parentNode.querySelector('.fv-kg'); if(h&&/kg\s*$/i.test(el.value)) h.remove(); },0); },true);
 })();
 </script>
+<script>
+/* ═════════ FLOW — admits sent from an outpatient treatment sheet (Oct 2026) ═════════
+   Treatment Sheets' Admit moves the sheet to the IP Board and leaves visits/{id}.admit_request. The first staff Flow screen that sees it
+   claims it in a transaction (only one screen admits), admits the visit here — which adds the patient to Rounds, filled in — and clears it. */
+(function(){
+  var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search), busy={};
+  function me(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){} return u; }
+  function clear(id){ try{ var o={}; o.admit_request=firebase.firestore.FieldValue.delete(); DB.collection('visits').doc(String(id)).update(o).catch(function(){}); }catch(e){} }
+  window.fvAdmitRequests=function(){ var u=me(); if(LOBBY||!u||typeof DB==='undefined'||!DB||typeof PATIENTS==='undefined') return;
+    try{ if(document.body.classList.contains('client-mode')||document.body.classList.contains('tv-mode')) return; }catch(e){}
+    PATIENTS.forEach(function(p){ var q=p&&p.admitRequest; if(!q||p._demo||busy[p.id]) return;
+      if(p.completed||(typeof isActive==='function'&&!isActive(p))){ busy[p.id]=1; clear(p.id); return; }   /* already admitted / discharged: nothing to do */
+      busy[p.id]=1; var ref=DB.collection('visits').doc(String(p.id));
+      DB.runTransaction(function(t){ return t.get(ref).then(function(snap){ var d=snap.exists&&snap.data(), r=d&&d.admit_request;
+        if(!r||r.claimed) return false; t.update(ref,{'admit_request.claimed':u.uid,'admit_request.claimed_at':new Date().toISOString()}); return true; }); })
+      .then(function(mine){ if(!mine) return; var cur=PATIENTS.find(function(x){ return x.id===p.id; })||p; if(cur.completed) { clear(p.id); return; }
+        completePatient(cur,'Admitted');
+        try{ var ev=(cur.timeline||[]).slice().reverse().find(function(e){ return /admit/i.test(e&&e.label||''); }); if(ev) ev.meta=(ev.meta?ev.meta+' · ':'')+'from Treatment Sheets'+(q.by?' · '+q.by:''); }catch(e){}
+        setTimeout(function(){ clear(p.id); },1500); })
+      .catch(function(e){ console.warn('[admit from sheet]',e); delete busy[p.id]; }); }); };
+  setInterval(function(){ try{ fvAdmitRequests(); }catch(e){} },3000);
+})();
+</script>
 <script>window.FV_TECHS=["Felisha Barnes", "Tanneil Buchanan", "Stephanie Cseh", "Erin Cummings", "Chris Densky", "Nelson Diaz", "Alexis Distasio", "Lizzy Dixon", "Catherine Fappiano", "Brandy Fellin", "Viviana Fonseca", "Lauren Francione", "Amber Horvath", "Kimberly Hulme", "Danielle Infante", "Amanda Inzitari", "Danielle Kiley", "Malyssa Kubik", "Carly Kudola", "Amanda Van Kuren", "Ann LeStrange", "Janitza Lopez", "Gabrielle Lungarini", "Lindsay Martin", "Myranda May", "Sam Mitchell", "Bethany Oczkowski", "Gabriella Palumbo", "Rachel Pieger", "Malachi Quinones", "Allie Rodriguez", "Christina Rodriguez", "Delahla Rosario", "Vanessa Ruiz", "Stacey Smith", "Ally Tewksbury", "Courtney Thieke", "Shelsey Vega", "Paola Velazquez", "Dharianna Villa", "Lauren Whitney", "Jordain Williams"];</script>
 <script>
 /* ═══ FLOW → TREATMENT SHEETS ═══
@@ -16375,7 +16378,7 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
     var own=String(p.owner||'').trim(), oLast=own.indexOf(',')>-1?own.split(',')[0].trim():(own.split(/\s+/).length>1?own.split(/\s+/).slice(1).join(' '):'');
     return {name:p.name||'Patient',last:p.last||oLast||'',owner:p.owner||'',phone:p.ownerPhone||'',species:p.species||'Dog',breed:p.breed||'',sex:sex,
       age:p.ageDisplay||p.age||'',weight:wt,reason:p.reason||'',doctor:doctorName(p.doctor),location:'',code:code,condition:cond,
-      alerts:code==='DNR'?['DNR']:[],tech:(techNow(p)||{}).staffName||null,tech_at:techAt(p)||null,problems:Array.isArray(p.reasonProblems)?p.reasonProblems.map(function(x){ return x.label; }).filter(Boolean):[]};
+      alerts:code==='DNR'?['DNR']:[],tech:(techNow(p)||{}).staffName||null,tech_at:techAt(p)||null,flags:flagsFor(p),problems:Array.isArray(p.reasonProblems)?p.reasonProblems.map(function(x){ return x.label; }).filter(Boolean):[]};
   }
   /* ---- triage → sheet: each triage reading becomes a completed entry at the triage time ---- */
   var TRI_MAP={temp:'Temperature',hr:'Heart Rate',rr:'Respiratory Rate',weight:'Weight',mentation:'Mentation',mm:'Mucous Membrane',crt:'CRT'};
@@ -16611,7 +16614,22 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
         audit:FV.arrayUnion(audit('Code status set '+src+' — <b>'+next+'</b>',who,now))});
     }); }).catch(function(e){ delete lastCode[p.id]; console.warn('[flow→sheet code]',e); });
   }
-  function sweepCodes(){ try{ (PATIENTS||[]).forEach(function(p){ if(p&&(p.room==='Treatment'||p.status==='Hospitalized'||p.status==='Admitted'||ensured[p.id])) syncCode(p); }); }catch(e){} }
+  /* ---- patient flags (staff-only) follow the patient onto the sheet, like the code status (Oct 2026) ---- */
+  var FLAG_K={safe:1,hand:1,med:1,iso:1,own:1}, lastFlags={};
+  function flagsFor(p){ return (Array.isArray(p&&p.flags)?p.flags:[]).filter(function(f){ return f&&f.t&&FLAG_K[f.k]; }).slice(0,30).map(function(f){ return {k:f.k,t:String(f.t).slice(0,40),scope:f.scope==='visit'?'visit':'always'}; }); }
+  function syncFlags(p){
+    if(!ready()||!p||p._demo) return; var L=flagsFor(p), sig=JSON.stringify(L); if(lastFlags[p.id]===sig) return; lastFlags[p.id]=sig;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
+      if(!snap.exists){ delete lastFlags[p.id]; return; }
+      var d=snap.data()||{}; if(d.status==='discharged'||d.status==='closed') return;
+      var had=JSON.stringify((d.patient&&d.patient.flags)||[]); if(had===sig) return;
+      t.update(ref,{'patient.flags':L,updated_at:now.toISOString(),updated_by:who.initials,
+        audit:FV.arrayUnion(audit('Flags from Flow — '+(L.length?L.map(function(f){ return '<b>'+esc(f.t)+'</b>'; }).join(', '):'none'),who,now))});
+    }); }).catch(function(e){ delete lastFlags[p.id]; console.warn('[flow→sheet flags]',e); });
+  }
+  function sweepCodes(){ try{ (PATIENTS||[]).forEach(function(p){ if(!p) return; var on=p.room==='Treatment'||p.status==='Hospitalized'||p.status==='Admitted'||ensured[p.id]||(p.tsSheet&&p.tsSheet.board);
+      if(on){ syncCode(p); syncFlags(p); } }); }catch(e){} }
   setInterval(function(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){} if(u&&typeof PATIENTS!=='undefined') sweepCodes(); },8000);
   if(typeof setResusPref==='function'){
     var origResus=setResusPref;
