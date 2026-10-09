@@ -194,6 +194,159 @@ body.edit-mode .edit-orb{opacity:1;box-shadow:0 0 0 3px rgba(232,100,74,0.32),0 
 
 @media(max-width:900px){.nav-center{display:none;}.grid2{grid-template-columns:1fr;}.page-head{flex-direction:column;align-items:flex-start;}.block-card{text-align:left;width:100%;}.topnav img.logo{height:56px;}}
 </style>
+<style id="pvx-logout-css">
+/* Flow's Logout button, verbatim */
+.logout-button{--mx:50%;--my:50%;--surface-top:rgba(255,255,255,0.96);--surface-bottom:rgba(247,249,252,0.90);--border:rgba(20,28,40,0.08);--border-hover:rgba(20,28,40,0.13);--text:#1d1d1f;--icon:#59616d;--icon-bg-top:rgba(65,72,82,0.055);--icon-bg-bottom:rgba(65,72,82,0.025);--icon-bg-hover-top:rgba(65,72,82,0.075);--icon-bg-hover-bottom:rgba(65,72,82,0.035);--icon-border:rgba(65,72,82,0.10);--icon-border-hover:rgba(65,72,82,0.14);--chevron:rgba(95,104,116,0.46);--chevron-hover:rgba(72,78,88,0.72);--shadow-main:rgba(29,29,31,0.10);--shadow-secondary:rgba(29,29,31,0.06);--shadow-hover-main:rgba(29,29,31,0.115);--shadow-hover-secondary:rgba(29,29,31,0.065);--highlight:rgba(255,255,255,0.72);position:relative;width:auto;height:40px;padding:0 12px 0 8px;border:1px solid var(--border);border-radius:13px;display:grid;grid-template-columns:28px auto 16px;align-items:center;gap:8px;cursor:pointer;color:var(--text);font-family:var(--font);background:linear-gradient(180deg,var(--surface-top),var(--surface-bottom));box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);overflow:hidden;isolation:isolate;transform:translateY(0) scale(1);transition:transform 180ms cubic-bezier(.2,.8,.2,1),border-color 180ms ease,background 180ms ease,box-shadow 180ms ease;}
+body.dark .logout-button{--surface-top:rgba(25,37,64,0.92);--surface-bottom:rgba(17,27,48,0.94);--border:rgba(77,200,224,0.16);--border-hover:rgba(77,200,224,0.30);--text:#D8E8F4;--icon:#A7C2D8;--icon-bg-top:rgba(77,200,224,0.10);--icon-bg-bottom:rgba(77,200,224,0.04);--icon-bg-hover-top:rgba(77,200,224,0.16);--icon-bg-hover-bottom:rgba(77,200,224,0.06);--icon-border:rgba(77,200,224,0.18);--icon-border-hover:rgba(77,200,224,0.30);--chevron:rgba(167,194,216,0.50);--chevron-hover:rgba(216,232,244,0.80);--shadow-main:rgba(0,0,0,0.40);--shadow-secondary:rgba(0,0,0,0.24);--shadow-hover-main:rgba(0,0,0,0.46);--shadow-hover-secondary:rgba(0,0,0,0.26);--highlight:rgba(77,200,224,0.12);}
+.logout-button::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(170px 100px at var(--mx) var(--my),var(--highlight),transparent 68%);opacity:0;transition:opacity 160ms ease;pointer-events:none;z-index:0;}
+.logout-button:hover{border-color:var(--border-hover);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);}
+.logout-button:hover::before{opacity:1;}
+.logout-button:active{transform:scale(0.985);box-shadow:inset 0 2px 5px rgba(0,0,0,0.08);}
+.logout-icon{position:relative;z-index:1;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;color:var(--icon);background:linear-gradient(180deg,var(--icon-bg-top),var(--icon-bg-bottom));border:1px solid var(--icon-border);transition:transform 190ms cubic-bezier(.2,.8,.2,1),background 180ms ease,border-color 180ms ease;}
+.logout-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
+.door-glyph,.exit-arrow{transform-box:fill-box;transform-origin:center;transition:transform 260ms cubic-bezier(.22,1,.36,1),opacity 180ms ease;}
+.logout-button:hover .logout-icon{transform:translateX(-0.5px);background:linear-gradient(180deg,var(--icon-bg-hover-top),var(--icon-bg-hover-bottom));border-color:var(--icon-border-hover);}
+.logout-button:hover .door-glyph{transform:translateX(-0.45px);}
+.logout-button:hover .exit-arrow{transform:translateX(2.2px);}
+.logout-button:active .logout-icon{transform:scale(0.96);}
+.logout-button:active .door-glyph{transform:translateX(-0.2px) scale(.98);}
+.logout-button:active .exit-arrow{transform:translateX(3px) scale(.96);}
+.logout-label{position:relative;z-index:1;text-align:left;font-size:14px;font-weight:600;line-height:1;letter-spacing:-0.015em;color:var(--text);transition:transform 180ms cubic-bezier(.2,.8,.2,1),opacity 180ms ease;}
+.logout-button:hover .logout-label{transform:translateX(1px);}
+.logout-chevron{position:relative;z-index:1;width:16px;height:16px;display:grid;place-items:center;color:var(--chevron);transition:transform 190ms cubic-bezier(.2,.8,.2,1),color 180ms ease;}
+.logout-chevron svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.logout-button:hover .logout-chevron{transform:translateX(1.25px);color:var(--chevron-hover);}
+.logout-button:focus-visible{outline:3px solid rgba(88,166,255,0.55);outline-offset:4px;}
+
+.nav-right{display:flex;align-items:center;gap:10px}
+@media(max-width:1100px){.logout-button{width:40px;padding:0 5px;grid-template-columns:28px;gap:0}.logout-label,.logout-chevron{display:none}}
+</style>
+<style id="pvx-header-css">
+/* ═══ Pravix portal header — Flow's top bar and sub-nav on the portal pages (Oct 2026; source: VCA/nav/portal-header.css) ═══
+   Flow's rules verbatim (values from Flow's stylesheet), scoped to #pvxTopnav / #pvxSubnav so a page's older nav CSS can't override them.
+   Goes with portal-nav.css (smaller screens) and the Logout CSS (flow_logout.css). */
+#pvxTopnav,#pvxSubnav{--nav-bg:#0A1222;--r-sm:8px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --brand-cyan:#4DC8E0;--ink-400:#8E8E93;--glass-hairline:rgba(0,0,0,0.06);--ease:cubic-bezier(.2,.8,.2,1);--brand-green:#1a9e6e;font-family:var(--font)}
+body.dark #pvxTopnav,body.dark #pvxSubnav{--brand-cyan:#38BDD2;--ink-400:#5E7C9C;--glass-hairline:rgba(77,200,224,0.10);--brand-green:#48B888}
+
+/* top bar (the light-mode lines are !important: some intern pages carry an older !important light header) */
+#pvxTopnav.topnav{z-index:300;background:var(--nav-bg);height:76px;min-height:76px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;justify-content:normal;
+  padding:0 32px;margin:0;box-shadow:0 2px 24px rgba(0,0,0,0.25);backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;transition:background .4s;}
+#pvxTopnav.topnav::before,#pvxTopnav.topnav::after{content:none;display:none}
+body.dark #pvxTopnav.topnav{background:#0D1730;border-bottom:1px solid rgba(255,255,255,0.04);}
+body:not(.dark) #pvxTopnav.topnav{background:rgba(255,255,255,.96)!important;border-bottom:1px solid rgba(29,29,31,.08)!important;box-shadow:0 1px 0 rgba(29,29,31,.03)!important;}
+#pvxTopnav img.logo{height:58.14px;width:auto;max-height:none;}
+#pvxTopnav img.logo-dark{display:none;}
+#pvxTopnav img.logo-light{display:block;}
+body.dark #pvxTopnav img.logo-dark{display:block;}
+body.dark #pvxTopnav img.logo-light{display:none;}
+#pvxTopnav .brandwrap{display:flex;align-items:center;gap:20px;justify-self:start;min-width:0;}
+#pvxTopnav .cobrand-div{width:1px;height:34px;background:#8098ae;opacity:.28;border-radius:1px;flex:0 0 auto;}
+#pvxTopnav .pvx-lockup{display:flex;align-items:center;gap:8px;}
+#pvxTopnav img.pvx-icon{height:34px;width:auto;}
+#pvxTopnav .pvx-word{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;}
+#pvxTopnav .pvx-powered{font-size:7px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);line-height:1;white-space:nowrap;}
+#pvxTopnav img.pvx-mark{height:22px;width:auto;}
+#pvxTopnav img.plogo-dark{display:none;}
+#pvxTopnav img.plogo-light{display:block;}
+body.dark #pvxTopnav img.plogo-dark{display:block;}
+body.dark #pvxTopnav img.plogo-light{display:none;}
+#pvxTopnav .nav-center{justify-self:center;display:flex;gap:3px;align-items:center;position:static;transform:none;margin:0;}
+#pvxTopnav .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 13px;border-radius:var(--r-sm);
+  cursor:pointer;transition:all .2s;color:rgba(255,255,255,0.55);font-size:10px;font-weight:600;letter-spacing:.3px;
+  border:1px solid transparent;text-decoration:none;background:transparent;font-family:var(--font);white-space:nowrap;box-shadow:none;}
+#pvxTopnav .nav-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);}
+#pvxTopnav .nav-item.active{background:rgba(77,200,224,0.15);color:var(--brand-cyan);border-color:rgba(77,200,224,0.25);}
+#pvxTopnav .nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+body:not(.dark) #pvxTopnav .nav-item{color:#333333!important;}
+body:not(.dark) #pvxTopnav .nav-item:hover{background:#EBEBEB!important;color:#636365!important;}
+body:not(.dark) #pvxTopnav .nav-item.active{background:#EBEBEB!important;color:#636365!important;border-color:transparent!important;}
+#pvxTopnav .nav-right{justify-self:end;display:flex;gap:10px;align-items:center;}
+#pvxTopnav .theme-toggle{cursor:pointer;background:none;border:none;border-radius:50px;overflow:hidden;width:72px;height:34px;padding:0;
+  flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,0.15);position:relative;transition:box-shadow .2s;}
+#pvxTopnav .theme-toggle:hover{box-shadow:0 0 0 2px rgba(77,200,224,0.5);}
+#pvxTopnav .theme-toggle img{width:72px;height:34px;object-fit:cover;display:block;border-radius:50px;pointer-events:none;transition:opacity .3s;position:absolute;top:0;left:0;}
+#pvxTopnav .theme-toggle .img-light{opacity:1;} #pvxTopnav .theme-toggle .img-dark{opacity:0;}
+body.dark #pvxTopnav .theme-toggle .img-light{opacity:0;} body.dark #pvxTopnav .theme-toggle .img-dark{opacity:1;}
+body:not(.dark) #pvxTopnav .theme-toggle{box-shadow:0 0 0 1.5px rgba(29,29,31,.12)!important;}
+body:not(.dark) #pvxTopnav .theme-toggle:hover{box-shadow:0 0 0 2px rgba(44,184,210,.5)!important;}
+
+/* smaller screens — portal-nav.css's steps, again at this scope */
+@media(max-width:1280px){#pvxTopnav .nav-item{padding:8px 10px}}
+@media(max-width:1100px) and (min-width:761px){#pvxTopnav .nav-item{font-size:0;gap:0;padding:10px 11px;letter-spacing:0}#pvxTopnav .nav-item svg{width:19px;height:19px}}
+@media(max-width:1024px){#pvxTopnav.topnav{column-gap:10px}}
+@media(max-width:760px){#pvxTopnav.topnav{height:auto;min-height:0;padding:8px 16px 6px}#pvxTopnav .nav-item{flex:0 0 auto;padding:6px 10px}#pvxTopnav img.logo{height:44px}}
+
+/* sub-nav — Flow's: the program's own pages on the left, this page's actions on the right */
+#pvxSubnav.subnav{display:flex;align-items:center;gap:16px;padding:11px 32px;margin:0;position:relative;z-index:200;
+  background:var(--nav-bg);opacity:.97;border-bottom:1px solid var(--glass-hairline);box-shadow:0 6px 20px rgba(0,0,0,0.12);}
+body.dark #pvxSubnav.subnav{background:#101a32;}
+body:not(.dark) #pvxSubnav.subnav{background:#FFFFFF;border-bottom:1px solid rgba(29,29,31,.08);box-shadow:0 1px 0 rgba(29,29,31,.03);}
+#pvxSubnav .subnav-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(77,200,224,0.65);white-space:nowrap;}
+body:not(.dark) #pvxSubnav .subnav-title{color:#86868B;}
+#pvxSubnav .switcher{display:flex;gap:3px;align-items:center;padding:0;background:transparent;border:none;min-width:0;overflow-x:auto;scrollbar-width:none;}
+#pvxSubnav .switcher::-webkit-scrollbar{display:none}
+#pvxSubnav .seg{display:flex;flex-direction:row;align-items:center;gap:7px;border:1px solid transparent;background:transparent;cursor:pointer;min-height:40px;
+  font-family:var(--font);font-size:13px;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.01em;text-decoration:none;white-space:nowrap;
+  padding:8px 14px;border-radius:var(--r-sm);transition:all .2s var(--ease);box-shadow:none;}
+#pvxSubnav .seg svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+#pvxSubnav .seg:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9);}
+#pvxSubnav .seg.active{background:rgba(77,200,224,.15);color:var(--brand-cyan);border-color:rgba(77,200,224,.25);}
+body:not(.dark) #pvxSubnav .seg{color:#6E6E73;}
+body:not(.dark) #pvxSubnav .seg:hover{background:rgba(29,29,31,.05);color:#1D1D1F;}
+body:not(.dark) #pvxSubnav .seg.active{background:#EBEBEB;color:#636365;border-color:transparent;}
+#pvxSubnav .pvx-spacer{flex:1 1 auto}
+#pvxSubnav .pvx-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+#pvxSubnav .pvx-actions:empty{display:none}
+/* the page's own buttons (Edit, Save, Print…): Flow's header button — the Logout button's surface */
+#pvxSubnav .pvx-actions>button{height:40px;border-radius:13px;padding:0 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;
+  border:1px solid rgba(20,28,40,.08);color:#1D1D1F;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,252,.90));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:border-color .18s ease,background .18s ease;margin:0}
+#pvxSubnav .pvx-actions>button:hover{border-color:rgba(20,28,40,.13);background:linear-gradient(180deg,#FFFFFF,rgba(247,249,252,.96))}
+body.dark #pvxSubnav .pvx-actions>button{color:#D8E8F4;border-color:rgba(77,200,224,.16);background:linear-gradient(180deg,rgba(25,37,64,.92),rgba(17,27,48,.94))}
+body.dark #pvxSubnav .pvx-actions>button:hover{border-color:rgba(77,200,224,.30)}
+#pvxSubnav .live-dot{width:7px;height:7px;border-radius:50%;background:var(--brand-green);display:inline-block;
+  animation:live-breathe 3s ease-in-out infinite;box-shadow:0 0 6px rgba(26,158,110,0.6);margin-right:6px;flex-shrink:0;}
+@keyframes live-breathe{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 5px rgba(26,158,110,0.5),0 0 0px rgba(26,158,110,0);}
+  50%{opacity:.7;transform:scale(1.25);box-shadow:0 0 8px rgba(26,158,110,0.7),0 0 12px rgba(26,158,110,0.3);}}
+@media(max-width:1100px){#pvxSubnav .subnav-title{display:none}}
+@media(max-width:760px){
+  #pvxSubnav.subnav{padding:8px 16px;gap:10px}
+  #pvxSubnav .seg{padding:7px 11px;font-size:12.5px}
+  #pvxSubnav .pvx-actions>button{height:36px;padding:0 11px;font-size:12px}}
+@media print{#pvxTopnav,#pvxSubnav{display:none!important}}
+/* a page's own button left in the top bar (Directory's Edit): Flow's header button; its inline colours were for the old navy bar */
+#pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){height:40px!important;border-radius:13px!important;padding:0 14px!important;font-family:var(--font)!important;font-size:13px!important;font-weight:600!important;letter-spacing:normal!important;
+  border:1px solid rgba(20,28,40,.08)!important;color:#1D1D1F!important;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,252,.90))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important}
+body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){color:#D8E8F4!important;border-color:rgba(77,200,224,.16)!important;background:linear-gradient(180deg,rgba(25,37,64,.92),rgba(17,27,48,.94))!important}
+</style>
+<style id="pvx-portal-nav">
+/* ═══ Pravix portal nav — one file for Flow, Treatment Sheets and OR (Oct 2026; source: VCA/nav/portal-nav.css) ═══
+   Nine apps across the top. Wide: icon + name. Up to 1120 px the Pravix wordmark steps aside; up to 1100 px the apps show icons only
+   (the name is the tooltip). Tablet (≤1024 px) keeps Flow's header layout. Phones (≤760 px): the apps get their own scrolling row,
+   with names, under the logo, Logout and the theme switch. */
+@media(max-width:1120px){.cobrand-div,.topnav img.plogo,.topnav .pvx-lockup{display:none!important}}
+@media(max-width:1280px){.nav-center .nav-item{padding:8px 10px}}
+@media(max-width:1100px) and (min-width:761px){
+  .nav-center .nav-item{font-size:0;gap:0;padding:10px 11px;letter-spacing:0}
+  .nav-center .nav-item svg{width:19px;height:19px}}
+/* tablet header — as Flow has it */
+@media (max-width:1024px){
+ .topnav{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-areas:none!important;column-gap:10px}
+ .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ .topnav .nav-center{grid-column:2!important;grid-row:1!important;justify-self:stretch!important;position:static!important;transform:none!important;left:auto!important;min-width:0;overflow-x:auto;scrollbar-width:none;justify-content:flex-start;-webkit-overflow-scrolling:touch}
+ .topnav .nav-center::-webkit-scrollbar{display:none}
+ .topnav .nav-right{grid-column:3!important;grid-row:1!important}
+ .topnav .cobrand-div,.topnav .pvx-lockup{display:none!important}}
+/* phones */
+@media(max-width:760px){
+ html body .topnav{grid-template-columns:auto minmax(0,1fr)!important;height:auto!important;min-height:0;row-gap:4px;padding:8px 16px 6px}
+ html body .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ html body .topnav .nav-right{grid-column:2!important;grid-row:1!important;justify-self:end!important}
+ html body .topnav .nav-center{grid-column:1/-1!important;grid-row:2!important;justify-self:stretch!important;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:0 -16px;padding:0 12px 2px}
+ html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
+ html body .topnav img.logo{height:44px}}
+</style>
 </head>
 <body>
 <script>/* Pravix shared theme — carries across every pravix.app page via a domain cookie (default dark). Reads the cookie (mirrors it into localStorage so this page's own theme init agrees), applies before first paint, and persists ANY dark-class change back to the cookie via an observer, covering every toggle path. */
@@ -208,26 +361,52 @@ body.edit-mode .edit-orb{opacity:1;box-shadow:0 0 0 3px rgba(232,100,74,0.32),0 
 <div class="bg-orb-2"></div>
 <div class="bg-orb-3"></div>
 
-<nav class="topnav">
-  <img class="logo" src="VCA%20Logo.png" alt="VCA Shoreline Graduate Veterinarian Program">
-  <div class="nav-center">
-    <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
-    <a class="nav-item" href="../Profile%20Dashboard.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>Profile</a>
-    <a class="nav-item" href="Directory.html"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Directory</a>
-    <a class="nav-item" href="SGVP%20Assets.html"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Assets</a>
-    <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Tasks</a>
-    <a class="nav-item" href="SGVP%20Curriculum.html"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Curriculum</a>
-    <a class="nav-item" href="2026%20-%202027%20Calendar%20Portal.html"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
-    <a class="nav-item active" href="Shadow%20Schedule.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Shadow</a>
-    <a class="nav-item" href="SGVP%20Mentors.html"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>Mentors</a>
-  </div>
-  <div class="nav-right">
-    <span class="live"><i></i>Live</span>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
-      <img class="img-light" src="Light.png" alt=""><img class="img-dark" src="Dark.png" alt="">
+<nav class="topnav pvx-topnav" id="pvxTopnav">
+    <div class="brandwrap">
+      <img class="logo logo-dark"  src="/assets/img/logo-dark.png" alt="VCA Shoreline">
+      <img class="logo logo-light" src="/assets/img/logo-light.png" alt="VCA Shoreline">
+      <span class="cobrand-div" aria-hidden="true"></span>
+      <span class="pvx-lockup">
+        <img class="pvx-icon plogo-dark"  src="/assets/img/pvx-icon-dark.png" alt="">
+        <img class="pvx-icon plogo-light" src="/assets/img/pvx-icon-light.png" alt="">
+        <span class="pvx-word">
+          <span class="pvx-powered">Powered by</span>
+          <img class="pvx-mark plogo-dark"  src="/assets/img/pvx-mark-dark.png" alt="Pravix">
+          <img class="pvx-mark plogo-light" src="/assets/img/pvx-mark-light.png" alt="Pravix">
+        </span>
+      </span>
+    </div>
+    <div class="nav-center">
+      <a class="nav-item" href="https://shoreline.pravix.app/directory/" id="navDirectory" title="Directory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Directory</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/sgvp/assets/" id="navAssets" title="Assets"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Assets</a>
+      <a class="nav-item active" href="https://shoreline.pravix.app/sgvp/" id="navCurriculum" title="Curriculum" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Curriculum</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/scheduling/" id="navSchedule" title="Schedule"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/" id="navFlow" title="Flow"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="10.5" y="3" width="6" height="12" rx="1.5"/><rect x="18" y="3" width="3" height="8" rx="1.5"/></svg>Flow</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/#app=ultrasound" id="navUltrasound" title="Ultrasound"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="15" r="1.6"/><path d="M8.6 11.4a4.8 4.8 0 0 1 6.8 0"/><path d="M5.8 8.6a8.8 8.8 0 0 1 12.4 0"/></svg>Ultrasound</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/treatment/" id="navTreatment" title="Treatment"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17.5" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><path d="M8.5 10.5h3M8.5 14h3M8.5 17.5h3"/><path d="M14 10.5h1.5M14 14h1.5M14 17.5h1.5"/></svg>Treatment</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
+    </div>
+    <div class="nav-right">
+      <button class="logout-button" id="logoutBtn" type="button" onclick="pvxLogoutClick()" aria-label="Log out"><span class="logout-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="door-glyph"><path d="M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1"/></g><g class="exit-arrow"><path d="M12.6 8.7 16 12l-3.4 3.3"/><path d="M8.9 12H16"/></g></svg></span><span class="logout-label">Logout</span><span class="logout-chevron" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m7.5 5 5 5-5 5"/></svg></span></button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+      <img class="img-light" src="/assets/img/theme-light.png" alt=""><img class="img-dark" src="/assets/img/theme-dark.png" alt="">
     </button>
+    </div>
+  </nav>
+  <div class="subnav pvx-subnav" id="pvxSubnav">
+    <div class="subnav-title">Graduate Veterinarian Program</div>
+    <nav class="switcher" aria-label="Graduate Veterinarian Program">
+      <a class="seg" href="/sgvp/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Overview</a>
+      <a class="seg nav-item" href="/directory/" id="navProfile"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>Profile</a>
+      <a class="seg" href="/sgvp/mentors/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>Mentors</a>
+      <a class="seg active" href="/sgvp/shadow-schedule/" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Shadow schedule</a>
+    </nav>
+    <span class="pvx-spacer"></span>
+    <div class="pvx-actions">
+      <span class="live"><i></i>Live</span>
+    </div>
   </div>
-</nav>
 
 <div class="edit-banner" id="editBanner">✏ EDIT MODE — Click any highlighted field to edit &nbsp;|&nbsp; <span onclick="saveAll()">💾 Save</span> &nbsp;|&nbsp; <span onclick="cancelEdit()">Cancel</span> &nbsp;|&nbsp; <span onclick="resetAll()">⟲ Reset</span> &nbsp;|&nbsp; <span onclick="exportSchedule()">⬇ Extract Copy</span></div>
 
@@ -559,6 +738,19 @@ window.__pvxResolveAdmin = async function(user){
          && typeof exitEdit==='function') exitEdit();
     });
   }catch(e){ console.warn('auth',e); }
+})();
+</script>
+<script id="pvx-logout-js">
+/* Logout — the same button in every Pravix app. A page with its own logout() keeps it; otherwise sign out of the shared account and open Flow's sign-in. */
+(function(){
+  window.pvxLogout=function(){ var b=document.getElementById('logoutBtn'); if(b){ b.disabled=true; b.style.opacity='.6'; }
+    var go=function(){ location.replace('https://shoreline.pravix.app/#logout'); };
+    try{ if(window.firebase&&firebase.apps&&firebase.apps.length&&typeof firebase.auth==='function'){ firebase.auth().signOut().catch(function(){}).then(go); return; } }catch(e){}
+    go(); };
+  window.pvxLogoutClick=function(){ if(typeof window.logout==='function'&&window.logout!==window.pvxLogout) return window.logout(); return window.pvxLogout(); };
+  var lb=document.getElementById('logoutBtn'); if(!lb) return;
+  lb.addEventListener('pointermove',function(e){ var r=lb.getBoundingClientRect(); lb.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%'); lb.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%'); });
+  lb.addEventListener('pointerleave',function(){ lb.style.setProperty('--mx','50%'); lb.style.setProperty('--my','50%'); });
 })();
 </script>
 </body>
