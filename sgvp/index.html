@@ -496,8 +496,52 @@ body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){co
  html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
  html body .topnav img.logo{height:44px}}
 </style>
+<style id="pvx-light">
+/* ═══ Pravix light mode — one palette for every app (Oct 2026; source: VCA/nav/pravix-light.css) ═══
+   Daniel: use Treatment Sheets' light mode everywhere. These are Treatment Sheets' own values (app/styles/look.css):
+   grey canvas #F2F4F8 · white top bar · the sub-nav sits on the canvas · borderless white cards with a faint cool shadow ·
+   cool hairlines. Surfaces only — each app keeps its accent, status colours, type and layout. Dark mode is untouched.
+   Loaded last (after the app's own CSS) in Flow (patch_light.py), OR (src/order.txt) and the portal pages (portal_light.py).
+   The tokens are set on html body:not(.dark) so they win over an app's own body:not(.dark) tokens wherever those sit. */
+html body:not(.dark){
+  --page-bg:#F2F4F8; --surface-0:#FFFFFF; --surface-1:#F7F8FB; --surface-2:#EEF1F6; --surface-tertiary:#F7F8FB;
+  --border:rgba(30,45,90,.08); --border-subtle:rgba(30,45,90,.05); --border-strong:rgba(30,45,90,.14); --ctl-border:rgba(30,45,90,.10);
+  --glass:#FFFFFF; --glass-strong:#FFFFFF; --glass-border:transparent; --glass-hairline:rgba(30,45,90,.08);
+  --panel-shadow:0 1px 2px rgba(30,45,90,.04),0 8px 24px rgba(30,45,90,.05);
+  --panel-shadow-lg:0 2px 6px rgba(30,45,90,.08),0 14px 34px rgba(30,45,90,.16);
+  --card-hover-shadow:0 2px 6px rgba(30,45,90,.06),0 12px 28px rgba(30,45,90,.08);
+  --card-grad:linear-gradient(#FFFFFF,#FFFFFF); --col-grad:linear-gradient(#FFFFFF,#FFFFFF); --ptcard-grad:linear-gradient(#FFFFFF,#FFFFFF);
+  --panel-grad:linear-gradient(#F7F8FB,#F7F8FB); --panel-grad-hi:linear-gradient(#F7F8FB,#F7F8FB);
+  --fill-soft:rgba(30,45,90,.055); --fill-track:rgba(30,45,90,.07);
+  background:#F2F4F8}
+html:has(body:not(.dark)){background:#F2F4F8}
+body:not(.dark) .mesh{background:#F2F4F8!important}
+/* the top bar stays white; the sub-nav sits on the canvas, with Treatment Sheets' hairline */
+body:not(.dark) .topnav{background:rgba(255,255,255,.96)!important;border-bottom:1px solid rgba(29,29,31,.08)!important;box-shadow:0 1px 0 rgba(29,29,31,.03)!important}
+body:not(.dark) .subnav{background:transparent!important;box-shadow:none!important;border-bottom:1px solid rgba(29,29,31,.08)!important}
+/* cards: white, borderless, a faint cool shadow (Treatment Sheets' .panel) */
+body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!important;box-shadow:0 1px 2px rgba(30,45,90,.04),0 8px 24px rgba(30,45,90,.05)!important}
+/* a flat canvas, as Treatment Sheets: the older pages' coloured background glows step aside in light mode */
+body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
+</style>
 </head>
 <body>
+<script id="pvx-theme-js">
+/* Pravix theme — one Light / Dark choice for every app (Oct 2026; source: VCA/nav/pvx-theme.js).
+   The choice lives in the pvx_theme cookie (domain .pravix.app), which Flow, Treatment Sheets, Directory and SGVP already use.
+   Runs at the very top of <body>: applies the saved choice before anything is drawn, tells the page's own older setting
+   (localStorage darkMode / sgvp-curr-theme) the same thing, and saves every later switch back to the cookie. Default: dark (as Flow). */
+(function(){
+  function rc(){ var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/); return m&&m[1]; }
+  function wc(v){ try{ document.cookie='pvx_theme='+v+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax'; }catch(e){}
+    if(rc()!==v){ try{ document.cookie='pvx_theme='+v+';path=/;max-age=31536000;SameSite=Lax'; }catch(e){} } }   /* outside pravix.app (previews) */
+  function local(v){ try{ localStorage.setItem('darkMode',v==='dark'?'1':'0'); localStorage.setItem('sgvp-curr-theme',v); }catch(e){} }
+  var t=rc()||'dark'; local(t);
+  try{ document.body.classList.toggle('dark',t==='dark'); }catch(e){}
+  try{ new MutationObserver(function(){ var v=document.body.classList.contains('dark')?'dark':'light'; if(v!==rc()) wc(v); local(v); })
+    .observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+})();
+</script>
 <div class="bg-orb-1"></div>
 <div class="bg-orb-2"></div>
 
