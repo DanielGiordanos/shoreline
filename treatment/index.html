@@ -6,9 +6,9 @@
 <title>Pravix Treatment Sheets | VCA Shoreline</title>
 <link rel="icon" type="image/png" href="img/3ad4e7dbff.png">
 <meta name="theme-color" content="#0A1222">
-<link rel="stylesheet" href="app.css?v=386d09f50b">
+<link rel="stylesheet" href="app.css?v=cd77a3af36">
 
-<script>window.PVX_LANG_SRC={es:'es.js?v=19a2f3fd67'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
+<script>window.PVX_LANG_SRC={es:'es.js?v=b1b8c2d7da'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
 <style>html.i18n-wait body{visibility:hidden}</style>
 </head>
 <body>
@@ -34,13 +34,15 @@
       </span>
     </div>
     <div class="nav-center">
-      <a class="nav-item" href="https://shoreline.pravix.app/directory/"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Directory</a>
-      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Assets</a>
-      <a class="nav-item" href="https://shoreline.pravix.app/sgvp/"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Curriculum</a>
-      <a class="nav-item" href="https://shoreline.pravix.app/scheduling/"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
-      <a class="nav-item" href="https://shoreline.pravix.app/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="10.5" y="3" width="6" height="12" rx="1.5"/><rect x="18" y="3" width="3" height="8" rx="1.5"/></svg>Flow</a>
-      <a class="nav-item active" href="#" aria-current="page"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17.5" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><path d="M8.5 10.5h3M8.5 14h3M8.5 17.5h3"/><path d="M14 10.5h1.5M14 14h1.5M14 17.5h1.5"/></svg>Treatment</a>
-      <a class="nav-item" href="https://shoreline.pravix.app/"><svg viewBox="0 0 24 24"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/directory/" id="navDirectory" title="Directory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Directory</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/sgvp/assets/" id="navAssets" title="Assets"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Assets</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/sgvp/" id="navCurriculum" title="Curriculum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Curriculum</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/scheduling/" id="navSchedule" title="Schedule"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/" id="navFlow" title="Flow"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="10.5" y="3" width="6" height="12" rx="1.5"/><rect x="18" y="3" width="3" height="8" rx="1.5"/></svg>Flow</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/#app=ultrasound" id="navUltrasound" title="Ultrasound"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="15" r="1.6"/><path d="M8.6 11.4a4.8 4.8 0 0 1 6.8 0"/><path d="M5.8 8.6a8.8 8.8 0 0 1 12.4 0"/></svg>Ultrasound</a>
+      <a class="nav-item active" href="#" id="navTreatment" title="Treatment" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17.5" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><path d="M8.5 10.5h3M8.5 14h3M8.5 17.5h3"/><path d="M14 10.5h1.5M14 14h1.5M14 17.5h1.5"/></svg>Treatment</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
     </div>
     <div class="nav-right">
       <button class="logout-button" id="logoutBtn" type="button" onclick="logout()" aria-label="Log out"><span class="logout-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="door-glyph"><path d="M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1"/></g><g class="exit-arrow"><path d="M12.6 8.7 16 12l-3.4 3.3"/><path d="M8.9 12H16"/></g></svg></span><span class="logout-label">Logout</span><span class="logout-chevron" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m7.5 5 5 5-5 5"/></svg></span></button>
@@ -124,7 +126,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script defer src="store.js?v=8925e329a4"></script>
+<script defer src="store.js?v=4648035d3c"></script>
 
 
 <script defer src="voice.js?v=7a919ece66"></script>
