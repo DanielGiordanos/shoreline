@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261009-1429-54b27fe2">
+<meta name="flow-build" content="20261009-1445-afed8d0a">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -6943,7 +6943,7 @@ PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.da
 Backend._lastRows = fvRowsCopy(PATIENTS);
 Backend._mergeResus();
 _persistLock = false;
-Backend.setConn(meta&&meta.fromCache?'reconnecting':'live');
+if(meta&&meta.fromCache) fvConfirmLive(); else Backend.setConn('live');   /* n92c: Firestore sends no second event when only the cache flag changes */
 try{ if(typeof scheduleRender==='function'){ scheduleRender(function(){ try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} }); } else { if(typeof renderAll==='function') renderAll();
 try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} } }catch(e){}
 }, function(err){ console.warn('[visits] live feed stopped —',(err&&err.message)||err); Backend.setConn('reconnecting'); fvResubscribeSoon(); });
@@ -7083,7 +7083,11 @@ function fvVisitsGetServer(){ var o={source:'server'};
 function fvKeepBoard(docs,meta){
   try{ if(!meta||!meta.fromCache||(docs&&docs.length)) return false;
     var have=PATIENTS.some(function(p){ return p&&!p._demo; }); if(!have) return false;
-    console.warn('[visits] ignored an empty cached update — keeping the board'); Backend.setConn('reconnecting'); fvResubscribeSoon(); return true; }catch(e){ return false; } }
+    console.warn('[visits] ignored an empty cached update — keeping the board'); fvConfirmLive(); return true; }catch(e){ return false; } }
+var _fvConfT=null;
+function fvConfirmLive(){ if(_fvConfT) return; _fvConfT=setTimeout(function(){ _fvConfT=null;
+  fvVisitsAll().limit(1).get({source:'server'}).then(function(){ Backend._liveAt=Date.now(); Backend._retry=0; if(Backend.conn!=='live') Backend.setConn('live'); })
+  .catch(function(){ Backend.setConn('reconnecting'); fvResubscribeSoon(); }); },400); }
 var _fvRetryT=null;
 function fvResubscribeSoon(){ if(_fvRetryT) return; var n=Backend._retry=(Backend._retry||0)+1, wait=Math.min(30000,1000*Math.pow(2,n));
   _fvRetryT=setTimeout(function(){ _fvRetryT=null; if(!navigator.onLine){ fvResubscribeSoon(); return; }
@@ -7093,7 +7097,7 @@ function fvResubscribeSoon(){ if(_fvRetryT) return; var n=Backend._retry=(Backen
     Backend._subVisits(); Backend.refetch(); }catch(e){} }
   document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){ hidAt=Date.now(); return; } if(hidAt&&Date.now()-hidAt>20000) wake(); hidAt=0; });
   window.addEventListener('pageshow',function(e){ if(e&&e.persisted) wake(); });   /* Safari back/forward cache */
-  setInterval(function(){ try{ if(Backend.mode==='staff'&&Backend.conn!=='live'&&navigator.onLine&&Backend._subVisits&&!_fvRetryT) fvResubscribeSoon(); }catch(e){} },15000);
+  setInterval(function(){ try{ if(Backend.mode==='staff'&&Backend.conn!=='live'&&navigator.onLine&&Backend._subVisits&&!_fvRetryT) fvConfirmLive(); }catch(e){} },15000);   /* n92c: a cheap server check, not a full re-subscribe */
 })();
 var _fvHist=null;
 function fvVisitHistory(){ if(_fvHist&&Date.now()-_fvHist.at<10*60000) return _fvHist.p;
