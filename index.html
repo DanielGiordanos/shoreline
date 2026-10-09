@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261009-0203-6cbf8aaa">
+<meta name="flow-build" content="20261009-0259-563a7298">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5500,9 +5500,45 @@ body.rd-display .rd-task .ck{pointer-events:none}
  html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
  html body .topnav img.logo{height:44px}}
 </style>
+<style id="pvx-light">
+/* ═══ Pravix light mode — one palette for every app (Oct 2026; source: VCA/nav/pravix-light.css) ═══
+   Daniel: use Treatment Sheets' light mode everywhere. These are Treatment Sheets' own values (app/styles/look.css):
+   grey canvas #F2F4F8 · white top bar · the sub-nav sits on the canvas · borderless white cards with a faint cool shadow ·
+   cool hairlines. Surfaces only — each app keeps its accent, status colours, type and layout. Dark mode is untouched.
+   Loaded last (after the app's own CSS) in Flow (patch_light.py), OR (src/order.txt) and the portal pages (portal_light.py).
+   The tokens are set on html body:not(.dark) so they win over an app's own body:not(.dark) tokens wherever those sit. */
+html body:not(.dark){
+  --page-bg:#F2F4F8; --surface-0:#FFFFFF; --surface-1:#F7F8FB; --surface-2:#EEF1F6; --surface-tertiary:#F7F8FB;
+  --border:rgba(30,45,90,.08); --border-subtle:rgba(30,45,90,.05); --border-strong:rgba(30,45,90,.14); --ctl-border:rgba(30,45,90,.10);
+  --glass:#FFFFFF; --glass-strong:#FFFFFF; --glass-border:transparent; --glass-hairline:rgba(30,45,90,.08);
+  --panel-shadow:0 1px 2px rgba(30,45,90,.04),0 8px 24px rgba(30,45,90,.05);
+  --panel-shadow-lg:0 2px 6px rgba(30,45,90,.08),0 14px 34px rgba(30,45,90,.16);
+  --card-hover-shadow:0 2px 6px rgba(30,45,90,.06),0 12px 28px rgba(30,45,90,.08);
+  --card-grad:linear-gradient(#FFFFFF,#FFFFFF); --col-grad:linear-gradient(#FFFFFF,#FFFFFF); --ptcard-grad:linear-gradient(#FFFFFF,#FFFFFF);
+  --panel-grad:linear-gradient(#F7F8FB,#F7F8FB); --panel-grad-hi:linear-gradient(#F7F8FB,#F7F8FB);
+  --fill-soft:rgba(30,45,90,.055); --fill-track:rgba(30,45,90,.07);
+  background:#F2F4F8}
+html:has(body:not(.dark)){background:#F2F4F8}
+body:not(.dark) .mesh{background:#F2F4F8!important}
+/* the top bar stays white; the sub-nav sits on the canvas, with Treatment Sheets' hairline */
+body:not(.dark) .topnav{background:rgba(255,255,255,.96)!important;border-bottom:1px solid rgba(29,29,31,.08)!important;box-shadow:0 1px 0 rgba(29,29,31,.03)!important}
+body:not(.dark) .subnav{background:transparent!important;box-shadow:none!important;border-bottom:1px solid rgba(29,29,31,.08)!important}
+/* cards: white, borderless, a faint cool shadow (Treatment Sheets' .panel) */
+body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!important;box-shadow:0 1px 2px rgba(30,45,90,.04),0 8px 24px rgba(30,45,90,.05)!important}
+/* a flat canvas, as Treatment Sheets: the older pages' coloured background glows step aside in light mode */
+body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
+/* Flow's own card faces, in the same white */
+body:not(.dark) .command-kpi{--ckpi-face:#FFFFFF}
+body:not(.dark) .usb-card{--usbc-face:#FFFFFF}
+body:not(.dark) .um:not(.um-need),body:not(.dark) .um-next:not(.um-need),body:not(.dark) .um-scan:not(.um-need){background:#FFFFFF!important}
+body:not(.dark) #view-dashboard .command-kpi,body:not(.dark) #view-dashboard .panel,body:not(.dark) #view-dashboard .cq-card{background:#FFFFFF!important}
+/* opening straight into Rounds / Ultrasound: nothing of the Flow board shows while it switches */
+html.pvx-app-boot .subnav,html.pvx-app-boot [id^="view-"],html.pvx-app-boot .alert-strip,html.pvx-app-boot #alertStrip{visibility:hidden!important}
+html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;border-color:transparent!important}
+</style>
 </head>
 <body>
-<script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#FFFFFF';}catch(e){}}window.__pvxPaintCanvas=paint;try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
+<script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#F2F4F8';}catch(e){}}window.__pvxPaintCanvas=paint;try{if(/[#&]app=(rounds|ultrasound)\b/.test(location.hash))document.documentElement.classList.add('pvx-app-boot');}catch(e){}try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
 
 
 <div class="app">
@@ -16852,9 +16888,14 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
   setInterval(function(){ if(!ok()||typeof PATIENTS==='undefined') return; try{ PATIENTS.forEach(function(p){ if(p&&!p._demo&&p.orStatus) roundsLine(p); }); }catch(e){} },4000);
   window.fvOrRoundsLine=roundsLine;
   /* the portal nav in Treatment Sheets and OR links to Ultrasound and Rounds as Flow#app=ultrasound / #app=rounds */
-  function appFromHash(){ var m=String(location.hash||'').match(/app=(rounds|ultrasound|flow)/); if(!m||typeof switchApp!=='function') return;
-    try{ switchApp(m[1]); history.replaceState(null,'',location.pathname+location.search); }catch(e){ console.warn('[nav]',e); } }
-  setTimeout(appFromHash,250); window.addEventListener('hashchange',appFromHash);
+  /* Flow hides its views while it opens straight into Rounds / Ultrasound (html.pvx-app-boot, set at the top of <body>), so the Flow
+     board never flashes first: switch now, again once Flow's own start-up has run, then show the page */
+  function bootDone(){ document.documentElement.classList.remove('pvx-app-boot'); }
+  function appFromHash(keep){ var m=String(location.hash||'').match(/app=(rounds|ultrasound|flow)/); if(!m||typeof switchApp!=='function'){ if(keep!==true) bootDone(); return; }
+    try{ switchApp(m[1]); if(keep!==true) history.replaceState(null,'',location.pathname+location.search); }catch(e){ console.warn('[nav]',e); }
+    if(keep!==true) requestAnimationFrame(function(){ requestAnimationFrame(bootDone); }); }
+  appFromHash(true);
+  setTimeout(appFromHash,250); setTimeout(bootDone,2500); window.addEventListener('hashchange',appFromHash);
   /* Logout from any other Pravix page (Directory, SGVP, Scheduling…) lands on Flow at #logout: sign out here too, then Flow's sign-in */
   function logoutFromHash(){ if(!/(^#|&)logout\b/.test(String(location.hash||''))) return; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
     try{ if(typeof logout==='function') logout(); else if(typeof AUTH!=='undefined'&&AUTH) AUTH.signOut(); }catch(e){ console.warn('[logout]',e); } }
