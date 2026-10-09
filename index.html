@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261008-0349-f9aa36b5">
+<meta name="flow-build" content="20261009-0203-6cbf8aaa">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5473,6 +5473,33 @@ body.rd-display .rd-task .ck{pointer-events:none}
 .disposition-card .dc-note[hidden]{display:none}
 .fv-kg{margin-top:5px;font-size:12px;font-weight:700;color:var(--accent,#38BDD2);font-variant-numeric:tabular-nums}
 </style>
+<style id="pvx-portal-nav">
+/* ═══ Pravix portal nav — one file for Flow, Treatment Sheets and OR (Oct 2026; source: VCA/nav/portal-nav.css) ═══
+   Nine apps across the top. Wide: icon + name. Up to 1120 px the Pravix wordmark steps aside; up to 1100 px the apps show icons only
+   (the name is the tooltip). Tablet (≤1024 px) keeps Flow's header layout. Phones (≤760 px): the apps get their own scrolling row,
+   with names, under the logo, Logout and the theme switch. */
+@media(max-width:1120px){.cobrand-div,.topnav img.plogo,.topnav .pvx-lockup{display:none!important}}
+@media(max-width:1280px){.nav-center .nav-item{padding:8px 10px}}
+@media(max-width:1100px) and (min-width:761px){
+  .nav-center .nav-item{font-size:0;gap:0;padding:10px 11px;letter-spacing:0}
+  .nav-center .nav-item svg{width:19px;height:19px}}
+/* tablet header — as Flow has it */
+@media (max-width:1024px){
+ .topnav{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-areas:none!important;column-gap:10px}
+ .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ .topnav .nav-center{grid-column:2!important;grid-row:1!important;justify-self:stretch!important;position:static!important;transform:none!important;left:auto!important;min-width:0;overflow-x:auto;scrollbar-width:none;justify-content:flex-start;-webkit-overflow-scrolling:touch}
+ .topnav .nav-center::-webkit-scrollbar{display:none}
+ .topnav .nav-right{grid-column:3!important;grid-row:1!important}
+ .topnav .cobrand-div,.topnav .pvx-lockup{display:none!important}}
+/* phones */
+@media(max-width:760px){
+ html body .topnav{grid-template-columns:auto minmax(0,1fr)!important;height:auto!important;min-height:0;row-gap:4px;padding:8px 16px 6px}
+ html body .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ html body .topnav .nav-right{grid-column:2!important;grid-row:1!important;justify-self:end!important}
+ html body .topnav .nav-center{grid-column:1/-1!important;grid-row:2!important;justify-self:stretch!important;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:0 -16px;padding:0 12px 2px}
+ html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
+ html body .topnav img.logo{height:44px}}
+</style>
 </head>
 <body>
 <script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#FFFFFF';}catch(e){}}window.__pvxPaintCanvas=paint;try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
@@ -5496,13 +5523,15 @@ body.rd-display .rd-task .ck{pointer-events:none}
       </span>
     </div>
     <div class="nav-center">
-      <a class="nav-item" href="https://shoreline.pravix.app/directory"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Directory</a>
-      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Assets</a>
-      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Curriculum</a>
-      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
-      <a class="nav-item active" href="#" id="navFlow"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="10.5" y="3" width="6" height="12" rx="1.5"/><rect x="18" y="3" width="3" height="8" rx="1.5"/></svg>Flow</a>
-      <a class="nav-item" href="#" id="navUltrasound"><svg viewBox="0 0 24 24"><circle cx="12" cy="15" r="1.6"/><path d="M8.6 11.4a4.8 4.8 0 0 1 6.8 0"/><path d="M5.8 8.6a8.8 8.8 0 0 1 12.4 0"/></svg>Ultrasound</a>
-      <a class="nav-item" href="#" id="navRounds"><svg viewBox="0 0 24 24"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/directory/" id="navDirectory" title="Directory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Directory</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/sgvp/assets/" id="navAssets" title="Assets"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Assets</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/sgvp/" id="navCurriculum" title="Curriculum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Curriculum</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/scheduling/" id="navSchedule" title="Schedule"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
+      <a class="nav-item active" href="#" id="navFlow" title="Flow" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="10.5" y="3" width="6" height="12" rx="1.5"/><rect x="18" y="3" width="3" height="8" rx="1.5"/></svg>Flow</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/#app=ultrasound" id="navUltrasound" title="Ultrasound"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="15" r="1.6"/><path d="M8.6 11.4a4.8 4.8 0 0 1 6.8 0"/><path d="M5.8 8.6a8.8 8.8 0 0 1 12.4 0"/></svg>Ultrasound</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/treatment/" id="navTreatment" title="Treatment"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17.5" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><path d="M8.5 10.5h3M8.5 14h3M8.5 17.5h3"/><path d="M14 10.5h1.5M14 14h1.5M14 17.5h1.5"/></svg>Treatment</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
     </div>
     <div class="nav-right">      <button class="logout-button" id="logoutBtn" type="button" onclick="logout()" aria-label="Log out"><span class="logout-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="door-glyph"><path d="M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1"/></g><g class="exit-arrow"><path d="M12.6 8.7 16 12l-3.4 3.3"/><path d="M8.9 12H16"/></g></svg></span><span class="logout-label">Logout</span><span class="logout-chevron" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m7.5 5 5 5-5 5"/></svg></span></button>
       <button class="theme-toggle" onclick="toggleDark()" title="Toggle theme" aria-label="Toggle theme">
@@ -6793,7 +6822,7 @@ triage:r.triage||null, intake:r.intake||null, records:recToApp(r.records), ultra
 timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new Date(e.at): new Date(), meta:e.meta||''}; }),
 arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt, critTakenAt: r.crit_taken_at? new Date(r.crit_taken_at): null, critTakenBy: r.crit_taken_by||null, critTakenUid: r.crit_taken_uid||null, waitingOn: (r.waiting_on&&r.waiting_on.text)?r.waiting_on:null, staleKeepUntil: r.stale_keep_until?new Date(r.stale_keep_until):null, msRoomedAt: r.ms_roomed_at?new Date(r.ms_roomed_at):null, msDoctorAt: r.ms_doctor_at?new Date(r.ms_doctor_at):null, viewing: r.viewing||null, lastBy: r.last_by||null, lastByUid: r.last_by_uid||null, lastAt: r.last_at||null,
 examStartedAt: r.exam_started_at? new Date(r.exam_started_at): null, examStartedByDoctorId: r.exam_started_by||null, examWaitMinutes: (typeof r.exam_wait_min==='number'? r.exam_wait_min : null),
-totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null, admitRequest:(r.admit_request&&r.admit_request.at)?r.admit_request:null, tsSheet:(r.ts_sheet&&r.ts_sheet.board)?{board:r.ts_sheet.board,at:r.ts_sheet.at||null}:null, flags:(typeof fgToApp==='function'?fgToApp(r.flags):[]),
+totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null, admitRequest:(r.admit_request&&r.admit_request.at)?r.admit_request:null, orStatus:(r.or_status&&r.or_status.case)?r.or_status:null, tsSheet:(r.ts_sheet&&r.ts_sheet.board)?{board:r.ts_sheet.board,at:r.ts_sheet.at||null}:null, flags:(typeof fgToApp==='function'?fgToApp(r.flags):[]),
 resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusSource:r.resus_source||null, resusHistory:Array.isArray(r.resus_history)?r.resus_history.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:h.at?new Date(h.at):null, by:h.by||null }; }):[], resusRequest:(r.resus_request&&r.resus_request.pref)?{ pref:r.resus_request.pref, at:r.resus_request.at||null }:null, resusRequestDismissed:r.resus_request_dismissed||null, resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
 };
 }
@@ -8179,7 +8208,7 @@ return`<div class="card" draggable="true" data-pid="${p.id}">
     <span class="edge" style="background:${PRIO[p.prio].c}"></span>
     <div class="c-top">${mono(p,'patient-medallion patient-medallion--compact')}<b>${bcEsc(p.name)} ${bcEsc(p.last)}${msgBadge(p)}</b>
       <span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:10px">${PRIO[p.prio].l}</span></div>
-    <div class="c-reason">${bcEsc(compactProblems(p))}</div>${typeof fgCard==='function'?fgCard(p):''}
+    <div class="c-reason">${bcEsc(compactProblems(p))}</div>${typeof fgCard==='function'?fgCard(p):''}${typeof fvOrChip==='function'?fvOrChip(p):''}
     ${usFlag(p)}${typeof fvWaitChip==='function'?fvWaitChip(p):''}${typeof fvPresenceChip==='function'?fvPresenceChip(p):''}
     <div class="c-meta"><div class="l">${p.doctor==='unassigned'?'<span class="muted" style="font-size:12px">No doctor</span>':docAv(p.doctor)}${p.liaison?liaAv(p.liaison):''}${ctAvRow(p)}
       <span class="loc" style="font-size:12px">${p.room}</span></div>
@@ -13715,6 +13744,7 @@ return`<div class="rd-row acu-${r.acuity} ${open?'open':''} ${r.newAdmit?'is-new
           ${r.acuity==='critical'?`<span class="rd-chip crit">CRITICAL</span>`:''}
           ${rdFlagChips(p)}
           ${rdAuthChip(p)}
+          ${typeof fvDisRowChip==='function'?fvDisRowChip(p):''}
           ${due?`<span class="rd-chip due">OWNER UPDATE DUE · ${due}</span>`:''}
         </div>
         <div class="rd-l2">${rdEsc(rdSignalment(p))}</div>
@@ -16684,6 +16714,283 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
   window.fvAdmitSheet={syncTech:syncTech,syncDoctor:syncDoctor,syncCode:syncCode,sweepCodes:sweepCodes,ensure:ensureSheet,create:function(p,o){ return ensureSheet(p,'IP',o); },closeOP:closeOP,id:sheetId,undo:undoSheet,pushEstimate:pushEstimate,pullEstimate:pullEstimate,sweep:sweepTreatment,triageMarks:triageMarks,syncTriage:syncTriage};
 })();
 </script>
+<script>
+/* ═════════ FLOW ⇄ OR (Oct 2026) ═════════
+   A surgical case lives on the patient's treatment sheet (sheets/{id}.surgery) — the record Flow, Treatment Sheets and Pravix OR share.
+     · Book surgery (drawer → Surgery): starts the outpatient sheet if there isn't one yet (as moving to Treatment does), then puts the case
+       on it. Pravix OR shows it straight away, with readiness filled in from the visit and the sheet.
+     · Pravix OR sends every step back to the visit (visits/{id}.or_status): the board card says "OR 2 · 2:30" → "In surgery · OR 2" →
+       "Recovery", and the drawer's Surgery card follows along.
+     · OR's hand-off to ICU / Ward / Treatment admits an outpatient (visits/{id}.admit_request → fvAdmitRequests); once the case is done,
+       Rounds gets a Surgery line (procedure, surgeon, room, times, destination) — once per case.
+   Staff-only: never shown on the family tracker or the waiting-room screen. */
+(function(){
+  if(typeof completePatient!=='function') return;
+  var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search);
+  var OR_URL='https://shoreline.pravix.app/or/';
+  var ROOMS=[{id:'or1',name:'OR 1',service:'Orthopedics / Neurology'},{id:'or2',name:'OR 2',service:'Soft Tissue / Emergency'}];
+  var SURGEONS=[{id:'galano',name:'Dr. Galano'},{id:'nolte',name:'Dr. Nolte'},{id:'giannetto',name:'Dr. Giannetto'}];   /* = Pravix OR */
+  var PROC={'TPLO':'Orthopedics','Fracture Repair':'Orthopedics','Arthroscopy':'Orthopedics','Hemilaminectomy':'Neurology','GDV Surgery':'Emergency',
+    'Splenectomy':'Soft Tissue','Exploratory Laparotomy':'Soft Tissue','Foreign Body Removal':'Soft Tissue','Cystotomy':'Soft Tissue','Mass Removal':'Soft Tissue',
+    'Thoracotomy':'Soft Tissue','Total Ear Canal Ablation':'Soft Tissue','Liver Lobectomy':'Soft Tissue','Perineal Urethrostomy':'Soft Tissue'};
+  var LIVE_ST=['in_room','anesthesia_started','procedure_started','closing','procedure_finished'], REC_ST=['out_of_room','recovery'], DONE_ST=['recovery_complete','out_of_recovery','complete'];
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function pad(n){ return (n<10?'0':'')+n; }
+  function isoDay(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function clock(iso){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d)) return ''; var h=d.getHours(), m=d.getMinutes(); return (h%12||12)+':'+pad(m)+' '+(h<12?'AM':'PM'); }
+  function minClock(m){ var h=Math.floor(m/60)%24, mm=Math.round(m%60); return (h%12||12)+':'+pad(mm)+' '+(h<12?'AM':'PM'); }
+  function me(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
+    var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
+    return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
+  function ok(){ return !LOBBY&&typeof DB!=='undefined'&&DB&&window.fvAdmitSheet&&!document.body.classList.contains('client-mode')&&!document.body.classList.contains('tv-mode'); }
+  function curP(p){ return (p&&typeof PATIENTS!=='undefined'&&PATIENTS.find(function(x){ return x.id===p.id; }))||p; }
+  function today(s){ return !!s&&String(s.date||'')===isoDay(new Date()); }
+  function open(s){ return !!s&&s.status!=='cancelled'&&DONE_ST.indexOf(s.status)<0; }
+  function caseLink(id){ return OR_URL+'#case='+encodeURIComponent(id||''); }
+
+  /* ---------- the board card ---------- */
+  window.fvOrChip=function(p){ var s=p&&p.orStatus; if(!s||!open(s)||(!today(s)&&LIVE_ST.indexOf(s.status)<0&&REC_ST.indexOf(s.status)<0)) return '';
+    var live=LIVE_ST.indexOf(s.status)>-1, rec=REC_ST.indexOf(s.status)>-1;
+    var t=live?'In surgery · '+esc(s.room):rec?'Recovery':esc(s.room)+' · '+clock(s.sched).replace(' ',' ');
+    return '<div class="fv-or-chip'+(live?' live':rec?' rec':'')+'" title="'+esc((s.proc||'Surgery')+' · '+(s.surgeon||'')+' · '+(s.label||''))+'"><i></i>'+t+'</div>'; };
+
+  /* ---------- the drawer: Surgery ---------- */
+  var SG_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg>';
+  function card(p){ var s=p.orStatus, booked=s&&s.case&&s.status!=='cancelled';
+    var head='<div class="rec-ic">'+SG_IC+'</div><div class="rec-title">Surgery</div>';
+    if(!booked||(!open(s)&&!today(s))) return '<div class="rec-card fv-or-card"><div class="rec-head">'+head+'<button class="rec-req" type="button" data-fvor="book">Book surgery</button></div></div>';
+    var st=LIVE_ST.indexOf(s.status)>-1?'live':REC_ST.indexOf(s.status)>-1?'rec':DONE_ST.indexOf(s.status)>-1?'done':'sched';
+    var chip='<span class="rec-chip fv-or-st '+st+'">'+esc(st==='done'?(s.dest?'Done · '+s.dest:'Done'):s.label||'Scheduled')+'</span>';
+    var when=(today(s)?'':String(s.date||'').slice(5).replace('-','/')+' ')+clock(s.sched);
+    var line=[s.proc,s.room,st==='sched'?when:st==='live'?'in '+clock(s.in):st==='rec'?'out '+clock(s.out):'',s.surgeon].filter(Boolean).map(esc).join(' · ');
+    return '<div class="rec-card fv-or-card"><div class="rec-head">'+head+chip+'<a class="rec-link" href="'+caseLink(s.case)+'" target="_blank" rel="noopener">Open in OR</a></div><div class="rec-summary">'+line+'</div></div>'; }
+  function mount(p){ var m=document.getElementById('fvOrMount');
+    if(!m){ var r=document.getElementById('recordsMount'); if(!r) return; m=document.createElement('div'); m.id='fvOrMount'; r.insertAdjacentElement('afterend',m); }
+    if(!p||p._demo&&!window.FV_OR_DEMO){ m.innerHTML=''; return; } m.innerHTML=card(p); m.setAttribute('data-pid',p.id); }
+  if(typeof fillDrawer==='function'){ var _fd=fillDrawer;
+    window.fillDrawer=fillDrawer=function(p){ var r=_fd.apply(this,arguments); try{ if(ok()||window.FV_OR_DEMO) mount(p); }catch(e){ console.warn('[flow OR card]',e); } return r; }; }
+  document.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('[data-fvor="book"]'); if(!b) return; e.preventDefault();
+    var m=document.getElementById('fvOrMount'), id=m&&m.getAttribute('data-pid'), p=id&&PATIENTS.find(function(x){ return String(x.id)===id; }); if(p) bookOpen(p); });
+
+  /* ---------- Book surgery ---------- */
+  var BK=null;
+  function seg(name,opts,val){ return '<div class="ap-seg fv-or-seg" data-seg="'+name+'" style="grid-template-columns:repeat('+opts.length+',1fr)">'+opts.map(function(o){ return '<button type="button" class="ap-seg-btn'+(o[0]===val?' active':'')+'" data-v="'+esc(o[0])+'">'+esc(o[1])+'</button>'; }).join('')+'</div>'; }
+  function segVal(name){ var b=document.querySelector('#fvOrModal [data-seg="'+name+'"] .active'); return b?b.getAttribute('data-v'):''; }
+  function ensureModal(){ if(document.getElementById('fvOrModal')) return;
+    var sc=document.createElement('div'); sc.className='addpt-scrim'; sc.id='fvOrScrim'; sc.onclick=bookClose;
+    var md=document.createElement('div'); md.className='addpt-modal fv-or-modal'; md.id='fvOrModal'; md.setAttribute('role','dialog'); md.setAttribute('aria-modal','true'); md.setAttribute('aria-labelledby','fvOrTitle');
+    md.innerHTML='<div class="addpt-head"><div class="aph-title"><span class="aph-ic">'+SG_IC+'</span><div><div class="aph-t" id="fvOrTitle">Book surgery</div><div class="aph-sub" id="fvOrSub"></div></div></div>'
+      +'<button class="close" type="button" aria-label="Close" data-fvor-x><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'
+      +'<div class="addpt-body" id="fvOrBody"></div><div class="addpt-foot" id="fvOrFoot"></div>';
+    document.body.appendChild(sc); document.body.appendChild(md);
+    md.addEventListener('click',function(e){ var x=e.target.closest('[data-fvor-x]'); if(x){ bookClose(); return; } var b=e.target.closest('.fv-or-seg .ap-seg-btn'); if(!b) return;
+      b.parentNode.querySelectorAll('.ap-seg-btn').forEach(function(y){ y.classList.toggle('active',y===b); }); if(b.parentNode.getAttribute('data-seg')==='type'&&b.getAttribute('data-v')==='emergency') pickRoomFor('GDV Surgery'); });
+    md.addEventListener('keydown',function(e){ if(e.key==='Escape'){ e.stopPropagation(); bookClose(); } }); }
+  function pickRoomFor(proc){ var sv=PROC[proc]||'Soft Tissue', r=/Orthopedics|Neurology/.test(sv)?'or1':'or2';
+    document.querySelectorAll('#fvOrModal [data-seg="room"] .ap-seg-btn').forEach(function(y){ y.classList.toggle('active',y.getAttribute('data-v')===r); }); }
+  function bookOpen(p){ ensureModal(); BK={p:p}; var d=new Date(), nowM=d.getHours()*60+d.getMinutes(), def=Math.min(21*60,Math.ceil((nowM+60)/15)*15), times=[];
+    for(var m=7*60;m<=22*60;m+=15) times.push(m);
+    var days=[[isoDay(d),'Today']]; for(var i=1;i<=7;i++){ var x=new Date(d); x.setDate(d.getDate()+i); days.push([isoDay(x),i===1?'Tomorrow':x.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})]); }
+    document.getElementById('fvOrSub').textContent=(p.name||'')+' '+(p.last||'')+' · goes on the treatment sheet and the OR board';
+    document.getElementById('fvOrBody').innerHTML=
+      '<div class="ap-sect"><h4>Procedure</h4><div class="ap-grid c2"><div class="ap-field"><label for="fvOrProc">Procedure</label><input class="ap-input" id="fvOrProc" list="fvOrProcs" placeholder="e.g. Foreign Body Removal" autocomplete="off" value="'+esc(/foreign body/i.test(p.reason||'')?'Foreign Body Removal':'')+'"><datalist id="fvOrProcs">'+Object.keys(PROC).map(function(k){ return '<option value="'+esc(k)+'">'; }).join('')+'</datalist></div>'
+      +'<div class="ap-field"><label>Side</label>'+seg('lat',[['','None'],['Left','Left'],['Right','Right'],['Bilateral','Both']],'')+'</div></div></div>'
+      +'<div class="ap-sect"><h4>Team &amp; room</h4><div class="ap-grid c2"><div class="ap-field"><label>Surgeon</label>'+seg('surgeon',SURGEONS.map(function(s){ return [s.id,s.name]; }),'')+'</div>'
+      +'<div class="ap-field"><label>Room</label>'+seg('room',ROOMS.map(function(r){ return [r.id,r.name]; }),'or2')+'</div></div></div>'
+      +'<div class="ap-sect"><h4>When</h4><div class="ap-grid c3"><div class="ap-field"><label for="fvOrDate">Day</label><select class="ap-input ap-select" id="fvOrDate">'+days.map(function(x){ return '<option value="'+x[0]+'">'+esc(x[1])+'</option>'; }).join('')+'</select></div>'
+      +'<div class="ap-field"><label for="fvOrTime">Time</label><select class="ap-input ap-select" id="fvOrTime">'+times.map(function(m){ return '<option value="'+m+'"'+(m===def?' selected':'')+'>'+minClock(m)+'</option>'; }).join('')+'</select></div>'
+      +'<div class="ap-field"><label for="fvOrDur">About</label><select class="ap-input ap-select" id="fvOrDur">'+[30,45,60,75,90,120,150,180,240].map(function(m){ return '<option value="'+m+'"'+(m===90?' selected':'')+'>'+(m<60?m+' min':(m%60?Math.floor(m/60)+' h '+m%60+' min':m/60+' h'))+'</option>'; }).join('')+'</select></div></div>'
+      +'<div class="ap-field" style="margin-top:13px"><label>Type</label>'+seg('type',[['scheduled','Scheduled'],['addon','Add-on'],['emergency','Emergency']],'addon')+'</div></div>'
+      +'<div class="ap-sect"><h4>Note <span style="text-transform:none;letter-spacing:0;font-weight:500">· optional</span></h4><input class="ap-input" id="fvOrNote" placeholder="Anything the OR team should know"></div>'
+      +'<div class="fv-or-err" id="fvOrErr" role="alert"></div>';
+    document.getElementById('fvOrFoot').innerHTML='<button class="btn" type="button" data-fvor-x>Cancel</button><button class="btn primary" type="button" id="fvOrGo">Book surgery</button>';
+    document.getElementById('fvOrGo').onclick=bookSave;
+    var pr=document.getElementById('fvOrProc'); pr.addEventListener('change',function(){ if(PROC[pr.value]) pickRoomFor(pr.value); }); if(pr.value) pickRoomFor(pr.value);
+    document.getElementById('fvOrScrim').classList.add('open'); document.getElementById('fvOrModal').classList.add('open'); setTimeout(function(){ pr.focus(); },60); }
+  function bookClose(){ var a=document.getElementById('fvOrScrim'), b=document.getElementById('fvOrModal'); if(a) a.classList.remove('open'); if(b) b.classList.remove('open'); BK=null; }
+  function err(t){ var e=document.getElementById('fvOrErr'); if(e) e.textContent=t||''; }
+  function bookSave(){ if(!BK) return; var p=curP(BK.p), proc=(document.getElementById('fvOrProc').value||'').trim(), sg=segVal('surgeon');
+    if(!proc){ err('Enter the procedure.'); document.getElementById('fvOrProc').focus(); return; }
+    if(!sg){ err('Choose the surgeon.'); return; }
+    var lat=segVal('lat')||null, type=segVal('type')||'scheduled', room=segVal('room')||'or2', date=document.getElementById('fvOrDate').value, sched=+document.getElementById('fvOrTime').value, dur=+document.getElementById('fvOrDur').value, note=(document.getElementById('fvOrNote').value||'').trim();
+    var who=me(), at=new Date(), nm=at.getHours()*60+at.getMinutes(), id='c'+at.getTime().toString(36);
+    var s={id:id, procedure:proc, laterality:lat, service:PROC[proc]||'Soft Tissue', surgeonId:sg, anesthesiaId:null, techId:null, assistantIds:[], roomId:room, date:date, sched:sched, dur:dur,
+      type:type, priority:type==='emergency'?'emergency':type==='addon'?'urgent':'routine', asa:null, status:'scheduled', events:[{status:'scheduled',t:date===isoDay(at)?nm:0}],
+      readiness:{}, rman:{}, readinessNotes:{}, delay:null, timeout:{done:false,t:null,checks:{}}, intraop:[], implants:[], specimens:[], kura:[], drugs:[], anesthesia:null, recovery:{}, record:null, prefCardId:null,
+      notes:note, src:'flow', bookedBy:who.name, bookedUid:who.uid, bookedAt:at.toISOString()};
+    var go=document.getElementById('fvOrGo'); go.disabled=true; go.textContent='Booking…'; err('');
+    if(window.FV_OR_DEMO){ p.orStatus=statusOf(s); bookClose(); done(p,s); return; }
+    var board=(p.status==='Hospitalized'||p.status==='Admitted'||(p.tsSheet&&p.tsSheet.board==='IP'))?'IP':'OP';
+    Promise.resolve(fvAdmitSheet.ensure(p,board,{quiet:true})).then(function(res){ if(res==='error'||res==='closed'||res==null) throw new Error('sheet:'+res);
+      var ref=DB.collection('sheets').doc(fvAdmitSheet.id(p)), FV=firebase.firestore.FieldValue;
+      return DB.runTransaction(function(t){ return t.get(ref).then(function(snap){ var d=snap.exists&&snap.data(); if(!d) throw new Error('no sheet');
+        var old=d.surgery; if(old&&open(old)&&old.id) throw new Error('booked:'+(old.procedure||''));
+        var upd={surgery:s, updated_at:at.toISOString(), updated_by:who.initials,
+          audit:FV.arrayUnion({at:at.toISOString(),type:'doctor',desc:'Surgery booked in Flow — <b>'+esc(proc+(lat?' — '+lat:''))+'</b> · '+esc((ROOMS.find(function(r){ return r.id===room; })||{}).name||'OR')+' · '+minClock(sched)+' · '+esc((SURGEONS.find(function(x){ return x.id===sg; })||{}).name||''),who:who.initials,uid:who.uid})};
+        if(old&&old.id) upd.surgery_past=FV.arrayUnion(old);
+        var al=p.intake&&p.intake.allergies; if(al&&String(al).trim()) upd['patient.allergies']=String(al).trim().slice(0,200);
+        t.update(ref,upd); }); }); })
+    .then(function(){ var os=statusOf(s); p.orStatus=os; DB.collection('visits').doc(String(p.id)).update({or_status:Object.assign({},os,{at:at.toISOString(),by:who.name})}).catch(function(e){ console.warn('[flow → OR status]',e); });
+      bookClose(); done(p,s); })
+    .catch(function(e){ console.warn('[book surgery]',e); go.disabled=false; go.textContent='Book surgery'; var m=String(e&&e.message||'');
+      err(m.indexOf('booked:')===0?'There’s already a surgery booked for '+(p.name||'this patient')+' ('+m.slice(7)+'). Change it in the OR.':'Couldn’t book it — check the connection and try again.'); }); }
+  function statusOf(s){ var r=ROOMS.find(function(x){ return x.id===s.roomId; })||ROOMS[1], sg=SURGEONS.find(function(x){ return x.id===s.surgeonId; });
+    var d=new Date(s.date+'T00:00:00'); d.setMinutes(s.sched);
+    return {case:s.id,status:'scheduled',label:'Scheduled',stage:'scheduled',room:r.name,proc:s.procedure+(s.laterality?' — '+s.laterality:''),surgeon:sg?sg.name:'',date:s.date,sched:d.toISOString(),in:null,out:null,dest:null,sent:false}; }
+  function done(p,s){ try{ p.timeline=p.timeline||[]; p.timeline.push({label:'Surgery booked',at:new Date(),meta:s.procedure+' · '+(statusOf(s).room)+' · '+minClock(s.sched)}); }catch(e){}
+    try{ notify('Surgery booked', esc(p.name||'Patient')+' · '+esc(s.procedure)+' · <a href="'+caseLink(s.id)+'" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open in OR ›</a>',{icon:'info',color:'var(--accent)',dur:8000}); }catch(e){}
+    try{ if(typeof renderAll==='function') renderAll(); }catch(e){} try{ if(typeof fillDrawer==='function'&&typeof activePatient!=='undefined'&&activePatient===p.id) fillDrawer(p); else mount(p); }catch(e){} }
+  window.fvBookSurgery=bookOpen;
+
+  /* ---------- Rounds: the surgery, once per case ---------- */
+  function roundsLine(p){ var s=p.orStatus, r=p.rounds; if(!s||!s.case||!r||r.outcome||!Array.isArray(r.events)||DONE_ST.indexOf(s.status)<0) return;
+    var eid='or_'+s.case; if(r.events.some(function(e){ return e&&e.id===eid; })) return;
+    var bits=[s.proc,s.surgeon,s.room].filter(Boolean), tm=[s.in?'in '+clock(s.in):'',s.out?'out '+clock(s.out):''].filter(Boolean).join(', ');
+    r.events.push({id:eid,at:(s.out||s.at||new Date().toISOString()),text:'Surgery — '+bits.join(' · ')+(tm?' · '+tm:'')+(s.dest?' → '+s.dest:''),by:s.surgeon||null,kind:'clinical'});
+    r.events.sort(function(x,y){ return new Date(x.at)-new Date(y.at); });
+    try{ if(typeof rdTouch==='function') rdTouch(p,'Surgery from OR'); }catch(e){} }
+  setInterval(function(){ if(!ok()||typeof PATIENTS==='undefined') return; try{ PATIENTS.forEach(function(p){ if(p&&!p._demo&&p.orStatus) roundsLine(p); }); }catch(e){} },4000);
+  window.fvOrRoundsLine=roundsLine;
+  /* the portal nav in Treatment Sheets and OR links to Ultrasound and Rounds as Flow#app=ultrasound / #app=rounds */
+  function appFromHash(){ var m=String(location.hash||'').match(/app=(rounds|ultrasound|flow)/); if(!m||typeof switchApp!=='function') return;
+    try{ switchApp(m[1]); history.replaceState(null,'',location.pathname+location.search); }catch(e){ console.warn('[nav]',e); } }
+  setTimeout(appFromHash,250); window.addEventListener('hashchange',appFromHash);
+  /* Logout from any other Pravix page (Directory, SGVP, Scheduling…) lands on Flow at #logout: sign out here too, then Flow's sign-in */
+  function logoutFromHash(){ if(!/(^#|&)logout\b/.test(String(location.hash||''))) return; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    try{ if(typeof logout==='function') logout(); else if(typeof AUTH!=='undefined'&&AUTH) AUTH.signOut(); }catch(e){ console.warn('[logout]',e); } }
+  setTimeout(logoutFromHash,600); window.addEventListener('hashchange',logoutFromHash);
+})();
+</script>
+<style id="fv-or-css">
+/* Flow ⇄ OR (Oct 2026): the board chip and the drawer's Surgery card — the Records card's look (no color-mix) */
+.fv-or-chip{display:inline-flex;align-items:center;gap:6px;margin:6px 6px 2px 0;padding:3px 9px 3px 7px;border-radius:999px;font:600 11.5px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;letter-spacing:-.005em;
+  color:#2C5F9E;background:rgba(59,130,196,.12);border:1px solid rgba(59,130,196,.26);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fv-or-chip i{width:6px;height:6px;border-radius:50%;background:#3B82C4;flex:0 0 6px}
+.fv-or-chip.live{color:#5B41B5;background:rgba(106,79,196,.12);border-color:rgba(106,79,196,.28)}
+.fv-or-chip.live i{background:#6A4FC4;box-shadow:0 0 0 3px rgba(106,79,196,.18)}
+.fv-or-chip.rec{color:#1F7F8F;background:rgba(56,189,210,.12);border-color:rgba(56,189,210,.3)}
+.fv-or-chip.rec i{background:#38BDD2}
+body.dark .fv-or-chip{color:#9CC4F0;background:rgba(59,130,196,.16);border-color:rgba(59,130,196,.32)}
+body.dark .fv-or-chip.live{color:#CDBEF7;background:rgba(140,115,224,.18);border-color:rgba(140,115,224,.34)}
+body.dark .fv-or-chip.rec{color:#8FE3EF;background:rgba(56,189,210,.14);border-color:rgba(56,189,210,.32)}
+.fv-or-card .rec-chip.fv-or-st.sched{color:#3B82C4;background:rgba(59,130,196,.12)}
+.fv-or-card .rec-chip.fv-or-st.live{color:#6A4FC4;background:rgba(106,79,196,.14)}
+.fv-or-card .rec-chip.fv-or-st.rec{color:#1F8FA8;background:rgba(56,189,210,.14)}
+.fv-or-card .rec-chip.fv-or-st.done{color:#3B9E74;background:rgba(72,184,136,.18)}
+.fv-or-card a.rec-link{text-decoration:none}
+.fv-or-card .rec-summary{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fv-or-modal{width:640px}
+.fv-or-seg .ap-seg-btn{min-height:40px;padding:0 8px;font-size:13px}
+.fv-or-err{min-height:18px;margin:-8px 0 12px;font-size:12.5px;font-weight:600;color:#E4655C}
+.fv-or-modal .addpt-foot [data-fvor-x]{flex:0 0 120px}
+@media(max-width:620px){.fv-or-modal .addpt-body{padding:18px 18px 4px}.fv-or-modal .addpt-head{padding:18px 18px 14px}.fv-or-modal .addpt-foot{padding:14px 18px 18px}.fv-or-modal .ap-grid.c3{grid-template-columns:1fr 1fr}}
+</style>
+<script>
+/* ═════════ ROUNDS ⇄ TREATMENT SHEET — discharge (Oct 2026) ═════════
+   The doctor plans the discharge in Rounds; whoever is with the patient discharges on the treatment sheet. One Discharge button.
+     · Rounds → sheet: Discharge Readiness "Likely today" / "Possible today" and its checklist travel to the sheet
+       (sheets/{id}.patient.discharge_plan). The sheet shows it in the header with the Discharge button, the IP Board row gets a chip,
+       and the Rounds row says GOING HOME TODAY.
+     · Sheet → everything else: when the sheet closes (charge check, then how the stay ended), the admission ends in Rounds
+       (rounds.outcome → the Rounds archive), the board card goes, and the family tracker gets its ending (visit_end, from the outcome).
+     · Rounds' "End admission…" sends an admitted patient with an open sheet to the sheet, so nobody discharges in two places.
+   Staff-only: none of this is on the family tracker or the waiting-room screen (the tracker only sees the ending). */
+(function(){
+  if(typeof completePatient!=='function') return;
+  var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search);
+  var TS_URL='/treatment/';
+  /* how the stay ended on the sheet → the Rounds outcome (RD_OUTCOMES; 'Admitted in error' is its own ending) */
+  var OUT={home:'Discharged',ama:'Discharged',transfer:'Transferred',euth:'Euthanized',died:'Deceased',error:'Admitted in error'};
+  var LEGACY={discharged:'Discharged',transferred:'Transferred',deceased:'Deceased',cancelled:'Admitted in error'};
+  var LIKELY={likely:'Likely today',possible:'Possible today'};
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function pad(n){ return (n<10?'0':'')+n; }
+  function dk(d){ return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate()); }
+  function me(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
+    var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
+    return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
+  function ok(){ return !LOBBY&&typeof DB!=='undefined'&&DB&&window.fvAdmitSheet&&!document.body.classList.contains('client-mode')&&!document.body.classList.contains('tv-mode'); }
+  function signedIn(){ try{ return !!(AUTH&&AUTH.currentUser); }catch(e){ return false; } }
+  function sid(p){ return fvAdmitSheet.id(p); }
+  function inRounds(p){ return !!(p&&p.rounds&&typeof p.rounds==='object'&&!p.rounds.outcome); }
+  function sheetLink(id,go){ return TS_URL+'#sheet='+encodeURIComponent(id)+(go?'&discharge=1':''); }
+
+  /* ---------- Rounds → sheet: the plan ---------- */
+  function planFor(p){ var r=p.rounds, d=r&&r.discharge; if(!d||!LIKELY[d.likely]) return null;
+    var a=(r.audit||[]).slice().reverse().find(function(x){ return x&&/^Discharge · (likely|possible)/i.test(x.what||''); })||{};
+    var list=(Array.isArray(d.checklist)?d.checklist:[]).filter(function(c){ return c&&c.label; }).slice(0,12).map(function(c){ return {t:String(c.label).slice(0,60),done:!!c.done}; });
+    return {k:d.likely,label:LIKELY[d.likely],at:a.at||null,by:a.by||null,list:list}; }
+  var lastPlan={};
+  function syncPlan(p){
+    if(!ok()||!p||p._demo||!inRounds(p)) return; var pl=planFor(p), sig=JSON.stringify(pl); if(lastPlan[p.id]===sig) return; lastPlan[p.id]=sig;
+    var ref=DB.collection('sheets').doc(sid(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
+      if(!snap.exists){ delete lastPlan[p.id]; return; }
+      var d=snap.data()||{}, had=(d.patient&&d.patient.discharge_plan)||null; if(d.status==='closed') return;
+      if(JSON.stringify(had)===sig) return;
+      var upd={'patient.discharge_plan':pl,updated_at:now.toISOString(),updated_by:who.initials};
+      if((had&&had.k)!==(pl&&pl.k)) upd.audit=FV.arrayUnion({at:now.toISOString(),type:'doctor',desc:pl?'Discharge planned in Rounds — <b>'+esc(pl.label)+'</b>':'Discharge plan cleared in Rounds',who:who.initials,uid:who.uid});
+      t.update(ref,upd);
+    }); }).catch(function(e){ delete lastPlan[p.id]; console.warn('[rounds→sheet discharge]',e); });
+  }
+  setInterval(function(){ if(!signedIn()||typeof PATIENTS==='undefined') return; try{ PATIENTS.forEach(function(p){ if(p&&p.rounds) syncPlan(p); }); }catch(e){} },8000);
+
+  /* ---------- sheet → Rounds, board, tracker: the sheet closed ---------- */
+  function outcomeOf(d){ var k=d&&d.outcome&&d.outcome.k; return OUT[k]||LEGACY[String(d&&d.closed_reason||'').toLowerCase()]||null; }
+  function endAdmission(p,d){
+    var type=outcomeOf(d); if(!type||!inRounds(p)) return false;
+    var by=d.closed_by||(d.outcome&&d.outcome.by)||'Treatment sheet', at=d.closed_at||new Date().toISOString(), lab=(d.outcome&&d.outcome.label)||type;
+    p.rounds.outcome={type:type,at:at,by:by};
+    p.timeline=p.timeline||[]; p.timeline.push({label:type,at:new Date(at),meta:'Treatment sheet · '+by});
+    try{ if(typeof rdExpanded!=='undefined'&&rdExpanded===p.id) rdExpanded=null; }catch(e){}
+    try{ rdTouch(p,'Admission ended on the treatment sheet · '+lab); }catch(e){ try{ renderAll(); }catch(_){} }
+    if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p,type==='Euthanized'?'Euthanized':'Discharged'); }catch(e){} }   /* a direct admit leaves the board too */
+    try{ if(window.fvSheetSeen) fvSheetSeen(p,'closed'); }catch(e){}
+    try{ notify(type==='Discharged'?'Went home':type,esc(((p.name||'')+' '+(p.last||'')).trim())+' · '+esc(lab)+' on the treatment sheet',{icon:'info',color:'var(--s-admitted)',dur:7000}); }catch(e){}
+    return true; }
+  var claimed={};
+  /* one screen ends it: claim the closed sheet first (rounds_ended_at), so two Flow screens never write the ending twice */
+  function onClosed(id,d){ if(claimed[id]||!d||d.status!=='closed'||d.rounds_ended_at) return;
+    var p=(PATIENTS||[]).find(function(x){ return x&&!x._demo&&sid(x)===id; }); if(!p||!inRounds(p)||!outcomeOf(d)) return;
+    claimed[id]=1; var ref=DB.collection('sheets').doc(id), now=new Date().toISOString();
+    DB.runTransaction(function(t){ return t.get(ref).then(function(s){ var x=s.exists&&s.data(); if(!x||x.status!=='closed'||x.rounds_ended_at) return null;
+        t.update(ref,{rounds_ended_at:now,rounds_ended_by:me().initials}); return x; }); })
+      .then(function(x){ if(x) endAdmission(p,x); else delete claimed[id]; })
+      .catch(function(e){ delete claimed[id]; console.warn('[sheet→rounds discharge]',e); }); }
+  /* sheets closed today or yesterday (closed_on, written by the sheet) — a handful of documents, not the whole collection */
+  var unsub=null, onDay=null;
+  function listen(){ if(!ok()||!signedIn()) return; var now=new Date(), y=new Date(now.getTime()-86400000), key=dk(now); if(onDay===key&&unsub) return;
+    if(unsub){ try{ unsub(); }catch(e){} unsub=null; } onDay=key;
+    try{ unsub=DB.collection('sheets').where('closed_on','in',[key,dk(y)]).onSnapshot(function(q){ q.forEach(function(s){ onClosed(s.id,s.data()); }); },function(e){ console.warn('[sheet→rounds listen]',e); unsub=null; onDay=null; }); }catch(e){ unsub=null; onDay=null; } }
+  setInterval(listen,15000); setTimeout(listen,2500);
+
+  /* ---------- Rounds' End admission… → the sheet, when the patient has one open ---------- */
+  if(typeof rdSetOutcome==='function'){
+    var origOutcome=rdSetOutcome;
+    window.rdSetOutcome=rdSetOutcome=function(p,type){
+      if(!ok()||!p||p._demo) return origOutcome.apply(this,arguments);
+      var self=this, args=arguments, id=sid(p);
+      DB.collection('sheets').doc(id).get().then(function(s){ var d=s.exists&&s.data();
+        if(!d||d.status!=='active') return origOutcome.apply(self,args);
+        var nm=((p.name||'')+' '+(p.last||'')).trim();
+        showConfirm('Discharge '+nm+' on the treatment sheet','Open sheet',function(){ window.open(sheetLink(id,true),'_blank','noopener'); },
+          {sub:nm+' has an open treatment sheet. Discharging there runs the charge check and records how the stay ended — Rounds, the board and the family tracker update by themselves.'});
+      }).catch(function(){ origOutcome.apply(self,args); });
+    };
+  }
+
+  /* ---------- the Rounds row chip (admitted patients are on Rounds, not on the Flow board) ---------- */
+  window.fvDisRowChip=function(p){ var r=p&&p.rounds, d=r&&r.discharge; if(!r||r.outcome||!d||d.likely!=='likely') return '';
+    var L=Array.isArray(d.checklist)?d.checklist:[], n=L.filter(function(c){ return c&&c.done; }).length;
+    return '<span class="rd-chip home" title="Discharge planned · discharged on the treatment sheet">GOING HOME TODAY'+(L.length?' · '+n+'/'+L.length:'')+'</span>'; };
+  window.fvDischarge={syncPlan:syncPlan,planFor:planFor,onClosed:onClosed,endAdmission:endAdmission,outcomeOf:outcomeOf,listen:listen};
+})();
+</script>
+<style id="fv-dis-css">
+/* Rounds ⇄ sheet discharge (Oct 2026): the Rounds row chip (no color-mix) */
+.rd-chip.home{color:#1F7A55;background:rgba(26,158,110,.12);border:1px solid rgba(26,158,110,.28)}
+body.dark .rd-chip.home{color:#8FE0BC;background:rgba(72,184,136,.14);border-color:rgba(72,184,136,.30)}
+</style>
 
 </body>
 </html>
