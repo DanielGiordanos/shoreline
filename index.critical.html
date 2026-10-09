@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261009-0259-563a7298">
+<meta name="flow-build" content="20261009-0603-a87c18c6">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -6258,7 +6258,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
       <h4>Owner Information</h4>
       <div class="ap-grid c2">
         <div class="ap-field"><label>Owner Name</label><input class="ap-input" id="apOwner" placeholder="e.g. Daniel Giordano"></div>
-        <div class="ap-field"><label>Phone Number</label><input class="ap-input" id="apPhone" placeholder="(203) 555-0134"></div>
+        <div class="ap-field"><label>Phone Number</label><input class="ap-input" id="apPhone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="14" placeholder="(203) 555-0134"></div>
       </div>
     </div>
 
@@ -6648,9 +6648,9 @@ const TRIAGE_VITALS = [
 
 ];
 const TRIAGE_ASSESS = [
-{key:'mentation', label:'Mentation'},
-{key:'mm',        label:'Mucous Membranes'},
-{key:'crt',       label:'Capillary Refill Time', fmt:fmtCRT},
+{key:'mentation', label:'Mentation',        opts:['BAR','QAR','Dull','Obtunded','Stupor']},
+{key:'mm',        label:'Mucous Membranes', opts:['Pink','Pale Pink','Pale','White','Injected','Cyanotic']},
+{key:'crt',       label:'Capillary Refill Time', fmt:fmtCRT, opts:['<2 sec','2 sec','>2 sec']},   /* same choices as Treatment Sheets' Vitals (V_OPTS) */
 
 ];
 function defaultTriage(){ return {status:'not_started', vitals:{}, assess:{}, chief:[], history:'', by:'', at:''}; }
@@ -10240,9 +10240,14 @@ const esc=s=>String(s==null?'':s).replace(/"/g,'&quot;');
 const vitalFields=TRIAGE_VITALS.map(c=>`
     <div class="ap-field"><label>${c.label} <span class="te-unit">${c.unit.trim()}</span></label>
       <input class="ap-input" data-vk="${c.key}" value="${esc(v[c.key])}" placeholder="—"></div>`).join('');
-const assessFields=TRIAGE_ASSESS.map(c=>`
+const assessFields=TRIAGE_ASSESS.map(c=>{ const cur=a[c.key]==null?'':String(a[c.key]);
+    if(c.opts){ const list=c.opts.slice(); if(cur&&list.indexOf(cur)<0) list.unshift(cur);   /* an older typed value stays selectable */
+      return `
     <div class="ap-field"><label>${c.label}</label>
-      <input class="ap-input" data-ak="${c.key}" value="${esc(a[c.key])}" placeholder="—"></div>`).join('');
+      <select class="ap-input ap-select" data-ak="${c.key}"><option value=""${cur?'':' selected'}>—</option>${list.map(o=>`<option value="${esc(o)}"${o===cur?' selected':''}>${esc(o)}</option>`).join('')}</select></div>`; }
+    return `
+    <div class="ap-field"><label>${c.label}</label>
+      <input class="ap-input" data-ak="${c.key}" value="${esc(cur)}" placeholder="—"></div>`; }).join('');
 document.getElementById('triEditBody').innerHTML=`
     <div class="ap-sect"><h4>Vitals</h4><div class="ap-grid c2">${vitalFields}</div></div>
     <div class="ap-sect"><h4>Assessment</h4><div class="ap-grid c2">${assessFields}</div></div>
@@ -10256,7 +10261,7 @@ document.getElementById('triEditBody').innerHTML=`
 document.querySelectorAll('#triEditBody [data-vk]').forEach(el=>{ const c=TRIAGE_VITALS.find(x=>x.key===el.dataset.vk);
 if(c&&c.fmt){ const run=()=>{ el.value=c.fmt(el.value); }; el.addEventListener('blur',run); el.addEventListener('keydown',e=>{ if(e.key==='Enter') run(); }); } });
 document.querySelectorAll('#triEditBody [data-ak]').forEach(el=>{ const c=TRIAGE_ASSESS.find(x=>x.key===el.dataset.ak);
-if(c&&c.fmt){ const run=()=>{ el.value=c.fmt(el.value); }; el.addEventListener('blur',run); el.addEventListener('keydown',e=>{ if(e.key==='Enter') run(); }); } });
+if(c&&c.fmt&&el.tagName!=='SELECT'){ const run=()=>{ el.value=c.fmt(el.value); }; el.addEventListener('blur',run); el.addEventListener('keydown',e=>{ if(e.key==='Enter') run(); }); } });
 document.getElementById('triEditScrim').classList.add('open');
 document.getElementById('triEditModal').classList.add('open');
 }
@@ -10272,7 +10277,7 @@ const body=document.getElementById('triEditBody');
 const vitals={}; body.querySelectorAll('[data-vk]').forEach(el=>{ const c=TRIAGE_VITALS.find(x=>x.key===el.dataset.vk); const val=el.value.trim();
 if(val!==''){ vitals[el.dataset.vk]=(c&&c.fmt)?c.fmt(val):val; } });
 const assess={}; body.querySelectorAll('[data-ak]').forEach(el=>{ const c=TRIAGE_ASSESS.find(x=>x.key===el.dataset.ak); const val=el.value.trim();
-if(val!==''){ assess[el.dataset.ak]=(c&&c.fmt)?c.fmt(val):val; } });
+if(val!==''){ assess[el.dataset.ak]=(c&&c.fmt&&el.tagName!=='SELECT')?c.fmt(val):val; } });
 t.vitals=vitals; t.assess=assess;
 t.chief=document.getElementById('triEditChief').value.split(',').map(s=>s.trim()).filter(Boolean);
 t.history=document.getElementById('triEditHistory').value.trim();
@@ -10986,6 +10991,10 @@ if(!s || !s.trim()) return s;
 return s.trim().replace(/\s+/g,' ').toLowerCase()
 .replace(/(^|[\s'’.-])([a-z])/g, (m,p,c)=>p+c.toUpperCase());
 }
+/* Phone: digits only, at most 10 (area code + number), shaped as you type — (401) 533-7580 (n91) */
+function fmtPhoneLive(s){ const d=String(s||'').replace(/\D/g,'').replace(/^1(?=\d{10})/,'').slice(0,10);
+if(d.length<4) return d; if(d.length<7) return '('+d.slice(0,3)+') '+d.slice(3); return '('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6); }
+document.addEventListener('input',function(e){ const el=e.target; if(!el||el.id!=='apPhone') return; const v=fmtPhoneLive(el.value); if(el.value!==v) el.value=v; },true);
 function fmtPhone(s){
 if(!s) return s;
 const d=s.replace(/\D/g,'');
@@ -16319,7 +16328,7 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
   if(typeof moveStatus==='function'){ var _ms=moveStatus;
     window.moveStatus=moveStatus=function(p,newStatus){ var was=p&&p.status, r=_ms.apply(this,arguments);
       try{ if(p&&newStatus==='Diagnostics'&&was!=='Diagnostics'&&p.status==='Diagnostics'&&active(p)){
-        if(inRoom(p)&&typeof moveRoom==='function') moveRoom(p,'Treatment');   /* the move to Treatment makes the sheet */
+        if(p.room!=='Treatment'&&typeof moveRoom==='function') moveRoom(p,'Treatment');   /* a sheet means Treatment (n91: from the Lobby too); the move makes the sheet */
         else if(!p._demo&&window.fvAdmitSheet&&fvAdmitSheet.ensure) fvAdmitSheet.ensure(p,'OP'); } }catch(e){ console.warn('[flow diagnostics]',e); }
       return r; }; }
 
@@ -16524,6 +16533,8 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
       var re0=roundsEst(p); if(re0) doc.estimate={low:re0.low,high:re0.high,current:re0.current||0,deposit:re0.deposit,approved_by:'Client — in person',approved_at:null,initials:'',plan:'',updated_at:now.toISOString(),updated_by:who.initials,updated_by_name:who.name,source:'rounds'};
       t.set(ref,doc); return 'created';
     }); }).then(function(res){ if(!opts.quiet) announce(p,id,res,board);
+      /* n91: a new outpatient sheet puts the patient in the Treatment room (frees the exam room) */
+      try{ if(res==='created'&&outB==='OP'&&p.room!=='Treatment'&&!p._demo&&(typeof isActive!=='function'||isActive(p))&&typeof moveRoom==='function') moveRoom(p,'Treatment'); }catch(e){ console.warn('[sheet → Treatment room]',e); }
       try{ if(window.fvSheetSeen&&res&&res!=='error'&&res!=='closed') fvSheetSeen(p,res,outB); }catch(e){}   /* the visit remembers its sheet (Admit on OP cards) */
       return res; })
       .catch(function(e){ if(!opts.quiet) fail(p,e); return 'error'; });
