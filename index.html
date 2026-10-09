@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261009-0603-a87c18c6">
+<meta name="flow-build" content="20261009-1429-54b27fe2">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -6744,6 +6744,7 @@ const SB_LOGIN_EMAIL ='au733@vca.com';
 try{ if(window.firebase && !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); }catch(e){}
 const DB   = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
 /* Offline: keep a local copy of the board so Flow opens and keeps working without a connection. */
+try{ if(DB && DB.settings) DB.settings({experimentalAutoDetectLongPolling:true, merge:true}); }catch(e){}   /* n92: Safari and SSL-inspection proxies stall Firestore's stream; long-polling keeps it live */
 try{ if(DB && DB.enablePersistence) DB.enablePersistence({synchronizeTabs:true}).catch(function(){}); }catch(e){}
 const AUTH = (window.firebase && firebase.auth)      ? firebase.auth()      : null;
 const SB   = DB;
@@ -6875,7 +6876,7 @@ timeline:(r.timeline||[]).map(function(e){ return {label:e.label, at:e.at?new Da
 const Backend = {
 mode:'staff', channel:null, conn:'connecting', _poll:null, _lastRows:null,
 setConn:function(state){
-Backend.conn = state;
+if(Backend.conn!==state) Backend._connSince=Date.now(); Backend.conn = state;
 const map = { live:['Live','var(--s-admitted)'], connecting:['Connecting…','var(--s-admitted)'],
 reconnecting:['Reconnecting…','var(--amber)'], offline:['Offline','#8A8FA0'], error:['Sync error','var(--priority-p1)'] };
 const cfg = map[state] || map.live;
@@ -6932,17 +6933,22 @@ await Promise.all([ Backend.refetch(), Backend.loadShifts(), Backend.loadAlert()
 try{ FlowIntakeStore._attach(DB); }catch(e){}
 try{ fxLobbySync(); }catch(e){}
 
+Backend._subVisits=function(){   /* n92: one place that (re)starts the live visits feed */
 if(Backend.unsubVisits){ try{ Backend.unsubVisits(); }catch(e){} }
-Backend.unsubVisits = fvVisitsListen(function(docs){
+Backend.unsubVisits = fvVisitsListen(function(docs,meta){
+if(fvKeepBoard(docs,meta)) return;   /* an empty answer from the local cache never wipes a board that has patients */
+Backend._liveAt=Date.now(); Backend._retry=0;
 _persistLock = true;
 PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
 Backend._lastRows = fvRowsCopy(PATIENTS);
 Backend._mergeResus();
 _persistLock = false;
-Backend.setConn('live');
+Backend.setConn(meta&&meta.fromCache?'reconnecting':'live');
 try{ if(typeof scheduleRender==='function'){ scheduleRender(function(){ try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} }); } else { if(typeof renderAll==='function') renderAll();
 try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){} } }catch(e){}
-}, function(){ Backend.setConn('reconnecting'); });
+}, function(err){ console.warn('[visits] live feed stopped —',(err&&err.message)||err); Backend.setConn('reconnecting'); fvResubscribeSoon(); });
+};
+Backend._subVisits();
 
 if(Backend.unsubPub){ try{ Backend.unsubPub(); }catch(e){} }
 Backend.unsubPub = DB.collection('pub').where('tenant_id','==',TENANT_ID)
@@ -7000,8 +7006,9 @@ try{ PATIENTS.forEach(function(p){ fxResusFromPub(p, Backend._pubResus[p.publicT
 refetch: async function(){
 _persistLock = true;
 try{
-const docs = await fvVisitsGet();
-PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); });
+const docs = await fvVisitsGetServer();   /* n92: never rebuild the board from the local cache */
+PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
+Backend._liveAt=Date.now();
 
 const pub = await DB.collection('pub').where('tenant_id','==',TENANT_ID).get();
 Backend._pubResus = {};
@@ -7009,7 +7016,7 @@ pub.docs.forEach(function(d){ const v=d.data(); if(v.resus_pref) Backend._pubRes
 Backend._lastRows = fvRowsCopy(PATIENTS);
 Backend._mergeResus();
 if(Backend.conn!=='live') Backend.setConn('live');
-}catch(e){ Backend.setConn('error'); }
+}catch(e){ console.warn('[visits] refresh failed — keeping the board on screen',(e&&e.message)||e); Backend.setConn('reconnecting'); fvResubscribeSoon(); }
 try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
 _persistLock = false;
 try{ if(activePatient){ const p=PATIENTS.find(function(x){return x.id===activePatient;}); if(p && typeof fillDrawer==='function') fillDrawer(p); } }catch(e){}
@@ -7066,6 +7073,28 @@ function fvVisitsListen(onDocs,onErr,opts){ opts=opts||{};
   return function(){ dead=true; if(t) clearTimeout(t); subs.forEach(function(u){ try{ u(); }catch(e){} }); if(full) try{ full(); }catch(e){} }; }
 function fvVisitsGet(){ return Promise.all(fvVisitQueries().map(function(q){ return q.get(); })).then(function(S){ Backend._visitsMode='recent'; return fvMerge(S.map(function(s){ return s.docs; })); })
   .catch(function(err){ console.warn('[visits] loading the full list instead —',(err&&err.message)||err); Backend._visitsMode='all'; return fvVisitsAll().get().then(function(s){ return s.docs; }); }); }
+/* n92 — live connection guard (Safari / sleeping iPads / flaky Wi-Fi).
+   The board is only ever replaced by an answer from the server. Cached answers that would empty it are ignored; a feed that errors
+   restarts itself (2 s, 4 s … 30 s); waking the screen or coming back online re-checks with the server; the capsule says when it is not live. */
+function fvVisitsGetServer(){ var o={source:'server'};
+  return Promise.all(fvVisitQueries().map(function(q){ return q.get(o); })).then(function(S){ Backend._visitsMode='recent'; return fvMerge(S.map(function(s){ return s.docs; })); })
+  .catch(function(err){ if(err&&/unavailable|offline|network/i.test((err.code||'')+' '+(err.message||''))) throw err;
+    return fvVisitsAll().get(o).then(function(s){ Backend._visitsMode='all'; return s.docs; }); }); }
+function fvKeepBoard(docs,meta){
+  try{ if(!meta||!meta.fromCache||(docs&&docs.length)) return false;
+    var have=PATIENTS.some(function(p){ return p&&!p._demo; }); if(!have) return false;
+    console.warn('[visits] ignored an empty cached update — keeping the board'); Backend.setConn('reconnecting'); fvResubscribeSoon(); return true; }catch(e){ return false; } }
+var _fvRetryT=null;
+function fvResubscribeSoon(){ if(_fvRetryT) return; var n=Backend._retry=(Backend._retry||0)+1, wait=Math.min(30000,1000*Math.pow(2,n));
+  _fvRetryT=setTimeout(function(){ _fvRetryT=null; if(!navigator.onLine){ fvResubscribeSoon(); return; }
+    try{ if(Backend._subVisits) Backend._subVisits(); Backend.refetch(); }catch(e){} },wait); }
+(function(){ var hidAt=0;
+  function wake(){ try{ if(Backend.mode!=='staff'||!Backend._subVisits) return; if(!AUTH||!AUTH.currentUser) return;
+    Backend._subVisits(); Backend.refetch(); }catch(e){} }
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){ hidAt=Date.now(); return; } if(hidAt&&Date.now()-hidAt>20000) wake(); hidAt=0; });
+  window.addEventListener('pageshow',function(e){ if(e&&e.persisted) wake(); });   /* Safari back/forward cache */
+  setInterval(function(){ try{ if(Backend.mode==='staff'&&Backend.conn!=='live'&&navigator.onLine&&Backend._subVisits&&!_fvRetryT) fvResubscribeSoon(); }catch(e){} },15000);
+})();
 var _fvHist=null;
 function fvVisitHistory(){ if(_fvHist&&Date.now()-_fvHist.at<10*60000) return _fvHist.p;
   var p=fvVisitsAll().get().then(function(s){ return s.docs.map(function(d){ return mapToApp(Object.assign({id:d.id},d.data())); }); }); _fvHist={at:Date.now(),p:p}; p.catch(function(){ _fvHist=null; }); return p; }
@@ -15411,14 +15440,17 @@ var ICON={
   ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>',
   up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>'
 };
-function offline(){ return !state.online || (state.fromCache && state.cacheSince && Date.now()-state.cacheSince>8000); }
+function feedDown(){ try{ return typeof Backend!=='undefined'&&Backend.mode==='staff'&&(Backend.conn==='reconnecting'||Backend.conn==='error')&&Backend._connSince&&Date.now()-Backend._connSince>6000; }catch(e){ return false; } }
+function offline(){ return !state.online || (state.fromCache && state.cacheSince && Date.now()-state.cacheSince>8000) || feedDown(); }
 function waiting(n){ return n===1?'1 change waiting':n+' changes waiting'; }
 function render(){
   var c=capsule(), off=offline(), html='', cls='';
   if(off){
     if(!state.offlineSince) state.offlineSince=Date.now();
     state.wasOffline=true;
-    cls='off'; html=ICON.off+'<span><b>Offline</b> since '+clock(state.offlineSince)+' · '+(state.pending?waiting(state.pending):'Flow keeps working')+'</span>';
+    cls='off'; html=ICON.off+'<span><b>'+(state.online?'Reconnecting':'Offline')+'</b> since '+clock(state.offlineSince)+' · '+(state.pending?waiting(state.pending):(state.online?'showing the last saved board':'Flow keeps working'))+'</span>';
+  } else if(state.pending>0 && state.pendingSince && Date.now()-state.pendingSince>15000){
+    cls='sync'; html=ICON.sync+'<span><b>Not saved yet</b> · '+(state.pending===1?'1 change':state.pending+' changes')+' still saving — keep this screen open</span>';
   } else if(state.pending>0 && state.wasOffline){
     cls='sync'; html=ICON.sync+'<span>Syncing '+(state.pending===1?'1 change':state.pending+' changes')+'</span>';
   } else if(state.wasOffline){
@@ -15446,12 +15478,12 @@ function watch(){
   try{
     if(LOBBY||typeof DB==='undefined'||!DB||typeof TENANT_ID==='undefined') return;
     fvVisitsListen(function(docs,meta){   /* the same queries as the main list: Firestore shares them, nothing is read twice */
-      state.pending=docs.filter(function(d){ return d.metadata.hasPendingWrites; }).length;
+      state.pending=docs.filter(function(d){ return d.metadata.hasPendingWrites; }).length; if(state.pending&&!state.pendingSince) state.pendingSince=Date.now(); if(!state.pending) state.pendingSince=0;
       var fc=!!(meta&&meta.fromCache);
       if(fc&&!state.fromCache) state.cacheSince=Date.now();
       state.fromCache=fc; if(!fc) state.cacheSince=0;
       render();
-    },function(){},{includeMetadataChanges:true});
+    },function(){ setTimeout(watch,5000); },{includeMetadataChanges:true});   /* n92: restart after an error */
   }catch(e){}
 }
 try{ if(typeof AUTH!=='undefined'&&AUTH&&AUTH.onAuthStateChanged){ var started=false; AUTH.onAuthStateChanged(function(u){ if(u&&!started){ started=true; watch(); } }); } }catch(e){}
