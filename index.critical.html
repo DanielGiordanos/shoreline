@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261009-1445-afed8d0a">
+<meta name="flow-build" content="20261009-1609-b0d0af61">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -12546,6 +12546,26 @@ if(fromEl && fromEl!==toEl){ clearTimeout(pvTimer); clearTimeout(pvHide); pvHide
 document.getElementById('patientPreview').addEventListener('mouseenter',()=>clearTimeout(pvHide));
 document.getElementById('patientPreview').addEventListener('mouseleave',()=>{ clearTimeout(pvHide); pvHide=setTimeout(hidePreview,160); });
 window.addEventListener('scroll',()=>{ if(pvShown) hidePreview(); }, true);
+/* n93 — the hover card never gets stuck. Live updates redraw the table under the cursor, and Safari then skips the mouseout,
+   so the card stayed up. Now: it only opens if the pointer is still on that patient when the 0.5 s delay ends, and any pointer
+   move that is not over the card or that patient's row closes it; so does a click, Esc, switching view, or leaving the window. */
+(function(){
+  let px=-1, py=-1, raf=0;
+  function overOwner(){ if(px<0) return false; const el=document.elementFromPoint(px,py); if(!el) return false;
+    if(el.closest('#patientPreview')) return true; const row=el.closest('[data-pid]'); return !!(row&&row.dataset.pid===pvPid&&row.closest('#tableBody')); }
+  function check(){ raf=0; if(pvShown&&!overOwner()){ clearTimeout(pvHide); pvHide=setTimeout(function(){ if(pvShown&&!overOwner()) hidePreview(); },120); } }
+  document.addEventListener('pointermove',e=>{ px=e.clientX; py=e.clientY; if(pvShown&&!raf) raf=requestAnimationFrame(check); },{passive:true,capture:true});
+  const _show=showPreview;
+  showPreview=function(pid,anchor){ if(px>=0){ const el=document.elementFromPoint(px,py), row=el&&el.closest&&el.closest('[data-pid]'); if(!row||row.dataset.pid!==pid) return; }
+    if(currentView!=='list') return; return _show.apply(this,arguments); };
+  function closeNow(){ clearTimeout(pvTimer); if(pvShown) hidePreview(); }
+  document.addEventListener('pointerdown',e=>{ if(!(e.target.closest&&e.target.closest('#patientPreview'))) closeNow(); },true);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeNow(); });
+  window.addEventListener('blur',closeNow);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState!=='visible') closeNow(); });
+  document.documentElement.addEventListener('mouseleave',closeNow);
+  setInterval(function(){ if(pvShown&&(currentView!=='list'||!overOwner())) closeNow(); },1500);
+})();
 
 
 document.getElementById('switcher').addEventListener('click',e=>{const b=e.target.closest('.seg');if(b)switchView(b.dataset.view);});
