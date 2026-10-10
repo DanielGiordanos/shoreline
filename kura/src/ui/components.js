@@ -1,5 +1,5 @@
-import { Icon } from './icons.js?v=af8bf3e0ed';
-export { Icon } from './icons.js?v=af8bf3e0ed';
+import { Icon } from './icons.js?v=3a7528f6ad';
+export { Icon } from './icons.js?v=3a7528f6ad';
 
 let sequence = 0;
 const uid = (prefix = 'pv') => `${prefix}-${++sequence}`;
