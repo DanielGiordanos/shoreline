@@ -6,7 +6,7 @@
 const ROOT = new URL('../../', self.location.href).href;          // …/kura/
 const VERSION = new URL(self.location.href).searchParams.get('v') || '';
 // Published names (GitHub Pages skips files that start with "_", so __init__.py is served as init.py) → names in Python.
-const FILES = [['init.py', '__init__.py'], 'core.py', 'security.py', 'workflows.py', 'connectors.py', 'server.py', 'web.py'].map(f => Array.isArray(f) ? f : [f, f]);
+const FILES = [['init.py', '__init__.py'], 'core.py', 'security.py', 'workflows.py', 'connectors.py', 'planning.py', 'controlled.py', 'kits.py', 'purchasing.py', 'server.py', 'web.py'].map(f => Array.isArray(f) ? f : [f, f]);
 const SQLITE = 'sqlite3-1.0.0-cp312-cp312-pyodide_2024_0_wasm32.whl';
 let py = null, kweb = null, booting = null;
 

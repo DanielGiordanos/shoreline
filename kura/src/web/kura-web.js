@@ -13,6 +13,8 @@
 
 export const SPACE = 'shoreline';
 export const OWNERS = ['daniel.giordano@pravix.app'];
+export const LABEL_READER_URL = 'https://us-central1-shoreline-flow.cloudfunctions.net/kuraReadLabel';
+export const BRIEF_URL = 'https://us-central1-shoreline-flow.cloudfunctions.net/kuraBrief';
 const FIREBASE = { apiKey: 'AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE', authDomain: 'shoreline-flow.firebaseapp.com', projectId: 'shoreline-flow',
   storageBucket: 'shoreline-flow.firebasestorage.app', messagingSenderId: '237404385636', appId: '1:237404385636:web:1ee3ba27f22c946f748a71' };
 const PART = 900_000, CHECKPOINT_EVERY = 100, RETRIES = 6, TS_SOURCE = 'pravix-treatment', TS_HOSPITAL = 'shoreline';
@@ -221,6 +223,12 @@ export function install({ firebase: fbGlobal, workerUrl }) {
   auth.onAuthStateChanged(u => { const was = user && user.uid; user = u; if ((u && u.uid) !== (was || null) && ready) { stopListening(); ready = null; } });
   globalThis.kuraTransport = request;          // api.js calls these instead of a Kura server
   globalThis.kuraDownload = download;
+  globalThis.kuraOnChange = onChange;
+  // "Fill from photos": the label reader Cloud Function (cloud/functions/) checks this same sign-in and owner list
+  const ownerToken = async () => { await authReady; return user && OWNERS.includes(String(user.email || '').toLowerCase()) ? user.getIdToken() : null; };
+  globalThis.kuraLabelReader = { url: LABEL_READER_URL, token: ownerToken };
+  // Morning brief on the phone (cloud/functions/brief.js): same sign-in and owner list
+  globalThis.kuraBrief = { url: BRIEF_URL, token: ownerToken };
 }
 async function ensure() {
   if (!booted) throw offline(status.error || 'Kura’s engine did not load. Reload the page.');
