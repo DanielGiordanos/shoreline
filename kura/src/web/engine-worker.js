@@ -5,7 +5,8 @@
 'use strict';
 const ROOT = new URL('../../', self.location.href).href;          // …/kura/
 const VERSION = new URL(self.location.href).searchParams.get('v') || '';
-const FILES = ['__init__.py', 'core.py', 'security.py', 'workflows.py', 'connectors.py', 'server.py', 'web.py'];
+// Published names (GitHub Pages skips files that start with "_", so __init__.py is served as init.py) → names in Python.
+const FILES = [['init.py', '__init__.py'], 'core.py', 'security.py', 'workflows.py', 'connectors.py', 'server.py', 'web.py'].map(f => Array.isArray(f) ? f : [f, f]);
 const SQLITE = 'sqlite3-1.0.0-cp312-cp312-pyodide_2024_0_wasm32.whl';
 let py = null, kweb = null, booting = null;
 
@@ -14,8 +15,8 @@ async function boot() {
   const pyodide = await self.loadPyodide({ indexURL: ROOT + 'pyodide/', fullStdLib: false });
   await pyodide.loadPackage(ROOT + 'pyodide/' + SQLITE);
   pyodide.FS.mkdirTree('/kura/backend');
-  await Promise.all(FILES.map(async f => {
-    const r = await fetch(ROOT + 'py/backend/' + f + (VERSION ? '?v=' + VERSION : ''), { cache: 'no-cache' });
+  await Promise.all(FILES.map(async ([published, f]) => {
+    const r = await fetch(ROOT + 'py/backend/' + published + (VERSION ? '?v=' + VERSION : ''), { cache: 'no-cache' });
     if (!r.ok) throw new Error('Kura could not load its engine (' + f + ').');
     pyodide.FS.writeFile('/kura/backend/' + f, new Uint8Array(await r.arrayBuffer()));
   }));
