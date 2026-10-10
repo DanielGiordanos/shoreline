@@ -8,21 +8,21 @@
   <title>Kura · Pravix inventory</title>
   <link rel="icon" href="assets/pvx-icon-plogo-light.png">
   <link rel="apple-touch-icon" href="assets/pvx-icon-plogo-light.png">
-  <link rel="stylesheet" href="src/theme/tokens.css?v=f33e5821dd">
-  <link rel="stylesheet" href="src/theme/product.css?v=f33e5821dd">
-  <link rel="stylesheet" href="src/theme/components.css?v=f33e5821dd">
-  <link rel="stylesheet" href="src/app.css?v=f33e5821dd">
+  <link rel="stylesheet" href="src/theme/tokens.css?v=6f411ada51">
+  <link rel="stylesheet" href="src/theme/product.css?v=6f411ada51">
+  <link rel="stylesheet" href="src/theme/components.css?v=6f411ada51">
+  <link rel="stylesheet" href="src/app.css?v=6f411ada51">
   <link rel="preload" href="pyodide/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script type="module">
     // Kura on shoreline.pravix.app: the engine runs on this device; Firebase keeps the shared, ordered record.
-    import { install } from './src/web/kura-web.js?v=f33e5821dd';
+    import { install } from './src/web/kura-web.js?v=6f411ada51';
     try {
       if (!window.firebase) throw new Error('Firebase did not load. Check your connection, then reload.');
-      install({ firebase: window.firebase, workerUrl: new URL('src/web/engine-worker.js?v=f33e5821dd', location.href).href });
-      await import('./src/app.js?v=f33e5821dd');
+      install({ firebase: window.firebase, workerUrl: new URL('src/web/engine-worker.js?v=6f411ada51', location.href).href });
+      await import('./src/app.js?v=6f411ada51');
     } catch (error) { document.querySelector('.boot').textContent = 'Kura could not start. ' + error.message; }
   </script>
 </head>
