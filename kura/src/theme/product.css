@@ -1,8 +1,12 @@
-/* Approved interim Kura identity: text wordmark + inherited Pravix cyan.
-   Replace these accessible color pairs and config.js logo paths when supplied. */
+/* Kura uses the Treatment Sheets palette: cobalt #23439C on white in light mode, Pravix cyan in dark mode
+   (exactly as Treatment Sheets does). */
 :root[data-product="kura"] {
-  --product-accent: #38BDD2;
-  --product-accent-ink: #082A32;
-  --product-accent-text-light: #116778;
+  --product-accent: #23439C;
+  --product-accent-ink: #FFFFFF;
+  --product-accent-text-light: #23439C;
   --product-accent-text-dark: #67D2E2;
+}
+:root[data-product="kura"][data-theme="dark"] {
+  --product-accent: #38BDD2;
+  --product-accent-ink: #03242C;
 }
