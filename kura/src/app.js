@@ -1,6 +1,6 @@
-import { el, Button, Input, Search, Dropdown, Card, StatusBadge, Alert, UserAvatar, PageHeader, Toolbar, Metric, EmptyState, LoadingState, Tabs, Table, ContextMenu, Modal, Drawer, Toast as PravixToast, Sidebar, Icon } from './ui/components.js?v=6f411ada51';
-import { api } from './api.js?v=6f411ada51';
-import { cameraSupport, startScanner, codeCandidates } from './camera.js?v=6f411ada51';
+import { el, Button, Input, Search, Dropdown, Card, StatusBadge, Alert, UserAvatar, PageHeader, Toolbar, Metric, EmptyState, LoadingState, Tabs, Table, ContextMenu, Modal, Drawer, Toast as PravixToast, Sidebar, Icon } from './ui/components.js?v=af8bf3e0ed';
+import { api } from './api.js?v=af8bf3e0ed';
+import { cameraSupport, startScanner, codeCandidates } from './camera.js?v=af8bf3e0ed';
 
 // Application state and presentation are separate from server inventory rules.
 let state = {}, session = {}, offline = false, page = location.hash.slice(1) || 'overview';
