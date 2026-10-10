@@ -12,7 +12,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_CEILING
 
-from . import core
+from . import core, planning, controlled, kits, purchasing
 from .core import DomainError, audit, balances, get_obj, list_obj, move, new_id, now, save_obj
 
 PERMISSIONS = {
@@ -27,6 +27,7 @@ PERMISSIONS = {
     'setting.save': 'settings.manage', 'recommendation.dismiss': 'purchase.manage',
     'alert.resolve': 'inventory.manage',
     'exception.resolve': 'inventory.adjust',
+    **controlled.PERMISSIONS, **kits.PERMISSIONS, **purchasing.PERMISSIONS,
 }
 ORDER_STATUSES = {
     'needs_review': {'approved', 'cancelled'},
@@ -731,7 +732,7 @@ def _bulk(conn, ctx, command, p):
 
 def _setting_save(conn, ctx, p):
     identifier = _s(p.get('id'), 'Setting name', maximum=100)
-    if identifier not in {'notifications', 'features', 'setup', 'procurement', 'counts', 'appearance'}:
+    if identifier not in {'notifications', 'features', 'setup', 'procurement', 'counts', 'appearance', 'planning', 'dea'}:
         raise DomainError('Unknown setting group.')
     data = p.get('data')
     if not isinstance(data, dict) or len(json.dumps(data)) > 50000:
@@ -748,6 +749,25 @@ def _setting_save(conn, ctx, p):
         allowed = {'forecasting', 'transfer_suggestions', 'receiving'}
         if set(data) - allowed or any(value not in {'off', 'pilot', 'on'} for value in data.values()):
             raise DomainError('Feature values must be off, pilot or on for supported features.')
+    if identifier == 'dea':
+        if set(data) - {'registrant', 'dea_number', 'address', 'count_every_hours'}:
+            raise DomainError('DEA settings are registrant, dea_number, address and count_every_hours.')
+        if data.get('dea_number') and not controlled.valid_dea_number(data['dea_number']):
+            raise DomainError('That DEA number does not look right (two letters, seven digits, and the check digit must match).')
+        if data.get('dea_number'):
+            data = {**data, 'dea_number': data['dea_number'].strip().upper()}
+        hours = data.get('count_every_hours', 24)
+        if isinstance(hours, bool) or not isinstance(hours, int) or not 4 <= hours <= 168:
+            raise DomainError('Count every (hours) must be from 4 to 168.')
+    if identifier == 'planning':
+        limits = {'history_days': (14, 90), 'safety_days': (0, 14), 'cover_days': (1, 30)}
+        if set(data) - set(limits) - {'timezone'}:
+            raise DomainError('Planning settings are history_days, safety_days, cover_days and timezone.')
+        for key, (low, high) in limits.items():
+            if key in data and (isinstance(data[key], bool) or not isinstance(data[key], int) or not low <= data[key] <= high):
+                raise DomainError(f'{key.replace("_", " ").capitalize()} must be a whole number from {low} to {high}.')
+        if 'timezone' in data and data['timezone'] not in planning.US_ZONES:
+            raise DomainError('Choose a US time zone.')
     previous = next((s for s in list_obj(conn, _tenant(ctx), 'setting') if s['id'] == identifier), None)
     obj = {'id': identifier, 'data': data}
     if previous:
@@ -1066,12 +1086,17 @@ def _readiness(conn, ctx, state=None):
 
 def snapshot(conn, ctx):
     tenant = _tenant(ctx)
-    kinds = ('item','location','vendor','rule','lot','order','count','mapping','location_mapping','event','exception','setting','override','alert')
+    kinds = ('item','location','vendor','rule','lot','order','count','mapping','location_mapping','event','exception','setting','override','alert',
+             'ccount','kitcheck','invoice','price','price_import')
     state = {kind: list_obj(conn, tenant, kind) for kind in kinds}
     state.update(balances=balances(conn, tenant), ledger=_ledger(conn, tenant))
     recs = recommendations(conn, ctx, state)
+    alerts = _alerts(conn, ctx, state, recs)
+    plan = planning.plan(state)
+    ctl_state, kit_state = controlled.snapshot(state), kits.snapshot(state)
     return {**{kind + 's': state[kind] for kind in ('order', 'count', 'mapping', 'location_mapping', 'event', 'exception', 'setting')},
-        'alerts': _alerts(conn, ctx, state, recs), 'recommendations': recs,
+        'alerts': alerts, 'recommendations': recs, 'planning': {**plan, 'brief': planning.brief(state, plan, alerts, recs, kit_state, ctl_state)},
+        'controlled': ctl_state, 'kits': kit_state, 'pricing': purchasing.pricing_snapshot(state), 'invoicing': purchasing.invoices_snapshot(state),
         'insights': insights(conn, ctx, state), 'readiness': _readiness(conn, ctx, state)}
 
 
@@ -1090,6 +1115,9 @@ def handle(conn, ctx, command, payload):
         'recommendation.dismiss': _dismiss, 'alert.resolve': _alert_resolve, 'exception.resolve': _exception_resolve}
     if command in commands:
         return commands[command](conn, ctx, payload)
+    for module in (controlled, kits, purchasing):
+        if command in module.PERMISSIONS:
+            return module.handle(conn, ctx, command, payload)
     if command.startswith('import.'):
         return _import(conn, ctx, command, payload)
     return _bulk(conn, ctx, command, payload)

@@ -19,7 +19,8 @@ from decimal import Decimal, InvalidOperation
 SCALE = 1_000_000
 MAX_MICROS = 9_000_000_000_000_000
 MASTER_KINDS = {'item', 'location', 'vendor', 'category', 'rule', 'mapping', 'location_mapping'}
-KINDS = MASTER_KINDS | {'lot', 'reservation', 'order', 'count', 'event', 'exception', 'alert', 'setting', 'override', 'preview'}
+KINDS = MASTER_KINDS | {'lot', 'reservation', 'order', 'count', 'event', 'exception', 'alert', 'setting', 'override', 'preview',
+                        'ccount', 'kitcheck', 'invoice', 'price', 'price_import'}
 PERMISSIONS = {
     'item.save': 'item.edit', 'item.merge': 'item.edit',
     'location.save': 'location.configure', 'vendor.save': 'vendor.edit',
@@ -220,6 +221,27 @@ def _bool(value, label):
     return value
 
 
+def sku_from_name(name):
+    """'Maropitant 10 mg/mL (test)' -> 'MARO-10'; 'Gauze sponge' -> 'GAUZ-SPO'. Same rule as the web form's preview."""
+    words = re.findall(r'[A-Za-z]+|\d+(?:\.\d+)?', re.sub(r'\([^)]*\)', ' ', name or ''))
+    letters = [w for w in words if w.isalpha()]
+    numbers = [w for w in words if not w.isalpha()]
+    if not letters and not numbers:
+        return 'ITEM'
+    head = (letters[0][:4] if letters else 'ITEM').upper()
+    tail = numbers[0].replace('.', '') if numbers else (letters[1][:3].upper() if len(letters) > 1 else '')
+    return head + ('-' + tail if tail else '')
+
+
+def auto_sku(conn, tenant, name):
+    base = sku_from_name(name)
+    taken = {r[0].lower() for r in conn.execute("SELECT json_extract(data,'$.sku') FROM objects WHERE tenant_id=? AND kind='item' AND json_extract(data,'$.sku')<>''", (tenant,)) if r[0]}
+    sku, n = base, 2
+    while sku.lower() in taken:
+        sku, n = f'{base}-{n}', n + 1
+    return sku
+
+
 def _validate_item(conn, tenant, p, old=None):
     p = dict(p)
     p['name'] = _text(p.get('name'), 'Item name', True, 200)
@@ -259,6 +281,12 @@ def _validate_item(conn, tenant, p, old=None):
     for field, kind in [('vendor_id', 'vendor')]:
         if p.get(field):
             get_obj(conn, tenant, kind, p[field])
+    schedule = p.get('dea_schedule') or None          # DEA controlled-substance schedule (II–V), or not controlled
+    if schedule is not None and schedule not in ('II', 'III', 'IV', 'V'):
+        raise DomainError('DEA schedule must be II, III, IV or V (or empty when not controlled).')
+    p['dea_schedule'] = schedule
+    if schedule:
+        p['restricted'] = True
     alternatives = p.get('alternatives', [])
     if not isinstance(alternatives, list):
         raise DomainError('Alternatives must be a list of item IDs.')
@@ -276,6 +304,8 @@ def _validate_item(conn, tenant, p, old=None):
         row = conn.execute('SELECT item_id FROM barcodes WHERE tenant_id=? AND barcode=?', (tenant, code)).fetchone()
         if row and row[0] != p.get('id'):
             raise DomainError('Barcode is already assigned to another item.', 409, 'duplicate_barcode', {'barcode': code})
+    if not p['sku'] and not old:
+        p['sku'] = auto_sku(conn, tenant, p['name'])       # ask less: a short, unique code from the name
     if p['sku']:
         other = conn.execute("SELECT id FROM objects WHERE tenant_id=? AND kind='item' AND lower(json_extract(data,'$.sku'))=lower(?) AND json_extract(data,'$.sku')<>''", (tenant, p['sku'])).fetchone()
         if other and other[0] != p.get('id'):
@@ -320,7 +350,7 @@ def _save_entity(conn, ctx, kind, payload):
             raise DomainError('Status must be active or inactive.')
         if kind == 'location':
             p['type'] = p.get('type', 'storage')
-            if p['type'] not in ('hospital', 'department', 'storage', 'shelf', 'cart', 'organization', 'region'):
+            if p['type'] not in ('hospital', 'department', 'storage', 'shelf', 'cart', 'kit', 'organization', 'region'):
                 raise DomainError('Unknown location type.')
             parent = p.get('parent_id')
             visited = {p.get('id')} if p.get('id') else set()
@@ -837,6 +867,8 @@ def handle(conn, ctx, command, payload):
         audit(conn, ctx, command, {'item_id': item['id'], 'barcode': barcode})
         return saved
     if command == 'stock.move':
+        from . import controlled                       # DEA record requirements for scheduled items
+        controlled.check_move(conn, ctx, payload)
         return move(conn, ctx, payload)
     if command == 'stock.reverse':
         return reverse(conn, ctx, payload)
