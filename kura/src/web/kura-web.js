@@ -86,6 +86,7 @@ async function load() {
   let head;
   try { head = await root().get(); }
   catch (e) {                                                  // no connection: open this device's last copy, read only
+    if (e && e.code === 'permission-denied') throw fail({ message: 'Firebase isn’t letting Kura in yet. Publish the Kura rule (Firebase › firestore.rules.kura-web-pending), then press Try again.', status: 403, code: 'forbidden' });
     if (!cached) throw offline('Kura needs a connection the first time it opens on this device.');
     await openFrom(await gunzip(cached.z)); status.offline = true; return;
   }
