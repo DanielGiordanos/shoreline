@@ -179,7 +179,7 @@ async function discardQueued(id) {
 }
 async function clearOfflineData() {
   const owner=identity();
-  if(owner) await transaction('snapshots','readwrite',s=>s.delete(owner));
+  if(owner) await transaction('snapshots','readwrite',s=>{s.delete(owner);return s.delete('last');});
   sessionStorage.removeItem(remembered); current=null;
 }
 export const api = {
@@ -200,9 +200,12 @@ export const api = {
   },
   async state() {
     const state=await request('state');
-    if(identity()) await transaction('snapshots','readwrite',s=>s.put({id:identity(),saved_at:new Date().toISOString(),state}));
+    if(identity()) { const saved_at=new Date().toISOString();
+      await transaction('snapshots','readwrite',s=>{s.put({id:identity(),saved_at,state});return s.put({id:'last',owner:identity(),user:current.user,saved_at,state});}); }
     return state;
   },
+  /* The last screen this browser showed, to draw instantly while the engine starts (removed on sign-out). */
+  async quickStart() { try { return (await transaction('snapshots','readonly',s=>s.get('last')))||null; } catch { return null; } },
   async loadOfflineState() {
     if(!identity()) return null;
     const cached=await transaction('snapshots','readonly',s=>s.get(identity()));
