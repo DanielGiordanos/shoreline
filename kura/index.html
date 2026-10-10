@@ -2,27 +2,32 @@
 <html lang="en" data-product="kura" data-theme="light">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0D1730">
   <meta name="robots" content="noindex">
   <title>Kura · Pravix inventory</title>
   <link rel="icon" href="assets/pvx-icon-plogo-light.png">
-  <link rel="apple-touch-icon" href="assets/pvx-icon-plogo-light.png">
-  <link rel="stylesheet" href="src/theme/tokens.css?v=af8bf3e0ed">
-  <link rel="stylesheet" href="src/theme/product.css?v=af8bf3e0ed">
-  <link rel="stylesheet" href="src/theme/components.css?v=af8bf3e0ed">
-  <link rel="stylesheet" href="src/app.css?v=af8bf3e0ed">
+  <link rel="apple-touch-icon" href="icons/kura-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kura">
+  <link rel="stylesheet" href="src/theme/tokens.css?v=3a7528f6ad">
+  <link rel="stylesheet" href="src/theme/product.css?v=3a7528f6ad">
+  <link rel="stylesheet" href="src/theme/components.css?v=3a7528f6ad">
+  <link rel="stylesheet" href="src/app.css?v=3a7528f6ad">
+  <link rel="stylesheet" href="src/overview.css?v=3a7528f6ad">
+  <link rel="stylesheet" href="src/look.css?v=3a7528f6ad">
   <link rel="preload" href="pyodide/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script type="module">
     // Kura on shoreline.pravix.app: the engine runs on this device; Firebase keeps the shared, ordered record.
-    import { install } from './src/web/kura-web.js?v=af8bf3e0ed';
+    import { install } from './src/web/kura-web.js?v=3a7528f6ad';
     try {
       if (!window.firebase) throw new Error('Firebase did not load. Check your connection, then reload.');
-      install({ firebase: window.firebase, workerUrl: new URL('src/web/engine-worker.js?v=af8bf3e0ed', location.href).href });
-      await import('./src/app.js?v=af8bf3e0ed');
+      install({ firebase: window.firebase, workerUrl: new URL('src/web/engine-worker.js?v=3a7528f6ad', location.href).href });
+      await import('./src/app.js?v=3a7528f6ad');
     } catch (error) { document.querySelector('.boot').textContent = 'Kura could not start. ' + error.message; }
   </script>
 </head>
