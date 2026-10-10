@@ -1,0 +1,8 @@
+/* Approved interim Kura identity: text wordmark + inherited Pravix cyan.
+   Replace these accessible color pairs and config.js logo paths when supplied. */
+:root[data-product="kura"] {
+  --product-accent: #38BDD2;
+  --product-accent-ink: #082A32;
+  --product-accent-text-light: #116778;
+  --product-accent-text-dark: #67D2E2;
+}

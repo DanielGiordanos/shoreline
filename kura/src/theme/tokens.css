@@ -1,0 +1,83 @@
+/* Pravix Design System 0.1 — the only source of visual values.
+   Theme primitives and aliases share the html scope; no inherited light aliases. */
+:root {
+  --pv-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --pv-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --pv-weight-regular: 400; --pv-weight-medium: 500; --pv-weight-semibold: 600; --pv-weight-bold: 700; --pv-weight-heavy: 800;
+  --pv-type-display: 2.125rem; --pv-type-title: 1.625rem; --pv-type-section: 1.25rem;
+  --pv-type-panel: .9375rem; --pv-type-body: .875rem; --pv-type-small: .8125rem;
+  --pv-type-label: .75rem; --pv-type-micro: .6875rem; --pv-type-number: 2rem;
+  --pv-leading-tight: 1.15; --pv-leading-snug: 1.3; --pv-leading-body: 1.5;
+  --pv-tracking-title: -.03em; --pv-tracking-body: -.01em; --pv-tracking-label: .08em;
+  --pv-space-0: 0; --pv-space-1: .25rem; --pv-space-2: .5rem; --pv-space-3: .75rem;
+  --pv-space-4: 1rem; --pv-space-5: 1.25rem; --pv-space-6: 1.5rem;
+  --pv-space-7: 1.75rem; --pv-space-8: 2rem; --pv-space-10: 2.5rem; --pv-space-12: 3rem; --pv-space-16: 4rem;
+  --spacing-xs: var(--pv-space-1); --spacing-sm: var(--pv-space-2); --spacing-md: var(--pv-space-4);
+  --spacing-lg: var(--pv-space-6); --spacing-xl: var(--pv-space-8);
+  --radius-small: .5rem; --radius-medium: .875rem; --radius-large: 1.5rem; --radius-pill: 999px; --radius-circle: 50%;
+  --pv-stroke: 1px; --pv-focus-width: 3px; --pv-focus-offset: 3px;
+  --pv-control-height: 2.75rem; --pv-control-small: 2.25rem; --pv-icon-size: 1.125rem; --pv-avatar-size: 2.25rem;
+  --pv-content-width: 87.5rem; --pv-content-inset: 2rem; --pv-header-height: 4.75rem;
+  --pv-subnav-height: 4rem; --pv-drawer-width: 27.5rem; --pv-modal-width: 32rem;
+  --pv-sidebar-width: 14rem; --pv-menu-width: 13rem; --pv-search-width: 20rem;
+  --pv-text-measure: 70ch; --pv-table-min: 58rem; --pv-empty-height: 13rem; --pv-row-height: 4.25rem;
+  --pv-duration-fast: 140ms; --pv-duration-normal: 220ms; --pv-duration-slow: 320ms;
+  --pv-ease: cubic-bezier(.2,.8,.2,1); --pv-press-scale: .985;
+  --pv-z-header: 10; --pv-z-menu: 30; --pv-z-toast: 100;
+  --pv-family-navy: #0C2952; --pv-family-cyan: #38BDD2; --pv-family-purple: #8B4DB5; --pv-family-coral: #E8644A;
+  --pravix-background: #FFFFFF; --pravix-surface: #F5F5F7; --pravix-surface-secondary: #EEEEF0; --pravix-overlay: #FFFFFF;
+  --pravix-header: #FFFFFF; --pravix-subnav: #FFFFFF; --pravix-footer: #0A1222;
+  --pravix-text-primary: #181A1F; --pravix-text-secondary: #555961; --pravix-text-muted: #646A73;
+  --pravix-border: #DADDE1; --pravix-border-subtle: #E4E5E8; --pravix-control-border: #8D949E;
+  --pravix-focus: #0D7487; --pravix-selection: #C9EDF3;
+  --pravix-hover: #E9EBEF; --pravix-selected: #E8EAED; --pravix-selected-ink: #181A1F;
+  --pravix-success: #146944; --pravix-success-bg: #E5F4EC;
+  --pravix-warning: #775700; --pravix-warning-bg: #FBF0CC;
+  --pravix-critical: #B32B24; --pravix-critical-bg: #FCE9E7;
+  --pravix-info: #116778; --pravix-info-bg: #E1F2F5;
+  --pravix-neutral: #555961; --pravix-neutral-bg: #E8EAED;
+  --pravix-overlay-backdrop: rgba(12,20,38,.36);
+  --pravix-shadow: 0 1px 2px rgba(0,0,0,.02), 0 8px 24px rgba(0,0,0,.025);
+  --pravix-shadow-raised: 0 4px 8px rgba(0,0,0,.04), 0 12px 32px rgba(0,0,0,.08);
+  --pravix-shadow-overlay: 0 16px 56px rgba(0,0,0,.18);
+  --pravix-toast-bg: #172440; --pravix-toast-ink: #FFFFFF;
+  --pravix-footer-ink: #A7C2D8; --pravix-scroll: #9FA6AF;
+  --pravix-skeleton: #DEE1E6;
+  --pravix-accent: var(--product-accent, var(--pv-family-cyan));
+  --pravix-accent-ink: var(--product-accent-ink, #082A32);
+  --pravix-accent-text: var(--product-accent-text-light, #116778);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --pravix-background: #080E1A; --pravix-surface: #131E34; --pravix-surface-secondary: #192540; --pravix-overlay: #172440;
+  --pravix-header: #0D1730; --pravix-subnav: #101A32;
+  --pravix-text-primary: #D8E8F4; --pravix-text-secondary: #A7C2D8; --pravix-text-muted: #93ABC3;
+  --pravix-border: #2A3C53; --pravix-border-subtle: #21324A; --pravix-control-border: #6C829D;
+  --pravix-focus: #4DC8E0; --pravix-selection: #254D63;
+  --pravix-hover: #20304B; --pravix-selected: #19394C; --pravix-selected-ink: #67D2E2;
+  --pravix-success: #73D5A2; --pravix-success-bg: #143B31;
+  --pravix-warning: #EBC95D; --pravix-warning-bg: #3E3521;
+  --pravix-critical: #FF9B96; --pravix-critical-bg: #45292D;
+  --pravix-info: #67D2E2; --pravix-info-bg: #173444;
+  --pravix-neutral: #B5C6D8; --pravix-neutral-bg: #29374E;
+  --pravix-overlay-backdrop: rgba(0,5,14,.62);
+  --pravix-shadow: 0 2px 4px rgba(0,0,0,.2), 0 8px 24px rgba(0,0,0,.15);
+  --pravix-shadow-raised: 0 4px 8px rgba(0,0,0,.25), 0 12px 32px rgba(0,0,0,.24);
+  --pravix-shadow-overlay: 0 16px 56px rgba(0,0,0,.5);
+  --pravix-skeleton: #2B3C56; --pravix-scroll: #516982;
+  --pravix-accent-text: var(--product-accent-text-dark, #67D2E2);
+  color-scheme: dark;
+}
+/* Brand and semantic status are independent. Tones always include readable text. */
+[data-tone="success"] { --tone-ink: var(--pravix-success); --tone-bg: var(--pravix-success-bg); }
+[data-tone="warning"] { --tone-ink: var(--pravix-warning); --tone-bg: var(--pravix-warning-bg); }
+[data-tone="critical"] { --tone-ink: var(--pravix-critical); --tone-bg: var(--pravix-critical-bg); }
+[data-tone="info"] { --tone-ink: var(--pravix-info); --tone-bg: var(--pravix-info-bg); }
+[data-tone="neutral"] { --tone-ink: var(--pravix-neutral); --tone-bg: var(--pravix-neutral-bg); }
+/* Shared thresholds are grouped here; component and app layout breakpoints
+   live at the ends of components.css and app.css. */
+@media (max-width: 48rem) { :root { --pv-content-inset: 1rem; --pv-row-height: 4.75rem; } }
+@media (pointer: coarse) { :root { --pv-control-small: 2.75rem; } }
+@media (prefers-reduced-motion: reduce) {
+  :root { --pv-duration-fast: 0ms; --pv-duration-normal: 0ms; --pv-duration-slow: 0ms; --pv-press-scale: 1; }
+}
