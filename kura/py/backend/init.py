@@ -1,0 +1,1 @@
+"""Kura standalone inventory service."""
