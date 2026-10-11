@@ -917,7 +917,9 @@ def insights(conn, ctx, state=None):
     cut = current - timedelta(days=30)
     previous_cut = current - timedelta(days=60)
     usage, prior_usage, waste, cost, waste_cost = defaultdict(Decimal), defaultdict(Decimal), defaultdict(Decimal), defaultdict(Decimal), defaultdict(Decimal)
-    department_cost = defaultdict(Decimal)
+    department_cost, department_waste = defaultdict(Decimal), defaultdict(Decimal)
+    item_where = defaultdict(lambda: defaultdict(lambda: [Decimal(0), Decimal(0)]))     # item -> area -> [used, cost], last 30 days
+    weeks = [{'use': Decimal(0), 'waste': Decimal(0), 'areas': defaultdict(Decimal)} for _ in range(8)]   # 8 weeks, oldest first
     first_seen, days = {}, defaultdict(set)
     reversed_ids = {e.get('reversal_of') for e in entries if e.get('reversal_of')}
     for entry in entries:
@@ -938,8 +940,17 @@ def insights(conn, ctx, state=None):
             unit_cost = Decimal(str(metadata['unit_cost'])) / factor
         else:
             unit_cost = Decimal(str(item.get('unit_cost', 0)))
+        age = (current - timestamp).days // 7
+        week = weeks[7 - age] if 0 <= age < 8 else None
+        if week is not None and entry['kind'] in {'use', 'emergency'}:
+            week['use'] -= quantity * unit_cost
+            week['areas'][entry['location_id']] -= quantity * unit_cost
+        if week is not None and entry['kind'] in {'waste', 'dispose'}:
+            week['waste'] -= quantity * unit_cost
         if entry['kind'] in {'use', 'emergency'}:
             if timestamp >= cut:
+                item_where[item_id][entry['location_id']][0] -= quantity
+                item_where[item_id][entry['location_id']][1] -= quantity * unit_cost
                 usage[item_id] -= quantity
                 cost[item_id] -= quantity * unit_cost
                 department_cost[entry['location_id']] -= quantity * unit_cost
@@ -949,10 +960,12 @@ def insights(conn, ctx, state=None):
         if entry['kind'] in {'waste', 'dispose'} and timestamp >= cut:
             waste[item_id] -= quantity
             waste_cost[item_id] -= quantity * unit_cost
-    availability, on_hand = defaultdict(Decimal), defaultdict(Decimal)
+            department_waste[entry['location_id']] -= quantity * unit_cost
+    availability, on_hand, area_value = defaultdict(Decimal), defaultdict(Decimal), defaultdict(Decimal)
     for balance in stocks:
         availability[balance['item_id']] += Decimal(str(balance['available']))
         on_hand[balance['item_id']] += Decimal(str(balance['on_hand']))
+        area_value[balance['location_id']] += Decimal(str(balance['on_hand'])) * Decimal(str(items.get(balance['item_id'], {}).get('unit_cost', 0)))
     details = []
     forecasting = _feature(conn, ctx, 'forecasting', state)
     for item_id, item in items.items():
@@ -968,7 +981,8 @@ def insights(conn, ctx, state=None):
             'estimated_days_supply': round(float(depletion), 1) if depletion is not None else None,
             'days_supply_range': [round(float(depletion * Decimal('.75')), 1), round(float(depletion * Decimal('1.25')), 1)] if depletion is not None else None,
             'confidence': 'disabled' if forecasting == 'off' else ('descriptive_estimate' if adequate else 'insufficient_data'), 'observed_days': round(observed, 1),
-            'usage_change_percent': change,
+            'usage_change_percent': change, 'on_hand': _num(on_hand[item_id]), 'available': _num(availability[item_id]),
+            'by_location': [{'location_id': k, 'used': _num(v[0]), 'cost': _num(v[1])} for k, v in sorted(item_where[item_id].items(), key=lambda kv: -kv[1][1])[:3]],
             'explanation': 'Forecasting is disabled by an administrator. Recorded usage remains available.' if forecasting == 'off' else ('Uses recorded consumption over up to 30 days; ±25% is a scenario range, not a statistical confidence interval. Unrecorded demand is unknown.' if adequate else 'At least seven days of inventory history and consumption on three distinct days are required. No depletion date is asserted.')})
     counts = [c for c in _data(conn, tenant, 'count', state) if c.get('status') == 'reconciled']
     counted = sum(len(c['lines']) for c in counts)
@@ -979,7 +993,11 @@ def insights(conn, ctx, state=None):
         'cost_basis': 'Recorded movement cost when available, otherwise current acquisition cost estimate; never client charges.',
         'inventory_accuracy': round(100 * matching / counted, 1) if counted else None,
         'counted_lines': counted, 'items': details,
-        'department_consumption': [{'location_id': key, 'cost': _num(value)} for key, value in department_cost.items()],
+        'department_consumption': [{'location_id': key, 'cost': _num(department_cost[key]), 'waste_cost': _num(department_waste[key])} for key in sorted(set(department_cost) | set(department_waste))],
+        'location_value': [{'location_id': key, 'value': _num(value)} for key, value in sorted(area_value.items(), key=lambda kv: -kv[1]) if value > 0],
+        'weekly': [{'start': (current - timedelta(days=7 * (8 - i))).date().isoformat(), 'end': (current - timedelta(days=7 * (7 - i))).date().isoformat(),
+                    'use_cost': _num(w['use']), 'waste_cost': _num(w['waste']),
+                    'top_locations': [k for k, v in sorted(w['areas'].items(), key=lambda kv: -kv[1]) if v > 0][:3]} for i, w in enumerate(weeks)],
         'automation': 'recommendation_only', 'forecasting': forecasting, 'as_of': now()}
 
 
