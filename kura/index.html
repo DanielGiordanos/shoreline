@@ -11,23 +11,23 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Kura">
-  <link rel="stylesheet" href="src/theme/tokens.css?v=3a7528f6ad">
-  <link rel="stylesheet" href="src/theme/product.css?v=3a7528f6ad">
-  <link rel="stylesheet" href="src/theme/components.css?v=3a7528f6ad">
-  <link rel="stylesheet" href="src/app.css?v=3a7528f6ad">
-  <link rel="stylesheet" href="src/overview.css?v=3a7528f6ad">
-  <link rel="stylesheet" href="src/look.css?v=3a7528f6ad">
+  <link rel="stylesheet" href="src/theme/tokens.css?v=a31c3934f6">
+  <link rel="stylesheet" href="src/theme/product.css?v=a31c3934f6">
+  <link rel="stylesheet" href="src/theme/components.css?v=a31c3934f6">
+  <link rel="stylesheet" href="src/app.css?v=a31c3934f6">
+  <link rel="stylesheet" href="src/overview.css?v=a31c3934f6">
+  <link rel="stylesheet" href="src/look.css?v=a31c3934f6">
   <link rel="preload" href="pyodide/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script type="module">
     // Kura on shoreline.pravix.app: the engine runs on this device; Firebase keeps the shared, ordered record.
-    import { install } from './src/web/kura-web.js?v=3a7528f6ad';
+    import { install } from './src/web/kura-web.js?v=a31c3934f6';
     try {
       if (!window.firebase) throw new Error('Firebase did not load. Check your connection, then reload.');
-      install({ firebase: window.firebase, workerUrl: new URL('src/web/engine-worker.js?v=3a7528f6ad', location.href).href });
-      await import('./src/app.js?v=3a7528f6ad');
+      install({ firebase: window.firebase, workerUrl: new URL('src/web/engine-worker.js?v=a31c3934f6', location.href).href });
+      await import('./src/app.js?v=a31c3934f6');
     } catch (error) { document.querySelector('.boot').textContent = 'Kura could not start. ' + error.message; }
   </script>
 </head>
