@@ -254,6 +254,10 @@ async function request(path, payload) {
   }
   if (name === 'logout') { stopListening(); await auth.signOut(); user = null; ready = null; return { signed_out: true }; }
   if (name === 'session') {
+    // Signed out (or not an allowed account): answer as soon as Firebase knows, without waiting for the engine, so the
+    // sign-in screen shows at once on a first visit while the engine keeps loading in the background.
+    await authReady;
+    if (!user || !OWNERS.includes(String(user.email || '').toLowerCase())) return { setup_required: false, user: null, permissions: [], environment: 'production', web: true, denied: user ? user.email : null };
     const ok = await ensure();
     if (!ok) return { setup_required: false, user: null, permissions: [], environment: 'production', web: true, denied: user ? user.email : null };
     const out = await read('session', { email: user.email });
