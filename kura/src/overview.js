@@ -3,11 +3,11 @@
    engine's insights (days of coverage are the engine's estimate, shown only when it has enough history). Nothing is
    invented: an area with no stock says so, and a number Kura can't know is shown as "—".
    Areas are the locations directly under the hospital; anything below them (carts, fridges, shelves) rolls up. */
-import { el, Button, EmptyState, Icon } from './ui/components.js?v=a31c3934f6';
-import * as I from './iso.js?v=a31c3934f6';
-import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=a31c3934f6';
-import { cachedIcon, drawIcons } from './area-icons.js?v=a31c3934f6';
-import { recommendationText } from './words.js?v=a31c3934f6';
+import { el, Button, EmptyState, Icon } from './ui/components.js?v=9e22706f40';
+import * as I from './iso.js?v=9e22706f40';
+import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=9e22706f40';
+import { cachedIcon, drawIcons } from './area-icons.js?v=9e22706f40';
+import { recommendationText, plural } from './words.js?v=9e22706f40';
 export { releaseAreaScene };
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -577,7 +577,7 @@ export function overviewDashboard(k) {
     k.makeDialog({ title: z.area.name, description: z.total ? `${z.well} of ${z.total} items at par · ${money(z.value)} on hand` : 'Nothing is stocked here yet.', children: [
       el('div', { className: 'stack' }, [
         zr.length ? el('div', { className: 'ov-drawer-list' }, zr.map(r => el('button', { type: 'button', className: 'ov-drawer-row', onClick: () => itemDrawer(r.item) }, [
-          el('span', {}, [el('strong', {}, r.item.name), el('small', {}, `${fmt(r.available)} ${r.item.base_unit} available${r.hasPar ? ` · reorder at ${fmt(r.rule.reorder_point)}` : ''}${r.expiresIn != null ? ` · ${r.expiresIn <= 0 ? 'a lot has expired' : `a lot expires in ${r.expiresIn} day${r.expiresIn === 1 ? '' : 's'}`}` : ''}`)]), pill(r.state)]))) :
+          el('span', {}, [el('strong', {}, r.item.name), el('small', {}, `${fmt(r.available)} ${plural(r.item.base_unit, r.available)} available${r.hasPar ? ` · reorder at ${fmt(r.rule.reorder_point)}` : ''}${r.expiresIn != null ? ` · ${r.expiresIn <= 0 ? 'a lot has expired' : `a lot expires in ${r.expiresIn} day${r.expiresIn === 1 ? '' : 's'}`}` : ''}`)]), pill(r.state)]))) :
           EmptyState({ title: 'No stock here yet', description: 'Receive stock or record an opening balance for this area.', icon: 'package' }),
         el('div', { className: 'inline' }, [can('stock.move') ? Button({ label: 'Record movement', variant: 'primary', icon: 'plus', onClick: () => record({ location_id: z.area.id }, z.area.name) }) : null, Button({ label: 'Open Locations', onClick: () => navigate('locations') })]),
       ])] }, true);

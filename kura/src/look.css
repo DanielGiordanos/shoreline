@@ -463,3 +463,95 @@ td .kq-u { font-size: .86em; }
 .kura-logout-chevron svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .kura-logout:hover .kura-logout-chevron { transform: translateX(1.25px); color: var(--chevron-hover); }
 @media (prefers-reduced-motion: reduce) { .kura-logout, .kura-logout *, .kura-theme-toggle, .kura-theme-toggle img { transition: none; } .kura-logout:hover *, .kura-logout:active * { transform: none; } }
+
+/* ---------- n108: Flow's components, everywhere in Kura ----------
+   Taken from Flow's live CSS (shoreline.pravix.app): the .seg tabs, .d-cell detail cards with uppercase labels, the drawer,
+   hairline-bordered panels and tables, rounded-rectangle buttons (13px) and Flow's primary gradient. Dark uses Flow's exact values;
+   light keeps Kura's Treatment Sheets canvas and cobalt, with Flow's shapes, hairlines and grey segments. */
+:root[data-product="kura"] {
+  --f-glass: #F6F7FA; --f-panel: #FFFFFF; --f-hair: rgba(30,45,90,.075); --f-border: rgba(30,45,90,.11); --f-label: #6B7387;
+  --f-seg-ink: #6E6E73; --f-seg-hover: rgba(29,29,31,.05); --f-seg-hover-ink: #1D1D1F; --f-seg-on: #EBEBEB; --f-seg-on-ink: #48484C; --f-seg-on-border: transparent;
+  --f-ghost: #FFFFFF; --f-ghost-ink: #1B2033; --f-ghost-hover: #F1F2F6;
+  --f-primary: linear-gradient(150deg, #2F55BE, #23439C); --f-primary-glow: 0 8px 20px rgba(35,67,156,.28);
+  --f-row-hover: rgba(30,45,90,.035); --f-panel-hi: none;
+}
+:root[data-product="kura"][data-theme="dark"] {
+  --f-glass: #131E34; --f-panel: #0E1628; --f-hair: rgba(77,200,224,.10); --f-border: rgba(77,200,224,.16); --f-label: #7A98B8;
+  --f-seg-ink: rgba(255,255,255,.55); --f-seg-hover: rgba(255,255,255,.08); --f-seg-hover-ink: rgba(255,255,255,.9); --f-seg-on: rgba(77,200,224,.15); --f-seg-on-ink: #38BDD2; --f-seg-on-border: rgba(77,200,224,.25);
+  --f-ghost: rgba(150,185,220,.12); --f-ghost-ink: #A7C2D8; --f-ghost-hover: rgba(150,185,220,.18);
+  --f-primary: linear-gradient(150deg, #38BDD2, #2C7FB8); --f-primary-glow: 0 8px 20px rgba(56,189,210,.35);
+  --f-row-hover: rgba(56,189,210,.05); --f-panel-hi: inset 0 1px 0 rgba(77,200,224,.08);
+}
+
+/* tabs and the active page in the sidebar: Flow's .seg */
+[data-product="kura"] .pv-tab-list { gap: 3px; border-bottom: 0; padding-bottom: .25rem; }
+[data-product="kura"] .pv-tab { min-height: 34px; padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; background: transparent; box-shadow: none;
+  font-size: 13px; font-weight: 600; letter-spacing: .01em; color: var(--f-seg-ink); transition: background .2s var(--pv-ease), color .2s var(--pv-ease), border-color .2s var(--pv-ease); }
+[data-product="kura"] .pv-tab:hover { background: var(--f-seg-hover); color: var(--f-seg-hover-ink); }
+[data-product="kura"] .pv-tab[aria-selected="true"] { background: var(--f-seg-on); color: var(--f-seg-on-ink); border-color: var(--f-seg-on-border); box-shadow: none; }
+.kura-nav .pv-sidebar-item { border: 1px solid transparent; border-radius: 8px; }
+.kura-nav .pv-sidebar-item:hover { background: var(--f-seg-hover); }
+.kura-nav .pv-sidebar-item[aria-current="page"] { background: var(--f-seg-on); color: var(--f-seg-on-ink); border-color: var(--f-seg-on-border); box-shadow: none; }
+.kura-nav .pv-sidebar-item[aria-current="page"] svg { color: currentColor; }
+
+/* buttons: Flow's 13px rounded rectangles */
+[data-product="kura"] .pv-button { border-radius: 13px; font-weight: 700; letter-spacing: -.01em; }
+[data-product="kura"] .pv-button--sm { border-radius: 10px; }
+[data-product="kura"] .pv-button--primary { background: var(--f-primary); color: #fff; border-color: transparent; box-shadow: var(--f-primary-glow); }
+[data-product="kura"] .pv-button--primary:hover:not(:disabled) { background: var(--f-primary); box-shadow: var(--f-primary-glow); transform: translateY(-1px); filter: brightness(1.06); }
+[data-product="kura"] .pv-button--secondary { background: var(--f-ghost); color: var(--f-ghost-ink); border: 1px solid var(--f-hair); }
+[data-product="kura"] .pv-button--secondary:hover:not(:disabled), [data-product="kura"][data-theme="dark"] .pv-button--secondary:hover:not(:disabled) { background: var(--f-ghost-hover); }
+[data-product="kura"] .pv-dialog .pv-button--secondary { background: var(--f-glass); }
+[data-product="kura"][data-theme="dark"] .pv-dialog .pv-button--secondary { background: var(--f-ghost); }
+[data-product="kura"] .pv-button--ghost { color: var(--f-ghost-ink); }
+[data-product="kura"] .pv-button--ghost:hover:not(:disabled) { background: var(--f-seg-hover); }
+.kura-more .pv-button { border-radius: 10px; }
+
+/* fields: glass with a hairline, 12px corners (Flow's "All doctors" picker and search) */
+[data-product="kura"] .pv-input, [data-product="kura"] .pv-select { background: var(--f-panel); border: 1px solid var(--f-border); border-radius: 12px; }
+[data-product="kura"] .pv-dialog .pv-input, [data-product="kura"] .pv-dialog .pv-select { background: var(--f-glass); }
+[data-product="kura"] .pv-toolbar .pv-input, [data-product="kura"] .pv-toolbar .pv-select, [data-product="kura"] .pv-search .pv-input { border-radius: 12px; border: 1px solid var(--f-border); background: var(--f-panel); box-shadow: none; }
+[data-product="kura"] .pv-toolbar .pv-button--secondary { background: var(--f-panel); border-color: var(--f-border); }
+[data-product="kura"] .pv-input:focus, [data-product="kura"] .pv-select:focus { border-color: rgba(56,189,210,.55); box-shadow: 0 0 0 3px rgba(56,189,210,.15); outline: none; }
+.kura-search-box { border-radius: 12px; border: 1px solid var(--f-border); }
+
+/* panels, cards and tables: a hairline, 20px corners, Flow's quiet header */
+[data-product="kura"] .pv-card, [data-product="kura"] .pv-table-wrap, [data-product="kura"] .kit-card, [data-product="kura"] .brief-section, [data-product="kura"] .kura-main .kl-list {
+  background: var(--f-panel); border: 1px solid var(--f-hair); border-radius: 20px; box-shadow: var(--f-panel-hi); }
+.ovx-card, .ovx-zone { border: 1px solid var(--f-hair); }                                         /* the Overview keeps its own fills and states, with Flow's hairline */
+[data-product="kura"]:not([data-theme="dark"]) .pv-card, [data-product="kura"]:not([data-theme="dark"]) .pv-table-wrap, [data-product="kura"]:not([data-theme="dark"]) .kit-card { box-shadow: var(--pravix-shadow); }
+[data-product="kura"] .pv-table th, [data-product="kura"] .pv-table thead th { padding: 14px 16px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--f-label); border-bottom: 1px solid var(--f-hair); }
+[data-product="kura"] .pv-table td, [data-product="kura"] .pv-table tbody th[scope="row"] { padding: 13px 16px; border-bottom: 1px solid var(--f-hair); }
+[data-product="kura"] .pv-table tbody tr:hover { background: var(--f-row-hover); }
+[data-product="kura"] .pv-metric { background: var(--f-panel); border: 1px solid var(--f-hair); box-shadow: var(--f-panel-hi); border-radius: 18px; }
+[data-product="kura"] .pv-metric-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--f-label); }
+
+/* inside a drawer or sheet: Flow's .d-cell — glass, hairline, uppercase label, bold value */
+[data-product="kura"][data-theme="dark"] .pv-dialog { background: #0E1628; }
+[data-product="kura"][data-theme="dark"] .pv-drawer { border-left: 1px solid rgba(77,200,224,.10); }
+[data-product="kura"] .pv-dialog .metrics { gap: 8px; }
+[data-product="kura"] .pv-dialog .pv-metric { background: var(--f-glass); border: 1px solid var(--f-hair); border-radius: 10px; padding: 11px 13px; box-shadow: none; }
+[data-product="kura"] .pv-dialog .pv-metric-value { margin: 4px 0 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; }
+[data-product="kura"] .pv-dialog .pv-metric-value .kq-u { font-size: .7em; }
+[data-product="kura"] .detail-list { gap: 8px; }
+[data-product="kura"] .pv-dialog .detail-list > div, [data-product="kura"] .kit-facts > div { background: var(--f-glass); border: 1px solid var(--f-hair); border-radius: 10px; padding: 11px 13px; }
+[data-product="kura"] .detail-list dt, [data-product="kura"] .kit-facts dt, [data-product="kura"] .readable dt { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--f-label); }
+[data-product="kura"] .detail-list dd, [data-product="kura"] .kit-facts dd { margin-top: 4px; font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+[data-product="kura"] .pv-dialog .kl-row, [data-product="kura"] .pv-dialog .kura-why, [data-product="kura"] .readable-list > li { background: var(--f-glass); border: 1px solid var(--f-hair); border-radius: 12px; }
+[data-product="kura"] .pv-dialog .kl-row:hover { background: var(--f-glass); border-color: var(--f-border); }
+[data-product="kura"] .pv-dialog-head { border-bottom-color: var(--f-hair); }
+[data-product="kura"] .pv-dialog-head h2:focus { outline: none; }                                  /* the heading takes focus on open; no ring for that */
+[data-product="kura"] .pv-dialog-head .pv-button[aria-label^="Close"] { width: 32px; height: 32px; min-height: 32px; padding: 0; border-radius: 50%; background: var(--f-ghost); color: var(--f-ghost-ink); }
+
+/* status badges: Flow's pills — small rounded rectangles with a tinted hairline */
+[data-product="kura"] .pv-badge { border-radius: 8px; padding: 3px 9px; border: 1px solid transparent; font-weight: 600; }
+[data-product="kura"] .pv-badge[data-tone="success"] { border-color: rgba(30,122,76,.18); } [data-product="kura"] .pv-badge[data-tone="warning"] { border-color: rgba(150,105,0,.2); }
+[data-product="kura"] .pv-badge[data-tone="critical"] { border-color: rgba(190,40,40,.18); } [data-product="kura"] .pv-badge[data-tone="info"] { border-color: rgba(35,67,156,.18); }
+[data-product="kura"][data-theme="dark"] .pv-badge[data-tone="success"] { border-color: rgba(115,213,162,.22); } [data-product="kura"][data-theme="dark"] .pv-badge[data-tone="warning"] { border-color: rgba(235,201,93,.22); }
+[data-product="kura"][data-theme="dark"] .pv-badge[data-tone="critical"] { border-color: rgba(255,155,150,.22); } [data-product="kura"][data-theme="dark"] .pv-badge[data-tone="info"] { border-color: rgba(103,210,226,.22); }
+[data-product="kura"][data-theme="dark"] .pv-badge[data-tone="neutral"] { border-color: rgba(181,198,216,.16); }
+@media (prefers-reduced-motion: reduce) { [data-product="kura"] .pv-button--primary:hover:not(:disabled) { transform: none; } }
+/* the Overview's own buttons take Flow's primary too */
+[data-product="kura"] .ovx-primary, [data-product="kura"] .ovx-cta { border-radius: 13px; background: var(--f-primary); color: #fff !important; box-shadow: var(--f-primary-glow); font-weight: 700; }
+[data-product="kura"] .ovx-primary:hover, [data-product="kura"] .ovx-cta:hover { filter: brightness(1.06); transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) { [data-product="kura"] .ovx-primary:hover, [data-product="kura"] .ovx-cta:hover { transform: none; } }

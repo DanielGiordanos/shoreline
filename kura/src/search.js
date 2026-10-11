@@ -2,8 +2,9 @@
    One field across items (name, SKU, generic name, barcode), lots, orders, kits, safes, locations, vendors and pages.
    Results are grouped, best first; Enter opens the top one, arrow keys move. Everything is on this device:
    nothing is sent anywhere. */
-import { el, Icon } from './ui/components.js?v=a31c3934f6';
-import { ROUTES } from './nav.js?v=a31c3934f6';
+import { el, Icon } from './ui/components.js?v=9e22706f40';
+import { ROUTES } from './nav.js?v=9e22706f40';
+import { plural } from './words.js?v=9e22706f40';
 
 const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 /* 3 = exact, 2 = starts with, 1.5 = a word starts with, 1 = contains, 0 = no match */
@@ -28,7 +29,7 @@ export function searchIndex(k, query) {
   const add = (label, rows, limit = 6) => { const r = rows.filter(x => x.score > 0).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)).slice(0, limit); if (r.length) groups.push({ label, rows: r }); };
   const items = k.list('items');
   add('Items', items.map(i => ({ score: score(q, i.name, i.sku, i.generic_name, i.brand, ...(i.barcodes || [])) + (i.status === 'inactive' ? -0.5 : 0),
-    title: i.name, detail: [i.sku, `${k.fmt(k.available(i.id))} ${i.base_unit} available`].filter(Boolean).join(' · '), icon: 'package', open: () => k.itemDrawer(i) })));
+    title: i.name, detail: [i.sku, `${k.fmt(k.available(i.id))} ${plural(i.base_unit, k.available(i.id))} available`].filter(Boolean).join(' · '), icon: 'package', open: () => k.itemDrawer(i) })));
   add('Lots', k.list('lots').map(l => { const i = k.find('items', l.item_id); return { score: score(q, l.code, l.lot_code) * 1.1,
     title: `Lot ${l.code || l.lot_code}`, detail: [i?.name, l.expires ? `expires ${String(l.expires).slice(0, 10)}` : null, l.status && l.status !== 'active' ? l.status : null].filter(Boolean).join(' · '), icon: 'barcode', open: () => i && k.itemDrawer(i) }; }), 4);
   add('Orders', k.list('orders').map(o => ({ score: Math.max(score(q, o.number, o.order_number, o.id.slice(0, 8)), score(q, k.vendorName(o.vendor_id)) * .8),
