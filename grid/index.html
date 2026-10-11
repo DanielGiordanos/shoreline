@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Grid · Pravix</title>
+  <link rel="icon" href="assets/pvx-icon-plogo-light.png">
+  <meta name="theme-color" content="#F2F4F8">
+  <script>
+    // One theme across Pravix: Flow, Treatment Sheets and Kura keep it in the pvx_theme cookie on .pravix.app.
+    (function () {
+      var root = document.documentElement;
+      var m = document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);
+      root.dataset.theme = m ? m[1] : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      if (window.matchMedia && matchMedia('(pointer: coarse)').matches) root.dataset.pointer = 'coarse';
+    })();
+  </script>
+  <style>
+    /* Grid draws its own toolbar (brand, workbook, tools, day/night switch): the page is just the window. */
+    :root { --bg:#F2F4F8; --ink:#1B2033; --ink2:#5A627A; --hair:rgba(30,45,90,.09); --accent:#23439C; --card:#FFFFFF; --line:#D5DAE4; --field:#FFFFFF; --ring:rgba(35,67,156,.25); --primary:#23439C; --danger:#C42B23;
+      --font:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Helvetica Neue", Arial, sans-serif; }
+    :root[data-theme="dark"] { --bg:#080E1A; --ink:#E8EEF6; --ink2:#A7C2D8; --hair:rgba(77,200,224,.12); --accent:#38BDD2; --card:#0E1628; --line:#24314D; --field:#0B1322; --ring:rgba(56,189,210,.3); --primary:#2A76AD; --danger:#FF7B72; }
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:var(--bg); font-family:var(--font); -webkit-font-smoothing:antialiased; }
+    .stage { position:fixed; inset:0; }
+    #gridcraft_canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+    #gridcraft_loading { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--ink2); font-size:14px; pointer-events:none; }
+    #gridcraft_loading img { width:40px; height:39px; }
+    #gridcraft_loading .is-dark { display:none; } :root[data-theme="dark"] #gridcraft_loading .is-dark { display:block; } :root[data-theme="dark"] #gridcraft_loading .is-light { display:none; }
+    .spin { width:22px; height:22px; border-radius:50%; border:2.5px solid var(--hair); border-top-color:var(--accent); animation:spin .9s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spin { animation:none; } }
+    /* Sign-in gate: Grid only opens for allowed Pravix accounts (Daniel only, for now). */
+    #gate { position:fixed; inset:0; z-index:10; display:none; align-items:center; justify-content:center; padding:16px; background:var(--bg); }
+    #gate.on { display:flex; }
+    .gate-card { width:100%; max-width:360px; background:var(--card); border:1px solid var(--hair); border-radius:16px; padding:28px 24px; box-shadow:0 1px 2px rgba(30,45,90,.05), 0 18px 40px -26px rgba(30,45,90,.35); color:var(--ink); }
+    .gate-card img { width:36px; height:35px; display:block; margin-bottom:14px; }
+    .gate-card .is-dark { display:none; } :root[data-theme="dark"] .gate-card .is-dark { display:block; } :root[data-theme="dark"] .gate-card .is-light { display:none; }
+    .gate-card h1 { font-size:20px; margin:0 0 6px; letter-spacing:-.01em; }
+    .gate-card p { margin:0 0 18px; font-size:14px; line-height:1.45; color:var(--ink2); }
+    .gate-card label { display:block; font-size:12.5px; font-weight:600; color:var(--ink2); margin:12px 0 6px; }
+    .gate-card input { width:100%; box-sizing:border-box; height:44px; border-radius:10px; border:1px solid var(--line); background:var(--field); color:var(--ink); font:inherit; font-size:15px; padding:0 12px; }
+    .gate-card input:focus { outline:3px solid var(--ring); outline-offset:1px; border-color:var(--accent); }
+    .gate-card button { margin-top:18px; width:100%; height:44px; border:0; border-radius:10px; background:var(--primary); color:#fff; font:inherit; font-size:15px; font-weight:600; cursor:pointer; }
+    .gate-card button:disabled { opacity:.6; cursor:default; }
+    .gate-card .link { background:none; color:var(--accent); height:auto; margin-top:14px; font-weight:600; }
+    .gate-err { min-height:18px; margin-top:12px; font-size:13px; color:var(--danger); }
+  </style>
+</head>
+<body>
+  <div id="gate" role="dialog" aria-labelledby="gate-title">
+    <form class="gate-card" id="gate-form" novalidate>
+      <img class="is-light" src="assets/pvx-icon-plogo-light.png" alt=""><img class="is-dark" src="assets/pvx-icon-plogo-dark.png" alt="">
+      <h1 id="gate-title">Grid</h1>
+      <p id="gate-text">Sign in with your Pravix account.</p>
+      <div id="gate-fields">
+        <label for="gate-email">Email</label><input id="gate-email" type="email" autocomplete="username" required>
+        <label for="gate-pass">Password</label><input id="gate-pass" type="password" autocomplete="current-password" required>
+        <button type="submit" id="gate-go">Sign in</button>
+      </div>
+      <button type="button" class="link" id="gate-out" hidden>Sign in with another account</button>
+      <div class="gate-err" id="gate-err" role="alert"></div>
+    </form>
+  </div>
+  <main class="stage">
+    <canvas id="gridcraft_canvas" aria-label="Grid by Pravix spreadsheet"></canvas>
+    <div id="gridcraft_loading">
+      <img class="is-light" src="assets/pvx-icon-plogo-light.png" alt=""><img class="is-dark" src="assets/pvx-icon-plogo-dark.png" alt="">
+      <span class="spin" aria-hidden="true"></span>Opening Grid…
+    </div>
+  </main>
+  <script>
+    // Keep the browser's bar colour with the theme (Grid's switch changes data-theme).
+    (function () {
+      var root = document.documentElement, meta = document.querySelector('meta[name=theme-color]');
+      function sync() { meta.content = root.dataset.theme === 'dark' ? '#080E1A' : '#F2F4F8'; }
+      new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+      sync();
+      // Grid sets window.__gridDirty while a workbook has changes that haven't been downloaded.
+      // Browsers show their own wording ("Leave site? Changes may not be saved").
+      addEventListener('beforeunload', function (e) { if (window.__gridDirty) { e.preventDefault(); e.returnValue = ''; } });
+    })();
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script type="module">
+    // The same Pravix sign-in (and session) as Flow, Treatment Sheets and Kura. Grid only opens for
+    // the accounts below; nothing else (not even the 13 MB engine) loads until then.
+    const ALLOWED = ['daniel.giordano@pravix.app'];
+    const V = 'bfdd2934e5';
+    firebase.initializeApp({ apiKey: 'AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE', authDomain: 'shoreline-flow.firebaseapp.com', projectId: 'shoreline-flow',
+      storageBucket: 'shoreline-flow.firebasestorage.app', messagingSenderId: '237404385636', appId: '1:237404385636:web:1ee3ba27f22c946f748a71' });
+    const auth = firebase.auth(), $ = id => document.getElementById(id);
+    const gate = $('gate'), loading = $('gridcraft_loading');
+    let started = false;
+    async function start() {
+      if (started) return; started = true;
+      gate.classList.remove('on'); loading.style.display = '';
+      const { default: init } = await import('./gridcraft_web.js?v=' + V);
+      // The engine ships in two parts (GitHub's upload limit); join them, then start.
+      const parts = await Promise.all(['engine.part0', 'engine.part1'].map(p =>
+        fetch('./' + p + '?v=' + V).then(r => { if (!r.ok) throw new Error(p + ' ' + r.status); return r.arrayBuffer(); })));
+      const bytes = new Uint8Array(parts.reduce((n, b) => n + b.byteLength, 0));
+      let at = 0; for (const b of parts) { bytes.set(new Uint8Array(b), at); at += b.byteLength; }
+      init({ module_or_path: bytes });
+    }
+    function show(text, fields) {
+      loading.style.display = 'none'; gate.classList.add('on');
+      $('gate-text').textContent = text; $('gate-fields').hidden = !fields; $('gate-out').hidden = fields;
+      if (fields) setTimeout(() => $('gate-email').focus(), 50);
+    }
+    auth.onAuthStateChanged(u => {
+      if (!u) return show('Sign in with your Pravix account.', true);
+      if (ALLOWED.includes((u.email || '').toLowerCase())) return start();
+      show('This account can’t open Grid yet.', false);
+    });
+    $('gate-form').addEventListener('submit', async e => {
+      e.preventDefault(); $('gate-err').textContent = ''; $('gate-go').disabled = true;
+      try { await auth.signInWithEmailAndPassword($('gate-email').value.trim(), $('gate-pass').value); }
+      catch (err) { $('gate-err').textContent = /network/i.test(err.code || '') ? 'Grid could not reach Pravix. Check your connection.' : 'That email or password didn’t work.'; }
+      $('gate-go').disabled = false;
+    });
+    $('gate-out').addEventListener('click', () => auth.signOut());
+  </script>
+</body>
+</html>
