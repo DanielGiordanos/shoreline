@@ -920,6 +920,7 @@ def insights(conn, ctx, state=None):
     department_cost, department_waste = defaultdict(Decimal), defaultdict(Decimal)
     item_where = defaultdict(lambda: defaultdict(lambda: [Decimal(0), Decimal(0)]))     # item -> area -> [used, cost], last 30 days
     weeks = [{'use': Decimal(0), 'waste': Decimal(0), 'areas': defaultdict(Decimal)} for _ in range(8)]   # 8 weeks, oldest first
+    item_weeks = defaultdict(lambda: [Decimal(0)] * 8)                                   # item -> quantity used each week
     first_seen, days = {}, defaultdict(set)
     reversed_ids = {e.get('reversal_of') for e in entries if e.get('reversal_of')}
     for entry in entries:
@@ -945,6 +946,7 @@ def insights(conn, ctx, state=None):
         if week is not None and entry['kind'] in {'use', 'emergency'}:
             week['use'] -= quantity * unit_cost
             week['areas'][entry['location_id']] -= quantity * unit_cost
+            item_weeks[item_id][7 - age] -= quantity
         if week is not None and entry['kind'] in {'waste', 'dispose'}:
             week['waste'] -= quantity * unit_cost
         if entry['kind'] in {'use', 'emergency'}:
@@ -982,6 +984,7 @@ def insights(conn, ctx, state=None):
             'days_supply_range': [round(float(depletion * Decimal('.75')), 1), round(float(depletion * Decimal('1.25')), 1)] if depletion is not None else None,
             'confidence': 'disabled' if forecasting == 'off' else ('descriptive_estimate' if adequate else 'insufficient_data'), 'observed_days': round(observed, 1),
             'usage_change_percent': change, 'on_hand': _num(on_hand[item_id]), 'available': _num(availability[item_id]),
+            'weekly_used': [_num(q) for q in item_weeks[item_id]],
             'by_location': [{'location_id': k, 'used': _num(v[0]), 'cost': _num(v[1])} for k, v in sorted(item_where[item_id].items(), key=lambda kv: -kv[1][1])[:3]],
             'explanation': 'Forecasting is disabled by an administrator. Recorded usage remains available.' if forecasting == 'off' else ('Uses recorded consumption over up to 30 days; ±25% is a scenario range, not a statistical confidence interval. Unrecorded demand is unknown.' if adequate else 'At least seven days of inventory history and consumption on three distinct days are required. No depletion date is asserted.')})
     counts = [c for c in _data(conn, tenant, 'count', state) if c.get('status') == 'reconciled']
