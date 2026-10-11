@@ -1,7 +1,7 @@
 /* Morning brief on this phone: sign up for a notification at a chosen hour, and keep the brief's summary current.
    Works on shoreline.pravix.app (kura-web.js sets globalThis.kuraBrief) once the kuraBrief Cloud Function is deployed
    (cloud/functions/). On iPhone, web notifications need Kura added to the Home Screen first (iOS 16.4 or later). */
-import { el, Button, Card, Dropdown } from './ui/components.js?v=9e22706f40';
+import { el, Button, Card, Dropdown, Input } from './ui/components.js?v=cf69b844c0';
 
 const KEY = 'kura-brief-published';
 const HOURS = [5, 6, 7, 8, 9, 10];
@@ -14,26 +14,27 @@ const pushable = () => 'serviceWorker' in navigator && 'PushManager' in window &
 const b64 = s => { const p = '='.repeat((4 - s.length % 4) % 4), raw = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
 const hourLabel = h => `${h}:00 AM`;
 
-async function call(action, body = {}) {
+async function call(action, body = {}, what = 'morning brief service') {
   const r = remote(); if (!r) throw new Error('Phone notifications work on shoreline.pravix.app.');
   const token = await r.token(); if (!token) throw new Error('Sign in to Kura first.');
   let res; try { res = await fetch(`${r.url}/${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }); }
-  catch { throw new Error('Kura couldn’t reach the morning brief service. Check the connection; if it keeps happening, it may not be set up yet.'); }
+  catch { throw new Error(`Kura couldn’t reach the ${what}. Check the connection; if it keeps happening, it may not be set up yet.`); }
   let out = null; try { out = await res.json(); } catch { /* not JSON */ }
-  if (!res.ok) throw new Error(out?.error?.message || (res.status === 404 ? 'The morning brief service isn’t set up yet.' : `The morning brief service answered ${res.status}.`));
+  if (!res.ok) throw new Error(out?.error?.message || (res.status === 404 ? `The ${what} isn’t set up yet.` : `The ${what} answered ${res.status}.`));
   return out;
 }
 
 /* Keep the server's copy of the brief current (small; only when it changed, or every 6 hours). */
 let pending = 0, broken = false;
-export function publishBrief(brief, now = false) {
+/* extra: { stock, hospital } — what's low, with quantities, for the low-stock email (email.js on the server) */
+export function publishBrief(brief, now = false, extra = {}) {
   if (!remote() || !brief || (broken && !now)) return;
   if (now) { broken = false; write(KEY, '{}'); }
   clearTimeout(pending);
   pending = setTimeout(async () => {
-    const { as_of, ...facts } = brief, sig = JSON.stringify(facts), last = JSON.parse(read(KEY) || '{}');
+    const { as_of, ...facts } = brief, sig = JSON.stringify([facts, extra.stock || null]), last = JSON.parse(read(KEY) || '{}');
     if (last.sig === sig && Date.now() - (last.at || 0) < 6 * 3600000) return;
-    try { await call('publish', { brief }); write(KEY, JSON.stringify({ sig, at: Date.now() })); }
+    try { await call('publish', { brief, ...extra }); write(KEY, JSON.stringify({ sig, at: Date.now() })); }
     catch { broken = true; }                                  // not deployed yet, or offline: try again next session
   }, 4000);
 }
@@ -93,6 +94,47 @@ export function briefCard({ navigate, timezone, toast, onBriefPage = false, onEn
     try { await call('subscribe', { subscription: sub.toJSON(), hour: Number(hour.control.value), tz: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone }); toast(`Morning brief moved to ${hourLabel(hour.control.value)}.`); draw(); }
     catch (e) { status.textContent = e.message; }
   });
+  draw().catch(e => { status.textContent = e.message || String(e); });
+  return card;
+}
+
+/* ---------- low-stock email (Settings) ----------
+   A summary each morning when something is low, and right away when something runs out or reaches its minimum.
+   The addresses live on the server (kuraBrief → email.js) and can be changed here any time. */
+const mail = (action, body) => call(action, body, 'low-stock email service');
+export function emailCard({ timezone, toast, onEnabled = null }) {
+  const status = el('p', { className: 'muted small', role: 'status' }, 'Checking…');
+  const to = Input({ label: 'Send to', placeholder: 'you@pravix.app, pharmacy@pravix.app', help: 'Up to 5 addresses, separated by commas. Change them any time.', autocomplete: 'email' });
+  const hour = Dropdown({ label: 'Daily summary at', value: '7', options: HOURS.map(h => ({ value: String(h), label: hourLabel(h) })) });
+  const urgentBox = el('input', { type: 'checkbox', checked: true, id: 'kura-email-urgent' });
+  const urgent = el('div', { className: 'check-field' }, [urgentBox, el('label', { for: 'kura-email-urgent' }, 'Also email right away when something runs out or reaches its minimum (once a day per item)')]);
+  const actions = el('div', { className: 'inline' });
+  const form = el('div', { className: 'brief-card-body' }, [to, hour, urgent, status, actions]);
+  const card = Card({ title: 'Low-stock email', className: 'email-card', description: 'Item and area names with quantities — never patient information. Only sent on days something is low.', children: [form] });
+  const busy = (b, label) => { for (const btn of actions.querySelectorAll('button')) btn.disabled = b; if (label) status.textContent = label; };
+  const tz = () => timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  async function save(enabled) {
+    busy(true, enabled ? 'Saving…' : 'Turning off…');
+    try {
+      const r = await mail('email-save', { enabled, to: to.control.value, hour: Number(hour.control.value), tz: tz(), urgent: urgentBox.checked });
+      await onEnabled?.(enabled);
+      toast(enabled ? `Low-stock email is on · ${r.settings.to.length === 1 ? r.settings.to[0] : `${r.settings.to.length} addresses`} · ${hourLabel(r.settings.hour)}.` : 'Low-stock email turned off.');
+    } catch (e) { status.textContent = e.message || String(e); busy(false); return; }
+    busy(false); draw();
+  }
+  async function draw() {
+    if (!remote()) { status.textContent = 'Email works on shoreline.pravix.app.'; to.hidden = hour.hidden = urgent.hidden = true; return; }
+    let st; try { st = await mail('email-status'); } catch (e) { status.textContent = e.message; actions.replaceChildren(); return; }
+    const s = st.settings || { enabled: false, to: [], hour: 7, urgent: true };
+    if (document.activeElement !== to.control) to.control.value = (s.to || []).join(', ');
+    hour.control.value = String(s.hour || 7); urgentBox.checked = s.urgent !== false;
+    status.textContent = !st.configured ? 'Email isn’t set up on the server yet: it needs the Resend key (cloud/functions/README.md). You can save the addresses now.'
+      : s.enabled ? `On · ${s.to.length === 1 ? s.to[0] : `${s.to.length} addresses`} · ${hourLabel(s.hour)}${st.last_daily ? ` · last summary ${st.last_daily}` : ''}${st.low ? ` · ${st.low} low right now` : ''}.` : 'Off.';
+    actions.replaceChildren(...[
+      Button({ label: s.enabled ? 'Save' : 'Turn on', variant: 'primary', icon: s.enabled ? undefined : 'bell', onClick: () => save(true) }),
+      st.configured ? Button({ label: 'Send a test', variant: 'secondary', onClick: async () => { busy(true, 'Sending…'); try { const r = await mail('email-test', { to: to.control.value }); status.textContent = `Test sent to ${r.sent === 1 ? 'that address' : `${r.sent} addresses`}. It should arrive in a minute.`; } catch (e) { status.textContent = e.message; } busy(false); } }) : null,
+      s.enabled ? Button({ label: 'Turn off', variant: 'ghost', onClick: () => save(false) }) : null].filter(Boolean));
+  }
   draw().catch(e => { status.textContent = e.message || String(e); });
   return card;
 }

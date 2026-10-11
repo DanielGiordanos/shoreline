@@ -66,7 +66,7 @@
 .brief-head { display:flex; align-items:center; gap:var(--pv-space-3); }.brief-head h3 { margin:0; flex:1; font-size:var(--pv-type-panel); }
 .brief-icon { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:var(--radius-small); background:var(--pravix-info-bg); color:var(--pravix-accent-text); flex:none; }
 .brief-lines { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:var(--pv-space-2); font-size:var(--pv-type-small); }.brief-lines li { padding-bottom:var(--pv-space-2); border-bottom:var(--pv-stroke) solid var(--pravix-border-subtle); }.brief-lines li:last-child { border-bottom:0; padding-bottom:0; }
-.brief-card-body { display:flex; flex-direction:column; gap:var(--pv-space-3); }.brief-card-body .pv-field { max-width:14rem; }.brief-card-body p { margin:0; }
+.brief-card-body { display:flex; flex-direction:column; gap:var(--pv-space-3); }.brief-card-body .pv-field { max-width:14rem; }.brief-card-body p { margin:0; }.email-card .brief-card-body .pv-field:first-child { max-width:32rem; }
 @media (max-width:48rem) { .plan-row { grid-template-columns:1fr; padding:var(--pv-space-4); }.plan-actions { justify-content:flex-start; }.plan-actions .pv-button { flex:1; } }
 /* Controlled drugs (controlled-ui.js) */
 .cs-badge { display:inline-flex; align-items:center; justify-content:center; min-width:2.6rem; padding:0 var(--pv-space-2); border-radius:var(--radius-small); font-size:var(--pv-type-label); font-weight:var(--pv-weight-bold); line-height:1.6; background:var(--pravix-surface-secondary); color:var(--pravix-text-secondary); font-variant-numeric:tabular-nums; }
