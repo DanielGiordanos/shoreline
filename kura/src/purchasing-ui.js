@@ -5,8 +5,9 @@
    the order; you check the quantities, lots and dates, then receive in one step. An invoice is matched against the
    order (price) and what was received (quantity) — differences become exceptions to accept or claim a credit for.
    Price lists: import a distributor's CSV; orders then show when another vendor has the same item for less. */
-import { el, Button, Dropdown, EmptyState } from './ui/components.js?v=5e40e4b4db';
-import { labelReader, photoPanel, readLabel } from './label-reader.js?v=5e40e4b4db';
+import { el, Button, Dropdown, EmptyState } from './ui/components.js?v=c011573571';
+import { labelReader, photoPanel, readLabel } from './label-reader.js?v=c011573571';
+import { orderName } from './words.js?v=c011573571';
 
 const money = n => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(Number(n) || 0);
 const UOM = { EA: 'each', EACH: 'each', BX: 'box', BOX: 'box', CS: 'case', CASE: 'case', VL: 'vial', VIAL: 'vial', BG: 'bag', BAG: 'bag', BT: 'bottle', BTL: 'bottle',
@@ -63,7 +64,7 @@ function readDocument(k, order, { title, onDoc }) {
     text: 'Up to 4 pages. Kura reads the lines and matches them to this order for you to check. Photos aren’t saved.',
     read: photos => readLabel(photos, { kind: 'document', order_lines: (order.lines || []).map(l => { const it = k.find('items', l.item_id) || {}; return { name: it.name, vendor_sku: it.vendor_sku, quantity: l.quantity, unit: l.unit }; }) }),
     onRead: result => { dialog.dismiss(); onDoc(result?.document || null); } });
-  dialog = k.makeDialog({ title, description: `Order ${order.number || order.id.slice(0, 8)} · ${k.vendorName(order.vendor_id)}`,
+  dialog = k.makeDialog({ title, description: `${k.vendorName(order.vendor_id)} · ${orderName(order)}`,
     children: [el('div', { className: 'stack' }, [panel, el('div', { className: 'form-actions' }, [Button({ label: 'Enter by hand instead', variant: 'ghost', onClick: () => { dialog.dismiss(); onDoc(null); } })])])] });
 }
 

@@ -4,7 +4,7 @@
    - pairsField: "Field / Value" rows for free-form details, in place of a JSON box.
    - plainError: the few engine messages that need everyday words.
    The engine's text is unchanged (tests and the API rely on it); only what's drawn on screen changes. */
-import { el, Button, Input, Dropdown } from './ui/components.js?v=5e40e4b4db';
+import { el, Button, Input, Dropdown } from './ui/components.js?v=c011573571';
 
 const num = n => new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(Number(n) || 0).replace(/^-/, '−');
 const sentence = v => { const t = String(v ?? '').replaceAll('_', ' ').toLowerCase(); return t.charAt(0).toUpperCase() + t.slice(1); };
@@ -159,4 +159,13 @@ export function plainError(err) {
   if (/must contain valid JSON/i.test(m)) return m.replace(/must contain valid JSON\.?/i, 'isn’t filled in correctly.');
   if (/^Failed to fetch|NetworkError/i.test(m)) return 'Kura couldn’t reach the network. Check the connection and try again.';
   return m;
+}
+
+/* How an order is named for people: the vendor's reference or order number when there is one; otherwise when it was
+   placed. Kura's database ID is never shown. */
+export function orderRef(o) { return o ? (o.external_reference || o.number || o.order_number || '') : ''; }
+export function orderName(o) {
+  const ref = orderRef(o); if (ref) return `#${ref}`;
+  const at = o && (o.created_at || o.ordered_at); if (!at) return 'Order';
+  return 'Ordered ' + new Date(at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }

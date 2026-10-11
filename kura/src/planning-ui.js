@@ -1,7 +1,7 @@
 /* Kura planning screens: Expiry & recalls, levels from recorded use, the before-the-weekend heads-up, backorder
    swaps and the morning brief. The numbers come from the engine (backend/planning.py → state.planning); every
    action opens an existing, reviewed dialog (move, waste, order, rule, lot hold). Nothing here changes stock on its own. */
-import { el, Button, Card, EmptyState, Icon, Metric, PageHeader, Search, Tabs } from './ui/components.js?v=5e40e4b4db';
+import { el, Button, Card, EmptyState, Icon, Metric, PageHeader, Search, Tabs } from './ui/components.js?v=c011573571';
 
 const DAY = 86400000;
 const plural = (n, one, many = one + 's') => `${n} ${Number(n) === 1 ? one : many}`;

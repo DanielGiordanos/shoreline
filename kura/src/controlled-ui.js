@@ -2,7 +2,7 @@
    Safes and when each was last counted, open discrepancies, doses missing a patient or witness, the log with
    running balances, counts with a second person, and the initial / biennial inventory and destruction records.
    Every change goes through an engine command; nothing here edits a record after the fact. */
-import { el, Button, Card, Dropdown, EmptyState, Metric, PageHeader, Tabs } from './ui/components.js?v=5e40e4b4db';
+import { el, Button, Card, Dropdown, EmptyState, Metric, PageHeader, Tabs } from './ui/components.js?v=c011573571';
 
 const KIND = { receive: 'Received', use: 'Given', emergency: 'Given (emergency)', waste: 'Wasted', dispose: 'Disposed', adjust: 'Count correction', opening: 'Opening balance',
   return: 'Returned to stock', transfer: 'Moved', reverse: 'Reversal' };

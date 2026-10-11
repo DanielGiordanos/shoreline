@@ -2,7 +2,7 @@
    Layout: a summary card with eight weekly bars, an inventory-value card with the top areas, a filter bar, and a
    board with Items · Waste · Running low tabs, an item list and the chosen item's detail.
    All numbers come from the engine's insights report (backend/workflows.py → insights). Nothing here changes stock. */
-import { el, Button, Icon, PageHeader, EmptyState } from './ui/components.js?v=5e40e4b4db';
+import { el, Button, Icon, PageHeader, EmptyState } from './ui/components.js?v=c011573571';
 
 const view = { tab: 'all', area: '', q: '', selected: null, week: null };          // kept while Kura redraws the page
 const SVG = 'http://www.w3.org/2000/svg';
@@ -39,6 +39,13 @@ export function insightsView(ctx) {
       waste ? el('span', { className: 'ins-readout-num is-waste' }, [cash(waste), ' wasted']) : null,
       el('span', { className: 'ins-chips' }, (w.top_locations || []).map(chip))); };
   const cols = el('div', { className: 'ins-cols', role: 'group', 'aria-label': 'Stock used each week, last 8 weeks' });
+  // Scrub: drag a finger along the chart to read each week (like Apple's Health charts); lifting it keeps that week.
+  let scrubbing = false;
+  const colAt = x => [...cols.children].findIndex(c => { const r = c.getBoundingClientRect(); return x >= r.left && x <= r.right; });
+  cols.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; scrubbing = true; });
+  cols.addEventListener('pointermove', e => { if (!scrubbing) return; const i = colAt(e.clientX); if (i >= 0 && i !== view.week) { view.week = i; drawCols(); drawReadout(i); } });
+  const stopScrub = () => { scrubbing = false; };
+  cols.addEventListener('pointerup', stopScrub); cols.addEventListener('pointercancel', stopScrub);
   const drawCols = () => cols.replaceChildren(...weeks.map((w, i) => {
     const use = Number(w.use_cost) || 0, waste = Number(w.waste_cost) || 0, on = i === view.week;
     return el('button', { type: 'button', className: `ins-col${on ? ' is-on' : ''}${i === weeks.length - 1 ? ' is-now' : ''}`, 'aria-pressed': String(on),

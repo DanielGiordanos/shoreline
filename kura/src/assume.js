@@ -5,9 +5,9 @@
    - A scan asks one thing afterwards: Use, Add, Move or Count.
    - A new item without a SKU gets one from its name (the engine makes the same one: backend/core.py sku_from_name).
    Per-device choices live in this browser only (localStorage), never in the shared inventory. */
-import { el, Button, Icon } from './ui/components.js?v=5e40e4b4db';
-import { choiceCards } from './kit.js?v=5e40e4b4db';
-import { plural } from './words.js?v=5e40e4b4db';
+import { el, Button, Icon } from './ui/components.js?v=c011573571';
+import { choiceCards } from './kit.js?v=c011573571';
+import { plural } from './words.js?v=c011573571';
 
 const DEVICE_KEY = 'kura-device-location', LAST_KEY = 'kura-scan-last';
 const read = key => { try { return localStorage.getItem(key) || ''; } catch { return ''; } };

@@ -30,10 +30,10 @@
 /* ---------- shared bits ---------- */
 .ins-label { display:block; font-size:.8125rem; color:var(--ins-muted); letter-spacing:-.005em; margin-bottom:.5rem; }
 .ins-cash, .ins-big { font-variant-numeric: tabular-nums; white-space:nowrap; }
-.ins-cur { opacity:.5; font-weight:400; margin-right:.12em; font-size:.62em; vertical-align:.32em; }
+.ins-cur { opacity:.62; font-weight:400; margin-right:.12em; font-size:max(.6875rem, .62em); vertical-align:.32em; }
 .ins-big { display:inline-block; font-size:clamp(1.65rem, 2.3vw, 2.15rem); font-weight:500; letter-spacing:-.035em; line-height:1.05; color:var(--ins-ink); }
 .ins-big.is-waste { color:var(--ins-waste); }
-.ins-unit { font-size:.55em; font-weight:400; letter-spacing:0; color:var(--ins-faint); }
+.ins-unit { font-size:max(.6875rem, .55em); font-weight:400; letter-spacing:0; color:var(--ins-faint); }
 .ins-arrow { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
 .ins-round { display:inline-grid; place-items:center; width:2.5rem; height:2.5rem; flex:none; border-radius:999px; border:1px solid var(--ins-round-line); background:var(--ins-round); color:inherit; cursor:pointer; transition: background .18s ease, transform .18s ease; }
 .ins-round:hover { background:var(--ins-accent-soft); }
@@ -41,7 +41,7 @@
 .ins-round .pv-icon { width:1.05rem; height:1.05rem; }
 .ins-round:focus-visible, .ins-tab:focus-visible, .ins-row:focus-visible, .ins-cell:focus-visible, .ins-notch-tab:focus-visible, .ins-white:focus-visible { outline:2px solid var(--ins-accent); outline-offset:2px; }
 .ins-chip { display:inline-grid; place-items:center; border-radius:999px; font-weight:700; letter-spacing:-.01em; background:var(--ins-chip); color:var(--ins-chip-ink); }
-.ins-chip { width:1.9rem; height:1.9rem; font-size:.62rem; border:2px solid var(--ins-card); margin-left:-.45rem; }
+.ins-chip { width:1.9rem; height:1.9rem; font-size:.6875rem; border:2px solid var(--ins-card); margin-left:-.45rem; }
 .ins-chip:first-child { margin-left:0; }
 .ins-pill { display:inline-flex; align-items:center; height:1.75rem; padding:0 .75rem; border-radius:999px; border:1px solid var(--ins-round-line); font-size:.75rem; color:var(--ins-ink-2); }
 
@@ -58,7 +58,7 @@
 .ins-value-foot { display:flex; align-items:flex-end; justify-content:space-between; gap:.75rem; }
 .ins-tabs { display:flex; align-items:flex-end; gap:.375rem; min-width:0; }
 .ins-tab { display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start; gap:.8rem; min-width:0; width:6.6rem; height:var(--h, 5.6rem); padding:.85rem .85rem .9rem; border:0; border-radius:18px 18px 0 0; background:var(--ins-tab); color:var(--ins-tab-ink); text-align:left; cursor:pointer; font-size:.8125rem; font-weight:600; transition: height .28s cubic-bezier(.2,.8,.2,1), background .2s ease, box-shadow .2s ease; }
-.ins-tab .ins-cur { font-size:.8em; vertical-align:0; }
+.ins-tab .ins-cur { font-size:max(.6875rem, .8em); vertical-align:0; }
 .ins-tab-name { font-weight:400; font-size:.75rem; line-height:1.2; opacity:.7; max-width:100%; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow-wrap:anywhere; }
 .ins-tab:hover { height:calc(var(--h, 5.6rem) + .25rem); }
 .ins-tab.is-on { height:calc(var(--h, 5.6rem) + .25rem); background:var(--ins-accent); color:var(--ins-accent-ink); box-shadow:var(--ins-accent-glow); }
@@ -144,16 +144,16 @@
 .ins-foot { margin:.25rem 0 0; padding-inline:.5rem; font-size:.75rem; color:var(--ins-muted); max-width:70ch; }
 
 /* Status badges, Flow style. Light surface (the board) first; dark surfaces (the picked row, the detail) below. */
-.ins-badge { --c:#E4342B; --tx:#C42B23; --bg:rgba(228,52,43,.06); --bd:rgba(228,52,43,.22); --glow:rgba(228,52,43,.22);
+.ins-badge { --c:#E4342B; --tx:#A61F19; --bg:rgba(228,52,43,.06); --bd:rgba(228,52,43,.22); --glow:rgba(228,52,43,.22);
   display:inline-flex; align-items:center; gap:.4rem; height:1.65rem; padding:0 .7rem 0 .2rem; border-radius:999px; border:1px solid var(--bd); background:var(--bg); color:var(--tx);
   box-shadow:0 1px 2px rgba(0,0,0,.03), 0 3px 8px var(--bg); white-space:nowrap; flex:none; transition: transform .16s ease, background .16s ease, border-color .16s ease; }
-.ins-badge.is-waste { --c:#F0B03D; --tx:#7D5C1B; --bg:rgba(240,176,61,.10); --bd:rgba(240,176,61,.40); --glow:rgba(240,176,61,.28); }
-.ins-badge.is-use { --c:#5093C4; --tx:#234258; --bg:rgba(80,147,196,.10); --bd:rgba(80,147,196,.40); --glow:rgba(80,147,196,.28); }
-.ins-badge.is-idle { --c:#8A93A6; --tx:#4A5268; --bg:rgba(138,147,166,.10); --bd:rgba(138,147,166,.32); --glow:rgba(138,147,166,.22); }
+.ins-badge.is-waste { --c:#F0B03D; --tx:#664912; --bg:rgba(240,176,61,.10); --bd:rgba(240,176,61,.40); --glow:rgba(240,176,61,.28); }
+.ins-badge.is-use { --c:#5093C4; --tx:#1C384C; --bg:rgba(80,147,196,.10); --bd:rgba(80,147,196,.40); --glow:rgba(80,147,196,.28); }
+.ins-badge.is-idle { --c:#8A93A6; --tx:#3B4256; --bg:rgba(138,147,166,.10); --bd:rgba(138,147,166,.32); --glow:rgba(138,147,166,.22); }
 .ins-badge-icon { display:grid; place-items:center; width:1.2rem; height:1.2rem; flex:none; border-radius:50%; background:var(--c); color:#FFFFFF; box-shadow:0 2px 5px var(--glow), inset 0 1px 0 rgba(255,255,255,.2); }
 .ins-badge-icon svg { width:.8rem; height:.8rem; fill:none; stroke:currentColor; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
 .ins-badge.is-waste .ins-badge-icon svg { stroke-width:1.6; }
-.ins-badge-text { font-size:.66rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; line-height:1; }
+.ins-badge-text { font-size:.6875rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; line-height:1; }
 .ins-row:hover .ins-badge { transform:translateY(-1px); }
 .ins-row.is-on .ins-badge, .ins-detail .ins-badge { --tx:#FF6B62; --bg:rgba(228,52,43,.12); --bd:rgba(228,52,43,.42); }
 .ins-row.is-on .ins-badge.is-waste, .ins-detail .ins-badge.is-waste { --tx:#F5C46B; --bg:rgba(240,176,61,.12); --bd:rgba(240,176,61,.42); }
@@ -162,13 +162,13 @@
 .ins-row.is-on .ins-badge, .ins-detail .ins-badge { box-shadow:none; }
 
 /* ---------- the week chart (one column per week; waste sits on top in amber) ---------- */
-.ins-quiet { display:block; padding-top:.55rem; font-size:1rem; color:var(--ins-faint); }
+.ins-quiet { display:block; padding-top:.55rem; font-size:1rem; color:var(--ins-muted); }
 .ins-chart { display:flex; flex-direction:column; gap:.85rem; }
 .ins-readout { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; min-height:1.9rem; font-size:.8125rem; color:var(--ins-muted); }
 .ins-readout-week { font-weight:600; color:var(--ins-ink); }
 .ins-readout-num { color:var(--ins-ink-2); font-variant-numeric:tabular-nums; }
 .ins-readout-num .ins-cash { font-weight:600; color:var(--ins-ink); }
-.ins-readout-num .ins-cur { font-size:.85em; vertical-align:0; }
+.ins-readout-num .ins-cur { font-size:max(.6875rem, .85em); vertical-align:0; }
 .ins-readout-num.is-waste .ins-cash { color:var(--ins-waste); }
 .ins-readout .ins-chips { margin-left:auto; }
 .ins-chips { display:flex; min-height:1.9rem; }
@@ -205,7 +205,7 @@
 .ins-spark-bar.is-now { background:var(--ins-go); }
 .ins-cell.is-spark .ins-cell-sub { margin-top:.35rem; }
 .ins-cell-waste { margin-top:.2rem; font-size:.72rem; color:#F5C46B; }
-.ins-cell-waste .ins-cur { font-size:.9em; vertical-align:0; }
+.ins-cell-waste .ins-cur { font-size:max(.6875rem, .9em); vertical-align:0; }
 .ins-places { display:flex; flex-direction:column; gap:.2rem; }
 .ins-place { display:flex; justify-content:space-between; gap:.75rem; font-size:.95rem; font-weight:500; }
 .ins-place + .ins-place { font-size:.85rem; color:var(--ins-detail-muted); font-weight:400; }
@@ -223,7 +223,8 @@
 @media (max-width: 48rem) {
   .ins-hero { padding:1.25rem; }
   .ins-cols { gap:.25rem; }
-  .ins-col-label { font-size:.62rem; }
+  .ins-col-label { font-size:.6875rem; }
+  .ins-col-label { letter-spacing:-.01em; }
   .ins-readout .ins-chips { margin-left:0; }
   .ins-stats { grid-template-columns:1fr 1fr; }
   .ins-stats > :first-child { grid-column:1 / -1; }
@@ -244,3 +245,10 @@
   .ins-totals-actions { grid-column:1 / -1; justify-content:flex-end; }
 }
 @media (prefers-reduced-motion: reduce) { .ins-col-seg, .ins-spark-bar, .ins-tab, .ins-row, .ins-cell, .ins-notch-tab { transition:none; } }
+
+/* n113: on Insights' deeper light canvas the quiet text gets a step darker (4.5:1). Week columns are tall touch targets
+   and the chart scrubs: drag a finger along it to read each week, like Apple's Health charts. */
+:root[data-product="kura"]:not([data-theme="dark"]) .kura-main[data-page="insights"] .pv-page-header p,
+:root[data-product="kura"]:not([data-theme="dark"]) .kura-main[data-page="insights"] .ins-foot { color:#525A70; }
+.ins-cols { touch-action: pan-y; }
+@media (pointer: coarse) { .ins-col { min-height:44px; } .ins-cols { gap:0; } }

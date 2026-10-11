@@ -9,8 +9,8 @@
   --pravix-border: rgba(30,45,90,.10); --pravix-border-subtle: rgba(30,45,90,.06); --pravix-control-border: #8D94A6;
   --pravix-focus: #23439C; --pravix-selection: #D3DCF2;
   --pravix-hover: rgba(30,45,90,.045); --pravix-selected: rgba(35,67,156,.10); --pravix-selected-ink: #23439C;
-  --pravix-success: #1E7F52; --pravix-success-bg: #E6F3EC;
-  --pravix-warning: #9A6A00; --pravix-warning-bg: #FDF3DD;
+  --pravix-success: #176B45; --pravix-success-bg: #E6F3EC;   /* n113: 5.7:1 on its badge (was 4.4) */
+  --pravix-warning: #845B00; --pravix-warning-bg: #FDF3DD;   /* n113: 5.5:1 on its badge (was 4.3) */
   --pravix-critical: #C8323A; --pravix-critical-bg: #FBE8E6;
   --pravix-info: #23439C; --pravix-info-bg: #E9ECF5;
   --pravix-neutral: #3A4157; --pravix-neutral-bg: rgba(30,45,90,.055);
@@ -555,3 +555,32 @@ td .kq-u { font-size: .86em; }
 [data-product="kura"] .ovx-primary, [data-product="kura"] .ovx-cta { border-radius: 13px; background: var(--f-primary); color: #fff !important; box-shadow: var(--f-primary-glow); font-weight: 700; }
 [data-product="kura"] .ovx-primary:hover, [data-product="kura"] .ovx-cta:hover { filter: brightness(1.06); transform: translateY(-1px); }
 @media (prefers-reduced-motion: reduce) { [data-product="kura"] .ovx-primary:hover, [data-product="kura"] .ovx-cta:hover { transform: none; } }
+
+
+/* ===== n113 — Apple engineering pass: the accessibility floor (HIG / App Store accessibility criteria) ===== */
+/* Text never below 11 pt: <small> used to shrink to 83% of a 13 px line (10.8 px). */
+[data-product="kura"] small { font-size: max(.6875rem, .85em); }
+/* Names wrap instead of being cut off with "…" (Larger Text: "prefer wrapping to two or more lines"). */
+[data-product="kura"] :is(.ovx-next-top span, .ovx-next-mid span:first-child, .ovx-code, .ovx-dose-main b, .ovx-todo-text > span, .ovx-todo-text small, .ovx-line span, .kura-search-text b, .kura-search-text small, .ins-row-name strong, .ins-row-name small) { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+/* Touch: every control at least 44 × 44 pt. The day/night switch keeps its picture, just a little larger. */
+@media (pointer: coarse) {
+  [data-product="kura"] .pv-button, [data-product="kura"] .pv-tab, [data-product="kura"] .kura-search-trigger, [data-product="kura"] .kura-logout { min-height: 44px; }
+  [data-product="kura"] .pv-button, [data-product="kura"] .kura-search-trigger { min-width: 44px; }
+  [data-product="kura"] .link-button, [data-product="kura"] .pv-table-row-action { min-height: 44px; min-width: 44px; }
+  [data-product="kura"] .kura-device { min-height: 44px; } [data-product="kura"] .kura-device-select { min-height: 44px; }
+  [data-product="kura"] .kura-theme-toggle, [data-product="kura"] .kura-theme-toggle img { width: 84px; height: 44px; }
+}
+/* iPhone text size (Dynamic Type): Safari keeps 1rem at 16 px whatever the setting (WebKit bug 260880). The system body
+   style follows it, so on touch devices Kura's rem scale starts from the person's own size (17 pt at the default). */
+@media (hover: none) and (pointer: coarse) { html[data-product="kura"] { font: -apple-system-body; } html[data-product="kura"] body { font-family: var(--pv-font); } }
+/* Sheets: the grab handle on touch screens (swipe down to close), and the small "Discard your changes?" alert. */
+.kura-grabber { display: none; }
+@media (pointer: coarse) {
+  [data-product="kura"] .pv-dialog-head { position: relative; touch-action: none; }
+  .kura-grabber { display: block; position: absolute; top: 6px; left: 50%; width: 36px; height: 5px; margin-left: -18px; border-radius: 3px; background: var(--pravix-border); }
+}
+[data-product="kura"] .pv-dialog.kura-alert { --pv-modal-width: 22rem; text-align: center; }
+[data-product="kura"] .kura-alert .pv-dialog-head { justify-content: center; border-bottom: 0; padding-bottom: .25rem; }
+[data-product="kura"] .kura-alert .pv-dialog-head .pv-icon-button { display: none; }
+.kura-alert-actions { display: flex; gap: .5rem; justify-content: center; }
+.kura-alert-actions .pv-button { flex: 1; }

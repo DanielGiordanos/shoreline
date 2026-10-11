@@ -4,8 +4,8 @@
    - confirmSheet: the one confirmation an irreversible action gets (Reverse, Dismiss, Recall).
    - choiceCards: pick one next step from 2–6 — built like Flow's Disposition cards (Admit / Discharge).
    Everything uses Pravix components underneath. */
-import { el, Button, EmptyState, ContextMenu, Icon } from './ui/components.js?v=5e40e4b4db';
-import { plainError } from './words.js?v=5e40e4b4db';
+import { el, Button, EmptyState, ContextMenu, Icon } from './ui/components.js?v=c011573571';
+import { plainError } from './words.js?v=c011573571';
 
 /* rows: data; row(r) → { title, detail, meta: [strings], value, valueDetail, badge: node, tone, onOpen, label }.
    Paged at pageSize with Previous / Next, like the tables it replaces. */

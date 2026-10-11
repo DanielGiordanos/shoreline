@@ -1,12 +1,12 @@
 /* Kura's navigation: five groups in the sidebar, and on an iPhone a bottom tab bar (Today · Stock · Scan · Orders · More).
    Pages keep their ids (#inventory, #orders…), so links, notifications and tests stay the same. */
-import { el, Icon } from './ui/components.js?v=5e40e4b4db';
+import { el, Icon } from './ui/components.js?v=c011573571';
 
 export const NAV = [
-  { id: 'today', label: 'Today', items: [['overview', 'Overview', 'grid'], ['brief', 'Morning brief', 'clock']] },
+  { id: 'today', label: 'Today', items: [['overview', 'Overview', 'grid'], ['brief', 'Morning brief', 'bell']] },
   { id: 'stock', label: 'Stock', items: [['inventory', 'Inventory', 'package'], ['scan', 'Scan', 'barcode'], ['locations', 'Locations', 'home'], ['expiry', 'Expiry & recalls', 'calendar'], ['kits', 'Kits & carts', 'clipboard'], ['counts', 'Counts', 'check-circle']] },
   { id: 'purchasing', label: 'Purchasing', items: [['replenish', 'Replenish', 'refresh'], ['orders', 'Orders & receiving', 'boxes'], ['vendors', 'Vendors', 'people']] },
-  { id: 'records', label: 'Records', items: [['controlled', 'Controlled drugs', 'shield'], ['activity', 'Activity', 'clock'], ['insights', 'Insights', 'layers']] },
+  { id: 'records', label: 'Records', items: [['controlled', 'Controlled drugs', 'shield'], ['activity', 'Activity', 'clock'], ['insights', 'Insights', 'chart']] },
   { id: 'settings', label: 'Settings', items: [['integrations', 'Integrations', 'layers'], ['settings', 'Settings & setup', 'settings']] },
 ];
 /* Every page, flat, in sidebar order: [id, label, icon] */
@@ -17,7 +17,7 @@ export const groupOf = id => NAV.find(g => g.items.some(([p]) => p === id))?.id 
 const TABS = [
   { id: 'overview', label: 'Today', icon: 'grid', on: p => groupOf(p) === 'today' },
   { id: 'inventory', label: 'Stock', icon: 'package', on: p => groupOf(p) === 'stock' && p !== 'scan' },
-  { id: 'scan', label: 'Scan', icon: 'barcode', on: p => p === 'scan', primary: true },
+  { id: 'scan', label: 'Scan', icon: 'barcode', on: p => p === 'scan' },          // a section like the others (HIG: tab bars navigate; they aren't action buttons)
   { id: 'orders', label: 'Orders', icon: 'boxes', on: p => groupOf(p) === 'purchasing' },
   { id: 'more', label: 'More', icon: 'list', on: p => ['records', 'settings'].includes(groupOf(p)) },
 ];

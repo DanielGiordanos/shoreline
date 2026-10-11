@@ -3,11 +3,14 @@
    engine's insights (days of coverage are the engine's estimate, shown only when it has enough history). Nothing is
    invented: an area with no stock says so, and a number Kura can't know is shown as "—".
    Areas are the locations directly under the hospital; anything below them (carts, fridges, shelves) rolls up. */
-import { el, Button, EmptyState, Icon } from './ui/components.js?v=5e40e4b4db';
-import * as I from './iso.js?v=5e40e4b4db';
-import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=5e40e4b4db';
-import { cachedIcon, drawIcons } from './area-icons.js?v=5e40e4b4db';
-import { recommendationText, plural } from './words.js?v=5e40e4b4db';
+import { el, Button, EmptyState, Icon } from './ui/components.js?v=c011573571';
+import * as I from './iso.js?v=c011573571';
+import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=c011573571';
+// The card icons are drawn with three.js (670 KB): load it only when the Overview first needs icons, not at start-up.
+let iconsMod = null, iconsLoad = null;
+const cachedIcon = (key, theme) => iconsMod ? iconsMod.cachedIcon(key, theme) : null;
+const drawIcons = (keys, theme, onIcon) => { iconsLoad ||= import('./area-icons.js?v=c011573571').then(m => (iconsMod = m)); iconsLoad.then(m => m.drawIcons(keys, theme, onIcon)).catch(() => { /* no WebGL or offline: the 2D icons stay */ }); };
+import { recommendationText, plural, orderRef } from './words.js?v=c011573571';
 export { releaseAreaScene };
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -304,8 +307,9 @@ export function overviewDashboard(k) {
   /* one headline: how much of the hospital is at par, in words with one number; the rest lives in the cards below */
   const alerts = list('alerts').filter(a => a.status !== 'acknowledged');
   const alertCount = alerts.length + (d.waiting ? 1 : 0);
+  const urgent = alerts.filter(a => a.severity === 'critical').length + (d.waiting ? 1 : 0);   // the badge shows only what's urgent
   const actions = el('div', { className: 'ovx-actions' }, [roundIcon('barcode', 'Scan a barcode', () => navigate('scan')),
-    roundIcon('alert', alertCount ? `Alerts: ${alertCount} open` : 'Alerts', () => alertsSheet(k, d), alertCount || null),
+    roundIcon('alert', alertCount ? `Alerts: ${alertCount} open${urgent ? `, ${urgent} urgent` : ''}` : 'Alerts', () => alertsSheet(k, d), urgent || null),
     can('stock.move') ? el('button', { type: 'button', className: 'ovx-primary', onClick: () => record() }, [Icon('plus'), 'Record movement']) : null]);
   const toFix = lowN + critN;
   const headlineWords = !tracked ? 'Record what’s on the shelves to begin.'
@@ -396,7 +400,7 @@ export function overviewDashboard(k) {
         lines.length > 3 ? el('div', { className: 'ovx-line is-more' }, `+${lines.length - 3} more`) : null]),
       el('span', { className: 'ovx-float-gap' }),
       el('div', { className: 'ovx-next' }, [
-        el('div', { className: 'ovx-next-top' }, [el('span', {}, k.vendorName(next.vendor_id)), el('small', {}, next.id.slice(0, 8).toUpperCase())]),
+        el('div', { className: 'ovx-next-top' }, [el('span', {}, k.vendorName(next.vendor_id)), orderRef(next) ? el('small', {}, `#${orderRef(next)}`) : null]),
         el('div', { className: 'ovx-next-mid' }, [el('span', {}, `${lines.length} line${lines.length === 1 ? '' : 's'}`), el('span', {}, due ? new Date(due).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—')]),
         el('div', { className: 'ovx-slider', style: `--p:${(progress * 100).toFixed(1)}%` }, [el('i'), el('b')]),
       ]),

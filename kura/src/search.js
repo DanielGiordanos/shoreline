@@ -2,9 +2,9 @@
    One field across items (name, SKU, generic name, barcode), lots, orders, kits, safes, locations, vendors and pages.
    Results are grouped, best first; Enter opens the top one, arrow keys move. Everything is on this device:
    nothing is sent anywhere. */
-import { el, Icon } from './ui/components.js?v=5e40e4b4db';
-import { ROUTES } from './nav.js?v=5e40e4b4db';
-import { plural } from './words.js?v=5e40e4b4db';
+import { el, Icon } from './ui/components.js?v=c011573571';
+import { ROUTES } from './nav.js?v=c011573571';
+import { plural, orderName } from './words.js?v=c011573571';
 
 const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 /* 3 = exact, 2 = starts with, 1.5 = a word starts with, 1 = contains, 0 = no match */
@@ -32,8 +32,8 @@ export function searchIndex(k, query) {
     title: i.name, detail: [i.sku, `${k.fmt(k.available(i.id))} ${plural(i.base_unit, k.available(i.id))} available`].filter(Boolean).join(' · '), icon: 'package', open: () => k.itemDrawer(i) })));
   add('Lots', k.list('lots').map(l => { const i = k.find('items', l.item_id); return { score: score(q, l.code, l.lot_code) * 1.1,
     title: `Lot ${l.code || l.lot_code}`, detail: [i?.name, l.expires ? `expires ${String(l.expires).slice(0, 10)}` : null, l.status && l.status !== 'active' ? l.status : null].filter(Boolean).join(' · '), icon: 'barcode', open: () => i && k.itemDrawer(i) }; }), 4);
-  add('Orders', k.list('orders').map(o => ({ score: Math.max(score(q, o.number, o.order_number, o.id.slice(0, 8)), score(q, k.vendorName(o.vendor_id)) * .8),
-    title: `${k.vendorName(o.vendor_id)} · #${o.number || o.order_number || o.id.slice(0, 8)}`, detail: [String(o.status || '').replaceAll('_', ' '), `to ${k.locationName(o.location_id)}`].join(' · '), icon: 'truck', open: () => k.orderDrawer(o) })), 4);
+  add('Orders', k.list('orders').map(o => ({ score: Math.max(score(q, o.number, o.order_number, o.external_reference), score(q, k.vendorName(o.vendor_id)) * .8),
+    title: `${k.vendorName(o.vendor_id)} · ${orderName(o)}`, detail: [String(o.status || '').replaceAll('_', ' '), `to ${k.locationName(o.location_id)}`].join(' · '), icon: 'truck', open: () => k.orderDrawer(o) })), 4);
   const kits = (k.state.kits?.kits || []);
   add('Kits & carts', kits.map(x => ({ score: score(q, x.name, x.kind_label, x.seal), title: x.name, detail: [x.kind_label, x.area_name].filter(Boolean).join(' · '), icon: 'clipboard', open: () => k.kitSheet(x.id) })), 4);
   const safes = (k.state.controlled?.safes || []);
