@@ -2,9 +2,9 @@
    Layout: a summary card with eight weekly bars, an inventory-value card with the top areas, a filter bar, and a
    board with Items · Waste · Running low tabs, an item list and the chosen item's detail.
    All numbers come from the engine's insights report (backend/workflows.py → insights). Nothing here changes stock. */
-import { el, Button, Icon, PageHeader, EmptyState } from './ui/components.js?v=cf69b844c0';
+import { el, Button, Icon, PageHeader, EmptyState } from './ui/components.js?v=5e40e4b4db';
 
-const view = { tab: 'all', area: '', q: '', selected: null };          // kept while Kura redraws the page
+const view = { tab: 'all', area: '', q: '', selected: null, week: null };          // kept while Kura redraws the page
 const SVG = 'http://www.w3.org/2000/svg';
 const arrow = () => { const s = document.createElementNS(SVG, 'svg'); s.setAttribute('viewBox', '0 0 16 16'); s.setAttribute('aria-hidden', 'true'); s.classList.add('ins-arrow');
   const p = document.createElementNS(SVG, 'path'); p.setAttribute('d', 'M5 11 11 5M6 5h5v5'); s.append(p); return s; };
@@ -26,26 +26,40 @@ export function insightsView(ctx) {
   const big = (value, unit) => el('span', { className: 'ins-big' }, [value, unit ? el('span', { className: 'ins-unit' }, ` ${unit}`) : null]);
   const chip = id => el('span', { className: 'ins-chip', title: locationName(id) }, initials(locationName(id)));
 
-  /* ---------- summary: used, wasted, count accuracy + eight weeks ---------- */
+  /* ---------- summary: used, wasted, count accuracy + a column per week ---------- */
   const weeks = R.weekly || [], wmax = Math.max(1, ...weeks.map(w => Number(w.use_cost) + Number(w.waste_cost)));
   const accuracy = R.inventory_accuracy == null ? null : R.inventory_accuracy;
-  const hero = el('section', { className: 'ins-card ins-hero', 'aria-label': 'Last 30 days' }, [
+  const hasHistory = weeks.some(w => Number(w.use_cost) > 0 || Number(w.waste_cost) > 0) || Number(R.usage_cost_30d) > 0 || Number(R.waste_cost_30d) > 0;
+  const hasStock = Number(R.inventory_value) > 0 || items.some(r => Number(r.on_hand) > 0);
+  if (view.week == null || view.week >= weeks.length) view.week = weeks.length - 1;
+  const weekName = i => i === weeks.length - 1 ? 'This week' : `Week of ${short(weeks[i].start)}`;
+  const readout = el('div', { className: 'ins-readout', 'aria-live': 'polite' });
+  const drawReadout = i => { const w = weeks[i]; if (!w) return; const use = Number(w.use_cost) || 0, waste = Number(w.waste_cost) || 0;
+    readout.replaceChildren(el('span', { className: 'ins-readout-week' }, weekName(i)), el('span', { className: 'ins-readout-num' }, [cash(use), ' used']),
+      waste ? el('span', { className: 'ins-readout-num is-waste' }, [cash(waste), ' wasted']) : null,
+      el('span', { className: 'ins-chips' }, (w.top_locations || []).map(chip))); };
+  const cols = el('div', { className: 'ins-cols', role: 'group', 'aria-label': 'Stock used each week, last 8 weeks' });
+  const drawCols = () => cols.replaceChildren(...weeks.map((w, i) => {
+    const use = Number(w.use_cost) || 0, waste = Number(w.waste_cost) || 0, on = i === view.week;
+    return el('button', { type: 'button', className: `ins-col${on ? ' is-on' : ''}${i === weeks.length - 1 ? ' is-now' : ''}`, 'aria-pressed': String(on),
+      'aria-label': `${weekName(i)}: ${money(use)} used${waste ? `, ${money(waste)} wasted` : ''}`,
+      onClick: () => { view.week = i; drawCols(); drawReadout(i); }, onMouseenter: () => drawReadout(i), onMouseleave: () => drawReadout(view.week), onFocus: () => drawReadout(i) }, [
+      el('span', { className: 'ins-col-bar', 'aria-hidden': 'true' }, use + waste > 0 ? [
+        waste ? el('span', { className: 'ins-col-seg is-waste', style: { height: `${waste / wmax * 100}%` } }) : null,
+        use ? el('span', { className: 'ins-col-seg', style: { height: `${use / wmax * 100}%` } }) : null] : [el('span', { className: 'ins-col-zero' })]),
+      el('span', { className: 'ins-col-label' }, i === weeks.length - 1 ? 'Now' : short(w.start))]);
+  }));
+  const hero = hasHistory ? el('section', { className: 'ins-card ins-hero', 'aria-label': 'Last 30 days' }, [
     el('div', { className: 'ins-stats' }, [
       el('div', {}, [el('span', { className: 'ins-label' }, 'Used · 30 days'), cash(R.usage_cost_30d, 'ins-big')]),
       el('div', {}, [el('span', { className: 'ins-label' }, 'Wasted · 30 days'), cash(R.waste_cost_30d, `ins-big${Number(R.waste_cost_30d) > 0 ? ' is-waste' : ''}`)]),
-      el('div', {}, [el('span', { className: 'ins-label' }, 'Count accuracy'), accuracy == null ? big('—', 'no counts yet') : big(fmt(accuracy), '%')]),
+      el('div', {}, [el('span', { className: 'ins-label' }, 'Count accuracy'), accuracy == null ? el('span', { className: 'ins-quiet' }, 'No counts yet') : big(fmt(accuracy), '%')]),
     ]),
-    el('ol', { className: 'ins-weeks', 'aria-label': 'Stock used each week, last 8 weeks' }, weeks.map((w, i) => {
-      const use = Number(w.use_cost) || 0, waste = Number(w.waste_cost) || 0;
-      return el('li', { className: `ins-week${i === weeks.length - 1 ? ' is-now' : ''}`, 'aria-label': `Week of ${short(w.start)}: ${money(use)} used${waste ? `, ${money(waste)} wasted` : ''}` }, [
-        el('span', { className: 'ins-week-label' }, i === weeks.length - 1 ? 'This week' : short(w.start)),
-        el('span', { className: 'ins-track', 'aria-hidden': 'true' }, [
-          el('span', { className: 'ins-fill', style: { width: `${use / wmax * 100}%` } }),
-          waste ? el('span', { className: 'ins-fill is-waste', style: { width: `${Math.max(2, waste / wmax * 100)}%` } }) : null]),
-        el('span', { className: 'ins-chips' }, (w.top_locations || []).map(chip)),
-      ]);
-    })),
-  ]);
+    el('div', { className: 'ins-chart' }, [readout, cols]),
+  ]) : el('section', { className: 'ins-card ins-hero is-quiet', 'aria-label': 'Last 30 days' }, [
+    el('span', { className: 'ins-label' }, 'Last 30 days'), el('h2', {}, 'Nothing used yet'),
+    el('p', {}, 'Use and waste show here week by week once stock is used, by hand, by scan or from Treatment Sheets doses. The value on hand is already counted.')]);
+  if (hasHistory) { drawCols(); drawReadout(view.week); }
 
   /* ---------- inventory value + the areas holding the most ---------- */
   const areas = (R.location_value || []).slice(0, 3);
@@ -92,21 +106,28 @@ export function insightsView(ctx) {
   function setArea(id) { view.area = id; areaSelect.value = id; drawAreaTabs(); drawBoard(); }
 
   function drawDetail(r) {
-    if (!r) { detail.replaceChildren(EmptyState({ title: 'Nothing here yet', description: view.q || view.area ? 'Try another area or search.' : 'Insights build from recorded stock movements.', icon: 'chart' })); return; }
+    if (!r) { detail.replaceChildren(EmptyState({ title: 'Nothing here yet', description: view.q || view.area ? 'Try another area or search.' : 'Items show here once stock is added.', icon: 'chart' })); return; }
     const unit = unitOf(r), [label, tone] = status(r), it = find('items', r.item_id);
     const open = () => itemDrawer(it);
-    const cell = (title, value, sub) => el('button', { type: 'button', className: 'ins-cell', onClick: open, 'aria-label': `${title}: open ${r.item_name}` }, [arrow(), el('div', { className: 'ins-cell-value' }, value), el('span', { className: 'ins-cell-title' }, title), sub ? el('span', { className: 'ins-cell-sub' }, sub) : null]);
-    const change = r.usage_change_percent;
+    const change = r.usage_change_percent, wk = (r.weekly_used || []).map(Number), kmax = Math.max(0, ...wk), total = wk.reduce((a, b) => a + b, 0);
+    const places = (r.by_location || []).slice(0, 2);
+    const spark = el('div', { className: 'ins-cell is-spark' }, [
+      el('div', { className: 'ins-spark-head' }, [el('span', { className: 'ins-cell-title' }, 'Use each week'),
+        change == null ? null : el('span', { className: `ins-change${change > 0 ? ' is-up' : change < 0 ? ' is-down' : ''}` }, `${change > 0 ? '+' : change < 0 ? '−' : ''}${fmt(Math.abs(change))}% vs the 30 days before`)]),
+      el('div', { className: 'ins-spark', role: 'img', 'aria-label': `Used each week, last 8 weeks: ${wk.map(fmt).join(', ')} ${unit}` }, wk.map((q, i) =>
+        el('span', { className: `ins-spark-bar${i === wk.length - 1 ? ' is-now' : ''}`, style: { height: kmax ? `${Math.max(q ? 6 : 0, q / kmax * 100)}%` : '0%' } }))),
+      el('span', { className: 'ins-cell-sub' }, total ? `${fmt(total)} ${unit} in 8 weeks` : 'No use in 8 weeks'),
+    ]);
+    const used = el('div', { className: 'ins-cell' }, [el('div', { className: 'ins-cell-value' }, cash(r.usage_cost_30d)), el('span', { className: 'ins-cell-title' }, 'Used · 30 days'),
+      el('span', { className: 'ins-cell-sub' }, `${fmt(r.used_30d)} ${unit}`),
+      Number(r.wasted_30d) > 0 ? el('span', { className: 'ins-cell-waste' }, [cash(r.waste_cost_30d), ` wasted · ${fmt(r.wasted_30d)} ${unit}`]) : null]);
     detail.replaceChildren(
       el('div', { className: 'ins-detail-top' }, [
         el('div', { className: 'ins-detail-name' }, [el('span', { className: 'ins-label' }, 'Item'), el('div', { className: 'ins-name-line' }, [el('strong', {}, r.item_name), badge(label, tone)])]),
-        el('div', {}, [el('span', { className: 'ins-label' }, 'Used most in'), el('div', { className: 'ins-where' }, where(r) ? locationName(where(r)) : '—')]),
-        el('div', {}, [el('span', { className: 'ins-label' }, 'Days of supply'), r.estimated_days_supply == null ? el('div', { className: 'ins-where muted' }, r.confidence === 'disabled' ? 'Forecasting off' : 'Not enough history') : big(fmt(r.estimated_days_supply), 'days')]),
+        el('div', {}, [el('span', { className: 'ins-label' }, 'Used most in'), places.length ? el('div', { className: 'ins-places' }, places.map(b => el('div', { className: 'ins-place' }, [el('span', {}, locationName(b.location_id)), el('span', { className: 'ins-place-qty' }, `${fmt(b.used)} ${unit}`)]))) : el('div', { className: 'ins-where muted' }, 'Not used in 30 days')]),
+        el('div', {}, [el('span', { className: 'ins-label' }, 'Days of supply'), r.estimated_days_supply == null ? el('div', { className: 'ins-where muted' }, r.confidence === 'disabled' ? 'Forecasting off' : 'Not enough history yet') : big(fmt(r.estimated_days_supply), 'days')]),
       ]),
-      el('div', { className: 'ins-cells' }, [
-        cell('Used · 30 days', cash(r.usage_cost_30d), `${fmt(r.used_30d)} ${unit}`),
-        cell('Wasted · 30 days', cash(r.waste_cost_30d), `${fmt(r.wasted_30d)} ${unit}`),
-        cell('Change in use', change == null ? '—' : `${change > 0 ? '+' : change < 0 ? '−' : ''}${fmt(Math.abs(change))}%`, change == null ? 'Needs 60 days of history' : 'vs the 30 days before'),
+      el('div', { className: 'ins-cells' }, [spark, used,
         orderItem ? el('button', { type: 'button', className: 'ins-cell is-add', onClick: () => orderItem(it), 'aria-label': `Order ${r.item_name}` }, [el('span', { className: 'ins-plus' }, Icon('plus')), el('span', { className: 'ins-cell-title' }, 'Order')]) : null,
       ]),
       el('div', { className: 'ins-totals' }, [
@@ -138,10 +159,17 @@ export function insightsView(ctx) {
     const n = (view.area ? 1 : 0) + (view.q ? 1 : 0); count.textContent = String(n); count.hidden = !n;
   }
 
+  const header = PageHeader({ title: 'Insights', description: 'What gets used, what it’s worth and what’s wasted. Every estimate says what it’s based on.', actions: [download.button] });
+  const foot = el('p', { className: 'ins-foot' }, 'Value uses what the hospital paid for stock, never client prices. Days of supply show once an item has a week of history with use on 3 different days.');
+  if (!hasHistory && !hasStock) return [header, el('section', { className: 'ins-card ins-empty' }, [
+    el('span', { className: 'ins-empty-icon', 'aria-hidden': 'true' }, Icon('chart')),
+    el('h2', {}, 'Insights start with your first week of recorded use'),
+    el('p', {}, 'Once stock is added and used, by hand, by scan or from Treatment Sheets doses, this page shows what’s used, what’s wasted and what it’s worth, week by week and area by area.'),
+    el('div', { className: 'ins-empty-actions' }, [Button({ label: 'Go to Inventory', variant: 'primary', icon: 'package', onClick: () => navigate('inventory') }),
+      Button({ label: 'Open Activity', variant: 'secondary', icon: 'clock', onClick: () => navigate('activity') })])]), foot];
   areaSelect.value = view.area; drawAreaTabs(); drawBoard();
   return [
-    PageHeader({ title: 'Insights', description: 'What gets used, what it’s worth and what’s wasted. Every estimate says what it’s based on.', actions: [download.button] }),
-    el('div', { className: 'ins-top' }, [hero, valueCard]), filters, board,
-    el('p', { className: 'ins-foot' }, `${R.valuation_method || 'Inventory value uses acquisition cost, not client prices.'} ${R.cost_basis || ''} Days of supply need at least 7 days of history with use on 3 different days.`),
+    header,
+    el('div', { className: 'ins-top' }, [hero, valueCard]), filters, board, foot,
   ];
 }

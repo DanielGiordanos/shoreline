@@ -4,7 +4,7 @@
    - pairsField: "Field / Value" rows for free-form details, in place of a JSON box.
    - plainError: the few engine messages that need everyday words.
    The engine's text is unchanged (tests and the API rely on it); only what's drawn on screen changes. */
-import { el, Button, Input, Dropdown } from './ui/components.js?v=cf69b844c0';
+import { el, Button, Input, Dropdown } from './ui/components.js?v=5e40e4b4db';
 
 const num = n => new Intl.NumberFormat(undefined, { maximumFractionDigits: 6 }).format(Number(n) || 0).replace(/^-/, '−');
 const sentence = v => { const t = String(v ?? '').replaceAll('_', ' ').toLowerCase(); return t.charAt(0).toUpperCase() + t.slice(1); };

@@ -3,11 +3,11 @@
    engine's insights (days of coverage are the engine's estimate, shown only when it has enough history). Nothing is
    invented: an area with no stock says so, and a number Kura can't know is shown as "—".
    Areas are the locations directly under the hospital; anything below them (carts, fridges, shelves) rolls up. */
-import { el, Button, EmptyState, Icon } from './ui/components.js?v=cf69b844c0';
-import * as I from './iso.js?v=cf69b844c0';
-import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=cf69b844c0';
-import { cachedIcon, drawIcons } from './area-icons.js?v=cf69b844c0';
-import { recommendationText, plural } from './words.js?v=cf69b844c0';
+import { el, Button, EmptyState, Icon } from './ui/components.js?v=5e40e4b4db';
+import * as I from './iso.js?v=5e40e4b4db';
+import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=5e40e4b4db';
+import { cachedIcon, drawIcons } from './area-icons.js?v=5e40e4b4db';
+import { recommendationText, plural } from './words.js?v=5e40e4b4db';
 export { releaseAreaScene };
 
 const SVG = 'http://www.w3.org/2000/svg';

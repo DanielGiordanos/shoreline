@@ -2,9 +2,9 @@
    One field across items (name, SKU, generic name, barcode), lots, orders, kits, safes, locations, vendors and pages.
    Results are grouped, best first; Enter opens the top one, arrow keys move. Everything is on this device:
    nothing is sent anywhere. */
-import { el, Icon } from './ui/components.js?v=cf69b844c0';
-import { ROUTES } from './nav.js?v=cf69b844c0';
-import { plural } from './words.js?v=cf69b844c0';
+import { el, Icon } from './ui/components.js?v=5e40e4b4db';
+import { ROUTES } from './nav.js?v=5e40e4b4db';
+import { plural } from './words.js?v=5e40e4b4db';
 
 const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 /* 3 = exact, 2 = starts with, 1.5 = a word starts with, 1 = contains, 0 = no match */

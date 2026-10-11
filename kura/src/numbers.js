@@ -4,7 +4,7 @@
    - A true minus sign (−), not a hyphen.
    - A value that changes while you look rolls to its new number instead of jumping (off with reduced motion).
    watchNumbers() does all of it for anything Kura draws, so pages don't have to remember. */
-import { el } from './ui/components.js?v=cf69b844c0';
+import { el } from './ui/components.js?v=5e40e4b4db';
 
 export const MINUS = '\u2212';
 const QTY = /^([-−]?\d[\d,.\u202f\u00a0]*)\s([A-Za-z][A-Za-z]{0,11}(?: [a-z]{1,8})?)$/;   // "20 mL", "3 vials", "1,250 each"

@@ -5,8 +5,8 @@
    the order; you check the quantities, lots and dates, then receive in one step. An invoice is matched against the
    order (price) and what was received (quantity) — differences become exceptions to accept or claim a credit for.
    Price lists: import a distributor's CSV; orders then show when another vendor has the same item for less. */
-import { el, Button, Dropdown, EmptyState } from './ui/components.js?v=cf69b844c0';
-import { labelReader, photoPanel, readLabel } from './label-reader.js?v=cf69b844c0';
+import { el, Button, Dropdown, EmptyState } from './ui/components.js?v=5e40e4b4db';
+import { labelReader, photoPanel, readLabel } from './label-reader.js?v=5e40e4b4db';
 
 const money = n => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(Number(n) || 0);
 const UOM = { EA: 'each', EACH: 'each', BX: 'box', BOX: 'box', CS: 'case', CASE: 'case', VL: 'vial', VIAL: 'vial', BG: 'bag', BAG: 'bag', BT: 'bottle', BTL: 'bottle',
