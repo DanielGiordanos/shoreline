@@ -1,5 +1,5 @@
-import { Icon } from './icons.js?v=5e40e4b4db';
-export { Icon } from './icons.js?v=5e40e4b4db';
+import { Icon } from './icons.js?v=c011573571';
+export { Icon } from './icons.js?v=c011573571';
 
 let sequence = 0;
 const uid = (prefix = 'pv') => `${prefix}-${++sequence}`;
@@ -264,7 +264,7 @@ function createDialog({ title, description, children = [], actions = [] } = {}, 
   const titleId = uid('dialog-title');
   const descriptionId = uid('dialog-description');
   const node = el('dialog', { className: isDrawer ? 'pv-dialog pv-drawer' : 'pv-dialog', 'aria-labelledby': titleId, 'aria-describedby': description ? descriptionId : undefined });
-  const closeButton = Button({ label: isDrawer ? 'Close details' : 'Close dialog', icon: 'close', iconOnly: true, variant: 'ghost', onClick: () => node.dismiss() });
+  const closeButton = Button({ label: isDrawer ? 'Close details' : 'Close dialog', icon: 'close', iconOnly: true, variant: 'ghost', onClick: () => (node.requestDismiss ? node.requestDismiss('x') : node.dismiss()) });
   const heading = el('h2', { id: titleId, tabindex: '-1' }, title);
   node.append(el('div', { className: 'pv-dialog-head' }, [el('div', {}, [heading, description ? el('p', { id: descriptionId }, description) : null]), closeButton]), el('div', { className: 'pv-dialog-body' }, children));
   if ([actions].flat().filter(Boolean).length) node.append(el('div', { className: 'pv-dialog-actions' }, actions));
@@ -290,7 +290,7 @@ function createDialog({ title, description, children = [], actions = [] } = {}, 
   node.addEventListener('click', event => {
     if (event.target !== node) return;
     const rect = node.getBoundingClientRect();
-    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) node.dismiss();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) (node.requestDismiss ? node.requestDismiss() : node.dismiss());
   });
   node.addEventListener('keydown', event => {
     if (event.key !== 'Tab' || event.defaultPrevented) return;
