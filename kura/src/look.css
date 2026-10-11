@@ -155,16 +155,76 @@
 .kura-device-select { appearance: none; -webkit-appearance: none; border: 0; border-radius: 980px; padding: .3rem .9rem; background: var(--pravix-surface); color: var(--pravix-text-primary); font: inherit; font-weight: var(--pv-weight-semibold); box-shadow: var(--pravix-shadow); cursor: pointer; }
 .kura-device-select:focus-visible { outline: 3px solid var(--pravix-focus); outline-offset: 2px; }
 .rail-context .kura-device { margin-bottom: .25rem; font-size: .75rem; padding: .25rem .35rem .25rem .6rem; flex-wrap: wrap; }
-.scan-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
-.scan-choice { all: unset; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; padding: 1rem 1.1rem 1.05rem; border-radius: 1.25rem; background: var(--kura-inset); cursor: pointer; transition: background var(--pv-duration-fast) var(--pv-ease), transform var(--pv-duration-fast) var(--pv-ease); }
-.scan-choice:hover { background: var(--pravix-selected); }
-.scan-choice:active { transform: scale(var(--pv-press-scale)); }
-.scan-choice:focus-visible { outline: 3px solid var(--pravix-focus); outline-offset: 2px; }
-.scan-choice b { font-size: 1.125rem; font-weight: var(--pv-weight-bold); letter-spacing: -.01em; }
-.scan-choice small { color: var(--pravix-text-muted); font-size: .8125rem; }
-.scan-choice-icon { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; margin-bottom: .45rem; border-radius: 50%; background: var(--pravix-surface); color: var(--pravix-accent-text); box-shadow: var(--pravix-shadow); }
-.scan-choice-icon svg { width: 1.1rem; height: 1.1rem; }
-.scan-choice.is-last .scan-choice-icon { background: var(--pravix-accent); color: var(--pravix-accent-ink); box-shadow: var(--kura-glow); }
+/* Choice cards (kit.js choiceCards) — built like Flow's Disposition cards (Admit / Discharge): a quiet card with a hairline,
+   a line icon, the title and a faint direction arrow that moves on hover. Used for the scan sheet, Record movement,
+   the item drawer, kit checks and the empty states that offer a next step. */
+.choice-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; container-type: inline-size; width: 100%; }
+.choice-cards[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.choice-cards[data-count="1"] { grid-template-columns: minmax(0, 1fr); }
+.choice-card { all: unset; box-sizing: border-box; position: relative; min-height: 68px; padding: 10px 11px; border-radius: 16px; display: grid; grid-template-columns: 38px minmax(0, 1fr) 20px; gap: 10px; align-items: center; cursor: pointer; text-align: left; font-family: inherit; color: inherit;
+  border: 1px solid transparent; background: var(--kura-inset);
+  transition: transform 160ms cubic-bezier(.2,.8,.2,1), border-color 160ms ease, background 160ms ease, box-shadow 160ms ease; }
+.choice-card:hover { transform: translateY(-1px); }
+.choice-card:active { transform: translateY(0) scale(.986); }
+.choice-card-icon { width: 38px; height: 38px; display: grid; place-items: center; color: #7F9DB2; }
+.choice-card-icon svg { width: 20px; height: 20px; stroke-width: 1.65; transition: transform 160ms cubic-bezier(.2,.8,.2,1); }
+.choice-card-body { min-width: 0; }
+.choice-card-title { display: block; font-size: 14px; font-weight: 650; letter-spacing: -.015em; color: var(--pravix-text-primary); }
+.choice-card-arrow { width: 20px; height: 20px; display: grid; place-items: center; color: rgba(110,130,150,.6); opacity: .55; transition: color 160ms ease, opacity 160ms ease; }
+.choice-card-arrow svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.choice-card:hover .choice-card-arrow { color: var(--pravix-text-secondary); opacity: 1; }
+.choice-card:focus-visible { outline: none; border-color: rgba(88,194,216,.38); box-shadow: 0 0 0 3px rgba(59,177,201,.10); }
+.choice-card.is-in:hover .choice-card-icon svg { transform: translate3d(1px,1px,0) scale(1.02); }
+.choice-card.is-out:hover .choice-card-icon svg { transform: translate3d(1px,-1px,0) scale(1.01); }
+.choice-card.is-across:hover .choice-card-icon svg { transform: translate3d(1px,0,0) scale(1.01); }
+.choice-card.is-in:hover .choice-card-arrow svg { animation: kuraArrowIn 400ms cubic-bezier(.2,.8,.2,1) 70ms both; }
+.choice-card.is-out:hover .choice-card-arrow svg { animation: kuraArrowOut 400ms cubic-bezier(.2,.8,.2,1) 70ms both; }
+.choice-card.is-across:hover .choice-card-arrow svg { animation: kuraArrowAcross 400ms cubic-bezier(.2,.8,.2,1) 70ms both; }
+@keyframes kuraArrowIn { 0% { transform: translate(-4px,-4px); opacity: .42 } 62% { transform: translate(2.6px,2.6px); opacity: 1 } 82% { transform: translate(1.4px,1.4px) } 100% { transform: translate(2px,2px); opacity: 1 } }
+@keyframes kuraArrowOut { 0% { transform: translate(-1px,1px); opacity: .42 } 62% { transform: translate(4px,-4px); opacity: 1 } 82% { transform: translate(2px,-2px) } 100% { transform: translate(3px,-3px); opacity: 1 } }
+@keyframes kuraArrowAcross { 0% { transform: translateX(-4px); opacity: .42 } 62% { transform: translateX(3.6px); opacity: 1 } 82% { transform: translateX(2px) } 100% { transform: translateX(2.6px); opacity: 1 } }
+/* light: Flow's card with Kura's cobalt as the ink — icons and arrows in cobalt, the likely choice outlined, a cobalt focus ring */
+.choice-card-icon { color: rgba(35,67,156,.8); }
+.choice-card-arrow { color: rgba(35,67,156,.42); opacity: 1; }
+.choice-card:hover .choice-card-arrow { color: #23439C; }
+.choice-card.is-last { border-color: rgba(35,67,156,.22); }
+.choice-card.is-last .choice-card-icon { color: #23439C; }
+.choice-card.is-last .choice-card-arrow { color: rgba(35,67,156,.8); }
+.choice-card:focus-visible { border-color: rgba(35,67,156,.5); box-shadow: 0 0 0 3px rgba(35,67,156,.14); }
+/* dark: Flow's exact card — translucent white over the sheet, hairline border, lift on hover */
+:root[data-product="kura"][data-theme="dark"] .choice-card { border-color: rgba(255,255,255,.07); background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03)); box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
+:root[data-product="kura"][data-theme="dark"] .choice-card:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.125); background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04)); box-shadow: 0 7px 18px rgba(0,0,0,.11), inset 0 1px 0 rgba(255,255,255,.04); }
+:root[data-product="kura"][data-theme="dark"] .choice-card:active { transform: translateY(0) scale(.986); }
+:root[data-product="kura"][data-theme="dark"] .choice-card:focus-visible { border-color: rgba(88,194,216,.38); box-shadow: 0 0 0 3px rgba(59,177,201,.10), inset 0 1px 0 rgba(255,255,255,.03); }
+:root[data-product="kura"][data-theme="dark"] .choice-card-icon { color: #8FB0C4; }
+:root[data-product="kura"][data-theme="dark"] .choice-card-title { color: rgba(245,248,252,.96); }
+:root[data-product="kura"][data-theme="dark"] .choice-card-arrow { color: rgba(150,171,191,.5); }
+:root[data-product="kura"][data-theme="dark"] .choice-card:hover .choice-card-arrow { color: rgba(190,208,222,.95); }
+:root[data-product="kura"][data-theme="dark"] .choice-card-arrow { opacity: .55; }
+:root[data-product="kura"][data-theme="dark"] .choice-card:hover .choice-card-arrow { opacity: 1; }
+:root[data-product="kura"][data-theme="dark"] .choice-card.is-last { border-color: rgba(255,255,255,.07); }
+@media (prefers-reduced-motion: reduce) {
+  .choice-card, .choice-card-icon svg, .choice-card-arrow { transition: none; }
+  .choice-card:hover, :root[data-product="kura"][data-theme="dark"] .choice-card:hover { transform: none; }
+  .choice-card:hover .choice-card-icon svg, .choice-card:hover .choice-card-arrow svg { animation: none; transform: none; }
+}
+/* narrow cards (three across in under 36rem, two across in under 20rem — a phone, a kit card, an empty state):
+   icon over the title, the arrow in the corner */
+@container (max-width: 36rem) {
+  .choice-cards[data-count="3"] .choice-card { grid-template-columns: minmax(0, 1fr) 20px; grid-template-rows: auto auto; gap: 6px 4px; align-items: start; padding: 11px 10px 10px 12px; }
+  .choice-cards[data-count="3"] .choice-card-icon { width: 24px; height: 24px; place-items: center start; }
+  .choice-cards[data-count="3"] .choice-card-arrow { grid-column: 2; grid-row: 1; }
+  .choice-cards[data-count="3"] .choice-card-body { grid-column: 1 / -1; grid-row: 2; }
+}
+@container (max-width: 20rem) {
+  .choice-cards[data-count="2"] .choice-card { grid-template-columns: minmax(0, 1fr) 20px; grid-template-rows: auto auto; gap: 6px 4px; align-items: start; padding: 11px 10px 10px 12px; }
+  .choice-cards[data-count="2"] .choice-card-icon { width: 24px; height: 24px; place-items: center start; }
+  .choice-cards[data-count="2"] .choice-card-arrow { grid-column: 2; grid-row: 1; }
+  .choice-cards[data-count="2"] .choice-card-body { grid-column: 1 / -1; grid-row: 2; }
+}
+.pv-empty .empty-choices { max-width: 32rem; margin: .5rem auto 0; text-align: left; }
+.kit-card .kit-choices { margin-top: auto; }
+.kit-card .kit-choices + .kit-actions { margin-top: 0; }
 .scan-sheet-foot { display: flex; justify-content: center; margin-top: .75rem; }
 
 /* ---------- n103: lists, sheets, menus, undo ---------- */
@@ -197,7 +257,8 @@
 
 /* the "…" menu */
 .kura-more .pv-button { border-radius: 980px; }
-.item-actions { flex-wrap: wrap; gap: .5rem; align-items: center; }
+.item-actions { display: flex; flex-direction: column; gap: .5rem; align-items: stretch; }
+.item-actions > .pv-menu { align-self: flex-start; }
 
 /* one sheet: a dialog opened from another takes its place, with Back */
 .pv-dialog.is-covered { visibility: hidden; }
@@ -287,3 +348,118 @@
   .qr-label { box-shadow: none; border: .3mm dashed #999; border-radius: 2mm; padding: 3mm; }
   .qr-label svg { width: 30mm; height: 30mm; }
 }
+
+/* ---------- n106: plain words (words.js) ---------- */
+.kura-headline { margin: 0; font-size: 1.0625rem; font-weight: var(--pv-weight-semibold); letter-spacing: -.012em; line-height: 1.35; color: var(--pravix-text-primary); }
+.kura-why { border-radius: 1rem; background: var(--kura-inset); padding: .1rem .9rem; }
+.kura-why > summary { cursor: pointer; padding: .55rem 0; font-weight: var(--pv-weight-semibold); color: var(--pravix-accent-text); list-style: none; }
+.kura-why > summary::-webkit-details-marker { display: none; }
+.kura-why > summary::after { content: ''; display: inline-block; width: .38em; height: .38em; margin: 0 0 .14em .45em; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(-45deg); transition: transform var(--pv-duration-fast) var(--pv-ease); }
+.kura-why[open] > summary::after { transform: rotate(45deg); margin-bottom: .22em; }
+.kura-why ul { margin: 0 0 .7rem; padding-left: 1.1rem; display: grid; gap: .3rem; color: var(--pravix-text-secondary); font-size: var(--pv-type-body); }
+.readable { display: grid; gap: .1rem; margin: 0; }
+.readable > div { display: grid; grid-template-columns: minmax(7rem, 34%) minmax(0, 1fr); gap: .75rem; padding: .5rem 0; border-bottom: 1px solid var(--pravix-border-subtle); }
+.readable > div:last-child { border-bottom: 0; }
+.readable dt { color: var(--pravix-text-muted); font-size: var(--pv-type-small); }
+.readable dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.readable .readable { padding-left: .75rem; border-left: 2px solid var(--pravix-border-subtle); }
+.readable-list { margin: 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
+.readable-list > li { border-radius: .9rem; background: var(--kura-inset); padding: .25rem .9rem; }
+.readable-text { margin: 0; }
+:root[data-product="kura"][data-theme="dark"] .kura-why, :root[data-product="kura"][data-theme="dark"] .readable-list > li { background: var(--kura-fill); }
+.pairs-rows { display: grid; gap: .5rem; }
+.pairs-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: .5rem; align-items: end; }
+@media (max-width: 30rem) { .pairs-row { grid-template-columns: minmax(0, 1fr) auto; } .pairs-row > .pv-field:nth-child(2) { grid-column: 1; } }
+.api-key { display: grid; gap: .5rem; }
+.api-key-token { display: block; padding: .8rem 1rem; border-radius: .9rem; background: var(--kura-inset); font-family: var(--pv-font-mono); font-size: .85rem; overflow-wrap: anywhere; user-select: all; }
+
+/* ---------- n106: numbers (numbers.js) ---------- */
+[data-product="kura"] td, [data-product="kura"] .pv-metric-value, [data-product="kura"] .kq, [data-product="kura"] .kit-facts dd,
+[data-product="kura"] .readable dd, [data-product="kura"] .cs-balance, [data-product="kura"] .ovx-big, [data-product="kura"] .kl-detail { font-variant-numeric: tabular-nums; }
+.kq { white-space: nowrap; }
+.kq-u { font-size: .78em; font-weight: var(--pv-weight-medium); color: var(--pravix-text-muted); letter-spacing: 0; }
+.pv-metric-value .kq-u { font-size: .5em; font-weight: var(--pv-weight-semibold); margin-left: .1em; }
+td .kq-u { font-size: .86em; }
+.kl-value small { font-weight: var(--pv-weight-medium); }
+
+/* ---------- n106: sheets move like iOS (makeDialog) ---------- */
+@keyframes kura-grow { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes kura-leave { to { opacity: 0; transform: scale(.97); } }
+@keyframes kura-leave-side { to { opacity: 0; transform: translateX(1.5rem); } }
+@keyframes kura-cover { to { opacity: 0; transform: translateX(-1.25rem); } }
+@keyframes kura-reveal { from { opacity: 0; transform: translateX(-1.25rem); } to { opacity: 1; transform: none; } }
+@keyframes kura-content-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.pv-dialog[open] > .pv-dialog-body { animation: kura-content-in 240ms cubic-bezier(.2,.8,.2,1) 60ms both; }
+.pv-dialog.is-growing[open] { animation: kura-grow 300ms cubic-bezier(.2,.9,.25,1) both; }
+.pv-dialog.is-covering[open] { animation: kura-cover 260ms var(--pv-ease) both; pointer-events: none; }
+.pv-dialog.is-revealing[open] { animation: kura-reveal 280ms cubic-bezier(.2,.9,.25,1) both; }
+.kura-ghost { position: fixed; margin: 0; z-index: 2147483000; display: flex; flex-direction: column; overflow: hidden; pointer-events: none; animation: kura-leave 200ms ease-in both; }
+.kura-ghost.is-side { animation-name: kura-leave-side; }
+.kura-ghost > .pv-dialog-body { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .pv-dialog[open] > .pv-dialog-body, .pv-dialog.is-growing[open], .pv-dialog.is-covering[open], .pv-dialog.is-revealing[open] { animation: none; }
+  .kura-ghost { display: none; }
+}
+
+/* ---------- n106: large titles settle into the header ---------- */
+[data-product="kura"] .kura-header { position: sticky; transition: border-color 200ms ease; }
+[data-product="kura"] .kura-header:not(.has-title) { border-bottom-color: transparent; }
+.kura-header-title { position: absolute; left: 50%; top: 50%; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;
+  font-size: 1rem; font-weight: var(--pv-weight-semibold); letter-spacing: -.012em; color: var(--pravix-text-primary);
+  opacity: 0; transform: translate(-50%, -30%); transition: opacity 180ms ease, transform 220ms cubic-bezier(.2,.8,.2,1); }
+.kura-header.has-title .kura-header-title { opacity: 1; transform: translate(-50%, -50%); }
+@media (prefers-reduced-motion: reduce) { .kura-header-title { transition: none; } }
+
+/* ---------- n106: the save moment ---------- */
+.kura-check { width: 1.25rem; height: 1.25rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; color: var(--pravix-success); }
+.kura-check-ring, .kura-check-tick { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.kura-check-ring { animation: kura-draw 360ms cubic-bezier(.4,0,.2,1) 40ms forwards; opacity: .55; }
+.kura-check-tick { animation: kura-draw 260ms cubic-bezier(.3,.7,.2,1) 300ms forwards; }
+@keyframes kura-draw { to { stroke-dashoffset: 0; } }
+.pv-toast.has-time { position: relative; overflow: hidden; }
+.kura-toast-time { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--pravix-accent); opacity: .8; transform-origin: left center; animation: kura-toast-time 6s linear forwards; }
+.pv-toast.has-time:hover .kura-toast-time, .pv-toast.has-time:focus-within .kura-toast-time { animation-play-state: paused; }
+@keyframes kura-toast-time { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .kura-check-ring, .kura-check-tick { animation: none; stroke-dashoffset: 0; } }
+
+/* ---------- n107: the header's two buttons, exactly as Flow and Treatment Sheets draw them ---------- */
+/* Day/night switch: Flow's two pictures, cross-faded */
+.kura-theme-toggle { position: relative; flex: none; width: 72px; height: 34px; padding: 0; border: 0; border-radius: 50px; overflow: hidden; cursor: pointer; background: none;
+  box-shadow: 0 0 0 1.5px rgba(29,29,31,.12); transition: box-shadow .2s; }
+.kura-theme-toggle:hover { box-shadow: 0 0 0 2px rgba(44,184,210,.5); }
+.kura-theme-toggle:focus-visible { outline: 3px solid var(--pravix-focus); outline-offset: 3px; }
+.kura-theme-toggle img { position: absolute; inset: 0; width: 72px; height: 34px; object-fit: cover; display: block; border-radius: 50px; pointer-events: none; transition: opacity .3s; }
+.kura-theme-toggle .is-light { opacity: 1; } .kura-theme-toggle .is-dark { opacity: 0; }
+:root[data-theme="dark"] .kura-theme-toggle { box-shadow: 0 0 0 1.5px rgba(255,255,255,.15); }
+:root[data-theme="dark"] .kura-theme-toggle:hover { box-shadow: 0 0 0 2px rgba(77,200,224,.5); }
+:root[data-theme="dark"] .kura-theme-toggle .is-light { opacity: 0; } :root[data-theme="dark"] .kura-theme-toggle .is-dark { opacity: 1; }
+
+/* Sign out: Flow's Logout button */
+.kura-logout { --mx: 50%; --my: 50%;
+  --surface-top: rgba(255,255,255,.96); --surface-bottom: rgba(247,249,252,.90); --border: rgba(20,28,40,.08); --border-hover: rgba(20,28,40,.13); --text: #1d1d1f; --icon: #59616d;
+  --icon-bg-top: rgba(65,72,82,.055); --icon-bg-bottom: rgba(65,72,82,.025); --icon-bg-hover-top: rgba(65,72,82,.075); --icon-bg-hover-bottom: rgba(65,72,82,.035);
+  --icon-border: rgba(65,72,82,.10); --icon-border-hover: rgba(65,72,82,.14); --chevron: rgba(95,104,116,.46); --chevron-hover: rgba(72,78,88,.72); --highlight: rgba(255,255,255,.72);
+  position: relative; flex: none; height: 40px; padding: 0 12px 0 8px; border: 1px solid var(--border); border-radius: 13px; display: grid; grid-template-columns: 28px auto 16px; align-items: center; gap: 8px;
+  cursor: pointer; color: var(--text); font-family: var(--pv-font); background: linear-gradient(180deg, var(--surface-top), var(--surface-bottom)); box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  overflow: hidden; isolation: isolate; transition: transform 180ms cubic-bezier(.2,.8,.2,1), border-color 180ms ease, background 180ms ease, box-shadow 180ms ease; }
+:root[data-theme="dark"] .kura-logout { --surface-top: rgba(25,37,64,.92); --surface-bottom: rgba(17,27,48,.94); --border: rgba(77,200,224,.16); --border-hover: rgba(77,200,224,.30); --text: #D8E8F4; --icon: #A7C2D8;
+  --icon-bg-top: rgba(77,200,224,.10); --icon-bg-bottom: rgba(77,200,224,.04); --icon-bg-hover-top: rgba(77,200,224,.16); --icon-bg-hover-bottom: rgba(77,200,224,.06);
+  --icon-border: rgba(77,200,224,.18); --icon-border-hover: rgba(77,200,224,.30); --chevron: rgba(167,194,216,.50); --chevron-hover: rgba(216,232,244,.80); --highlight: rgba(77,200,224,.12); }
+.kura-logout::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(170px 100px at var(--mx) var(--my), var(--highlight), transparent 68%); opacity: 0; transition: opacity 160ms ease; pointer-events: none; z-index: 0; }
+.kura-logout:hover { border-color: var(--border-hover); box-shadow: inset 0 1px 0 rgba(255,255,255,.10); }
+.kura-logout:hover::before { opacity: 1; }
+.kura-logout:active { transform: scale(.985); box-shadow: inset 0 2px 5px rgba(0,0,0,.08); }
+.kura-logout:focus-visible { outline: 3px solid var(--pravix-focus); outline-offset: 4px; }
+.kura-logout-icon { position: relative; z-index: 1; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; color: var(--icon); background: linear-gradient(180deg, var(--icon-bg-top), var(--icon-bg-bottom)); border: 1px solid var(--icon-border);
+  transition: transform 190ms cubic-bezier(.2,.8,.2,1), background 180ms ease, border-color 180ms ease; }
+.kura-logout-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.kura-logout-icon g { transition: transform 190ms cubic-bezier(.2,.8,.2,1); }
+.kura-logout:hover .kura-logout-icon { transform: translateX(-.5px); background: linear-gradient(180deg, var(--icon-bg-hover-top), var(--icon-bg-hover-bottom)); border-color: var(--icon-border-hover); }
+.kura-logout:hover .door { transform: translateX(-.45px); } .kura-logout:hover .exit { transform: translateX(2.2px); }
+.kura-logout:active .kura-logout-icon { transform: scale(.96); } .kura-logout:active .exit { transform: translateX(3px) scale(.96); }
+.kura-logout-label { position: relative; z-index: 1; font-size: 14px; font-weight: 600; line-height: 1; letter-spacing: -.015em; color: var(--text); white-space: nowrap; transition: transform 180ms cubic-bezier(.2,.8,.2,1); }
+.kura-logout:hover .kura-logout-label { transform: translateX(1px); }
+.kura-logout-chevron { position: relative; z-index: 1; width: 16px; height: 16px; display: grid; place-items: center; color: var(--chevron); transition: transform 190ms cubic-bezier(.2,.8,.2,1), color 180ms ease; }
+.kura-logout-chevron svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.kura-logout:hover .kura-logout-chevron { transform: translateX(1.25px); color: var(--chevron-hover); }
+@media (prefers-reduced-motion: reduce) { .kura-logout, .kura-logout *, .kura-theme-toggle, .kura-theme-toggle img { transition: none; } .kura-logout:hover *, .kura-logout:active * { transform: none; } }

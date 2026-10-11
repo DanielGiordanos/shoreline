@@ -1,7 +1,7 @@
 /* Morning brief on this phone: sign up for a notification at a chosen hour, and keep the brief's summary current.
    Works on shoreline.pravix.app (kura-web.js sets globalThis.kuraBrief) once the kuraBrief Cloud Function is deployed
    (cloud/functions/). On iPhone, web notifications need Kura added to the Home Screen first (iOS 16.4 or later). */
-import { el, Button, Card, Dropdown } from './ui/components.js?v=3a7528f6ad';
+import { el, Button, Card, Dropdown } from './ui/components.js?v=a31c3934f6';
 
 const KEY = 'kura-brief-published';
 const HOURS = [5, 6, 7, 8, 9, 10];

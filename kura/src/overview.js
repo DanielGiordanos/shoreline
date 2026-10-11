@@ -3,10 +3,11 @@
    engine's insights (days of coverage are the engine's estimate, shown only when it has enough history). Nothing is
    invented: an area with no stock says so, and a number Kura can't know is shown as "—".
    Areas are the locations directly under the hospital; anything below them (carts, fridges, shelves) rolls up. */
-import { el, Button, EmptyState, Icon } from './ui/components.js?v=3a7528f6ad';
-import * as I from './iso.js?v=3a7528f6ad';
-import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=3a7528f6ad';
-import { cachedIcon, drawIcons } from './area-icons.js?v=3a7528f6ad';
+import { el, Button, EmptyState, Icon } from './ui/components.js?v=a31c3934f6';
+import * as I from './iso.js?v=a31c3934f6';
+import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=a31c3934f6';
+import { cachedIcon, drawIcons } from './area-icons.js?v=a31c3934f6';
+import { recommendationText } from './words.js?v=a31c3934f6';
 export { releaseAreaScene };
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -245,14 +246,23 @@ export function alertsSheet(k, d) {
   const { list, navigate, itemDrawer, find, can } = k;
   const all = list('alerts'), open = all.filter(a => a.status !== 'acknowledged'), seen = all.filter(a => a.status === 'acknowledged');
   const rank = a => (a.severity === 'critical' ? 0 : 1);
+  // a stock alert reads as the suggestion it comes from ("Order 2 boxes · brings ICU to its 120 mL target"), not the engine's sums
+  const recs = Array.isArray(k.state?.recommendations) ? k.state.recommendations : k.state?.recommendations?.items || [];
+  const plainAlert = a => {
+    const r = a.type === 'stock' ? recs.find(x => x.item_id === a.item_id && x.location_id === a.location_id) : null;
+    if (!r) return { title: a.title, message: a.message };
+    const w = recommendationText(r, { locationName: k.locationName, vendorName: k.vendorName });
+    return { title: w.title, message: w.headline };
+  };
   let dialog;
   const go = page => { dialog?.close(); navigate(page); };
   const row = a => {
     const [label, page] = ALERT_STEP[a.type] || ['Review', 'integrations'];
     const item = a.item_id ? find('items', a.item_id) : null;
+    const words = plainAlert(a);
     return el('li', { className: 'ovx-alert', 'data-tone': a.severity === 'critical' ? 'critical' : 'warning' }, [
       el('i', { className: 'ovx-dot' }),
-      el('span', { className: 'ovx-alert-main' }, [el('b', {}, a.title), el('small', {}, a.message)]),
+      el('span', { className: 'ovx-alert-main' }, [el('b', {}, words.title), el('small', {}, words.message)]),
       el('span', { className: 'ovx-alert-actions' }, [
         item && a.type !== 'stock' ? Button({ label: 'Item', size: 'sm', variant: 'ghost', onClick: () => { dialog?.close(); itemDrawer(item); } }) : null,
         Button({ label, size: 'sm', onClick: () => go(page) }),
@@ -266,7 +276,7 @@ export function alertsSheet(k, d) {
   const children = [
     open.length || doses ? el('ul', { className: 'ovx-alerts' }, [doses, ...open.slice().sort((a, b) => rank(a) - rank(b)).map(row)].filter(Boolean))
       : EmptyState({ title: 'No alerts', description: 'Low stock, expiring lots, backorders and count differences show up here.', icon: 'check-circle' }),
-    seen.length ? el('details', { className: 'ovx-alerts-seen' }, [el('summary', {}, `${seen.length} seen`), el('ul', { className: 'ovx-alerts' }, seen.slice(0, 20).map(a => el('li', { className: 'ovx-alert is-seen' }, [el('i', { className: 'ovx-dot' }), el('span', { className: 'ovx-alert-main' }, [el('b', {}, a.title), el('small', {}, a.message)])])))]) : null,
+    seen.length ? el('details', { className: 'ovx-alerts-seen' }, [el('summary', {}, `${seen.length} seen`), el('ul', { className: 'ovx-alerts' }, seen.slice(0, 20).map(a => el('li', { className: 'ovx-alert is-seen' }, [el('i', { className: 'ovx-dot' }), el('span', { className: 'ovx-alert-main' }, [el('b', {}, plainAlert(a).title), el('small', {}, plainAlert(a).message)])])))]) : null,
   ].filter(Boolean);
   dialog = k.makeDialog({ title: 'Alerts', description: open.length + (doses ? 1 : 0) ? `${open.length + (doses ? 1 : 0)} open` : 'All clear', children }, true);
   return dialog;
@@ -276,6 +286,7 @@ let liveIcons = null;
 export function overviewDashboard(k) {
   const d = computeOverview(k);
   const { fmt, money, navigate, itemDrawer, movementDialog, can, list } = k;
+  const record = (prefill, where) => k.recordMovement ? k.recordMovement(prefill, where) : movementDialog(undefined, 'receive', prefill);
   const hasItems = list('items').length > 0;
   const zones = d.zones;
   const tracked = d.tracked.length, wellN = d.states.well.length, lowN = d.states.low.length, critN = d.states.critical.length;
@@ -295,7 +306,7 @@ export function overviewDashboard(k) {
   const alertCount = alerts.length + (d.waiting ? 1 : 0);
   const actions = el('div', { className: 'ovx-actions' }, [roundIcon('barcode', 'Scan a barcode', () => navigate('scan')),
     roundIcon('alert', alertCount ? `Alerts: ${alertCount} open` : 'Alerts', () => alertsSheet(k, d), alertCount || null),
-    can('stock.move') ? el('button', { type: 'button', className: 'ovx-primary', onClick: () => movementDialog() }, [Icon('plus'), 'Record movement']) : null]);
+    can('stock.move') ? el('button', { type: 'button', className: 'ovx-primary', onClick: () => record() }, [Icon('plus'), 'Record movement']) : null]);
   const toFix = lowN + critN;
   const headlineWords = !tracked ? 'Record what’s on the shelves to begin.'
     : !toFix ? 'Everything is at par.'
@@ -568,7 +579,7 @@ export function overviewDashboard(k) {
         zr.length ? el('div', { className: 'ov-drawer-list' }, zr.map(r => el('button', { type: 'button', className: 'ov-drawer-row', onClick: () => itemDrawer(r.item) }, [
           el('span', {}, [el('strong', {}, r.item.name), el('small', {}, `${fmt(r.available)} ${r.item.base_unit} available${r.hasPar ? ` · reorder at ${fmt(r.rule.reorder_point)}` : ''}${r.expiresIn != null ? ` · ${r.expiresIn <= 0 ? 'a lot has expired' : `a lot expires in ${r.expiresIn} day${r.expiresIn === 1 ? '' : 's'}`}` : ''}`)]), pill(r.state)]))) :
           EmptyState({ title: 'No stock here yet', description: 'Receive stock or record an opening balance for this area.', icon: 'package' }),
-        el('div', { className: 'inline' }, [can('stock.move') ? Button({ label: 'Record movement', variant: 'primary', icon: 'plus', onClick: () => movementDialog(undefined, 'receive', { location_id: z.area.id }) }) : null, Button({ label: 'Open Locations', onClick: () => navigate('locations') })]),
+        el('div', { className: 'inline' }, [can('stock.move') ? Button({ label: 'Record movement', variant: 'primary', icon: 'plus', onClick: () => record({ location_id: z.area.id }, z.area.name) }) : null, Button({ label: 'Open Locations', onClick: () => navigate('locations') })]),
       ])] }, true);
   }
 

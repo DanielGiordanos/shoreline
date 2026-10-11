@@ -1,7 +1,8 @@
 /* Kits & carts — crash carts, anesthesia boxes, procedure kits (engine: backend/kits.py → state.kits).
    Each kit shows whether it is ready to use, its seal and earliest expiry, and the one action it needs next:
    a one-tap seal check, or a restock that records what was used, swaps out short-dated stock and refills it. */
-import { el, Button, EmptyState, Metric, PageHeader } from './ui/components.js?v=3a7528f6ad';
+import { el, Button, EmptyState, Metric, PageHeader } from './ui/components.js?v=a31c3934f6';
+import { choiceCards } from './kit.js?v=a31c3934f6';
 
 const STATUS = { ready: ['success', 'Ready'], expiring: ['warning', 'Expiring soon'], check_due: ['warning', 'Check due'], restock: ['critical', 'Needs restock'],
   expired: ['critical', 'Expired inside'], opened: ['critical', 'Opened'], setup: ['neutral', 'Set contents'] };
@@ -78,6 +79,8 @@ function kitCard(k, kit) {
   const primary = kit.status === 'setup' ? k.act('Set contents', () => kitEditor(k, kit), 'kit.save', 'primary')
     : ['opened', 'restock', 'expired', 'expiring'].includes(kit.status) ? k.act('Restock', () => restockDialog(k, kit), 'kit.restock', 'primary')
       : k.act(kit.seal ? `Seal ${kit.seal} intact` : 'Check kit', () => sealCheck(k, kit), 'kit.check', kit.status === 'check_due' ? 'primary' : 'secondary');
+  // a kit that only needs checking gets the two-card decision (intact / opened); restock and set-up stay one button
+  const checking = !['setup', 'opened', 'restock', 'expired', 'expiring'].includes(kit.status) && k.can('kit.check');
   const facts = [
     ['Seal', kit.seal || (kit.status === 'opened' ? 'Broken' : '—')],
     ['Checked', kit.last_check ? `${ago(kit.hours_since_check)}` : 'Never'],
@@ -88,7 +91,10 @@ function kitCard(k, kit) {
     el('div', { className: 'kit-head' }, [el('div', {}, [el('h3', {}, kit.name), el('p', { className: 'muted small' }, `${kit.kind_label} · ${kit.area_name || '—'}`)]), el('span', { className: 'kit-status', 'data-tone': tone }, label)]),
     el('dl', { className: 'kit-facts' }, facts.map(([a, b]) => el('div', {}, [el('dt', {}, a), el('dd', {}, b)]))),
     kit.missing || kit.expired ? el('p', { className: 'plan-why' }, [kit.missing ? `Missing: ${kit.lines.filter(l => l.missing > 0).map(l => `${l.name} ×${k.fmt(l.missing)}`).join(', ')}.` : null, kit.expired ? ` ${kit.expired} expired lot(s) inside.` : null].filter(Boolean).join('')) : null,
-    el('div', { className: 'kit-actions' }, [primary, kit.status !== 'opened' && kit.lines.length ? k.act('Opened…', () => openedDialog(k, kit), 'kit.check', 'ghost') : null,
+    checking ? choiceCards([
+      { id: 'intact', label: kit.seal ? 'Seal intact' : 'All there', aria: kit.seal ? `Seal ${kit.seal} intact` : 'Check kit, all there', detail: kit.seal ? `Seal ${kit.seal} is unbroken` : 'Contents checked', icon: 'check-circle', dir: 'across', onPick: () => sealCheck(k, kit) },
+      { id: 'opened', label: 'Opened…', aria: 'Opened…, used in a code or broken seal', detail: 'Used in a code, or the seal is broken', icon: 'alert', dir: 'out', onPick: () => openedDialog(k, kit), hidden: !kit.lines.length }], { label: `Check ${kit.name}`, className: 'kit-choices' }) : null,
+    el('div', { className: 'kit-actions' }, [checking ? null : primary, !checking && kit.status !== 'opened' && kit.lines.length ? k.act('Opened…', () => openedDialog(k, kit), 'kit.check', 'ghost') : null,
       k.act('Edit', () => kitEditor(k, kit), 'kit.save', 'ghost'), Button({ label: 'History', variant: 'ghost', onClick: () => historyDialog(k, kit) }),
       k.qrLabels ? Button({ label: 'QR label', variant: 'ghost', onClick: () => k.qrLabels([k.find('locations', kit.id) || { id: kit.id, name: kit.name, type: 'kit' }]) }) : null].filter(Boolean))]);
 }

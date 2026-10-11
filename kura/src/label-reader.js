@@ -7,7 +7,7 @@
 
    Available on shoreline.pravix.app (kura-web.js sets globalThis.kuraLabelReader); the local Mac version has no
    sign-in token for the function, so the panel isn't shown there. */
-import { el, Button, Icon } from './ui/components.js?v=3a7528f6ad';
+import { el, Button, Icon } from './ui/components.js?v=a31c3934f6';
 
 export const MAX_PHOTOS = 3;
 const MAX_SIDE = 1568, QUALITY = 0.85, TIMEOUT_MS = 60000;

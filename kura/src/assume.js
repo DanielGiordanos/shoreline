@@ -5,7 +5,9 @@
    - A scan asks one thing afterwards: Use, Add, Move or Count.
    - A new item without a SKU gets one from its name (the engine makes the same one: backend/core.py sku_from_name).
    Per-device choices live in this browser only (localStorage), never in the shared inventory. */
-import { el, Button, Icon } from './ui/components.js?v=3a7528f6ad';
+import { el, Button, Icon } from './ui/components.js?v=a31c3934f6';
+import { choiceCards } from './kit.js?v=a31c3934f6';
+import { plural } from './words.js?v=a31c3934f6';
 
 const DEVICE_KEY = 'kura-device-location', LAST_KEY = 'kura-scan-last';
 const read = key => { try { return localStorage.getItem(key) || ''; } catch { return ''; } };
@@ -70,10 +72,10 @@ export function nextSku(name, items) {
 
 /* ---------- after a scan: one question ---------- */
 export const SCAN_ACTIONS = [
-  { id: 'use', label: 'Use', detail: 'Take from stock', icon: 'minus' },
-  { id: 'receive', label: 'Add', detail: 'Receive or put back', icon: 'plus' },
-  { id: 'transfer', label: 'Move', detail: 'To another location', icon: 'arrow-right' },
-  { id: 'count', label: 'Count', detail: 'Set what’s really here', icon: 'check-circle' },
+  { id: 'use', label: 'Use', detail: 'Take from stock', icon: 'minus', dir: 'out' },
+  { id: 'receive', label: 'Add', detail: 'Receive or put back', icon: 'plus', dir: 'in' },
+  { id: 'transfer', label: 'Move', detail: 'To another location', icon: 'location', dir: 'across' },
+  { id: 'count', label: 'Count', detail: 'Set what’s really here', icon: 'check-circle', dir: 'across' },
 ];
 export const lastScanAction = () => read(LAST_KEY) || 'use';
 
@@ -82,15 +84,39 @@ export function scanSheet(k, item, prefill = {}, note = '') {
   const allowed = SCAN_ACTIONS.filter(a => k.canDo(a.id));
   const here = deviceLocation(k.list);
   const at = (loc) => k.list('balances').filter(b => b.item_id === item.id && (!loc || b.location_id === loc)).reduce((n, b) => n + Number(b.available || 0), 0);
-  const where = here ? `${k.fmt(at(here))} ${item.base_unit} in ${k.locationName(here)} · ${k.fmt(at())} in all` : `${k.fmt(at())} ${item.base_unit} available`;
+  const where = here ? `${k.fmt(at(here))} ${plural(item.base_unit, at(here))} in ${k.locationName(here)} · ${k.fmt(at())} in all` : `${k.fmt(at())} ${plural(item.base_unit, at())} available`;
   let dialog;
   const last = lastScanAction();
   const pick = id => { write(LAST_KEY, id); dialog.close(); k.onPick(id, item, prefill); };
-  const grid = el('div', { className: 'scan-choices' }, allowed.map(a => el('button', { type: 'button', className: `scan-choice${a.id === last ? ' is-last' : ''}`, 'aria-label': `${a.label}, ${a.detail.toLowerCase()}`, onClick: () => pick(a.id) },
-    [el('span', { className: 'scan-choice-icon' }, [Icon(a.icon)]), el('b', {}, a.label), el('small', {}, a.detail)])));
+  const grid = choiceCards(allowed.map(a => ({ ...a, onPick: () => pick(a.id) })), { label: 'What are you doing?', last, className: 'scan-choices' });
   dialog = k.makeDialog({ title: item.name, description: [where, note].filter(Boolean).join(' · '), children: [grid,
     el('div', { className: 'scan-sheet-foot' }, [Button({ label: 'Item details', variant: 'ghost', size: 'sm', onClick: () => { dialog.close(); k.onDetails(item); } })])] });
   dialog.classList.add('scan-sheet');
+  requestAnimationFrame(() => (grid.querySelector('.is-last') || grid.firstChild)?.focus());
+  return dialog;
+}
+
+/* ---------- "Record movement" without an item: first, what kind ---------- */
+/* The four everyday movements as cards; the rest (opening balance, correction, emergency) behind "Something else…".
+   k: { makeDialog, canMove(kind), open(kind) }. `where` is the area's name when it came from one. */
+export const MOVEMENT_CHOICES = [
+  { id: 'use', label: 'Use', detail: 'Take from stock', icon: 'minus', dir: 'out' },
+  { id: 'receive', label: 'Add', detail: 'Receive or put back', icon: 'plus', dir: 'in' },
+  { id: 'transfer', label: 'Move', detail: 'To another location', icon: 'location', dir: 'across' },
+  { id: 'waste', label: 'Waste or return', detail: 'Expired, broken or sent back', icon: 'trash', dir: 'out' },
+];
+const OTHER_KINDS = ['adjust', 'opening', 'emergency', 'return', 'dispose'];
+const MOVE_KEY = 'kura-movement-last';
+export function movementPicker(k, { where = '' } = {}) {
+  const allowed = MOVEMENT_CHOICES.filter(c => k.canMove(c.id)), other = OTHER_KINDS.find(k.canMove);
+  if (allowed.length + (other ? 1 : 0) < 2) { k.open(allowed[0]?.id || other); return null; }   // nothing to choose
+  let dialog;
+  const pick = id => { write(MOVE_KEY, id); dialog.close(); k.open(id); };
+  const last = read(MOVE_KEY);
+  const grid = choiceCards(allowed.map(c => ({ ...c, onPick: () => pick(c.id) })), { label: 'What are you recording?', last, className: 'movement-choices' });
+  dialog = k.makeDialog({ title: 'What are you recording?', description: where ? `In ${where}` : 'Pick one — the item and place come next.', children: [grid,
+    other ? el('div', { className: 'scan-sheet-foot' }, [Button({ label: 'Something else…', variant: 'ghost', size: 'sm', onClick: () => { dialog.close(); k.open(other); } })]) : null].filter(Boolean) });
+  dialog.classList.add('scan-sheet', 'movement-sheet');
   requestAnimationFrame(() => (grid.querySelector('.is-last') || grid.firstChild)?.focus());
   return dialog;
 }
