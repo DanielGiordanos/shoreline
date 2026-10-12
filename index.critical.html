@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261012-0113-233371af">
+<meta name="flow-build" content="20261012-0441-0b2a3df7">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -4294,6 +4294,28 @@ background:rgba(122,152,184,.42);background-clip:content-box;
 }
 
 .rd-txs,.rd-conts{max-height:150px;}
+/* n117 — Rounds treatments */
+.rd-txsync{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--ink-400);white-space:nowrap;}
+.rd-txsync i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#3FC48A;margin-right:6px;vertical-align:1px;}
+.rd-txl{margin-top:2px;}
+.rd-txg+.rd-txg{margin-top:12px;}
+.rd-txg-h{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);margin:0 0 2px;}
+.rd-txr{display:grid;grid-template-columns:minmax(0,160px) minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--rslate);}
+.rd-txg .rd-txr:last-child{border-bottom:none;}
+.rd-txr .n{font-size:13.5px;font-weight:650;color:var(--ink-900);overflow-wrap:anywhere;}
+.rd-txr .n small{display:block;font-size:11px;font-weight:500;color:var(--ink-400);margin-top:1px;}
+.rd-txr .d{font-size:13.5px;font-weight:500;color:var(--ink-900);font-variant-numeric:tabular-nums;}
+.rd-txr .k{font-size:12px;color:var(--ink-400);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+.rd-txchips{display:flex;flex-wrap:wrap;gap:6px;padding-top:4px;}
+.rd-txchip{font-size:12px;font-weight:600;padding:4px 9px;border-radius:8px;background:var(--rslate);color:var(--ink-900);white-space:nowrap;}
+.rd-txchip em,.rd-txfeed em{font-style:normal;font-weight:500;color:var(--ink-500);margin-left:4px;font-variant-numeric:tabular-nums;}
+.rd-txfeed{font-size:13px;font-weight:600;color:var(--ink-900);margin-top:8px;}
+.rd-txg .rd-tx input{font-weight:600;}
+@media (max-width:560px){
+  .rd-txr{grid-template-columns:minmax(0,1fr) auto;gap:1px 10px;}
+  .rd-txr .d{grid-column:1;}
+  .rd-txr .k{grid-column:2;grid-row:1/3;align-self:center;}
+}
 
 .rd-auth-ledger-row{display:grid;grid-template-columns:78px 82px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:58px;padding:10px 0;border-bottom:1px solid var(--glass-hairline);}
 .rd-auth-ledger-row .type{font-size:8px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--rc-2);}
@@ -13099,7 +13121,7 @@ next:r.next&&r.next.docId?{docId:r.next.docId,name:r.next.name||null,at:iso(r.ne
 problems:(r.problems||[]).map(x=>({id:x.id||rdId(),label:x.label||'',active:x.active!==false,resolvedAt:iso(x.resolvedAt)})),
 events:(r.events||[]).map(x=>({id:x.id||rdId(),at:iso(x.at),text:x.text||'',by:x.by||null,kind:x.kind||'clinical'})),
 diagnostics:(r.diagnostics||[]).map(x=>({id:x.id||rdId(),name:x.name||'',result:x.result||'',status:x.status||'pending',at:iso(x.at),due:x.due||null,discussed:!!x.discussed,createdAt:iso(x.createdAt)})),
-treatments:(r.treatments||[]).map(x=>Object.assign({id:x.id||rdId(),name:x.name||'',detail:x.detail||''},x.oid?{oid:String(x.oid)}:{})),   /* oid: the sheet order it mirrors (n116) */
+treatments:(r.treatments||[]).map(x=>Object.assign({id:x.id||rdId(),name:x.name||'',detail:x.detail||''},x.oid?{oid:String(x.oid)}:{},x.g?{g:String(x.g),main:x.main||'',kg:x.kg||'',sub:x.sub||''}:{})),   /* oid: the sheet order it mirrors (n116) */
 tasks:(r.tasks||[]).map(x=>({id:x.id||rdId(),label:x.label||'',due:x.due||null,assignee:x.assignee||null,status:x.status||'pending',doneAt:iso(x.doneAt),doneBy:x.doneBy||null,urgent:!!x.urgent,createdAt:iso(x.createdAt)})),
 contingencies:(r.contingencies||[]).map(c=>({id:c.id||rdId(),trigger:c.trigger||'',action:c.action||'',active:c.active!==false,by:c.by||null,at:iso(c.at)})),
 flags:(r.flags||[]).map(f=>({id:f.id||rdId(),label:f.label||'',kind:f.kind||'safety'})),
@@ -13244,9 +13266,12 @@ function rdAuthRead(p){ return (p&&p.rounds&&p.rounds.auth)||null; }
 function rdAuthHours(p){ const a=rdAuthRead(p); return a?(a.hours||[]).reduce((s,x)=>s+(+x.h||0),0):0; }
 
 
-function rdBalance(p){ const a=rdAuthRead(p);   /* n116: Remaining = deposit − current charges, as Treatment Sheets shows it */
-if(!a||a.deposited==null||!(+a.deposited>0)) return null;
-return (+a.deposited)-(+(a.bill||0)); }
+function rdLowEnd(a){ if(!a) return null; const hi=a.estimate!=null?+a.estimate:null; return a.estimateLow!=null&&+a.estimateLow>0?+a.estimateLow:(hi!=null?Math.round(hi*.8):null); }
+function rdBalance(p){ const a=rdAuthRead(p);   /* n117: left to the low end = low end − current charges (same as Treatment Sheets) */
+const lo=rdLowEnd(a); if(lo==null||!(lo>0)) return null;
+return lo-(+(a.bill||0)); }
+function rdMoneyTone(p){ const a=rdAuthRead(p), lo=rdLowEnd(a); if(!a||lo==null) return '';   /* amber from 80% of the low end, red past the high end */
+const c=+(a.bill||0), hi=a.estimate!=null?+a.estimate:null; if(hi!=null&&c>hi) return 'over'; return c>=lo*.8?'warn':''; }
 function rdRemain(v){ return v==null?'—':(v<0?'−'+rdMoney(-v):rdMoney(v)); }
 function rdMoney(v){ return v==null?'—':('$'+Math.round(v).toLocaleString()); }
 var RD_AUTH_SOON_H=12;   /* flow-round2-oct6: one "expiring" cutoff for the panel, the chips, the summary and the handoff */
@@ -13781,12 +13806,12 @@ return`<div class="rd-handoff">
 }
 function rdFinHTML(p){
 const a=rdAuthRead(p);
-const est=a?a.estimate:null, dep=a?a.deposited:null, bal=rdBalance(p);
+const est=rdLowEnd(a), dep=a?a.deposited:null, bal=rdBalance(p), tone=rdMoneyTone(p);
  
 return`<div class="rd-finrow" data-act="row-fin" data-pid="${p.id}" role="button" tabindex="-1" title="Open authorization &amp; financials">
-    <div class="fcol"><span class="lbl">Estimate</span><span class="v">${rdMoney(est)}</span></div>
+    <div class="fcol"><span class="lbl">Low end</span><span class="v">${rdMoney(est)}</span></div>
     <div class="fcol"><span class="lbl">Deposit</span><span class="v">${rdMoney(dep)}</span></div>
-    <div class="fcol"><span class="lbl">Remaining</span><span class="v bal${bal!=null&&bal<0?' over':''}" title="Deposit − current charges">${rdRemain(bal)}</span></div>
+    <div class="fcol"><span class="lbl">To low end</span><span class="v bal${tone?' '+tone:''}" title="Low end − current charges">${rdRemain(bal)}</span></div>
   </div>`;
 }
 
@@ -13864,6 +13889,25 @@ return`<div class="rd-row acu-${r.acuity} ${open?'open':''} ${r.newAdmit?'is-new
 }
 
  
+/* n117 — Rounds treatments: the sheet's orders as a plan (fluids & CRIs → meds → care), the dose you'd say first, mg/kg light on the right */
+function rdTxHTML(p,pid){ const r=p.rounds, T=r.treatments||[]; if(!T.length) return `<div class="rd-empty-line">No treatments entered.</div>`;
+  const G={fl:[],med:[],care:[],feed:[]}, man=[];
+  T.forEach(t=>{ if(t.oid) (G[t.g]||G.med).push(t); else man.push(t); });
+  const row=t=>`<div class="rd-txr" title="From the treatment sheet · change it there"><div class="n">${rdEsc(t.name)}${t.sub?`<small>${rdEsc(t.sub)}</small>`:''}</div><div class="d">${rdEsc(t.g?t.main:(t.detail||''))}</div><div class="k">${rdEsc(t.kg||'')}</div></div>`;
+  const grp=(lab,html)=>`<div class="rd-txg"><div class="rd-txg-h">${lab}</div>${html}</div>`;
+  const edit=t=>`<div class="rd-tx"><input data-input="tx-edit" data-pid="${pid}" data-id="${t.id}" value="${rdEsc(t.name+(t.detail?(' — '+t.detail):''))}" autocomplete="off"><button class="x" data-act="tx-del" data-pid="${pid}" data-id="${t.id}" title="Discontinue">✕</button></div>`;
+  let h='';
+  if(G.fl.length) h+=grp('Fluids &amp; CRIs',G.fl.map(row).join(''));
+  if(G.med.length) h+=grp('Medications',G.med.map(row).join(''));
+  if(G.care.length||G.feed.length) h+=grp('Care &amp; monitoring',
+    (G.care.length?`<div class="rd-txchips">${G.care.map(t=>`<span class="rd-txchip" title="From the treatment sheet">${rdEsc(t.name)}${t.main?`<em>${rdEsc(t.main)}</em>`:''}</span>`).join('')}</div>`:'')
+    +G.feed.map(t=>`<div class="rd-txfeed">${rdEsc(t.name)}${t.sub?` · ${rdEsc(t.sub)}`:''}${t.main?` <em>${rdEsc(t.main)}</em>`:''}</div>`).join(''));
+  if(man.length) h+=h?grp('Added in Rounds',man.map(edit).join('')):man.map(edit).join('');
+  return `<div class="rd-txl">${h}</div>`; }
+function rdTxSyncHTML(p){ const T=(p.rounds&&p.rounds.treatments)||[]; if(!T.some(t=>t.oid)) return '';
+  const S=window.fvRoundsSheetSync, id=String(p.id), at=S&&S.at&&S.at[id], on=!!(S&&S.isLive&&S.isLive(id));
+  let ago=''; if(at){ const m=Math.floor((Date.now()-at)/60000); ago=m<1?' · just now':m<60?` · ${m} min ago`:` · ${new Date(at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`; }
+  return `<span class="rd-txsync">${on?'<i></i>':''}Treatment sheet${ago}</span>`; }
 function rdSecAdd(pid,input,ph){ return`<div class="rd-add"><input data-input="${input}" data-pid="${pid}" placeholder="${ph}" autocomplete="off"></div>`; }
 
  
@@ -13883,7 +13927,7 @@ const low=(a.estimateLow!=null?+a.estimateLow:(high!=null?Math.round(high*.8):nu
 const charges=a.bill!=null?+a.bill:null;
 const deposit=a.deposited!=null?+a.deposited:null;
 const remHigh=(high!=null&&charges!=null)?Math.max(0,high-charges):null;
-const balance=rdBalance(p);   /* n116: deposit − current charges (was low − deposit) */
+const balance=rdBalance(p), mtone=rdMoneyTone(p);   /* n117: low end − current charges */
 const depositRequired=(low!=null)?low*.75:null;
 const depositShortfall=(depositRequired!=null)?Math.max(0,depositRequired-(deposit||0)):null;
 const depositMet=depositRequired!=null&&deposit!=null&&deposit>=depositRequired;
@@ -13897,6 +13941,9 @@ approvals.forEach(x=>hist.push({kind:x.amount!=null?'ESTIMATE':'PROCEDURE',value
 (a.hours||[]).forEach(h=>hist.push({kind:'CARE TIME',value:'+'+h.h+' hrs',title:'Care authorization extended',detail:'Total authorized '+rdAuthHours(p)+'h',meta:[rdT(h.at),h.by].filter(Boolean).join(' · '),at:h.at||''}));
 hist.sort((x,y)=>String(y.at).localeCompare(String(x.at)));
 const attention=[];
+if(low!=null&&low>0&&charges!=null&&!(high!=null&&charges>high)&&charges>=low*.8) attention.push(charges>low
+  ?{red:false,title:'Current charges are '+rdMoney(charges-low)+' past the low end',detail:'Low end '+rdMoney(low)+' · Current charges '+rdMoney(charges)+' · update the owner.'}
+  :{red:false,title:'Current charges are at '+Math.round(charges/low*100)+'% of the low end',detail:rdMoney(low-charges)+' left before the low end '+rdMoney(low)+'.'});
 if(high!=null&&charges!=null&&charges>high) attention.push({red:true,title:'Current charges are '+rdMoney(charges-high)+' above estimate',detail:'Approved high end '+rdMoney(high)+' · Current charges '+rdMoney(charges)+'.'});
 if(depositRequired!=null&&depositShortfall>0) attention.push({red:false,title:'Deposit is '+rdMoney(depositShortfall)+' below the 75% minimum',detail:'75% of the Low End is '+rdMoney(depositRequired)+' · Current deposit '+rdMoney(deposit||0)+'.'});
 if(st&&remain<=RD_AUTH_SOON_H) attention.push({red:remain<=0,title:remain<=0?'Care authorization has expired':'Care authorization expires in '+fmtWait(Math.max(0,Math.round(remain*60))),detail:remain<=0?'Updated authorization is needed before continued care.':'Renew before the approved care window ends.'});
@@ -13912,12 +13959,12 @@ return`<div class="rd-auth-stack">
           <div><span>High End</span>${rdFinEditable(pid,'estimate',high)}</div>
           <div><span>Deposit</span>${rdFinEditable(pid,'deposited',deposit)}</div>
           <div><span>Current charges</span><b class="rd-fin-computed">${charges!=null?rdMoney(charges):'—'}</b></div>
-          <div><span>Remaining</span><b class="rd-fin-computed${balance!=null&&balance<0?' over':''}" title="Deposit − current charges">${rdRemain(balance)}</b></div>
+          <div><span>Left to low end</span><b class="rd-fin-computed${mtone?' '+mtone:''}" title="Low end − current charges">${rdRemain(balance)}</b></div>
         </div>
         ${depositRequired!=null?`<div class="rd-deposit-rule ${depositMet?'is-met':'is-low'}"><span>${depositMet?'✓':'!'}</span><div><b>${depositMet?'75% deposit met':'Deposit below 75% minimum'}</b><small>${depositMet?('Minimum '+rdMoney(depositRequired)+' · Deposit '+rdMoney(deposit)):('Minimum '+rdMoney(depositRequired)+' · '+rdMoney(depositShortfall)+' more needed')}</small></div></div>`:''}
         ${high!=null?`<div class="rd-est-runway">
-          <div class="rd-est-track"><span class="rd-est-fill" style="width:${pos}%"></span><span class="rd-est-low" style="left:${lowPos}%"></span><span class="rd-est-dot" style="left:${pos}%"></span></div>
-          <div class="rd-est-labels"><span>${rdMoney(low)}<small>LOW END</small></span><span>${rdMoney(high)}<small>HIGH END</small></span></div>
+          <div class="rd-est-track"><span class="rd-est-fill${mtone?' '+mtone:''}" style="width:${pos}%"></span><span class="rd-est-low" style="left:${lowPos}%"></span><span class="rd-est-dot" style="left:${pos}%"></span></div>
+          <div class="rd-est-labels n117"><span class="lo" style="left:${Math.max(12,Math.min(70,lowPos))}%">${rdMoney(low)}<small>LOW END</small></span><span class="hi">${rdMoney(high)}<small>HIGH END</small></span></div>
         </div>`:''}
       </div>
 
@@ -14086,10 +14133,8 @@ return`<div class="rd-work" data-pid="${pid}">
       ${rdTrendsHTML(p)}
 
       <div class="rd-sec">
-        <div class="rd-sec-h">Current Treatment</div>
-        ${(r.treatments||[]).length?`<div class="rd-txs">${r.treatments.map(t=>`
-          <div class="rd-tx"><input data-input="tx-edit" data-pid="${pid}" data-id="${t.id}" value="${rdEsc(t.name+(t.detail?(' — '+t.detail):''))}" autocomplete="off"><button class="x" data-act="tx-del" data-pid="${pid}" data-id="${t.id}" title="Discontinue">✕</button></div>`).join('')}</div>`
-        :`<div class="rd-empty-line">No treatments entered.</div>`}
+        <div class="rd-sec-h">Current Treatments${rdTxSyncHTML(p)}</div>
+        ${rdTxHTML(p,pid)}
         ${rdSecAdd(pid,'tx','+ Add treatment — “LRS — 120 mL/kg/day”, “NPO”')}
         <div class="rd-cont-inline">
           <div class="rd-sec-h">Contingency Plan</div>
@@ -16467,29 +16512,65 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
 })();
 </script>
 <script>/* n114 Grid link: only for accounts Grid lets in (keep in step with grid/index.html ALLOWED) */(function(){var a=document.getElementById("navGrid");if(!a)return;var OK=["daniel.giordano@pravix.app"];function set(u){var e=u&&u.email?String(u.email).toLowerCase():"";a.style.display=OK.indexOf(e)>-1?"":"none";}try{if(typeof AUTH!=="undefined"&&AUTH&&AUTH.onAuthStateChanged){set(AUTH.currentUser);AUTH.onAuthStateChanged(set);}}catch(e){}})();</script>
-<style id="n116-css">.rd-finrow .v.bal.over,.rd-fin-computed.over{color:var(--s-critical,#e5484d)}</style>
+<style id="n116-css">.rd-finrow .v.bal.over,.rd-fin-computed.over{color:var(--s-critical,#e5484d)}
+.rd-finrow .v.bal.warn,.rd-fin-computed.warn{color:var(--ra,#EBC95D)}
+body:not(.dark) .rd-finrow .v.bal.warn,body:not(.dark) .rd-fin-computed.warn{color:#9A6A00}
+.rd-est-fill.warn{background:linear-gradient(90deg,#c98a12,var(--ra,#EBC95D))}.rd-est-fill.over{background:linear-gradient(90deg,#b5271b,#e5484d)}
+.rd-est-labels.n117{display:block;position:relative;min-height:26px}
+.rd-est-labels.n117 .lo{position:absolute;top:0;transform:translateX(-50%);text-align:center}
+.rd-est-labels.n117 .hi{position:absolute;top:0;right:0;text-align:right}</style>
 <script>/* ═════════ n116 — Rounds follows the treatment sheet ═════════
    One listener per Rounds patient with a sheet. Current treatment = the sheet's active meds, fluids and CRIs (tagged oid);
    untagged entries (typed in Rounds) are never touched. Location is shared both ways through rounds.locSheet. */
 (function(){
   if(typeof rdTouch!=='function'||typeof rdId!=='function'||typeof rdNormLoc!=='function') return;
-  var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search), subs={};
+  var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search), subs={}, AT={};
   function ok(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){}
     return !!u&&!LOBBY&&typeof DB!=='undefined'&&DB&&window.fvAdmitSheet&&!document.body.classList.contains('client-mode')&&!document.body.classList.contains('tv-mode'); }
-  function line(o){ var b=[];
+  /* n117 — Rounds treatments: the dose you'd say at rounds (total mg / pump rate) first, the per-kg alongside */
+  function line0(o){ var b=[];   /* n116's wording: still matches the one-time copy made at admit */
     if(o.cont||o.type==='fluid'||o.kind){ if(o.rate_v!=null) b.push(o.rate_v+' '+(o.rate_u||'mL/hr')); if(o.additive) b.push('+ '+o.additive); if(o.conc_label) b.push(o.conc_label); b.push(o.route||'IV'); return b.join(' · '); }
     if(o.dose!=null&&o.dose!=='') b.push(o.dose+(o.unit?' '+o.unit:'')); if(o.route) b.push(o.route); if(o.freq) b.push(o.freq); return b.join(' · '); }
-  function isTx(o){ return !!o&&!o.draft&&(o.type==='med'||o.cont||o.type==='fluid'||!!o.kind)&&!/^d\d+$/.test(String(o.id||'')); }
+  var UMG={mcg:0.001,mg:1,g:1000}, FEED=/\b(feed|food|diet|meal|rer|npo|water|nutrition)\b/i;
+  function num(n){ n=Number(n); return !isFinite(n)?'':n>=100?String(Math.round(n)):n>=10?String(Math.round(n*10)/10):String(Math.round(n*100)/100); }
+  function ab(u){ return String(u||'').replace(/\/day$/,'/d'); }
+  function fq(f){ f=String(f||''); return /^once$/i.test(f)?'once':f; }
+  function perHr(v,u,kg){ var t=Number(v)||0; if(/\/kg/.test(u)) t*=kg; if(/\/min$/.test(u)) t*=60; else if(/\/day$/.test(u)) t/=24; return t; }
+  function mlhr(o,kg){ var u=String(o.rate_u||''); if(/\/kg/.test(u)&&!kg) return null; if(/^mL\//.test(u)) return perHr(o.rate_v,u,kg);   /* same math as the sheet's pump rate */
+    var c=Number(o.conc)||0; if(!c) return null; var b=u.split('/')[0], cu=o.conc_u||String(((o.rates&&o.rates[0])||{}).u||u).split('/')[0]||b, x=perHr(o.rate_v,u,kg);
+    if(b!==cu){ if(!(UMG[b]&&UMG[cu])) return null; x*=UMG[b]/UMG[cu]; } return x/c; }
+  function bsa(kg,sp){ return (/cat|feline/i.test(String(sp||''))?10:10.1)*Math.pow(kg,2/3)/100; }
+  function fmt(o,kg,sp){ var g,main,k='',sub='';
+    if(o.type==='obs'||o.type==='care'||o.type==='diag'){ g=FEED.test(o.name||'')?'feed':'care'; main=fq(o.freq); if(g==='feed') sub=String(o.notes||'').trim(); }
+    else if(o.cont||o.type==='fluid'||o.kind){ var u=String(o.rate_u||'mL/hr'), m=mlhr(o,kg), rt=o.route||'IV'; g='fl';
+      if(Number(o.rate_v)===0) main='Paused';
+      else if(o.kind==='cri'){ main=m!=null?num(m)+' mL/hr '+rt:o.rate_v+' '+ab(u)+' '+rt; if(m!=null) k=o.rate_v+' '+ab(u);
+        var cl=o.conc_label||(o.conc?num(o.conc)+' '+(o.conc_u||u.split('/')[0])+'/mL':''); sub='CRI'+(cl?' · '+cl:''); }
+      else { main=(m!=null?num(m)+' mL/hr':o.rate_v+' '+ab(u))+' '+rt; if(/^mL\/kg/.test(u)) k=o.rate_v+' '+ab(u); else if(m!=null&&kg) k=Math.round(m*24/kg)+' mL/kg/d'; }
+      if(o.additive) sub=(sub?sub+' · ':'')+'+ '+o.additive; }
+    else { var un=String(o.unit||''), per=un.split('/')[1]||'', base=un.split('/')[0], tot=null, w=[];
+      if(per&&kg) tot=per==='kg'?o.dose*kg:per==='lb'?o.dose*kg*2.20462:per==='m²'?o.dose*bsa(kg,sp):null;
+      w.push(tot!=null?num(tot)+' '+base:(o.dose!=null&&o.dose!==''?o.dose+(un?' '+un:''):'')); if(o.route) w.push(o.route); if(o.freq) w.push(fq(o.freq));
+      main=w.filter(Boolean).join(' '); if(tot!=null) k=o.dose+' '+un; g='med'; }
+    return {g:g,main:main||'',kg:k,sub:sub,detail:[sub,main,k].filter(Boolean).join(' · ')}; }
+  function line(o,kg,sp){ return fmt(o,kg,sp).detail; }
+  function isTx(o){ return !!o&&!o.draft&&(o.type==='med'||o.cont||o.type==='fluid'||!!o.kind||o.type==='obs'||o.type==='care'||o.type==='diag')&&!/^d\d+$/.test(String(o.id||'')); }
   function live(o){ return isTx(o)&&!o.dc&&!o.stopped&&!(/^once$/i.test(String(o.freq||''))&&o.once_done); }
   function me(){ var u=null; try{ u=AUTH.currentUser; }catch(e){} var n=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
     return {name:n,uid:u?u.uid:null,initials:n.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
+  function oat(o){ return new Date(o.ordered_at||o.started_at||0).getTime()||0; }
   function apply(id,ref,d){ var p=(typeof PATIENTS!=='undefined')&&PATIENTS.find(function(x){ return String(x.id)===id; }); if(!p||!p.rounds||p.rounds.outcome||!d) return;
-    var r=p.rounds, T=r.treatments=r.treatments||[], O=d.orders||{}, all=Object.keys(O).map(function(k){ return O[k]; }).filter(isTx), want=all.filter(live), msgs=[];
+    var r=p.rounds, T=r.treatments=r.treatments||[], O=d.orders||{}, all=Object.keys(O).map(function(k){ return O[k]; }).filter(isTx).sort(function(a,b){ return oat(a)-oat(b); }), want=all.filter(live), msgs=[];
+    var pt=d.patient||{}, kg=Number(pt.weight)||Number(p.weightKg)||0, sp=pt.species||p.species||'';
     var tagged={}; T.forEach(function(t){ if(t.oid) tagged[t.oid]=t; });
-    all.forEach(function(o){ if(tagged[o.id]) return; var m=T.find(function(t){ return !t.oid&&t.name===(o.name||'Treatment')&&t.detail===line(o); }); if(m){ m.oid=o.id; tagged[o.id]=m; } });   /* the one-time copy at admit */
-    var keep={}; want.forEach(function(o){ keep[o.id]=1; var nm=o.name||'Treatment', dl=line(o), t=tagged[o.id];
-      if(!t){ T.push({id:rdId(),name:nm,detail:dl,oid:o.id}); msgs.push('+'+nm); } else if(t.name!==nm||t.detail!==dl){ t.name=nm; t.detail=dl; msgs.push('~'+nm); } });
+    all.forEach(function(o){ if(tagged[o.id]) return; var nm=o.name||'Treatment', a0=line0(o), a1=line(o,kg,sp);
+      var m=T.find(function(t){ return !t.oid&&t.name===nm&&(t.detail===a0||t.detail===a1); }); if(m){ m.oid=o.id; tagged[o.id]=m; } });   /* the one-time copy at admit */
+    var keep={}, quiet=0; want.forEach(function(o){ keep[o.id]=1; var nm=o.name||'Treatment', f=fmt(o,kg,sp), t=tagged[o.id];
+      if(!t){ T.push({id:rdId(),name:nm,detail:f.detail,oid:o.id,g:f.g,main:f.main,kg:f.kg,sub:f.sub}); msgs.push('+'+nm); }
+      else if(t.name!==nm||t.detail!==f.detail||t.g!==f.g||t.main!==f.main||(t.kg||'')!==f.kg||(t.sub||'')!==f.sub){ var old=!t.g&&t.name===nm;
+        t.name=nm; t.detail=f.detail; t.g=f.g; t.main=f.main; t.kg=f.kg; t.sub=f.sub; if(old) quiet++; else msgs.push('~'+nm); } });
     for(var i=T.length-1;i>=0;i--){ var t=T[i]; if(t.oid&&!keep[t.oid]){ msgs.push('−'+t.name); T.splice(i,1); } }
+    if(quiet&&!msgs.length) msgs.push('fmt');   /* n116 entries rewritten in the new layout: saved, nothing to announce */
     /* location: whichever side changed since the last sync wins */
     var sl=rdNormLoc(d.patient&&d.patient.location)||null, rl=rdNormLoc(r.location)||null;
     if(sl!==(r.locSheet||null)){ if(sl&&sl!==rl){ r.location=sl; msgs.push('Location '+sl); } r.locSheet=sl; if(!sl) r.locSheet=null; if(!msgs.length) msgs.push('loc'); }
@@ -16498,16 +16579,16 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
         .catch(function(e){ console.warn('[rounds → sheet location]',e); });
       r.locSheet=rl; msgs.push('loc'); }
     if(!msgs.length) return;
-    var said=msgs.filter(function(x){ return x!=='loc'; }), tx=said.filter(function(x){ return /^[+~−]/.test(x); });
-    rdTouch(p, tx.length?('Treatment sheet · '+tx.join(' ')).slice(0,180):(said[0]||'Location from the treatment sheet'), true); }
+    var said=msgs.filter(function(x){ return x!=='loc'&&x!=='fmt'; }), tx=said.filter(function(x){ return /^[+~−]/.test(x); });
+    rdTouch(p, tx.length?('Treatment sheet · '+tx.join(' ')).slice(0,180):(said[0]||(msgs.indexOf('fmt')>=0?'Treatments from the treatment sheet':'Location from the treatment sheet')), true); }
   function watch(){ if(!ok()||typeof PATIENTS==='undefined') return; var need={};
     PATIENTS.forEach(function(p){ if(!p||p._demo||!p.rounds||p.rounds.outcome) return; if(!(p.tsSheet||p.status==='Admitted'||p.status==='Hospitalized')) return;
       var id=String(p.id); need[id]=1; if(subs[id]) return;
       var ref=DB.collection('sheets').doc(fvAdmitSheet.id(p));
-      subs[id]=ref.onSnapshot(function(s){ try{ if(s.exists) apply(id,ref,s.data()); }catch(e){ console.warn('[rounds ← sheet]',e); } },function(e){ console.warn('[rounds ← sheet listen]',e); delete subs[id]; }); });
+      subs[id]=ref.onSnapshot(function(s){ try{ if(s.exists){ AT[id]=Date.now(); apply(id,ref,s.data()); } }catch(e){ console.warn('[rounds ← sheet]',e); } },function(e){ console.warn('[rounds ← sheet listen]',e); delete subs[id]; }); });
     Object.keys(subs).forEach(function(id){ if(!need[id]){ try{ subs[id](); }catch(e){} delete subs[id]; } }); }
   setInterval(watch,10000); setTimeout(watch,2500);
-  window.fvRoundsSheetSync={watch:watch,apply:apply,line:line};
+  window.fvRoundsSheetSync={watch:watch,apply:apply,line:line,fmt:fmt,at:AT,isLive:function(id){ return !!subs[String(id)]; }};
 })();
 </script>
 <script>window.FV_TECHS=["Felisha Barnes", "Tanneil Buchanan", "Stephanie Cseh", "Erin Cummings", "Chris Densky", "Nelson Diaz", "Alexis Distasio", "Lizzy Dixon", "Catherine Fappiano", "Brandy Fellin", "Viviana Fonseca", "Lauren Francione", "Amber Horvath", "Kimberly Hulme", "Danielle Infante", "Amanda Inzitari", "Danielle Kiley", "Malyssa Kubik", "Carly Kudola", "Amanda Van Kuren", "Ann LeStrange", "Janitza Lopez", "Gabrielle Lungarini", "Lindsay Martin", "Myranda May", "Sam Mitchell", "Bethany Oczkowski", "Gabriella Palumbo", "Rachel Pieger", "Malachi Quinones", "Allie Rodriguez", "Christina Rodriguez", "Delahla Rosario", "Vanessa Ruiz", "Stacey Smith", "Ally Tewksbury", "Courtney Thieke", "Shelsey Vega", "Paola Velazquez", "Dharianna Villa", "Lauren Whitney", "Jordain Williams"];</script>
