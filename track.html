@@ -380,6 +380,8 @@ html.dark{--ink-500:#a4b9cf;--ink3:#a4b9cf;}
 .jstage.future .jnode{border-color:#76767b;}.jstage.future .jnode i{background:#76767b;}
 html.dark .jstage.future .jnode{border-color:#829eb9;}html.dark .jstage.future .jnode i{background:#829eb9;}
 .timeline-time{display:block;background:none;border:0;padding:4px 0;color:var(--ink3);font-size:.8125rem;text-align:left;text-decoration:underline;cursor:pointer;}
+.entry .pet-l{display:block;margin-top:18px}
+.entry #petIn{letter-spacing:normal;text-transform:none;font-size:1.125rem;font-weight:620}
 </style>
 </head>
 <body>
@@ -480,7 +482,7 @@ const IC={
 /* UI text is owned here. Database text is escaped once and never translated. */
 const ES={
  'Track your pet’s visit':'Siga la visita de su mascota','Enter the check-in code from the front desk to see your pet’s status and message our care team.':'Ingrese el código de recepción para ver el estado de su mascota y enviar mensajes al equipo de atención.',
- 'Check-in code':'Código de la visita','View status':'Ver estado','Checking…':'Buscando…','Visit not found. Please check with the front desk.':'No se encontró la visita. Consulte con recepción.',
+ 'Check-in code':'Código de la visita','Your pet’s name':'Nombre de su mascota','Enter the check-in code from the front desk and your pet’s name.':'Ingrese el código de recepción y el nombre de su mascota.','Please enter your pet’s name.':'Ingrese el nombre de su mascota.','Please enter the 6-character check-in code.':'Ingrese el código de 6 caracteres.','We couldn’t find an open visit with that code and pet name. Codes stop working when the visit ends.':'No encontramos una visita abierta con ese código y nombre. Los códigos dejan de funcionar cuando termina la visita.','View status':'Ver estado','Checking…':'Buscando…','Visit not found. Please check with the front desk.':'No se encontró la visita. Consulte con recepción.',
  'Unable to connect. Please try again.':'No se pudo conectar. Inténtelo de nuevo.','Questions? Call':'¿Tiene preguntas? Llame al','Your visit has ended.':'Su visita ha terminado.',
  'If you have any questions, please call the hospital at':'Si tiene alguna pregunta, llame al hospital al',"We’re thinking of you and":"Estamos pensando en usted y en",'your pet':'su mascota',
  'This visit has ended':'Esta visita ha terminado','Staying in the hospital':'Permanece en el hospital','has been transferred to another hospital.':'fue trasladado a otro hospital.','Final status':'Estado final','Final update':'Última actualización','Time unavailable':'Hora no disponible','Currently in':'Ahora en',
@@ -533,21 +535,32 @@ function bindLanguages(){
 }
 function renderEntry(error=''){
  stopPoll();shellBuilt=false;entryError=error;
- $('root').innerHTML='<div class="entry"><div class="entry-card card">'+languages()+'<div class="entry-logo">'+IC.paw+'</div><h1>'+tx('Track your pet’s visit')+'</h1><p>'+tx('Enter the check-in code from the front desk to see your pet’s status and message our care team.')+'</p><label for="codeIn">'+tx('Check-in code')+'</label><input id="codeIn" inputmode="text" autocomplete="one-time-code" maxlength="6" placeholder="ABC123"><button class="go" id="codeGo">'+tx('View status')+'</button><p class="err" id="codeErr" role="status">'+tx(error)+'</p><p>'+tx('Questions? Call')+' '+PHONE+'</p></div></div>';
- bindLanguages();const inp=$('codeIn');
- $('codeGo').onclick=()=>{pendingCode=inp.value.trim().toUpperCase();resolveCode();};
- inp.onkeydown=e=>{if(e.key==='Enter')$('codeGo').click();};
+ $('root').innerHTML='<div class="entry"><div class="entry-card card">'+languages()+'<div class="entry-logo">'+IC.paw+'</div><h1>'+tx('Track your pet’s visit')+'</h1><p>'+tx('Enter the check-in code from the front desk and your pet’s name.')+'</p><label for="codeIn">'+tx('Check-in code')+'</label><input id="codeIn" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="ABC123"><label for="petIn" class="pet-l">'+tx('Your pet’s name')+'</label><input id="petIn" autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="40" placeholder="Bella"><button class="go" id="codeGo">'+tx('View status')+'</button><p class="err" id="codeErr" role="status">'+tx(error)+'</p><p>'+tx('Questions? Call')+' '+PHONE+'</p></div></div>';
+ bindLanguages();const inp=$('codeIn'),pet=$('petIn');inp.value=entryCode;pet.value=entryPet;
+ $('codeGo').onclick=()=>{entryCode=inp.value.trim().toUpperCase();entryPet=pet.value;pendingCode=entryCode;resolveCode();};
+ inp.oninput=()=>{entryCode=inp.value.trim().toUpperCase();};pet.oninput=()=>{entryPet=pet.value;};
+ inp.onkeydown=e=>{if(e.key==='Enter'){if(!pet.value.trim())pet.focus();else $('codeGo').click();}};pet.onkeydown=e=>{if(e.key==='Enter')$('codeGo').click();};
+ if(entryCode&&!entryPet)setTimeout(()=>{if($('petIn')&&!document.hidden)$('petIn').focus();},0);
 }
+/* n118 — the pet's name, the same way Flow writes it: accents dropped, lower case, letters and digits only.
+   Flow writes one code per way of typing it (the whole name and each word); the family's entry is tried whole, then word by word. */
+function tkPetWords(s){return String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(' ').filter(Boolean);}
+function tkPetKeys(s){const w=tkPetWords(s),out=[];const add=k=>{if(k&&out.indexOf(k)<0&&out.length<3)out.push(k);};add(w.join(''));w.forEach(x=>{if(x.length>=2)add(x);});return out;}
+let entryCode='',entryPet='';
+const NOT_OPEN='We couldn’t find an open visit with that code and pet name. Codes stop working when the visit ends.';
+function tkOpen(d){if(!d||typeof d.public_token!=='string'||!d.public_token||d.is_active!==true)return false;const x=d.expires_at,ms=x&&typeof x.toDate==='function'?+x.toDate():Date.parse(x);return !(ms<=Date.now());}
 async function resolveCode(){
  if(!pendingCode||resolving||document.hidden)return;
- if(!/^[A-Z0-9]{6}$/.test(pendingCode)){renderEntry('Visit not found. Please check with the front desk.');pendingCode=null;return;}
+ if(!/^[A-Z0-9]{6}$/.test(pendingCode)){pendingCode=null;renderEntry('Please enter the 6-character check-in code.');return;}
+ const keys=tkPetKeys(entryPet);if(!keys.length){pendingCode=null;renderEntry(entryPet.trim()?NOT_OPEN:'Please enter your pet’s name.');return;}
  resolving=true;const requested=pendingCode;if($('codeGo'))$('codeGo').disabled=true;
  try{
-  if(!DB)throw Error('offline');const snap=await DB.collection('codes').doc(requested).get();
-  if(!snap.exists||!snap.data().public_token){pendingCode=null;renderEntry('Visit not found. Please check with the front desk.');return;}
-  const data=snap.data();TOKEN=data.public_token;codeInactive=data.is_active===false;pendingCode=null;
+  if(!DB)throw Error('offline');let data=null;
+  for(const k of keys){let snap;try{snap=await DB.collection('codes').doc(requested+'-'+k).get();}catch(e){if(e&&e.code==='permission-denied')continue;throw e;}if(snap.exists&&tkOpen(snap.data())){data=snap.data();break;}}
+  if(!data){pendingCode=null;renderEntry(NOT_OPEN);return;}
+  TOKEN=data.public_token;codeInactive=false;pendingCode=null;entryPet='';
   history.replaceState(null,'','?t='+encodeURIComponent(TOKEN));boot();
- }catch(e){renderEntry('Unable to connect. Please try again.');if($('codeIn'))$('codeIn').value=requested;}
+ }catch(e){pendingCode=null;renderEntry('Unable to connect. Please try again.');}
  finally{resolving=false;if($('codeGo'))$('codeGo').disabled=false;}
 }
 function buildShell(){
@@ -557,7 +570,7 @@ function buildShell(){
  +'<section class="convo card" id="convo"><div class="convo-head"><h2 class="convo-title">'+tx('Messages')+'</h2></div><div class="feed" id="feed"></div><div class="composer" hidden><label for="msgBox">'+tx('Message')+'</label><div class="comp-row"><div class="comp-in"><textarea id="msgBox" rows="2" maxlength="1000" placeholder="'+tx('Message')+'"></textarea></div><button class="send" id="sendBtn" disabled>'+tx('Send')+'</button></div><p id="sendError" role="status"></p><div class="secure">'+IC.lock+' '+tx('Your messages are private.')+'</div></div></section></main>'
  +'<div class="footer-bar"><div class="fb1"></div><div class="fb2"></div><div class="fb3"></div><div class="fb4"></div></div><footer class="site-footer"><div class="footer-text"><strong>VCA Shoreline Veterinary Referral &amp; Emergency Center</strong><br>895 Bridgeport Avenue, Shelton, CT 06484<br>'+PHONE+'</div></footer><div class="version-bar"><span class="vb-logo">vca shoreline</span><span>'+tx('Pet Care Portal')+'</span></div>';
  shellBuilt=true;bindLanguages();
- $('btnEnd').onclick=()=>{stopPoll();TOKEN=null;OV=null;MSGS=[];stopped=false;codeInactive=false;pendingCode=null;_resusConfirm=null;_resusEditing=false;sendFailed=false;history.replaceState(null,'','?');renderEntry();};
+ $('btnEnd').onclick=()=>{stopPoll();TOKEN=null;OV=null;MSGS=[];stopped=false;codeInactive=false;pendingCode=null;entryCode='';entryPet='';_resusConfirm=null;_resusEditing=false;sendFailed=false;history.replaceState(null,'','?');renderEntry();};
  $('btnHelp').onclick=()=>toast(tr('If you have an urgent concern while at the hospital, please speak with our front desk team.'));
  $('msgBox').oninput=updateSend;
  $('msgBox').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();doSend();}};
@@ -693,8 +706,8 @@ window.addEventListener('online',()=>{if(pendingCode)resolveCode();else startPol
 window.addEventListener('pagehide',stopPoll);
 window.addEventListener('pageshow',e=>{if(e.persisted&&!document.hidden)startPoll();});
 startThemeSchedule();tickT=setInterval(tickUpd,15000);
-const params=new URLSearchParams(location.search);TOKEN=params.get('t');pendingCode=(params.get('code')||params.get('c')||'').trim().toUpperCase();
-if(TOKEN)boot();else{renderEntry();if(pendingCode)resolveCode();}
+const params=new URLSearchParams(location.search);TOKEN=params.get('t');entryCode=(params.get('code')||params.get('c')||'').trim().toUpperCase().slice(0,6);pendingCode=null;
+if(TOKEN)boot();else renderEntry();
 });
 </script>
 </body>

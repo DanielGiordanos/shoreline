@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261012-0441-0b2a3df7">
+<meta name="flow-build" content="20261012-1227-a115fb41">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -7153,7 +7153,7 @@ changed.forEach(function(p){
 if(typeof fvSaveVisit==='function') fvSaveVisit(batch,p,prev); else batch.set(DB.collection('visits').doc(String(p.id)), mapToDb(p));
 batch.set(DB.collection('pub').doc(p.publicToken), safeProjection(p), { merge:true });
 fxLobbyWrite(batch,p);
-batch.set(DB.collection('codes').doc(String(p.trackCode).toUpperCase()), { public_token:p.publicToken, tenant_id:TENANT_ID, is_active:!p.completed }, { merge:true });
+if(typeof fxCodesSync==='function') fxCodesSync([p],true);   /* n118: codes/{CODE}-{pet name}, its own batch (codes_n118.js) */
 });
 try{ await batch.commit(); }catch(err){ changed.forEach(function(p){ delete _fxLobby[String(p.id)]; }); if(typeof fvSaveFallback==='function') await fvSaveFallback(changed); else throw err; }
 Backend._lastRows = fvRowsCopy(LIVE);
@@ -12973,7 +12973,7 @@ applyHospitalBranding();
 
 
 const RD_SERVICES=[
-{key:'ecc',    label:'Emergency Services'},
+{key:'ecc',    label:'Emergency & Critical Care'},
 {key:'im',     label:'Internal Medicine'},
 {key:'neuro',  label:'Neurology'},
 {key:'onco',   label:'Oncology'},
@@ -16591,6 +16591,249 @@ body:not(.dark) .rd-finrow .v.bal.warn,body:not(.dark) .rd-fin-computed.warn{col
   window.fvRoundsSheetSync={watch:watch,apply:apply,line:line,fmt:fmt,at:AT,isLive:function(id){ return !!subs[String(id)]; }};
 })();
 </script>
+<script>
+/* ═════════ ROUNDS n118 — two people on one patient's rounds, and undo for removals (Oct 2026) ═════════
+   1. Saving rounds merges instead of replacing. Before, a patient's whole `rounds` was one field: when two people changed different
+      parts at the same time (a doctor writing the plan, a tech ticking a task), the later save wrote back its own copy and the other
+      change was lost. Now each rounds save is a short transaction: read what the database has, lay this screen's changes (what it
+      changed since it last heard from the database) on top, write the result. Problems, events, diagnostics, treatments, tasks,
+      contingencies, flags and the care team merge item by item (by id); lists without ids (the audit, trend values) merge by value;
+      single values take the change, and if both people changed the very same value the later save wins, as before.
+      Saves for one patient go one after another, so a screen never merges against its own earlier save. Offline (a transaction needs
+      the server) it falls back to the plain save it always did. While a save is on its way, a copy arriving from another screen does
+      not undo what is on this screen.
+   2. Removing a problem, event, diagnostic, treatment, task, contingency or flag shows "… removed · Undo" for 8 seconds; Undo puts it
+      back where it was (and says so in the audit). */
+(function(){
+if(typeof window.fvSaveVisit!=='function'||typeof rdHandleAct!=='function') return;
+var RDM_TAKE={snapshots:1,lastReviewSnapshot:1,summary:1};   /* derived from the rest: the newer save's copy, not merged piece by piece */
+function J(x){ return JSON.stringify(x===undefined?null:x); }
+function eq(a,b){ return J(a)===J(b); }
+function isObj(x){ return x&&typeof x==='object'&&!Array.isArray(x); }
+function idList(a){ return Array.isArray(a)&&a.every(function(x){ return isObj(x)&&x.id!=null; }); }
+/* three-way merge: b = what this screen last heard from the database, m = this screen now, t = the database now */
+function merge(b,m,t,key){
+  if(eq(m,b)) return t;            /* this screen didn't touch it */
+  if(eq(t,b)||eq(m,t)) return m;   /* nobody else did */
+  if(key&&RDM_TAKE[key]) return m;
+  if(Array.isArray(m)||Array.isArray(t)) return mergeArr(b,m,t);
+  if(isObj(m)&&isObj(t)){ var out={}, B=isObj(b)?b:{}, keys={};
+    [B,m,t].forEach(function(o){ Object.keys(o).forEach(function(k){ keys[k]=1; }); });
+    Object.keys(keys).forEach(function(k){ var v=merge(B[k],m[k],t[k],key?null:k); if(v!==undefined) out[k]=v; });
+    return out; }
+  return m;                        /* both changed the same value: the later save wins */
+}
+function mergeArr(b,m,t){ b=Array.isArray(b)?b:[]; m=Array.isArray(m)?m:[]; t=Array.isArray(t)?t:[];
+  if(idList(b)&&idList(m)&&idList(t)){
+    var B={}, M={}, T={}; b.forEach(function(x){ B[x.id]=x; }); m.forEach(function(x){ M[x.id]=x; }); t.forEach(function(x){ T[x.id]=x; });
+    var out=[];
+    t.forEach(function(x){ var id=x.id;
+      if(B[id]&&!M[id]) return;                                      /* removed here */
+      out.push(B[id]&&M[id]&&!eq(B[id],M[id])?merge(B[id],M[id],x):x); });
+    m.forEach(function(x){ var id=x.id; if(T[id]) return;
+      if(!B[id]) out.push(x);                                         /* added here */
+      else if(!eq(B[id],x)) out.push(x); });                          /* changed here, removed there: keep the change */
+    /* this screen reordered (Rounds drag / ↑): its order for the items both have */
+    var bo=b.map(function(x){ return x.id; }).filter(function(id){ return M[id]; }), mo=m.map(function(x){ return x.id; }).filter(function(id){ return B[id]; });
+    if(!eq(bo,mo)){ var pos={}; m.forEach(function(x,i){ pos[x.id]=i; });
+      out=out.map(function(x,i){ return [x,i]; }).sort(function(p,q){ var a=pos[p[0].id], c=pos[q[0].id]; if(a==null&&c==null) return p[1]-q[1]; if(a==null) return 1; if(c==null) return -1; return a-c; }).map(function(p){ return p[0]; }); }
+    return out; }
+  /* no ids (audit lines, trend points, payers): theirs, plus what was added here, minus what was removed here */
+  var bs={}, ms={}; b.forEach(function(x){ bs[J(x)]=(bs[J(x)]||0)+1; }); m.forEach(function(x){ ms[J(x)]=1; });
+  var res=t.filter(function(x){ var k=J(x); return !(bs[k]&&!ms[k]); }), have={}; res.forEach(function(x){ have[J(x)]=1; });
+  m.forEach(function(x){ var k=J(x); if(!bs[k]&&!have[k]){ res.push(x); have[k]=1; } });
+  return res; }
+window.rdmMerge=merge;   /* tests */
+
+/* ---------- saving: rounds by transaction, one after another per patient ---------- */
+var chain={}, pending={};
+function who(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){} var n=''; try{ n=(typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):''; }catch(e){} return {uid:(u&&u.uid)||'',name:n||(u&&u.email)||''}; }
+function saveRounds(id,base,mine){ var P=pending[id]=pending[id]||[]; var job={base:base,mine:mine}; P.push(job);
+  var ref=DB.collection('visits').doc(String(id)), w=who(), stamp={last_by:w.name||null,last_by_uid:w.uid||null,last_at:new Date().toISOString()};
+  chain[id]=(chain[id]||Promise.resolve()).then(function(){
+    return DB.runTransaction(function(t){ return t.get(ref).then(function(s){ var cur=s&&s.exists?((s.data()||{}).rounds||null):null;
+      var merged=cur?merge(job.base,job.mine,cur):job.mine; job.merged=merged; t.update(ref,Object.assign({rounds:merged},stamp)); }); })
+    .catch(function(err){ console.warn('[rounds] merge save failed — saving this screen’s copy',(err&&err.message)||err);
+      return ref.update(Object.assign({rounds:job.mine},stamp)).catch(function(e){ console.warn('[rounds] save',e); }); }); })
+  .then(function(){ var i=P.indexOf(job); if(i>-1) P.splice(i,1); }); }
+var saveBase=window.fvSaveVisit;
+window.fvSaveVisit=function(batch,p,prev){
+  var row=mapToDb(p), old=null; try{ old=prev[row.id]?JSON.parse(prev[row.id]):null; }catch(e){ old=null; }
+  if(old&&old.rounds&&row.rounds&&!eq(old.rounds,row.rounds)){
+    saveRounds(row.id,JSON.parse(J(old.rounds)),JSON.parse(J(row.rounds)));
+    var p2=Object.assign({},prev); p2[row.id]=J(Object.assign({},old,{rounds:row.rounds}));   /* everything else as before, without rounds */
+    return saveBase(batch,p,p2); }
+  return saveBase(batch,p,prev); };
+/* a copy from another screen arriving while this screen's rounds save is on its way: keep this screen's changes on top */
+var resusBase=Backend._mergeResus;
+Backend._mergeResus=function(){ var r=resusBase.apply(this,arguments);
+  try{ Object.keys(pending).forEach(function(id){ var P=pending[id]; if(!P||!P.length) return; var p=PATIENTS.find(function(x){ return String(x.id)===String(id); }); if(!p||!p.rounds) return;
+    var cur=JSON.parse(J(rdToDb(p.rounds))); P.forEach(function(job){ cur=merge(job.base,job.mine,cur); }); p.rounds=rdNorm(cur); }); }catch(e){ console.warn('[rounds] keep',e); }
+  return r; };
+
+/* ---------- undo for removals ---------- */
+var DEL={'prob-del':['problems','Problem'],'ev-del':['events','Event'],'diag-del':['diagnostics','Diagnostic'],'tx-del':['treatments','Treatment'],
+  'task-del':['tasks','Task'],'cont-del':['contingencies','Contingency'],'flag-del':['flags','Flag']};
+var actBase=rdHandleAct, undoT=null;
+function nameOf(x){ return (x&&(x.label||x.name||x.text||(x.trigger?'if '+x.trigger:'')))||''; }
+function toastEl(){ var t=document.getElementById('rdUndo'); if(!t){ t=document.createElement('div'); t.id='rdUndo'; t.className='rd-undo'; t.setAttribute('role','status'); t.setAttribute('aria-live','polite'); document.body.appendChild(t); } return t; }
+function hide(){ var t=document.getElementById('rdUndo'); if(t) t.classList.remove('open'); clearTimeout(undoT); }
+function offer(pid,arr,word,item,idx){ var t=toastEl(), nm=nameOf(item);
+  t.innerHTML='<span class="ru-msg"></span><button type="button" class="ru-undo">Undo</button><span class="ru-bar" aria-hidden="true"></span>';
+  t.querySelector('.ru-msg').textContent=word+' removed'+(nm?' · '+(nm.length>40?nm.slice(0,40)+'…':nm):'');
+  t.classList.remove('open'); void t.offsetWidth; t.classList.add('open');
+  t.querySelector('.ru-undo').onclick=function(){ hide(); var p=rdFind(pid), r=p&&p.rounds; if(!r) return; r[arr]=r[arr]||[];
+    if(!r[arr].some(function(x){ return x.id===item.id; })) r[arr].splice(Math.min(idx,r[arr].length),0,item);
+    rdTouch(p,word+' restored'+(nm?' · '+nm:'')); };
+  clearTimeout(undoT); undoT=setTimeout(hide,8000); }
+rdHandleAct=function(act,el){ var d=DEL[act]; if(!d||!el||!el.dataset) return actBase.apply(this,arguments);
+  var pid=el.dataset.pid, id=el.dataset.id, p=pid?rdFind(pid):null, L=(p&&p.rounds&&p.rounds[d[0]])||[], idx=L.findIndex(function(x){ return x.id===id; }), item=idx>-1?JSON.parse(J(L[idx])):null;
+  var out=actBase.apply(this,arguments);
+  if(item&&p&&!(p.rounds[d[0]]||[]).some(function(x){ return x.id===id; })) offer(pid,d[0],d[1],item,idx);
+  return out; };
+window.rdmUndoHide=hide;
+})();
+</script>
+<style>
+/* Rounds n118: "… removed · Undo" (same look as Flow's disposition undo) */
+.rd-undo{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:9500;display:flex;align-items:center;gap:14px;min-width:260px;max-width:min(92vw,520px);padding:10px 12px 10px 16px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);border-radius:14px;background:rgba(20,28,36,.92);box-shadow:0 8px 22px rgba(0,0,0,.25);color:rgba(230,238,246,.94);font-size:13px;
+  opacity:0;pointer-events:none;transform:translate(-50%,6px);transition:opacity .2s ease,transform .2s ease}
+.rd-undo.open{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.rd-undo .ru-msg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-undo .ru-undo{height:30px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.rd-undo .ru-undo:focus-visible{outline:none;border-color:rgba(88,194,216,.5);box-shadow:0 0 0 3px rgba(59,177,201,.18)}
+.rd-undo .ru-bar{position:absolute;left:0;bottom:0;height:2px;width:100%;background:rgba(88,194,216,.7);transform-origin:left;transform:scaleX(0)}
+.rd-undo.open .ru-bar{animation:ruBar 8s linear forwards}
+@keyframes ruBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+body:not(.dark) .rd-undo{background:rgba(255,255,255,.96);border-color:var(--glass-hairline,rgba(0,0,0,.08));color:var(--ink-800,#1d1d1f);box-shadow:0 8px 26px rgba(20,30,50,.16)}
+body:not(.dark) .rd-undo .ru-undo{background:var(--fill-soft,rgba(120,120,128,.12));border-color:var(--glass-hairline,rgba(0,0,0,.08));color:var(--ink-900,#1d1d1f)}
+@media (prefers-reduced-motion:reduce){.rd-undo{transition:none}.rd-undo.open .ru-bar{animation:none}}
+</style>
+
+<script>
+/* ===== TRACKER CODES n118 — a check-in code opens the family tracker only with the pet's name, and only while the visit is open =====
+   Flow used to write codes/{CODE} = {public_token}, readable by anyone forever: every code ever given out could be guessed.
+   Now it writes codes/{CODE}-{petkey} (one per way the family might type the name: the whole name and each word),
+   with is_active (open visit; admitted and hospitalized pets count as open) and expires_at (30 days after check-in at most).
+   The rules (Oct 12) refuse anything else. The ?t= link and QR are unchanged; the waiting room is not touched.
+   Written in its own small batch, never in the visit's save, so a code write can't hold up or fail a save. */
+(function(){
+  if(typeof window==='undefined') return;
+  var SIG={}, KEYS={}, CAP=30*864e5;
+  function words(s){ return String(s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(' ').filter(Boolean); }
+  function keys(name){ var w=words(name), out=[]; function add(k){ if(k&&out.indexOf(k)<0&&out.length<4) out.push(k); }
+    add(w.join('')); w.forEach(function(x){ if(x.length>=2) add(x); }); return out; }
+  function isOpen(p){
+    try{ if(fxVisitEnd(p)) return false; }catch(e){}
+    if(p.status==='Discharged'||p.status==='Euthanized') return false;
+    if(!p.completed) return true;
+    return p.status==='Admitted'||p.status==='Hospitalized';   /* the front-desk visit closed, the pet is still with us */
+  }
+  function expires(p){ var a=null; try{ a=_fromTS(p.arrival); }catch(e){} if(!a||isNaN(a)) a=new Date(); return new Date(+a+CAP); }
+  function staff(){ try{ return !!DB && typeof Backend!=='undefined' && Backend.mode==='staff'; }catch(e){ return false; } }
+  /* write what changed for these visits; closedToo=false skips closed visits this screen never wrote (the backfill) */
+  window.fxCodesSync=function(list,closedToo){
+    if(!staff()) return Promise.resolve(0);
+    var ops=[], done=[];
+    (list||[]).forEach(function(p){
+      if(!p||p._demo||!p.trackCode||!p.publicToken) return;
+      var id=String(p.id), code=String(p.trackCode).toUpperCase(), on=isOpen(p), exp=expires(p);
+      var ids=keys(p.name).map(function(k){ return code+'-'+k; });
+      var sig=JSON.stringify([ids,p.publicToken,on,+exp]);
+      if(SIG[id]===sig) return;
+      if(SIG[id]===undefined&&!on&&!closedToo) return;
+      var old=(KEYS[id]||[]).filter(function(d){ return ids.indexOf(d)<0; });   /* a renamed pet: the old name stops working */
+      ids.forEach(function(d){ ops.push([d,{ v:2, public_token:p.publicToken, tenant_id:TENANT_ID, is_active:on, expires_at:exp },false]); });
+      old.forEach(function(d){ ops.push([d,{ is_active:false },true]); });
+      done.push([id,sig,ids,SIG[id]]); SIG[id]=sig;
+    });
+    if(!ops.length) return Promise.resolve(0);
+    var chunks=[]; for(var i=0;i<ops.length;i+=400) chunks.push(ops.slice(i,i+400));
+    return Promise.all(chunks.map(function(c){ var b=DB.batch();
+      c.forEach(function(o){ b.set(DB.collection('codes').doc(o[0]),o[1],o[2]?{merge:true}:undefined); }); return b.commit(); }))
+      .then(function(){ done.forEach(function(d){ KEYS[d[0]]=d[2]; }); return ops.length; })
+      .catch(function(){ done.forEach(function(d){ if(SIG[d[0]]===d[1]){ if(d[3]===undefined) delete SIG[d[0]]; else SIG[d[0]]=d[3]; } }); return 0; });
+  };
+  /* after every board update: open visits get their codes (the first load writes today's visits once), and a visit
+     that closed in the last two days is closed again in case it was closed on a screen that didn't have this yet */
+  var t=null;
+  function backfill(){ clearTimeout(t); t=setTimeout(function(){ try{
+    var now=Date.now(), list=(PATIENTS||[]).filter(function(p){ return p&&!p._demo; });
+    window.fxCodesSync(list.filter(isOpen),false);
+    window.fxCodesSync(list.filter(function(p){ var c=null; try{ c=_fromTS(p.completedAt); }catch(e){} return !isOpen(p)&&c&&now-c<2*864e5; }),true);
+  }catch(e){} },1500); }
+  try{ var _mr=Backend._mergeResus; Backend._mergeResus=function(){ var out=_mr.apply(this,arguments); backfill(); return out; }; }catch(e){}
+  window.__fxCodes={ keys:keys, isOpen:isOpen, sig:SIG, written:KEYS };
+})();
+</script>
+
+<script>
+/* ===== FLOYD LEFTOVERS n118 (Flow + Rounds) — what the Oct 11 end-to-end test found =====
+   1. Rounds lists a problem once: the triage / intake complaint that check-in already turned into a problem
+      ("Painful abdomen" → "Acute Pain") is not added a second time.
+   2. Triage starts with the check-in weight filled in (marked "from check-in"; change it if the scale says otherwise).
+   3. Names: capital letters are only fixed when a word is typed all lower case or all capitals
+      (McDonald, DeLuca stay; "(floyd)" → "(Floyd)").
+   4. The family name on the treatment sheet is the owner's surname only ("Test Owner (floyd)" → "Owner";
+      "Mary Ann Smith" → "Smith"; "Smith, John" → "Smith").
+   The Rounds surgery detail and the department name are string patches in patch_floyd_n118.py. */
+(function(){
+  if(typeof window==='undefined') return;
+  var lc=function(x){ return String(x==null?'':x).trim().toLowerCase(); };
+  /* ---- 1. one problem, once ---- */
+  function keysOf(x){ var k=[lc(x)];
+    try{ var m=parseModifiers(x); if(m&&m.remaining&&m.remaining.trim()) k.push(lc(m.remaining)); }catch(e){}
+    try{ var pr=parseProblem(x); if(pr&&pr.label) k.push(lc(pr.label)); }catch(e){}
+    return k.filter(Boolean); }
+  function dedupe(p,before){
+    var r=p&&p.rounds; if(!r||!Array.isArray(r.problems)) return;
+    var seen={}; function mark(x){ keysOf(x).forEach(function(k){ seen[k]=1; }); }
+    (before||[]).forEach(function(x){ if(x&&x.label) mark(x.label); });
+    (p.reasonProblems||[]).forEach(function(pr){ if(!pr) return; if(pr.label) mark(pr.label); if(pr.originalInput) mark(pr.originalInput); });
+    var keep=(before||[]).map(function(x){ return x&&x.id; });
+    r.problems=r.problems.filter(function(x){
+      if(!x||keep.indexOf(x.id)>-1) return true;          /* what was there before stays exactly as it was */
+      var ks=keysOf(x.label); if(ks.some(function(k){ return seen[k]; })) return false;
+      ks.forEach(function(k){ seen[k]=1; }); return true; }); }
+  if(typeof window.fvRoundsPrefill==='function'){ var _pf=window.fvRoundsPrefill;
+    window.fvRoundsPrefill=function(p,at){ var before=(p&&p.rounds&&Array.isArray(p.rounds.problems))?p.rounds.problems.slice():[];
+      var out=_pf.apply(this,arguments); try{ dedupe(p,before); }catch(e){} return out; }; }
+  window.fvDedupeProblems=dedupe;
+
+  /* ---- 2. triage: the check-in weight is the starting value ---- */
+  try{ if(typeof openTriageEdit==='function'){ var _ote=openTriageEdit;
+    openTriageEdit=function(p){ var out=_ote.apply(this,arguments);
+      try{ var t=getTriage(p), v=(t&&t.vitals)||{}; var el=document.querySelector('#triEditBody [data-vk="weight"]');
+        if(el&&!String(el.value||'').trim()&&!(v.weight&&String(v.weight).trim())){
+          var w=(typeof p.weightKg==='number'&&p.weightKg>0)?(p.weightKg+' kg'):String(p.weight||'').trim();
+          if(w&&w!=='—'){ el.value=(typeof fmtWeight==='function')?fmtWeight(w):w;
+            var lab=el.parentNode&&el.parentNode.querySelector('label');
+            if(lab&&!lab.querySelector('.fv-from')){ var s=document.createElement('span'); s.className='fv-from'; s.textContent='from check-in'; lab.appendChild(s); }
+            el.addEventListener('input',function rm(){ var f=lab&&lab.querySelector('.fv-from'); if(f) f.remove(); el.removeEventListener('input',rm); }); } } }catch(e){}
+      return out; }; } }catch(e){}
+
+  /* ---- 3. names keep the capitals people type ---- */
+  function nameCase(s){ if(!s||!String(s).trim()) return s;
+    return String(s).trim().replace(/\s+/g,' ').split(' ').map(function(w){
+      var letters=w.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g,'');
+      var mixed=letters&&letters!==letters.toLowerCase()&&letters!==letters.toUpperCase();
+      if(mixed) return w.replace(/^([^A-Za-zÀ-ÖØ-öø-ÿ]*)([a-zà-öø-ÿ])/,function(m,a,c){ return a+c.toUpperCase(); });
+      return w.toLowerCase().replace(/(^|['’.\-(])([a-zà-öø-ÿ])/g,function(m,a,c){ return a+c.toUpperCase(); }); }).join(' '); }
+  try{ if(typeof fmtTitleCase==='function') fmtTitleCase=nameCase; }catch(e){}
+  window.fvNameCase=nameCase;
+
+  /* ---- 4. the owner's surname ---- */
+  window.fvOwnerSurname=function(own){ own=String(own||'').trim(); if(!own||own==='—') return '';
+    if(own.indexOf(',')>-1){ var a=own.split(',')[0].replace(/\([^)]*\)/g,' ').trim(); return a; }
+    var w=own.replace(/\([^)]*\)|\[[^\]]*\]|"[^"]*"/g,' ').split(/\s+/).map(function(x){ return x.replace(/^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$/g,''); })
+      .filter(function(x){ return /[A-Za-zÀ-ÿ]{2,}/.test(x)&&!/^(jr|sr|ii|iii|iv|dvm|md|phd)$/i.test(x); });
+    return w.length>1?w[w.length-1]:''; };
+  var st=document.createElement('style'); st.textContent='#triEditBody .fv-from{margin-left:6px;font-size:11px;font-weight:600;color:var(--accent,#38BDD2);text-transform:none;letter-spacing:0}';
+  (document.head||document.documentElement).appendChild(st);
+})();
+</script>
+
 <script>window.FV_TECHS=["Felisha Barnes", "Tanneil Buchanan", "Stephanie Cseh", "Erin Cummings", "Chris Densky", "Nelson Diaz", "Alexis Distasio", "Lizzy Dixon", "Catherine Fappiano", "Brandy Fellin", "Viviana Fonseca", "Lauren Francione", "Amber Horvath", "Kimberly Hulme", "Danielle Infante", "Amanda Inzitari", "Danielle Kiley", "Malyssa Kubik", "Carly Kudola", "Amanda Van Kuren", "Ann LeStrange", "Janitza Lopez", "Gabrielle Lungarini", "Lindsay Martin", "Myranda May", "Sam Mitchell", "Bethany Oczkowski", "Gabriella Palumbo", "Rachel Pieger", "Malachi Quinones", "Allie Rodriguez", "Christina Rodriguez", "Delahla Rosario", "Vanessa Ruiz", "Stacey Smith", "Ally Tewksbury", "Courtney Thieke", "Shelsey Vega", "Paola Velazquez", "Dharianna Villa", "Lauren Whitney", "Jordain Williams"];</script>
 <script>
 /* ═══ FLOW → TREATMENT SHEETS ═══
@@ -16634,7 +16877,7 @@ body:not(.dark) .rd-finrow .v.bal.warn,body:not(.dark) .rd-fin-computed.warn{col
     var sex=''; try{ sex=(typeof normalizeSexValue==='function'?normalizeSexValue(p.sex):'')||p.sex||''; }catch(e){ sex=p.sex||''; }
     var code=p.resusPref==='DNR'?'DNR':(p.resusPref==='CPR'?'CPR':'—');
     var cond={1:'Critical',2:'Watch'}[p.prio]||'Stable';
-    var own=String(p.owner||'').trim(), oLast=own.indexOf(',')>-1?own.split(',')[0].trim():(own.split(/\s+/).length>1?own.split(/\s+/).slice(1).join(' '):'');
+    var own=String(p.owner||'').trim(), oLast=(typeof fvOwnerSurname==='function')?fvOwnerSurname(own):(own.indexOf(',')>-1?own.split(',')[0].trim():(own.split(/\s+/).length>1?own.split(/\s+/).slice(1).join(' '):''));
     return {name:p.name||'Patient',last:p.last||oLast||'',owner:p.owner||'',phone:p.ownerPhone||'',species:p.species||'Dog',breed:p.breed||'',sex:sex,
       age:p.ageDisplay||p.age||'',weight:wt,reason:p.reason||'',doctor:doctorName(p.doctor),location:'',code:code,condition:cond,
       alerts:code==='DNR'?['DNR']:[],tech:(techNow(p)||{}).staffName||null,tech_at:techAt(p)||null,flags:flagsFor(p),problems:Array.isArray(p.reasonProblems)?p.reasonProblems.map(function(x){ return x.label; }).filter(Boolean):[]};
@@ -17075,9 +17318,15 @@ body:not(.dark) .rd-finrow .v.bal.warn,body:not(.dark) .rd-fin-computed.warn{col
 
   /* ---------- Rounds: the surgery, once per case ---------- */
   function roundsLine(p){ var s=p.orStatus, r=p.rounds; if(!s||!s.case||!r||r.outcome||!Array.isArray(r.events)||DONE_ST.indexOf(s.status)<0) return;
-    var eid='or_'+s.case; if(r.events.some(function(e){ return e&&e.id===eid; })) return;
+    var eid='or_'+s.case, added=false;   /* n118: the surgery line, then each intra-op event and the recovery, once each */
+    function put(id,at,text,by){ if(r.events.some(function(e){ return e&&e.id===id; })) return; r.events.push({id:id,at:at,text:text,by:by||null,kind:'clinical'}); added=true; }
     var bits=[s.proc,s.surgeon,s.room].filter(Boolean), tm=[s.in?'in '+clock(s.in):'',s.out?'out '+clock(s.out):''].filter(Boolean).join(', ');
-    r.events.push({id:eid,at:(s.out||s.at||new Date().toISOString()),text:'Surgery — '+bits.join(' · ')+(tm?' · '+tm:'')+(s.dest?' → '+s.dest:''),by:s.surgeon||null,kind:'clinical'});
+    put(eid,(s.out||s.at||new Date().toISOString()),'Surgery — '+bits.join(' · ')+(tm?' · '+tm:'')+(s.dest?' → '+s.dest:''),s.surgeon);
+    (Array.isArray(s.notes)?s.notes:[]).slice(0,8).forEach(function(n,i){ if(n&&n.text) put(eid+'_i'+i,(n.at||s.out||s.at||new Date().toISOString()),'Intra-op — '+String(n.text),s.surgeon); });
+    var c=s.rec; if(c){ var rb=[c.ext?'extubated '+clock(c.ext):'',c.temp?'T '+c.temp:'',c.pain?'pain '+c.pain:'',c.o2?'O₂ '+c.o2:'',c.incision?'incision '+String(c.incision).toLowerCase():'',
+        c.meds?'meds: '+c.meds:'',c.complications&&!/^none\.?$/i.test(String(c.complications).trim())?'complications: '+c.complications:''].filter(Boolean);
+      if(rb.length) put(eid+'_rec',(c.at||s.out||s.at||new Date().toISOString()),'Recovery — '+rb.join(' · '),null); }
+    if(!added) return;
     r.events.sort(function(x,y){ return new Date(x.at)-new Date(y.at); });
     try{ if(typeof rdTouch==='function') rdTouch(p,'Surgery from OR'); }catch(e){} }
   setInterval(function(){ if(!ok()||typeof PATIENTS==='undefined') return; try{ PATIENTS.forEach(function(p){ if(p&&!p._demo&&p.orStatus) roundsLine(p); }); }catch(e){} },4000);
