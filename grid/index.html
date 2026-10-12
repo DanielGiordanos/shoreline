@@ -82,11 +82,13 @@
   </script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="reports.js?v=c864b72431"></script>
   <script type="module">
     // The same Pravix sign-in (and session) as Flow, Treatment Sheets and Kura. Grid only opens for
     // the accounts below; nothing else (not even the 13 MB engine) loads until then.
     const ALLOWED = ['daniel.giordano@pravix.app'];
-    const V = 'bfdd2934e5';
+    const V = 'f6e0cf4428';
     firebase.initializeApp({ apiKey: 'AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE', authDomain: 'shoreline-flow.firebaseapp.com', projectId: 'shoreline-flow',
       storageBucket: 'shoreline-flow.firebasestorage.app', messagingSenderId: '237404385636', appId: '1:237404385636:web:1ee3ba27f22c946f748a71' });
     const auth = firebase.auth(), $ = id => document.getElementById(id);
@@ -108,9 +110,16 @@
       $('gate-text').textContent = text; $('gate-fields').hidden = !fields; $('gate-out').hidden = fields;
       if (fields) setTimeout(() => $('gate-email').focus(), 50);
     }
+    window.__gridStart = () => start();
     auth.onAuthStateChanged(u => {
       if (!u) return show('Sign in with your Pravix account.', true);
-      if (ALLOWED.includes((u.email || '').toLowerCase())) return start();
+      if (ALLOWED.includes((u.email || '').toLowerCase())) {
+        // Weekly reports: the panel, its links (#report / #visits / #trend) and "Mark reviewed". A link to visits or a
+        // trend opens without the 13 MB engine; Open in Grid starts it.
+        if (window.__gridReports) window.__gridReports(u);
+        if (!window.__gridReportsWantsEngine || window.__gridReportsWantsEngine()) return start();
+        gate.classList.remove('on'); loading.style.display = 'none'; return;
+      }
       show('This account can’t open Grid yet.', false);
     });
     $('gate-form').addEventListener('submit', async e => {
