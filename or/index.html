@@ -2391,6 +2391,16 @@ function initLunaSearchOrb(){
 initLunaSearchOrb();
 </script>
 <script>
+/* n118 — shared helpers: readable sex, allergy state, °F */
+const OR_SEX={mn:'Male neutered',male_neutered:'Male neutered',fs:'Female spayed',female_spayed:'Female spayed',mi:'Male intact',male_intact:'Male intact',
+  fi:'Female intact',female_intact:'Female intact',m:'Male',male:'Male',f:'Female',female:'Female',unknown:'Unknown',u:'Unknown'};
+function orSexLabel(v){ const s=String(v==null?'':v).trim(); if(!s) return ''; const k=s.toLowerCase().replace(/[\s()/-]+/g,'_').replace(/^_|_$/g,'');
+  if(OR_SEX[k]) return OR_SEX[k]; if(/neuter|castrat/.test(k)) return 'Male neutered'; if(/spay/.test(k)) return 'Female spayed'; return s.replace(/_/g,' '); }
+const OR_ALLERGY_NONE=/^\s*(none|none known|no known( drug)? allergies|nka|nkda|n\/?a|no|nil|-+)\s*\.?\s*$/i;
+function orAllergyNone(t){ return OR_ALLERGY_NONE.test(String(t||'')); }
+function orAllergyKnown(t){ const s=String(t||'').trim(); return !!s&&!orAllergyNone(s)&&!/^not recorded/i.test(s); }
+function orTempF(v){ if(v==null) return ''; const s=String(v).trim(); if(!s) return ''; const m=s.match(/-?\d+(\.\d+)?/); if(!m) return s;
+  const n=parseFloat(m[0]), c=/°?\s*c\b/i.test(s)||(!/°?\s*f\b/i.test(s)&&n<50); return (c?n*9/5+32:n).toFixed(1)+' °F'; }
 /* ============================================================
    PRAVIX OR — data model + status engine
    Everything the UI renders comes from these objects. In production
@@ -2925,8 +2935,8 @@ function speciesOf(s){ return /fel|cat/i.test(String(s||''))?'Feline':'Canine'; 
 function flagsOf(p,k){ return (Array.isArray(p.flags)?p.flags:[]).filter(f=>f&&f.k===k&&f.t).map(f=>f.t); }
 function patientFrom(sh){ const p=sh.patient||{}, code=String(p.code||'').toUpperCase();
   const where=p.location||(sh.board==='OP'?'Outpatient':'Inpatient');
-  return {id:sh._id, name:p.name||'Patient', last:p.last||'', species:speciesOf(p.species), breed:p.breed||'', sex:p.sex||'', age:p.age||'', kg:p.weight||'—', owner:p.owner||'',
-    cpr:code==='DNR'?'DNR':code==='CPR'?'CPR':'Not recorded', allergies:p.allergies||'Not recorded in Flow', conditions:[].concat(p.problems||[],flagsOf(p,'med')).join(' · ')||p.reason||'—',
+  return {id:sh._id, name:p.name||'Patient', last:p.last||'', species:speciesOf(p.species), breed:p.breed||'', sex:orSexLabel(p.sex), age:p.age||'', kg:p.weight||'—', owner:p.owner||'',
+    cpr:code==='DNR'?'DNR':code==='CPR'?'CPR':'Not recorded', allergies:p.allergies||'Not recorded', conditions:[].concat(p.problems||[],flagsOf(p,'med')).join(' · ')||p.reason||'—',
     bloodType:'—', crossmatch:'—', fasting:fastingLine(sh), location:where, hid:sh.visit_code||'', difficultAirway:false,
     temperament:[].concat(flagsOf(p,'safe'),flagsOf(p,'hand')).join(' · ')||null, isolation:flagsOf(p,'iso').join(' · ')||null,
     board:sh.board||'IP', visitId:sh.visit_id||null, reason:p.reason||'', doctor:p.doctor||''}; }
@@ -2972,7 +2982,10 @@ function replaceInto(old,fresh){ Object.keys(old).forEach(k=>{ if(!(k in fresh))
 /* what Flow shows on the card and in the drawer */
 function orStatusOf(c){ const r=c.recovery||{};
   return {case:c.id, status:c.status, label:STATUS[c.status].label, stage:stageKey(c), room:ROOM[c.roomId].name, proc:procLabel(c), surgeon:person(c.surgeonId).name,
-    date:c.date, sched:isoAt(c.date,c.sched), in:isoAt(c.date,evT(c,'in_room')), out:isoAt(c.date,evT(c,'out_of_room')), dest:r.destination||null, sent:!!r.sentToFlow}; }
+    date:c.date, sched:isoAt(c.date,c.sched), in:isoAt(c.date,evT(c,'in_room')), out:isoAt(c.date,evT(c,'out_of_room')), dest:r.destination||null, sent:!!r.sentToFlow,
+    notes:(c.intraop||[]).filter(e=>e&&(e.type||e.note)).slice().sort((a,b)=>a.t-b.t).slice(0,8).map(e=>({at:isoAt(c.date,e.t),text:String(e.type||'')+(e.note?' — '+String(e.note).slice(0,200):'')})),
+    rec:(r.extubated!=null||r.temp||r.pain||r.o2||r.incision||r.complications||r.meds)?{at:isoAt(c.date,r.extubated!=null?r.extubated:(r.complete!=null?r.complete:r.started)),ext:isoAt(c.date,r.extubated),
+      temp:r.temp?orTempF(r.temp):null,pain:r.pain||null,o2:r.o2||null,incision:r.incision||null,complications:r.complications||null,meds:r.meds||null}:null}; }
 
 /* ---------- writing: only the fields that changed ---------- */
 const OBJ_KEYS={readiness:1,readinessNotes:1,rman:1,recovery:1,record:1,timeout:1};
@@ -3210,7 +3223,7 @@ function caseFlags(c){
   const done=statusAtLeast(c,'procedure_finished');
   if(p.cpr==='DNR') add('dnr');
   if(p.difficultAirway) add('airway');
-  if(p.allergies && p.allergies!=='None known') add('allergy');
+  if(orAllergyKnown(p.allergies)) add('allergy');
   if(p.isolation) add('isolation');
   if(p.temperament) add('caution');
   if(c.type==='emergency') add('emergency'); else if(c.type==='addon') add('addon');
@@ -3225,7 +3238,7 @@ function caseFlags(c){
   /* documentation */
   if(c.readiness.consent==='pending') add('consentX'); else if(c.readiness.consent==='done'&&!done) add('consent');
   if(c.readiness.imaging==='pending') add('imagingX');
-  if(c.anesthesia && c.anesthesia.state==='ended') (c.anesthesia.signed?add('record'):add('recordX'));
+  if(c.anesthesia && c.anesthesia.state==='ended' && (!LIVE||c.anesthesia.signed)) (c.anesthesia.signed?add('record'):add('recordX'));
   if(done) ((c.record&&c.record.status==='signed')?add('note'):add('noteX'));
   const asa=asaFlag(c); if(asa) f.push(asa);
   const rank=x=>({crit:0,warn:1,info:2,ok:3})[x.tone];
@@ -3730,7 +3743,7 @@ function timelineHtml(c){
 }
 function tabOverview(c){
   const p=pt(c); const rs=readinessSummary(c); const late=lateMin(c);
-  const patient=panel('Patient', `<div class="or-kv">${cell('Species · Breed',esc(p.species+' · '+p.breed))}${cell('Sex · Age · Weight',esc(`${p.sex} · ${p.age} · ${p.kg} kg`))}${cell('Owner',esc(p.owner))}${cell('CPR / DNR',esc(p.cpr),p.cpr==='DNR'?'warn':'')}${cell('Allergies',esc(p.allergies),p.allergies!=='None known'?'warn':'')}${cell('Relevant conditions',esc(p.conditions))}${cell('Blood type',esc(p.bloodType))}${cell('Crossmatch',esc(p.crossmatch))}${cell('Fasting',esc(p.fasting))}${cell('Current location',esc(p.location))}</div>`, {cls:'span7'});
+  const patient=panel('Patient', `<div class="or-kv">${cell('Species · Breed',esc(p.species+' · '+p.breed))}${cell('Sex · Age · Weight',esc([orSexLabel(p.sex),p.age,(p.kg!=null&&p.kg!=='—'&&p.kg!=='')?p.kg+' kg':''].filter(Boolean).join(' · ')||'—'))}${cell('Owner',esc(p.owner))}${cell('CPR / DNR',esc(p.cpr),p.cpr==='DNR'?'warn':'')}${cell('Allergies',esc(p.allergies),orAllergyKnown(p.allergies)?'warn':'')}${cell('Relevant conditions',esc(p.conditions))}${cell('Blood type',esc(p.bloodType))}${cell('Crossmatch',esc(p.crossmatch))}${cell('Fasting',esc(p.fasting))}${cell('Current location',esc(p.location))}</div>`, {cls:'span7'});
   const details=panel('Case', `<div class="or-kv">${cell('Procedure',esc(procLabel(c)))}${cell('Service',esc(c.service))}${cell('Room',esc(ROOM[c.roomId].name))}${cell('Scheduled',fmtT(c.sched))}${cell('Estimated duration',fmtDur(c.dur))}${cell('Type',esc(c.type==='scheduled'?'Scheduled':c.type==='addon'?'Add-on':'Emergency add-on'))}${cell('Priority',esc(c.priority[0].toUpperCase()+c.priority.slice(1)))}${c.requestedAt?cell('Requested',fmtT(c.requestedAt)):''}${cell('Surgeon',esc(person(c.surgeonId).full||person(c.surgeonId).name))}${cell('Anesthesia',esc(person(c.anesthesiaId).full||person(c.anesthesiaId).name))}${cell('Technician',esc(person(c.techId).name))}${cell('Readiness',`${rs.done} / ${rs.total}`,rs.ready?'ok':'warn')}</div>
     ${late?`<div class="or-alert" style="margin:14px 0 0"><div class="ai">!</div><div><b>Delay · ${late} min</b><span>${esc(c.delay?c.delay.reason:'Scheduled time has passed')}${c.delay&&c.delay.note?' · '+esc(c.delay.note):''}</span></div></div>`:''}
     ${c.impact&&c.impact.minutes?`<div class="or-impact" style="margin-top:12px"><div><b>Schedule impact</b><span>Delays the next case in ${esc(ROOM[c.impact.roomId].name)} by ≈ ${c.impact.minutes} min</span></div></div>`:''}
@@ -3738,7 +3751,7 @@ function tabOverview(c){
   const tl=panel('Surgical timeline', timelineHtml(c), {cls:'span5', right:`<span class="count">${c.events.length} events</span>`});
   const an=c.anesthesia;
   const anesia=panel('Anesia', an?`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active':an.state==='ended'?'Ended':'Pre-op assessment'}</span></div><div class="or-anesia-mode">${esc(an.mode)}</div>
-      ${an.hr?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}%</div></div><div><div class="k">Temp</div><div class="v">${esc(an.temp||'—')}</div></div></div>`:''}
+      ${an.hr?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}%</div></div><div><div class="k">Temp</div><div class="v">${esc(orTempF(an.temp)||'—')}</div></div></div>`:''}
       <div class="sub">${an.start?`Anesthesia start ${fmtT(an.start)}`:'Not yet started'}${an.end?` · end ${fmtT(an.end)}`:''}</div></div>`
     :`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">Not started</span></div><div class="sub" style="margin-top:6px">${c.readiness.anesthesia==='done'?'Pre-op assessment complete':'Pre-op assessment incomplete'}</div></div>`, {cls:'span7', right:`<button class="or-btn sm luna" data-act="anesia">Open Anesia</button>`});
   const flags=panel('Flags &amp; considerations', flagList(c), {cls:'span5', right:`<button class="or-btn sm" data-act="legend">Legend</button>`});
@@ -3788,8 +3801,8 @@ function tabProcedure(c){
   const an=c.anesthesia;
   const anesia=panel('Anesia', an?`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active · '+fmtDur(now()-an.start):an.state==='ended'?'Ended '+fmtShort(an.end):'Pre-op assessment'}</span></div><div class="or-anesia-mode">${esc(an.mode)}</div>
       ${an.state==='active'?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}%</div></div><div><div class="k">EtCO₂</div><div class="v">${esc(an.etco2||'—')}</div></div></div>`:''}
-      <div class="sub">${an.start?`Anesthesia start ${fmtT(an.start)}`:'Not started'}${an.end?` · end ${fmtT(an.end)}`:''}${an.temp?` · Temp ${esc(an.temp)} °C`:''}</div></div>`
-    :`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">Not started</span></div><div class="sub" style="margin-top:6px">Anesthesia has not started. ${LIVE?'Its start is recorded with Start Anesthesia.':'OR will update when Anesia records induction.'}</div></div>`, {cls:'span4', right:`<button class="or-btn sm luna" data-act="anesia">Open Anesia</button>`});
+      <div class="sub">${an.start?`Anesthesia start ${fmtT(an.start)}`:'Not started'}${an.end?` · end ${fmtT(an.end)}`:''}${an.temp?` · Temp ${esc(orTempF(an.temp))}`:''}</div></div>`
+    :`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">Not started</span></div><div class="sub" style="margin-top:6px">Anesthesia has not started. ${LIVE?'Its start is recorded with Start Anesthesia.':'OR will update when Anesia records induction.'}</div></div>`, {cls:'span4', right:`${an&&an.state==='active'?'<button class="or-btn sm" data-act="an-end">End anesthesia</button>':''}<button class="or-btn sm luna" data-act="anesia">Open Anesia</button>`});
   const events=panel('Intraoperative events', c.intraop.length?`<div class="or-list">${c.intraop.slice().sort((a,b)=>b.t-a.t).map(e=>`<div class="or-li"><span class="tm">${fmtShort(e.t)}</span><span class="tt">${esc(e.type)}${e.note?`<small>${esc(e.note)}</small>`:''}</span><span class="st ${['Hemorrhage','Hypotension','Arrhythmia','Complication'].includes(e.type)?'warn':'muted'}">${['Hemorrhage','Hypotension','Arrhythmia','Complication'].includes(e.type)?'Clinical':'Logged'}</span></div>`).join('')}</div>`:`<div class="or-empty">No events recorded</div>`, {cls:'span8', right:`<button class="or-btn sm primary" data-act="event">${I.plus}Event</button>`});
   const implants=panel('Implants', c.implants.length?`<div class="or-list">${c.implants.map(i=>`<div class="or-li or-implant"><span class="tt">${esc(i.product)}<span class="spec"><span><b>Mfr</b> ${esc(i.manufacturer)}</span><span><b>Size</b> ${esc(i.size)}</span><span><b>Lot</b> ${esc(i.lot)}</span><span><b>Serial</b> ${esc(i.serial)}</span><span><b>Exp</b> ${esc(i.exp)}</span><span><b>Qty</b> ${i.qty}</span></span><small>${esc(pt(c).name)} · ${esc(procLabel(c))} · ${esc(person(c.surgeonId).name)} · ${fmtT(i.t)}</small></span><span class="st">Placed</span></div>`).join('')}</div>`:`<div class="or-empty">No implants recorded</div>`, {cls:'span6', right:`<button class="or-btn sm" data-act="scan">${I.scan}Scan barcode</button>`});
   const specimens=panel('Specimens', c.specimens.length?`<div class="or-list">${c.specimens.map(s=>`<div class="or-li" data-spec="${s.id}"><span class="tm">${fmtShort(s.t)}</span><span class="tt">${esc(s.type)} · ${esc(s.site)}${s.laterality&&s.laterality!=='N/A'?' · '+esc(s.laterality):''}<small>${esc(s.test)} · ${esc(s.container)} · ${esc(s.destination)}</small></span><button class="or-btn sm" data-specnext="${s.id}" ${s.status==='Received'?'disabled':''} title="Advance status">${esc(s.status)}${s.status!=='Received'?' →':''}</button></div>`).join('')}</div>`:`<div class="or-empty">No specimens collected</div>`, {cls:'span6', right:`<button class="or-btn sm" data-act="specimen">${I.plus}Specimen</button>`});
@@ -3841,7 +3854,7 @@ function tabRecovery(c){
       <div class="or-field"><label>Recovery started</label><input value="${r.started!=null?fmtT(r.started):'—'}" disabled></div>
       <div class="or-field"><label>Extubation</label><div class="or-actions">${r.extubated!=null?`<input value="${fmtT(r.extubated)}" disabled>`:`<button class="or-btn" data-act="extubate">Mark extubated</button>`}</div></div>
       <div class="or-field"><label>Recovery technician</label><select data-rec="techId">${LIVE?`<option value="" ${r.techId?'':'selected'}>Choose…</option>`:''}${techs.map(t=>`<option value="${t.id}" ${r.techId===t.id?'selected':''}>${t.name}</option>`).join('')}</select></div></div>
-    <div class="or-field-row3">${f('temp','Temperature',r.temp,'37.5 °C')}${f('pain','Pain score',r.pain,'0–4 (CSU)')}${f('o2','Oxygen requirement',r.o2,'None')}</div>
+    <div class="or-field-row3">${f('temp','Temperature',orTempF(r.temp),'99.5 °F')}${f('pain','Pain score',r.pain,'0–4 (CSU)')}${f('o2','Oxygen requirement',r.o2,'None')}</div>
     <div class="or-field-row">${f('meds','Post-op medications',r.meds,'Drug · dose · time')}${f('incision','Incision status',r.incision,'Clean, dry, intact')}</div>
     <div class="or-field"><label>Complications</label><input data-rec="complications" value="${esc(r.complications||'')}" placeholder="None"></div>
     <div class="or-field"><label>Destination</label><div class="or-pills">${DESTINATIONS.map(d=>`<button class="or-pill ${r.destination===d?'active':''}" data-dest="${d}">${d}</button>`).join('')}</div></div>`;
@@ -3906,7 +3919,8 @@ function caseAction(c, act, btn){
     case 'drug': drugModal(c); break;
     case 'scan': scanModal(c); break;
     case 'specimen': specimenModal(c); break;
-    case 'extubate': c.recovery.extubated=now(); save(); renderCase(); break;
+    case 'extubate': c.recovery.extubated=now(); if(c.anesthesia&&c.anesthesia.state==='active'){ c.anesthesia.state='ended'; c.anesthesia.end=c.recovery.extubated; toast('Extubated · anesthesia ended '+fmtT(c.anesthesia.end)); } save(); renderCase(); break;
+    case 'an-end': if(c.anesthesia&&c.anesthesia.state==='active'){ c.anesthesia.state='ended'; c.anesthesia.end=now(); save(); toast('Anesthesia ended '+fmtT(c.anesthesia.end)); renderCase(); } break;
     case 'rec-complete': doAdvance(c); break;
     case 'send-flow': sendToFlow(c); break;
     case 'luna-draft': lunaDraft(c); break;
