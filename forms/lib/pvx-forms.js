@@ -81,18 +81,23 @@
     return (fields || []).filter(function (f) { return f.type !== 'button'; }).map(function (f, i) {
       var g = guess(f), label = humanize(f.name);
       return { id: 'b' + (i + 1).toString(36) + Math.random().toString(36).slice(2, 6), page: f.page | 0, rect: f.rect.map(function (v) { return Math.round(v * 10) / 10; }),
-        type: g.type, src: g.src, opt: g.opt, field: f.name, required: g.src && /^sign\.owner$|owner\.name/.test(g.src) ? true : false,
+        type: g.type, src: g.src, opt: g.opt, field: f.name, guess: !!g.src, required: g.src && /^sign\.owner$|owner\.name/.test(g.src) ? true : false,
         label: g.src && BYK[g.src] && BYK[g.src].custom ? { en: label, es: '' } : null, group: g.src === 'family.choice' ? humanize(f.name) : null };
     });
   }
   function humanize(n) { return String(n || '').replace(/[_\-.]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\s+/g, ' ').trim().replace(/^./, function (c) { return c.toUpperCase(); }); }
 
   /* how complete a template is */
+  /* a box Pravix guessed from the PDF's field name stays a suggestion (guess:true) until someone confirms or changes it;
+     boxes saved before Oct 13 have no flag and count as confirmed */
   function progress(tpl) {
     var B = (tpl && tpl.boxes) || [], done = B.filter(function (b) { return isMapped(b); }).length;
-    var hasOwnerSig = B.some(function (b) { return b.src === 'sign.owner'; });
-    return { total: B.length, mapped: done, missing: B.length - done, hasOwnerSig: hasOwnerSig, ready: B.length > 0 && done === B.length && hasOwnerSig };
+    var toReview = B.filter(function (b) { return isMapped(b) && b.guess; }).length;
+    var hasOwnerSig = B.some(function (b) { return b.src === 'sign.owner'; }), hasWitness = B.some(function (b) { return b.src === 'sign.witness'; });
+    return { total: B.length, mapped: done, missing: B.length - done, review: toReview, confirmed: done - toReview, hasOwnerSig: hasOwnerSig, hasWitness: hasWitness,
+      ready: B.length > 0 && done === B.length && toReview === 0 && hasOwnerSig };
   }
+  function isConfirmed(b) { return isMapped(b) && !b.guess; }
   function isMapped(b) {
     if (!b || !b.src) return false; var s = BYK[b.src]; if (!s) return false;
     if (s.custom && !(b.label && String(b.label.en || '').trim())) return false;
@@ -205,6 +210,6 @@
   }
 
   window.PvxForms = { SOURCES: SOURCES, source: function (k) { return BYK[k] || null; }, guess: guess, boxesFromFields: boxesFromFields, humanize: humanize,
-    progress: progress, isMapped: isMapped, questions: questions, resolve: resolve, regions: regions, fmtDate: fmtDate,
+    progress: progress, isMapped: isMapped, isConfirmed: isConfirmed, questions: questions, resolve: resolve, regions: regions, fmtDate: fmtDate,
     putParts: putParts, getParts: getParts, templateBytes: templateBytes, docBytes: docBytes, fileSigned: fileSigned, newId: newId, PART: PART };
 })();
