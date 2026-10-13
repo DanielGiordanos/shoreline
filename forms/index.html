@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="forms-build" content="20261013a">
+<title>Forms · Pravix</title>
+<script>(function(){try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(light|dark)/);if(m)document.documentElement.setAttribute('data-theme',m[1]);}catch(e){}})();</script>
+<style>
+:root{--font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","Segoe UI",Roboto,sans-serif;
+  --bg:#080E1A;--nav:#0A1222;--s0:#0E1628;--s1:#131E34;--s2:#192540;--ink:#D8E8F4;--ink2:#A7C2D8;--ink3:#7A98B8;--line:rgba(77,200,224,.10);--line2:rgba(150,185,220,.32);
+  --accent:#1F8FA8;--accent-ink:#4DC8E0;--good:#48B888;--good-ink:#7FD6AE;--warn:#EBC95D;--bad:#E8928A;--paper-bg:#060B15;--fill:rgba(150,185,220,.10);--sel:rgba(56,189,210,.14);
+  --b-visit:rgba(56,189,210,.22);--b-visit-line:#1F8FA8;--b-family:rgba(56,189,210,.14);--b-ending:rgba(168,136,224,.22);--b-ending-line:#8064C8;--b-sign:rgba(235,201,93,.28);--b-sign-line:#C49628;--b-none:rgba(150,170,200,.18);--b-none-line:#8A97AB;--b-todo:rgba(232,100,74,.20);--b-todo-line:#E8644A}
+:root[data-theme="light"]{--bg:#F2F4F8;--nav:#FFFFFF;--s0:#FFFFFF;--s1:#F7F8FB;--s2:#EDF0F5;--ink:#14181F;--ink2:#4B5563;--ink3:#6B7280;--line:rgba(30,45,90,.08);--line2:rgba(30,45,90,.18);--accent:#1F7F96;--accent-ink:#1F7F96;--good-ink:#2E8A5E;--paper-bg:#E4E8EF;--fill:rgba(30,45,90,.06);--sel:rgba(31,143,168,.12)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent-ink)}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:12px 24px;background:var(--nav);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;min-width:170px;text-decoration:none;color:inherit}
+.brand i{width:30px;height:30px;border-radius:9px;background:#2F55BE;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;color:#fff}
+.brand b{font-size:17px}.brand span{font-weight:500;color:var(--ink2)}
+.apps{display:flex;flex-wrap:wrap;gap:4px;flex:1;justify-content:center}
+.apps a{padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink2);text-decoration:none}
+.apps a:hover{background:var(--fill)}.apps a[aria-current]{color:var(--ink);background:var(--sel);box-shadow:inset 0 0 0 1px rgba(56,189,210,.35)}
+.who{display:flex;align-items:center;gap:10px;min-width:170px;justify-content:flex-end;font-size:12.5px;color:var(--ink2)}
+.btn{min-height:40px;padding:0 15px;border-radius:11px;border:1px solid var(--line2);background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn:hover{background:var(--fill)}.btn.primary{background:var(--accent);border-color:transparent;color:#fff}.btn.primary:hover{filter:brightness(1.07)}
+.btn.quiet{border-color:transparent}.btn.danger{color:var(--bad)}.btn[disabled]{opacity:.45;cursor:default}
+.btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(56,189,210,.35)!important}
+/* library */
+.lib{max-width:1200px;margin:0 auto;padding:36px 28px 60px;display:flex;flex-direction:column;gap:24px}
+.lib-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px}
+.lib-head h1{margin:0;font-size:32px;font-weight:750;letter-spacing:-.02em}.lib-head p{margin:8px 0 0;max-width:640px;color:var(--ink2);line-height:1.5;font-size:15px}
+.seg{display:inline-flex;padding:3px;border-radius:12px;background:var(--fill)}
+.seg button{min-height:36px;padding:0 12px;white-space:nowrap;border:0;border-radius:9px;background:transparent;color:var(--ink2);font-size:13px;font-weight:550;cursor:pointer}
+.seg button[aria-checked="true"]{background:var(--s2);color:var(--ink);font-weight:650;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.card{display:flex;gap:16px;padding:16px;border-radius:18px;background:var(--s0);border:1px solid var(--line);text-align:left;cursor:pointer;width:100%}
+.card:hover{border-color:rgba(77,200,224,.28)}
+.thumb{flex:0 0 92px;height:119px;border-radius:6px;background:#fff;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center}
+.thumb canvas{width:100%;height:auto;display:block}
+.card-b{display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}
+.pill{align-self:flex-start;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px}
+.pill.ready{background:rgba(72,184,136,.16);color:var(--good-ink)}.pill.draft{background:var(--fill);color:var(--ink2)}.pill.todo{background:rgba(235,201,93,.16);color:#C9A23A}
+:root:not([data-theme="light"]) .pill.todo{color:var(--warn)}
+.card h2{margin:0;font-size:16px;font-weight:650;line-height:1.3}.card p{margin:0;font-size:13px;line-height:1.45;color:var(--ink2)}.card small{font-size:12px;color:var(--ink3)}
+.empty{padding:40px;border-radius:18px;border:1px dashed var(--line2);text-align:center;color:var(--ink2);display:flex;flex-direction:column;gap:10px;align-items:center}
+.empty b{color:var(--ink);font-size:16px}
+.steps{display:flex;flex-wrap:wrap;border-radius:18px;background:var(--s0);border:1px solid var(--line);overflow:hidden}
+.steps div{flex:1 1 230px;padding:16px 20px;display:flex;flex-direction:column;gap:5px;border-right:1px solid var(--line);font-size:14px;line-height:1.45}
+.steps div:last-child{border-right:0}.steps span{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+/* mapper */
+.map{display:flex;flex-wrap:wrap;min-height:calc(100vh - 65px)}
+.map-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--nav);position:sticky;top:65px;z-index:15;width:100%}
+.map-bar .name{flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px}
+.map-bar input.title{border:0;background:transparent;font-size:16px;font-weight:650;padding:4px 6px;border-radius:8px;outline:0;min-width:0;width:100%}
+.map-bar input.title:hover,.map-bar input.title:focus{background:var(--fill)}
+.map-bar .sub{font-size:12px;color:var(--ink2);padding-left:6px}
+.saved{font-size:12px;color:var(--ink3);min-width:70px;text-align:right}
+.side{flex:1 1 250px;max-width:290px;padding:16px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 130px);overflow:auto;position:sticky;top:130px}
+.prog{display:flex;flex-direction:column;gap:6px;padding:0 6px}.prog-t{display:flex;justify-content:space-between;font-size:12.5px;font-weight:650}
+.bar{height:6px;border-radius:3px;background:var(--fill);overflow:hidden}.bar i{display:block;height:6px;background:var(--good)}
+.blist{display:flex;flex-direction:column;gap:2px}
+.bitem{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:6px 10px;border:0;border-radius:10px;background:transparent;text-align:left;cursor:pointer}
+.bitem:hover{background:var(--fill)}.bitem.on{background:var(--sel);box-shadow:inset 0 0 0 1px rgba(56,189,210,.45)}
+.dot{width:9px;height:9px;border-radius:5px;flex:0 0 9px}
+.bitem span{display:flex;flex-direction:column;gap:1px;min-width:0}.bitem b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bitem small{font-size:11.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.paper{flex:999 1 560px;min-width:0;background:var(--paper-bg);padding:24px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.hint{font-size:12.5px;color:var(--ink2);text-align:center}
+.page{position:relative;background:#fff;box-shadow:0 20px 50px rgba(0,0,0,.45);border-radius:3px;user-select:none;-webkit-user-select:none;touch-action:none}
+.page canvas{display:block;width:100%;height:auto;border-radius:3px}
+.page .pno{position:absolute;left:-2px;top:-22px;font-size:12px;color:var(--ink2)}
+.box{position:absolute;border-radius:3px;cursor:move;display:flex;align-items:flex-start}
+.box em{position:absolute;left:0;top:-17px;font-style:normal;font-size:10px;font-weight:700;color:#fff;padding:1px 6px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;font-family:var(--font)}
+.box:hover em,.box.on em{opacity:1}
+.box.on{outline:2px solid #1F8FA8;outline-offset:1px;z-index:3}
+.box .h{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:6px;background:#fff;border:2px solid #1F8FA8;cursor:nwse-resize;display:none}
+.box.on .h{display:block}
+.drawing{position:absolute;border:1.5px dashed #1F8FA8;background:rgba(56,189,210,.12);pointer-events:none}
+.insp{flex:1 1 300px;max-width:340px;padding:18px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 130px);overflow:auto;position:sticky;top:130px}
+.insp h3{margin:0;font-size:17px;font-weight:650}.insp .k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.fld{display:flex;flex-direction:column;gap:6px}.fld>span{font-size:13px;font-weight:600}.fld small{font-size:12px;color:var(--ink2);line-height:1.45}
+.fld select,.fld input[type=text]{min-height:42px;padding:0 12px;border-radius:11px;border:1px solid var(--line2);background:var(--s0);font-size:14px;width:100%}
+.grp{border-radius:14px;background:var(--s0);overflow:hidden;border:1px solid var(--line)}
+.grp label{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:46px;padding:0 14px;font-size:14px}
+.grp label+label{border-top:1px solid var(--line)}.grp input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink2);justify-content:center}.legend span{display:flex;align-items:center;gap:6px}.legend i{width:12px;height:12px;border-radius:3px}
+.note{padding:12px 14px;border-radius:12px;background:var(--fill);font-size:13px;line-height:1.5;color:var(--ink2)}
+.note.warn{background:rgba(235,201,93,.12);color:var(--ink)}
+/* overlays */
+.scrim{position:fixed;inset:0;background:rgba(3,7,15,.6);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.sheet{width:min(860px,100%);background:var(--s1);border:1px solid var(--line);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden}
+.sheet header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}.sheet header b{flex:1;font-size:16px}
+.sheet .body{padding:18px;background:var(--paper-bg);display:flex;flex-direction:column;align-items:center;gap:16px;max-height:72vh;overflow:auto}
+.sheet .body canvas{width:min(640px,100%);height:auto;box-shadow:0 14px 34px rgba(0,0,0,.4);border-radius:3px;background:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#050A14;color:#E6EEF6;padding:12px 18px;border-radius:12px;font-size:13.5px;z-index:60;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+/* gate */
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate form,.gate .box2{width:min(380px,100%);background:var(--s0);border:1px solid var(--line);border-radius:20px;padding:26px;display:flex;flex-direction:column;gap:14px}
+.gate h1{margin:0;font-size:22px}.gate p{margin:0;color:var(--ink2);font-size:14px}
+.gate input{min-height:44px;border-radius:11px;border:1px solid var(--line2);background:var(--bg);padding:0 12px;font-size:15px}
+.gate .err{color:var(--bad);font-size:13px}
+[hidden]{display:none!important}
+@media (max-width:900px){.side,.insp{max-width:none;position:static;max-height:none;border:0}.map-bar{top:0}}
+</style>
+</head>
+<body>
+<div id="app"><div class="gate"><div class="box2"><h1>Forms</h1><p>Loading…</p></div></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="lib/pvx-pdf.js?v=20261013a"></script>
+<script src="lib/pvx-forms.js?v=20261013a"></script>
+<script>
+(function(){
+'use strict';
+/* Pravix Forms (Oct 13 2026). The hospital's own PDFs, mapped once; Flow fills them and the family signs them on the iPad.
+   Only the accounts below can open it for now (like Grid and Kura). Nothing about a template leaves this browser except
+   what is saved to the hospital's own database (form_templates). */
+var ALLOWED=['daniel.giordano@pravix.app'];
+var TENANT='shoreline', HOSPITAL='VCA Shoreline Veterinary Referral & Emergency Center';
+firebase.initializeApp({apiKey:'AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE',authDomain:'shoreline-flow.firebaseapp.com',projectId:'shoreline-flow',
+  storageBucket:'shoreline-flow.firebasestorage.app',messagingSenderId:'237404385636',appId:'1:237404385636:web:1ee3ba27f22c946f748a71'});
+var AUTH=firebase.auth(), DB=firebase.firestore(), F=window.PvxForms, P=window.PvxPdf;
+var $=function(s,r){ return (r||document).querySelector(s); }, $$=function(s,r){ return [].slice.call((r||document).querySelectorAll(s)); };
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+var ICON={up:'<path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/>',back:'<path d="M15 6l-6 6 6 6"/>',plus:'<path d="M12 5v14M5 12h14"/>',eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',dl:'<path d="M12 4v12"/><path d="M6 10l6 6 6-6"/><path d="M4 20h16"/>'};
+function ic(n){ return '<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[n]+'</svg>'; }
+var state={user:null,view:'lib',filter:'all',list:[],tpl:null,bytes:null,sel:null,saving:0,savedAt:null,dirty:false};
+function who(){ var u=state.user; return u&&(u.displayName||u.email)||''; }
+function toast(t){ var e=document.createElement('div'); e.className='toast'; e.setAttribute('role','status'); e.textContent=t; document.body.appendChild(e); setTimeout(function(){ e.remove(); },2600); }
+
+/* ---------- sign-in ---------- */
+function gate(text,fields){
+  $('#app').innerHTML='<div class="gate">'+(fields?'<form id="gf"><h1>Forms</h1><p>'+esc(text)+'</p><input id="ge" type="email" autocomplete="username" placeholder="Email" aria-label="Email" required><input id="gp" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required><div class="err" id="gerr" role="alert"></div><button class="btn primary" type="submit">Sign in</button></form>'
+    :'<div class="box2"><h1>Forms</h1><p>'+esc(text)+'</p><button class="btn" type="button" id="gout">Use another account</button></div>')+'</div>';
+  if(fields){ $('#gf').addEventListener('submit',function(e){ e.preventDefault(); $('#gerr').textContent='';
+    AUTH.signInWithEmailAndPassword($('#ge').value.trim(),$('#gp').value).catch(function(){ $('#gerr').textContent='That email and password didn’t match.'; }); }); setTimeout(function(){ var g=$('#ge'); if(g) g.focus(); },50); }
+  else $('#gout').addEventListener('click',function(){ AUTH.signOut(); });
+}
+AUTH.onAuthStateChanged(function(u){ state.user=u||null;
+  if(!u) return gate('Sign in with your Pravix account.',true);
+  if(ALLOWED.indexOf(String(u.email||'').toLowerCase())<0) return gate('This account can’t open Forms yet.',false);
+  loadList().then(function(){ var id=(location.hash.match(/tpl=([\w-]+)/)||[])[1]; if(id){ var t=state.list.filter(function(x){ return x.id===id; })[0]; if(t) return openTpl(t); } render(); });
+});
+
+/* ---------- data ---------- */
+function loadList(){ return DB.collection('form_templates').where('tenant_id','==',TENANT).get().then(function(s){
+  state.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(t){ return t.status!=='archived'; })
+    .sort(function(a,b){ return String(b.updated_at||'').localeCompare(String(a.updated_at||'')); }); })
+  .catch(function(e){ console.warn('[forms] list',e); state.list=[]; toast('Couldn’t load the forms. Check the connection.'); }); }
+function statusOf(t){ var pr=F.progress(t); if(t.status==='ready') return {k:'ready',t:'Ready'}; if(pr.total&&pr.missing) return {k:'todo',t:'Needs mapping · '+pr.missing}; return {k:'draft',t:'Draft'}; }
+function whereText(t){ return t.purpose==='ending'?('Flow › Other ending › Send form'+(t.kind==='died'?' (died)':' (euthanasia)')):'Flow › patient drawer › Send a form'; }
+var saveT=null;
+function queueSave(){ state.dirty=true; state.savedAt=null; paintSaved(); clearTimeout(saveT); saveT=setTimeout(saveNow,700); }
+function saveNow(){ var t=state.tpl; if(!t) return Promise.resolve(); clearTimeout(saveT); state.dirty=false;
+  var doc={name:t.name||'Untitled form',purpose:t.purpose||'visit',kind:t.purpose==='ending'?(t.kind||'euthanasia'):null,status:t.status==='ready'&&F.progress(t).ready?'ready':(t.status==='ready'?'draft':t.status||'draft'),
+    boxes:t.boxes||[],updated_at:new Date().toISOString(),updated_by:who()};
+  t.status=doc.status; state.saving++; paintSaved();
+  return DB.collection('form_templates').doc(t.id).set(doc,{merge:true}).then(function(){ state.saving--; state.savedAt=new Date(); paintSaved(); })
+    .catch(function(e){ state.saving--; state.dirty=true; paintSaved(); console.warn('[forms] save',e); toast('Not saved — only an admin can change forms.'); }); }
+function paintSaved(){ var e=$('#saved'); if(!e) return; e.textContent=state.saving?'Saving…':state.dirty?'Edited':state.savedAt?'Saved':''; }
+window.addEventListener('beforeunload',function(e){ if(state.dirty||state.saving){ e.preventDefault(); e.returnValue=''; } });
+
+/* ---------- upload ---------- */
+function pickFile(){ var i=document.createElement('input'); i.type='file'; i.accept='application/pdf,.pdf'; i.onchange=function(){ if(i.files&&i.files[0]) upload(i.files[0]); }; i.click(); }
+function upload(file){
+  if(file.size>15*1024*1024){ toast('That PDF is over 15 MB. Save a smaller copy and try again.'); return; }
+  toast('Reading '+file.name+'…');
+  file.arrayBuffer().then(function(buf){ var bytes=new Uint8Array(buf);
+    return P.inspect(bytes).then(function(info){
+      if(info.encrypted) throw new Error('This PDF is password-protected. Save an unlocked copy first.');
+      if(info.pages.some(function(p){ return p.rotate; })) toast('Some pages are rotated; boxes are placed on the page as stored.');
+      return P.sha256(bytes).then(function(h){
+        var id=F.newId('ft_'), boxes=F.boxesFromFields(info.fields), now=new Date().toISOString();
+        var tpl={tenant_id:TENANT,name:F.humanize(file.name.replace(/\.pdf$/i,'')),purpose:'visit',kind:null,status:'draft',
+          file:{name:file.name,size:bytes.length,sha256:h,pages:info.pages.map(function(p){ return {w:p.w,h:p.h}; })},boxes:boxes,created_at:now,created_by:who(),updated_at:now,updated_by:who()};
+        return F.putParts(DB,'form_templates',id,bytes).then(function(n){ tpl.file.parts=n; return DB.collection('form_templates').doc(id).set(tpl); })
+          .then(function(){ tpl.id=id; state.list.unshift(tpl); toast(boxes.length?('Found '+boxes.length+' fields in the PDF — check each one.'):'No fields in this PDF — draw a box where each answer goes.'); openTpl(tpl,bytes); });
+      });
+    });
+  }).catch(function(e){ console.warn('[forms] upload',e); toast(e&&e.message?e.message:'Couldn’t read that PDF.'); });
+}
+
+/* ---------- views ---------- */
+function shell(inner){ var u=state.user;
+  return '<header class="top"><a class="brand" href="./" data-go="lib"><i>P</i><b>Pravix <span>Forms</span></b></a>'
+    +'<nav class="apps" aria-label="Pravix apps"><a href="/directory/">Directory</a><a href="/sgvp/assets/">Assets</a><a href="/sgvp/">Curriculum</a><a href="/scheduling/">Schedule</a><a href="/">Flow</a><a href="/#app=ultrasound">Ultrasound</a><a href="/treatment/">Treatment</a><a href="/#app=rounds">Rounds</a><a href="/or/">OR</a><a href="/grid/">Grid</a><a href="./" aria-current="page">Forms</a></nav>'
+    +'<div class="who"><span>VCA Shoreline</span><span>'+esc(u&&u.email||'')+'</span></div></header>'+inner; }
+function render(){ if(state.view==='map'&&state.tpl) return renderMap(); renderLib(); }
+function renderLib(){ state.view='lib'; if(location.hash) history.replaceState(null,'',location.pathname);
+  var L=state.list, f=state.filter, counts={all:L.length,ready:0,todo:0,draft:0}; L.forEach(function(t){ counts[statusOf(t).k]++; });
+  var show=L.filter(function(t){ return f==='all'||statusOf(t).k===f; });
+  var h='<main class="lib"><div class="lib-head"><div><h1>Forms</h1><p>Your hospital’s own paperwork. Map each PDF once — Flow fills it from the visit, the family signs it on the iPad, and the signed copy is saved on the patient.</p></div>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" type="button" data-act="upload">'+ic('up')+'Upload a PDF</button></div></div>';
+  if(L.length) h+='<div class="seg" role="radiogroup" aria-label="Show">'+[['all','All'],['ready','Ready'],['todo','Needs mapping'],['draft','Drafts']].map(function(x){ return '<button type="button" role="radio" aria-checked="'+(f===x[0])+'" data-filter="'+x[0]+'">'+x[1]+' · '+counts[x[0]]+'</button>'; }).join('')+'</div>';
+  if(!L.length) h+='<div class="empty"><b>No forms yet</b><span>Upload a PDF your hospital already uses — a fillable one or a scan. You’ll point each blank at a Pravix field.</span><button class="btn primary" type="button" data-act="upload">'+ic('up')+'Upload a PDF</button></div>';
+  else h+='<div class="cards">'+show.map(function(t){ var s=statusOf(t), pr=F.progress(t), pages=(t.file&&t.file.pages||[]).length;
+    return '<button type="button" class="card" data-open="'+esc(t.id)+'"><span class="thumb" data-thumb="'+esc(t.id)+'"></span><span class="card-b"><span class="pill '+s.k+'">'+esc(s.t)+'</span>'
+      +'<h2>'+esc(t.name||'Untitled form')+'</h2><p>'+esc(whereText(t))+'</p><small>'+pages+' page'+(pages===1?'':'s')+' · '+pr.mapped+' of '+pr.total+' boxes mapped</small>'
+      +'<small>Edited '+esc(F.fmtDate(t.updated_at,'en'))+(t.updated_by?' · '+esc(t.updated_by):'')+'</small></span></button>'; }).join('')+'</div>';
+  h+='<section class="steps" aria-label="How it works"><div><span>1 · Map</span>Point each blank on the PDF at a Pravix field. Once.</div><div><span>2 · Send</span>From the patient drawer: Send a form. Reception sees it.</div><div><span>3 · Sign</span>Staff take the iPad into the room. The family signs; staff witness.</div><div><span>4 · File</span>The hospital’s PDF, filled and locked, saved on the visit with its fingerprint.</div></section></main>';
+  $('#app').innerHTML=shell(h);
+  show.forEach(function(t){ thumb(t); });
+}
+var thumbs={};
+function thumb(t){ var el=$('[data-thumb="'+t.id+'"]'); if(!el) return;
+  var put=function(u){ var e=$('[data-thumb="'+t.id+'"]'); if(!e) return; e.innerHTML=''; var img=new Image(); img.src=u; img.alt=''; img.style.width='100%'; e.appendChild(img); };
+  var key=t.id+':'+(t.file&&t.file.sha256); if(thumbs[key]){ put(thumbs[key]); return; }
+  F.templateBytes(DB,t).then(function(b){ return P.renderPage(b,0,0.5); }).then(function(c){ thumbs[key]=c.toDataURL('image/png'); put(thumbs[key]); }).catch(function(){}); }
+
+function openTpl(t,bytes){ state.tpl=JSON.parse(JSON.stringify(t)); state.tpl.boxes=state.tpl.boxes||[]; state.sel=null; state.view='map'; state.bytes=bytes||null; state.savedAt=new Date();
+  history.replaceState(null,'','#tpl='+t.id);
+  (bytes?Promise.resolve(bytes):F.templateBytes(DB,t)).then(function(b){ state.bytes=b; renderMap(); }).catch(function(e){ toast(e.message||'Couldn’t open the PDF'); state.view='lib'; renderLib(); }); renderMap(); }
+
+var COLORS={visit:['var(--b-visit)','var(--b-visit-line)','#1F8FA8'],family:['var(--b-family)','var(--b-visit-line)','#1F8FA8'],ending:['var(--b-ending)','var(--b-ending-line)','#8064C8'],sign:['var(--b-sign)','var(--b-sign-line)','#B08414'],staff:['var(--b-none)','var(--b-none-line)','#6B778A'],none:['var(--b-none)','var(--b-none-line)','#6B778A'],todo:['var(--b-todo)','var(--b-todo-line)','#C8533A']};
+function colorOf(b){ if(!F.isMapped(b)) return COLORS.todo; var s=F.source(b.src); return COLORS[s.who]||COLORS.none; }
+function boxName(b){ var s=F.source(b.src); if(!s) return b.field?F.humanize(b.field):'New box';
+  if(s.custom) return (b.label&&b.label.en)||s.t; if(b.src==='aftercare.care'){ var o=(s.opts||[]).filter(function(x){ return x[0]===b.opt; })[0]; return 'Care · '+(o?o[1]:'pick which'); } return s.t; }
+function boxSub(b){ var s=F.source(b.src); if(!s) return 'Not mapped yet'; return ({visit:'Flow fills it',family:'The family checks it',ending:'From the aftercare choices',sign:'Signed on the iPad',staff:'Staff type it',none:'Left blank'})[s.who]||''; }
+
+var SCALE=1.25;
+function renderMap(){
+  var t=state.tpl, pr=F.progress(t), pages=(t.file&&t.file.pages)||[], sel=t.boxes.filter(function(b){ return b.id===state.sel; })[0]||null;
+  var h='<div class="map-bar"><button class="btn quiet" type="button" data-act="back">'+ic('back')+'Forms</button>'
+    +'<div class="name"><input class="title" id="tname" value="'+esc(t.name||'')+'" aria-label="Form name"><span class="sub">'+esc(t.file&&t.file.name||'')+' · '+pages.length+' page'+(pages.length===1?'':'s')+'</span></div>'
+    +'<label class="fld" style="min-width:250px"><select id="tpurpose" aria-label="Where it’s used"><option value="visit"'+(t.purpose!=='ending'?' selected':'')+'>Patient drawer · Send a form</option><option value="ending"'+(t.purpose==='ending'&&t.kind!=='died'?' selected':'')+' data-kind="euthanasia">Other ending · euthanasia &amp; aftercare</option><option value="ending-died"'+(t.purpose==='ending'&&t.kind==='died'?' selected':'')+'>Other ending · died (aftercare only)</option></select></label>'
+    +'<span class="saved" id="saved" aria-live="polite"></span>'
+    +'<button class="btn" type="button" data-act="test"'+(state.bytes?'':' disabled')+'>'+ic('eye')+'Test with Rosie</button>'
+    +'<button class="btn primary" type="button" data-act="publish">'+(t.status==='ready'?'Published':'Publish to Flow')+'</button></div>';
+  h+='<div class="map"><aside class="side" aria-label="Boxes"><div class="prog"><div class="prog-t"><span>'+pr.mapped+' of '+pr.total+' mapped</span><span style="color:'+(pr.ready?'var(--good-ink)':'var(--ink2)')+'">'+(t.status==='ready'?'Published':pr.ready?'Ready to publish':'Not ready')+'</span></div><div class="bar"><i style="width:'+(pr.total?Math.round(pr.mapped/pr.total*100):0)+'%"></i></div></div>'
+    +(pr.hasOwnerSig?'':'<div class="note warn">Draw a box where the owner signs, and set it to <b>Owner signature</b>.</div>')
+    +'<div class="blist" role="listbox" aria-label="Boxes on the form">'+t.boxes.slice().sort(order).map(function(b){ var c=colorOf(b); return '<button type="button" role="option" aria-selected="'+(b.id===state.sel)+'" class="bitem'+(b.id===state.sel?' on':'')+'" data-sel="'+b.id+'"><i class="dot" style="background:'+c[2]+'"></i><span><b>'+esc(boxName(b))+'</b><small>p'+(b.page+1)+' · '+esc(boxSub(b))+'</small></span></button>'; }).join('')+'</div>'
+    +'<button class="btn" type="button" data-act="addhelp">'+ic('plus')+'Add a box</button></aside>';
+  h+='<section class="paper" aria-label="The PDF"><div class="hint">Drag on the page to draw a box. Drag a box to move it; the corner dot resizes it. Arrow keys nudge.</div>';
+  pages.forEach(function(pg,i){ h+='<div class="page" data-page="'+i+'" style="width:'+Math.round(pg.w*SCALE)+'px;max-width:100%"><span class="pno">Page '+(i+1)+' of '+pages.length+'</span><div class="canvas-slot" style="aspect-ratio:'+pg.w+' / '+pg.h+'"></div></div>'; });
+  h+='<div class="legend"><span><i style="background:var(--b-visit);box-shadow:inset 0 0 0 1px #1F8FA8"></i>From the visit · the family checks it</span><span><i style="background:var(--b-ending);box-shadow:inset 0 0 0 1px #8064C8"></i>Aftercare choices</span><span><i style="background:var(--b-sign);box-shadow:inset 0 0 0 1px #C49628"></i>Signatures</span><span><i style="background:var(--b-todo);box-shadow:inset 0 0 0 1px #E8644A"></i>Not mapped yet</span></div></section>';
+  h+='<aside class="insp" aria-label="Selected box">'+(sel?inspector(sel):'<div class="k">No box selected</div><div class="note">Pick a box on the page or in the list — or drag on the page to draw a new one.</div>'+publishNote(t))+'</aside></div>';
+  var keepFocus=document.activeElement&&document.activeElement.id;
+  $('#app').innerHTML=shell(h); paintSaved();
+  if(keepFocus){ var kf=document.getElementById(keepFocus); if(kf) kf.focus(); }
+  if(state.bytes) pages.forEach(function(pg,i){ drawPage(i); });
+  paintBoxes();
+}
+function order(a,b){ return (a.page-b.page)||(b.rect[1]-a.rect[1])||(a.rect[0]-b.rect[0]); }
+function publishNote(t){ var pr=F.progress(t); if(t.status==='ready') return '<div class="note">This form is live in Flow: '+esc(whereText(t))+'. Changes save as you make them.</div>';
+  return '<div class="note">'+(pr.ready?'Everything is mapped. Publish it to make it appear in Flow.':'Publish becomes possible when every box is mapped and the owner signs somewhere.')+'</div>'; }
+var pageCanvas={};
+function drawPage(i){ var slot=$('.page[data-page="'+i+'"] .canvas-slot'); if(!slot) return;
+  var key=state.tpl.id+':'+i; if(pageCanvas[key]){ slot.replaceWith(pageCanvas[key]); return; }
+  P.renderPage(state.bytes,i,2).then(function(c){ c.className='canvas-slot'; c.setAttribute('aria-hidden','true'); pageCanvas[key]=c; var s=$('.page[data-page="'+i+'"] .canvas-slot'); if(s) s.replaceWith(c); }); }
+function pxScale(i){ var pg=$('.page[data-page="'+i+'"]'), w=state.tpl.file.pages[i].w; return pg?pg.clientWidth/w:SCALE; }
+function paintBoxes(){ $$('.page .box').forEach(function(e){ e.remove(); });
+  state.tpl.boxes.forEach(function(b){ var pg=$('.page[data-page="'+b.page+'"]'); if(!pg) return; var k=pxScale(b.page), H=state.tpl.file.pages[b.page].h, c=colorOf(b);
+    var e=document.createElement('div'); e.className='box'+(b.id===state.sel?' on':''); e.dataset.box=b.id;
+    e.style.cssText='left:'+(b.rect[0]*k)+'px;top:'+((H-b.rect[1]-b.rect[3])*k)+'px;width:'+(b.rect[2]*k)+'px;height:'+(b.rect[3]*k)+'px;background:'+c[0]+';box-shadow:inset 0 0 0 1px '+c[1];
+    e.innerHTML='<em style="background:'+c[2]+'">'+esc(boxName(b))+'</em><span class="h" data-resize="1"></span>'; e.title=boxName(b); pg.appendChild(e); }); }
+function inspector(b){ var s=F.source(b.src), types=[['text','Text'],['check','Tick box'],['signature','Signature'],['date','Date']];
+  var srcs=F.SOURCES.filter(function(x){ return x.k==='none'||(b.type==='signature'?x.type==='signature':b.type==='check'?x.type==='check':(x.type==='text'||x.type==='date')); });
+  var groups={}; srcs.forEach(function(x){ (groups[x.g]=groups[x.g]||[]).push(x); });
+  var h='<div><div class="k">Selected box · page '+(b.page+1)+'</div><h3>'+esc(boxName(b))+'</h3>'+(b.field?'<div style="font-size:12px;color:var(--ink2);margin-top:3px">The PDF calls it “'+esc(b.field)+'”</div>':'')+'</div>'
+    +'<div class="fld"><span>Kind of box</span><div class="seg" role="radiogroup" aria-label="Kind of box">'+types.map(function(x){ return '<button type="button" role="radio" aria-checked="'+(b.type===x[0])+'" data-type="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div></div>'
+    +'<label class="fld"><span>Fill it with</span><select id="bsrc"><option value=""'+(b.src?'':' selected')+'>Choose…</option>'+Object.keys(groups).map(function(g){ return '<optgroup label="'+esc(g)+'">'+groups[g].map(function(x){ return '<option value="'+x.k+'"'+(b.src===x.k?' selected':'')+'>'+esc(x.t)+'</option>'; }).join('')+'</optgroup>'; }).join('')+'</select>'
+    +'<small>'+esc(boxSub(b))+'.'+(s&&s.who==='family'?' Shown on the iPad pre-filled when Flow knows it; the family can correct it.':'')+'</small></label>';
+  if(b.src==='aftercare.care') h+='<label class="fld"><span>Tick it when the family chooses</span><select id="bopt"><option value="">Choose…</option>'+s.opts.map(function(o){ return '<option value="'+o[0]+'"'+(b.opt===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('')+'</select></label>';
+  if(s&&s.custom){ if(b.src==='family.choice') h+='<label class="fld"><span>The question (same for every box in the group)</span><input type="text" id="bgroup" value="'+esc(b.group||'')+'" placeholder="CPR if the heart stops"></label>';
+    h+='<label class="fld"><span>'+(b.src==='family.choice'?'This answer':'What to ask')+' · English</span><input type="text" id="blabel" value="'+esc(b.label&&b.label.en||'')+'" placeholder="'+(b.src==='family.choice'?'Yes, full CPR':'Emergency contact')+'"></label>'
+      +'<label class="fld"><span>Español</span><input type="text" id="blabeles" value="'+esc(b.label&&b.label.es||'')+'" placeholder="Opcional"></label>'; }
+  h+='<div class="grp"><label><span>Required</span><input type="checkbox" id="breq"'+(b.required?' checked':'')+'></label></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn danger" type="button" data-act="del">'+ic('trash')+'Remove box</button><button class="btn quiet" type="button" data-act="desel">Done</button></div>';
+  return h; }
+
+/* ---------- interactions ---------- */
+document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) return;
+  var go=t.closest('[data-go="lib"]'); if(go){ e.preventDefault(); leave(); return; }
+  var a=t.closest('[data-act]'); if(a){ var w=a.dataset.act;
+    if(w==='upload') pickFile(); else if(w==='back') leave(); else if(w==='test') testFill(); else if(w==='publish') publish();
+    else if(w==='del') removeSel(); else if(w==='desel'){ state.sel=null; renderMap(); } else if(w==='addhelp') toast('Drag on the page where the answer goes.');
+    else if(w==='close-sheet'){ var s=$('.scrim'); if(s) s.remove(); } else if(w==='dl-test') downloadTest();
+    return; }
+  var f=t.closest('[data-filter]'); if(f){ state.filter=f.dataset.filter; renderLib(); return; }
+  var o=t.closest('[data-open]'); if(o){ var tp=state.list.filter(function(x){ return x.id===o.dataset.open; })[0]; if(tp) openTpl(tp); return; }
+  var sl=t.closest('[data-sel]'); if(sl){ select(sl.dataset.sel,true); return; }
+  var ty=t.closest('[data-type]'); if(ty&&state.sel){ var b=cur(); if(b){ b.type=ty.dataset.type; var s=F.source(b.src); if(s&&s.k!=='none'&&!(b.type==='signature'?s.type==='signature':b.type==='check'?s.type==='check':(s.type==='text'||s.type==='date'))){ b.src=null; b.opt=null; } queueSave(); renderMap(); } return; }
+});
+document.addEventListener('change',function(e){ var t=e.target, b=cur(); if(!b&&t.id!=='tpurpose') return;
+  if(t.id==='bsrc'){ b.src=t.value||null; var s=F.source(b.src); if(s&&s.type!==b.type&&!(s.type==='date'&&b.type==='text')) b.type=s.type; if(!(s&&s.custom)) b.label=null; else b.label=b.label||{en:'',es:''}; if(b.src!=='aftercare.care') b.opt=null; if(b.src==='sign.owner') b.required=true; queueSave(); renderMap(); var n=document.getElementById(s&&s.custom?(b.src==='family.choice'?'bgroup':'blabel'):'bsrc'); if(n) n.focus(); }
+  else if(t.id==='bopt'){ b.opt=t.value||null; queueSave(); renderMap(); }
+  else if(t.id==='breq'){ b.required=t.checked; queueSave(); }
+  else if(t.id==='tpurpose'){ var v=t.value; state.tpl.purpose=v==='visit'?'visit':'ending'; state.tpl.kind=v==='ending-died'?'died':v==='ending'?'euthanasia':null; queueSave(); renderMap(); }
+});
+document.addEventListener('input',function(e){ var t=e.target, b=cur();
+  if(t.id==='tname'){ state.tpl.name=t.value; queueSave(); return; }
+  if(!b) return;
+  if(t.id==='blabel'){ b.label=b.label||{en:'',es:''}; b.label.en=t.value; queueSave(); refreshSide(); }
+  else if(t.id==='blabeles'){ b.label=b.label||{en:'',es:''}; b.label.es=t.value; queueSave(); }
+  else if(t.id==='bgroup'){ b.group=t.value; queueSave(); refreshSide(); }
+});
+function refreshSide(){ /* names in the list and on the page follow typing, without a full repaint (keeps the caret) */
+  var t=state.tpl, pr=F.progress(t);
+  $$('.bitem').forEach(function(el){ var b=t.boxes.filter(function(x){ return x.id===el.dataset.sel; })[0]; if(!b) return; el.querySelector('b').textContent=boxName(b); el.querySelector('.dot').style.background=colorOf(b)[2]; });
+  var pt=$('.prog-t span'); if(pt) pt.textContent=pr.mapped+' of '+pr.total+' mapped'; var bi=$('.bar i'); if(bi) bi.style.width=(pr.total?Math.round(pr.mapped/pr.total*100):0)+'%';
+  paintBoxes(); }
+function cur(){ var t=state.tpl; return t&&t.boxes.filter(function(b){ return b.id===state.sel; })[0]||null; }
+function select(id,scroll){ state.sel=id; renderMap(); if(scroll){ var e=$('.box[data-box="'+id+'"]'); if(e&&e.scrollIntoView) e.scrollIntoView({block:'center',behavior:'smooth'}); } }
+function removeSel(){ var t=state.tpl, i=t.boxes.findIndex(function(b){ return b.id===state.sel; }); if(i<0) return; var gone=t.boxes.splice(i,1)[0]; state.sel=null; queueSave(); renderMap(); toast('Box removed · press ⌘Z to bring it back'); lastRemoved=gone; }
+var lastRemoved=null;
+function leave(){ (state.dirty?saveNow():Promise.resolve()).then(function(){ var t=state.tpl; if(t){ var i=state.list.findIndex(function(x){ return x.id===t.id; }); if(i>-1) state.list[i]=Object.assign(state.list[i],t); } state.tpl=null; state.sel=null; state.view='lib'; renderLib(); }); }
+document.addEventListener('keydown',function(e){ if(state.view!=='map') return; var tag=(e.target&&e.target.tagName)||''; if(/INPUT|SELECT|TEXTAREA/.test(tag)) return;
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'&&lastRemoved){ e.preventDefault(); state.tpl.boxes.push(lastRemoved); state.sel=lastRemoved.id; lastRemoved=null; queueSave(); renderMap(); return; }
+  var b=cur(); if(!b) return;
+  if(e.key==='Backspace'||e.key==='Delete'){ e.preventDefault(); removeSel(); return; }
+  if(e.key==='Escape'){ state.sel=null; renderMap(); return; }
+  var d=e.shiftKey?10:1, m={ArrowLeft:[-d,0],ArrowRight:[d,0],ArrowUp:[0,d],ArrowDown:[0,-d]}[e.key]; if(!m) return; e.preventDefault();
+  b.rect[0]=Math.round((b.rect[0]+m[0])*10)/10; b.rect[1]=Math.round((b.rect[1]+m[1])*10)/10; clampBox(b); queueSave(); paintBoxes(); });
+function clampBox(b){ var pg=state.tpl.file.pages[b.page]; b.rect[2]=Math.max(6,Math.min(b.rect[2],pg.w)); b.rect[3]=Math.max(6,Math.min(b.rect[3],pg.h)); b.rect[0]=Math.max(0,Math.min(b.rect[0],pg.w-b.rect[2])); b.rect[1]=Math.max(0,Math.min(b.rect[1],pg.h-b.rect[3])); }
+/* drag: draw a new box, move one, or resize one (pointer events, so mouse, pen and touch all work) */
+var drag=null;
+document.addEventListener('pointerdown',function(e){ if(state.view!=='map'||e.button>0) return; var pg=e.target.closest&&e.target.closest('.page'); if(!pg) return;
+  var i=+pg.dataset.page, k=pxScale(i), H=state.tpl.file.pages[i].h, r=pg.getBoundingClientRect(), bx=e.target.closest('.box');
+  if(bx){ var b=state.tpl.boxes.filter(function(x){ return x.id===bx.dataset.box; })[0]; if(!b) return; if(state.sel!==b.id){ state.sel=b.id; renderMap(); }
+    drag={mode:e.target.dataset.resize?'resize':'move',b:b,x0:e.clientX,y0:e.clientY,r0:b.rect.slice(),k:k,moved:false}; e.preventDefault(); return; }
+  var x=(e.clientX-r.left), y=(e.clientY-r.top); var g=document.createElement('div'); g.className='drawing'; pg.appendChild(g);
+  drag={mode:'draw',page:i,x0:x,y0:y,el:g,pg:pg,k:k,H:H}; e.preventDefault(); try{ pg.setPointerCapture(e.pointerId); }catch(_){} });
+document.addEventListener('pointermove',function(e){ if(!drag) return;
+  if(drag.mode==='draw'){ var r=drag.pg.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top; var L=Math.min(x,drag.x0),T=Math.min(y,drag.y0); drag.el.style.cssText='left:'+L+'px;top:'+T+'px;width:'+Math.abs(x-drag.x0)+'px;height:'+Math.abs(y-drag.y0)+'px'; drag.x1=x; drag.y1=y; return; }
+  var dx=(e.clientX-drag.x0)/drag.k, dy=(e.clientY-drag.y0)/drag.k; if(Math.abs(dx)+Math.abs(dy)>0.5) drag.moved=true; var b=drag.b;
+  if(drag.mode==='move'){ b.rect[0]=drag.r0[0]+dx; b.rect[1]=drag.r0[1]-dy; } else { b.rect[2]=Math.max(6,drag.r0[2]+dx); b.rect[3]=Math.max(6,drag.r0[3]+dy); b.rect[1]=drag.r0[1]-dy; if(b.rect[3]<=6) b.rect[1]=drag.r0[1]+drag.r0[3]-6; }
+  clampBox(b); var el=$('.box[data-box="'+b.id+'"]'), H=state.tpl.file.pages[b.page].h, k=drag.k; if(el){ el.style.left=(b.rect[0]*k)+'px'; el.style.top=((H-b.rect[1]-b.rect[3])*k)+'px'; el.style.width=(b.rect[2]*k)+'px'; el.style.height=(b.rect[3]*k)+'px'; } });
+document.addEventListener('pointerup',function(e){ if(!drag) return; var d=drag; drag=null;
+  if(d.mode==='draw'){ d.el.remove(); if(d.x1==null||Math.abs(d.x1-d.x0)<8||Math.abs(d.y1-d.y0)<6) return;
+    var k=d.k, L=Math.min(d.x1,d.x0)/k, T=Math.min(d.y1,d.y0)/k, W=Math.abs(d.x1-d.x0)/k, Hh=Math.abs(d.y1-d.y0)/k;
+    var hasOwner=state.tpl.boxes.some(function(b){ return b.src==='sign.owner'; });
+    var b={id:F.newId('b'),page:d.page,rect:[Math.round(L*10)/10,Math.round((d.H-T-Hh)*10)/10,Math.round(W*10)/10,Math.round(Hh*10)/10],type:Hh>26&&!hasOwner?'signature':'text',src:Hh>26&&!hasOwner?'sign.owner':null,opt:null,label:null,required:Hh>26&&!hasOwner};
+    if(Math.abs(W-Hh)<4&&W<24){ b.type='check'; b.src=null; b.required=false; }
+    clampBox(b); state.tpl.boxes.push(b); state.sel=b.id; queueSave(); renderMap(); var s=document.getElementById('bsrc'); if(s) s.focus(); return; }
+  if(d.moved){ d.b.rect=d.b.rect.map(function(v){ return Math.round(v*10)/10; }); queueSave(); } });
+window.addEventListener('resize',function(){ if(state.view==='map') paintBoxes(); });
+
+/* ---------- test and publish ---------- */
+function sampleSig(name){ var c=document.createElement('canvas'); c.width=480; c.height=120; var x=c.getContext('2d'); x.strokeStyle='#14181F'; x.lineWidth=3.2; x.lineCap='round'; x.beginPath();
+  var seed=name.length; x.moveTo(20,80); for(var i=0;i<9;i++){ x.bezierCurveTo(40+i*48,10+((i*37+seed)%60),60+i*48,110-((i*23+seed)%50),70+i*48,60+((i*13)%30)); } x.stroke(); return c.toDataURL('image/png'); }
+var lastTest=null;
+function sampleCtx(){ var now=new Date().toISOString();
+  return {p:{id:'test',name:'Rosie',last:'Testa',owner:'Mary Ann Smith',ownerPhone:'(203) 555-0142',species:'Canine',breed:'Beagle',sex:'Female spayed',weight:'12',ageDisplay:'11 years',hid:'SH-1042',doctor:'Annie Downes',arrival:new Date()},
+    answers:{'owner.name':'Mary Ann Smith','owner.phone':'(203) 555-0142','family.address':'12 Test Lane','family.city':'Shelton','family.state':'CT','family.zip':'06484','family.email':'test@example.com'},
+    aftercare:{care:'private',urn:'Trail to Heaven',clay:true,total:712.82},sign:{owner:{name:'Mary Ann Smith',at:now,png:sampleSig('Mary Ann Smith')},witness:{name:who(),at:now,png:sampleSig(who())}},hospital:HOSPITAL}; }
+function testFill(){ var t=state.tpl; if(!state.bytes) return; var ctx=sampleCtx();
+  (t.boxes||[]).forEach(function(b){ if(b.src==='family.text'||b.src==='staff.text') ctx.answers[b.id]='Test answer'; if(b.src==='family.check') ctx.answers[b.id]=true; if(b.src==='family.choice'&&ctx.answers['g:'+b.group]==null) ctx.answers['g:'+String(b.group||'Choose one')]=b.id; });
+  P.fill(state.bytes,t.boxes,F.resolve(t,ctx),{at:new Date().toISOString(),title:(t.name||'Form')+' · test'}).then(function(out){ lastTest=out; return P.check(out).then(function(c){
+    var s=document.createElement('div'); s.className='scrim'; s.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="Test copy"><header><b>Test copy · Rosie Testa (test data)</b><button class="btn" type="button" data-act="dl-test">'+ic('dl')+'Download</button><button class="btn quiet" type="button" data-act="close-sheet">Close</button></header><div class="body" id="testBody"></div></div>';
+    document.body.appendChild(s); s.addEventListener('click',function(ev){ if(ev.target===s) s.remove(); });
+    var chain=Promise.resolve(); for(var i=0;i<c.pages;i++)(function(i){ chain=chain.then(function(){ return P.renderPage(out,i,1.6); }).then(function(cv){ var b=$('#testBody'); if(b) b.appendChild(cv); }); })(i);
+  }); }).catch(function(e){ console.warn('[forms] test',e); toast('Couldn’t make the test copy: '+(e.message||e)); }); }
+function downloadTest(){ if(!lastTest) return; var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([lastTest],{type:'application/pdf'})); a.download=(state.tpl.name||'form')+' - test.pdf'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000); }
+function publish(){ var t=state.tpl, pr=F.progress(t);
+  if(t.status==='ready'){ toast('Already in Flow. Changes save as you make them.'); return; }
+  if(!pr.ready){ var first=t.boxes.filter(function(b){ return !F.isMapped(b); }).sort(order)[0];
+    if(!pr.hasOwnerSig) toast('Add the owner’s signature box first.'); else toast(pr.missing+' box'+(pr.missing===1?'':'es')+' still need'+(pr.missing===1?'s':'')+' a field.');
+    if(first) select(first.id,true); return; }
+  t.status='ready'; saveNow().then(function(){ toast('Published · '+whereText(t)); renderMap(); }); }
+window.__forms={state:state,render:render,openTpl:openTpl,upload:upload,select:select,saveNow:saveNow,testFill:testFill};
+})();
+</script>
+</body>
+</html>
