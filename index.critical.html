@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261013-0027-d86d1690">
+<meta name="flow-build" content="20261013-0129-6b807097">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -17930,7 +17930,7 @@ body.cf-family-on{overflow:hidden;}
    · The PDF work runs in this browser (forms/lib/pvx-pdf.js: pdf-lib + pdf.js today, PdfCraft's engine later). */
 (function(){
   if(typeof fillDrawer!=='function'||typeof renderDisposition!=='function') return;
-  var LIB='/forms/lib/', LV='20261013a';
+  var LIB='/forms/lib/', LV='20261013b';
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function who(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Staff'; }catch(e){ return 'Staff'; } }
   function uid(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.uid)||null; }catch(e){ return null; } }
@@ -17942,7 +17942,7 @@ body.cf-family-on{overflow:hidden;}
   function hm(iso){ try{ return fmtTime(new Date(iso)); }catch(e){ return ''; } }
   function note(t,s,o){ try{ notify(t,s,Object.assign({icon:'info',color:'#3E8FA5'},o||{})); }catch(e){} }
   function noteAct(t,s,a,fn,o){ if(window.fvNotifyAct) fvNotifyAct(t,s,a,fn,Object.assign({color:'#3E8FA5'},o||{})); else note(t,s,o); }
-  var IC={doc:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>',tag:'<path d="M3 12l9-9h9v9l-9 9z"/><circle cx="16" cy="8" r="1.6"/>',send:'<path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 12l2 2 4-4"/>',plus:'<path d="M12 5v14M5 12h14"/>',chev:'<path d="M9 6l6 6-6 6"/>',up:'<path d="M6 15l6-6 6 6"/>',down:'<path d="M6 9l6 6 6-6"/>',shield:'<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',warn:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',ipad:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>'};
+  var IC={doc:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>',tag:'<path d="M3 12l9-9h9v9l-9 9z"/><circle cx="16" cy="8" r="1.6"/>',send:'<path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 12l2 2 4-4"/>',plus:'<path d="M12 5v14M5 12h14"/>',chev:'<path d="M9 6l6 6-6 6"/>',up:'<path d="M6 15l6-6 6 6"/>',down:'<path d="M6 9l6 6 6-6"/>',shield:'<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',warn:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',ipad:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>',dl:'<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>'};
   function svg(n){ return '<svg viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'; }
 
   /* ---------- the PDF libraries, loaded the first time they're needed ---------- */
@@ -18027,15 +18027,21 @@ body.cf-family-on{overflow:hidden;}
     if(!L.length) h+='<div class="es-sec"><div class="es-group es-text"><b>No forms are ready yet.</b><br>Map your hospital’s PDFs in Pravix Forms, then publish them to Flow.</div></div>';
     else{ h+='<div class="es-sec"><div class="es-h" id="fvdFormsH">Your hospital’s forms</div><div class="es-group" role="radiogroup" aria-labelledby="fvdFormsH">';
       L.forEach(function(t){ var on=send.tid===t.id, isOut=out.indexOf(t.id)>-1, isDone=done.indexOf(t.id)>-1, pages=(t.file&&t.file.pages||[]).length;
-        h+='<button type="button" class="es-row'+(on?' on':'')+'" role="radio" aria-checked="'+on+'" data-fvd="pick" data-tid="'+esc(t.id)+'"'+(isOut?' disabled':'')+'><span class="es-rl">'+esc(t.name||'Form')+'<span class="es-rd">'+(isOut?'Already with reception':isDone?'Signed earlier today · send again':pages+' page'+(pages===1?'':'s'))+'</span></span><span class="es-check" aria-hidden="true"></span></button>'; });
+        h+='<button type="button" class="es-row fvd-pickrow'+(on?' on':'')+'" role="radio" aria-checked="'+on+'" data-fvd="pick" data-tid="'+esc(t.id)+'"'+(isOut?' disabled':'')+'><span class="fvd-th" data-fvd-th="'+esc(t.id)+'" aria-hidden="true"></span><span class="es-rl">'+esc(t.name||'Form')+'<span class="es-rd">'+(isOut?'Already with reception':isDone?'Signed earlier today · send again':pages+' page'+(pages===1?'':'s'))+'</span></span><span class="es-check" aria-hidden="true"></span></button>'; });
       h+='</div></div>';
       var t=L.filter(function(x){ return x.id===send.tid; })[0];
       if(t){ var staffQ=(t.boxes||[]).filter(function(b){ return b.src==='staff.text'; });
         if(staffQ.length){ h+='<div class="es-sec"><div class="es-h">Before you send it</div><div class="es-group">'+staffQ.map(function(b){ return '<label class="es-row es-field"><span class="es-fl">'+esc(b.label&&b.label.en||'Staff answer')+'</span><input type="text" data-fvd-staff="'+esc(b.id)+'" value="'+esc(send.ans[b.id]||'')+'" autocomplete="off"></label>'; }).join('')+'</div></div>'; }
-        h+='<div class="es-sec"><div class="es-group es-text">Filled in from '+esc(pet(p))+'’s visit: '+esc([p.owner,p.hid,(p.doctor&&p.doctor!=='unassigned')?p.doctor:''].filter(Boolean).join(' · '))+'. Reception takes the iPad into the room; the family checks it and signs.</div></div>'; } }
-    h+='</div><footer class="es-foot"><div class="end-hint" id="fvdHint" role="alert" hidden></div><button type="button" class="es-primary" data-fvd="do-send"'+(send.tid?'':' disabled')+'>Send to reception</button></footer>';
+        h+='<div class="es-sec fvd-filled"><div>Filled from '+esc(pet(p))+'’s visit: <b>'+esc([p.owner,p.hid].filter(Boolean).join(' · '))+'</b></div><div class="fvd-sub">Reception takes the iPad into the room with the family.</div></div>'; } }
+    h+='</div><footer class="es-foot"><div class="end-hint" id="fvdHint" role="alert" hidden></div><button type="button" class="es-primary fvd-solid" data-fvd="do-send"'+(send.tid?'':' disabled')+'>Send to reception</button></footer>';
     var panel=sheet.el.querySelector('.es-panel'), fk=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.tid; panel.innerHTML=h;
-    if(fk){ var f=panel.querySelector('[data-tid="'+fk+'"]'); if(f) f.focus(); } }
+    if(fk){ var f=panel.querySelector('[data-tid="'+fk+'"]'); if(f) f.focus(); }
+    L.forEach(function(t){ tplThumb(t); }); }
+  /* a small picture of each form's first page, so staff pick by sight */
+  var THUMB={};
+  function tplThumb(t){ var put=function(u){ var e=document.querySelector('#fvdSheet [data-fvd-th="'+t.id+'"]'); if(e&&!e.firstChild){ var i=new Image(); i.src=u; i.alt=''; e.appendChild(i); } };
+    var k=t.id+':'+(t.file&&t.file.sha256); if(THUMB[k]){ if(THUMB[k]!==1) put(THUMB[k]); return; } THUMB[k]=1;
+    lib().then(function(){ return PvxForms.templateBytes(db(),t); }).then(function(b){ return PvxPdf.renderPage(b,0,0.25); }).then(function(c){ THUMB[k]=c.toDataURL('image/png'); put(THUMB[k]); }).catch(function(){ delete THUMB[k]; }); }
   function doSend(){ var p=byId(send.pid), t=(TPL.list||[]).filter(function(x){ return x.id===send.tid; })[0], D=db(); if(!p||!t||!D) return;
     var id='fr_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), r={tenant_id:T(),visit_id:String(p.id),template_id:t.id,template_name:t.name||'Form',status:'requested',
       requested:{at:new Date().toISOString(),by:who(),uid:uid()},pet:{name:pet(p)},owner:{name:p.owner||''},staff_answers:send.ans||{}};
@@ -18053,7 +18059,8 @@ body.cf-family-on{overflow:hidden;}
     signhere:['Sign with your finger or Apple Pencil','Firme con el dedo o con el Apple Pencil'],clear:['Clear','Borrar'],cont:['Continue','Continuar'],signbtn:['Sign','Firmar'],
     back:['Back','Atrás'],staff:['Staff','Personal'],thanks:['Thank you','Gracias'],care:['We’ll take good care of {pet}.','Cuidaremos muy bien de {pet}.'],
     req:['Please answer this to continue.','Por favor, responda para continuar.'],e_name:['Please type your full name.','Por favor, escriba su nombre completo.'],e_sig:['Please sign in the box.','Por favor, firme en el recuadro.'],
-    yes:['Yes','Sí'],loading:['Preparing the form…','Preparando el formulario…'],choose:['Choose one.','Elija una opción.']};
+    yes:['Yes','Sí'],loading:['Preparing the form…','Preparando el formulario…'],choose:['Choose one.','Elija una opción.'],
+    page:['Page {n} of {t}','Página {n} de {t}'],zin:['Make it bigger','Ampliar'],zout:['Make it smaller','Reducir'],ztip:['Double-tap a page to zoom.','Toque dos veces una página para ampliarla.']};
   var FAM=null;
   function t2(k,v){ var r=(L2[k]||[k,k])[FAM&&FAM.lang==='es'?1:0]; return r.replace(/\{(\w+)\}/g,function(_,n){ return v&&v[n]!=null?v[n]:''; }); }
   function qTitle(q){ var t=q.title||{}; return (FAM.lang==='es'&&t.es)?t.es:(t.en||''); }
@@ -18080,7 +18087,9 @@ body.cf-family-on{overflow:hidden;}
       +'<div class="cff-nav-r">'+(fam?'<div class="cff-lang" role="group" aria-label="Language / Idioma"><button type="button" lang="en" aria-pressed="'+(FAM.lang==='en')+'" data-fvl="en">English</button><button type="button" lang="es" aria-pressed="'+(FAM.lang==='es')+'" data-fvl="es">Español</button></div><button type="button" class="cff-staff" data-fvd="hold" aria-label="Staff: press and hold to leave the form">'+t2('staff')+'</button>':'')+'</div></header><main class="cff-card">';
     var primary='';
     if(!tpl&&!FAM.err) h+='<h1>'+t2('loading')+'</h1>';
-    else if(FAM.step==='read'){ h+='<h1>'+t2('read')+'</h1><p class="cff-lead">'+t2('read_l')+'</p><div class="fvf-pages">'+(FAM.pages?FAM.pages.map(function(u,i){ return '<img src="'+u+'" alt="'+esc((tpl&&tpl.name||'Form')+' · page '+(i+1))+'">'; }).join(''):'<div class="fvf-wait">'+t2('loading')+'</div>')+'</div>';
+    else if(FAM.step==='read'){ var NP=FAM.pages?FAM.pages.length:0;
+      h+='<h1>'+t2('read')+'</h1><p class="cff-lead">'+t2('read_l')+'</p>'+(NP?'<div class="fvf-zoombar"><span>'+t2('ztip')+'</span><button type="button" class="fvf-zbtn" data-fvd="fzoom" aria-pressed="'+!!FAM.zoom+'">'+t2(FAM.zoom?'zout':'zin')+'</button></div>':'')
+        +'<div class="fvf-pages'+(FAM.zoom?' zoomed':'')+'">'+(NP?FAM.pages.map(function(u,i){ return '<figure class="fvf-pg">'+(NP>1?'<figcaption>'+t2('page',{n:i+1,t:NP})+'</figcaption>':'')+'<div class="fvf-pz"><img src="'+u+'" alt="'+esc((tpl&&tpl.name||'Form')+' · page '+(i+1))+'" data-fvd-pz="1"></div></figure>'; }).join(''):'<div class="fvf-wait">'+t2('loading')+'</div>')+'</div>';
       primary='<button type="button" class="cff-primary" data-fvd="fnext"'+(FAM.pages?'':' disabled')+'>'+t2('cont')+'</button>'; }
     else if(FAM.step==='ask'){ h+='<h1>'+t2('ask')+'</h1><p class="cff-lead">'+t2('ask_l')+'</p><div class="cff-grid">';
       PvxForms.questions(tpl).forEach(function(q){ var v=FAM.ans[q.key];
@@ -18143,15 +18152,24 @@ body.cf-family-on{overflow:hidden;}
   function view(p,meta){ VIEW={pid:p.id,meta:meta,state:'loading'}; paintView(); lib().then(function(){ return PvxForms.docBytes(db(),meta); }).then(function(r){ if(!VIEW||VIEW.meta.id!==meta.id) return; VIEW.bytes=r.bytes; VIEW.intact=r.intact;
       var ch=Promise.resolve(), out=[]; for(var i=0;i<(meta.pages||1);i++)(function(i){ ch=ch.then(function(){ return PvxPdf.renderPage(r.bytes,i,1.5); }).then(function(c){ out.push(c.toDataURL('image/jpeg',0.88)); }); })(i);
       return ch.then(function(){ if(!VIEW) return; VIEW.pages=out; VIEW.state='ready'; paintView(); }); }).catch(function(e){ console.warn('[docs] view',e); if(VIEW){ VIEW.state='error'; VIEW.err=String(e.message||e); paintView(); } }); }
-  function paintView(){ var V=VIEW, p=byId(V.pid)||{}, m=V.meta;
-    var h=bar(m.title||'Signed form')+'<div class="es-body fvv-body">';
-    if(V.state==='ready') h+='<div class="fvv-check '+(V.intact?'ok':'bad')+'">'+svg(V.intact?'shield':'warn')+'<span><b>'+(V.intact?'Unchanged since signing':'This copy doesn’t match its fingerprint')+'</b><span>'+(V.intact?'Its fingerprint matches the one saved when it was signed.':'Don’t rely on it; ask an admin.')+'</span></span></div>';
-    h+='<div class="fvv-meta">'+esc([m.signed_by?'Signed by '+m.signed_by:'',m.witness?'witness '+m.witness:'',hm(m.signed_at)?hm(m.signed_at):'',m.lang==='es'?'filled in Spanish':''].filter(Boolean).join(' · '))+'<code>'+esc(String(m.sha256||'').slice(0,16).replace(/(.{4})/g,'$1 ').trim())+'</code></div>';
+  function paintView(){ var V=VIEW, p=byId(V.pid)||{}, m=V.meta, NP=(V.pages||[]).length;
+    var h='<header class="es-bar"><button type="button" class="es-cancel" data-fvd="close">Close</button><h2>'+esc(m.title||'Signed form')+'</h2><span class="es-bar-r"><button type="button" class="fvv-icon" data-fvd="v-dl" aria-label="Download the PDF" title="Download"'+(V.bytes?'':' disabled')+'>'+svg('dl')+'</button></span></header>';
+    var who2=esc([m.signed_by?'Signed by '+m.signed_by:'',hm(m.signed_at)?hm(m.signed_at):''].filter(Boolean).join(' · '));
+    if(V.state==='ready') h+='<div class="fvv-status"><div class="fvv-check '+(V.intact?'ok':'bad')+'">'+svg(V.intact?'shield':'warn')+'<b>'+(V.intact?'Unchanged since signing':'This copy doesn’t match its fingerprint — don’t rely on it; ask an admin.')+'</b>'
+      +'<button type="button" class="fvv-more" data-fvd="v-details" aria-expanded="'+!!V.details+'">'+(V.details?'Hide details':'Details')+'</button></div><span class="fvv-who">'+who2+'</span></div>';
+    else h+='<div class="fvv-status"><span class="fvv-who">'+who2+'</span></div>';
+    if(V.details) h+='<div class="fvv-meta">'+esc([m.witness?'Witness '+m.witness:'',m.lang==='es'?'Filled in Spanish':'',(m.pages||NP||1)+' page'+((m.pages||NP||1)===1?'':'s')].filter(Boolean).join(' · '))+'<span>Fingerprint <code>'+esc(String(m.sha256||'').slice(0,16).replace(/(.{4})/g,'$1 ').trim())+'</code></span></div>';
+    h+='<div class="es-body fvv-body">';
     if(V.state==='loading') h+='<div class="es-text">Opening the PDF…</div>';
     if(V.state==='error') h+='<div class="es-text">Couldn’t open it: '+esc(V.err)+'</div>';
-    (V.pages||[]).forEach(function(u,i){ h+='<img class="fvv-page" src="'+u+'" alt="Page '+(i+1)+'">'; });
-    h+='</div><footer class="es-foot fvv-foot"><button type="button" class="fvd-mini" data-fvd="v-packet">Make a packet</button><button type="button" class="fvd-mini" data-fvd="v-dl"'+(V.bytes?'':' disabled')+'>Download</button><button type="button" class="es-primary" data-fvd="v-print"'+(V.bytes?'':' disabled')+'>Print</button></footer>';
-    if(sheet&&sheet.el.querySelector('.fvv')) sheet.el.querySelector('.es-panel').innerHTML=h; else openSheet(h,'fvv fvd-wide',m.title||'Signed form'); }
+    if(NP>1) h+='<span class="fvv-pno" aria-live="polite">1 of '+NP+'</span>';
+    (V.pages||[]).forEach(function(u,i){ h+='<img class="fvv-page" src="'+u+'" alt="Page '+(i+1)+'" data-pno="'+(i+1)+'">'; });
+    h+='</div><footer class="es-foot fvv-foot"><button type="button" class="fvd-mini fvd-mid" data-fvd="v-packet">Make a packet</button><span class="fvv-sp"></span><button type="button" class="es-primary fvd-solid" data-fvd="v-print"'+(V.bytes?'':' disabled')+'>Print</button></footer>';
+    var keep=V.details!=null&&document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.fvd==='v-details';
+    if(sheet&&sheet.el.querySelector('.fvv')) sheet.el.querySelector('.es-panel').innerHTML=h; else openSheet(h,'fvv fvd-wide',m.title||'Signed form');
+    if(keep){ var d=document.querySelector('#fvdSheet [data-fvd="v-details"]'); if(d) d.focus(); }
+    var body=document.querySelector('#fvdSheet .fvv-body'); if(body&&NP>1) body.addEventListener('scroll',function(){ var pn=body.querySelector('.fvv-pno'), best=1, bd=1e9, mid=body.getBoundingClientRect().top+body.clientHeight/2;
+      [].forEach.call(body.querySelectorAll('.fvv-page'),function(im){ var r=im.getBoundingClientRect(), dd=Math.abs((r.top+r.bottom)/2-mid); if(dd<bd){ bd=dd; best=+im.dataset.pno; } }); if(pn) pn.textContent=best+' of '+NP; },{passive:true}); }
   function blobUrl(bytes){ return URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})); }
   function fileName(p,title){ return (String((p&&((p.name||'')+' '+(p.last||'')))||'').trim()+' - '+(title||'document')+'.pdf').replace(/[\\/:*?"<>|]+/g,'-'); }
   function download(bytes,name){ var a=document.createElement('a'); a.href=blobUrl(bytes); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); }
@@ -18195,8 +18213,8 @@ body.cf-family-on{overflow:hidden;}
       +'<div class="es-foot-note">The packet is made in this browser. Nothing is saved or sent until you download or print it.</div></div>';
     if(P.state==='done') h+='<div class="es-sec"><div class="es-group es-text"><b>'+esc(P.outName)+'</b><br>'+P.outPages+' pages · one bookmark per document'+(P.redacted?' · '+P.redacted+' page'+(P.redacted===1?'':'s')+' redrawn with details removed':'')+'</div></div>';
     if(P.state==='error') h+='<div class="es-sec"><div class="es-group es-text">Couldn’t make the packet: '+esc(P.err)+'</div></div>';
-    h+='</div><footer class="es-foot">'+(P.state==='done'?'<div class="fvv-foot"><button type="button" class="fvd-mini" data-fvd="p-dl">Download</button><button type="button" class="es-primary" data-fvd="p-print">Print</button></div>'
-      :'<button type="button" class="es-primary" data-fvd="p-make"'+(P.items.some(function(i){ return i.on; })&&P.state!=='working'?'':' disabled')+'>'+(P.state==='working'?'Making the PDF…':'Make the packet')+'</button>')+'</footer>';
+    h+='</div><footer class="es-foot">'+(P.state==='done'?'<div class="fvv-foot"><button type="button" class="fvd-mini" data-fvd="p-dl">Download</button><button type="button" class="es-primary fvd-solid" data-fvd="p-print">Print</button></div>'
+      :'<button type="button" class="es-primary fvd-solid" data-fvd="p-make"'+(P.items.some(function(i){ return i.on; })&&P.state!=='working'?'':' disabled')+'>'+(P.state==='working'?'Making the PDF…':'Make the packet')+'</button>')+'</footer>';
     if(sheet&&sheet.el.querySelector('.fvp')) sheet.el.querySelector('.es-panel').innerHTML=h; else openSheet(h,'fvp','Packet'); }
   function makePacket(){ var P=PK, p=byId(P.pid); P.state='working'; paintPacket();
     lib().then(function(){ var sel=P.items.filter(function(i){ return i.on; });
@@ -18225,6 +18243,7 @@ body.cf-family-on{overflow:hidden;}
     if(w==='tag'&&p&&window.fvEndings&&fvEndings.printTag){ fvEndings.printTag(p); return; }
     if(w==='packet'&&p){ openPacket(p); return; }
     if(w==='v-packet'&&VIEW){ var vp=byId(VIEW.pid); closeSheet(); VIEW=null; if(vp) openPacket(vp); return; }
+    if(w==='v-details'&&VIEW){ VIEW.details=!VIEW.details; paintView(); return; }
     if(w==='v-dl'&&VIEW&&VIEW.bytes){ download(VIEW.bytes,fileName(byId(VIEW.pid),VIEW.meta.title)); return; }
     if(w==='v-print'&&VIEW&&VIEW.bytes){ printBytes(VIEW.bytes); try{ var D=db(); if(D) D.collection('visit_docs').doc(VIEW.meta.id).set({printed_at:new Date().toISOString(),printed_by:who()},{merge:true}).catch(function(){}); }catch(e){} return; }
     if(w==='aud'&&PK){ PK.aud=a.dataset.aud; PK.contact=AUD[PK.aud].contact; PK.fees=AUD[PK.aud].fees; PK.state='edit'; paintPacket(); return; }
@@ -18240,7 +18259,10 @@ body.cf-family-on{overflow:hidden;}
     if(w==='fsave'){ fsave(); return; }
     if(w==='fclear'){ FAM.sig.owner=[]; paintFamily(); return; }
     if(w==='fclearw'){ FAM.sig.witness=[]; paintFamily(); return; }
+    if(w==='fzoom'){ FAM.zoom=!FAM.zoom; paintFamily(); var zb=document.querySelector('#cfFamily [data-fvd="fzoom"]'); if(zb) zb.focus({preventScroll:true}); return; }
   });
+  /* double-tap (or double-click) a page on the family's screen to zoom in and out */
+  document.addEventListener('dblclick',function(ev){ var im=ev.target&&ev.target.closest&&ev.target.closest('#cfFamily [data-fvd-pz]'); if(!im||!FAM) return; ev.preventDefault(); FAM.zoom=!FAM.zoom; paintFamily(); });
   document.addEventListener('change',function(ev){ var t=ev.target; if(!PK||!t||!t.closest||!t.closest('#fvdSheet')) return;
     if(t.dataset.fvdOn!=null){ PK.items[+t.dataset.fvdOn].on=t.checked; PK.state='edit'; paintPacket(); }
     if(t.dataset.fvdOpt){ PK[t.dataset.fvdOpt]=t.checked; PK.state='edit'; paintPacket(); } });
@@ -18298,6 +18320,39 @@ body:not(.dark) .fvd-link{color:#1F7F96;}
 body:not(.dark) .fvd-item{background:#fff;border-color:var(--glass-hairline);}
 body:not(.dark) .fvv-meta{color:#6b7280;}
 body:not(.dark) .fvp-ord button{border-color:rgba(30,45,90,.15);}
+/* n123 design pass: one unmistakable main button, a real disabled state, quieter fingerprint, page markers */
+.es-primary[disabled]{opacity:.4;cursor:default;filter:none;}
+.es-primary.fvd-solid{background:#187A91;}
+body:not(.dark) .es-primary.fvd-solid{background:#1F7F96;}
+.fvd-mid{min-height:46px;padding:0 18px;font-size:14.5px;border-radius:13px;}
+.fvv-sp{flex:1;}
+.fvv-foot .es-primary.fvd-solid{min-width:170px;}
+.fvv .es-bar-r{display:flex;justify-content:flex-end;}
+.fvv-icon{width:44px;height:44px;border:0;border-radius:11px;background:transparent;color:#4DC8E0;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
+.fvv-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}.fvv-icon[disabled]{opacity:.35;cursor:default;}
+body:not(.dark) .fvv-icon{color:#1F7F96;}
+.fvv-status{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 14px;padding:8px 18px 12px;border-bottom:1px solid rgba(255,255,255,.06);}
+.fvv-status .fvv-check{align-self:auto;padding:0;background:none!important;box-shadow:none!important;gap:8px;}
+.fvv-status .fvv-check svg{width:19px;height:19px;flex:0 0 19px;}
+.fvv-status .fvv-check b{font-size:14px;font-weight:600;}.fvv-check.ok b{color:#7FD6AE;}.fvv-check.bad b{color:#E8928A;}
+.fvv-more{min-height:32px;border:0;background:transparent;color:#4DC8E0;font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;padding:0 4px;}
+body:not(.dark) .fvv-more{color:#1F7F96;}body:not(.dark) .fvv-check.ok b{color:#2E8A5E;}body:not(.dark) .fvv-check.bad b{color:#B5402C;}
+.fvv-who{font-size:13.5px;color:rgba(167,194,216,.9);}body:not(.dark) .fvv-who{color:#4b5563;}
+.fvv-status+.fvv-meta,.fvv-meta{padding:10px 18px;margin:0;border-bottom:1px solid rgba(255,255,255,.06);align-self:stretch;}
+.fvv-body{position:relative;}
+.fvv-pno{position:sticky;top:6px;align-self:flex-end;z-index:2;margin-bottom:-36px;padding:5px 11px;border-radius:999px;background:rgba(20,24,31,.74);color:#fff;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;}
+.fvd-pickrow{gap:14px;}
+.fvd-th{flex:0 0 34px;height:44px;border-radius:3px;background:#fff;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:flex-start;}
+.fvd-th img{width:100%;height:auto;display:block;}
+.fvd-pickrow .es-rl{flex:1;}
+.fvd-filled{display:flex;flex-direction:column;gap:5px;padding:2px 6px;font-size:14px;}.fvd-filled b{font-weight:650;}
+.fvd-sub{font-size:13px;color:rgba(150,171,191,.85);}body:not(.dark) .fvd-sub{color:#6b7280;}
+.fvf-zoombar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 4px;font-size:14px;color:#6b7280;}
+.fvf-zbtn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid rgba(30,45,90,.18);background:#fff;color:#14181F;font:inherit;font-size:15px;font-weight:600;cursor:pointer;}
+.fvf-pg{margin:0;display:flex;flex-direction:column;gap:6px;}
+.fvf-pg figcaption{font-size:13px;font-weight:600;color:#6b7280;}
+.fvf-pz{overflow:auto;border-radius:6px;-webkit-overflow-scrolling:touch;}
+.fvf-pages.zoomed img{width:180%;max-width:none;}
 </style>
 
 <script>/* n122 Forms link: only for accounts Forms lets in (keep in step with forms/index.html ALLOWED) */(function(){var a=document.getElementById("navForms");if(!a)return;var OK=["daniel.giordano@pravix.app"];function set(u){var e=u&&u.email?String(u.email).toLowerCase():"";a.style.display=OK.indexOf(e)>-1?"":"none";}try{if(typeof AUTH!=="undefined"&&AUTH&&AUTH.onAuthStateChanged){set(AUTH.currentUser);AUTH.onAuthStateChanged(set);}}catch(e){}})();</script>
