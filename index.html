@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="flow-build" content="20261012-1227-a115fb41">
+<meta name="flow-build" content="20261013-0027-d86d1690">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
@@ -5591,6 +5591,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
       <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
       <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
       <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
     </div>
     <div class="nav-right">      <button class="logout-button" id="logoutBtn" type="button" onclick="logout()" aria-label="Log out"><span class="logout-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="door-glyph"><path d="M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1"/></g><g class="exit-arrow"><path d="M12.6 8.7 16 12l-3.4 3.3"/><path d="M8.9 12H16"/></g></svg></span><span class="logout-label">Logout</span><span class="logout-chevron" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m7.5 5 5 5-5 5"/></svg></span></button>
       <button class="theme-toggle" onclick="toggleDark()" title="Toggle theme" aria-label="Toggle theme">
@@ -6785,7 +6786,7 @@ function genToken(){ try{ return crypto.randomUUID(); }catch(e){ return'tok-'+Da
 function fxVisitEnd(p){   /* how the visit ended, for the family tracker — Rounds outcome first, then Flow's final status */
   const o=p.rounds&&p.rounds.outcome&&p.rounds.outcome.type;
   if(o){ if(o==='Euthanized'||o==='Deceased') return 'loss'; if(o==='Transferred') return 'transferred'; if(o==='Discharged') return 'home'; return 'ended'; }
-  if(p.status==='Euthanized') return 'loss'; if(p.status==='Discharged') return 'home'; return null; }
+  if(p.status==='Euthanized'||p.status==='Deceased') return 'loss'; if(p.status==='Discharged') return 'home'; return null; }
 function safeProjection(p){
 const docName = (p.doctor && p.doctor!=='unassigned') ? (doc(p.doctor).name||null) : null;
 const liaName = p.liaison ? ((liaison(p.liaison)||{}).name||null) : null;
@@ -6862,7 +6863,8 @@ resus_history: Array.isArray(p.resusHistory) ? p.resusHistory.map(function(h){ r
 crit_taken_at: _toISO(p.critTakenAt), crit_taken_by: p.critTakenBy || null, crit_taken_uid: p.critTakenUid || null, waiting_on: p.waitingOn || null, stale_keep_until: _toISO(p.staleKeepUntil), ms_roomed_at: _toISO(p.msRoomedAt), ms_doctor_at: _toISO(p.msDoctorAt),
 flags: (typeof fgToDb==='function'?fgToDb(p.flags):[]),
 ts_sheet: (p.tsSheet&&p.tsSheet.board)?{board:p.tsSheet.board,at:p.tsSheet.at||null}:null,
-is_active: !(p.completed===true || p.active===false || p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized')
+ending: (typeof fvEndingToDb==='function'?fvEndingToDb(p.ending):null),
+is_active: !(p.completed===true || p.active===false || p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized'|| p.status==='Deceased')
 };
 }
 function mapToApp(r){ return fxCleanPatient(_fxMapToApp(r)); }
@@ -6882,7 +6884,7 @@ triage:r.triage||null, intake:r.intake||null, records:recToApp(r.records), ultra
 timeline:(r.timeline||[]).map(function(e){ return { label:e.label, at:e.at? new Date(e.at): new Date(), meta:e.meta||''}; }),
 arrival:arrival, completed:!r.is_active, active:r.is_active, completedAt:completedAt, critTakenAt: r.crit_taken_at? new Date(r.crit_taken_at): null, critTakenBy: r.crit_taken_by||null, critTakenUid: r.crit_taken_uid||null, waitingOn: (r.waiting_on&&r.waiting_on.text)?r.waiting_on:null, staleKeepUntil: r.stale_keep_until?new Date(r.stale_keep_until):null, msRoomedAt: r.ms_roomed_at?new Date(r.ms_roomed_at):null, msDoctorAt: r.ms_doctor_at?new Date(r.ms_doctor_at):null, viewing: r.viewing||null, lastBy: r.last_by||null, lastByUid: r.last_by_uid||null, lastAt: r.last_at||null,
 examStartedAt: r.exam_started_at? new Date(r.exam_started_at): null, examStartedByDoctorId: r.exam_started_by||null, examWaitMinutes: (typeof r.exam_wait_min==='number'? r.exam_wait_min : null),
-totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null, admitRequest:(r.admit_request&&r.admit_request.at)?r.admit_request:null, orStatus:(r.or_status&&r.or_status.case)?r.or_status:null, tsSheet:(r.ts_sheet&&r.ts_sheet.board)?{board:r.ts_sheet.board,at:r.ts_sheet.at||null}:null, flags:(typeof fgToApp==='function'?fgToApp(r.flags):[]),
+totalMin: completedAt ? Math.round((completedAt-arrival)/60000) : undefined, publicToken:r.public_token||null, trackCode:r.track_code||null, admitRequest:(r.admit_request&&r.admit_request.at)?r.admit_request:null, orStatus:(r.or_status&&r.or_status.case)?r.or_status:null, ending:(r.ending&&r.ending.type)?r.ending:null, consentForm:(r.consent_form&&r.consent_form.status)?r.consent_form:null, tsSheet:(r.ts_sheet&&r.ts_sheet.board)?{board:r.ts_sheet.board,at:r.ts_sheet.at||null}:null, flags:(typeof fgToApp==='function'?fgToApp(r.flags):[]),
 resusPref:r.resus_pref||null, resusStatus:r.resus_status||'not_selected', resusRecordedAt:r.resus_recorded_at?new Date(r.resus_recorded_at):null, resusSource:r.resus_source||null, resusHistory:Array.isArray(r.resus_history)?r.resus_history.map(function(h){ return { pref:h.pref||null, source:h.source||null, at:h.at?new Date(h.at):null, by:h.by||null }; }):[], resusRequest:(r.resus_request&&r.resus_request.pref)?{ pref:r.resus_request.pref, at:r.resus_request.at||null }:null, resusRequestDismissed:r.resus_request_dismissed||null, resusConfirmedBy:r.resus_confirmed_by||null, resusConfirmedAt:r.resus_confirmed_at?new Date(r.resus_confirmed_at):null, tags:[]
 };
 }
@@ -7306,8 +7308,8 @@ if(/checked in|arriv/i.test(label)) return STATUSES.Waiting.color;
 if(/discharg/i.test(label)) return STATUSES.Discharged.color;
 return'var(--accent)';
 }
-function isActive(p){return !(p.completed===true || p.active===false || p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized');}
-function isCompleted(p){return p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized';}
+function isActive(p){return !(p.completed===true || p.active===false || p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized'|| p.status==='Deceased');}
+function isCompleted(p){return p.status==='Discharged'|| p.status==='Admitted'|| p.status==='Euthanized'|| p.status==='Deceased';}
 
 function toast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600);}
 
@@ -8003,7 +8005,7 @@ avgPerDoc: working.length? (assigned/working.length):0,
 highest: byCount[0], lowest: byCount[byCount.length-1],
 inUse, totalRooms:clin.length, util: clin.length? Math.round(inUse/clin.length*100):0,
 waitByDoc, casesToday: pickups.length,
-discharged: completedTodayCount('Discharged'), admitted: completedTodayCount('Admitted'), euthanized: completedTodayCount('Euthanized'), completed: completedTodayCount('Discharged')+completedTodayCount('Admitted')+completedTodayCount('Euthanized')
+discharged: completedTodayCount('Discharged'), admitted: completedTodayCount('Admitted'), euthanized: completedTodayCount('Euthanized'), deceased: completedTodayCount('Deceased'), completed: completedTodayCount('Discharged')+completedTodayCount('Admitted')+completedTodayCount('Euthanized')+completedTodayCount('Deceased')
 };
 }
 
@@ -12715,7 +12717,8 @@ acts.querySelectorAll('.disposition-card').forEach(c=>c.classList.remove('proces
 if(isCompleted(p)){
 const map={ Admitted:['Admitted','Inpatient care active',DISP_ICON.admit],
 Discharged:['Discharged','Visit completed',DISP_ICON.discharge],
-Euthanized:['Visit closed','Recorded in Completed Today',DISP_ICON.euth] };
+Euthanized:['Visit closed','Recorded in Completed Today',DISP_ICON.euth],
+Deceased:['Visit closed','Recorded in Completed Today',DISP_ICON.euth] };
 const m=map[p.status]||map.Discharged;
 acts.style.display='none';
 conf.className='disp-confirm mounted';
@@ -12790,7 +12793,7 @@ conf.innerHTML='<div class="disp-conflict" role="alert"><div class="cfl-t">Patie
 function showUndo(p, kind, snap){
 const t=document.getElementById('undoToast'); if(!t) return;
 clearTimeout(_dispUndoTimer);
-const nm=dispFirstName(p), verb=(kind==='admit'?'admitted':'discharged');
+const nm=dispFirstName(p), verb=(kind==='admit'?'admitted':kind==='euthanasia'?'· euthanasia recorded':kind==='died'?'· death recorded':'discharged');
 t.innerHTML='<span class="ut-msg">'+nm+' '+verb+'</span><button type="button" class="ut-undo">Undo</button><span class="undo-progress" aria-hidden="true"></span>';
 t.classList.remove('open'); void t.offsetWidth; t.classList.add('open');
 const undoBtn=t.querySelector('.ut-undo');
@@ -13394,7 +13397,7 @@ function rdOnFlowComplete(p, finalStatus){
 if(finalStatus==='Admitted'){ rdEnroll(p); return; }
 if(p.rounds && !p.rounds.outcome){
  
-const type=(finalStatus==='Euthanized')?'Euthanized':'Discharged';
+const type=(finalStatus==='Euthanized'||finalStatus==='Deceased')?finalStatus:'Discharged';
 p.rounds.outcome={type:type,at:rdIso(new Date()),by:CURRENT_USER};
 rdSnapshotToday(p);
 rdAudit(p,'Admission closed from Flow · '+type);
@@ -13407,7 +13410,7 @@ p.timeline.push({label:type, at:new Date(), meta:'Rounds · '+rdActorName()});
 rdSnapshotToday(p);
 rdExpanded=null;
 rdTouch(p,'Admission ended · '+type);
-if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p, type==='Euthanized'?'Euthanized':'Discharged'); }catch(e){} }   /* a direct admit leaves Flow too */
+if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p, (type==='Euthanized'||type==='Deceased')?type:'Discharged'); }catch(e){} }   /* a direct admit leaves Flow too */
 }, {sub:'The admission closes and moves to the Rounds archive. The full record is preserved.', fancyConfirm:type==='Discharged'});
 }
 function rdSetLocation(p,loc){
@@ -16726,7 +16729,7 @@ body:not(.dark) .rd-undo .ru-undo{background:var(--fill-soft,rgba(120,120,128,.1
     add(w.join('')); w.forEach(function(x){ if(x.length>=2) add(x); }); return out; }
   function isOpen(p){
     try{ if(fxVisitEnd(p)) return false; }catch(e){}
-    if(p.status==='Discharged'||p.status==='Euthanized') return false;
+    if(p.status==='Discharged'||p.status==='Euthanized'||p.status==='Deceased') return false;
     if(!p.completed) return true;
     return p.status==='Admitted'||p.status==='Hospitalized';   /* the front-desk visit closed, the pet is still with us */
   }
@@ -16834,6 +16837,1470 @@ body:not(.dark) .rd-undo .ru-undo{background:var(--fill-soft,rgba(120,120,128,.1
 })();
 </script>
 
+<script>
+/* ===== ENDINGS n120 (Oct 12 2026) — euthanasia and died, from the patient drawer =====
+   Daniel's choices: a quiet "Other ending…" under Admit / Discharge; Died as well as Euthanasia; record aftercare,
+   owner consent (euthanasia, required) and keepsakes. Then (Oct 12, "Do all of those"), Apple-style:
+   · The ending opens in its own sheet, "Rosie's ending" (centered on a desk, a bottom sheet on iPad / phone), with grouped
+     sections like iOS Settings: How (the drawer cards) · Consent & aftercare form · Consent · Aftercare · Keepsake.
+   · What isn't actionable isn't shown: while the family's form is out, only its progress line (Sent → With the family → Signed)
+     and "Cancel form" show; "Enter them here instead" opens the paper path.
+   · p.ending = {type:'euthanasia'|'died', consent:{at,by,via}|null, aftercare, keepsakes:[], urn, form, at, by, edits:[]} on the visit.
+     Staff only: the family tracker sees just the gentle ending (visit_end 'loss'); the waiting-room screen drops the visit as before.
+   · Died is the final status "Deceased" (Rounds' word): Completed Today, Rounds (Deceased), the OP sheet closes ("deceased").
+   · Dragging a card onto Completed Today › Euthanized opens this sheet instead of a plain confirm.
+   · A patient with an inpatient treatment sheet ends on the sheet (it has Euthanasia and Died), so nobody ends it in two places.
+   · Ended visits show the details in the drawer; aftercare and keepsakes can be changed later ("Edit details"). */
+(function(){
+  if(typeof completePatient!=='function'||typeof renderDisposition!=='function') return;
+  /* the hospital's own choices (VCA Shoreline × Final Gift form, Oct 12): care of body + the clay paw print */
+  var AFTER=[['private','Private cremation'],['communal','Communal cremation'],['release','Release remains'],['hold','Hold for instructions']];
+  var KEEP=[['clay','Clay paw print']];
+  var KIND={
+    euthanasia:{status:'Euthanized',title:'Euthanasia',sub:'Owner’s consent',done:'Euthanized',go:'Record euthanasia',undo:'euthanasia recorded',
+      ic:'<path d="M12 20.2 5.95 14.3C4.1 12.5 4.05 9.7 5.78 7.98c1.68-1.67 4.4-1.64 6.06.08l.16.17.16-.17c1.66-1.72 4.38-1.75 6.06-.08 1.73 1.72 1.68 4.52-.17 6.32L12 20.2Z"/>'},
+    died:{status:'Deceased',title:'Died',sub:'During the visit',done:'Died',go:'Record death',undo:'death recorded',
+      ic:'<path d="M19.5 14.6A8 8 0 1 1 9.4 4.5a6.4 6.4 0 0 0 10.1 10.1Z"/>'}
+  };
+  var CHEV='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  /* Flow's drawer card (Admit / Discharge) for every "pick one next step" button (Daniel, Oct 12: "use the same buttons we have
+     for the drawer cards"). Same element and classes as #dispActions. Go cards carry an arrow (out ↗, in ↘, next →, back ←);
+     choice cards carry a ring that fills when chosen (is-on). Text is passed already escaped. */
+  var DC_ARROW={out:'<path d="M7 17L17 7"/><path d="M11 7h6v6"/>',in:'<path d="M7 7L17 17"/><path d="M17 11v6h-6"/>',next:'<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',back:'<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>'};
+  function dcard(o){
+    var choice=typeof o.sel==='boolean';
+    var mark=choice?'<span class="dc-mark'+(o.box?' sq':'')+'" aria-hidden="true"></span>':(o.arrow?'<span class="dc-arrow dc-'+o.arrow+'" aria-hidden="true"><svg viewBox="0 0 24 24">'+DC_ARROW[o.arrow]+'</svg></span>':'<span></span>');
+    return '<button type="button" class="disposition-card fv-dc'+(o.cls?' '+o.cls:'')+(o.sel?' is-on':'')+(o.wrap?' dc-wrap':'')+'"'
+      +(choice?' role="'+(o.box?'checkbox':'radio')+'" aria-checked="'+o.sel+'"':'')+(o.label?' aria-label="'+o.label+'"':'')+' '+(o.attrs||'')+'>'
+      +'<span class="dc-ic" aria-hidden="true"><svg viewBox="0 0 24 24">'+o.ic+'</svg></span>'
+      +'<span class="dc-body"><span class="dc-title">'+o.title+(o.aside?'<span class="dc-aside">'+o.aside+'</span>':'')+'</span>'+(o.desc?'<span class="dc-desc">'+o.desc+'</span>':'')+'</span>'+mark+'</button>'; }
+  var IC={form:'<path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 12l2 2 4-4"/>',use:'<path d="M4 6h10M4 12h10M4 18h7"/><path d="M15 17l2 2 4-4"/>'};
+  window.fvDCard=dcard; window.fvDCardIcons=IC;
+  var draft=null;   /* the open sheet: {pid, type, fee, consent, aftercare, keepsakes, edit, manual, used} */
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function label(list,k){ var x=list.filter(function(a){ return a[0]===k; })[0]; return x?x[1]:''; }
+  function who(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Flow'; }catch(e){ return 'Flow'; } }
+  function cur(){ try{ return PATIENTS.find(function(x){ return x.id===activePatient; })||null; }catch(e){ return null; } }
+  function byId(id){ try{ return PATIENTS.find(function(x){ return String(x.id)===String(id); })||null; }catch(e){ return null; } }
+  function kindOf(p){ return p&&p.ending&&KIND[p.ending.type]?p.ending.type:(p&&p.status==='Deceased'?'died':(p&&p.status==='Euthanized'?'euthanasia':null)); }
+  function ipSheet(p){ return !!(p&&p.tsSheet&&p.tsSheet.board==='IP'); }
+  function sheetHref(p){ var id=''; try{ id=window.fvAdmitSheet?fvAdmitSheet.id(p):''; }catch(e){} return '/treatment/'+(id?'#sheet='+encodeURIComponent(id)+'&discharge=1':''); }
+  function fmtT(iso){ try{ return fmtTime(new Date(iso)); }catch(e){ return ''; } }
+  function formOf(p){ var F=p&&p.consentForm; return (F&&F.status!=='cancelled')?F:null; }
+  function formOpen(p){ var F=formOf(p); return !!F&&(F.status==='requested'||F.status==='family'); }
+  function signedForm(p){ var F=formOf(p); return (F&&F.status==='signed')?F:null; }
+  /* what the details say, in one line */
+  function summary(e,withConsent){ if(!e) return '';
+    var bits=[label(AFTER,e.aftercare)||'Aftercare not recorded'];
+    if(e.aftercare==='hold') bits[0]='Held for instructions (up to 7 days)';
+    if(e.urn) bits.push(e.urn+' urn');
+    var k=(e.keepsakes||[]).map(function(x){ return label(KEEP,x); }).filter(Boolean); if(k.length) bits.push(k.join(', '));
+    if(withConsent&&e.consent) bits.push(e.consent.via==='phone'?'Consent by phone':'Consent signed');
+    return bits.join(' · '); }
+
+  /* the consent line under an ended visit */
+  function consentLine(c){ if(!c) return '';
+    if(c.via==='phone'){ var w=(c.witnesses||[]).filter(Boolean); return 'Consent by phone'+(c.spoke_with?' from '+c.spoke_with:'')+(w.length?' · witnessed by '+w.join(' and '):''); }
+    return 'Consent signed'+(c.via==='form'?' on the iPad':'')+(c.by?' · '+c.by:''); }
+  /* names for the witness fields: the doctors, techs and liaisons Flow already knows */
+  function staffNames(){ var a=[]; try{ a=a.concat(DOCTOR_NAMES||[]); }catch(e){} try{ a=a.concat(window.FV_TECHS||[]); }catch(e){} try{ if(window.Pravix&&Pravix.getLiaisons) a=a.concat(Pravix.getLiaisons()||[]); }catch(e){}
+    var seen={}; return a.map(function(x){ return String(x&&x.name||x||'').trim(); }).filter(function(x){ var k=x.toLowerCase(); if(!x||seen[k]) return false; seen[k]=1; return true; }).sort(); }
+  function sameName(a,b){ return String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase(); }
+
+  /* ---------- saved on the visit ---------- */
+  window.fvEndingToDb=function(e){ if(!e||!KIND[e.type]) return null;
+    return {type:e.type,consent:e.consent?{at:e.consent.at||null,by:e.consent.by||null,via:e.consent.via||null,form:e.consent.form||null,spoke_with:e.consent.spoke_with?String(e.consent.spoke_with).slice(0,80):null,witnesses:(e.consent.witnesses||[]).slice(0,2).map(function(w){ return String(w||'').slice(0,80); })}:null,aftercare:e.aftercare||null,
+      keepsakes:(e.keepsakes||[]).filter(function(k){ return !!label(KEEP,k); }),urn:e.urn||null,form:e.form||null,at:e.at||null,by:e.by||null,
+      edits:(e.edits||[]).slice(-20).map(function(x){ return {at:x.at||null,by:x.by||null,what:String(x.what||'').slice(0,200)}; })}; };
+
+  /* ---------- the new final status: Deceased ---------- */
+  try{ STATUSES.Deceased={color:'#8A82A8',bg:'rgba(138,130,168,.16)'}; }catch(e){}
+  try{ COMPLETION.Deceased={tlLabel:'Patient died',title:'Patient died',icon:'info',color:'#8A82A8',stampKey:'deceasedAt'}; }catch(e){}
+  if(typeof captureDispSnap==='function'&&typeof restoreDispSnap==='function'){
+    var capBase=captureDispSnap, resBase=restoreDispSnap;
+    captureDispSnap=function(p){ var s=capBase.apply(this,arguments); s.deceasedAt=p.deceasedAt; s.ending=p.ending?JSON.parse(JSON.stringify(p.ending)):null; return s; };
+    restoreDispSnap=function(p,s){ resBase.apply(this,arguments); p.deceasedAt=s.deceasedAt; p.ending=s.ending||null; };
+  }
+
+  /* ---------- the drawer: "Other ending…" ---------- */
+  function link(){ var el=document.getElementById('dispOther'); if(el) return el;
+    var acts=document.getElementById('dispActions'); if(!acts) return null;
+    el=document.createElement('button'); el.type='button'; el.id='dispOther'; el.className='disp-other';
+    el.setAttribute('aria-label','Other ending — euthanasia or died'); el.setAttribute('aria-haspopup','dialog');
+    el.innerHTML='<span>Other ending…</span>'+CHEV;
+    acts.insertAdjacentElement('afterend',el); return el; }
+  function showLink(on){ var el=link(); if(!el) return; el.hidden=!on; var p=cur(), F=formOf(p), sp=el.querySelector('span');
+    var t=(F&&F.status==='requested')?'Other ending · form waiting for reception':(F&&F.status==='family')?'Other ending · form with the family':(F&&F.status==='signed'&&!isCompleted(p))?'Other ending · form signed — record it':'Other ending…';
+    if(sp&&sp.textContent!==t) sp.textContent=t; el.classList.toggle('has-form',t!=='Other ending…'); }
+
+  var rdBase=renderDisposition;
+  renderDisposition=function(p){
+    var r=rdBase.apply(this,arguments);
+    try{ showLink(!!p&&!isCompleted(p)); var k=kindOf(p); if(p&&isCompleted(p)&&k) terminal(p,k);
+      if(draft&&p&&draft.pid===p.id) paintSheet();   /* a live update: keep the sheet and what's in it */
+    }catch(e){ console.warn('[endings]',e); }
+    return r; };
+  function terminal(p,k){
+    var conf=document.getElementById('dispConfirm'); if(!conf) return; var K=KIND[k], e=p.ending;
+    var when=''; try{ when=p.completedAt?fmtTime(p.completedAt):''; }catch(_){}
+    var desc=e?summary(e,false):'Recorded in Completed Today';
+    conf.className='disp-confirm mounted';
+    conf.innerHTML='<div class="disp-terminal end-terminal"><span class="dc-ic" aria-hidden="true"><svg viewBox="0 0 24 24">'+K.ic+'</svg></span>'
+      +'<span class="dc-body"><span class="dc-title">'+esc(K.done)+(when?' <span class="end-when">'+esc(when)+'</span>':'')+'</span><span class="dc-desc">'+esc(desc)+'</span>'
+      +(e&&e.consent?'<span class="dc-desc end-consent-line">'+esc(consentLine(e.consent))+'</span>':'')+'</span>'
+      +'<span class="end-acts">'+(e&&e.aftercare?'<button type="button" class="end-edit" data-end="tag">Print tag</button>':'')+'<button type="button" class="end-edit" data-end="edit">Edit details</button></span></div>'; }
+
+  /* ---------- the sheet ---------- */
+  var lastFocus=null;
+  function sheetEl(){ var s=document.getElementById('endSheet'); if(!s){ s=document.createElement('div'); s.id='endSheet'; s.className='end-sheet'; document.body.appendChild(s); } return s; }
+  function openSheet(p,type,opts){
+    opts=opts||{}; if(!p||(typeof _dispBusy!=='undefined'&&_dispBusy)) return;
+    var edit=!!opts.edit; if(!edit&&isCompleted(p)) return;
+    var e=edit?(p.ending||{type:kindOf(p)}):null;
+    draft={pid:p.id,fee:'outpatient',type:edit?(e.type||kindOf(p)):(type||null),consent:edit?((e&&e.consent&&(e.consent.via||'paper'))||false):false,ph:{who:'',w1:'',w2:'',read:false,lang:'en'},aftercare:edit?(e.aftercare||null):null,
+      keepsakes:edit?(e.keepsakes||[]).slice():[],edit:edit,manual:!!opts.manual,used:false};
+    if(opts.useForm) useForm(p);
+    lastFocus=document.activeElement; paintSheet(true);
+    var s=sheetEl(); requestAnimationFrame(function(){ s.classList.add('shown'); });
+    var f=s.querySelector(opts.useForm?'[data-end="go"]':draft.type?'[data-end-kind="'+draft.type+'"]':'[data-end-kind]'); if(f) f.focus({preventScroll:true});
+  }
+  function focusKey(){ var a=document.activeElement, s=document.getElementById('endSheet'); if(!a||!s||!s.contains(a)) return null;
+    var n=['endPh','endKind','endAfter','endKeep','endConsent','endFee','endRl','end']; for(var i=0;i<n.length;i++){ var v=a.dataset&&a.dataset[n[i]]; if(v!=null) return '[data-'+n[i].replace(/[A-Z]/g,function(m){ return '-'+m.toLowerCase(); })+'="'+v+'"]'; } return null; }
+  function row(o){   /* an inset-grouped row: label, optional detail, and a check (radio), a switch, or a chevron */
+    var tail=o.kind==='radio'?'<span class="es-check" aria-hidden="true"></span>':o.kind==='switch'?'<span class="es-switch" aria-hidden="true"><span></span></span>':o.kind==='link'?'<span class="es-chev" aria-hidden="true">'+CHEV+'</span>':'';
+    var role=o.kind==='radio'?' role="radio" aria-checked="'+!!o.on+'"':o.kind==='switch'?' role="switch" aria-checked="'+!!o.on+'"':'';
+    return '<button type="button" class="es-row'+(o.on?' on':'')+(o.cls?' '+o.cls:'')+'"'+role+' '+(o.attrs||'')+'><span class="es-rl">'+o.t+(o.d?'<span class="es-rd">'+o.d+'</span>':'')+'</span>'+tail+'</button>'; }
+  function field(k,lab,val,ph,list){ return '<label class="es-row es-field"><span class="es-fl">'+lab+'</span><input type="text" data-end-ph="'+k+'" value="'+esc(val)+'" placeholder="'+esc(ph)+'" autocomplete="off" autocapitalize="words" spellcheck="false"'+(list?' list="'+list+'"':'')+'></label>'; }
+  function paintSheet(first){
+    var p=draft&&byId(draft.pid), s=sheetEl(); if(!p||!draft){ closeSheet(true); return; }
+    var fk=first?null:focusKey(), scroll=(s.querySelector('.es-body')||{}).scrollTop||0, ae=document.activeElement, caret=(ae&&ae.tagName==='INPUT'&&s.contains(ae))?[ae.selectionStart,ae.selectionEnd]:null;
+    var d=draft, nm=dispFirstName(p), K=d.type?KIND[d.type]:null, F=formOf(p), SF=signedForm(p), FO=formOpen(p);
+    var fields=d.edit||d.manual||d.used||!window.fvConsent;
+    var h='<div class="es-scrim" data-end="scrim"></div><div class="es-panel" role="dialog" aria-modal="true" aria-labelledby="endSheetT">'
+      +'<header class="es-bar"><button type="button" class="es-cancel" data-end="cancel">Cancel</button><h2 id="endSheetT">'+esc(d.edit?nm+' · ending details':nm+'’s ending')+'</h2><span class="es-bar-r"></span></header><div class="es-body">';
+    var foot='';
+    if(!d.edit&&ipSheet(p)){
+      h+='<div class="es-sec"><div class="es-group es-text"><b>'+esc(nm)+' has an inpatient treatment sheet.</b><br>Record the ending on the sheet — it has Euthanasia and Died — so it’s written once. Flow and Rounds follow.</div></div>';
+      foot='<a class="es-primary" href="'+esc(sheetHref(p))+'" target="_blank" rel="noopener" data-end="sheet">Open the treatment sheet</a>';
+    }else{
+      if(!d.edit){ h+='<div class="es-sec"><div class="es-h" id="endKindH">How did '+esc(nm)+'’s visit end?</div><div class="end-kinds" role="radiogroup" aria-labelledby="endKindH">';
+        ['euthanasia','died'].forEach(function(k){ var on=d.type===k, X=KIND[k]; h+=dcard({ic:X.ic,title:X.title,sel:on,label:X.title+' — '+X.sub,cls:'end-kind'+(on?' on':''),attrs:'data-end-kind="'+k+'"'}); });
+        h+='</div></div>'; }
+      if(K&&!d.edit&&window.fvConsent){
+        h+='<div class="es-sec"><div class="es-h">'+(d.type==='died'?'Aftercare form':'Consent &amp; aftercare form')+'</div>';
+        if(!F&&d.manual){
+          h+='<div class="es-group">'+row({t:'Send the form to reception instead',d:'The family chooses and signs on the iPad',kind:'link',attrs:'data-end="unmanual"'})+'</div>';
+        }else if(!F){
+          h+='<div class="es-group">'+(d.type==='euthanasia'?'<div class="es-row es-static"><span class="es-rl">Fee</span><span class="es-seg" role="radiogroup" aria-label="Euthanasia fee">'
+            +[['outpatient','Outpatient'],['consult','With consult']].map(function(x){ var on=(d.fee||'outpatient')===x[0]; return '<button type="button" class="'+(on?'on':'')+'" role="radio" aria-checked="'+on+'" data-end-fee="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</span></div>':'')
+            +'<div class="es-cardrow">'+dcard({ic:IC.form,title:'Send form to reception',desc:'Shows up in Consent forms',arrow:'out',cls:'end-send',attrs:'data-end="send"'})+'</div></div>'
+            +'<div class="es-foot-note">Reception takes the iPad into the room and goes over '+esc(nm)+'’s aftercare'+(d.type==='died'?'':' and the consent')+' with the family.</div>';
+          if(!d.manual) h+='<div class="es-group">'+row({t:'Record it here instead',d:'From a paper form, or with the family beside you',kind:'link',attrs:'data-end="manual"'})+'</div>';
+        }else if(FO||SF){
+          h+='<div class="es-group es-text">'+fvConsent.progress(F)+'</div>';
+          if(SF){ h+='<div class="es-foot-note">'+esc((SF.owner_sig&&SF.owner_sig.name)||'The owner')+' chose '+esc(fvConsent.summary(SF))+'.</div>';
+            if(!d.used) h+='<div class="es-group"><div class="es-cardrow">'+dcard({ic:IC.use,title:'Use the family’s choices',desc:'Fills in the ending for you',arrow:'in',cls:'end-use',attrs:'data-end="use-form"'})+'</div></div>';
+            h+='<div class="es-group">'+row({t:'Print the form',kind:'link',attrs:'data-end="print-form"'})+'</div>';
+          }else{
+            h+='<div class="es-foot-note">Consent and aftercare will come from the family’s form. You’ll get a notice when it’s signed.</div>'
+              +'<div class="es-group">'+row({t:'Cancel form',cls:'danger',attrs:'data-end="cancel-form"'})+(d.manual?'':row({t:'Enter them here instead',d:'If the family signed the paper form',kind:'link',attrs:'data-end="manual"'}))+'</div>';
+          }
+        }
+        h+='</div>';
+      }
+      if(K&&fields){
+        if(d.type==='euthanasia'){ h+='<div class="es-sec"><div class="es-h">Consent</div><div class="es-group">';
+          var ec=d.edit&&byId(d.pid)&&byId(d.pid).ending&&byId(d.pid).ending.consent;
+          if(d.edit||SF) h+='<div class="es-row es-static on"><span class="es-rl">'+(SF?'Signed on the iPad · '+esc(fmtT(SF.signed_at)):ec?esc(ec.via==='phone'?consentLine(ec):ec.via==='form'?'Signed on the iPad':'Signed the paper form'):'Euthanasia consent signed by the owner')+'</span><span class="es-check" aria-hidden="true"></span></div></div>';
+          else{ h=h.replace(/<div class="es-group">$/,'<div class="es-group" role="radiogroup" aria-label="How the owner consented">');
+            h+=row({t:'Signed the paper form',kind:'radio',on:d.consent==='paper',attrs:'data-end-consent="paper"'})
+              +row({t:'By phone',d:'Two staff witness the owner’s consent on the call',kind:'radio',on:d.consent==='phone',attrs:'data-end-consent="phone"'})+'</div>';
+            if(d.consent==='phone'){ var P=d.ph;
+              h+='<div class="es-group es-phone">'
+                +field('who','Spoke with',P.who,'Owner or authorized agent','')
+                +field('w1','Witness',P.w1,'Staff name','endStaff')
+                +field('w2','Second witness',P.w2,'Another staff member','endStaff')
+                +row({t:P.read?'Hide the consent wording':'Consent wording to read',d:P.read?'':'Read it to the owner, word for word',kind:'link',attrs:'data-end="read"'})
+                +(P.read&&window.fvConsent&&fvConsent.consentText?'<div class="es-text es-read"><span class="es-seg es-rl-seg" role="radiogroup" aria-label="Language">'+[['en','English'],['es','Español']].map(function(x){ var on=P.lang===x[0]; return '<button type="button" class="'+(on?'on':'')+'" role="radio" aria-checked="'+on+'" data-end-rl="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</span><p>'+esc(fvConsent.consentText(P.lang))+'</p></div>':'')
+                +'</div><datalist id="endStaff">'+staffNames().map(function(n){ return '<option value="'+esc(n)+'"></option>'; }).join('')+'</datalist>'
+                +'<div class="es-foot-note">Both witnesses hear the owner give consent. The time is recorded when you tap Record.</div>'; }
+            }
+          h+='</div>'; }
+        h+='<div class="es-sec"><div class="es-h" id="endAfterH">Aftercare</div><div class="es-group" role="radiogroup" aria-labelledby="endAfterH">';
+        AFTER.forEach(function(a){ h+=row({t:a[1],kind:'radio',on:d.aftercare===a[0],attrs:'data-end-after="'+a[0]+'"'}); });
+        h+='</div>'+(d.aftercare==='hold'?'<div class="es-foot-note">The family has up to 7 days to decide; after that a communal cremation is charged.</div>':'')+'</div>';
+        h+='<div class="es-sec"><div class="es-h">Keepsake</div><div class="es-group">'+row({t:'Clay paw print',kind:'switch',on:d.keepsakes.indexOf('clay')>-1,attrs:'data-end-keep="clay"'})+'</div>'
+          +(d.aftercare==='private'?'<div class="es-foot-note">Included with private cremation.</div>':'')+'</div>';
+      }
+      if(K) foot=(fields?'<button type="button" class="es-primary" data-end="go">'+esc(d.edit?'Save':K.go)+'</button>':(FO?'<button type="button" class="es-primary quiet" data-end="cancel">Done</button>':''));
+    }
+    h+='</div><footer class="es-foot"><div class="end-hint" id="endHint" role="alert" hidden></div>'+foot+'</footer></div>';
+    s.className='end-sheet open'+(s.classList.contains('shown')?' shown':''); s.innerHTML=h;
+    var b=s.querySelector('.es-body'); if(b) b.scrollTop=scroll;
+    if(fk){ var f=s.querySelector(fk); if(f){ f.focus({preventScroll:true}); if(caret&&f.setSelectionRange) try{ f.setSelectionRange(caret[0],caret[1]); }catch(_){} } }
+  }
+  function closeSheet(silent){ var s=document.getElementById('endSheet'); draft=null; if(s){ s.className='end-sheet'; s.innerHTML=''; }
+    var p=cur(); if(p) showLink(!isCompleted(p)); if(!silent){ var lf=(lastFocus&&lastFocus!==document.body&&document.contains(lastFocus)&&lastFocus.offsetParent!==null)?lastFocus:document.getElementById('dispOther'); if(lf&&lf.focus&&!lf.hidden) try{ lf.focus({preventScroll:true}); }catch(e){} } }
+  function hint(msg,sel){ var h=document.getElementById('endHint'); if(h){ h.textContent=msg; h.hidden=false; }
+    var f=sel&&document.querySelector('#endSheet '+sel); if(f){ f.focus(); f.classList.remove('end-nudge'); void f.offsetWidth; f.classList.add('end-nudge'); } }
+  function useForm(p){ var sf=signedForm(p); if(!sf||!draft) return; draft.type=draft.type||sf.kind; draft.aftercare=sf.care; draft.keepsakes=(sf.clay||sf.care==='private')?['clay']:[]; draft.used=true; }
+
+  function record(p){
+    var d=draft; if(!d||!d.type) return;
+    var SF=signedForm(p);
+    if(d.type==='euthanasia'&&!d.consent&&!SF&&!d.edit){ hint('Choose how the owner consented — the paper form or by phone — or send the form to reception.','[data-end-consent]'); return; }
+    if(d.type==='euthanasia'&&d.consent==='phone'&&!SF&&!d.edit){ var P=d.ph; P.who=String(P.who||'').trim(); P.w1=String(P.w1||'').trim(); P.w2=String(P.w2||'').trim();
+      if(!P.who){ hint('Add who gave consent on the phone.','[data-end-ph="who"]'); return; }
+      if(!P.w1){ hint('Add the first witness.','[data-end-ph="w1"]'); return; }
+      if(!P.w2){ hint('Add the second witness.','[data-end-ph="w2"]'); return; }
+      if(sameName(P.w1,P.w2)){ hint('The two witnesses need to be different people.','[data-end-ph="w2"]'); return; } }
+    if(!d.aftercare){ hint('Choose the aftercare — “Hold for instructions” is fine.','[data-end-after]'); return; }
+    if(d.edit) return saveEdit(p,d);
+    if(_dispBusy) return; if(isCompleted(p)){ closeSheet(true); showDispConflict(p); return; }
+    var K=KIND[d.type], now=new Date(), by=who(), conf=document.getElementById('dispConfirm'), acts=document.getElementById('dispActions');
+    closeSheet(true); _dispBusy=true; if(acts) acts.classList.add('mutation-locked');
+    conf.className='disp-confirm mounted';
+    conf.innerHTML='<div class="disp-terminal end-terminal" aria-live="polite"><span class="dc-ic" aria-hidden="true"><svg viewBox="0 0 24 24">'+K.ic+'</svg></span><span class="dc-body"><span class="dc-title">Recording…</span><span class="dc-desc">Saving to record</span></span></div>';
+    var snap=captureDispSnap(p), end={type:d.type,consent:d.type==='euthanasia'?(SF?{at:SF.signed_at,by:(SF.witness&&SF.witness.name)||by,via:'form',form:SF.id}:(d.consent==='phone'?{at:now.toISOString(),by:by,via:'phone',spoke_with:d.ph.who,witnesses:[d.ph.w1,d.ph.w2]}:{at:now.toISOString(),by:by,via:'paper'})):null,aftercare:d.aftercare,keepsakes:d.keepsakes.slice(),urn:(SF&&SF.care==='private'&&d.aftercare==='private'&&window.fvConsent)?fvConsent.urnLabel(SF.urn):null,form:SF?SF.id:null,at:now.toISOString(),by:by,edits:[]};
+    setTimeout(function(){
+      var failed=false;
+      try{ p.ending=end; completePatient(p,K.status);
+        var ev=p.timeline&&p.timeline[p.timeline.length-1];
+        if(ev) ev.meta=[ev.meta,summary(end,true),by].filter(Boolean).join(' · ');   /* meta stays staff-only: the tracker gets the label and time */
+      }catch(e){ failed=true; console.warn('[endings]',e); }
+      setTimeout(function(){
+        _dispBusy=false;
+        var bad=(typeof Backend!=='undefined'&&Backend&&Backend.conn==='error');
+        if(failed||bad){ restoreDispSnap(p,snap); try{ renderAll(); }catch(_){} if(activePatient===p.id) fillDrawer(p);
+          if(acts){ acts.classList.remove('mutation-locked'); acts.querySelectorAll('.disposition-card').forEach(function(c){ c.classList.remove('compress'); }); }
+          conf.className='disp-confirm mounted';
+          conf.innerHTML='<div class="disp-terminal" style="grid-template-columns:1fr" role="alert"><span class="dc-body"><span class="dc-title" style="color:rgba(232,152,146,.96)">Couldn’t record · Try again</span><span class="dc-desc">No patient state was changed</span></span></div>';
+          return; }
+        if(activePatient===p.id) fillDrawer(p);
+        showUndo(p,d.type,snap);
+      },360);
+    },430);
+  }
+  function saveEdit(p,d){
+    var e=p.ending||{type:d.type,consent:null,at:null,by:null,edits:[]};
+    var before=summary(e,false); e.aftercare=d.aftercare; e.keepsakes=d.keepsakes.slice(); e.type=e.type||d.type;
+    var after=summary(e,false); closeSheet();
+    if(after!==before){ e.edits=(e.edits||[]); e.edits.push({at:new Date().toISOString(),by:who(),what:before+' → '+after}); }
+    p.ending=e;
+    try{ renderAll(); }catch(_){}
+    if(activePatient===p.id) fillDrawer(p);
+    if(after!==before) try{ if(window.fvNotifyAct) fvNotifyAct('Ending details saved',esc(dispFirstName(p))+' · '+esc(after),'Print new tag',function(){ printTag(byId(p.id)); });
+      else notify('Ending details saved',esc(dispFirstName(p))+' · '+esc(after),{icon:'info',color:'#8A82A8'}); }catch(_){}
+  }
+  function dirty(){ var d=draft; return !!d&&!d.edit&&!!(d.consent||d.aftercare||d.keepsakes.length||d.ph.who||d.ph.w2); }
+
+  /* ---------- the body tag (4 × 6 in): who, and what happens to them, impossible to misread ---------- */
+  var BAND={private:{cls:'solid',t:'Private cremation',s:'Ashes come back to VCA Shoreline'},communal:{cls:'outline',t:'Communal cremation',s:'Ashes are not returned'},
+    release:{cls:'double',t:'Release to owner',s:'Do not send to Final Gift'},hold:{cls:'dashed',t:'Hold',s:''}};
+  function tagDay(d){ try{ return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }catch(e){ return ''; } }
+  function tagHtml(p){ var e=p&&p.ending; if(!e||!e.aftercare||!KIND[e.type]) return '';
+    var K=KIND[e.type], at=e.at?new Date(e.at):(p.completedAt?new Date(p.completedAt):new Date()), B=Object.assign({},BAND[e.aftercare]||{cls:'outline',t:label(AFTER,e.aftercare),s:''});
+    if(e.aftercare==='hold'){ var until=new Date(at.getTime()+7*864e5); B.t='Hold until '+tagDay(until); B.s='Then communal cremation, unless the family decides'; }
+    var full=[p.name,p.last].filter(Boolean).join(' ')||'Patient', pet=[p.species,p.breed,p.sex,p.weight?(String(p.weight)+(/[a-z]/i.test(String(p.weight))?'':' kg')):''].filter(Boolean).join(' · ');
+    var doc=(p.doctor&&p.doctor!=='unassigned')?p.doctor:'', time='';
+    try{ time=fmtTime(at); }catch(_){ time=''; }
+    var keep=(e.keepsakes||[]).map(function(k){ return label(KEEP,k); }).filter(Boolean);
+    var line=function(l,v){ return v?'<tr><td>'+l+'</td><td>'+esc(v)+'</td></tr>':''; };
+    return '<div class="et"><div class="et-top"><span>VCA Shoreline</span><b>'+esc(p.hid||'')+'</b></div>'
+      +'<div class="et-name">'+esc(full)+'</div><div class="et-pet">'+esc(pet)+'</div>'
+      +'<div class="et-band et-'+B.cls+'"><b>'+esc(B.t)+'</b>'+(B.s?'<span>'+esc(B.s)+'</span>':'')+'</div>'
+      +'<table class="et-t">'+line('Owner',p.owner)+line('Urn',e.urn||'')+line(K.done,(tagDay(at)+' · '+time).replace(/ · $/,''))+line('Doctor',doc)+line('Consent',e.type==='euthanasia'?consentLine(e.consent).replace(/^Consent (\w)/,function(_,c){ return c.toUpperCase(); }):'')+'</table>'
+      +(keep.length?'<div class="et-keep">'+keep.map(function(k){ return '<span><i></i>'+esc(k)+' made</span>'; }).join('')+'</div>':'')
+      +'<div class="et-sign"><span>Tagged by</span><span>Picked up by Final Gift · date</span></div>'
+      +'<div class="et-foot">Recorded by '+esc(e.by||'')+' · Pravix Flow</div></div>'; }
+  function printTag(p){ var h=tagHtml(p); if(!h) return false;
+    var w=document.getElementById('endTag'); if(!w){ w=document.createElement('div'); w.id='endTag'; document.body.appendChild(w); }
+    w.innerHTML=h; document.body.classList.add('end-tagging');
+    var done=function(){ document.body.classList.remove('end-tagging'); window.removeEventListener('afterprint',done); };
+    window.addEventListener('afterprint',done); setTimeout(function(){ try{ window.print(); }catch(e){} setTimeout(done,1500); },120); return true; }
+
+  /* ---------- clicks and keys ---------- */
+  document.addEventListener('click',function(ev){
+    var t=ev.target; if(!t||!t.closest) return;
+    if(t.closest('#dispOther')){ openSheet(cur(),null); return; }
+    if(t.closest('#dispConfirm [data-end="tag"]')){ var pt=cur(); if(pt) printTag(pt); return; }
+    if(t.closest('#dispConfirm [data-end="edit"]')){ var pe=cur(); if(pe) openSheet(pe,null,{edit:true}); return; }
+    var s=t.closest('#endSheet'); if(!s||!draft) return;
+    var p=byId(draft.pid); if(!p) return;
+    var a=t.closest('[data-end]'); if(a){ var w=a.dataset.end;
+      if(w==='cancel') closeSheet();
+      else if(w==='scrim'){ if(dirty()){ var pn=s.querySelector('.es-panel'); if(pn){ pn.classList.remove('end-nudge'); void pn.offsetWidth; pn.classList.add('end-nudge'); } } else closeSheet(); }
+      else if(w==='go') record(p);
+      else if(w==='read'){ draft.ph.read=!draft.ph.read; paintSheet(); var rd=s.querySelector('[data-end="read"]'); if(rd) rd.focus(); }
+      else if(w==='unmanual'){ draft.manual=false; draft.consent=false; paintSheet(); var sf=s.querySelector('[data-end="send"]'); if(sf) sf.focus(); }
+      else if(w==='manual'){ draft.manual=true; paintSheet(); var f=s.querySelector('[data-end-consent],[data-end-after]'); if(f) f.focus(); }
+      else if(w==='send'&&window.fvConsent){ fvConsent.send(p,draft.type,draft.fee); paintSheet(); }
+      else if(w==='cancel-form'&&window.fvConsent){ fvConsent.cancel(p); setTimeout(paintSheet,0); }
+      else if(w==='print-form'&&window.fvConsent) fvConsent.print(p);
+      else if(w==='use-form'){ useForm(p); paintSheet(); var g=document.querySelector('#endSheet [data-end="go"]'); if(g) g.focus(); }
+      return; }
+    var fe=t.closest('[data-end-fee]'); if(fe){ draft.fee=fe.dataset.endFee; paintSheet(); var fq=s.querySelector('[data-end-fee="'+draft.fee+'"]'); if(fq) fq.focus(); return; }
+    var k=t.closest('[data-end-kind]'); if(k){ draft.type=k.dataset.endKind; paintSheet(); var kf=s.querySelector('[data-end-kind="'+draft.type+'"]'); if(kf) kf.focus(); return; }
+    if(t.closest('[data-end-ph]')) return;
+    var rl=t.closest('[data-end-rl]'); if(rl){ draft.ph.lang=rl.dataset.endRl; paintSheet(); var rq=s.querySelector('[data-end-rl="'+draft.ph.lang+'"]'); if(rq) rq.focus(); return; }
+    var cn=t.closest('[data-end-consent]'); if(cn){ var cv=cn.dataset.endConsent==='phone'?'phone':'paper'; draft.consent=cv;
+      if(cv==='phone'){ if(!draft.ph.who) draft.ph.who=String(p.owner||'').trim(); if(!draft.ph.w1&&who()!=='Flow') draft.ph.w1=who(); }
+      paintSheet(); var nx=cv==='phone'?(s.querySelector('[data-end-ph="who"]:placeholder-shown')||s.querySelector('[data-end-ph="w1"]:placeholder-shown')||s.querySelector('[data-end-ph="w2"]:placeholder-shown')):null;
+      (nx||s.querySelector('[data-end-consent="'+cv+'"]')).focus(); return; }
+    var af=t.closest('[data-end-after]'); if(af){ draft.aftercare=af.dataset.endAfter; paintSheet(); var x=s.querySelector('[data-end-after="'+draft.aftercare+'"]'); if(x) x.focus(); return; }
+    var kp=t.closest('[data-end-keep]'); if(kp){ var v=kp.dataset.endKeep, i=draft.keepsakes.indexOf(v); if(i>-1) draft.keepsakes.splice(i,1); else draft.keepsakes.push(v); paintSheet(); var y=s.querySelector('[data-end-keep="'+v+'"]'); if(y) y.focus(); return; }
+  });
+  document.addEventListener('input',function(e){ var t=e.target; if(!draft||!t||!t.matches||!t.matches('#endSheet [data-end-ph]')) return; draft.ph[t.dataset.endPh]=t.value;
+    var h=document.getElementById('endHint'); if(h&&!h.hidden) h.hidden=true; });
+  document.addEventListener('keydown',function(e){ var t=e.target; if(!draft||e.key!=='Enter'||!t||!t.matches||!t.matches('#endSheet [data-end-ph]')) return; e.preventDefault();
+    var all=[].slice.call(document.querySelectorAll('#endSheet [data-end-ph]')), i=all.indexOf(t); if(i<all.length-1) all[i+1].focus(); else { var g=document.querySelector('#endSheet [data-end-after]'); if(g) g.focus(); } });
+  document.addEventListener('keydown',function(e){ if(!draft||!document.querySelector('#endSheet.open')) return;
+    if(e.key==='Escape'){ e.stopPropagation(); e.preventDefault(); closeSheet(); return; }
+    if(e.key==='Tab'){ var f=[].slice.call(document.querySelectorAll('#endSheet .es-panel button, #endSheet .es-panel a[href], #endSheet .es-panel input')).filter(function(x){ return x.offsetParent!==null; }); if(!f.length) return;
+      var i=f.indexOf(document.activeElement); if(e.shiftKey&&i<=0){ e.preventDefault(); f[f.length-1].focus(); } else if(!e.shiftKey&&i===f.length-1){ e.preventDefault(); f[0].focus(); } } },true);
+  /* closing the drawer closes its sheet */
+  if(typeof closeDrawer==='function'){ var cdrBase=closeDrawer; closeDrawer=function(){ if(draft) closeSheet(true); return cdrBase.apply(this,arguments); }; }
+  if(typeof openDispConfirm==='function'){ var odBase=openDispConfirm; openDispConfirm=function(){ if(draft) closeSheet(true); var r=odBase.apply(this,arguments); var c=document.getElementById('dispConfirm'); if(c&&c.querySelector('.confirmation')) showLink(false); return r; }; }
+  if(typeof closeDispConfirm==='function'){ var cdBase=closeDispConfirm; closeDispConfirm=function(){ var r=cdBase.apply(this,arguments); var p=cur(); if(p) showLink(!isCompleted(p)); return r; }; }
+
+  /* ---------- Completed Today › Euthanized: the same sheet, not a plain confirm ---------- */
+  document.addEventListener('drop',function(ev){
+    var z=ev.target&&ev.target.closest&&ev.target.closest('#czEuthanized'); if(!z) return;
+    var id=(typeof dragId!=='undefined')?dragId:null; if(!id) return;
+    ev.preventDefault(); ev.stopPropagation();
+    z.classList.remove('cz-over'); var bd=document.getElementById('board'); if(bd) bd.classList.remove('board-dim');
+    var p=PATIENTS.find(function(x){ return x.id===id; }); if(!p||isCompleted(p)) return;
+    try{ openDrawer(p.id); }catch(e){}
+    setTimeout(function(){ var q=cur(); if(q&&q.id===p.id) openSheet(q,'euthanasia'); },260);
+  },true);
+
+  /* ---------- Completed Today: the aftercare under the name ---------- */
+  if(typeof renderComplete==='function'){ var rcBase=renderComplete;
+    renderComplete=function(){ var r=rcBase.apply(this,arguments);
+      try{ var tEl=document.getElementById('czTotal'); if(tEl) tEl.textContent=String((+tEl.textContent||0)+completedTodayCount('Deceased'));
+        document.querySelectorAll('#czList .cz-item').forEach(function(n){ var p=PATIENTS.find(function(x){ return x.id===n.dataset.pid; });
+          if(!p||!p.ending) return; var s=n.querySelector('.cz-sub'); if(!s||s.querySelector('.cz-end')) return;
+          var a=p.ending.aftercare==='hold'?'Held for instructions':label(AFTER,p.ending.aftercare); if(a) s.insertAdjacentHTML('beforeend','<span class="cz-end"> · '+esc(a)+'</span>'); });
+      }catch(e){}
+      return r; }; }
+
+  try{ link(); }catch(e){}
+  window.fvEndings={open:function(p,t,o){ openSheet(p||cur(),t||null,o); },
+    /* from the "Form signed" notice: the drawer, then this sheet with the family's choices in, focused on Record */
+    openSigned:function(p){ if(!p) return; try{ if(activePatient!==p.id) openDrawer(p.id); }catch(e){}
+      setTimeout(function(){ var q=cur(); if(q&&q.id===p.id&&!isCompleted(q)){ var sf=signedForm(q); openSheet(q,sf?sf.kind:null,{useForm:!!sf}); } },260); },
+    summary:summary,consentLine:consentLine,tagHtml:tagHtml,printTag:function(p){ return printTag(p||cur()); },staffNames:staffNames,AFTER:AFTER,KEEP:KEEP,state:function(){ return draft; },close:function(){ closeSheet(); },
+    repaint:function(){ var p=cur(); if(draft) paintSheet(); else if(p) showLink(!isCompleted(p)); }};
+})();
+</script>
+<style>
+/* Endings n120 — quiet, calm, never cheerful (choice-cards rule for sad outcomes) */
+.disp-other{align-self:center;display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 10px;margin-top:-2px;border:0;border-radius:9px;background:transparent;
+  color:rgba(150,171,191,.78);font:inherit;font-size:12.5px;font-weight:550;letter-spacing:-.005em;cursor:pointer;transition:color .16s ease,background .16s ease;}
+.disp-other svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.7;}
+.disp-other:hover{color:rgba(220,229,239,.95);background:rgba(255,255,255,.04);}
+.disp-other:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,177,201,.16);}
+.disp-other[hidden]{display:none;}
+.disp-other.has-form{color:#a79fc4;}
+@media (pointer:coarse){ .disp-other{min-height:44px;} }
+/* the drawer card, extra pieces (fv-dc): choice ring, right-hand note (price), wrapping description, arrow motion */
+.fv-dc{width:100%;}
+.fv-dc .dc-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.fv-dc .dc-aside{font-weight:600;font-variant-numeric:tabular-nums;color:rgba(190,204,218,.92);white-space:nowrap;}
+.fv-dc.dc-wrap{align-items:start;padding-top:13px;padding-bottom:13px;}
+.fv-dc.dc-wrap .dc-ic{margin-top:-6px;}
+.fv-dc.dc-wrap .dc-desc{white-space:normal;overflow:visible;line-height:1.4;}
+.fv-dc .dc-mark{width:20px;height:20px;border-radius:10px;border:1.5px solid rgba(150,171,191,.45);display:grid;place-items:center;transition:background .16s ease,border-color .16s ease;}
+.fv-dc .dc-mark.sq{border-radius:6px;}
+.fv-dc.dc-wrap .dc-mark{margin-top:2px;}
+.fv-dc.is-on{border-color:rgba(154,147,184,.62);}
+.fv-dc.is-on .dc-ic{color:#a79fc4;}
+.fv-dc.is-on .dc-mark{border-color:#9a93b8;background:#8A82A8;}
+.fv-dc.is-on .dc-mark::after{content:'';width:8px;height:4.5px;border:2px solid #fff;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg);}
+.fv-dc:hover .dc-arrow.dc-out svg{animation:dischargeArrowOut 400ms cubic-bezier(.2,.8,.2,1) 70ms both;}
+.fv-dc:hover .dc-arrow.dc-in svg{animation:admitArrowIn 400ms cubic-bezier(.2,.8,.2,1) 70ms both;}
+.fv-dc:hover .dc-arrow.dc-next svg{animation:fvDcNext 400ms cubic-bezier(.2,.8,.2,1) 70ms both;}
+.fv-dc:hover .dc-arrow.dc-back svg{animation:fvDcBack 400ms cubic-bezier(.2,.8,.2,1) 70ms both;}
+@keyframes fvDcNext{0%{transform:translateX(-3px);opacity:.42}62%{transform:translateX(3px);opacity:1}100%{transform:translateX(2px);opacity:1}}
+@keyframes fvDcBack{0%{transform:translateX(3px);opacity:.42}62%{transform:translateX(-3px);opacity:1}100%{transform:translateX(-2px);opacity:1}}
+body:not(.dark) .fv-dc .dc-aside{color:var(--ink-700);}
+body:not(.dark) .fv-dc .dc-mark{border-color:rgba(75,85,99,.35);}
+body:not(.dark) .fv-dc.is-on{border-color:rgba(110,103,136,.55);}
+body:not(.dark) .fv-dc.is-on .dc-ic{color:#6E6788;}
+body:not(.dark) .fv-dc.is-on .dc-mark{border-color:#6E6788;background:#6E6788;}
+/* the sheet: a centered sheet on a desk, a bottom sheet on iPad / phone; inset grouped sections like iOS Settings */
+.end-sheet{display:none;}
+.end-sheet.open{display:block;position:fixed;inset:0;z-index:9700;}
+.es-scrim{position:absolute;inset:0;background:rgba(4,8,16,.52);opacity:0;transition:opacity .24s ease;}
+.end-sheet.shown .es-scrim{opacity:1;}
+.es-panel{position:absolute;left:50%;top:50%;width:min(540px,calc(100vw - 32px));max-height:min(88vh,860px);display:flex;flex-direction:column;
+  transform:translate(-50%,-46%) scale(.985);opacity:0;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .2s ease;
+  border-radius:22px;background:#111a28;border:1px solid rgba(255,255,255,.08);box-shadow:0 30px 80px rgba(0,0,0,.45);overflow:hidden;color:rgba(235,240,246,.96);}
+.end-sheet.shown .es-panel{transform:translate(-50%,-50%) scale(1);opacity:1;}
+.es-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);}
+.es-bar h2{margin:0;font-size:16px;font-weight:650;letter-spacing:-.015em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.es-cancel{justify-self:start;min-height:36px;padding:0 6px;border:0;background:transparent;color:#a79fc4;font:inherit;font-size:15px;font-weight:500;cursor:pointer;}
+.es-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:6px 16px 10px;overscroll-behavior:contain;}
+.es-sec{margin-top:16px;}
+.es-h{font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:rgba(150,171,191,.75);margin:0 4px 7px;}
+.es-sec .end-kinds{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.es-group{border-radius:14px;background:rgba(255,255,255,.045);overflow:hidden;}
+.es-group+.es-group{margin-top:10px;}
+.es-text{padding:13px 14px;font-size:13.5px;line-height:1.45;color:rgba(214,224,235,.92);}
+.es-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:46px;padding:10px 14px;border:0;border-top:1px solid rgba(255,255,255,.06);background:transparent;color:inherit;font:inherit;font-size:14.5px;text-align:left;cursor:pointer;}
+.es-group>.es-row:first-child,.es-group>.es-cardrow:first-child+.es-row{border-top:0;}
+.es-row:hover:not(.es-static){background:rgba(255,255,255,.04);}
+.es-row.es-static{cursor:default;}
+.es-row.danger{color:#E8928A;}
+.es-rl{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.es-rd{font-size:12px;color:rgba(150,171,191,.8);}
+.es-check{width:16px;height:16px;flex:0 0 16px;}
+.es-row.on .es-check::after{content:'';display:block;width:11px;height:6px;margin:3px 0 0 2px;border:2.2px solid #a79fc4;border-top:0;border-right:0;transform:rotate(-45deg);}
+.es-switch{position:relative;width:46px;height:28px;flex:0 0 46px;border-radius:14px;background:rgba(255,255,255,.16);transition:background .2s ease;}
+.es-switch span{position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:12px;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .22s cubic-bezier(.2,.8,.2,1);}
+.es-row.on .es-switch{background:#8A82A8;} .es-row.on .es-switch span{transform:translateX(18px);}
+.es-chev svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.5;}
+.es-seg{display:inline-flex;padding:2px;border-radius:10px;background:rgba(255,255,255,.08);}
+.es-seg button{min-height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:550;cursor:pointer;}
+.es-seg button.on{background:rgba(255,255,255,.16);box-shadow:0 1px 3px rgba(0,0,0,.25);font-weight:650;}
+.es-cardrow{padding:8px;}
+.es-foot-note{font-size:12.5px;line-height:1.45;color:rgba(150,171,191,.82);margin:7px 4px 0;}
+.es-foot{display:flex;flex-direction:column;gap:8px;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.06);}
+.es-foot:empty,.es-foot:has(> .end-hint[hidden]:only-child){display:none;}
+.es-primary{display:flex;align-items:center;justify-content:center;min-height:50px;border:0;border-radius:14px;background:#8A82A8;color:#fff;font:inherit;font-size:16px;font-weight:650;letter-spacing:-.01em;cursor:pointer;text-decoration:none;}
+.es-primary:hover{filter:brightness(1.06);}
+.es-primary.quiet{background:rgba(255,255,255,.10);color:inherit;}
+.es-panel button:focus-visible,.es-panel a:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,177,201,.30);}
+.es-row:focus-visible{box-shadow:inset 0 0 0 2px rgba(59,177,201,.45)!important;}
+.end-hint{font-size:12.5px;font-weight:550;color:#d9a35a;}
+.end-hint[hidden]{display:none;}
+.end-nudge{animation:endNudge .36s ease;}
+@keyframes endNudge{0%,100%{translate:0}30%{translate:-4px}65%{translate:4px}}
+/* the progress line (Sent → With the family → Signed), also in the queue */
+.cf-prog{display:flex;align-items:flex-start;gap:0;list-style:none;margin:0;padding:2px 0;}
+.cf-prog li{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:5px;position:relative;font-size:12px;font-weight:600;color:rgba(150,171,191,.7);}
+.cf-prog li::before{content:'';width:10px;height:10px;border-radius:5px;border:2px solid rgba(150,171,191,.4);background:transparent;z-index:1;}
+.cf-prog li:not(:last-child)::after{content:'';position:absolute;top:5px;left:12px;right:2px;height:2px;border-radius:1px;background:rgba(150,171,191,.22);}
+.cf-prog li.done{color:rgba(225,232,240,.95);} .cf-prog li.done::before{background:#8A82A8;border-color:#8A82A8;} .cf-prog li.done:not(:last-child)::after{background:#8A82A8;}
+.cf-prog li.now{color:rgba(240,244,248,.98);} .cf-prog li.now::before{border-color:#a79fc4;box-shadow:0 0 0 4px rgba(138,130,168,.2);}
+.cf-prog li small{font-weight:500;font-size:11px;opacity:.8;}
+@media (max-width:820px){
+  .es-panel{left:0;right:0;top:auto;bottom:0;width:100%;max-height:92vh;border-radius:22px 22px 0 0;transform:translateY(100%);}
+  .end-sheet.shown .es-panel{transform:translateY(0);}
+  .es-panel::before{content:'';display:block;width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.22);margin:8px auto 0;}
+}
+@media (pointer:coarse){ .es-row{min-height:52px;} .es-seg button{min-height:36px;} }
+body:not(.dark) .es-panel{background:#F2F4F8;color:var(--ink-900);border-color:rgba(30,45,90,.08);box-shadow:0 30px 80px rgba(17,24,39,.22);}
+body:not(.dark) .es-bar,body:not(.dark) .es-foot{border-color:rgba(30,45,90,.08);background:rgba(255,255,255,.7);}
+body:not(.dark) .es-cancel{color:#5d5679;}
+body:not(.dark) .es-h,body:not(.dark) .es-foot-note,body:not(.dark) .es-rd{color:#6b7280;}
+body:not(.dark) .es-group{background:#fff;}
+body:not(.dark) .es-text{color:#3b4250;}
+body:not(.dark) .es-row{border-top-color:rgba(30,45,90,.07);}
+body:not(.dark) .es-row:hover:not(.es-static){background:#F7F8FB;}
+body:not(.dark) .es-row.danger{color:#B4382E;}
+body:not(.dark) .es-row.on .es-check::after{border-color:#5d5679;}
+body:not(.dark) .es-switch{background:rgba(120,120,128,.20);} body:not(.dark) .es-row.on .es-switch{background:#6E6788;}
+body:not(.dark) .es-seg{background:rgba(118,118,128,.12);} body:not(.dark) .es-seg button.on{background:#fff;box-shadow:0 1px 3px rgba(17,24,39,.14);}
+body:not(.dark) .es-primary{background:#6E6788;}
+body:not(.dark) .es-primary.quiet{background:rgba(118,118,128,.14);color:var(--ink-900);}
+body:not(.dark) .es-panel .end-kinds .fv-dc{background:#fff;}
+body:not(.dark) .end-hint{color:#9A5B12;}
+body:not(.dark) .es-panel::before{background:rgba(0,0,0,.18);}
+body:not(.dark) .cf-prog li{color:#9aa1ad;} body:not(.dark) .cf-prog li.done,body:not(.dark) .cf-prog li.now{color:#18191F;}
+body:not(.dark) .cf-prog li::before{border-color:#c4c9d2;} body:not(.dark) .cf-prog li:not(:last-child)::after{background:#e1e5ec;}
+body:not(.dark) .cf-prog li.done::before{background:#6E6788;border-color:#6E6788;} body:not(.dark) .cf-prog li.done:not(:last-child)::after{background:#6E6788;}
+@media (prefers-reduced-motion:reduce){ .es-panel,.es-scrim,.es-switch,.es-switch span{transition:none;} .end-nudge{animation:none;} .fv-dc:hover .dc-arrow svg{animation:none;} }
+/* the ended state in the drawer */
+.end-terminal{grid-template-columns:38px 1fr auto;}
+.end-terminal .dc-ic{color:#9a93b8;}
+.end-terminal .end-when{font-size:11.5px;font-weight:550;color:rgba(150,171,191,.7);margin-left:4px;}
+.end-terminal .end-consent-line{margin-top:1px;}
+.end-edit{align-self:center;min-height:30px;padding:0 10px;border:1px solid rgba(255,255,255,.10);border-radius:9px;background:rgba(255,255,255,.04);color:rgba(220,229,239,.9);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;}
+.end-edit:hover{background:rgba(255,255,255,.08);}
+.end-acts{display:flex;flex-direction:column;gap:6px;align-self:center;} .end-acts .end-edit{white-space:nowrap;}
+/* phone consent: the inline fields */
+.es-field{cursor:text;gap:14px;}
+.es-fl{flex:0 0 auto;white-space:nowrap;font-size:14.5px;color:inherit;}
+.es-field input::-webkit-calendar-picker-indicator{display:none !important;opacity:0;}
+.es-field input{flex:1;min-width:0;height:30px;border:0;outline:0;background:transparent;color:inherit;font:inherit;font-size:14.5px;text-align:right;padding:0;}
+.es-field input::placeholder{color:rgba(150,171,191,.55);}
+.es-field:focus-within{background:rgba(255,255,255,.04);}
+.es-read{border-top:1px solid rgba(255,255,255,.06);} .es-read p{margin:10px 0 0;font-size:14px;line-height:1.55;}
+body:not(.dark) .es-field input::placeholder{color:#9aa1ad;} body:not(.dark) .es-field:focus-within{background:#F7F8FB;} body:not(.dark) .es-read{border-top-color:rgba(30,45,90,.07);}
+/* the body tag — printed, 4 × 6 in */
+#endTag{display:none;}
+@page endtag{size:4in 6in;margin:0.18in;}
+@media print{
+  body.end-tagging > *:not(#endTag){display:none !important;}
+  body.end-tagging #endTag{display:block !important;page:endtag;}
+}
+.et{font-family:Arial,Helvetica,sans-serif;color:#000;width:3.64in;margin:0 auto;font-size:10.5pt;line-height:1.3;}
+.et-top{display:flex;justify-content:space-between;align-items:baseline;font-size:9pt;text-transform:uppercase;letter-spacing:.06em;border-bottom:1.5pt solid #000;padding-bottom:4pt;}
+.et-top b{font-size:12pt;letter-spacing:.02em;}
+.et-name{font-size:30pt;font-weight:800;line-height:1.05;margin-top:8pt;letter-spacing:-.01em;word-break:break-word;}
+.et-pet{font-size:10.5pt;margin-top:2pt;}
+.et-band{margin:10pt 0 8pt;padding:8pt 10pt;border-radius:4pt;display:flex;flex-direction:column;gap:2pt;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.et-band b{font-size:17pt;font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:1.1;}
+.et-band span{font-size:9.5pt;}
+.et-solid{background:#000;color:#fff;} .et-outline{border:3pt solid #000;} .et-double{border:5pt double #000;} .et-dashed{border:3pt dashed #000;}
+.et-t{width:100%;border-collapse:collapse;font-size:10.5pt;} .et-t td{padding:2.5pt 0;vertical-align:top;border-bottom:.5pt solid #bbb;} .et-t td:first-child{width:0.85in;font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;color:#333;padding-top:4pt;}
+.et-keep{margin-top:7pt;font-size:10.5pt;} .et-keep span{display:flex;align-items:center;gap:6pt;} .et-keep i{display:inline-block;width:10pt;height:10pt;border:1.2pt solid #000;}
+.et-sign{display:grid;grid-template-columns:1fr 1fr;gap:12pt;margin-top:22pt;font-size:8pt;color:#333;} .et-sign span{border-top:.8pt solid #000;padding-top:3pt;}
+.et-foot{margin-top:8pt;font-size:7.5pt;color:#555;}
+.cz-end{color:inherit;opacity:.9;}
+body:not(.dark) .disp-other{color:var(--ink-400);}
+body:not(.dark) .disp-other:hover{color:var(--ink-800);background:var(--fill-soft);}
+body:not(.dark) .disp-other.has-form{color:#5d5679;}
+body:not(.dark) .end-edit{border-color:var(--glass-hairline);background:var(--fill-soft);color:var(--ink-800);}
+body:not(.dark) .end-terminal .dc-ic{color:#6E6788;}
+body:not(.dark) .end-terminal .end-when{color:var(--ink-400);}
+/* phones: the drawer is full width, so the + button sat on the Disposition cards — hide it while the drawer is open */
+@media (max-width:820px){ body:has(#drawer.open) .fab-add{opacity:0;pointer-events:none;visibility:hidden;} }
+/* Deceased pills = the Euthanized pills */
+.pill.st-deceased{--sp-accent:#8A82A8;--sp-bg:rgba(138,130,168,.05);--sp-border:rgba(138,130,168,.12);--sp-hbg:rgba(138,130,168,.08);--sp-hborder:rgba(138,130,168,.20);}
+.pill.st-deceased{height:32px;padding:0 10px;gap:7px;border-radius:10px;font-size:14px;font-weight:600;letter-spacing:-.015em;color:#DCE5EF;background:var(--sp-bg);border:1px solid var(--sp-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.018);transition:none;}
+.pill.st-deceased .d{width:7px;height:7px;flex:0 0 7px;background:var(--sp-accent);opacity:.92;box-shadow:none;transition:none;}
+.pill.st-deceased:hover{transform:none;background:var(--sp-hbg);border-color:var(--sp-hborder);box-shadow:inset 0 1px 0 rgba(255,255,255,.028);}
+.pill.st-deceased:hover .d{opacity:1;}
+.pill.st-deceased:active{transform:translateY(0) scale(.985);box-shadow:0 2px 5px rgba(0,0,0,.07),inset 0 1px 2px rgba(0,0,0,.06);}
+body:not(.dark) .pill.st-deceased{color:#4B5563;box-shadow:none;}
+body:not(.dark) .pill.st-deceased{--sp-accent:#6E6788;--sp-bg:rgba(110,103,136,.095);--sp-border:rgba(110,103,136,.18);--sp-hbg:rgba(110,103,136,.09);--sp-hborder:rgba(110,103,136,.26);}
+body:not(.dark) .pill.st-deceased:hover{box-shadow:0 3px 8px rgba(17,24,39,.07),inset 0 1px 0 rgba(255,255,255,.82);}
+.st-deceased{color:#8A82A8;background:rgba(138,130,168,.16);border-color:rgba(138,130,168,.24);box-shadow:0 2px 12px -3px rgba(138,130,168,.35);}
+.st-deceased:hover{box-shadow:0 5px 16px -3px rgba(138,130,168,.5);border-color:rgba(138,130,168,.4);}
+</style>
+
+<script>
+/* ===== AFTERCARE FORMS n120 (Oct 12 2026) — the euthanasia / aftercare form on the reception iPad =====
+   Daniel: "clicking on Euthanasia adds them to a queue where reception goes in with an iPad to fill our version of this form"
+   (VCA Shoreline × Final Gift "Pet aftercare services and memorial center" + euthanasia consent). Choices: a Flow tab + family
+   mode; drawn signatures + a printable copy; prices shown (kept in ts_settings/aftercare_prices, never in this public code);
+   when signed, Flow tells the doctor. Then (Oct 12, "Do all of those"), Apple-style:
+   · Family mode: a navigation bar (‹ Back · progress dots · English | Español · Staff), one filled primary button pinned at the
+     bottom, "For Rosie" as the first title, a soft slide between screens (none under Reduce Motion).
+       1 About you · 2 Care of Rosie (choices = Flow's drawer cards; the urn is a photo carousel) · 3 Review (each line with
+       Change) · 4 Consent and signature (a pad with a baseline and ×, finger or Apple Pencil, the line follows the hand)
+       → "Thank you" → the staff member in the room signs as witness → saved.
+   · Español: every family-facing line, the care descriptions and the consent wording; the signed language is kept and the
+     printed copy shows the consent as signed (plus the English wording for the record).
+   · Flow › Consent forms: longest wait first, the wait shown on each card, the progress line (Sent → With the family → Signed),
+     Cancel with Undo. Staff always go into the room with the iPad (Daniel, Oct 12), so there's no Guided Access tip.
+   · Signed: every staff Flow screen gets a notice with "Record euthanasia" (opens the ending with the family's choices in).
+   · Staff only: consent_form lives on the visit (staff rules); never in pub (tracker), lobby or Grid's field masks.
+   · Urn pictures: placeholders until Daniel adds the photos (URN_IMG below, e.g. assets/img/urns/trail.jpg). */
+(function(){
+  if(typeof switchView!=='function'||typeof completePatient!=='function') return;
+  var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search);
+  var VER='vca-shoreline-finalgift-2026-10';
+  var URNS=[['scatter','Blue scattering tube with paw prints'],['carved','Carved wood'],['cedar','Cedar memorial'],['serenity','Serenity photo'],['tin','Paw print tin'],['pouch','Satin pouch'],['trail','Trail to Heaven']];
+  var URN_IMG={};   /* key → image path, filled in when the photos arrive; until then a quiet placeholder */
+  var PRICE_KEYS=[['euth_outpatient','Euthanasia · outpatient'],['euth_consult','Euthanasia · with consult'],['communal','Communal cremation'],
+    ['communal_clay','Communal cremation with clay paw print'],['private_clay','Private cremation with clay paw print'],['clay_only','Clay paw print only']];
+  var CONSENT={en:'I, the undersigned, certify that I am the owner or the duly authorized agent of the pet described above, that I am 18 years of age or older, and I give VCA Shoreline, its agents, servants and representatives full and complete authority to humanely euthanize the said pet, and release the veterinary facility and its employees from any and all liability for so euthanizing the said pet. I also certify that, to the best of my knowledge, the said pet has not bitten any person or animal during the last 15 days and has not been exposed to rabies.',
+    es:'Yo, la persona que firma, certifico que soy el dueño o el representante debidamente autorizado de la mascota descrita arriba, que tengo 18 años de edad o más, y otorgo a VCA Shoreline, a sus agentes, empleados y representantes plena y total autoridad para practicar la eutanasia de forma humanitaria a dicha mascota, y libero al centro veterinario y a sus empleados de toda responsabilidad por dicha eutanasia. También certifico que, a mi leal saber, dicha mascota no ha mordido a ninguna persona ni animal durante los últimos 15 días y no ha estado expuesta a la rabia.'};
+  /* family-facing words: English and Spanish ({pet} and {date} are filled in) */
+  var T={
+    org2:['Pet aftercare with Final Gift','Cuidado posterior de mascotas con Final Gift'],
+    back:['Back','Atrás'], staff:['Staff','Personal'],
+    s1:['About you','Sus datos'], s2:['Care of {pet}','Cuidado de {pet}'], s3:['Review','Revisión'], s4c:['Consent','Consentimiento'], s4d:['Sign','Firma'],
+    for:['For {pet}','Para {pet}'],
+    lead1:['We’re so sorry. This tells us how you’d like us to care for {pet}. Take all the time you need, and ask us anything.','Lo sentimos mucho. Aquí nos indica cómo desea que cuidemos de {pet}. Tómese todo el tiempo que necesite y pregúntenos lo que quiera.'],
+    name:['Your full name','Su nombre completo'], addr:['Street address','Dirección'], city:['City','Ciudad'], state:['State','Estado'], zip:['ZIP','Código postal'],
+    petname:['Pet’s name','Nombre de la mascota'], dogcat:['Dog or cat','Perro o gato'], Dog:['Dog','Perro'], Cat:['Cat','Gato'], Other:['Other','Otro'],
+    care:['Care of {pet}’s body','El cuidado del cuerpo de {pet}'], one:['Choose one.','Elija una opción.'],
+    private_t:['Private cremation','Cremación privada'], private_d:['{pet} is cremated individually. The ashes come back to the hospital in the urn you choose, with a clay paw print, to be reunited with you and your family.','{pet} se crema de forma individual. Las cenizas regresan al hospital en la urna que usted elija, con una huella de su patita en arcilla, para volver con usted y su familia.'],
+    communal_t:['Communal cremation','Cremación comunitaria'], communal_d:['{pet} is cremated together with other pets, with care and dignity. The ashes are not returned.','{pet} se crema junto con otras mascotas, con cuidado y dignidad. Las cenizas no se devuelven.'],
+    release_t:['Take {pet} home','Llevar a {pet} a casa'], release_d:['We release {pet} to you for burial or other arrangements. Local laws apply.','Le entregamos a {pet} para el entierro u otros arreglos. Se aplican las leyes locales.'],
+    hold_t:['Decide later','Decidir más tarde'], hold_d:['We can care for {pet} while you decide, for up to 7 days.','Podemos cuidar de {pet} mientras decide, hasta por 7 días.'],
+    hold_n:['If we haven’t heard from you by {date}, {pet} will be communally cremated and you’ll be charged for it.','Si no sabemos de usted antes del {date}, se hará una cremación comunitaria de {pet} y se le cobrará.'],
+    urn:['Choose an urn','Elija una urna'], urn1:['one is included','una está incluida'], incl:['Includes a clay paw print.','Incluye una huella de la patita en arcilla.'], photo:['Photo soon','Foto pronto'],
+    clay:['Add a clay paw print','Añadir una huella de la patita en arcilla'], clay_d:['A keepsake of {pet}’s paw','Un recuerdo de la patita de {pet}'],
+    review:['Please review','Revise sus opciones'], review_l:['Make sure everything is right. You can change anything.','Asegúrese de que todo esté bien. Puede cambiar lo que quiera.'],
+    r_you:['You','Usted'], r_pet:['Pet','Mascota'], r_care:['Care','Cuidado'], r_urn:['Urn','Urna'], r_keep:['Keepsake','Recuerdo'], r_clay:['Clay paw print','Huella de la patita en arcilla'], r_none:['None','Ninguno'],
+    change:['Change','Cambiar'], fees:['Fees','Costos'], totalw:['Total','Total'],
+    hold_fee:['Communal cremation is charged if we haven’t heard from you within 7 days.','Si no sabemos de usted en 7 días, se cobrará la cremación comunitaria.'],
+    consent_t:['Euthanasia consent','Consentimiento para la eutanasia'], sign_t:['Please sign','Por favor, firme'],
+    sign_l:['Signing confirms {pet}’s care as you chose it.','Al firmar, confirma el cuidado de {pet} tal como lo eligió.'],
+    signhere:['Sign with your finger or Apple Pencil','Firme con el dedo o con el Apple Pencil'], clear:['Clear','Borrar'],
+    thanks:['Thank you','Gracias'], handback:['We’ll take good care of {pet}.','Cuidaremos muy bien de {pet}.'],
+    cont:['Continue','Continuar'], toreview:['Review','Revisar'], tosign:['Continue to sign','Continuar para firmar'], signbtn:['Sign','Firmar'],
+    e_name:['Please add your full name.','Por favor, escriba su nombre completo.'], e_addr:['Please add your address, so we can reach you about {pet}.','Por favor, escriba su dirección para poder comunicarnos con usted sobre {pet}.'],
+    e_one:['Please choose one option.','Por favor, elija una opción.'], e_urn:['Please choose an urn.','Por favor, elija una urna.'], e_sname:['Please type your full name.','Por favor, escriba su nombre completo.'], e_sig:['Please sign in the box.','Por favor, firme en el recuadro.'],
+    euth_outpatient:['Euthanasia · outpatient','Eutanasia · ambulatoria'], euth_consult:['Euthanasia · with consult','Eutanasia · con consulta'], communal:['Communal cremation','Cremación comunitaria'],
+    communal_clay:['Communal cremation with clay paw print','Cremación comunitaria con huella en arcilla'], private_clay:['Private cremation with clay paw print','Cremación privada con huella en arcilla'], clay_only:['Clay paw print only','Solo huella en arcilla']
+  };
+  var PRICES=null, open=null, lang='en';
+  function L(k,v){ var r=(T[k]||[k,k])[lang==='es'?1:0]; v=v||{}; return r.replace(/\{(\w+)\}/g,function(_,n){ return v[n]!=null?v[n]:''; }); }
+  /* the drawer card (endings_n120 fvDCard) for every next-step choice here; a plain button if that module isn't there */
+  function DC(o){ if(window.fvDCard) return fvDCard(o); return '<button type="button" class="cf-btn go '+(o.cls||'')+'" '+(o.attrs||'')+'>'+o.title+'</button>'; }
+  var IC={ipad:'<rect x="6" y="3" width="12" height="18" rx="2.5"/><path d="M11 18h2"/>',print:'<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/>',
+    private:'<path d="M9 3h6M10 3v3c-2.5 1-4 3.4-4 6.5C6 17 8.5 21 12 21s6-4 6-8.5c0-3.1-1.5-5.5-4-6.5V3"/>',communal:'<circle cx="9" cy="12" r="4.5"/><circle cx="15" cy="12" r="4.5"/>',
+    release:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>',hold:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    paw:'<circle cx="7.5" cy="10" r="1.7"/><circle cx="10.8" cy="6.6" r="1.7"/><circle cx="14.8" cy="6.9" r="1.7"/><circle cx="17.8" cy="10.6" r="1.7"/><path d="M8.6 17.4c0-2.8 2-5 4.3-5s4.2 2.2 4.2 4.6c0 1.6-1.3 2.4-2.6 2-1-.3-1.6-.4-2-.4s-1.2.1-2 .4c-1.2.4-1.9-.3-1.9-1.6z"/>'};
+  var CHEVL='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function who(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Staff'; }catch(e){ return 'Staff'; } }
+  function uid(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.uid)||null; }catch(e){ return null; } }
+  function email(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.email)||''; }catch(e){ return ''; } }
+  function isAdmin(){ var e=email().toLowerCase(); try{ if(typeof isAdminUser==='function'&&isAdminUser(e)) return true; }catch(_){} return e==='daniel.giordano@pravix.app'; }
+  function pet(p){ return (p&&p.name)?String(p.name).split(' ')[0]:'your pet'; }
+  function byId(id){ try{ return PATIENTS.find(function(x){ return String(x.id)===String(id); })||null; }catch(e){ return null; } }
+  function money(n){ return (typeof n==='number'&&isFinite(n))?'$'+n.toFixed(2):''; }
+  function hm(iso){ try{ return fmtTime(new Date(iso)); }catch(e){ return ''; } }
+  function mins(iso){ return Math.max(0,Math.round((Date.now()-new Date(iso))/60000)); }
+  function dur(m){ return m<1?'just now':m<60?m+' min':Math.floor(m/60)+' h '+(m%60?(m%60)+' min':''); }
+  function day(d,l){ try{ return d.toLocaleDateString(l==='es'?'es-US':'en-US',{weekday:'long',month:'long',day:'numeric'}); }catch(e){ return ''; } }
+  function today(iso){ try{ return isTodayHosp(new Date(iso)); }catch(e){ return new Date(iso).toDateString()===new Date().toDateString(); } }
+  function species(p){ var s=String(p&&p.species||'').toLowerCase(); return /canine|dog/.test(s)?'Dog':/feline|cat/.test(s)?'Cat':(p&&p.species)||''; }
+  function careLabel(k){ return ({private:'Private cremation',communal:'Communal cremation',release:'Release remains (take home)',hold:'Hold for further instructions'})[k]||''; }
+  function urnLabel(k){ var u=URNS.filter(function(x){ return x[0]===k; })[0]; return u?u[1]:''; }
+  function price(k){ var it=PRICES&&PRICES.items&&PRICES.items[k]; return it&&typeof it.amount==='number'?it:null; }
+  /* the fee lines for a form: [{k,label,code,amount}] (labels in English for the staff copy) */
+  function lines(f){ var L2=[], add=function(k){ var it=price(k), lab=(PRICE_KEYS.filter(function(x){ return x[0]===k; })[0]||[])[1]; L2.push({k:k,label:lab||k,code:it?it.code||'':'',amount:it?it.amount:null}); };
+    if(f.kind==='euthanasia') add(f.fee==='consult'?'euth_consult':'euth_outpatient');
+    if(f.care==='private') add('private_clay');
+    else if(f.care==='communal') add(f.clay?'communal_clay':'communal');
+    else if(f.care==='release'&&f.clay) add('clay_only');
+    return L2; }
+  function total(L2){ var t=0, ok=true; L2.forEach(function(l){ if(typeof l.amount==='number') t+=l.amount; else ok=false; }); return ok?Math.round(t*100)/100:null; }
+  function summary(f){ if(!f) return ''; var b=[careLabel(f.care)]; if(f.care==='private'&&f.urn) b.push(urnLabel(f.urn)+' urn'); if(f.clay||f.care==='private') b.push('clay paw print'); return b.filter(Boolean).join(' · '); }
+  function active(f){ return !!f&&(f.status==='requested'||f.status==='family'); }
+  /* the progress line, for the drawer's sheet and the queue */
+  function progress(f){ if(!f) return ''; var st=f.status, S=[['Sent',f.requested&&f.requested.at],['With the family',f.family_at],['Signed',f.signed_at]], at=st==='requested'?0:st==='family'?1:st==='signed'?2:-1;
+    return '<ol class="cf-prog" aria-label="Form progress">'+S.map(function(x,i){ var c=i<at||(i===at&&st==='signed')?'done':i===at?'now':''; if(i===0&&at>0) c='done';
+      return '<li class="'+c+'"'+(i===at?' aria-current="step"':'')+'>'+x[0]+(x[1]&&(c==='done'||c==='now')?'<small>'+esc(hm(x[1]))+'</small>':'')+'</li>'; }).join('')+'</ol>'; }
+
+  /* ---------- prices: ts_settings/aftercare_prices (staff read, admin write — no rules change) ---------- */
+  function loadPrices(){ try{ if(typeof DB==='undefined'||!DB) return; var ref=DB.collection('ts_settings').doc('aftercare_prices');
+    ref.get().then(function(s){ if(s&&s.exists) { PRICES=s.data()||null; repaint(); } }).catch(function(){});
+    if(ref.onSnapshot) ref.onSnapshot(function(s){ if(s&&s.exists){ PRICES=s.data()||null; repaint(); } },function(){}); }catch(e){} }
+
+  /* ---------- saving: one transaction on the visit, never through the visit's own save ---------- */
+  function write(p,f,force){
+    p.consentForm=f; repaint();
+    if(p._demo||typeof DB==='undefined'||!DB) return Promise.resolve(true);
+    var ref=DB.collection('visits').doc(String(p.id));
+    return DB.runTransaction(function(t){ return t.get(ref).then(function(s){
+      var cur=(s&&s.exists&&(s.data()||{}).consent_form)||null;
+      if(!force&&cur&&cur.id===f.id&&cur.status==='signed'&&f.status!=='signed') return 'signed-elsewhere';
+      if(!force&&cur&&cur.id!==f.id&&active(cur)&&f.status==='requested') return 'other-open';
+      t.update(ref,{consent_form:f,last_by:who(),last_at:new Date().toISOString()}); return true; }); })
+      .then(function(r){ if(r!==true){ try{ notify('Not saved','The form changed on another screen',{icon:'info',color:'var(--accent)'}); }catch(_){} } return r===true; })
+      .catch(function(e){ console.warn('[aftercare] save',e); try{ notify('Couldn’t save the form','Check the connection and try again',{icon:'info',color:'#C85A50'}); }catch(_){} return false; });
+  }
+  /* a notice with one action, like an iOS notification with a button */
+  function notifyAct(title,sub,act,fn,opts){ try{ notify(title,sub,Object.assign({icon:'info',color:'#8A82A8',dur:12000},opts||{})); var w=document.getElementById('notes'), n=w&&w.lastElementChild; if(!n||!act) return;
+    var b=document.createElement('button'); b.type='button'; b.className='n-act'; b.textContent=act;
+    b.onclick=function(){ try{ fn(); }catch(e){} n.classList.add('hide'); setTimeout(function(){ n.remove(); },480); };
+    var body=n.querySelector('.n-body')||n; body.appendChild(b); }catch(e){} }
+
+  /* ---------- the doctor: send the form (from the ending sheet) ---------- */
+  function send(p,kind,fee){
+    if(!p) return; if(active(p.consentForm)) return;
+    var f={id:'cf_'+Date.now().toString(36),v:VER,kind:kind==='died'?'died':'euthanasia',fee:kind==='died'?null:(fee==='consult'?'consult':'outpatient'),status:'requested',
+      requested:{at:new Date().toISOString(),by:who(),uid:uid()},pet:{name:pet(p),species:species(p)},owner:{name:p.owner||''}};
+    write(p,f).then(function(ok){ if(ok) try{ notify('Form sent to reception',esc(pet(p))+' · '+(f.kind==='died'?'Aftercare form':'Euthanasia & aftercare form'),{icon:'info',color:'#8A82A8'}); }catch(_){} });
+  }
+  /* cancel straight away, with Undo (no "are you sure") */
+  function cancel(p){ var f=p&&p.consentForm; if(!active(f)) return; var before=JSON.parse(JSON.stringify(f));
+    var g=Object.assign({},f,{status:'cancelled',cancelled:{at:new Date().toISOString(),by:who()}}); write(p,g);
+    notifyAct('Form cancelled',esc(pet(p))+'’s '+(f.kind==='died'?'aftercare':'consent')+' form','Undo',function(){ var q=byId(p.id); if(q&&q.consentForm&&q.consentForm.id===before.id&&q.consentForm.status==='cancelled') write(q,before,true); },{dur:8000}); }
+
+  /* ---------- Flow › Consent forms ---------- */
+  function seg(){ var sw=document.getElementById('switcher'); if(!sw||document.querySelector('#switcher .seg[data-view="consent"]')) return;
+    var b=document.createElement('button'); b.className='seg'; b.dataset.view='consent';
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 12l2 2 4-4"/></svg>Consent forms<span class="cf-badge" id="cfBadge" hidden></span>';
+    var cl=sw.querySelector('.seg[data-view="client"]'); sw.insertBefore(b,cl||null); }
+  function section(){ var el=document.getElementById('view-consent'); if(el) return el; var cl=document.getElementById('view-client'); if(!cl) return null;
+    el=document.createElement('section'); el.className='view hidden'; el.id='view-consent'; cl.parentNode.insertBefore(el,cl); return el; }
+  var svBase=switchView;
+  switchView=function(v){ var r=svBase.apply(this,arguments); var el=section(); if(el){ el.classList.toggle('hidden',v!=='consent'); if(v==='consent'){ el.classList.remove('view'); void el.offsetWidth; el.classList.add('view'); renderQueue(); } } return r; };
+  if(typeof switchApp==='function'){ var saBase=switchApp; switchApp=function(app){ var r=saBase.apply(this,arguments); if(app!=='flow'){ var el=document.getElementById('view-consent'); if(el) el.classList.add('hidden'); } return r; }; }
+  /* waiting forms first, the longest wait at the top; then today's signed forms, newest first */
+  function queue(){ return (PATIENTS||[]).filter(function(p){ var f=p&&p.consentForm; return f&&(active(f)||(f.status==='signed'&&today(f.signed_at||f.requested.at))); })
+    .sort(function(a,b){ var A=a.consentForm,B=b.consentForm, ra=active(A)?0:1, rb=active(B)?0:1; if(ra!==rb) return ra-rb;
+      return ra===0?(new Date(A.requested.at)-new Date(B.requested.at)):(new Date(B.signed_at)-new Date(A.signed_at)); }); }
+  function badge(){ var n=(PATIENTS||[]).filter(function(p){ return p&&active(p.consentForm); }).length+((window.fvDocs&&fvDocs.queue)?fvDocs.queue().length:0), b=document.getElementById('cfBadge'); if(b){ b.textContent=n; b.hidden=!n; } }
+  function renderQueue(){ var el=section(); if(!el) return; badge(); if(el.classList.contains('hidden')) return;
+    var Q=queue();
+    var h='<div class="cfq-wrap"><div class="cfq-head"><div><h2 class="cfq-title">Consent forms</h2><div class="cfq-sub">Forms sent by the doctors. Take the iPad into the room, tap <b>Start with the family</b>, and go through it together.</div></div>'
+      +'<button type="button" class="cfq-prices" data-cfa="prices">'+(isAdmin()?'Prices':'Price list')+'</button></div>';
+    if(!PRICES) h+='<div class="cfq-note">Prices aren’t set yet, so the family form shows the choices without prices.'+(isAdmin()?' Open <b>Prices</b> to add them.':'')+'</div>';
+    var G=[]; try{ if(window.fvDocs&&fvDocs.queue) G=fvDocs.queue(); }catch(e){}
+    if(!Q.length&&!G.length) h+='<div class="cfq-empty"><b>No forms waiting</b><span>When a doctor sends a euthanasia or aftercare form, it appears here.</span></div>';
+    Q.forEach(function(p){ var f=p.consentForm, st=f.status, m=mins(f.requested.at);
+      var doc=''; try{ doc=(p.doctor&&p.doctor!=='unassigned')?docShort(p.doctor):''; }catch(e){}
+      var wait=st==='signed'?'<div class="cfq-wait done"><b>Signed</b><span>'+esc(hm(f.signed_at))+'</span></div>'
+        :'<div class="cfq-wait'+(m>=15?' long':'')+'"><b>'+esc(dur(m))+'</b><span>'+(st==='family'?'with the family':'waiting')+'</span></div>';
+      h+='<div class="cfq-card" data-pid="'+esc(p.id)+'">'+wait
+        +'<div class="cfq-main"><div class="cfq-name">'+esc(((p.name||'')+' '+(p.last||'')).trim())+'</div>'
+        +'<div class="cfq-meta">'+esc([f.kind==='died'?'Aftercare form':'Euthanasia & aftercare',p.room&&p.room!=='Lobby'?p.room:'',doc,'sent by '+(f.requested.by||'')].filter(Boolean).join(' · '))+'</div>'
+        +'<div class="cfq-prog">'+progress(f)+'</div>'
+        +(st==='signed'?'<div class="cfq-meta strong">'+esc(summary(f))+(f.witness?' · witnessed by '+esc(f.witness.name||''):'')+'</div>':'')+'</div>'
+        +'<div class="cfq-acts">'+(st==='signed'?DC({ic:IC.print,title:'Print · PDF',desc:'The signed form',arrow:'out',attrs:'data-cfa="print"'})
+          :'<button type="button" class="cfq-btn quiet" data-cfa="cancel">Cancel</button>'+DC({ic:IC.ipad,title:st==='family'?'Resume':'Start with the family',desc:st==='family'?'Back to where they were':'Opens the family form',arrow:'out',attrs:'data-cfa="family"'}))+'</div></div>'; });
+    try{ if(G.length) h+=fvDocs.queueCards(G); }catch(e){}
+    el.innerHTML=h+'</div>'; }
+  function repaint(){ try{ renderQueue(); }catch(e){} try{ if(open) paintFamily(); }catch(e){} try{ if(window.fvEndings&&fvEndings.repaint) fvEndings.repaint(); }catch(e){} }
+
+  /* ---------- prices editor ---------- */
+  function pricesSheet(){ var adm=isAdmin(), it=(PRICES&&PRICES.items)||{};
+    var h='<div class="cfp-box" role="dialog" aria-modal="true" aria-label="Aftercare prices"><div class="cfp-t">Aftercare prices</div><div class="cfp-s">'+(adm?'Saved for the hospital in the database, not in the app’s code.':'Only an admin can change these.')+'</div><div class="cfp-rows">';
+    PRICE_KEYS.forEach(function(k){ var x=it[k[0]]||{}; h+='<label class="cfp-row"><span class="cfp-l">'+esc(k[1])+'</span>'
+      +'<input class="cfp-code" data-pk="'+k[0]+'" data-pf="code" placeholder="Code" value="'+esc(x.code||'')+'"'+(adm?'':' disabled')+'>'
+      +'<span class="cfp-dollar">$</span><input class="cfp-amt" data-pk="'+k[0]+'" data-pf="amount" inputmode="decimal" placeholder="0.00" value="'+(typeof x.amount==='number'?x.amount.toFixed(2):'')+'"'+(adm?'':' disabled')+'></label>'; });
+    h+='</div><div class="cfp-foot">'+(PRICES&&PRICES.updated_by?'<span class="cfp-by">Last changed by '+esc(PRICES.updated_by)+'</span>':'<span></span>')
+      +'<span><button type="button" class="cf-btn cancel" data-cfa="prices-close">'+(adm?'Cancel':'Close')+'</button>'+(adm?' <button type="button" class="cf-btn go" data-cfa="prices-save">Save</button>':'')+'</span></div></div>';
+    var w=document.getElementById('cfPrices'); if(!w){ w=document.createElement('div'); w.id='cfPrices'; w.className='cfp-scrim open'; document.body.appendChild(w); }
+    w.className='cfp-scrim open'; w.innerHTML=h; var f=w.querySelector('input:not([disabled])'); if(f) f.focus(); }
+  function savePrices(){ var w=document.getElementById('cfPrices'); if(!w) return; var items={}, bad=null;
+    PRICE_KEYS.forEach(function(k){ var a=w.querySelector('[data-pk="'+k[0]+'"][data-pf="amount"]'), c=w.querySelector('[data-pk="'+k[0]+'"][data-pf="code"]');
+      var v=String(a.value||'').replace(/[$,\s]/g,''); if(v===''){ return; } var n=Number(v); if(!isFinite(n)||n<0){ bad=bad||a; return; }
+      items[k[0]]={amount:Math.round(n*100)/100,code:String(c.value||'').trim().slice(0,20)}; });
+    if(bad){ bad.focus(); bad.classList.add('cfp-bad'); return; }
+    var doc={items:items,updated_at:new Date().toISOString(),updated_by:who()};
+    PRICES=doc; w.className='cfp-scrim'; w.innerHTML=''; repaint();
+    try{ if(typeof DB!=='undefined'&&DB) DB.runTransaction(function(t){ var ref=DB.collection('ts_settings').doc('aftercare_prices'); return t.get(ref).then(function(){ t.set(ref,doc); }); })
+      .catch(function(e){ console.warn('[aftercare] prices',e); try{ notify('Prices not saved','Only an admin can change them',{icon:'info',color:'#C85A50'}); }catch(_){} }); }catch(e){} }
+
+  /* ---------- family mode ---------- */
+  var STEPS=4;   /* 1 about · 2 care · 3 review · 4 sign | 5 thank you · 6 witness (staff) */
+  function startFamily(p){ if(!p||!p.consentForm) return; var f=JSON.parse(JSON.stringify(p.consentForm));
+    f.owner=f.owner||{}; if(!f.owner.name) f.owner.name=p.owner||''; f.owner.state=f.owner.state||'CT'; f.pet=f.pet||{name:pet(p),species:species(p)};
+    lang=f.lang||'en'; open={pid:p.id,step:1,f:f,err:'',dir:0};
+    if(f.status==='requested'){ var g=Object.assign({},p.consentForm,{status:'family',family_at:new Date().toISOString(),family_by:who()}); write(p,g); open.f.status='family'; open.f.family_at=g.family_at; }
+    document.body.classList.add('cf-family-on'); paintFamily(); var b=document.getElementById('cfFamily'); if(b) b.scrollTop=0; }
+  function el(){ var w=document.getElementById('cfFamily'); if(!w){ w=document.createElement('div'); w.id='cfFamily'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true'); document.body.appendChild(w); } return w; }
+  function field(id,label,val,attrs){ return '<label class="cff-field"><span>'+label+'</span><input id="'+id+'" value="'+esc(val||'')+'" '+(attrs||'')+'></label>'; }
+  function careOpts(nm){ var v={pet:esc(nm)}; return [
+    {k:'private',t:L('private_t',v),d:L('private_d',v),urn:true,clay:'included'},
+    {k:'communal',t:L('communal_t',v),d:L('communal_d',v),clay:'option'},
+    {k:'release',t:L('release_t',v),d:L('release_d',v),clay:'option'},
+    {k:'hold',t:L('hold_t',v),d:L('hold_d',v),clay:null}]; }
+  function careName(k,nm){ return L(k+'_t',{pet:esc(nm)}); }
+  function paintFamily(){ if(!open) return; var p=byId(open.pid), w=el(), f=open.f; if(!p){ closeFamily(); return; }
+    if(w.querySelector('.cff')) readFields();   /* a live update repaints the form: keep what the family has typed */
+    var nm=f.pet&&f.pet.name||pet(p), v={pet:esc(nm)}, step=open.step, fam=step<=STEPS;
+    var h='<div class="cff" lang="'+lang+'"><header class="cff-nav">'
+      +'<div class="cff-nav-l">'+(step>1&&step<=STEPS?'<button type="button" class="cff-back" data-cfh="back">'+CHEVL+'<span>'+L('back')+'</span></button>':'<img class="cff-logo" src="assets/img/logo-light.png" alt="VCA Shoreline">')+'</div>'
+      +'<div class="cff-dots" aria-hidden="'+(!fam)+'">'+(fam?Array.from({length:STEPS},function(_,i){ return '<span class="'+(i+1===step?'on':i+1<step?'done':'')+'"></span>'; }).join('')+'<em class="cff-sr">'+(lang==='es'?'Paso ':'Step ')+step+(lang==='es'?' de ':' of ')+STEPS+'</em>':'')+'</div>'
+      +'<div class="cff-nav-r">'+(fam?'<div class="cff-lang" role="group" aria-label="Language / Idioma"><button type="button" lang="en" aria-pressed="'+(lang==='en')+'" data-cfl="en">English</button><button type="button" lang="es" aria-pressed="'+(lang==='es')+'" data-cfl="es">Español</button></div>'
+        +'<button type="button" class="cff-staff" data-cfh="hold" aria-label="Staff: press and hold to leave the form">'+L('staff')+'</button>':'')+'</div></header>';
+    var anim=open.dir>0?' enter-fwd':open.dir<0?' enter-back':''; open.dir=0;
+    h+='<main class="cff-card'+anim+'">';
+    var primary='';
+    if(step===1){
+      h+='<h1 class="cff-big">'+L('for',v)+'</h1><p class="cff-lead">'+L('lead1',v)+'</p>'
+        +'<div class="cff-grid">'+field('cffOwner',L('name'),f.owner.name,'autocomplete="name"')+field('cffAddr',L('addr'),f.owner.address,'autocomplete="street-address"')
+        +field('cffCity',L('city'),f.owner.city,'autocomplete="address-level2"')+'<div class="cff-two">'+field('cffState',L('state'),f.owner.state,'autocomplete="address-level1" maxlength="2"')+field('cffZip',L('zip'),f.owner.zip,'inputmode="numeric" autocomplete="postal-code" maxlength="10"')+'</div>'
+        +field('cffPet',L('petname'),f.pet.name,'')+'<div class="cff-field"><span>'+L('dogcat')+'</span><div class="cff-seg" role="radiogroup" aria-label="'+esc(L('dogcat'))+'">'
+        +['Dog','Cat','Other'].map(function(s){ var on=(f.pet.species||'')===s||(s==='Other'&&f.pet.species&&f.pet.species!=='Dog'&&f.pet.species!=='Cat'); return '<button type="button" role="radio" aria-checked="'+on+'" class="'+(on?'on':'')+'" data-cfs="'+s+'">'+L(s)+'</button>'; }).join('')+'</div></div></div>';
+      primary='<button type="button" class="cff-primary" data-cfh="next">'+L('cont')+'</button>';
+    }else if(step===2){
+      h+='<h1>'+L('care',v)+'</h1><p class="cff-lead">'+L('one')+'</p><div class="cff-care" role="radiogroup" aria-label="'+esc(L('care',v))+'">';
+      careOpts(nm).forEach(function(o){ var on=f.care===o.k, pr=o.k==='private'?price('private_clay'):o.k==='communal'?price('communal'):null;
+        var dd=o.d+(o.k==='hold'?'<span class="cff-note">'+L('hold_n',{pet:esc(nm),date:esc(day(new Date(Date.now()+7*864e5),lang))})+'</span>':'');
+        h+=DC({ic:IC[o.k],title:o.t,aside:pr?money(pr.amount):'',desc:dd,sel:on,wrap:true,cls:'cff-opt'+(on?' on':''),attrs:'data-cfc="'+o.k+'"'});
+        if(on&&o.urn){ h+='<div class="cff-sub"><div class="cff-subt">'+L('urn')+' <span>'+L('urn1')+'</span></div><div class="cff-urns" role="radiogroup" aria-label="'+esc(L('urn'))+'">';
+          URNS.forEach(function(u){ var uo=f.urn===u[0]; h+='<button type="button" class="cff-urn'+(uo?' on':'')+'" role="radio" aria-checked="'+uo+'" data-cfu="'+u[0]+'">'
+            +(URN_IMG[u[0]]?'<img src="'+esc(URN_IMG[u[0]])+'" alt="">':'<span class="cff-urn-ph" aria-hidden="true"><svg viewBox="0 0 24 24">'+IC.private+'</svg><em>'+L('photo')+'</em></span>')
+            +'<span class="cff-urn-t">'+esc(u[1])+'</span><span class="cff-urn-ok" aria-hidden="true"></span></button>'; });
+          h+='</div><div class="cff-incl">'+L('incl')+'</div></div>'; }
+        if(on&&o.clay==='option'){ var cp=price('clay_only'), cc=price('communal_clay'), cm=price('communal'), add=(o.k==='communal'&&cc&&cm)?Math.round((cc.amount-cm.amount)*100)/100:(cp?cp.amount:null);
+          h+='<div class="cff-sub">'+DC({ic:IC.paw,title:L('clay'),aside:add!=null?'+'+money(add):'',desc:L('clay_d',v),sel:!!f.clay,box:true,cls:'cff-check'+(f.clay?' on':''),attrs:'data-cfk="clay"'})+'</div>'; } });
+      h+='</div>';
+      primary='<button type="button" class="cff-primary" data-cfh="next">'+L('toreview')+'</button>';
+    }else if(step===3){
+      var L2=lines(f), Tt=total(L2), o=f.owner||{};
+      var rowr=function(lbl,val,goStep,id){ return '<div class="cff-rrow"><span class="cff-rl">'+lbl+'</span><span class="cff-rv">'+val+'</span>'+(goStep?'<button type="button" class="cff-edit" data-cfe="'+goStep+'" aria-label="'+esc(L('change')+' · '+lbl)+'">'+L('change')+'</button>':'<span></span>')+'</div>'; };
+      h+='<h1>'+L('review')+'</h1><p class="cff-lead">'+L('review_l')+'</p><div class="cff-review">'
+        +rowr(L('r_you'),esc(o.name||'')+'<small>'+esc([o.address,o.city,((o.state||'')+' '+(o.zip||'')).trim()].filter(Boolean).join(', '))+'</small>',1)
+        +rowr(L('r_pet'),esc(nm)+(f.pet&&f.pet.species?' · '+esc(L(f.pet.species)||f.pet.species):''),1)
+        +rowr(L('r_care'),careName(f.care,nm),2)
+        +(f.care==='private'?rowr(L('r_urn'),esc(urnLabel(f.urn)),2):'')
+        +(f.care!=='hold'?rowr(L('r_keep'),(f.clay||f.care==='private')?L('r_clay'):L('r_none'),2):'')
+        +'</div>';
+      if(L2.length&&PRICES) h+='<div class="cff-sum"><div class="cff-sumt">'+L('fees')+'</div><table class="cff-fees">'+L2.map(function(l){ return '<tr><td>'+esc(L(l.k))+'</td><td>'+(l.amount!=null?money(l.amount):'—')+'</td></tr>'; }).join('')+(Tt!=null?'<tr class="t"><td>'+L('totalw')+'</td><td>'+money(Tt)+'</td></tr>':'')+'</table></div>';
+      if(f.care==='hold') h+='<div class="cff-note">'+L('hold_fee')+'</div>';
+      primary='<button type="button" class="cff-primary" data-cfh="next">'+L('tosign')+'</button>';
+    }else if(step===4){
+      h+='<h1>'+(f.kind==='died'?L('sign_t'):L('consent_t'))+'</h1>';
+      if(f.kind!=='died') h+='<p class="cff-consent">'+esc(CONSENT[lang])+'</p>'; else h+='<p class="cff-lead">'+L('sign_l',v)+'</p>';
+      h+=field('cffSignName',L('name'),f.owner.sign_name!=null?f.owner.sign_name:f.owner.name,'autocomplete="name"')
+        +'<div class="cff-sigwrap"><div class="cff-sigl">'+L('signhere')+' <button type="button" class="cff-clear" data-cfh="clear-owner">'+L('clear')+'</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="cffSigOwner" aria-label="'+esc(L('signhere'))+'"></canvas><span class="cff-x" aria-hidden="true">×</span></div><div class="cff-sigd">'+esc(day(new Date(),lang))+'</div></div>';
+      primary='<button type="button" class="cff-primary" data-cfh="sign">'+L('signbtn')+'</button>';
+    }else if(step===5){
+      h+='<div class="cff-thanks"><h1 class="cff-big">'+L('thanks')+'</h1><p class="cff-lead">'+L('handback',{pet:esc(nm)})+'</p></div>';
+      primary='<button type="button" class="cff-primary" data-cfh="staff">Staff: witness the signature</button>';
+    }else if(step===6){
+      h+='<h1>Witness</h1><p class="cff-lead">'+esc(f.owner_sig&&f.owner_sig.name||f.owner.name||'The owner')+' signed for '+esc(nm)+(f.lang==='es'?' (in Spanish)':'')+'. Sign as the witness to the owner’s consent.</p>'
+        +'<div class="cff-sum"><div class="cff-sumt">'+esc(summary(f))+'</div></div>'
+        +'<div class="cff-sigwrap"><div class="cff-sigl">'+esc(who())+' <button type="button" class="cff-clear" data-cfh="clear-witness">Clear</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="cffSigWitness" aria-label="Witness signature pad"></canvas><span class="cff-x" aria-hidden="true">×</span></div><div class="cff-sigd">'+esc(day(new Date()))+'</div></div>';
+      primary='<button type="button" class="cff-primary" data-cfh="witness">Save the signed form</button>';
+    }
+    if(open.err) h+='<div class="cff-err" role="alert">'+esc(typeof open.err==='object'?L(open.err.k,open.err.v):open.err)+'</div>';
+    h+='</main><footer class="cff-bar">'+primary+'</footer></div>';
+    var keep=document.activeElement&&w.contains(document.activeElement)&&document.activeElement.id;
+    w.className='cf-family-sheet open'; w.innerHTML=h;
+    if(keep){ var k=document.getElementById(keep); if(k&&k.focus) k.focus({preventScroll:true}); }
+    pad('cffSigOwner','sigOwner'); pad('cffSigWitness','sigWitness');
+  }
+  function readFields(){ var f=open.f, v=function(id){ var e=document.getElementById(id); return e?String(e.value||'').trim():null; };
+    if(document.getElementById('cffOwner')){ f.owner.name=v('cffOwner'); f.owner.address=v('cffAddr'); f.owner.city=v('cffCity'); f.owner.state=(v('cffState')||'').toUpperCase(); f.owner.zip=v('cffZip'); f.pet.name=v('cffPet')||f.pet.name; }
+    if(document.getElementById('cffSignName')) f.owner.sign_name=v('cffSignName'); }
+  function E(k,v){ return {k:k,v:v}; }
+  function go(step,dir){ open.err=''; open.step=step; open.dir=dir; paintFamily(); var b=document.getElementById('cfFamily'); if(b) b.scrollTop=0; }
+  /* signature pads: smooth strokes whose width follows the hand (Apple Pencil pressure, or slower = thicker for a finger) */
+  function pad(id,key,store){ var c=document.getElementById(id); if(!c) return; var r=c.getBoundingClientRect(), dpr=Math.max(1,window.devicePixelRatio||1);
+    c.width=Math.round(r.width*dpr); c.height=Math.round(r.height*dpr); var x=c.getContext('2d'); x.scale(dpr,dpr);
+    var H=store||open, S=H[key]=H[key]||[]; draw(x,S,r.width,r.height,1); var cur=null, last=null;
+    function at(e){ var b=c.getBoundingClientRect(), px=Math.round((e.clientX-b.left)*10)/10, py=Math.round((e.clientY-b.top)*10)/10, now=performance.now(), w;
+      if(e.pointerType==='pen'&&e.pressure>0) w=1.1+e.pressure*3.2;
+      else { var sp=last?Math.hypot(px-last[0],py-last[1])/Math.max(1,now-last[3]):0; w=Math.max(1.5,Math.min(3.6,3.6-sp*1.4)); if(last) w=last[2]*0.6+w*0.4; }
+      var pt=[px,py,Math.round(w*100)/100,now]; last=pt; return pt; }
+    c.onpointerdown=function(e){ e.preventDefault(); if(open&&open.err&&open.err.k==='e_sig'){ open.err=''; var er=document.querySelector('#cfFamily .cff-err'); if(er) er.remove(); } try{ c.setPointerCapture(e.pointerId); }catch(_){} last=null; cur=[at(e)]; S.push(cur); draw(x,S,r.width,r.height,1); };
+    c.onpointermove=function(e){ if(!cur) return; e.preventDefault(); var ev=e.getCoalescedEvents?e.getCoalescedEvents():[e]; (ev.length?ev:[e]).forEach(function(q){ cur.push(at(q)); }); draw(x,S,r.width,r.height,1); };
+    c.onpointerup=c.onpointercancel=function(){ cur=null; };
+    c.dataset.w=r.width; c.dataset.h=r.height; }
+  function draw(x,S,w,h,k){ x.clearRect(0,0,w,h); x.lineCap='round'; x.lineJoin='round'; x.strokeStyle='#14181F';
+    S.forEach(function(s){ if(s.length===1){ x.beginPath(); x.arc(s[0][0],s[0][1],(s[0][2]||2.4)/2,0,Math.PI*2); x.fillStyle='#14181F'; x.fill(); return; }
+      for(var i=1;i<s.length;i++){ var a=s[i-1], b=s[i], m0=i>1?[(s[i-2][0]+a[0])/2,(s[i-2][1]+a[1])/2]:[a[0],a[1]], m1=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+        x.beginPath(); x.lineWidth=((a[2]||2.4)+(b[2]||2.4))/2; x.moveTo(m0[0],m0[1]); x.quadraticCurveTo(a[0],a[1],m1[0],m1[1]); x.stroke(); }
+      var e=s[s.length-1], pv=s[s.length-2]; x.beginPath(); x.lineWidth=e[2]||2.4; x.moveTo((pv[0]+e[0])/2,(pv[1]+e[1])/2); x.lineTo(e[0],e[1]); x.stroke(); }); }
+  function inked(key,store){ var H=store||open, S=H&&H[key]||[], n=0; S.forEach(function(s){ n+=s.length; }); return n>=8; }
+  function png(key,id,store){ var c=document.getElementById(id); var S=(store||open)[key]||[]; var w=+(c&&c.dataset.w)||600, h=+(c&&c.dataset.h)||180;
+    var o=document.createElement('canvas'), k=Math.min(1,640/w); o.width=Math.round(w*k); o.height=Math.round(h*k); var x=o.getContext('2d'); x.scale(k,k); draw(x,S,w,h,k);
+    return o.toDataURL('image/png'); }
+  function next(){ var f=open.f; readFields(); open.err='';
+    if(open.step===1){ if(!f.owner.name){ open.err=E('e_name'); paintFamily(); focus('cffOwner'); return; }
+      if(!f.owner.address||!f.owner.city||!f.owner.zip){ open.err=E('e_addr',{pet:f.pet.name||pet(byId(open.pid))}); paintFamily(); focus(!f.owner.address?'cffAddr':!f.owner.city?'cffCity':'cffZip'); return; } }
+    if(open.step===2){ if(!f.care){ open.err=E('e_one'); paintFamily(); return; } if(f.care==='private'&&!f.urn){ open.err=E('e_urn'); paintFamily(); var u=document.querySelector('[data-cfu]'); if(u) u.focus(); return; } }
+    go(open.step+1,1); }
+  function focus(id){ var e=document.getElementById(id); if(e) e.focus(); }
+  function signOwner(){ var f=open.f; readFields(); open.err='';
+    if(!f.owner.sign_name){ open.err=E('e_sname'); paintFamily(); focus('cffSignName'); return; }
+    if(!inked('sigOwner')){ open.err=E('e_sig'); paintFamily(); return; }
+    f.owner_sig={name:f.owner.sign_name,at:new Date().toISOString(),png:png('sigOwner','cffSigOwner')};
+    f.lang=lang; f.lines=lines(f); f.total=total(f.lines); f.consent_text=f.kind==='died'?null:CONSENT[lang]; f.consent_text_en=f.kind==='died'?null:CONSENT.en; go(5,1); }
+  function signWitness(){ var p=byId(open.pid), f=open.f; open.err='';
+    if(!inked('sigWitness')){ open.err='Please sign as the witness.'; paintFamily(); return; }
+    f.witness={name:who(),uid:uid(),at:new Date().toISOString(),png:png('sigWitness','cffSigWitness')};
+    f.status='signed'; f.signed_at=f.witness.at; delete f.owner.sign_name;
+    var done=JSON.parse(JSON.stringify(f));
+    write(p,done).then(function(ok){ if(!ok){ open.err='Couldn’t save. Check the connection and tap Save again.'; open.f.status='family'; paintFamily(); return; }
+      seen[p.id]=done.id+':signed'; try{ if(window.fvDocs&&fvDocs.fileEnding) fvDocs.fileEnding(p,done); }catch(e){ console.warn('[aftercare] pdf',e); } closeFamily(); try{ notify('Form signed',esc(done.pet&&done.pet.name||pet(p))+' · '+esc(summary(done)),{icon:'info',color:'#8A82A8'}); }catch(_){} }); }
+  function closeFamily(){ open=null; lang='en'; document.body.classList.remove('cf-family-on'); var w=document.getElementById('cfFamily'); if(w){ w.className='cf-family-sheet'; w.innerHTML=''; } renderQueue(); }
+
+  /* staff leave: press and hold "Staff" for 1.2 s (the family can't leave by a stray tap); answers stay on this iPad for Resume */
+  var holdT=null, drafts={};
+  document.addEventListener('pointerdown',function(e){ var b=e.target&&e.target.closest&&e.target.closest('[data-cfh="hold"]'); if(!b) return; b.classList.add('holding');
+    holdT=setTimeout(function(){ if(open){ readFields(); drafts[open.pid]={f:open.f,step:Math.min(open.step,STEPS),lang:lang}; } closeFamily(); },1200); },true);
+  ['pointerup','pointercancel','pointerleave'].forEach(function(t){ document.addEventListener(t,function(){ clearTimeout(holdT); var b=document.querySelector('[data-cfh="hold"].holding'); if(b) b.classList.remove('holding'); },true); });
+
+  /* ---------- printable copy (Print · PDF): laid out like the paper form ---------- */
+  function printCopy(p,html){ var f=p&&p.consentForm; if(!f||f.status!=='signed') return;
+    if(!html&&window.fvDocs&&fvDocs.docForForm){ var d=fvDocs.docForForm(p,f.id); if(d){ fvDocs.view(p,d); return; } } var L2=f.lines||lines(f), Tt=f.total!=null?f.total:total(L2), o=f.owner||{};
+    function box(on){ return '<span class="cpb">'+(on?'✓':'')+'</span>'; }
+    var h='<div class="cp"><div class="cp-head"><img src="assets/img/logo-light.png" alt=""><div><b>VCA Shoreline Veterinary Referral &amp; Emergency Center</b><br>895 Bridgeport Ave, Shelton, CT 06484 · 203-929-8600</div></div>'
+      +'<h1>Pet aftercare'+(f.kind==='died'?'':' and euthanasia consent')+'</h1><div class="cp-sub">Pet aftercare services and memorial center · Final Gift · Visit '+esc(p.hid||'')+(f.lang==='es'?' · Signed in Spanish':'')+'</div>'
+      +'<table class="cp-t"><tr><td>Owner</td><td>'+esc(o.name||'')+'</td></tr><tr><td>Address</td><td>'+esc([o.address,o.city,(o.state||'')+' '+(o.zip||'')].filter(function(x){ return String(x||'').trim(); }).join(', '))+'</td></tr>'
+      +'<tr><td>Pet</td><td>'+esc(f.pet&&f.pet.name||'')+' · '+esc(f.pet&&f.pet.species||'')+'</td></tr></table>'
+      +'<h2>Care of body</h2><div class="cp-care">'+['private','communal','release','hold'].map(function(k){ return '<div>'+box(f.care===k)+careLabel(k)+(k==='private'&&f.care==='private'&&f.urn?' — urn: '+esc(urnLabel(f.urn)):'')+'</div>'; }).join('')
+      +'<div>'+box(f.clay||f.care==='private')+'Clay paw print'+(f.care==='private'?' (included)':'')+'</div></div>'
+      +(f.care==='hold'?'<p class="cp-note">We will hold the pet for 7 days from this date. If VCA Shoreline is not told of a decision within 7 days, a communal cremation is charged and the remains are released to Final Gift.</p>':'')
+      +(f.consent_text?'<h2>Euthanasia</h2><p class="cp-consent">'+esc(f.consent_text)+'</p>'+(f.lang==='es'&&f.consent_text_en?'<p class="cp-consent en"><b>English wording (for the record):</b> '+esc(f.consent_text_en)+'</p>':''):'')
+      +'<div class="cp-sigs"><div><img src="'+esc(f.owner_sig&&f.owner_sig.png||'')+'" alt="Owner signature"><div class="cp-line">Signature · '+esc(f.owner_sig&&f.owner_sig.name||'')+' · '+esc(new Date(f.owner_sig&&f.owner_sig.at||f.signed_at).toLocaleString('en-US'))+'</div></div>'
+      +'<div><img src="'+esc(f.witness&&f.witness.png||'')+'" alt="Witness signature"><div class="cp-line">Witness to pet owner’s consent · '+esc(f.witness&&f.witness.name||'')+' · '+esc(new Date(f.signed_at).toLocaleString('en-US'))+'</div></div></div>'
+      +(L2.length?'<h2>Fees (staff copy)</h2><table class="cp-fees">'+L2.map(function(l){ return '<tr><td>'+esc(l.label)+'</td><td>'+esc(l.code?'Code #'+l.code:'')+'</td><td>'+(l.amount!=null?money(l.amount):'—')+'</td></tr>'; }).join('')+(Tt!=null?'<tr class="t"><td>Total</td><td></td><td>'+money(Tt)+'</td></tr>':'')+'</table>':'')
+      +'<div class="cp-foot">Sent by '+esc(f.requested&&f.requested.by||'')+' · '+esc(new Date(f.requested&&f.requested.at).toLocaleString('en-US'))+' · Pravix Flow</div></div>';
+    var w=document.getElementById('cfPrint'); if(!w){ w=document.createElement('div'); w.id='cfPrint'; document.body.appendChild(w); }
+    w.innerHTML=h; document.body.classList.add('cf-printing');
+    var done=function(){ document.body.classList.remove('cf-printing'); window.removeEventListener('afterprint',done); };
+    window.addEventListener('afterprint',done); setTimeout(function(){ try{ window.print(); }catch(e){} setTimeout(done,1500); },120); }
+
+  /* ---------- clicks ---------- */
+  document.addEventListener('click',function(e){ var t=e.target; if(!t||!t.closest) return;
+    var a=t.closest('[data-cfa]'); if(a){ var c=a.closest('.cfq-card'), p=c?byId(c.dataset.pid):null, w=a.dataset.cfa;
+      if(w==='family'&&p){ var d=drafts[p.id]; if(d&&p.consentForm&&d.f.id===p.consentForm.id){ lang=d.lang||'en'; open={pid:p.id,step:d.step,f:d.f,err:'',dir:0}; document.body.classList.add('cf-family-on'); paintFamily(); } else startFamily(p); }
+      else if(w==='cancel'&&p) cancel(p);
+      else if(w==='print'&&p) printCopy(p);
+      else if(w==='prices') pricesSheet();
+      else if(w==='prices-close'){ var s=document.getElementById('cfPrices'); if(s){ s.className='cfp-scrim'; s.innerHTML=''; } }
+      else if(w==='prices-save') savePrices();
+      return; }
+    if(!open) return; var f=open.f;
+    var lg=t.closest('[data-cfl]'); if(lg){ readFields(); lang=lg.dataset.cfl; paintFamily(); var q0=document.querySelector('[data-cfl="'+lang+'"]'); if(q0) q0.focus(); return; }
+    var ed=t.closest('[data-cfe]'); if(ed){ go(+ed.dataset.cfe,-1); return; }
+    var h=t.closest('[data-cfh]'); if(h){ var x=h.dataset.cfh;
+      if(x==='next') next(); else if(x==='back'){ readFields(); go(Math.max(1,open.step-1),-1); }
+      else if(x==='sign') signOwner(); else if(x==='staff') go(6,1); else if(x==='witness') signWitness();
+      else if(x==='clear-owner'){ open.sigOwner=[]; paintFamily(); } else if(x==='clear-witness'){ open.sigWitness=[]; paintFamily(); }
+      return; }
+    var s=t.closest('[data-cfs]'); if(s){ readFields(); f.pet.species=s.dataset.cfs; paintFamily(); return; }
+    var cc=t.closest('[data-cfc]'); if(cc){ f.care=cc.dataset.cfc; if(f.care==='private'||f.care==='hold') f.clay=false; if(f.care!=='private') f.urn=null; open.err=''; paintFamily(); var q=document.querySelector('[data-cfc="'+f.care+'"]'); if(q) q.focus({preventScroll:true}); return; }
+    var u=t.closest('[data-cfu]'); if(u){ f.urn=u.dataset.cfu; open.err=''; var sx=(document.querySelector('.cff-urns')||{}).scrollLeft||0; paintFamily(); var ur=document.querySelector('.cff-urns'); if(ur) ur.scrollLeft=sx; var q2=document.querySelector('[data-cfu="'+f.urn+'"]'); if(q2) q2.focus({preventScroll:true}); return; }
+    var k=t.closest('[data-cfk]'); if(k){ f.clay=!f.clay; paintFamily(); var q3=document.querySelector('[data-cfk]'); if(q3) q3.focus({preventScroll:true}); return; }
+  });
+
+  /* ---------- the doctor hears about it: requests and signatures, on every staff screen ---------- */
+  var seen={}, seeded=false;
+  setInterval(function(){ if(LOBBY||typeof PATIENTS==='undefined') return; try{
+    (PATIENTS||[]).forEach(function(p){ var f=p&&p.consentForm; if(!f) return; var k=f.id+':'+f.status, was=seen[p.id]; seen[p.id]=k; if(!seeded||was===k) return;
+      if(f.status==='signed'){ var ended=(typeof isCompleted==='function')&&isCompleted(p);
+        notifyAct('Form signed',esc(f.pet&&f.pet.name||pet(p))+' · '+esc(summary(f)),ended?null:(f.kind==='died'?'Record death':'Record euthanasia'),function(){ if(window.fvEndings&&fvEndings.openSigned) fvEndings.openSigned(byId(p.id)); },{dur:15000}); }
+      else if(f.status==='requested'&&(!f.requested||f.requested.uid!==uid())) notifyAct('Form for reception',esc(pet(p))+' · sent by '+esc(f.requested&&f.requested.by||''),'Open',function(){ switchView('consent'); },{dur:9000}); });
+    seeded=true; badge(); var v=document.getElementById('view-consent'); if(v&&!v.classList.contains('hidden')&&!open) renderQueue(); }catch(e){} },2000);
+
+  seg(); section(); badge(); loadPrices();
+  window.fvNotifyAct=notifyAct;
+  window.fvSigPad={pad:function(id,key,store){ pad(id,key,store); },png:function(key,id,store){ return png(key,id,store); },inked:function(key,store){ return inked(key,store); },draw:draw};
+  window.fvConsentRepaint=function(){ repaint(); badge(); };
+  window.fvConsent={consentText:function(l){ return CONSENT[l]||CONSENT.en; },send:send,cancel:cancel,active:active,summary:summary,careLabel:careLabel,urnLabel:urnLabel,lines:lines,total:total,progress:progress,
+    setPrices:function(d){ PRICES=d; repaint(); },open:function(p){ startFamily(p); },print:printCopy,URN_IMG:URN_IMG,state:function(){ return open; },lang:function(){ return lang; }};
+})();
+</script>
+<style>
+/* Aftercare forms n120 — staff queue (Flow's look) */
+#switcher .seg .cf-badge{min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:9px;background:#8A82A8;color:#fff;font-size:11px;font-weight:700;display:inline-grid;place-items:center;}
+#switcher .seg .cf-badge[hidden]{display:none;}
+.cfq-wrap{max-width:980px;margin:0 auto;padding:28px 40px 60px;display:flex;flex-direction:column;gap:12px;}
+.cfq-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:6px;}
+.cfq-title{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;}
+.cfq-sub{font-size:13px;color:var(--ink-400);margin-top:4px;max-width:560px;}
+.cfq-prices{height:34px;padding:0 14px;border-radius:10px;border:1px solid var(--glass-hairline);background:var(--glass);color:inherit;font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.cfq-note{font-size:12.5px;padding:10px 14px;border-radius:12px;background:rgba(217,163,90,.10);border:1px solid rgba(217,163,90,.25);color:#d9a35a;}
+body:not(.dark) .cfq-note{color:#8a5310;}
+.cfq-empty{padding:42px 20px;border-radius:18px;border:1px dashed var(--glass-hairline);display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--ink-400);font-size:13px;text-align:center;}
+.cfq-empty b{color:var(--ink-700);font-size:15px;}
+.cfq-card{display:grid;grid-template-columns:86px 1fr auto;gap:16px;align-items:center;padding:14px 16px;border-radius:18px;border:1px solid var(--glass-hairline);background:var(--glass);}
+.cfq-wait{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:64px;border-radius:14px;background:rgba(138,130,168,.12);color:#b7b0d4;text-align:center;}
+.cfq-wait b{font-size:17px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;} .cfq-wait span{font-size:11px;font-weight:600;opacity:.85;}
+.cfq-wait.long{background:rgba(217,163,90,.14);color:#e0ad66;} .cfq-wait.done{background:rgba(127,127,127,.10);color:var(--ink-400);}
+body:not(.dark) .cfq-wait{color:#5d5679;} body:not(.dark) .cfq-wait.long{color:#8a5310;}
+.cfq-name{font-size:16px;font-weight:650;letter-spacing:-.01em;}
+.cfq-meta{font-size:12.5px;color:var(--ink-400);margin-top:3px;}
+.cfq-meta.strong{color:var(--ink-700);font-weight:550;}
+.cfq-prog{margin-top:9px;max-width:420px;}
+.cfq-acts{display:flex;gap:8px;align-items:center;}
+.cfq-btn{min-height:40px;padding:0 16px;border-radius:11px;border:1px solid var(--glass-hairline);background:transparent;color:inherit;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;}
+.cfq-btn.quiet{color:var(--ink-400);}
+.cfq-btn:focus-visible,.cfq-prices:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,177,201,.25);}
+.cfq-acts .fv-dc{min-width:210px;min-height:56px;}
+body:not(.dark) .cfq-acts .fv-dc{background:#F3F5F9;}
+@media (max-width:700px){ .cfq-wrap{padding:18px 16px 60px;} .cfq-card{grid-template-columns:72px 1fr;} .cfq-acts{grid-column:1/-1;justify-content:flex-end;} .cfq-head{flex-direction:column;align-items:flex-start;} }
+/* a notice with an action (Record euthanasia · Undo · Open) */
+.note .n-act{display:inline-flex;align-items:center;min-height:30px;margin-top:8px;padding:0 12px;border-radius:9px;border:0;background:#8A82A8;color:#fff;font:inherit;font-size:12.5px;font-weight:650;cursor:pointer;}
+.note .n-act:hover{filter:brightness(1.07);}
+/* prices sheet */
+.cfp-scrim{display:none;}
+.cfp-scrim.open{display:grid;place-items:center;position:fixed;inset:0;z-index:9800;background:rgba(8,14,26,.45);padding:16px;}
+.cfp-box{width:min(560px,100%);max-height:90vh;overflow:auto;padding:20px;border-radius:20px;background:#fff;color:#14181F;box-shadow:0 24px 60px rgba(0,0,0,.3);}
+body.dark .cfp-box{background:#121a28;color:#E8EEF5;}
+.cfp-t{font-size:18px;font-weight:700;} .cfp-s{font-size:12.5px;opacity:.65;margin:3px 0 14px;}
+.cfp-row{display:grid;grid-template-columns:1fr 92px 14px 92px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid rgba(127,127,127,.15);font-size:13.5px;}
+.cfp-row input{height:36px;border-radius:9px;border:1px solid rgba(127,127,127,.3);padding:0 9px;font:inherit;font-size:13.5px;background:transparent;color:inherit;min-width:0;}
+.cfp-row input.cfp-bad{border-color:#C85A50;}
+.cfp-dollar{opacity:.6;text-align:right;}
+.cfp-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px;} .cfp-by{font-size:11.5px;opacity:.6;}
+@media (max-width:520px){ .cfp-row{grid-template-columns:1fr 1fr;} .cfp-row .cfp-l{grid-column:1/-1;} .cfp-dollar{display:none;} }
+/* family mode — light, calm, large; nothing of Flow shows */
+.cf-family-sheet{display:none;}
+.cf-family-sheet.open{display:block;position:fixed;inset:0;z-index:10050;overflow:auto;-webkit-overflow-scrolling:touch;background:#F2F4F8;color:#14181F;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Arial,sans-serif;font-size:17px;line-height:1.45;}
+body.cf-family-on{overflow:hidden;}
+.cff{max-width:720px;min-height:100%;margin:0 auto;padding:0 22px;display:flex;flex-direction:column;}
+.cff-nav{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;min-height:60px;padding:8px 0;background:rgba(242,244,248,.92);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);}
+.cff-nav-l{justify-self:start;} .cff-nav-r{justify-self:end;display:flex;align-items:center;gap:8px;}
+.cff-logo{height:38px;width:auto;display:block;}
+.cff-back{display:inline-flex;align-items:center;gap:2px;min-height:44px;padding:0 8px 0 0;border:0;background:transparent;color:#23439C;font:inherit;font-size:17px;font-weight:500;cursor:pointer;}
+.cff-back svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.cff-dots{display:flex;gap:8px;align-items:center;} .cff-dots span{width:8px;height:8px;border-radius:4px;background:#cfd5df;transition:width .3s cubic-bezier(.2,.8,.2,1),background .3s ease;}
+.cff-dots span.done{background:#9fb0d6;} .cff-dots span.on{width:22px;background:#23439C;}
+.cff-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+.cff-lang{display:inline-flex;padding:2px;border-radius:10px;background:rgba(118,118,128,.12);}
+.cff-lang button{min-height:34px;padding:0 10px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:550;color:#3b4250;cursor:pointer;}
+.cff-lang button:focus:not(:focus-visible){outline:none;box-shadow:none;} .cff-lang button[aria-pressed="true"]:focus:not(:focus-visible){box-shadow:0 1px 3px rgba(17,24,39,.14);}
+.cff-lang button[aria-pressed="true"]{background:#fff;color:#14181F;font-weight:650;box-shadow:0 1px 3px rgba(17,24,39,.14);}
+.cff-staff{height:34px;padding:0 12px;border-radius:9px;border:1px solid #d6dbe4;background:#fff;color:#6b7280;font:inherit;font-size:12px;font-weight:600;position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation;}
+.cff-staff::after{content:'';position:absolute;left:0;bottom:0;height:3px;width:0;background:#23439C;}
+.cff-staff.holding::after{width:100%;transition:width 1.2s linear;}
+.cff-card{flex:1;padding:14px 4px 24px;}
+.cff-card.enter-fwd{animation:cffIn .34s cubic-bezier(.2,.8,.2,1) both;} .cff-card.enter-back{animation:cffBack .34s cubic-bezier(.2,.8,.2,1) both;}
+@keyframes cffIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes cffBack{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+.cff-card h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:8px 0 8px;}
+.cff-card h1.cff-big{font-size:40px;letter-spacing:-.03em;}
+.cff-lead{color:#4b5563;margin:0 0 22px;font-size:18px;}
+.cff-grid{display:flex;flex-direction:column;gap:14px;}
+.cff-two{display:grid;grid-template-columns:1fr 1.4fr;gap:12px;}
+.cff-field{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:#3b4250;}
+.cff-field input{height:54px;border-radius:14px;border:1px solid #d6dbe4;padding:0 14px;font:inherit;font-size:18px;font-weight:500;color:#14181F;background:#fff;}
+.cff-field input:focus{outline:none;border-color:#23439C;box-shadow:0 0 0 4px rgba(35,67,156,.12);}
+.cff-seg{display:flex;gap:8px;} .cff-seg button{flex:1;height:50px;border-radius:13px;border:1px solid #d6dbe4;background:#fff;font:inherit;font-size:17px;font-weight:600;color:#3b4250;}
+.cff-seg button.on{border-color:#23439C;background:rgba(35,67,156,.07);color:#23439C;}
+.cff-care{display:flex;flex-direction:column;gap:10px;}
+.cff-note{display:block;color:#8a5310;margin-top:6px;font-size:15px;}
+.cff-sub{margin:-2px 0 4px;padding:14px 0 6px;}
+.cff-subt{font-size:16px;font-weight:650;margin:0 4px 10px;} .cff-subt span{font-weight:500;color:#6b7280;margin-left:6px;}
+.cff-urns{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 4px 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.cff-urns::-webkit-scrollbar{display:none;}
+.cff-urn{position:relative;flex:0 0 172px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 10px 12px;border-radius:18px;border:2px solid transparent;background:#fff;font:inherit;color:inherit;cursor:pointer;box-shadow:0 1px 2px rgba(17,24,39,.05);}
+.cff-urn.on{border-color:#23439C;box-shadow:0 0 0 4px rgba(35,67,156,.10);}
+.cff-urn img,.cff-urn-ph{width:100%;aspect-ratio:1;border-radius:12px;object-fit:contain;}
+.cff-urn-ph{display:grid;place-items:center;align-content:center;gap:4px;background:#eef1f6;color:#9aa1ad;}
+.cff-urn-ph svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;} .cff-urn-ph em{font-style:normal;font-size:12px;}
+.cff-urn-t{font-size:14px;font-weight:600;text-align:center;line-height:1.25;}
+.cff-urn-ok{position:absolute;top:16px;right:16px;width:26px;height:26px;border-radius:13px;background:#23439C;display:none;place-items:center;box-shadow:0 2px 6px rgba(35,67,156,.35);}
+.cff-urn.on .cff-urn-ok{display:grid;} .cff-urn-ok::after{content:'';width:11px;height:6px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg);}
+.cff-incl{font-size:14px;color:#6b7280;margin:2px 4px 0;}
+.cff-review{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(17,24,39,.04);}
+.cff-rrow{display:grid;grid-template-columns:110px 1fr auto;gap:12px;align-items:center;min-height:58px;padding:10px 16px;border-top:1px solid #edf0f5;}
+.cff-rrow:first-child{border-top:0;}
+.cff-rl{font-size:15px;color:#6b7280;} .cff-rv{font-size:17px;font-weight:600;} .cff-rv small{display:block;font-size:14px;font-weight:500;color:#6b7280;margin-top:2px;}
+.cff-edit{min-height:40px;padding:0 4px;border:0;background:transparent;color:#23439C;font:inherit;font-size:16px;font-weight:550;cursor:pointer;}
+.cff-consent{font-size:17px;color:#3b4250;background:#fff;border-radius:18px;padding:18px;margin:4px 0 18px;line-height:1.55;}
+.cff-sum{background:#fff;border-radius:18px;padding:14px 16px;margin:16px 0;}
+.cff-sumt{font-weight:650;}
+.cff-fees{width:100%;border-collapse:collapse;margin-top:8px;font-size:16px;font-variant-numeric:tabular-nums;} #cfFamily .cff-fees td{padding:7px 0;color:#4b5563;font-size:16px;border:0;background:none;} .cff-fees td:last-child{text-align:right;}
+#cfFamily .cff-fees tr.t td{border-top:1px solid #e1e5ec;padding-top:9px;font-weight:700;color:#14181F;}
+.cff-sigwrap{margin-top:16px;}
+.cff-sigl{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:600;color:#3b4250;margin-bottom:6px;}
+.cff-clear{height:34px;padding:0 12px;border-radius:9px;border:1px solid #d6dbe4;background:#fff;font:inherit;font-size:13px;font-weight:600;color:#4b5563;}
+.cff-sigbox{position:relative;border-radius:18px;background:#fff;box-shadow:inset 0 0 0 1px #d6dbe4;}
+.cff-sigbox::after{content:'';position:absolute;left:44px;right:22px;bottom:52px;height:1.5px;background:#b8c0cc;pointer-events:none;}
+.cff-x{position:absolute;left:20px;bottom:44px;font-size:24px;line-height:1;color:#9aa1ad;pointer-events:none;}
+.cff-sig{display:block;width:100%;height:210px;border-radius:18px;touch-action:none;cursor:crosshair;position:relative;z-index:1;}
+.cff-sigd{font-size:13px;color:#6b7280;margin-top:6px;text-align:right;}
+.cff-thanks{text-align:center;padding:70px 10px;}
+.cff-err{margin-top:14px;padding:12px 14px;border-radius:12px;background:#fdf2e3;color:#8a5310;font-size:16px;font-weight:550;}
+.cff-bar{position:sticky;bottom:0;z-index:2;padding:12px 0 calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(242,244,248,0),#F2F4F8 26%);}
+.cff-bar:empty{display:none;}
+.cff-primary{display:flex;align-items:center;justify-content:center;width:100%;min-height:58px;border:0;border-radius:16px;background:#23439C;color:#fff;font:inherit;font-size:18px;font-weight:650;letter-spacing:-.01em;cursor:pointer;box-shadow:0 8px 20px rgba(35,67,156,.22);}
+.cff-primary:active{transform:scale(.99);}
+.cff-primary.quiet{background:#fff;color:#3b4250;box-shadow:0 1px 2px rgba(17,24,39,.06);font-size:16px;}
+.cf-family-sheet button:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(35,67,156,.22);}
+/* the drawer card in family mode: always light (the iPad may be in dark mode), larger type for the family */
+#cfFamily .disposition-card{background:#fff;border-color:transparent;box-shadow:0 1px 2px rgba(17,24,39,.05);color:#18191F;}
+#cfFamily .disposition-card:hover{background:#fff;border-color:transparent;box-shadow:0 7px 18px rgba(17,24,39,.07);}
+#cfFamily .disposition-card .dc-title{color:#18191F;font-size:17px;}
+#cfFamily .disposition-card .dc-desc{color:#5b6472;font-size:15px;}
+#cfFamily .fv-dc .dc-aside{color:#3b4250;}
+#cfFamily .fv-dc .dc-mark{border-color:rgba(75,85,99,.35);}
+#cfFamily .fv-dc.is-on{border-color:#23439C;box-shadow:0 0 0 3px rgba(35,67,156,.10);}
+#cfFamily .fv-dc.is-on .dc-ic{color:#23439C;}
+#cfFamily .fv-dc.is-on .dc-mark{border-color:#23439C;background:#23439C;}
+#cfFamily .disposition-card:focus-visible{border-color:#23439C;box-shadow:0 0 0 4px rgba(35,67,156,.20);}
+@media (pointer:coarse){ #cfFamily .disposition-card{min-height:76px;} }
+@media (max-width:560px){ .cff{padding:0 14px;} .cff-card h1.cff-big{font-size:34px;} .cff-rrow{grid-template-columns:1fr auto;} .cff-rrow .cff-rl{grid-column:1/-1;} .cff-lang button{padding:0 7px;} .cff-urn{flex-basis:148px;} }
+@media (prefers-reduced-motion:reduce){ .cff-staff.holding::after{transition:none;} .cff-card.enter-fwd,.cff-card.enter-back{animation:none;} .cff-dots span{transition:none;} }
+/* printable copy */
+#cfPrint{display:none;}
+@media print{
+  body.cf-printing > *:not(#cfPrint){display:none !important;}
+  body.cf-printing #cfPrint{display:block !important;}
+}
+.cp{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:11.5pt;line-height:1.4;max-width:7.2in;margin:0 auto;}
+.cp-head{display:flex;gap:14px;align-items:center;font-size:9.5pt;} .cp-head img{height:48px;}
+.cp h1{font-size:17pt;margin:14px 0 2px;} .cp-sub{font-size:9.5pt;color:#444;margin-bottom:10px;}
+.cp h2{font-size:11.5pt;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px;border-bottom:1px solid #999;padding-bottom:3px;}
+.cp-t{border-collapse:collapse;width:100%;} .cp-t td{padding:3px 0;} .cp-t td:first-child{width:90px;color:#444;}
+.cp-care div{margin:3px 0;} .cpb{display:inline-block;width:14px;height:14px;border:1px solid #000;margin-right:8px;text-align:center;line-height:14px;font-size:11px;}
+.cp-consent{font-size:10.5pt;} .cp-consent.en{font-size:9pt;color:#333;} .cp-note{font-size:9.5pt;}
+.cp-sigs{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:14px;} .cp-sigs img{width:100%;height:80px;object-fit:contain;border-bottom:1px solid #000;}
+.cp-line{font-size:9pt;color:#333;margin-top:3px;}
+.cp-fees{border-collapse:collapse;width:100%;font-size:10.5pt;} .cp-fees td{padding:3px 0;} .cp-fees td:last-child{text-align:right;} .cp-fees tr.t td{border-top:1px solid #000;font-weight:700;}
+.cp-foot{font-size:8.5pt;color:#666;margin-top:16px;}
+</style>
+
+<script>
+/* ===== DOCUMENTS n122 (Oct 13 2026) — Pravix Forms inside Flow =====
+   Daniel: "Build it" (the Pravix Forms prototype). Staff always go into the room with the iPad.
+   · The patient drawer gets a Documents section: signed PDFs saved on the visit, the body tag, forms out with reception,
+     and "Send a form" for any form the hospital has mapped in Pravix Forms (shoreline.pravix.app/forms).
+   · Reception's Consent forms tab lists those forms too; "Start with the family" opens the family's iPad screens:
+     read the form (already filled from the visit), answer what it asks, sign; the staff member in the room witnesses.
+   · The signed copy is the hospital's own PDF, filled and locked, re-opened to check it, fingerprinted (SHA-256) and saved in
+     visit_docs (staff only; never in the tracker or the waiting room). The euthanasia & aftercare form does the same when a
+     mapped "Other ending" template exists; without one it keeps today's printable copy.
+   · Viewer (with the fingerprint check), Print, Download, and Make a packet: documents in order, one bookmark each,
+     contact details or fees blacked out by redrawing those pages (the text is removed, not covered).
+   · The PDF work runs in this browser (forms/lib/pvx-pdf.js: pdf-lib + pdf.js today, PdfCraft's engine later). */
+(function(){
+  if(typeof fillDrawer!=='function'||typeof renderDisposition!=='function') return;
+  var LIB='/forms/lib/', LV='20261013a';
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function who(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Staff'; }catch(e){ return 'Staff'; } }
+  function uid(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.uid)||null; }catch(e){ return null; } }
+  function T(){ try{ return TENANT_ID||'shoreline'; }catch(e){ return 'shoreline'; } }
+  function db(){ try{ return (typeof DB!=='undefined'&&DB)?DB:null; }catch(e){ return null; } }
+  function byId(id){ try{ return PATIENTS.find(function(x){ return String(x.id)===String(id); })||null; }catch(e){ return null; } }
+  function cur(){ try{ return PATIENTS.find(function(x){ return x.id===activePatient; })||null; }catch(e){ return null; } }
+  function pet(p){ try{ return dispFirstName(p); }catch(e){ return p&&p.name||'the pet'; } }
+  function hm(iso){ try{ return fmtTime(new Date(iso)); }catch(e){ return ''; } }
+  function note(t,s,o){ try{ notify(t,s,Object.assign({icon:'info',color:'#3E8FA5'},o||{})); }catch(e){} }
+  function noteAct(t,s,a,fn,o){ if(window.fvNotifyAct) fvNotifyAct(t,s,a,fn,Object.assign({color:'#3E8FA5'},o||{})); else note(t,s,o); }
+  var IC={doc:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>',tag:'<path d="M3 12l9-9h9v9l-9 9z"/><circle cx="16" cy="8" r="1.6"/>',send:'<path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 12l2 2 4-4"/>',plus:'<path d="M12 5v14M5 12h14"/>',chev:'<path d="M9 6l6 6-6 6"/>',up:'<path d="M6 15l6-6 6 6"/>',down:'<path d="M6 9l6 6 6-6"/>',shield:'<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',warn:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',ipad:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>'};
+  function svg(n){ return '<svg viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'; }
+
+  /* ---------- the PDF libraries, loaded the first time they're needed ---------- */
+  var libP=null;
+  function load(src){ return new Promise(function(ok,bad){ var s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=function(){ bad(new Error('Could not load '+src)); }; document.head.appendChild(s); }); }
+  function lib(){ if(libP) return libP; libP=(window.PvxPdf?Promise.resolve():load(LIB+'pvx-pdf.js?v='+LV)).then(function(){ return window.PvxForms?null:load(LIB+'pvx-forms.js?v='+LV); }).then(function(){ return PvxPdf.ready(); });
+    libP.catch(function(){ libP=null; }); return libP; }
+
+  /* ---------- templates (Pravix Forms) ---------- */
+  var TPL={list:null,at:0,p:null};
+  function templates(force){ if(!force&&TPL.list&&Date.now()-TPL.at<5*60000) return Promise.resolve(TPL.list); if(TPL.p&&!force) return TPL.p; var D=db(); if(!D) return Promise.resolve([]);
+    TPL.p=D.collection('form_templates').where('tenant_id','==',T()).get().then(function(s){ TPL.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(t){ return t.status==='ready'; })
+      .sort(function(a,b){ return String(b.updated_at||'').localeCompare(String(a.updated_at||'')); }); TPL.at=Date.now(); TPL.p=null; return TPL.list; })
+      .catch(function(e){ console.warn('[docs] templates',e); TPL.p=null; return TPL.list||[]; });
+    return TPL.p; }
+  function endingTemplate(kind){ return templates().then(function(L){ return L.filter(function(t){ return t.purpose==='ending'&&(t.kind||'euthanasia')===(kind==='died'?'died':'euthanasia'); })[0]||null; }); }
+
+  /* ---------- documents on a visit ---------- */
+  var DOCS={};
+  function loadDocs(p,force){ var k=String(p.id), c=DOCS[k]; if(c&&!force&&(c.list||c.p)) return c.p||Promise.resolve(c.list); var D=db(); if(!D) return Promise.resolve([]);
+    c=DOCS[k]=c||{list:null}; c.p=D.collection('visit_docs').where('visit_id','==',k).get().then(function(s){
+      c.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(m){ return !m.tenant_id||m.tenant_id===T(); }).sort(function(a,b){ return String(b.created_at||'').localeCompare(String(a.created_at||'')); });
+      c.p=null; return c.list; }).catch(function(e){ console.warn('[docs] list',e); c.p=null; c.err=true; return c.list||[]; });
+    return c.p; }
+  function docsOf(p){ var c=p&&DOCS[String(p.id)]; return (c&&c.list)||[]; }
+  function docForForm(p,formId){ return docsOf(p).filter(function(d){ return d.form_id&&d.form_id===formId; })[0]||null; }
+
+  /* ---------- forms out with reception (form_requests) ---------- */
+  var REQ=[], reqUnsub=null, reqSeen={};
+  function listen(){ var D=db(); if(!D||reqUnsub) return;
+    try{ reqUnsub=D.collection('form_requests').where('tenant_id','==',T()).where('status','in',['requested','family']).onSnapshot(function(s){
+      var before=REQ.map(function(r){ return r.id; }); REQ=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+      REQ.forEach(function(r){ if(before.indexOf(r.id)<0&&!reqSeen[r.id]&&r.status==='requested'&&r.requested&&r.requested.uid!==uid()&&(Date.now()-new Date(r.requested.at))<10*60000){ reqSeen[r.id]=1;
+        var p=byId(r.visit_id); noteAct('Form for reception',esc(p?pet(p):'A patient')+' · '+esc(r.template_name||'Form'),'Open',function(){ try{ switchView('consent'); }catch(e){} }); } });
+      repaintAll(); },function(e){ console.warn('[docs] requests',e); reqUnsub=null; }); }catch(e){ console.warn('[docs] listen',e); } }
+  var tries=0; (function wait(){ if(db()) return listen(); if(++tries<60) setTimeout(wait,500); })();
+  function reqsOf(p){ return REQ.filter(function(r){ return String(r.visit_id)===String(p.id); }); }
+  function queue(){ return REQ.filter(function(r){ return !!byId(r.visit_id); }).sort(function(a,b){ return new Date(a.requested.at)-new Date(b.requested.at); }); }
+  function mins(iso){ return Math.max(0,Math.round((Date.now()-new Date(iso))/60000)); }
+  function dur(m){ return m<1?'just now':m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min'; }
+  function queueCards(G){ var DC=window.fvDCard; return G.map(function(r){ var p=byId(r.visit_id), m=mins(r.requested.at), st=r.status;
+      return '<div class="cfq-card fvq-card" data-rid="'+esc(r.id)+'"><div class="cfq-wait'+(m>=15?' long':'')+'"><b>'+esc(dur(m))+'</b><span>'+(st==='family'?'with the family':'waiting')+'</span></div>'
+        +'<div class="cfq-main"><div class="cfq-name">'+esc(((p.name||'')+' '+(p.last||'')).trim())+'</div><div class="cfq-meta">'+esc([r.template_name||'Form',p.room&&p.room!=='Lobby'?p.room:'','sent by '+(r.requested.by||'')].filter(Boolean).join(' · '))+'</div></div>'
+        +'<div class="cfq-acts"><button type="button" class="cfq-btn quiet" data-fvq="cancel" data-rid="'+esc(r.id)+'">Cancel</button>'
+        +(DC?DC({ic:IC.ipad,title:st==='family'?'Resume':'Start with the family',desc:'Opens the family form',arrow:'out',attrs:'data-fvq="family" data-rid="'+esc(r.id)+'"'}):'<button type="button" class="cfq-btn" data-fvq="family" data-rid="'+esc(r.id)+'">Start with the family</button>')+'</div></div>'; }).join(''); }
+  function setReq(r,patch){ var D=db(); if(!D) return Promise.reject(new Error('offline')); Object.assign(r,patch); return D.collection('form_requests').doc(r.id).set(patch,{merge:true}); }
+  function repaintAll(){ try{ if(window.fvConsentRepaint) fvConsentRepaint(); }catch(e){} var p=cur(); if(p) try{ paintDocs(p); }catch(e){} }
+
+  /* ---------- the drawer: Documents ---------- */
+  function mount(){ var m=document.getElementById('docsMount'); if(m) return m; var after=document.getElementById('intakeCardMount')||document.getElementById('recordsMount'); if(!after) return null;
+    m=document.createElement('div'); m.id='docsMount'; after.insertAdjacentElement('afterend',m); return m; }
+  var fdBase=fillDrawer;
+  fillDrawer=function(p){ var r=fdBase.apply(this,arguments); try{ if(p){ paintDocs(p); var k=String(p.id); if(!DOCS[k]||!DOCS[k].list||Date.now()-(DOCS[k].at||0)>60000){ (DOCS[k]=DOCS[k]||{}).at=Date.now(); loadDocs(p,true).then(function(){ var c=cur(); if(c&&c.id===p.id) paintDocs(c); }); } } }catch(e){ console.warn('[docs]',e); } return r; };
+  function paintDocs(p){ var m=mount(); if(!m) return; var D=docsOf(p), R=reqsOf(p), F=p.consentForm, e=p.ending, rows=[];
+    D.forEach(function(d){ rows.push('<button type="button" class="fvd-item" data-fvd="view" data-doc="'+esc(d.id)+'"><span class="fvd-thumb" aria-hidden="true">'+svg('doc')+'</span><span class="fvd-b"><span class="fvd-t">'+esc(d.title||'Signed form')+'</span><span class="fvd-s">Signed '+esc(hm(d.signed_at||d.created_at))+(d.signed_by?' · '+esc(d.signed_by):'')+(d.witness?' · witnessed':'')+'</span><span class="fvd-ok">'+(d.pages||1)+' page'+((d.pages||1)===1?'':'s')+' · PDF</span></span><span class="fvd-chev" aria-hidden="true">'+svg('chev')+'</span></button>'); });
+    if(F&&F.status==='signed'&&!docForForm(p,F.id)) rows.push('<button type="button" class="fvd-item" data-fvd="print-consent"><span class="fvd-thumb" aria-hidden="true">'+svg('doc')+'</span><span class="fvd-b"><span class="fvd-t">'+(F.kind==='died'?'Aftercare form':'Euthanasia &amp; aftercare consent')+'</span><span class="fvd-s">Signed '+esc(hm(F.signed_at))+' · printable copy</span></span><span class="fvd-chev" aria-hidden="true">'+svg('chev')+'</span></button>');
+    if(e&&e.aftercare) rows.push('<div class="fvd-item static"><span class="fvd-thumb" aria-hidden="true">'+svg('tag')+'</span><span class="fvd-b"><span class="fvd-t">Body tag · 4 × 6 in</span><span class="fvd-s">'+esc((window.fvEndings&&fvEndings.summary)?fvEndings.summary(e,false):'')+'</span></span><button type="button" class="fvd-mini" data-fvd="tag">Print</button></div>');
+    R.forEach(function(r){ rows.push('<div class="fvd-item static pending"><span class="fvd-thumb" aria-hidden="true">'+svg('send')+'</span><span class="fvd-b"><span class="fvd-t">'+esc(r.template_name||'Form')+'</span><span class="fvd-s">'+(r.status==='family'?'With the family':'With reception')+' · sent '+esc(hm(r.requested.at))+'</span></span><button type="button" class="fvd-mini" data-fvd="cancel-req" data-rid="'+esc(r.id)+'">Cancel</button></div>'); });
+    var loading=DOCS[String(p.id)]&&DOCS[String(p.id)].p&&!D.length;
+    var h='<div class="fvd"><div class="fvd-head"><p class="sect-title">Documents'+(rows.length?' · '+rows.length:'')+'</p>'+((D.length||(e&&e.aftercare))?'<button type="button" class="fvd-link" data-fvd="packet">Make a packet</button>':'')+'</div>'
+      +(rows.length?'<div class="fvd-list">'+rows.join('')+'</div>':(loading?'<div class="fvd-empty">Loading…</div>':''))
+      +(isCompleted(p)?'':'<button type="button" class="fvd-send" data-fvd="send">'+svg('plus')+'Send a form</button>')+'</div>';
+    if(m.innerHTML!==h) m.innerHTML=h; }
+
+  /* ---------- sheets (the same sheet as the ending: centered on a computer, from the bottom on a phone) ---------- */
+  var sheet=null;
+  function openSheet(html,cls,label){ closeSheet(); var s=document.createElement('div'); s.id='fvdSheet'; s.className='end-sheet open';
+    s.innerHTML='<div class="es-scrim" data-fvd="close"></div><div class="es-panel '+(cls||'')+'" role="dialog" aria-modal="true" aria-label="'+esc(label||'')+'">'+html+'</div>';
+    document.body.appendChild(s); sheet={el:s,last:document.activeElement}; requestAnimationFrame(function(){ s.classList.add('shown'); var f=s.querySelector('[data-autofocus]')||s.querySelector('.es-panel button:not([data-fvd="close"])'); if(f) f.focus({preventScroll:true}); }); return s; }
+  function closeSheet(){ if(!sheet) return; var s=sheet.el, l=sheet.last; sheet=null; s.remove(); try{ if(l&&document.contains(l)) l.focus({preventScroll:true}); }catch(e){} }
+  function bar(title,right){ return '<header class="es-bar"><button type="button" class="es-cancel" data-fvd="close">'+(right?'Cancel':'Close')+'</button><h2>'+esc(title)+'</h2><span class="es-bar-r"></span></header>'; }
+  document.addEventListener('keydown',function(e){ if(sheet&&e.key==='Escape'){ e.stopPropagation(); e.preventDefault(); closeSheet(); } },true);
+
+  /* Send a form */
+  var send=null;
+  function openSend(p){ send={pid:p.id,tid:null,ans:{}};
+    openSheet(bar('Send a form for '+pet(p),true)+'<div class="es-body"><div class="es-sec"><div class="es-text">Loading your hospital’s forms…</div></div></div>','','Send a form');
+    templates(true).then(function(){ paintSend(); }); }
+  function paintSend(){ if(!send||!sheet) return; var p=byId(send.pid); if(!p){ closeSheet(); return; }
+    var L=(TPL.list||[]).filter(function(t){ return t.purpose!=='ending'; }), out=reqsOf(p).map(function(r){ return r.template_id; }), done=docsOf(p).map(function(d){ return d.template_id; });
+    var h=bar('Send a form for '+pet(p),true)+'<div class="es-body">';
+    if(!L.length) h+='<div class="es-sec"><div class="es-group es-text"><b>No forms are ready yet.</b><br>Map your hospital’s PDFs in Pravix Forms, then publish them to Flow.</div></div>';
+    else{ h+='<div class="es-sec"><div class="es-h" id="fvdFormsH">Your hospital’s forms</div><div class="es-group" role="radiogroup" aria-labelledby="fvdFormsH">';
+      L.forEach(function(t){ var on=send.tid===t.id, isOut=out.indexOf(t.id)>-1, isDone=done.indexOf(t.id)>-1, pages=(t.file&&t.file.pages||[]).length;
+        h+='<button type="button" class="es-row'+(on?' on':'')+'" role="radio" aria-checked="'+on+'" data-fvd="pick" data-tid="'+esc(t.id)+'"'+(isOut?' disabled':'')+'><span class="es-rl">'+esc(t.name||'Form')+'<span class="es-rd">'+(isOut?'Already with reception':isDone?'Signed earlier today · send again':pages+' page'+(pages===1?'':'s'))+'</span></span><span class="es-check" aria-hidden="true"></span></button>'; });
+      h+='</div></div>';
+      var t=L.filter(function(x){ return x.id===send.tid; })[0];
+      if(t){ var staffQ=(t.boxes||[]).filter(function(b){ return b.src==='staff.text'; });
+        if(staffQ.length){ h+='<div class="es-sec"><div class="es-h">Before you send it</div><div class="es-group">'+staffQ.map(function(b){ return '<label class="es-row es-field"><span class="es-fl">'+esc(b.label&&b.label.en||'Staff answer')+'</span><input type="text" data-fvd-staff="'+esc(b.id)+'" value="'+esc(send.ans[b.id]||'')+'" autocomplete="off"></label>'; }).join('')+'</div></div>'; }
+        h+='<div class="es-sec"><div class="es-group es-text">Filled in from '+esc(pet(p))+'’s visit: '+esc([p.owner,p.hid,(p.doctor&&p.doctor!=='unassigned')?p.doctor:''].filter(Boolean).join(' · '))+'. Reception takes the iPad into the room; the family checks it and signs.</div></div>'; } }
+    h+='</div><footer class="es-foot"><div class="end-hint" id="fvdHint" role="alert" hidden></div><button type="button" class="es-primary" data-fvd="do-send"'+(send.tid?'':' disabled')+'>Send to reception</button></footer>';
+    var panel=sheet.el.querySelector('.es-panel'), fk=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.tid; panel.innerHTML=h;
+    if(fk){ var f=panel.querySelector('[data-tid="'+fk+'"]'); if(f) f.focus(); } }
+  function doSend(){ var p=byId(send.pid), t=(TPL.list||[]).filter(function(x){ return x.id===send.tid; })[0], D=db(); if(!p||!t||!D) return;
+    var id='fr_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), r={tenant_id:T(),visit_id:String(p.id),template_id:t.id,template_name:t.name||'Form',status:'requested',
+      requested:{at:new Date().toISOString(),by:who(),uid:uid()},pet:{name:pet(p)},owner:{name:p.owner||''},staff_answers:send.ans||{}};
+    reqSeen[id]=1; D.collection('form_requests').doc(id).set(r).then(function(){ r.id=id; if(!REQ.some(function(x){ return x.id===id; })) REQ.push(r); closeSheet(); note('Form sent to reception',esc(pet(p))+' · '+esc(r.template_name)); repaintAll(); })
+      .catch(function(e){ console.warn('[docs] send',e); var h=document.getElementById('fvdHint'); if(h){ h.textContent='Couldn’t send it. Check the connection and try again.'; h.hidden=false; } }); }
+  function cancelReq(id){ var r=REQ.filter(function(x){ return x.id===id; })[0]; if(!r) return; var before={status:r.status};
+    setReq(r,{status:'cancelled',cancelled:{at:new Date().toISOString(),by:who()}}).then(function(){ REQ=REQ.filter(function(x){ return x.id!==id; }); repaintAll();
+      noteAct('Form cancelled',esc(r.template_name||'Form'),'Undo',function(){ setReq(r,{status:before.status,cancelled:null}).then(function(){ if(!REQ.some(function(x){ return x.id===id; })) REQ.push(r); repaintAll(); }); },{dur:8000}); })
+      .catch(function(e){ console.warn('[docs] cancel',e); }); }
+
+  /* ---------- the family's iPad screens for a mapped form ---------- */
+  var L2={read:['Please read','Por favor, lea'],read_l:['This is the form you’re signing. Your details are already filled in.','Este es el formulario que va a firmar. Sus datos ya están completados.'],
+    ask:['Your answers','Sus respuestas'],ask_l:['Check these and fill in anything missing.','Revíselos y complete lo que falte.'],sign:['Please sign','Por favor, firme'],
+    sign_l:['By signing, you agree to the form you just read.','Al firmar, acepta el formulario que acaba de leer.'],name:['Your full name','Su nombre completo'],
+    signhere:['Sign with your finger or Apple Pencil','Firme con el dedo o con el Apple Pencil'],clear:['Clear','Borrar'],cont:['Continue','Continuar'],signbtn:['Sign','Firmar'],
+    back:['Back','Atrás'],staff:['Staff','Personal'],thanks:['Thank you','Gracias'],care:['We’ll take good care of {pet}.','Cuidaremos muy bien de {pet}.'],
+    req:['Please answer this to continue.','Por favor, responda para continuar.'],e_name:['Please type your full name.','Por favor, escriba su nombre completo.'],e_sig:['Please sign in the box.','Por favor, firme en el recuadro.'],
+    yes:['Yes','Sí'],loading:['Preparing the form…','Preparando el formulario…'],choose:['Choose one.','Elija una opción.']};
+  var FAM=null;
+  function t2(k,v){ var r=(L2[k]||[k,k])[FAM&&FAM.lang==='es'?1:0]; return r.replace(/\{(\w+)\}/g,function(_,n){ return v&&v[n]!=null?v[n]:''; }); }
+  function qTitle(q){ var t=q.title||{}; return (FAM.lang==='es'&&t.es)?t.es:(t.en||''); }
+  function startFamily(rid){ var r=REQ.filter(function(x){ return x.id===rid; })[0]; if(!r) return; var p=byId(r.visit_id); if(!p) return;
+    var aw=document.getElementById('cfFamily'); if(aw&&aw.classList.contains('open')) return;   /* the euthanasia form is open */
+    var kept=famDrafts[rid]||null; delete famDrafts[rid];
+    FAM=kept||{rid:rid,pid:p.id,step:'read',lang:'en',ans:{},err:'',pages:null,tpl:null,sig:{}};
+    if(r.status==='requested') setReq(r,{status:'family',family_at:new Date().toISOString(),family_by:who()}).catch(function(){});
+    document.body.classList.add('cf-family-on'); paintFamily();
+    lib().then(function(){ return templates(); }).then(function(L){ var tpl=L.filter(function(t){ return t.id===r.template_id; })[0]; if(!tpl) throw new Error('This form is no longer published.');
+      FAM.tpl=tpl; var a=FAM.ans; PvxForms.questions(tpl).forEach(function(q){ if(a[q.key]!=null) return;
+        if(q.src==='owner.name') a[q.key]=p.owner||''; else if(q.src==='owner.phone') a[q.key]=p.ownerPhone||''; else if(q.src==='family.state') a[q.key]='CT'; });
+      Object.keys(r.staff_answers||{}).forEach(function(k){ a[k]=r.staff_answers[k]; });
+      return preview(); }).catch(function(e){ console.warn('[docs] family',e); if(FAM){ FAM.err=String(e.message||e); paintFamily(); } }); }
+  function preview(){ var p=byId(FAM.pid); return PvxForms.templateBytes(db(),FAM.tpl).then(function(src){ FAM.src=src; return PvxPdf.fill(src,FAM.tpl.boxes,PvxForms.resolve(FAM.tpl,{p:p,answers:FAM.ans,hospital:'VCA Shoreline'}),{}); })
+    .then(function(b){ var n=FAM.tpl.file.pages.length, out=[], ch=Promise.resolve(); for(var i=0;i<n;i++)(function(i){ ch=ch.then(function(){ return PvxPdf.renderPage(b,i,1.6); }).then(function(c){ out.push(c.toDataURL('image/jpeg',0.86)); }); })(i);
+      return ch.then(function(){ if(!FAM) return; FAM.pages=out; paintFamily(); }); }); }
+  function famEl(){ var w=document.getElementById('cfFamily'); if(!w){ w=document.createElement('div'); w.id='cfFamily'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true'); document.body.appendChild(w); } return w; }
+  function steps(){ var Q=FAM.tpl?PvxForms.questions(FAM.tpl):[]; return Q.length?['read','ask','sign']:['read','sign']; }
+  function paintFamily(){ if(!FAM) return; var p=byId(FAM.pid); if(!p){ closeFamily(); return; } readAnswers();
+    var w=famEl(), S=steps(), idx=S.indexOf(FAM.step), fam=idx>-1, nm=pet(p), tpl=FAM.tpl, h='<div class="cff" lang="'+FAM.lang+'"><header class="cff-nav"><div class="cff-nav-l">'
+      +(fam&&idx>0?'<button type="button" class="cff-back" data-fvd="fback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span>'+t2('back')+'</span></button>':'<img class="cff-logo" src="assets/img/logo-light.png" alt="VCA Shoreline">')+'</div>'
+      +'<div class="cff-dots" aria-hidden="'+(!fam)+'">'+(fam?S.map(function(s,i){ return '<span class="'+(i===idx?'on':i<idx?'done':'')+'"></span>'; }).join(''):'')+'</div>'
+      +'<div class="cff-nav-r">'+(fam?'<div class="cff-lang" role="group" aria-label="Language / Idioma"><button type="button" lang="en" aria-pressed="'+(FAM.lang==='en')+'" data-fvl="en">English</button><button type="button" lang="es" aria-pressed="'+(FAM.lang==='es')+'" data-fvl="es">Español</button></div><button type="button" class="cff-staff" data-fvd="hold" aria-label="Staff: press and hold to leave the form">'+t2('staff')+'</button>':'')+'</div></header><main class="cff-card">';
+    var primary='';
+    if(!tpl&&!FAM.err) h+='<h1>'+t2('loading')+'</h1>';
+    else if(FAM.step==='read'){ h+='<h1>'+t2('read')+'</h1><p class="cff-lead">'+t2('read_l')+'</p><div class="fvf-pages">'+(FAM.pages?FAM.pages.map(function(u,i){ return '<img src="'+u+'" alt="'+esc((tpl&&tpl.name||'Form')+' · page '+(i+1))+'">'; }).join(''):'<div class="fvf-wait">'+t2('loading')+'</div>')+'</div>';
+      primary='<button type="button" class="cff-primary" data-fvd="fnext"'+(FAM.pages?'':' disabled')+'>'+t2('cont')+'</button>'; }
+    else if(FAM.step==='ask'){ h+='<h1>'+t2('ask')+'</h1><p class="cff-lead">'+t2('ask_l')+'</p><div class="cff-grid">';
+      PvxForms.questions(tpl).forEach(function(q){ var v=FAM.ans[q.key];
+        if(q.kind==='text') h+='<label class="cff-field"><span>'+esc(qTitle(q))+(q.required?'':'')+'</span><input data-fvq-k="'+esc(q.key)+'" value="'+esc(v||'')+'"'+(q.src==='family.zip'?' inputmode="numeric"':'')+'></label>';
+        else if(q.kind==='check') h+=(window.fvDCard?fvDCard({ic:'',title:esc(qTitle(q)),sel:!!v,box:true,wrap:true,cls:'fvf-noic cff-check'+(v?' on':''),attrs:'data-fvq-c="'+esc(q.key)+'"'}):'');
+        else if(q.kind==='choice'){ h+='<div class="cff-field"><span>'+esc(qTitle(q))+'</span><div class="cff-care" role="radiogroup" aria-label="'+esc(qTitle(q))+'">'+q.options.map(function(o){ var on=v===o.id, lab=(FAM.lang==='es'&&o.label.es)?o.label.es:o.label.en; return window.fvDCard?fvDCard({ic:'',title:esc(lab||'—'),sel:on,wrap:true,cls:'fvf-noic cff-opt'+(on?' on':''),attrs:'data-fvq-o="'+esc(q.key)+'" data-opt="'+esc(o.id)+'"'}):''; }).join('')+'</div></div>'; } });
+      h+='</div>'; primary='<button type="button" class="cff-primary" data-fvd="fnext">'+t2('cont')+'</button>'; }
+    else if(FAM.step==='sign'){ h+='<h1>'+t2('sign')+'</h1><p class="cff-lead">'+t2('sign_l')+'</p><label class="cff-field"><span>'+t2('name')+'</span><input id="fvdSignName" value="'+esc(FAM.signName!=null?FAM.signName:(FAM.ans['owner.name']||p.owner||''))+'" autocomplete="name"></label>'
+        +'<div class="cff-sigwrap"><div class="cff-sigl">'+t2('signhere')+' <button type="button" class="cff-clear" data-fvd="fclear">'+t2('clear')+'</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="fvdSigOwner" aria-label="'+esc(t2('signhere'))+'"></canvas><span class="cff-x" aria-hidden="true">×</span></div></div>';
+      primary='<button type="button" class="cff-primary" data-fvd="fsign">'+t2('signbtn')+'</button>'; }
+    else if(FAM.step==='thanks'){ h+='<div class="cff-thanks"><h1 class="cff-big">'+t2('thanks')+'</h1><p class="cff-lead">'+t2('care',{pet:esc(nm)})+'</p></div>';
+      primary='<button type="button" class="cff-primary" data-fvd="'+(needsWitness()?'fwit':'fsave')+'">'+(needsWitness()?'Staff: witness the signature':'Staff: save the signed form')+'</button>'; }
+    else if(FAM.step==='witness'){ h+='<h1>Witness</h1><p class="cff-lead">'+esc(FAM.sign.owner.name)+' signed '+esc(tpl.name||'the form')+' for '+esc(nm)+'. Sign as the witness.</p>'
+        +'<div class="cff-sigwrap"><div class="cff-sigl">'+esc(who())+' <button type="button" class="cff-clear" data-fvd="fclearw">Clear</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="fvdSigWitness" aria-label="Witness signature pad"></canvas><span class="cff-x" aria-hidden="true">×</span></div></div>';
+      primary='<button type="button" class="cff-primary" data-fvd="fsave">Save the signed form</button>'; }
+    else if(FAM.step==='saving'){ h+='<div class="cff-thanks"><h1>Saving…</h1><p class="cff-lead">Making the signed PDF and checking it.</p></div>'; }
+    if(FAM.err) h+='<div class="cff-err" role="alert">'+esc(FAM.err)+'</div>';
+    h+='</main><footer class="cff-bar">'+primary+'</footer></div>';
+    var keep=document.activeElement&&w.contains(document.activeElement)&&(document.activeElement.id||document.activeElement.dataset.fvqK);
+    w.className='cf-family-sheet open'; w.innerHTML=h;
+    if(keep){ var k=document.getElementById(keep)||w.querySelector('[data-fvq-k="'+keep+'"]'); if(k&&k.focus) k.focus({preventScroll:true}); }
+    if(window.fvSigPad){ fvSigPad.pad('fvdSigOwner','owner',FAM.sig); fvSigPad.pad('fvdSigWitness','witness',FAM.sig); } }
+  function needsWitness(){ return !!(FAM&&FAM.tpl&&(FAM.tpl.boxes||[]).some(function(b){ return b.src==='sign.witness'; })); }
+  function readAnswers(){ if(!FAM) return; [].forEach.call(document.querySelectorAll('#cfFamily [data-fvq-k]'),function(i){ FAM.ans[i.dataset.fvqK]=String(i.value||'').trim(); });
+    var n=document.getElementById('fvdSignName'); if(n) FAM.signName=String(n.value||'').trim(); }
+  function fgo(step){ FAM.err=''; FAM.step=step; paintFamily(); var b=document.getElementById('cfFamily'); if(b) b.scrollTop=0; }
+  function fnext(){ readAnswers(); var S=steps(), i=S.indexOf(FAM.step);
+    if(FAM.step==='ask'){ var miss=PvxForms.questions(FAM.tpl).filter(function(q){ var v=FAM.ans[q.key]; return q.required&&(v==null||v===''||v===false); })[0];
+      if(miss){ FAM.err=t2('req'); paintFamily(); var f=document.querySelector('#cfFamily [data-fvq-k="'+miss.key+'"],#cfFamily [data-fvq-c="'+miss.key+'"],#cfFamily [data-fvq-o="'+miss.key+'"]'); if(f) f.focus(); return; } }
+    if(i>-1&&i<S.length-1) fgo(S[i+1]); }
+  function fsign(){ readAnswers(); if(!FAM.signName){ FAM.err=t2('e_name'); paintFamily(); var n=document.getElementById('fvdSignName'); if(n) n.focus(); return; }
+    if(!window.fvSigPad||!fvSigPad.inked('owner',FAM.sig)){ FAM.err=t2('e_sig'); paintFamily(); return; }
+    FAM.sign={owner:{name:FAM.signName,at:new Date().toISOString(),png:fvSigPad.png('owner','fvdSigOwner',FAM.sig)}}; if(FAM.ans['owner.name']==null) FAM.ans['owner.name']=FAM.signName; fgo('thanks'); }
+  function fsave(){ var p=byId(FAM.pid), r=REQ.filter(function(x){ return x.id===FAM.rid; })[0];
+    if(FAM.step==='witness'){ if(!fvSigPad.inked('witness',FAM.sig)){ FAM.err='Please sign as the witness.'; paintFamily(); return; } FAM.sign.witness={name:who(),uid:uid(),at:new Date().toISOString(),png:fvSigPad.png('witness','fvdSigWitness',FAM.sig)}; }
+    var F0=FAM; F0.step='saving'; paintFamily();
+    PvxForms.fileSigned(db(),{tpl:F0.tpl,p:p,answers:F0.ans,sign:F0.sign,lang:F0.lang,title:F0.tpl.name,by:who(),tenant:T(),hospital:'VCA Shoreline',request_id:F0.rid}).then(function(meta){
+      var k=String(p.id); (DOCS[k]=DOCS[k]||{list:[]}).list=[meta].concat((DOCS[k].list||[]).filter(function(d){ return d.id!==meta.id; }));
+      return (r?setReq(r,{status:'signed',signed_at:meta.signed_at,doc_id:meta.id,sha256:meta.sha256}):Promise.resolve()).then(function(){ REQ=REQ.filter(function(x){ return x.id!==F0.rid; });
+        FAM=null; closeFamily(); note('Form signed',esc(pet(p))+' · '+esc(meta.title)+' · saved as a PDF on the visit'); repaintAll(); }); })
+    .catch(function(e){ console.warn('[docs] save',e); if(FAM===F0){ F0.step=F0.sign&&F0.sign.witness?'witness':'thanks'; F0.err='Couldn’t save the signed PDF: '+(e&&e.message||e)+'. Tap Save to try again.'; paintFamily(); } }); }
+  function closeFamily(){ FAM=null; document.body.classList.remove('cf-family-on'); var w=document.getElementById('cfFamily'); if(w){ w.className='cf-family-sheet'; w.innerHTML=''; } repaintAll(); }
+  var holdT=null, famDrafts={};
+  document.addEventListener('pointerdown',function(e){ var b=e.target&&e.target.closest&&e.target.closest('[data-fvd="hold"]'); if(!b) return; b.classList.add('holding');
+    holdT=setTimeout(function(){ if(FAM){ readAnswers(); famDrafts[FAM.rid]=FAM; } FAM=null; closeFamily(); },1200); },true);
+  ['pointerup','pointercancel','pointerleave'].forEach(function(t){ document.addEventListener(t,function(){ clearTimeout(holdT); var b=document.querySelector('[data-fvd="hold"].holding'); if(b) b.classList.remove('holding'); },true); });
+
+  /* ---------- euthanasia & aftercare: file the hospital's PDF when the form is signed ---------- */
+  function fileEnding(p,f){ if(!p||!f||f.status!=='signed') return Promise.resolve(null);
+    return lib().then(function(){ return endingTemplate(f.kind); }).then(function(tpl){ if(!tpl) return null;
+      if(docForForm(p,f.id)) return docForForm(p,f.id);
+      var o=f.owner||{}, urn=''; try{ urn=window.fvConsent&&f.urn?fvConsent.urnLabel(f.urn):''; }catch(e){}
+      return PvxForms.fileSigned(db(),{tpl:tpl,p:p,answers:{'owner.name':o.name||p.owner||'','family.address':o.address||'','family.city':o.city||'','family.state':o.state||'','family.zip':o.zip||'','owner.phone':p.ownerPhone||''},
+        aftercare:{care:f.care,urn:urn,clay:!!f.clay,total:f.total},sign:{owner:f.owner_sig,witness:f.witness},lang:f.lang||'en',title:tpl.name||(f.kind==='died'?'Aftercare form':'Euthanasia & aftercare consent'),
+        kind:f.kind,by:who(),tenant:T(),hospital:'VCA Shoreline',form_id:f.id}).then(function(meta){ var k=String(p.id); (DOCS[k]=DOCS[k]||{list:[]}).list=[meta].concat(DOCS[k].list||[]); repaintAll(); return meta; }); })
+      .catch(function(e){ console.warn('[docs] ending pdf',e); noteAct('PDF not saved',esc(pet(p))+'’s signed form is safe; the PDF copy wasn’t made','Try again',function(){ fileEnding(byId(p.id)||p,f); },{color:'#C85A50'}); return null; }); }
+
+  /* ---------- viewer ---------- */
+  var VIEW=null;
+  function view(p,meta){ VIEW={pid:p.id,meta:meta,state:'loading'}; paintView(); lib().then(function(){ return PvxForms.docBytes(db(),meta); }).then(function(r){ if(!VIEW||VIEW.meta.id!==meta.id) return; VIEW.bytes=r.bytes; VIEW.intact=r.intact;
+      var ch=Promise.resolve(), out=[]; for(var i=0;i<(meta.pages||1);i++)(function(i){ ch=ch.then(function(){ return PvxPdf.renderPage(r.bytes,i,1.5); }).then(function(c){ out.push(c.toDataURL('image/jpeg',0.88)); }); })(i);
+      return ch.then(function(){ if(!VIEW) return; VIEW.pages=out; VIEW.state='ready'; paintView(); }); }).catch(function(e){ console.warn('[docs] view',e); if(VIEW){ VIEW.state='error'; VIEW.err=String(e.message||e); paintView(); } }); }
+  function paintView(){ var V=VIEW, p=byId(V.pid)||{}, m=V.meta;
+    var h=bar(m.title||'Signed form')+'<div class="es-body fvv-body">';
+    if(V.state==='ready') h+='<div class="fvv-check '+(V.intact?'ok':'bad')+'">'+svg(V.intact?'shield':'warn')+'<span><b>'+(V.intact?'Unchanged since signing':'This copy doesn’t match its fingerprint')+'</b><span>'+(V.intact?'Its fingerprint matches the one saved when it was signed.':'Don’t rely on it; ask an admin.')+'</span></span></div>';
+    h+='<div class="fvv-meta">'+esc([m.signed_by?'Signed by '+m.signed_by:'',m.witness?'witness '+m.witness:'',hm(m.signed_at)?hm(m.signed_at):'',m.lang==='es'?'filled in Spanish':''].filter(Boolean).join(' · '))+'<code>'+esc(String(m.sha256||'').slice(0,16).replace(/(.{4})/g,'$1 ').trim())+'</code></div>';
+    if(V.state==='loading') h+='<div class="es-text">Opening the PDF…</div>';
+    if(V.state==='error') h+='<div class="es-text">Couldn’t open it: '+esc(V.err)+'</div>';
+    (V.pages||[]).forEach(function(u,i){ h+='<img class="fvv-page" src="'+u+'" alt="Page '+(i+1)+'">'; });
+    h+='</div><footer class="es-foot fvv-foot"><button type="button" class="fvd-mini" data-fvd="v-packet">Make a packet</button><button type="button" class="fvd-mini" data-fvd="v-dl"'+(V.bytes?'':' disabled')+'>Download</button><button type="button" class="es-primary" data-fvd="v-print"'+(V.bytes?'':' disabled')+'>Print</button></footer>';
+    if(sheet&&sheet.el.querySelector('.fvv')) sheet.el.querySelector('.es-panel').innerHTML=h; else openSheet(h,'fvv fvd-wide',m.title||'Signed form'); }
+  function blobUrl(bytes){ return URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})); }
+  function fileName(p,title){ return (String((p&&((p.name||'')+' '+(p.last||'')))||'').trim()+' - '+(title||'document')+'.pdf').replace(/[\\/:*?"<>|]+/g,'-'); }
+  function download(bytes,name){ var a=document.createElement('a'); a.href=blobUrl(bytes); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); }
+  function printBytes(bytes,win){ var u=blobUrl(bytes); if(win&&!win.closed){ win.location.href=u; } else { var w=window.open(u,'_blank'); if(!w) download(bytes,'print.pdf'); } }
+
+  /* ---------- the body tag as a PDF (for the packet) ---------- */
+  function tagPdf(p){ var e=p.ending; if(!e||!e.aftercare) return Promise.resolve(null);
+    return lib().then(function(){ var PL=window.PDFLib; return PL.PDFDocument.create().then(function(doc){ return Promise.all([doc.embedFont(PL.StandardFonts.Helvetica),doc.embedFont(PL.StandardFonts.HelveticaBold)]).then(function(f){
+      var H=f[0], B=f[1], pg=doc.addPage([288,432]), ink=PL.rgb(0,0,0), x=13, w=262, y=410, clean=PvxPdf.clean;
+      var at=e.at?new Date(e.at):new Date(), when=at.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+' · '+at.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      pg.drawText('VCA SHORELINE',{x:x,y:y,size:8,font:H,color:ink}); var hid=clean(p.hid||''); pg.drawText(hid,{x:x+w-B.widthOfTextAtSize(hid,11),y:y,size:11,font:B,color:ink});
+      pg.drawLine({start:{x:x,y:y-5},end:{x:x+w,y:y-5},thickness:1.4,color:ink}); y-=36;
+      var nm=clean(((p.name||'')+' '+(p.last||'')).trim()||'Patient'), sz=28; while(sz>14&&B.widthOfTextAtSize(nm,sz)>w) sz-=1; pg.drawText(nm,{x:x,y:y,size:sz,font:B,color:ink}); y-=16;
+      pg.drawText(clean([p.species,p.breed,p.sex].filter(Boolean).join(' · ')),{x:x,y:y,size:10,font:H,color:ink}); y-=16;
+      var band={private:['PRIVATE CREMATION','Ashes come back to VCA Shoreline'],communal:['COMMUNAL CREMATION','Ashes are not returned'],release:['RELEASE TO OWNER','Do not send to Final Gift'],hold:['HOLD','Then communal cremation, unless the family decides']}[e.aftercare]||[String(e.aftercare).toUpperCase(),''];
+      if(e.aftercare==='hold'){ var u=new Date(at.getTime()+7*864e5); band[0]='HOLD UNTIL '+u.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase(); }
+      var bh=46; if(e.aftercare==='private') pg.drawRectangle({x:x,y:y-bh,width:w,height:bh,color:ink}); else pg.drawRectangle({x:x+1.5,y:y-bh+1.5,width:w-3,height:bh-3,borderColor:ink,borderWidth:e.aftercare==='release'?4:3,borderDashArray:e.aftercare==='hold'?[6,4]:undefined});
+      var bc=e.aftercare==='private'?PL.rgb(1,1,1):ink, bs=15; while(bs>9&&B.widthOfTextAtSize(band[0],bs)>w-20) bs-=0.5;
+      pg.drawText(band[0],{x:x+10,y:y-22,size:bs,font:B,color:bc}); if(band[1]) pg.drawText(band[1],{x:x+10,y:y-37,size:8.5,font:H,color:bc}); y-=bh+18;
+      var line=function(l,v){ if(!v) return; pg.drawText(l.toUpperCase(),{x:x,y:y,size:7,font:H,color:PL.rgb(0.25,0.25,0.25)}); pg.drawText(clean(v).slice(0,60),{x:x+66,y:y,size:9.5,font:H,color:ink}); pg.drawLine({start:{x:x,y:y-5},end:{x:x+w,y:y-5},thickness:0.4,color:PL.rgb(0.7,0.7,0.7)}); y-=18; };
+      line('Owner',p.owner); line('Urn',e.urn||''); line(e.type==='died'?'Died':'Euthanized',when); line('Doctor',(p.doctor&&p.doctor!=='unassigned')?p.doctor:'');
+      if(e.type==='euthanasia'&&e.consent&&window.fvEndings&&fvEndings.consentLine) line('Consent',fvEndings.consentLine(e.consent).replace(/^Consent /,''));
+      (e.keepsakes||[]).forEach(function(k){ pg.drawRectangle({x:x,y:y-2,width:9,height:9,borderColor:ink,borderWidth:1}); pg.drawText(k==='clay'?'Clay paw print made':String(k),{x:x+15,y:y,size:9.5,font:H,color:ink}); y-=16; });
+      y=46; pg.drawLine({start:{x:x,y:y},end:{x:x+120,y:y},thickness:0.7,color:ink}); pg.drawLine({start:{x:x+142,y:y},end:{x:x+w,y:y},thickness:0.7,color:ink});
+      pg.drawText('Tagged by',{x:x,y:y-10,size:7,font:H,color:ink}); pg.drawText('Picked up by Final Gift · date',{x:x+142,y:y-10,size:7,font:H,color:ink});
+      pg.drawText(clean('Recorded by '+(e.by||'')+' · Pravix Flow'),{x:x,y:14,size:6.5,font:H,color:PL.rgb(0.35,0.35,0.35)});
+      doc.setCreationDate(new Date(0)); doc.setModificationDate(new Date(0)); doc.setProducer('Pravix Forms'); return doc.save({useObjectStreams:false}); }); }); }); }
+
+  /* ---------- packet ---------- */
+  var PK=null;
+  var AUD={family:{t:'The family',contact:false,fees:false},rdvm:{t:'Referring vet',contact:true,fees:true},crem:{t:'Final Gift',contact:true,fees:true}};
+  function openPacket(p){ var items=docsOf(p).map(function(d){ return {key:'d:'+d.id,t:d.title||'Signed form',s:'Signed '+hm(d.signed_at||d.created_at)+' · '+(d.pages||1)+' page'+((d.pages||1)===1?'':'s'),on:true,meta:d}; });
+    if(p.ending&&p.ending.aftercare) items.push({key:'tag',t:'Body tag',s:'4 × 6 in · 1 page',on:true});
+    PK={pid:p.id,aud:'rdvm',items:items,contact:true,fees:true,state:'edit',out:null}; paintPacket(); }
+  function paintPacket(){ var P=PK, p=byId(P.pid)||{}, hasC=P.items.some(function(i){ return i.meta&&i.meta.regions&&i.meta.regions.contact&&i.meta.regions.contact.length; }), hasF=P.items.some(function(i){ return i.meta&&i.meta.regions&&i.meta.regions.fees&&i.meta.regions.fees.length; });
+    var h=bar('Packet · '+pet(p),true)+'<div class="es-body"><div class="es-sec"><div class="es-h">Who it’s for</div><span class="es-seg fvp-aud" role="radiogroup" aria-label="Who it’s for">'+Object.keys(AUD).map(function(k){ var on=P.aud===k; return '<button type="button" class="'+(on?'on':'')+'" role="radio" aria-checked="'+on+'" data-fvd="aud" data-aud="'+k+'">'+AUD[k].t+'</button>'; }).join('')+'</span></div>'
+      +'<div class="es-sec"><div class="es-h">Documents, in order</div><div class="es-group">'+(P.items.length?P.items.map(function(it,i){ return '<div class="es-row fvp-row"><label class="fvp-l"><input type="checkbox" data-fvd-on="'+i+'"'+(it.on?' checked':'')+'><span class="es-rl">'+esc(it.t)+'<span class="es-rd">'+esc(it.s)+'</span></span></label><span class="fvp-ord"><button type="button" aria-label="Move up" data-fvd="up" data-i="'+i+'"'+(i===0?' disabled':'')+'>'+svg('up')+'</button><button type="button" aria-label="Move down" data-fvd="dn" data-i="'+i+'"'+(i===P.items.length-1?' disabled':'')+'>'+svg('down')+'</button></span></div>'; }).join(''):'<div class="es-text">No PDFs on this visit yet.</div>')+'</div></div>'
+      +'<div class="es-sec"><div class="es-h">Before it leaves the hospital</div><div class="es-group">'
+      +'<label class="es-row fvp-l"><span class="es-rl">Black out the owner’s contact details<span class="es-rd">'+(hasC?'Phone, address and email boxes · removed from the file, not just covered':'None mapped on these forms')+'</span></span><input type="checkbox" data-fvd-opt="contact"'+(P.contact&&hasC?' checked':'')+(hasC?'':' disabled')+'></label>'
+      +'<label class="es-row fvp-l"><span class="es-rl">Leave out the fees<span class="es-rd">'+(hasF?'The fee boxes are blacked out':'No fee boxes on these forms')+'</span></span><input type="checkbox" data-fvd-opt="fees"'+(P.fees&&hasF?' checked':'')+(hasF?'':' disabled')+'></label></div>'
+      +'<div class="es-foot-note">The packet is made in this browser. Nothing is saved or sent until you download or print it.</div></div>';
+    if(P.state==='done') h+='<div class="es-sec"><div class="es-group es-text"><b>'+esc(P.outName)+'</b><br>'+P.outPages+' pages · one bookmark per document'+(P.redacted?' · '+P.redacted+' page'+(P.redacted===1?'':'s')+' redrawn with details removed':'')+'</div></div>';
+    if(P.state==='error') h+='<div class="es-sec"><div class="es-group es-text">Couldn’t make the packet: '+esc(P.err)+'</div></div>';
+    h+='</div><footer class="es-foot">'+(P.state==='done'?'<div class="fvv-foot"><button type="button" class="fvd-mini" data-fvd="p-dl">Download</button><button type="button" class="es-primary" data-fvd="p-print">Print</button></div>'
+      :'<button type="button" class="es-primary" data-fvd="p-make"'+(P.items.some(function(i){ return i.on; })&&P.state!=='working'?'':' disabled')+'>'+(P.state==='working'?'Making the PDF…':'Make the packet')+'</button>')+'</footer>';
+    if(sheet&&sheet.el.querySelector('.fvp')) sheet.el.querySelector('.es-panel').innerHTML=h; else openSheet(h,'fvp','Packet'); }
+  function makePacket(){ var P=PK, p=byId(P.pid); P.state='working'; paintPacket();
+    lib().then(function(){ var sel=P.items.filter(function(i){ return i.on; });
+      return Promise.all(sel.map(function(it){ return it.key==='tag'?tagPdf(p).then(function(b){ return {it:it,bytes:b}; }):PvxForms.docBytes(db(),it.meta).then(function(r){ if(!r.intact) throw new Error(it.t+' doesn’t match its fingerprint'); return {it:it,bytes:r.bytes}; }); })); })
+    .then(function(parts){ parts=parts.filter(function(x){ return x.bytes; }); var regions=[], at=0;
+      parts.forEach(function(x){ var m=x.it.meta, rg=m&&m.regions||{}; if(P.contact) (rg.contact||[]).forEach(function(r){ regions.push({page:at+(r.page|0),rect:r.rect}); }); if(P.fees) (rg.fees||[]).forEach(function(r){ regions.push({page:at+(r.page|0),rect:r.rect}); }); at+=(m&&m.pages)||1; });
+      return PvxPdf.merge(parts.map(function(x){ return {bytes:x.bytes,title:x.it.t}; })).then(function(m){ return regions.length?PvxPdf.redact(m,regions,{dpi:150}):m; })
+        .then(function(out){ return PvxPdf.check(out).then(function(c){ if(!c.ok) throw new Error(c.error||'the PDF did not open'); var pages={}; regions.forEach(function(r){ pages[r.page]=1; });
+          P.out=out; P.outPages=c.pages; P.redacted=Object.keys(pages).length; P.outName=fileName(p,AUD[P.aud].t==='The family'?'packet':'packet for '+AUD[P.aud].t.toLowerCase()); P.state='done'; paintPacket(); }); }); })
+    .catch(function(e){ console.warn('[docs] packet',e); P.state='error'; P.err=String(e&&e.message||e); paintPacket(); }); }
+
+  /* ---------- clicks ---------- */
+  document.addEventListener('click',function(ev){ var t=ev.target; if(!t||!t.closest) return;
+    var q=t.closest('[data-fvq]'); if(q&&q.closest('#view-consent')){ var w0=q.dataset.fvq, rid=q.dataset.rid; if(w0==='family') startFamily(rid); else if(w0==='cancel') cancelReq(rid); return; }
+    var fl=t.closest('#cfFamily [data-fvl]'); if(fl&&FAM){ readAnswers(); FAM.lang=fl.dataset.fvl; FAM.err=''; paintFamily(); return; }
+    if(FAM&&t.closest('#cfFamily')){ var c=t.closest('[data-fvq-c]'); if(c){ readAnswers(); FAM.ans[c.dataset.fvqC]=!FAM.ans[c.dataset.fvqC]; FAM.err=''; paintFamily(); return; }
+      var o=t.closest('[data-fvq-o]'); if(o){ readAnswers(); FAM.ans[o.dataset.fvqO]=o.dataset.opt; FAM.err=''; paintFamily(); return; } }
+    var a=t.closest('[data-fvd]'); if(!a) return; var w=a.dataset.fvd, p=cur();
+    if(w==='close'){ closeSheet(); VIEW=null; PK=null; send=null; return; }
+    if(w==='send'&&p){ openSend(p); return; }
+    if(w==='pick'&&send){ send.tid=a.dataset.tid; paintSend(); return; }
+    if(w==='do-send'&&send){ [].forEach.call(document.querySelectorAll('#fvdSheet [data-fvd-staff]'),function(i){ send.ans[i.dataset.fvdStaff]=String(i.value||'').trim(); }); doSend(); return; }
+    if(w==='cancel-req'){ cancelReq(a.dataset.rid); return; }
+    if(w==='view'&&p){ var m=docsOf(p).filter(function(d){ return d.id===a.dataset.doc; })[0]; if(m) view(p,m); return; }
+    if(w==='print-consent'&&p&&window.fvConsent){ fvConsent.print(p); return; }
+    if(w==='tag'&&p&&window.fvEndings&&fvEndings.printTag){ fvEndings.printTag(p); return; }
+    if(w==='packet'&&p){ openPacket(p); return; }
+    if(w==='v-packet'&&VIEW){ var vp=byId(VIEW.pid); closeSheet(); VIEW=null; if(vp) openPacket(vp); return; }
+    if(w==='v-dl'&&VIEW&&VIEW.bytes){ download(VIEW.bytes,fileName(byId(VIEW.pid),VIEW.meta.title)); return; }
+    if(w==='v-print'&&VIEW&&VIEW.bytes){ printBytes(VIEW.bytes); try{ var D=db(); if(D) D.collection('visit_docs').doc(VIEW.meta.id).set({printed_at:new Date().toISOString(),printed_by:who()},{merge:true}).catch(function(){}); }catch(e){} return; }
+    if(w==='aud'&&PK){ PK.aud=a.dataset.aud; PK.contact=AUD[PK.aud].contact; PK.fees=AUD[PK.aud].fees; PK.state='edit'; paintPacket(); return; }
+    if((w==='up'||w==='dn')&&PK){ var i=+a.dataset.i, j=w==='up'?i-1:i+1; if(j<0||j>=PK.items.length) return; var x=PK.items[i]; PK.items[i]=PK.items[j]; PK.items[j]=x; PK.state='edit'; paintPacket(); var f=document.querySelector('#fvdSheet [data-fvd="'+w+'"][data-i="'+j+'"]'); if(f&&!f.disabled) f.focus(); return; }
+    if(w==='p-make'&&PK){ makePacket(); return; }
+    if(w==='p-dl'&&PK&&PK.out){ download(PK.out,PK.outName); return; }
+    if(w==='p-print'&&PK&&PK.out){ printBytes(PK.out); return; }
+    if(!FAM) return;
+    if(w==='fback'){ readAnswers(); var S=steps(), k=S.indexOf(FAM.step); if(k>0) fgo(S[k-1]); return; }
+    if(w==='fnext'){ fnext(); return; }
+    if(w==='fsign'){ fsign(); return; }
+    if(w==='fwit'){ fgo('witness'); return; }
+    if(w==='fsave'){ fsave(); return; }
+    if(w==='fclear'){ FAM.sig.owner=[]; paintFamily(); return; }
+    if(w==='fclearw'){ FAM.sig.witness=[]; paintFamily(); return; }
+  });
+  document.addEventListener('change',function(ev){ var t=ev.target; if(!PK||!t||!t.closest||!t.closest('#fvdSheet')) return;
+    if(t.dataset.fvdOn!=null){ PK.items[+t.dataset.fvdOn].on=t.checked; PK.state='edit'; paintPacket(); }
+    if(t.dataset.fvdOpt){ PK[t.dataset.fvdOpt]=t.checked; PK.state='edit'; paintPacket(); } });
+
+  window.fvDocs={lib:lib,templates:templates,loadDocs:loadDocs,docsOf:docsOf,docForForm:docForForm,fileEnding:fileEnding,view:view,openPacket:openPacket,openSend:openSend,
+    queue:queue,queueCards:queueCards,startFamily:startFamily,tagPdf:tagPdf,state:function(){ return {REQ:REQ,FAM:FAM,PK:PK,VIEW:VIEW,DOCS:DOCS,TPL:TPL,send:send}; },close:closeSheet,listen:listen};
+})();
+</script>
+<style>
+/* Documents in the drawer */
+.fvd{margin:18px 0 6px;display:flex;flex-direction:column;gap:8px;}
+.fvd-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}.fvd-head .sect-title{margin:0;}
+.fvd-link{min-height:32px;border:0;background:transparent;color:#4DC8E0;font:inherit;font-size:13px;font-weight:650;cursor:pointer;padding:0 4px;}
+.fvd-list{display:flex;flex-direction:column;gap:8px;}
+.fvd-item{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:14px;background:var(--glass,#131e34);border:1px solid var(--glass-hairline,rgba(77,200,224,.10));color:inherit;font:inherit;text-align:left;cursor:pointer;}
+.fvd-item.static{cursor:default;}.fvd-item:not(.static):hover{border-color:rgba(77,200,224,.28);}
+.fvd-thumb{flex:0 0 38px;height:46px;border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;}
+.fvd-thumb svg{width:20px;height:20px;fill:none;stroke:#3A4558;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.fvd-item.pending .fvd-thumb{background:rgba(56,189,210,.14);}.fvd-item.pending .fvd-thumb svg{stroke:#38BDD2;}
+.fvd-b{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+.fvd-t{font-size:14px;font-weight:650;}.fvd-s{font-size:12.5px;color:var(--ink-500,#7A98B8);}.fvd-ok{font-size:11.5px;color:var(--ink-500,#7A98B8);}
+.fvd-chev svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;opacity:.5;}
+.fvd-mini{min-height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--ctl-border,rgba(150,185,220,.32));background:transparent;color:inherit;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.fvd-mini[disabled]{opacity:.45;cursor:default;}
+.fvd-send{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border-radius:14px;border:1px dashed var(--ctl-border,rgba(150,185,220,.38));background:transparent;color:inherit;font:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+.fvd-send svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;}
+.fvd-empty{font-size:13px;color:var(--ink-500,#7A98B8);}
+/* viewer + packet sheets */
+.es-panel.fvd-wide{width:min(880px,calc(100vw - 32px));}
+.fvv-body{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.fvv-check{align-self:stretch;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;}
+.fvv-check svg{width:24px;height:24px;flex:0 0 24px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.fvv-check.ok{background:rgba(72,184,136,.12);box-shadow:inset 0 0 0 1px rgba(72,184,136,.35);}.fvv-check.ok svg{stroke:#7FD6AE;}
+.fvv-check.bad{background:rgba(232,100,74,.12);box-shadow:inset 0 0 0 1px rgba(232,100,74,.4);}.fvv-check.bad svg{stroke:#E8928A;}
+.fvv-check>span{display:flex;flex-direction:column;gap:2px;font-size:12.5px;}.fvv-check b{font-size:14px;}
+.fvv-meta{align-self:stretch;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:12.5px;color:rgba(150,171,191,.85);}
+.fvv-meta code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11.5px;}
+.fvv-page{width:100%;max-width:760px;height:auto;border-radius:3px;box-shadow:0 14px 34px rgba(0,0,0,.4);background:#fff;}
+.fvv-foot{display:flex;gap:10px;justify-content:flex-end;align-items:center;}.fvv-foot .es-primary{min-width:140px;padding:0 18px;}
+.es-foot .fvv-foot,.es-foot.fvv-foot{flex-direction:row;flex-wrap:wrap;}
+.fvp-row{cursor:default;}.fvp-l{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;}
+label.es-row.fvp-l{justify-content:space-between;}
+.fvp-l input{width:20px;height:20px;accent-color:#8A82A8;flex:0 0 20px;}
+.fvp-ord{display:flex;gap:4px;}.fvp-ord button{width:34px;height:34px;border-radius:9px;border:1px solid rgba(150,185,220,.25);background:transparent;color:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.fvp-ord button[disabled]{opacity:.3;cursor:default;}.fvp-ord svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.fvp-aud{display:flex;}.fvp-aud button{flex:1;}
+/* the family's pages */
+.fvf-pages{display:flex;flex-direction:column;gap:16px;margin-top:6px;}
+.fvf-pages img{width:100%;height:auto;border-radius:6px;box-shadow:0 8px 24px rgba(17,24,39,.12);background:#fff;}
+.fvf-wait{padding:40px;text-align:center;color:#6b7280;}
+#cfFamily .fvf-noic{grid-template-columns:1fr auto;min-height:64px;align-items:center;}
+#cfFamily .fvf-noic .dc-ic{display:none;}
+#cfFamily .fvf-noic .dc-title{font-size:17px;}
+body:not(.dark) .fvd-link{color:#1F7F96;}
+body:not(.dark) .fvd-item{background:#fff;border-color:var(--glass-hairline);}
+body:not(.dark) .fvv-meta{color:#6b7280;}
+body:not(.dark) .fvp-ord button{border-color:rgba(30,45,90,.15);}
+</style>
+
+<script>/* n122 Forms link: only for accounts Forms lets in (keep in step with forms/index.html ALLOWED) */(function(){var a=document.getElementById("navForms");if(!a)return;var OK=["daniel.giordano@pravix.app"];function set(u){var e=u&&u.email?String(u.email).toLowerCase():"";a.style.display=OK.indexOf(e)>-1?"":"none";}try{if(typeof AUTH!=="undefined"&&AUTH&&AUTH.onAuthStateChanged){set(AUTH.currentUser);AUTH.onAuthStateChanged(set);}}catch(e){}})();</script>
 <script>window.FV_TECHS=["Felisha Barnes", "Tanneil Buchanan", "Stephanie Cseh", "Erin Cummings", "Chris Densky", "Nelson Diaz", "Alexis Distasio", "Lizzy Dixon", "Catherine Fappiano", "Brandy Fellin", "Viviana Fonseca", "Lauren Francione", "Amber Horvath", "Kimberly Hulme", "Danielle Infante", "Amanda Inzitari", "Danielle Kiley", "Malyssa Kubik", "Carly Kudola", "Amanda Van Kuren", "Ann LeStrange", "Janitza Lopez", "Gabrielle Lungarini", "Lindsay Martin", "Myranda May", "Sam Mitchell", "Bethany Oczkowski", "Gabriella Palumbo", "Rachel Pieger", "Malachi Quinones", "Allie Rodriguez", "Christina Rodriguez", "Delahla Rosario", "Vanessa Ruiz", "Stacey Smith", "Ally Tewksbury", "Courtney Thieke", "Shelsey Vega", "Paola Velazquez", "Dharianna Villa", "Lauren Whitney", "Jordain Williams"];</script>
 <script>
 /* ═══ FLOW → TREATMENT SHEETS ═══
@@ -17004,7 +18471,7 @@ body:not(.dark) .rd-undo .ru-undo{background:var(--fill-soft,rgba(120,120,128,.1
     var r=origComplete.apply(this,arguments);
     if(p&&!p._demo){ try{
       if(finalStatus==='Admitted') ensureSheet(p,'IP').then(function(){ setTimeout(function(){ pullEstimate(p); pushEstimate(p); },400); });
-      else if(finalStatus==='Discharged'||finalStatus==='Euthanized') closeOP(p,finalStatus);
+      else if(finalStatus==='Discharged'||finalStatus==='Euthanized'||finalStatus==='Deceased') closeOP(p,finalStatus);
     }catch(e){ console.warn(e); } }
     return r;
   };
@@ -17429,7 +18896,7 @@ body.dark .fv-or-chip.rec{color:#8FE3EF;background:rgba(56,189,210,.14);border-c
     p.timeline=p.timeline||[]; p.timeline.push({label:type,at:new Date(at),meta:'Treatment sheet · '+by});
     try{ if(typeof rdExpanded!=='undefined'&&rdExpanded===p.id) rdExpanded=null; }catch(e){}
     try{ rdTouch(p,'Admission ended on the treatment sheet · '+lab); }catch(e){ try{ renderAll(); }catch(_){} }
-    if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p,type==='Euthanized'?'Euthanized':'Discharged'); }catch(e){} }   /* a direct admit leaves the board too */
+    if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p,(type==='Euthanized'||type==='Deceased')?type:'Discharged'); }catch(e){} }   /* a direct admit leaves the board too */
     try{ if(window.fvSheetSeen) fvSheetSeen(p,'closed'); }catch(e){}
     try{ notify(type==='Discharged'?'Went home':type,esc(((p.name||'')+' '+(p.last||'')).trim())+' · '+esc(lab)+' on the treatment sheet',{icon:'info',color:'var(--s-admitted)',dur:7000}); }catch(e){}
     return true; }
