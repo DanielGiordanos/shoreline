@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forms-build" content="20261013b">
+<meta name="forms-build" content="20261013c">
 <title>Forms · Pravix</title>
 <script>(function(){try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(light|dark)/);if(m)document.documentElement.setAttribute('data-theme',m[1]);}catch(e){}})();</script>
 <style>
@@ -17,14 +17,32 @@ html,body{margin:0;height:100%}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}
 a{color:var(--accent-ink)}
-.top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:12px 24px;background:var(--nav);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
-.brand{display:flex;align-items:center;gap:10px;min-width:170px;text-decoration:none;color:inherit}
-.brand i{width:30px;height:30px;border-radius:9px;background:#2F55BE;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;color:#fff}
-.brand b{font-size:17px}.brand span{font-weight:500;color:var(--ink2)}
-.apps{display:flex;flex-wrap:wrap;gap:4px;flex:1;justify-content:center}
-.apps a{padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink2);text-decoration:none}
-.apps a:hover{background:var(--fill)}.apps a[aria-current]{color:var(--ink);background:var(--sel);box-shadow:inset 0 0 0 1px rgba(56,189,210,.35)}
-.who{display:flex;align-items:center;gap:10px;min-width:170px;justify-content:flex-end;font-size:12.5px;color:var(--ink2)}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:10px 28px;background:var(--nav);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:18px;text-decoration:none;color:inherit;flex:0 0 auto}
+.brand .vca{height:56px;width:auto;display:block}.brand .div{width:1px;height:40px;background:var(--line2);opacity:.7}
+.brand .pvx{display:flex;align-items:center;gap:8px}.brand .pvx-ic{height:34px;width:auto;display:block}
+.brand .pvx-t{display:flex;flex-direction:column;gap:1px}.brand .pvx-t small{font-size:7.5px;font-weight:700;letter-spacing:.14em;color:var(--ink3)}.brand .pvx-mk{height:21px;width:auto;display:block}
+.lite{display:none!important}:root[data-theme="light"] .lite{display:block!important}:root[data-theme="light"] .drk{display:none!important}
+.apps{display:flex;flex-wrap:wrap;gap:2px;flex:1 1 560px;justify-content:center}
+.apps a{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:62px;padding:7px 8px 6px;border-radius:12px;font-size:11.5px;font-weight:600;color:var(--ink2);text-decoration:none;border:1px solid transparent}
+.apps a svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.apps a:hover{background:var(--fill);color:var(--ink)}.apps a[aria-current]{color:var(--ink);background:rgba(77,200,224,.12);border-color:rgba(77,200,224,.32)}
+.who{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+.logout{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px 0 6px;border-radius:14px;border:1px solid var(--line2);background:var(--s0);font-size:14px;font-weight:600;cursor:pointer}
+.logout i{width:30px;height:30px;border-radius:9px;background:var(--s2);display:flex;align-items:center;justify-content:center}.logout svg{width:15px;height:15px;fill:none;stroke:var(--ink2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.theme{width:72px;height:40px;border-radius:20px;border:1px solid var(--line2);background:var(--s0);padding:4px;display:flex;justify-content:flex-end;cursor:pointer}
+.theme i{width:30px;height:30px;border-radius:15px;background:#D8D2C2;display:block}:root[data-theme="light"] .theme{justify-content:flex-start}:root[data-theme="light"] .theme i{background:#F2B33D}
+.subnav{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:10px 28px;border-bottom:1px solid var(--line);background:var(--bg)}
+.subnav .lbl{font-size:11.5px;font-weight:700;letter-spacing:.12em;color:var(--ink3)}
+.subnav .tabs{display:flex;gap:6px;flex:1 1 auto}
+.subnav .tabs button{display:flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--ink2);font-size:13.5px;font-weight:600;cursor:pointer}
+.subnav .tabs button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.subnav .tabs button[aria-current="page"]{background:rgba(56,189,210,.12);border-color:rgba(56,189,210,.35);color:var(--ink)}
+.subnav .tabs button:hover{color:var(--ink)}
+.subnav .srch{display:flex;align-items:center;gap:8px;min-height:38px;width:280px;max-width:100%;padding:0 12px;border-radius:11px;background:var(--s0);box-shadow:inset 0 0 0 1px var(--line2)}
+.subnav .srch svg{width:15px;height:15px;fill:none;stroke:var(--ink3);stroke-width:2.2;stroke-linecap:round}
+.subnav .srch input{flex:1;min-width:0;border:0;background:transparent;font-size:13.5px;outline:0}.subnav .srch kbd{font:inherit;font-size:11.5px;color:var(--ink3)}
+.subnav .srch:focus-within{box-shadow:inset 0 0 0 1px var(--line2),0 0 0 3px rgba(56,189,210,.35)}.subnav .srch input:focus-visible{box-shadow:none!important}
 .btn{min-height:40px;padding:0 15px;border-radius:11px;border:1px solid var(--line2);background:transparent;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
 .btn:hover{background:var(--fill)}.btn.primary{background:var(--accent);border-color:transparent;color:#fff}.btn.primary:hover{filter:brightness(1.08)}
 .btn.quiet{border-color:transparent}.btn.danger{color:var(--bad)}.btn[disabled]{opacity:.4;cursor:default;filter:none}
@@ -34,7 +52,34 @@ a{color:var(--accent-ink)}
 :focus-visible{outline:none;box-shadow:0 0 0 3px rgba(56,189,210,.35)!important}
 .ok-ic{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:var(--good-ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 /* library */
-.lib{max-width:1160px;margin:0 auto;padding:44px 28px 64px;display:flex;flex-direction:column;gap:30px}
+.lib{max-width:1180px;margin:0 auto;padding:52px 28px 64px;display:flex;flex-direction:column;gap:44px}
+.sec{display:flex;flex-direction:column;gap:18px}.sec-h h2{margin:0;font-size:20px;font-weight:650}.sec-h p{margin:4px 0 0;font-size:14px;color:var(--ink2);line-height:1.45}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px}
+.slot{display:flex;flex-direction:column;border-radius:18px;background:var(--s0);border:1px solid var(--line);overflow:hidden}
+.slot .art{height:210px;background:var(--paper-bg);display:flex;align-items:center;justify-content:center}
+.slot .blank{width:124px;height:160px;border-radius:6px;border:1.5px dashed var(--line2);background:var(--fill);display:flex;align-items:center;justify-content:center}
+.slot .blank i{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center}.slot .blank svg{width:26px;height:26px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.slot .txt{padding:18px 20px 20px;display:flex;flex-direction:column;gap:6px;flex:1}.slot .txt small{font-size:12px;font-weight:650;color:var(--ink3)}
+.slot h3{margin:0;font-size:17px;font-weight:650}.slot p{margin:0;font-size:13.5px;line-height:1.45;color:var(--ink2);flex:1}.slot .btn{align-self:flex-start;margin-top:10px}
+.foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.drophint{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink3)}.drophint svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dropzone{position:fixed;inset:0;z-index:70;background:rgba(6,11,21,.72);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.dropzone::before{content:"";position:absolute;inset:20px;border-radius:26px;border:2px solid #38BDD2;background:rgba(56,189,210,.06);box-shadow:0 0 0 6px rgba(56,189,210,.10)}
+.dropzone div{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;color:#E6EEF6}.dropzone b{font-size:26px;font-weight:700;letter-spacing:-.02em}.dropzone span{font-size:14.5px;color:#A7C2D8}
+.dropzone .pg{width:104px;height:132px;border-radius:6px;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,.55);transform:rotate(-4deg);margin-bottom:14px;position:relative}
+.dropzone .pg::after{content:"+";position:absolute;right:-14px;bottom:-14px;width:36px;height:36px;border-radius:18px;background:#187A91;color:#fff;font-size:26px;line-height:34px;text-align:center;font-weight:500}
+.welcome{width:min(540px,100%);background:var(--s0);border:1px solid var(--line);border-radius:24px;box-shadow:0 40px 100px rgba(0,0,0,.6);padding:40px 40px 32px;display:flex;flex-direction:column;gap:28px;margin-top:6vh}
+.welcome .hd{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}.welcome .hd i{width:64px;height:64px;border-radius:18px;background:var(--s1);display:flex;align-items:center;justify-content:center}
+.welcome .hd svg{width:32px;height:32px;fill:none;stroke:var(--accent-ink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.welcome h2{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em}
+.welcome .rows{display:flex;flex-direction:column;gap:22px}.welcome .row{display:flex;gap:16px;align-items:flex-start}
+.welcome .row i{flex:0 0 44px;height:44px;border-radius:13px;background:rgba(56,189,210,.12);display:flex;align-items:center;justify-content:center}.welcome .row svg{width:22px;height:22px;fill:none;stroke:var(--accent-ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.welcome .row b{display:block;font-size:15.5px;font-weight:650;margin-bottom:3px}.welcome .row span{font-size:14px;line-height:1.45;color:var(--ink2)}
+.welcome .btn.primary{min-height:52px;font-size:16px;border-radius:14px}
+.signed{display:flex;flex-direction:column;border-radius:16px;background:var(--s0);border:1px solid var(--line);overflow:hidden}
+.srow{display:flex;align-items:center;gap:14px;padding:12px 16px}.srow+.srow{border-top:1px solid var(--line)}
+.srow .ic{width:38px;height:46px;border-radius:5px;background:#fff;flex:0 0 38px;display:flex;align-items:center;justify-content:center}.srow .ic svg{width:20px;height:20px;fill:none;stroke:#3A4558;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.srow .b{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.srow .b b{font-size:14.5px;font-weight:600}.srow .b span{font-size:12.5px;color:var(--ink2)}
+.nothing{padding:36px;border-radius:16px;border:1px dashed var(--line2);text-align:center;color:var(--ink2);font-size:14px}
 .lib-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px}
 .lib-head h1{margin:0;font-size:34px;font-weight:750;letter-spacing:-.02em}.lib-head p{margin:6px 0 0;color:var(--ink2);line-height:1.5;font-size:15px}
 .lib-head .btn.primary{min-height:44px;padding:0 18px;font-size:14.5px}
@@ -47,6 +92,7 @@ a{color:var(--accent-ink)}
 .tile:hover .tthumb{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(77,200,224,.28)}
 .tthumb .pg{width:100%;max-height:100%;background:#fff;border-radius:3px;box-shadow:0 14px 34px rgba(0,0,0,.45);overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:60%}
 .tthumb .pg img{display:block;width:100%;height:auto}
+:root[data-theme="light"] .tthumb .pg{box-shadow:0 8px 22px rgba(17,24,39,.14)}:root[data-theme="light"] .slot .art,:root[data-theme="light"] .tthumb{background:#E4E8EF}
 .tmeta{display:flex;flex-direction:column;gap:3px;padding:0 2px}
 .tmeta b{font-size:15px;font-weight:650;line-height:1.3}.tmeta span{font-size:13px;color:var(--ink2)}.tmeta small{font-size:12.5px;color:var(--ink3)}
 .chip{align-self:flex-start;margin-top:5px;font-size:12.5px;font-weight:650;padding:4px 10px;border-radius:999px;background:var(--fill);color:var(--ink2)}
@@ -194,7 +240,7 @@ var ICON={up:'<path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/>'
   trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',dl:'<path d="M12 4v12"/><path d="M6 10l6 6 6-6"/><path d="M4 20h16"/>',ok:'<path d="M5 12l4 4 10-10"/>',
   pen:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.5"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>'};
 function ic(n,c){ return '<svg viewBox="0 0 24 24" aria-hidden="true"'+(c?' class="'+c+'"':'')+'>'+ICON[n]+'</svg>'; }
-var state={user:null,view:'lib',filter:'all',list:[],tpl:null,bytes:null,sel:null,saving:0,savedAt:null,dirty:false,mode:'edit',zoom:null,q:'',previewed:false,sheet:null,pageNo:0};
+var state={user:null,view:'lib',search:'',intent:null,filter:'all',list:[],tpl:null,bytes:null,sel:null,saving:0,savedAt:null,dirty:false,mode:'edit',zoom:null,q:'',previewed:false,sheet:null,pageNo:0};
 function who(){ var u=state.user; return u&&(u.displayName||u.email)||''; }
 function toast(t){ if(state.view==='map'&&$('#pstatus')&&!$('.scrim')){ state.note={t:t,until:Date.now()+2800}; paintStatus(); setTimeout(paintStatus,2900); return; } var e=document.createElement('div'); e.className='toast'; e.setAttribute('role','status'); e.textContent=t; document.body.appendChild(e); setTimeout(function(){ e.remove(); },2600); }
 function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
@@ -218,15 +264,16 @@ function loadList(){ return DB.collection('form_templates').where('tenant_id','=
   state.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(t){ return t.status!=='archived'; })
     .sort(function(a,b){ return String(b.updated_at||'').localeCompare(String(a.updated_at||'')); }); })
   .catch(function(e){ console.warn('[forms] list',e); state.list=[]; toast('Couldn’t load the forms. Check the connection.'); }); }
-function statusOf(t){ var pr=F.progress(t); if(t.status==='ready') return {k:'ready',t:'Ready'}; if(pr.total&&(pr.missing||pr.review)) return {k:'todo',t:'Needs review'}; return {k:'draft',t:'Draft'}; }
+function statusOf(t){ var pr=F.progress(t); if(t.status==='ready') return {k:'ready',t:'Ready'}; if(!pr.total||pr.missing||pr.review) return {k:'todo',t:'Needs review'}; return {k:'draft',t:'Draft'}; }
 function whereText(t){ return t.purpose==='ending'?('Flow › Other ending › Send form'+(t.kind==='died'?' (died)':' (euthanasia)')):'Flow › patient drawer › Send a form'; }
-function whereShort(t){ return t.purpose==='ending'?(t.kind==='died'?'Died ending':'Euthanasia ending'):'Patient drawer'; }
+function whereShort(t){ if(t.purpose==='staff') return 'Employee form'; return t.purpose==='ending'?(t.kind==='died'?'Died ending':'Euthanasia ending'):'Patient drawer'; }
 function firstName(s){ s=String(s||''); if(s.indexOf('@')>-1){ s=s.split('@')[0].split(/[._-]/)[0]; } else s=s.split(' ')[0]; return s?s.charAt(0).toUpperCase()+s.slice(1):''; }
 function when(d){ if(!d) return ''; var x=new Date(d), n=new Date(); if(isNaN(x)) return ''; var day=function(a){ return new Date(a.getFullYear(),a.getMonth(),a.getDate()).getTime(); }, diff=Math.round((day(n)-day(x))/864e5);
   return diff===0?'today':diff===1?'yesterday':'on '+F.fmtDate(d,'en').replace(/, \d{4}$/,x.getFullYear()===n.getFullYear()?'':', '+x.getFullYear()); }
 var saveT=null;
 function queueSave(){ state.dirty=true; state.savedAt=null; paintSaved(); clearTimeout(saveT); saveT=setTimeout(saveNow,700); }
 function saveNow(){ var t=state.tpl; if(!t) return Promise.resolve(); clearTimeout(saveT); state.dirty=false;
+  if(t.purpose==='staff'&&t.status==='ready') t.status='draft';   /* employee forms never reach Flow */
   var doc={name:t.name||'Untitled form',purpose:t.purpose||'visit',kind:t.purpose==='ending'?(t.kind||'euthanasia'):null,status:t.status==='ready'&&F.progress(t).ready?'ready':(t.status==='ready'?'draft':t.status||'draft'),
     boxes:t.boxes||[],updated_at:new Date().toISOString(),updated_by:who()};
   t.status=doc.status; state.saving++; paintSaved();
@@ -236,7 +283,7 @@ function paintSaved(){ var e=$('#saved'); if(!e) return; e.innerHTML=state.savin
 window.addEventListener('beforeunload',function(e){ if(state.dirty||state.saving){ e.preventDefault(); e.returnValue=''; } });
 
 /* ---------- upload ---------- */
-function pickFile(){ var i=document.createElement('input'); i.type='file'; i.accept='application/pdf,.pdf'; i.onchange=function(){ if(i.files&&i.files[0]) upload(i.files[0]); }; i.click(); }
+function pickFile(intent){ state.intent=intent||null; var i=document.createElement('input'); i.type='file'; i.accept='application/pdf,.pdf'; i.onchange=function(){ if(i.files&&i.files[0]) upload(i.files[0]); }; i.click(); }
 function upload(file){
   if(file.size>15*1024*1024){ toast('That PDF is over 15 MB. Save a smaller copy and try again.'); return; }
   toast('Reading '+file.name+'…');
@@ -246,7 +293,8 @@ function upload(file){
       if(info.pages.some(function(p){ return p.rotate; })) toast('Some pages are rotated; boxes are placed on the page as stored.');
       return P.sha256(bytes).then(function(h){
         var id=F.newId('ft_'), boxes=F.boxesFromFields(info.fields), now=new Date().toISOString();
-        var tpl={tenant_id:TENANT,name:F.humanize(file.name.replace(/\.pdf$/i,'')),purpose:'visit',kind:null,status:'draft',
+        var it=state.intent||{}; state.intent=null;
+        var tpl={tenant_id:TENANT,name:F.humanize(file.name.replace(/\.pdf$/i,'')),purpose:it.k||'visit',kind:it.kind||null,status:'draft',
           file:{name:file.name,size:bytes.length,sha256:h,pages:info.pages.map(function(p){ return {w:p.w,h:p.h}; })},boxes:boxes,created_at:now,created_by:who(),updated_at:now,updated_by:who()};
         return F.putParts(DB,'form_templates',id,bytes).then(function(n){ tpl.file.parts=n; return DB.collection('form_templates').doc(id).set(tpl); })
           .then(function(){ tpl.id=id; state.list.unshift(tpl); var g=boxes.filter(function(b){ return b.guess; }).length;
@@ -257,32 +305,87 @@ function upload(file){
 }
 
 /* ---------- views ---------- */
-function shell(inner){ var u=state.user;
-  return '<header class="top"><a class="brand" href="./" data-go="lib"><i>P</i><b>Pravix <span>Forms</span></b></a>'
-    +'<nav class="apps" aria-label="Pravix apps"><a href="/directory/">Directory</a><a href="/sgvp/assets/">Assets</a><a href="/sgvp/">Curriculum</a><a href="/scheduling/">Schedule</a><a href="/">Flow</a><a href="/#app=ultrasound">Ultrasound</a><a href="/treatment/">Treatment</a><a href="/#app=rounds">Rounds</a><a href="/or/">OR</a><a href="/grid/">Grid</a><a href="./" aria-current="page">Forms</a></nav>'
-    +'<div class="who"><span>VCA Shoreline</span><span>'+esc(u&&(u.displayName||u.email)||'')+'</span></div></header>'+inner; }
-function render(){ if(state.view==='map'&&state.tpl) return renderMap(); renderLib(); }
+/* the same top bar as Flow: VCA Shoreline + Pravix, the apps as icons over labels, Logout and the theme switch */
+var APPS=[['Directory','/directory/','<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>'],
+  ['Assets','/sgvp/assets/','<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>'],['Curriculum','/sgvp/','<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>'],
+  ['Schedule','/scheduling/','<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'],['Flow','/','<rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="10.5" y="3" width="6" height="12" rx="1.5"/><rect x="18" y="3" width="3" height="8" rx="1.5"/>'],
+  ['Ultrasound','/#app=ultrasound','<circle cx="12" cy="15" r="1.6"/><path d="M8.6 11.4a4.8 4.8 0 0 1 6.8 0"/><path d="M5.8 8.6a8.8 8.8 0 0 1 12.4 0"/>'],
+  ['Treatment','/treatment/','<rect x="5" y="3.5" width="14" height="17.5" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><path d="M8.5 10.5h3M8.5 14h3M8.5 17.5h3"/><path d="M14 10.5h1.5M14 14h1.5M14 17.5h1.5"/>'],
+  ['Rounds','/#app=rounds','<path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/>'],['OR','/or/','<path d="M3 12h4l2-5 4 10 2-5h6"/>'],
+  ['Grid','/grid/','<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/>'],['Forms','./','<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>']];
+var IMG='/assets/img/';
+function shell(inner,sub){
+  var h='<header class="top"><a class="brand" href="./" data-go="lib" aria-label="Pravix Forms"><img class="vca drk" src="'+IMG+'logo-dark.png" alt="VCA Shoreline"><img class="vca lite" src="'+IMG+'logo-light.png" alt="VCA Shoreline"><span class="div" aria-hidden="true"></span>'
+    +'<span class="pvx"><img class="pvx-ic drk" src="'+IMG+'pvx-icon-dark.png" alt=""><img class="pvx-ic lite" src="'+IMG+'pvx-icon-light.png" alt=""><span class="pvx-t"><small>POWERED BY</small><img class="pvx-mk drk" src="'+IMG+'pvx-mark-dark.png" alt="Pravix"><img class="pvx-mk lite" src="'+IMG+'pvx-mark-light.png" alt="Pravix"></span></span></a>'
+    +'<nav class="apps" aria-label="Pravix apps">'+APPS.map(function(a){ return '<a href="'+a[1]+'"'+(a[0]==='Forms'?' aria-current="page" data-go="lib"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true">'+a[2]+'</svg>'+a[0]+'</a>'; }).join('')+'</nav>'
+    +'<div class="who"><button type="button" class="logout" data-act="logout"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></i>Logout</button>'
+    +'<button type="button" class="theme" data-act="theme" aria-label="'+(isLight()?'Switch to dark mode':'Switch to light mode')+'"><i></i></button></div></header>';
+  if(sub) h+='<div class="subnav"><span class="lbl">PRAVIX FORMS</span><div class="tabs" role="tablist" aria-label="Forms">'
+    +'<button type="button" data-tab="lib"'+(state.view==='lib'?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><rect x="14" y="15" width="7" height="6" rx="1.5"/></svg>Library</button>'
+    +'<button type="button" data-tab="signed"'+(state.view==='signed'?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Signed</button></div>'
+    +'<label class="srch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input type="text" id="fsearch" placeholder="'+(state.view==='signed'?'Search signed forms':'Search forms')+'" aria-label="Search" value="'+esc(state.search)+'" autocomplete="off"><kbd>⌘K</kbd></label></div>';
+  return h+inner; }
+function isLight(){ return document.documentElement.getAttribute('data-theme')==='light'; }
+function setTheme(t){ document.documentElement.setAttribute('data-theme',t); try{ document.cookie='pvx_theme='+t+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax'; document.cookie='pvx_theme='+t+';path=/;max-age=31536000;SameSite=Lax'; }catch(e){} var b=$('[data-act="theme"]'); if(b) b.setAttribute('aria-label',t==='light'?'Switch to dark mode':'Switch to light mode'); }
+function render(){ if(state.view==='map'&&state.tpl) return renderMap(); if(state.view==='signed') return renderSigned(); renderLib(); }
 var STEPS='<div><span>1 · Map</span>Point each blank on the PDF at a Pravix field. Once.</div><div><span>2 · Send</span>From the patient drawer: Send a form. Reception sees it.</div><div><span>3 · Sign</span>Staff take the iPad into the room. The family signs; staff witness.</div><div><span>4 · File</span>The hospital’s PDF, filled and locked, saved on the visit with its fingerprint.</div>';
+/* the places in Flow that already use a form; a slot shows until a published form fills it */
+var SLOTS=[{k:'ending',kind:'euthanasia',where:'Other ending › Euthanasia',t:'Euthanasia & aftercare',p:'The family signs consent and chooses aftercare on the iPad. Flow files your PDF on the visit.',cta:'Upload the Final Gift PDF',tint:'rgba(168,136,224,.16)',ink:'#B9A0EC',d:'<path d="M12 21s-7-4.5-7-10a4 4 0 017-2.6A4 4 0 0119 11c0 5.5-7 10-7 10z"/>'},
+  {k:'ending',kind:'died',where:'Other ending › Died',t:'Aftercare only',p:'For a patient who died: the family chooses care of the body. No euthanasia consent.',cta:'Upload a PDF',tint:'rgba(168,136,224,.12)',ink:'#A888E0',d:'<path d="M5 19c8 0 14-6 14-14C11 5 5 11 5 19z"/><path d="M5 19l8-8"/>'},
+  {k:'visit',kind:null,where:'Patient drawer › Send a form',t:'Visit forms',p:'Hospitalization, anesthesia, photo release — any form staff send to reception for a visit.',cta:'Upload a PDF',tint:'rgba(56,189,210,.14)',ink:'#4DC8E0',d:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>'}];
+function filled(sl){ return state.list.some(function(t){ return t.status==='ready'&&(t.purpose||'visit')===sl.k&&(sl.k!=='ending'||(t.kind||'euthanasia')===sl.kind); }); }
+function tile(t){ var pr=F.progress(t), ready=t.status==='ready', staff=t.purpose==='staff', line;
+  if(ready) line='<small>Edited '+esc(when(t.updated_at))+(t.updated_by?' by '+esc(firstName(t.updated_by)):'')+'</small>';
+  else if(!pr.total) line='<span class="chip warn">No boxes yet</span>';
+  else if(pr.missing) line='<span class="chip warn">'+pr.missing+' box'+(pr.missing===1?'':'es')+' to map</span>';
+  else if(pr.review) line='<span class="chip warn">Review '+pr.review+' suggestion'+(pr.review===1?'':'s')+'</span>';
+  else line=staff?'<small>Edited '+esc(when(t.updated_at))+(t.updated_by?' by '+esc(firstName(t.updated_by)):'')+'</small>':'<span class="chip">Ready to publish</span>';
+  var where=staff?'Employee form':ready?whereShort(t):'Not in Flow yet';
+  return '<button type="button" class="tile" data-open="'+esc(t.id)+'" aria-label="'+esc((t.name||'Untitled form')+', '+where)+'"><span class="tthumb"><span class="pg" data-thumb="'+esc(t.id)+'"></span></span>'
+    +'<span class="tmeta"><b>'+esc(t.name||'Untitled form')+'</b><span>'+esc(where)+'</span>'+line+'</span></button>'; }
+function match(t){ var q=state.search.trim().toLowerCase(); return !q||String(t.name||'').toLowerCase().indexOf(q)>-1; }
 function renderLib(){ state.view='lib'; state.sheet=null; document.body.classList.remove('mapping'); if(location.hash) history.replaceState(null,'',location.pathname);
-  var L=state.list, counts={all:L.length,ready:0,todo:0,draft:0}; L.forEach(function(t){ counts[statusOf(t).k]++; });
-  var showSeg=L.length>8, f=showSeg?state.filter:'all', show=L.filter(function(t){ return f==='all'||statusOf(t).k===f; }), anyReady=counts.ready>0;
+  var L=state.list, pat=L.filter(function(t){ return t.purpose!=='staff'&&match(t); }), emp=L.filter(function(t){ return t.purpose==='staff'&&match(t); }), open=SLOTS.filter(function(sl){ return !filled(sl); });
   var h='<main class="lib"><div class="lib-head"><div><h1>Forms</h1><p>Your hospital’s own paperwork — filled by Flow, signed on the iPad.</p></div>'
-    +(L.length?'<button class="btn primary" type="button" data-act="upload">'+ic('up')+'Upload a PDF</button>':'')+'</div>';
-  if(showSeg) h+='<div class="seg" role="radiogroup" aria-label="Show">'+[['all','All'],['ready','Ready'],['todo','Needs review'],['draft','Drafts']].filter(function(x){ return x[0]==='all'||counts[x[0]]; }).map(function(x){ return '<button type="button" role="radio" aria-checked="'+(f===x[0])+'" data-filter="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div>';
-  if(!L.length) h+='<div class="empty"><b>No forms yet</b><span>Upload a PDF your hospital already uses — a fillable one or a scan. You’ll point each blank at a Pravix field.</span><button class="btn primary" type="button" data-act="upload">'+ic('up')+'Upload a PDF</button></div>';
-  else h+='<div class="tiles">'+show.map(function(t){ var pr=F.progress(t), ready=t.status==='ready', line;
-    if(ready) line='<small>Edited '+esc(when(t.updated_at))+(t.updated_by?' by '+esc(firstName(t.updated_by)):'')+'</small>';
-    else if(pr.missing) line='<span class="chip warn">'+pr.missing+' box'+(pr.missing===1?'':'es')+' to map</span>';
-    else if(pr.review) line='<span class="chip warn">Review '+pr.review+' suggestion'+(pr.review===1?'':'s')+'</span>';
-    else line='<span class="chip">Ready to publish</span>';
-    return '<button type="button" class="tile" data-open="'+esc(t.id)+'" aria-label="'+esc((t.name||'Untitled form')+', '+(ready?whereShort(t):'not in Flow yet'))+'"><span class="tthumb"><span class="pg" data-thumb="'+esc(t.id)+'"></span></span>'
-      +'<span class="tmeta"><b>'+esc(t.name||'Untitled form')+'</b><span>'+esc(ready?whereShort(t):'Not in Flow yet')+'</span>'+line+'</span></button>'; }).join('')+'</div>';
-  if(!anyReady) h+='<section class="steps" aria-label="How it works">'+STEPS+'</section>';
-  else h+='<button type="button" class="howlink" data-act="how">'+ic('info')+'How Forms works</button>';
-  h+='</main>';
-  $('#app').innerHTML=shell(h);
-  show.forEach(function(t){ thumb(t); });
+    +'<button class="btn primary" type="button" data-act="upload">'+ic('plus')+'Add a form</button></div>';
+  if(state.search&&!pat.length&&!emp.length) h+='<div class="nothing">No forms match “'+esc(state.search)+'”.</div>';
+  if(pat.length) h+='<section class="sec" aria-labelledby="yH"><div class="sec-h"><h2 id="yH">Your forms</h2></div><div class="tiles">'+pat.map(tile).join('')+'</div></section>';
+  if(open.length&&!state.search) h+='<section class="sec" aria-labelledby="wH"><div class="sec-h"><h2 id="wH">Flow is ready for '+(open.length===1?'this':'these')+'</h2><p>'+(open.length===1?'It already has':'Each one already has')+' a place in Flow. Add the hospital’s PDF and map it once.</p></div><div class="slots">'
+    +open.map(function(sl){ var i=SLOTS.indexOf(sl); return '<article class="slot"><div class="art"><div class="blank"><i style="background:'+sl.tint+'"><svg viewBox="0 0 24 24" aria-hidden="true" style="stroke:'+sl.ink+'">'+sl.d+'</svg></i></div></div><div class="txt"><small>'+sl.where+'</small><h3>'+sl.t+'</h3><p>'+sl.p+'</p><button class="btn" type="button" data-slot="'+i+'">'+ic('up')+esc(sl.cta)+'</button></div></article>'; }).join('')+'</div></section>';
+  if(emp.length) h+='<section class="sec" aria-labelledby="eH"><div class="sec-h"><h2 id="eH">Employee forms</h2><p>For the team, not patients. They stay out of Flow; signing them in Pravix comes later.</p></div><div class="tiles">'+emp.map(tile).join('')+'</div></section>';
+  h+='<div class="foot"><span class="drophint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/></svg>Or drop a PDF anywhere on this page.</span><button type="button" class="howlink" data-act="how">'+ic('info')+'How Forms works</button></div></main>';
+  var fk=document.activeElement&&document.activeElement.id==='fsearch';
+  $('#app').innerHTML=shell(h,true);
+  if(fk){ var fs=$('#fsearch'); fs.focus(); fs.setSelectionRange(fs.value.length,fs.value.length); }
+  pat.concat(emp).forEach(function(t){ thumb(t); });
+  if(!ls('pvx_forms_welcome1')&&!$('.scrim')) openWelcome();
 }
+/* Signed: every signed PDF on the hospital's visits, newest first */
+var SIGNED=null;
+function renderSigned(){ state.view='signed'; document.body.classList.remove('mapping');
+  var q=state.search.trim().toLowerCase(), L=(SIGNED||[]).filter(function(d){ return !q||(String(d.title||'')+' '+String(d.signed_by||'')).toLowerCase().indexOf(q)>-1; });
+  var h='<main class="lib"><div class="lib-head"><div><h1>Signed</h1><p>Every signed form, filled and locked, newest first. Each one opens with its fingerprint checked.</p></div></div>';
+  if(SIGNED==null) h+='<div class="nothing">Loading…</div>';
+  else if(!SIGNED.length) h+='<div class="nothing">Nothing signed yet. Signed forms appear here as soon as a family signs on the iPad.</div>';
+  else if(!L.length) h+='<div class="nothing">Nothing matches “'+esc(state.search)+'”.</div>';
+  else h+='<div class="signed" role="list">'+L.map(function(d){ return '<div class="srow" role="listitem"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg></span><span class="b"><b>'+esc(d.title||'Signed form')+'</b><span>'+esc([d.signed_by?'Signed by '+d.signed_by:'',d.signed_at?F.fmtDate(d.signed_at,'en')+' '+new Date(d.signed_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'',(d.pages||1)+' page'+((d.pages||1)===1?'':'s'),d.lang==='es'?'in Spanish':''].filter(Boolean).join(' · '))+'</span></span><button class="btn" type="button" data-dl="'+esc(d.id)+'">'+ic('dl')+'Download</button></div>'; }).join('')+'</div>';
+  h+='</main>';
+  var fk=document.activeElement&&document.activeElement.id==='fsearch';
+  $('#app').innerHTML=shell(h,true); if(fk){ var fs=$('#fsearch'); fs.focus(); fs.setSelectionRange(fs.value.length,fs.value.length); }
+  if(SIGNED==null) DB.collection('visit_docs').where('tenant_id','==',TENANT).limit(200).get().then(function(s){ SIGNED=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).sort(function(a,b){ return String(b.signed_at||b.created_at||'').localeCompare(String(a.signed_at||a.created_at||'')); }); if(state.view==='signed') renderSigned(); })
+    .catch(function(e){ console.warn('[forms] signed',e); SIGNED=[]; if(state.view==='signed') renderSigned(); toast('Couldn’t load the signed forms.'); }); }
+function downloadSigned(id){ var d=(SIGNED||[]).filter(function(x){ return x.id===id; })[0]; if(!d) return;
+  F.docBytes(DB,d).then(function(r){ if(!r.intact){ toast('This copy doesn’t match its fingerprint — not downloaded. Ask an admin.'); return; }
+    var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([r.bytes],{type:'application/pdf'})); a.download=(d.title||'signed form')+'.pdf'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000); })
+    .catch(function(e){ toast('Couldn’t open it: '+(e.message||e)); }); }
+function openWelcome(){ var s=document.createElement('div'); s.className='scrim'; s.dataset.kind='welcome';
+  var row=function(t,p,d){ return '<div class="row"><i><svg viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg></i><span><b>'+t+'</b><span>'+p+'</span></span></div>'; };
+  s.innerHTML='<section class="welcome" role="dialog" aria-modal="true" aria-labelledby="wT"><div class="hd"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg></i><h2 id="wT">Welcome to Forms</h2></div><div class="rows">'
+    +row('Map it once','Point each blank on your PDF at a Pravix field. Pravix suggests most of them for you.','<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')
+    +row('Signed on the iPad','Staff take the iPad into the room; the family checks the details and signs.','<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>')
+    +row('Filed on the visit','The hospital’s own PDF, filled and locked, with a fingerprint that proves it hasn’t changed.','<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')
+    +'</div><button class="btn primary" type="button" data-act="welcome-ok">Continue</button></section>';
+  document.body.appendChild(s); var b=s.querySelector('[data-act="welcome-ok"]'); if(b) b.focus(); }
 var thumbs={};
 function thumb(t,sel){ sel=sel||'[data-thumb="'+t.id+'"]'; var el=$(sel); if(!el) return;
   var put=function(u){ var e=$(sel); if(!e) return; e.innerHTML=''; var img=new Image(); img.src=u; img.alt=''; e.appendChild(img); };
@@ -315,7 +418,7 @@ function renderMap(){
     +'<div class="name"><input class="title" id="tname" value="'+esc(t.name||'')+'" aria-label="Form name" size="'+Math.max(8,Math.min(40,(t.name||'').length+1))+'"><button type="button" class="icon-btn" data-act="rename" aria-label="Rename">'+ic('pen')+'</button><span class="sub">'+pages.length+' page'+(pages.length===1?'':'s')+'</span></div>'
     +'<div class="seg" role="radiogroup" aria-label="View"><button type="button" role="radio" aria-checked="'+!R+'" data-mode="edit">Edit</button><button type="button" role="radio" aria-checked="'+R+'" data-mode="rosie"'+(state.bytes?'':' disabled')+'>Show with Rosie</button></div>'
     +'<div class="right"><span class="saved" id="saved" aria-live="polite"></span>'
-    +(t.status==='ready'?'<button class="btn" type="button" data-act="publish">'+ic('ok')+'In Flow</button>':'<button class="btn primary" type="button" data-act="publish">Publish…</button>')+'</div></div>';
+    +(t.status==='ready'?'<button class="btn" type="button" data-act="publish">'+ic('ok')+'In Flow</button>':t.purpose==='staff'?'<button class="btn" type="button" data-act="publish">Employee form</button>':'<button class="btn primary" type="button" data-act="publish">Publish…</button>')+'</div></div>';
   /* left: review progress + boxes grouped by where they come from */
   var rev;
   if(!pr.total) rev='<div class="rev"><div class="rev-t"><span>No boxes yet</span></div><p>Drag on the page where each answer goes.</p></div>';
@@ -404,21 +507,21 @@ function showRosie(){ var t=state.tpl; if(!state.bytes) return; var key=JSON.str
 /* ---------- publish sheet ---------- */
 function openPublish(repaint){ var t=state.tpl, pr=F.progress(t), live=t.status==='ready'; state.sheet='publish';
   var old=$('.scrim'); if(old) old.remove();
-  var v=t.purpose==='ending'?(t.kind==='died'?'ending-died':'ending'):'visit', sigPage=(t.boxes.filter(function(b){ return b.src==='sign.owner'; })[0]||{}).page;
-  var row=function(val,title,sub){ return '<label><input type="radio" name="where" value="'+val+'"'+(v===val?' checked':'')+'><span><b>'+title+'</b><span>'+sub+'</span></span></label>'; };
+  var v=t.purpose==='staff'?'staff':t.purpose==='ending'?(t.kind==='died'?'ending-died':'ending'):'visit', staff=v==='staff', sigPage=(t.boxes.filter(function(b){ return b.src==='sign.owner'; })[0]||{}).page;
+  var row=function(val,title,sub,dis){ return '<label'+(dis?' style="opacity:.5"':'')+'><input type="radio" name="where" value="'+val+'"'+(v===val?' checked':'')+(dis?' disabled':'')+'><span><b>'+title+'</b><span>'+sub+'</span></span></label>'; };
   var chk=function(ok,text,opt,btn){ return '<div>'+(ok?ic('ok','ok-ic'):opt?'<i class="opt-ic" aria-hidden="true"></i>':'<i class="todo-ic" aria-hidden="true"></i>')+'<span'+(opt&&!ok?' class="opt"':'')+'>'+text+'</span>'+(btn||'')+'</div>'; };
   var left=pr.missing+pr.review;
   var h='<div class="sheet pub" role="dialog" aria-modal="true" aria-labelledby="pubT"><header><button class="btn quiet" type="button" data-act="close-sheet">'+(live?'Close':'Cancel')+'</button><b id="pubT">'+(live?'In Flow':'Publish to Flow')+'</b><span></span></header>'
     +'<div class="pub-body"><div class="pub-form"><span class="mini" id="pubMini"></span><span><b>'+esc(t.name||'Untitled form')+'</b><span>'+(t.file.pages||[]).length+' page'+((t.file.pages||[]).length===1?'':'s')+' · '+pr.total+' boxes</span></span></div>'
-    +'<fieldset style="margin:0;padding:0;border:0"><legend class="pub-h">Where staff find it</legend><div class="choices">'+row('ending','Euthanasia ending','Other ending › Euthanasia › Send form to reception')+row('ending-died','Died ending','Aftercare only, no euthanasia consent')+row('visit','Patient drawer','Send a form, for any visit')+'</div></fieldset>'
-    +'<div><div class="pub-h">'+(live?'Live in Flow':'Ready to go live')+'</div><div class="checks">'
+    +'<fieldset style="margin:0;padding:0;border:0"><legend class="pub-h">Where staff find it</legend><div class="choices">'+row('ending','Euthanasia ending','Other ending › Euthanasia › Send form to reception')+row('ending-died','Died ending','Aftercare only, no euthanasia consent')+row('visit','Patient drawer','Send a form, for any visit')+row('staff','Employee form','For the team, not patients · stays out of Flow',live&&!staff)+'</div></fieldset>'
+    +(staff?'<p class="pub-note">Employee forms are kept here with your other forms, out of Flow and away from families. Signing them in Pravix comes later.</p>':'<div><div class="pub-h">'+(live?'Live in Flow':'Ready to go live')+'</div><div class="checks">'
     +chk(!left,left?[pr.missing?pr.missing+' box'+(pr.missing===1?'':'es')+' to map':'',pr.review?pr.review+(pr.missing?'':' box'+(pr.review===1?'':'es'))+' to review':''].filter(Boolean).join(' · '):'All '+pr.total+' boxes confirmed by you',false,left?'<button class="btn" type="button" data-act="review-next">Review</button>':'')
     +chk(pr.hasOwnerSig,pr.hasOwnerSig?'The owner signs on page '+(sigPage+1):'No box for the owner’s signature yet')
     +chk(pr.hasWitness,pr.hasWitness?'A staff witness signs':'No witness box (optional)',true)
     +chk(state.previewed,state.previewed?'Previewed with Rosie':'Not previewed yet (optional)',true,state.previewed?'':'<button class="btn" type="button" data-act="preview">Show with Rosie</button>')
-    +'</div></div><p class="pub-note">'+(live?'Changes save as you make them. ':'Staff see it in Flow right away. ')+'Forms already signed keep the version they were signed on.</p></div>'
+    +'</div></div><p class="pub-note">'+(live?'Changes save as you make them. ':'Staff see it in Flow right away. ')+'Forms already signed keep the version they were signed on.</p>')+'</div>'
     +'<div class="pub-foot">'+(live?'<button class="btn primary" type="button" data-act="close-sheet">Done</button><button class="btn quiet danger" type="button" data-act="unpublish">Take it out of Flow</button>'
-      :'<button class="btn primary" type="button" data-act="do-publish"'+(pr.ready?'':' disabled')+'>Publish</button>')+'</div></div>';
+      :staff?'<button class="btn primary" type="button" data-act="close-sheet">Done</button>':'<button class="btn primary" type="button" data-act="do-publish"'+(pr.ready?'':' disabled')+'>Publish</button>')+'</div></div>';
   var s=document.createElement('div'); s.className='scrim'; s.innerHTML=h; document.body.appendChild(s);
   s.addEventListener('click',function(ev){ if(ev.target===s) closeSheet(); });
   thumb(t,'#pubMini');
@@ -440,6 +543,8 @@ function setSrc(b,k){ b.src=k||null; var s=F.source(b.src); if(s&&s.type!==b.typ
 document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) return;
   var go=t.closest('[data-go="lib"]'); if(go){ e.preventDefault(); leave(); return; }
   var a=t.closest('[data-act]'); if(a){ var w=a.dataset.act;
+    if(w==='logout'){ AUTH.signOut(); return; } if(w==='theme'){ setTheme(isLight()?'dark':'light'); return; }
+    if(w==='welcome-ok'){ ls('pvx_forms_welcome1','1'); closeSheet(); return; }
     if(w==='upload') pickFile(); else if(w==='back') leave(); else if(w==='publish') openPublish(); else if(w==='do-publish') doPublish(); else if(w==='unpublish') unpublish();
     else if(w==='del') removeSel(); else if(w==='addhelp') toast('Drag on the page where the answer goes.');
     else if(w==='close-sheet') closeSheet(); else if(w==='dl-test') downloadTest(); else if(w==='how') openHow();
@@ -450,6 +555,9 @@ document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) re
     else if(w==='preview'){ closeSheet(); setMode('rosie'); }
     return; }
   var md=t.closest('[data-mode]'); if(md){ setMode(md.dataset.mode); return; }
+  var tb=t.closest('[data-tab]'); if(tb){ state.search=''; if(tb.dataset.tab==='signed'){ SIGNED=null; renderSigned(); } else renderLib(); return; }
+  var sl2=t.closest('[data-slot]'); if(sl2){ var S=SLOTS[+sl2.dataset.slot]; pickFile({k:S.k,kind:S.kind}); return; }
+  var dl=t.closest('[data-dl]'); if(dl){ downloadSigned(dl.dataset.dl); return; }
   var zm=t.closest('[data-zoom]'); if(zm){ var z=state.zoomShown||1, v=zm.dataset.zoom; if(v==='fit') state.zoom=null; else if(+v>0) state.zoom=ZOOMS.filter(function(x){ return x>z+0.001; })[0]||ZOOMS[ZOOMS.length-1]; else state.zoom=ZOOMS.filter(function(x){ return x<z-0.001; }).pop()||ZOOMS[0]; renderMap(); return; }
   var pgb=t.closest('[data-pg]'); if(pgb){ var n2=state.tpl.file.pages.length; state.pageNo=Math.max(0,Math.min(n2-1,state.pageNo+(+pgb.dataset.pg))); var pe=$('.page[data-page="'+state.pageNo+'"]'); if(pe&&pe.scrollIntoView) pe.scrollIntoView({block:'start',behavior:'smooth'}); var pn=$('#pgno'); if(pn) pn.textContent=(state.pageNo+1)+' of '+n2; return; }
   var f=t.closest('[data-filter]'); if(f){ state.filter=f.dataset.filter; renderLib(); return; }
@@ -459,12 +567,14 @@ document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) re
   var ty=t.closest('[data-type]'); if(ty&&state.sel){ var b=cur(); if(b){ b.type=ty.dataset.type; var s=F.source(b.src); if(s&&s.k!=='none'&&!(b.type==='signature'?s.type==='signature':b.type==='check'?s.type==='check':(s.type==='text'||s.type==='date'))){ b.src=null; b.opt=null; } touch(b); queueSave(); renderMap(); } return; }
 });
 document.addEventListener('change',function(e){ var t=e.target;
-  if(t.name==='where'){ var v=t.value, T=state.tpl; T.purpose=v==='visit'?'visit':'ending'; T.kind=v==='ending-died'?'died':v==='ending'?'euthanasia':null; queueSave(); return; }
+  if(t.name==='where'){ var v=t.value, T=state.tpl, was=T.purpose==='staff'; T.purpose=v==='visit'?'visit':v==='staff'?'staff':'ending'; T.kind=v==='ending-died'?'died':v==='ending'?'euthanasia':null; queueSave();
+    if(was!==(v==='staff')) renderMap(); var c=$('input[name="where"][value="'+v+'"]'); if(c) c.focus(); return; }
   var b=cur(); if(!b) return;
   if(t.id==='bopt'){ b.opt=t.value||null; touch(b); queueSave(); renderMap(); var o=$('#bopt'); if(o) o.focus(); }
   else if(t.id==='breq'){ b.required=t.checked; queueSave(); }
 });
 document.addEventListener('input',function(e){ var t=e.target, b=cur();
+  if(t.id==='fsearch'){ state.search=t.value; if(state.view==='signed') renderSigned(); else renderLib(); return; }
   if(t.id==='tname'){ state.tpl.name=t.value; t.size=Math.max(8,Math.min(40,t.value.length+1)); queueSave(); return; }
   if(t.id==='bq'){ state.q=t.value; var L=$('#srcs'); if(L&&b) L.innerHTML=srcList(b); return; }
   if(!b) return;
@@ -483,7 +593,8 @@ function removeSel(){ var t=state.tpl, i=t.boxes.findIndex(function(b){ return b
 var lastRemoved=null;
 function leave(){ closeSheet(); (state.dirty?saveNow():Promise.resolve()).then(function(){ var t=state.tpl; if(t){ var i=state.list.findIndex(function(x){ return x.id===t.id; }); if(i>-1) state.list[i]=Object.assign(state.list[i],t); } state.tpl=null; state.sel=null; state.view='lib'; renderLib(); }); }
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'&&$('.scrim')){ e.preventDefault(); closeSheet(); return; }
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'&&$('#fsearch')){ e.preventDefault(); $('#fsearch').focus(); return; }
+  if(e.key==='Escape'&&$('.scrim')){ e.preventDefault(); if($('.scrim').dataset.kind==='welcome') ls('pvx_forms_welcome1','1'); closeSheet(); return; }
   if($('.scrim')){ if(e.key==='Tab'){ var fs=$$('.scrim button:not([disabled]),.scrim input'); if(fs.length){ var i=fs.indexOf(document.activeElement); if(e.shiftKey&&i<=0){ e.preventDefault(); fs[fs.length-1].focus(); } else if(!e.shiftKey&&i===fs.length-1){ e.preventDefault(); fs[0].focus(); } } } return; }
   if(state.view!=='map') return; var tag=(e.target&&e.target.tagName)||''; if(/INPUT|SELECT|TEXTAREA/.test(tag)) return;
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'&&lastRemoved){ e.preventDefault(); state.tpl.boxes.push(lastRemoved); state.sel=lastRemoved.id; lastRemoved=null; queueSave(); renderMap(); return; }
@@ -494,6 +605,14 @@ document.addEventListener('keydown',function(e){
   var d=e.shiftKey?10:1, m={ArrowLeft:[-d,0],ArrowRight:[d,0],ArrowUp:[0,d],ArrowDown:[0,-d]}[e.key]; if(!m) return; e.preventDefault();
   b.rect[0]=Math.round((b.rect[0]+m[0])*10)/10; b.rect[1]=Math.round((b.rect[1]+m[1])*10)/10; clampBox(b); queueSave(); paintBoxes(); });
 function clampBox(b){ var pg=state.tpl.file.pages[b.page]; b.rect[2]=Math.max(6,Math.min(b.rect[2],pg.w)); b.rect[3]=Math.max(6,Math.min(b.rect[3],pg.h)); b.rect[0]=Math.max(0,Math.min(b.rect[0],pg.w-b.rect[2])); b.rect[1]=Math.max(0,Math.min(b.rect[1],pg.h-b.rect[3])); }
+/* drop a PDF anywhere on the library to add it */
+var dz=null, dzN=0;
+function isFileDrag(e){ var t=e.dataTransfer&&e.dataTransfer.types; return t&&[].indexOf.call(t,'Files')>-1; }
+document.addEventListener('dragenter',function(e){ if(!isFileDrag(e)||state.view==='map') return; e.preventDefault(); dzN++; if(!dz){ dz=document.createElement('div'); dz.className='dropzone'; dz.innerHTML='<div><span class="pg" aria-hidden="true"></span><b>Drop to add a form</b><span>Pravix reads its fields and suggests where each one comes from.</span></div>'; document.body.appendChild(dz); } });
+document.addEventListener('dragover',function(e){ if(!isFileDrag(e)||state.view==='map') return; e.preventDefault(); e.dataTransfer.dropEffect='copy'; });
+document.addEventListener('dragleave',function(e){ if(!dz) return; dzN--; if(dzN<=0){ dz.remove(); dz=null; dzN=0; } });
+document.addEventListener('drop',function(e){ if(!isFileDrag(e)||state.view==='map') return; e.preventDefault(); if(dz){ dz.remove(); dz=null; } dzN=0;
+  var f=[].filter.call(e.dataTransfer.files||[],function(x){ return /pdf$/i.test(x.type)||/\.pdf$/i.test(x.name); })[0]; if(f){ var sc=$('.scrim'); if(sc){ ls('pvx_forms_welcome1','1'); sc.remove(); } upload(f); } else toast('Only PDFs can be added.'); });
 /* drag: draw a new box, move one, or resize one (pointer events, so mouse, pen and touch all work) */
 var drag=null;
 function tipSeen(){ if(!ls('pvx_forms_tip1')){ ls('pvx_forms_tip1','1'); paintStatus(); } }
@@ -532,7 +651,7 @@ function testCtx(){ var t=state.tpl, ctx=sampleCtx();
   (t.boxes||[]).forEach(function(b){ if(b.src==='family.text'||b.src==='staff.text') ctx.answers[b.id]='Test answer'; if(b.src==='family.check') ctx.answers[b.id]=true; if(b.src==='family.choice'&&ctx.answers['g:'+b.group]==null) ctx.answers['g:'+String(b.group||'Choose one')]=b.id; });
   return ctx; }
 function downloadTest(){ if(!lastTest) return; var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([lastTest],{type:'application/pdf'})); a.download=(state.tpl.name||'form')+' - test.pdf'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000); }
-window.__forms={state:state,render:render,openTpl:openTpl,upload:upload,select:select,saveNow:saveNow,setMode:setMode,rosie:function(){ return rosie; }};
+window.__forms={state:state,signed:function(){ return SIGNED; },render:render,openTpl:openTpl,upload:upload,select:select,saveNow:saveNow,setMode:setMode,rosie:function(){ return rosie; }};
 })();
 </script>
 </body>
