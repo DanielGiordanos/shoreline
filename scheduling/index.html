@@ -891,6 +891,7 @@ body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!imp
 /* a flat canvas, as Treatment Sheets: the older pages' coloured background glows step aside in light mode */
 body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
 </style>
+<!-- SCH n134 -->
 </head>
 <body>
 <script id="pvx-theme-js">
@@ -935,6 +936,7 @@ body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,bo
       <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
       <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
       <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
       <script id="pvx-grid-link-js">(function(){var OK=["daniel.giordano@pravix.app"];function el(){return document.getElementById("navGrid")}
 function show(e){var a=el();if(a)a.style.display=(e&&OK.indexOf(String(e).toLowerCase())>-1)?"":"none"}
 function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
@@ -975,9 +977,10 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <div class="announce-divider" style="z-index:20;position:relative;flex-shrink:0;"></div>
   <div class="announce-inner" id="announceInner">
     <div class="announce-ticker-wrap">
-      <div class="announce-ticker" id="announceTicker"></div>
+      <div class="announce-ticker" id="announceTicker" role="marquee" aria-label="Program update"></div>
     </div>
   </div>
+  <button type="button" class="announce-toggle" id="announceToggle" aria-controls="announceTicker" aria-pressed="false" title="Pause the announcement"><svg class="ic-pause" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="2.5" width="3.6" height="11" rx="1"/><rect x="9.4" y="2.5" width="3.6" height="11" rx="1"/></svg><svg class="ic-play" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.5 2.8a1 1 0 0 1 1.5-.86l7.2 5.2a1 1 0 0 1 0 1.72L6 14.06a1 1 0 0 1-1.5-.86z"/></svg><span class="announce-toggle-l">Pause</span></button>
   <div class="announce-dot" style="z-index:20;position:relative;flex-shrink:0;margin:0 12px;"></div>
   <button class="announce-edit-btn" id="annEditBtn" type="button" style="z-index:100;position:relative;flex-shrink:0;display:none;">&#9998; Edit Announcement</button>
 </div>
@@ -1001,15 +1004,16 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 </div>
 
 <!-- TABS -->
-<div class="tab-wrap" id="tabWrap"></div>
-<div class="main" id="mainContent"></div>
+<div class="tab-wrap" id="tabWrap" role="tablist" aria-label="Month"></div>
+<h1 class="pvx-sr">Intern schedule</h1>
+<div class="main" id="mainContent" role="main"></div>
 
 <!-- PASSWORD MODAL -->
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
-    <h3>Editor Access</h3>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">Editor Access</h3>
     <p>Enter your password to enable editing</p>
-    <input type="password" id="pwInput" placeholder="Password" maxlength="30" onkeydown="if(event.key==='Enter')checkPassword()">
+    <input type="password" id="pwInput" aria-label="Password" placeholder="Password" maxlength="30" onkeydown="if(event.key==='Enter')checkPassword()">
     <button class="modal-btn" onclick="checkPassword()">Unlock Editing</button>
     <div class="modal-err" id="modalErr"></div>
   </div>
@@ -1019,10 +1023,10 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <button class="edit-orb" id="editOrb" onclick="orbClick()" title="Edit" aria-label="Edit"></button>
 <div class="editgate-overlay" id="editGate">
   <div class="editgate-dim" onclick="closeGate()"></div>
-  <div class="editgate-card">
-    <div class="editgate-title">Edit Access</div>
+  <div class="editgate-card" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <div class="editgate-title" id="gateTitle">Edit Access</div>
     <div class="editgate-sub">Enter the password to edit the calendar</div>
-    <input type="password" id="gatePass" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitGate();}">
+    <input type="password" id="gatePass" aria-label="Password" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitGate();}">
     <button class="editgate-btn" onclick="submitGate()">Unlock</button>
     <div class="editgate-err" id="gateErr"></div>
     <button class="editgate-cancel" onclick="closeGate()">Cancel</button>
@@ -1031,9 +1035,9 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <!-- ANNOUNCEMENT EDIT MODAL -->
 <div class="modal-overlay" id="annModalOverlay">
-  <div class="ann-modal">
-    <h3>&#128226; Edit Announcement</h3>
-    <textarea id="annInput" placeholder="Type your announcement here..."></textarea>
+  <div class="ann-modal" role="dialog" aria-modal="true" aria-labelledby="annTitle">
+    <h3 id="annTitle">&#128226; Edit Announcement</h3>
+    <textarea id="annInput" aria-label="Announcement text" placeholder="Type your announcement here..."></textarea>
     <div class="ann-modal-row">
       <button class="ann-modal-btn cancel" onclick="closeAnnounceModal()">Cancel</button>
       <button class="ann-modal-btn save" onclick="saveAnnouncement()">Save Announcement</button>
@@ -1070,10 +1074,10 @@ function setSyncStatus(state) {
   const dot = el ? el.querySelector('span') : null;
   if (!el || !txt) return;
   const states = {
-    syncing: { text:'Syncing…', color:'rgba(77,200,224,0.9)',  dotColor:'#4DC8E0', bg:'rgba(77,200,224,0.1)',  border:'rgba(77,200,224,0.25)',  anim:'live-blink 0.6s ease-in-out infinite' },
-    saved:   { text:'Saved',        color:'rgba(26,158,110,0.9)',  dotColor:'#1a9e6e', bg:'rgba(26,158,110,0.1)',  border:'rgba(26,158,110,0.25)',   anim:'live-blink 1.4s ease-in-out infinite' },
-    offline: { text:'Offline',      color:'rgba(232,100,74,0.9)',  dotColor:'#E8644A', bg:'rgba(232,100,74,0.1)',  border:'rgba(232,100,74,0.25)',   anim:'none' },
-    live:    { text:'Live',         color:'rgba(26,158,110,0.9)',  dotColor:'#1a9e6e', bg:'rgba(26,158,110,0.1)',  border:'rgba(26,158,110,0.25)',   anim:'live-blink 1.4s ease-in-out infinite' },
+    syncing: { text:'Syncing…', color:'var(--cyan-ink)',  dotColor:'#4DC8E0', bg:'rgba(77,200,224,0.1)',  border:'rgba(77,200,224,0.25)',  anim:'live-blink 0.6s ease-in-out infinite' },
+    saved:   { text:'Saved',        color:'var(--green-ink)',  dotColor:'#1a9e6e', bg:'rgba(26,158,110,0.1)',  border:'rgba(26,158,110,0.25)',   anim:'live-blink 1.4s ease-in-out infinite' },
+    offline: { text:'Offline',      color:'var(--red-ink)',  dotColor:'#E8644A', bg:'rgba(232,100,74,0.1)',  border:'rgba(232,100,74,0.25)',   anim:'none' },
+    live:    { text:'Live',         color:'var(--green-ink)',  dotColor:'#1a9e6e', bg:'rgba(26,158,110,0.1)',  border:'rgba(26,158,110,0.25)',   anim:'live-blink 1.4s ease-in-out infinite' },
   };
   const s = states[state] || states.live;
   txt.textContent = s.text;
@@ -1249,8 +1253,9 @@ function buildTicker(text){
     seg.className='ticker-segment';
     seg.innerHTML=text;
     ticker.appendChild(seg);
+    if(i>0) seg.setAttribute('aria-hidden','true');
     const sep=document.createElement('span');
-    sep.className='ticker-sep';
+    sep.className='ticker-sep'; sep.setAttribute('aria-hidden','true');
     sep.innerHTML='&nbsp;&nbsp;◆&nbsp;&nbsp;';
     ticker.appendChild(sep);
   }
@@ -1314,12 +1319,12 @@ function buildTabs(){
   MONTHS.forEach((m,i)=>{
     const b=document.createElement('button');
     b.className='mtab'+(i===activeTab?' active':'')+(i===5?' has-data':'');
-    b.textContent=m.substring(0,3).toUpperCase();b.title=m+' 2026';
+    b.textContent=m.substring(0,3).toUpperCase();b.title=m+' 2026';b.id='mtab-'+i;b.setAttribute('role','tab');b.setAttribute('aria-label',m+' 2026');b.setAttribute('aria-controls','view-'+i);b.setAttribute('aria-selected',i===activeTab?'true':'false');b.tabIndex=i===activeTab?0:-1;
     b.onclick=()=>switchTab(i);w.appendChild(b);
   });
   const wb=document.createElement('button');
   wb.className='mtab weekly-tab'+(activeTab===12?' active':'');
-  wb.textContent='WEEKLY';wb.onclick=()=>switchTab(12);w.appendChild(wb);
+  wb.textContent='WEEKLY';wb.id='mtab-12';wb.setAttribute('role','tab');wb.setAttribute('aria-label','Weekly department hours');wb.setAttribute('aria-controls','view-weekly');wb.setAttribute('aria-selected',activeTab===12?'true':'false');wb.tabIndex=activeTab===12?0:-1;wb.onclick=()=>switchTab(12);w.appendChild(wb);
 }
 function switchTab(idx){
   activeTab=idx;
@@ -1327,6 +1332,9 @@ function switchTab(idx){
   document.querySelectorAll('.month-view').forEach(v=>v.classList.remove('active'));
   const v=document.getElementById(idx===12?'view-weekly':`view-${idx}`);
   if(v) v.classList.add('active');
+  document.querySelectorAll('.mtab').forEach(b=>{ const on=b.classList.contains('active'); b.setAttribute('aria-selected',on?'true':'false'); b.tabIndex=on?0:-1; });
+  try{ const t=document.querySelectorAll('.mtab')[idx]; if(t) t.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'}); }catch(e){}
+  if(window.pvxTabWrapSync) pvxTabWrapSync();
 }
 
 // ── BUILD ALL ──
@@ -1335,13 +1343,13 @@ function buildAll(){
   MONTHS.forEach((mName,mIdx)=>{
     const div=document.createElement('div');
     div.className='month-view'+(mIdx===activeTab?' active':'');
-    div.id=`view-${mIdx}`;
+    div.id=`view-${mIdx}`; div.setAttribute('role','tabpanel'); div.setAttribute('aria-labelledby','mtab-'+mIdx);
     div.innerHTML=buildMonthHTML(2026,mIdx,mName);
     main.appendChild(div);
   });
   const wd=document.createElement('div');
   wd.className='month-view'+(activeTab===12?' active':'');
-  wd.id='view-weekly';wd.innerHTML=buildWeeklyHTML();main.appendChild(wd);
+  wd.id='view-weekly'; wd.setAttribute('role','tabpanel'); wd.setAttribute('aria-labelledby','mtab-12');wd.innerHTML=buildWeeklyHTML();main.appendChild(wd);
 }
 
 // ── MONTH HTML ──
@@ -1359,9 +1367,9 @@ function buildMonthHTML(year,month,mName){
       <div class="leg"><div class="leg-dot" style="background:#8B4DB5;"></div>Swap</div>
       <div class="leg"><div class="leg-dot" style="background:#f0f0f0;border:1px solid #ddd;"></div>N/A</div>
     </div></div>
-  <div class="cal-wrap"><table class="cal">
+  <div class="cal-wrap"><table class="cal" aria-label="${mName} ${year} shifts">
   <thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
-  <tbody><tr class="accent-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+  <tbody><tr class="accent-row" aria-hidden="true"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
 
   let day=1,started=false;
   for(let w=0;w<6;w++){
@@ -1378,7 +1386,7 @@ function buildMonthHTML(year,month,mName){
         const content=formatDay(day,cd,year,month);
         const raw=getRaw(day,cd,year,month);
         const tdClass=isToday?'today':isPre?'precutoff':'';
-        rh+=`<td class="${tdClass}" data-year="${year}" data-month="${month}" data-day="${day}" style="position:relative;">
+        rh+=`<td class="${tdClass}"${isToday?' aria-current="date"':''} data-year="${year}" data-month="${month}" data-day="${day}" style="position:relative;">
           <div class="day-inner" data-raw="${escA(raw)}">${content}</div></td>`;
         day++;
       }
@@ -1458,13 +1466,13 @@ function buildWeeklyHTML(){
   <div class="weekly-wrap">
     <div class="weekly-topbar"><h3>Department Hours</h3>
     <p>Week of ${new Date(mon).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p></div>
-    <table class="weekly"><thead><tr>
+    <table class="weekly" aria-label="Department hours, week of ${new Date(mon).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}"><thead><tr>
       <th>SERVICE</th>
       ${DAY_NAMES.map((d,i)=>`<th>${d.toUpperCase()}<span class="th-date">${dates[i]}</span></th>`).join('')}
     </tr></thead><tbody>`;
   SERVICES.forEach((svc,idx)=>{
     const bg=idx%2===1?'#F8F9FA':'#fff';
-    html+=`<tr style="background:${bg}"><td class="svc-cell" style="color:${svc.color};border-left-color:${svc.color};background:${svc.bg};">${svc.name}</td>`;
+    html+=`<tr style="background:${bg}"><td class="svc-cell" role="rowheader" style="color:${svc.color};border-left-color:${svc.color};background:${svc.bg};">${svc.name}</td>`;
     DAY_KEYS.forEach(dk=>{
       const v=svc[dk]||'—';
       const isO=v==='OFF',isE=v.includes('12:00 PM');
@@ -1848,4 +1856,207 @@ setSyncStatus('live');
   lb.addEventListener('pointerleave',function(){ lb.style.setProperty('--mx','50%'); lb.style.setProperty('--my','50%'); });
 })();
 </script>
-</body></html>
+
+<!-- PVX-TOPBAR n132: brand and controls keep their width; app links overflow into a More menu; Grid and Forms in every app (account-gated) -->
+<style>
+/* PVX-TOPBAR n132 — the brand and the right-hand controls keep their width; the apps get what is left, overflowing into More */
+html body nav.topnav{grid-template-columns:max-content minmax(0,1fr) max-content!important;column-gap:12px}
+html body nav.topnav .brandwrap{flex:0 0 auto;min-width:0}
+html body nav.topnav .nav-center{min-width:0;max-width:100%;justify-self:center!important;overflow:visible!important;flex-wrap:nowrap;position:relative}
+html body nav.topnav .nav-right{flex:0 0 auto}
+@media(max-width:760px){ html body nav.topnav{grid-template-columns:max-content minmax(0,1fr)!important} html body nav.topnav .nav-center{margin:0!important;padding:0!important;justify-content:flex-start} }
+.pvx-more{position:relative;display:flex;flex:0 0 auto}
+.pvx-more[hidden]{display:none!important}
+.pvx-more-btn{font-family:inherit;cursor:pointer}
+.pvx-more-btn[aria-expanded=true]{background:rgba(255,255,255,0.10);color:rgba(255,255,255,.95)}
+body:not(.dark) .pvx-more-btn[aria-expanded=true]{background:#EBEBEB;color:#333}
+.pvx-more-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;min-width:200px;padding:6px;border-radius:14px;display:flex;flex-direction:column;gap:2px;
+  background:#101A32;border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+body:not(.dark) .pvx-more-menu{background:#fff;border-color:rgba(29,29,31,.1);box-shadow:0 18px 44px rgba(20,28,40,.18)}
+.pvx-more-menu[hidden]{display:none!important}
+html body nav.topnav .pvx-more-menu .nav-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:13px!important;letter-spacing:0;white-space:nowrap;width:100%}
+html body nav.topnav .pvx-more-menu .nav-item svg{width:18px;height:18px}
+.nav-item:focus-visible,.pvx-more-btn:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+@media(forced-colors:active){.pvx-more-menu{border:1px solid CanvasText}}
+</style>
+<script id="pvx-app-links-js">/* n132: Grid and Forms links show only for the accounts those apps let in (keep in step with grid/index.html and forms/index.html ALLOWED) */
+(function(){var OK={navGrid:["daniel.giordano@pravix.app"],navForms:["daniel.giordano@pravix.app"]};
+function show(e){e=String(e||"").toLowerCase();Object.keys(OK).forEach(function(id){var a=document.getElementById(id);if(a)a.style.display=OK[id].indexOf(e)>-1?"":"none"})}
+function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
+var hooked=false;function live(){if(hooked)return;try{if(window.firebase&&firebase.apps&&firebase.apps.length&&firebase.auth){hooked=true;firebase.auth().onAuthStateChanged(function(u){if(u)show(u.email);else fromStore()})}}catch(_){}}
+fromStore();live();window.addEventListener("load",function(){live();setTimeout(live,1500)})})();</script>
+<script>
+/* ═══ Pravix shared top bar · n132 (audit RX-01, FL-07, DTA-S01, CL-X02, US-04) ═══
+   The same nav.topnav lives in every app. This block makes it fit any width without collisions:
+   · the brand and the Logout/theme group keep their real width (grid: max-content · 1fr · max-content) — nothing can slide under them;
+   · the app links get the middle; the ones that do not fit move into a "More" menu (a real button with a menu of the same links),
+     instead of being clipped inside a scroller with its scrollbar hidden. The active app always stays visible;
+   · the More menu is keyboard-operable (Enter/Space, arrows, Escape, focus return) and closed state is display:none;
+   · aria-current="page" follows the active link (apps that switch in place call pvxTopbar.setActive(id)). */
+(function(){
+  if(window.pvxTopbar) return;
+  var nav=document.querySelector('nav.topnav'); if(!nav) return;
+  var center=nav.querySelector('.nav-center'); if(!center) return;
+  var more=document.createElement('div'); more.className='pvx-more'; more.hidden=true;
+  more.innerHTML='<button type="button" class="nav-item pvx-more-btn" aria-haspopup="true" aria-expanded="false" aria-label="More apps" title="More apps">'
+    +'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>'
+    +'<div class="pvx-more-menu" role="menu" aria-label="More apps" hidden></div>';
+  center.appendChild(more); var btn=more.querySelector('button'), menu=more.querySelector('.pvx-more-menu');
+  function items(){ return [].slice.call(center.querySelectorAll('.nav-item')).filter(function(a){ return a!==btn&&!a.classList.contains('pvx-more-btn'); }); }
+  function shown(a){ return a.style.display!=='none'&&!a.hidden; }   /* account-gated links (Grid, Forms) are display:none until allowed */
+  var gap=0, busy=false;
+  function layout(){ if(busy) return; busy=true;
+    try{ var all=items(); all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
+      var vis=all.filter(shown); if(!vis.length){ more.hidden=true; return; }
+      gap=parseFloat(getComputedStyle(center).columnGap||getComputedStyle(center).gap)||0;
+      more.hidden=true; var avail=center.clientWidth, w=vis.map(function(a){ return a.getBoundingClientRect().width; }), total=w.reduce(function(s,x){ return s+x; },0)+gap*(vis.length-1);
+      if(total<=avail+0.5){ menu.innerHTML=''; return; }
+      more.hidden=false; var mw=more.getBoundingClientRect().width+gap, keep=0, used=0;
+      for(var i=0;i<vis.length;i++){ if(used+w[i]+(i?gap:0)+mw<=avail){ used+=w[i]+(i?gap:0); keep++; } else break; }
+      var active=vis.findIndex(function(a){ return a.classList.contains('active')||a.getAttribute('aria-current'); });
+      if(active>=keep&&keep>0){ var a=vis.splice(active,1)[0]; vis.splice(keep-1,0,a); center.insertBefore(a,vis[keep]||more); }
+      var hidden=vis.slice(keep); hidden.forEach(function(a){ menu.appendChild(a); a.setAttribute('role','menuitem'); });
+      if(!hidden.length) more.hidden=true; }
+    finally{ busy=false; } }
+  function open(o){ var isOpen=!menu.hidden; if(o===undefined) o=!isOpen; if(o===isOpen) return; menu.hidden=!o; btn.setAttribute('aria-expanded',o?'true':'false');
+    if(o){ var f=menu.querySelector('.nav-item'); if(f) f.focus(); } }
+  btn.addEventListener('click',function(){ open(); });
+  menu.addEventListener('keydown',function(e){ var f=[].slice.call(menu.querySelectorAll('.nav-item')), i=f.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){ e.preventDefault(); (f[i+1]||f[0]).focus(); } else if(e.key==='ArrowUp'){ e.preventDefault(); (f[i-1]||f[f.length-1]).focus(); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); open(false); btn.focus(); } else if(e.key==='Tab'){ open(false); } });
+  btn.addEventListener('keydown',function(e){ if(e.key==='ArrowDown'){ e.preventDefault(); open(true); } else if(e.key==='Escape'&&!menu.hidden){ e.preventDefault(); open(false); } });
+  document.addEventListener('click',function(e){ if(!menu.hidden&&!more.contains(e.target)) open(false); },true);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!menu.hidden&&!more.contains(document.activeElement)) open(false); });
+  function setActive(id){ items().forEach(function(a){ var on=a.id===id; a.classList.toggle('active',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); layout(); }
+  /* keep aria-current in step with the visual active class, for apps that switch in place */
+  items().forEach(function(a){ if(a.classList.contains('active')) a.setAttribute('aria-current','page'); else if(a.getAttribute('aria-current')==='page'&&!a.classList.contains('active')) a.removeAttribute('aria-current'); });
+  var t; function soon(){ clearTimeout(t); t=setTimeout(layout,60); }
+  if(window.ResizeObserver){ new ResizeObserver(soon).observe(nav); } window.addEventListener('resize',soon);
+  new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
+  window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
+})();
+</script>
+<!-- SCH n134: tab strip overflow, ticker control + reduced motion, 11 px type floor -->
+<style>
+/* SCH-06 */
+.tab-wrap{scroll-snap-type:x proximity;scroll-padding:0 32px;scrollbar-width:thin}
+.tab-wrap .mtab{scroll-snap-align:center}
+.tab-wrap.is-overflow{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%)}
+.tab-wrap.is-overflow.at-start{-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 28px),transparent 100%)}
+.tab-wrap.is-overflow.at-end{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28px,#000 100%);mask-image:linear-gradient(90deg,transparent 0,#000 28px,#000 100%)}
+@media (max-width:480px){#pvxSubnav .switcher{flex-wrap:wrap;overflow:visible;row-gap:4px}}
+/* the Weekly table is 743 px wide; on narrow screens its card scrolls sideways instead of cutting the last days off */
+.weekly-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+@media (max-width:600px){.weekly-wrap table.weekly{min-width:720px}}
+@media (min-width:601px) and (max-width:900px){.weekly thead th,.weekly tbody td{padding-left:8px;padding-right:8px}.weekly thead th:first-child{width:150px}}
+/* SCH-07 */
+.announce-toggle{z-index:20;position:relative;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;margin-left:10px;border-radius:999px;border:1px solid rgba(77,200,224,.35);background:rgba(77,200,224,.1);color:#4DC8E0;font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.announce-toggle svg{width:11px;height:11px}
+.announce-toggle .ic-play,.announce-toggle[aria-pressed=true] .ic-pause{display:none}
+.announce-toggle[aria-pressed=true] .ic-play{display:block}
+.announce-toggle:hover{background:rgba(77,200,224,.2)}
+.announce-toggle:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+.announce-bar.is-paused .announce-ticker,.announce-bar.is-held .announce-ticker{animation-play-state:paused}
+@media (max-width:640px){.announce-toggle .announce-toggle-l{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.announce-toggle{padding:0 8px}}
+@media (prefers-reduced-motion:reduce){
+  .announce-ticker{animation:none;overflow-x:auto;max-width:100%;scrollbar-width:thin}
+  .announce-ticker .ticker-segment[aria-hidden=true],.announce-ticker .ticker-sep{display:none}
+  .announce-toggle{display:none}
+  #syncStatus span[style*="live-blink"],.announce-dot{animation:none!important}
+}
+/* SCH-13 — an 11 px floor for labels */
+.announce-badge{font-size:11px;letter-spacing:1.4px}
+.block-pill .bp-label{font-size:11px;letter-spacing:1.2px}
+.block-pill .bp-dates{font-size:11.5px}
+.intern-key-label{font-size:11px;letter-spacing:1px}
+.weekly thead th{font-size:11px}
+.th-date{font-size:11px}
+#syncStatus{font-size:11px!important}
+.announce-edit-btn{font-size:11px}
+#pvxSubnav .subnav-title{font-size:11px}
+.site-footer span[style*="font-size:10px"],.site-footer div[style*="font-size:10px"],div[style*="background:#080E1A"] span[style*="font-size:10px"]{font-size:11px!important}
+</style>
+<script>
+(function(){
+  /* SCH-06: the tab strip says when it overflows and keeps the active tab in view */
+  var tw=document.getElementById('tabWrap'); if(tw){ var raf=0;
+    function sync(){ raf=0; var over=tw.scrollWidth>tw.clientWidth+1, x=tw.scrollLeft, max=tw.scrollWidth-tw.clientWidth; tw.classList.toggle('is-overflow',over); tw.classList.toggle('at-start',!over||x<=1); tw.classList.toggle('at-end',!over||x>=max-1); }
+    function queue(){ if(!raf) raf=requestAnimationFrame(sync); }
+    window.pvxTabWrapSync=sync; tw.addEventListener('scroll',queue,{passive:true}); window.addEventListener('resize',queue); sync();
+    setTimeout(function(){ var a=tw.querySelector('.mtab.active'); if(a){ try{ a.scrollIntoView({block:'nearest',inline:'center'}); }catch(e){} } sync(); },60); }
+  /* SCH-07: the ticker control */
+  var bar=document.getElementById('announceBar'), btn=document.getElementById('announceToggle'); if(bar&&btn){
+    function set(paused,remember){ bar.classList.toggle('is-paused',paused); btn.setAttribute('aria-pressed',paused?'true':'false'); btn.title=paused?'Play the announcement':'Pause the announcement'; btn.querySelector('.announce-toggle-l').textContent=paused?'Play':'Pause'; if(remember){ try{ localStorage.setItem('pvxTickerPaused',paused?'1':'0'); }catch(e){} } }
+    var saved=null; try{ saved=localStorage.getItem('pvxTickerPaused'); }catch(e){} set(saved==='1',false);
+    btn.addEventListener('click',function(){ set(!bar.classList.contains('is-paused'),true); });
+    btn.addEventListener('focus',function(){ bar.classList.add('is-held'); }); btn.addEventListener('blur',function(){ bar.classList.remove('is-held'); });
+    window.pvxTicker={set:set}; }
+})();
+</script>
+</body>
+
+<!-- PVX-N136: copy, states and semantics (batch 5) — scheduling -->
+<style>
+.pvx-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+
+<script>
+(function(){
+  /* month tabs: one Tab stop, ←/→/Home/End move between months (and show them) */
+  var tw=document.getElementById('tabWrap');
+  if(tw) tw.addEventListener('keydown',function(e){ var t=[].slice.call(tw.querySelectorAll('.mtab')), i=t.indexOf(document.activeElement); if(i<0) return;
+    var j=e.key==='ArrowRight'?i+1:e.key==='ArrowLeft'?i-1:e.key==='Home'?0:e.key==='End'?t.length-1:null; if(j===null) return;
+    e.preventDefault(); j=(j+t.length)%t.length; t[j].focus(); if(window.switchTab) window.switchTab(j===t.length-1&&t[j].classList.contains('weekly-tab')?12:j); });
+  /* initials on a shift line ("12PM–12AM · JH") get the intern's name for screen readers, from the Intern Key on the page;
+     cells being edited are left alone, and the extra text is never part of what is saved (edit mode rebuilds the cell from data-raw) */
+  function names(){ var m={}; document.querySelectorAll('#internKey .intern-chip').forEach(function(c){ var i=c.querySelector('.ic-init'), n=c.querySelector('.ic-name'); if(i&&n) m[i.textContent.trim()]=n.textContent.trim(); }); return m; }
+  var busy=false;
+  function expand(){ if(busy) return; busy=true; try{ var m=names(); if(!Object.keys(m).length) return;
+    document.querySelectorAll('.day-inner:not([contenteditable=true]) .day-line').forEach(function(l){ if(l.querySelector('.pvx-sr')) return; var t=l.textContent.trim(), k=(t.match(/·\s*([A-Z]{2,3})\s*$/)||[])[1]; if(k&&m[k]){ var s=document.createElement('span'); s.className='pvx-sr'; s.textContent=' ('+m[k]+')'; l.appendChild(s); } });
+  } finally{ busy=false; } }
+  var main=document.getElementById('mainContent'), raf=0;
+  if(main&&window.MutationObserver) new MutationObserver(function(){ if(!raf) raf=requestAnimationFrame(function(){ raf=0; expand(); }); }).observe(main,{childList:true,subtree:true});
+  setTimeout(expand,400);
+})();
+</script>
+<!-- PVX-TYPE n135: contrast + type floor (shared sheet + scheduling rules) -->
+<style>
+/* PVX-TYPE n135 — contrast and type floor, shared by every Pravix app (batch 4: FL-08, CL-T10, DTA-S03, SCH-01/02).
+   Text colours only: fills, accents, lines and the brand palette are untouched. Every value here was measured against the
+   surfaces it sits on (see n135/REGISTER.md): light muted ink #66666B (≥4.9:1 on white, #F2F4F8, #EDEFF3, #E2F0F6, #F4F4F4),
+   blue-grey muted #52698A for the portal apps (≥5.0:1 on #F2F4F8), cyan-as-text #0F6B82, green-as-text #12623F, amber-as-text
+   #875C00, red-as-text #BE3A2E, blue-as-text #0A66C2; dark muted ink #8FA6BE (≥6.2:1 on every dark surface measured, #1C2333 up).
+   An 11 px floor for labels; the shared top bar's 10 px app labels and the 7 px "Powered by" rise to 11 / 9 px. No color-mix(). */
+:root,body{
+  --ink-400:#66666B; --text-muted:#66666B; --st-meta:#66666B; --muted:#66666B; --tm:#66666B;
+  --cyan-ink:#0F6B82; --green-ink:#12623F; --amber-ink:#875C00; --red-ink:#BE3A2E; --blue-ink:#0A66C2; --p1-fill:#D92B22; --p3-ink:#06341A;
+}
+body.dark,html.dark body,:root.dark{
+  --ink-400:#8FA6BE; --text-muted:#8FA6BE; --st-meta:#A7B8CC; --muted:#8FA6BE; --tm:#8FA6BE;
+  --cyan-ink:#6FD3E4; --green-ink:#5BD6A8; --amber-ink:#F2C744; --red-ink:#FF8A70; --blue-ink:#7CC0FF; --p1-fill:#D92B22; --p3-ink:#06341A;
+}
+/* the portal apps re-declare --ink-400 on the top bar and sub-nav (#8E8E93 / #5E7C9C); same scope, measured values */
+#pvxTopnav,#pvxSubnav{--ink-400:#66666B}
+body.dark #pvxTopnav,body.dark #pvxSubnav{--ink-400:#8FA6BE}
+/* the shared top bar (same block in every app): app labels 10 → 11 px, "Powered by" 7 → 9 px */
+@media (min-width:1101px),(max-width:760px){.topnav .nav-item,#pvxTopnav .nav-item{font-size:11px}}  /* 761–1100 px is the icon-only strip */
+.topnav .pvx-powered,#pvxTopnav .pvx-powered{font-size:9px;letter-spacing:.14em}
+.topnav .pvx-powered,.topnav .nav-item:not(.active){color:var(--ink-400)}
+/* the portal sub-nav: title (10 px, 3.2:1) and the section links (#6E6E73, 4.35:1 on #F2F4F8) */
+.subnav .subnav-title,#pvxSubnav .subnav-title{font-size:11px!important;color:var(--ink-400)!important}
+body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.active){color:var(--ink-400)}
+
+/* ── Scheduling (SCH-01 contrast, SCH-02 dark Weekly table) ── */
+:root,body{--text-muted:#52698A}
+body.dark{--text-muted:#8FA6BE}
+.weekly td.on-cell{color:var(--blue-ink)}
+.weekly td.off-cell{color:var(--red-ink)}
+/* SCH-02: the rows carry inline white / #F8F9FA backgrounds and the dark cells are transparent, so dark mode showed white rows */
+body.dark .weekly tbody tr{background:var(--surface-0)!important}
+body.dark .weekly tbody tr:nth-child(even){background:var(--surface-1)!important}
+body.dark .weekly tbody td{color:var(--text-secondary)}
+body.dark .weekly td.on-cell{color:var(--blue-ink)}
+body.dark .weekly td.off-cell{color:var(--red-ink)}
+</style>
+</html>
