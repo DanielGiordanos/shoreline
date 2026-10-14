@@ -176,6 +176,9 @@ backdrop-filter:blur(16px);
 white-space:nowrap;
 user-select:none;
 }
+/* DTA-D01 n133 */
+button.chip{font:inherit;font-size:12px;font-weight:600;line-height:normal;appearance:none;-webkit-appearance:none;margin:0;font-family:inherit}
+button.chip:focus-visible{outline:2px solid var(--brand-cyan);outline-offset:2px}
 .chip:hover{border-color:var(--brand-cyan);color:var(--brand-cyan);background:rgba(77,200,224,0.06);}
 .chip.active{
 background:rgba(77,200,224,0.15);
@@ -1826,6 +1829,18 @@ body:not(.dark) .subnav{background:transparent!important;box-shadow:none!importa
 body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!important;box-shadow:0 1px 2px rgba(30,45,90,.04),0 8px 24px rgba(30,45,90,.05)!important}
 /* a flat canvas, as Treatment Sheets: the older pages' coloured background glows step aside in light mode */
 body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
+
+/* ===== AVATARS n131 — people look as they do in Flow (.dav): neutral circle, hairline, initials; photos unchanged ===== */
+.emp-avatar-ring,.emp-visual .emp-avatar-ring,.drawer-avatar-ring,.drawer-hero .drawer-avatar-ring{background:rgba(20,30,42,.12)!important;padding:1px!important;box-shadow:none!important}
+.emp-visual .emp-avatar-ring{box-shadow:0 0 0 3px var(--surface-0,#fff),0 6px 18px rgba(4,20,40,.18)!important}
+.emp-avatar,.emp-visual .emp-avatar,.drawer-avatar,.drawer-hero .drawer-avatar,.new-card .nc-avatar,.person-chip .pc-av,.oc-initials,#orgView .org-person-initials{
+  background:#F2F4F6!important;color:#182433!important;font-weight:700!important;letter-spacing:-.01em;box-shadow:inset 0 1px 0 rgba(255,255,255,.72)}
+.new-card .nc-avatar,.person-chip .pc-av,.oc-initials,#orgView .org-person-initials{border:1px solid rgba(20,30,42,.10);border-radius:50%!important}
+body.dark .emp-avatar-ring,body.dark .emp-visual .emp-avatar-ring,body.dark .drawer-avatar-ring,body.dark .drawer-hero .drawer-avatar-ring{background:rgba(235,242,250,.14)!important}
+body.dark .emp-visual .emp-avatar-ring{box-shadow:0 0 0 3px var(--surface-0,#0F1A2E),0 6px 18px rgba(0,0,0,.4)!important}
+body.dark .emp-avatar,body.dark .emp-visual .emp-avatar,body.dark .drawer-avatar,body.dark .drawer-hero .drawer-avatar,body.dark .new-card .nc-avatar,body.dark .person-chip .pc-av,body.dark .oc-initials,body.dark #orgView .org-person-initials{
+  background:#172437!important;color:#F2F6FB!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+body.dark .new-card .nc-avatar,body.dark .person-chip .pc-av,body.dark .oc-initials,body.dark #orgView .org-person-initials{border-color:rgba(235,242,250,.11)}
 </style>
 </head>
 <body>
@@ -1861,6 +1876,7 @@ body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,bo
       <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
       <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
       <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
       <script id="pvx-grid-link-js">(function(){var OK=["daniel.giordano@pravix.app"];function el(){return document.getElementById("navGrid")}
 function show(e){var a=el();if(a)a.style.display=(e&&OK.indexOf(String(e).toLowerCase())>-1)?"":"none"}
 function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
@@ -1878,7 +1894,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   </nav>
 
 <!-- PAGE -->
-<div class="page-content">
+<div class="page-content" role="main">
 
   <!-- DIRECTORY HEADER -->
   <section class="dir-header apple-header" aria-labelledby="directoryTitle">
@@ -1902,35 +1918,35 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <div class="fs-shell">
         <div class="fs-bar">
           <span class="fs-icon" aria-hidden="true"></span>
-          <input class="fs-input" id="searchInput" type="search" placeholder="Search people" autocomplete="off" oninput="onSearch(this.value)">
+          <input class="fs-input" id="searchInput" type="search" placeholder="Search people" aria-label="Search people" autocomplete="off" oninput="onSearch(this.value)">
           <span class="fs-caret" aria-hidden="true"></span>
           <button class="fs-clear" id="searchClear" onclick="clearSearch()" aria-label="Clear search">✕</button>
         </div>
       </div>
     </div>
-    <div class="filter-chips apple-filters" id="filterChips">
-      <div class="chip active" data-filter="all" onclick="setFilter('all',this)">All <span class="chip-count" id="chip-all">99</span></div>
-      <div class="chip" data-filter="Doctors" onclick="setFilter('Doctors',this)">Doctors</div>
-      <div class="chip" data-filter="Interns" onclick="setFilter('Interns',this)">Interns</div>
+    <div class="filter-chips apple-filters" id="filterChips" role="group" aria-label="Filter people">
+      <button type="button" class="chip active" data-filter="all" aria-pressed="true" onclick="setFilter('all',this)">All <span class="chip-count" id="chip-all">99</span></button>
+      <button type="button" class="chip" data-filter="Doctors" aria-pressed="false" onclick="setFilter('Doctors',this)">Doctors</button>
+      <button type="button" class="chip" data-filter="Interns" aria-pressed="false" onclick="setFilter('Interns',this)">Interns</button>
       <details class="dept-menu">
-        <summary>Departments <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <summary aria-label="Filter by department">Departments <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></summary>
         <div class="dept-menu-popover">
-          <div class="chip" data-filter="Emergency Medicine" onclick="setFilter('Emergency Medicine',this);this.closest('details').removeAttribute('open')">Emergency Medicine</div>
-          <div class="chip" data-filter="Internal Medicine" onclick="setFilter('Internal Medicine',this);this.closest('details').removeAttribute('open')">Internal Medicine</div>
-          <div class="chip" data-filter="Surgery" onclick="setFilter('Surgery',this);this.closest('details').removeAttribute('open')">Surgery</div>
-          <div class="chip" data-filter="Neurology" onclick="setFilter('Neurology',this);this.closest('details').removeAttribute('open')">Neurology</div>
-          <div class="chip" data-filter="Oncology" onclick="setFilter('Oncology',this);this.closest('details').removeAttribute('open')">Oncology</div>
-          <div class="chip" data-filter="Urgent Care" onclick="setFilter('Urgent Care',this);this.closest('details').removeAttribute('open')">Urgent Care</div>
-          <div class="chip" data-filter="Intensive Care Unit" onclick="setFilter('Intensive Care Unit',this);this.closest('details').removeAttribute('open')">ICU</div>
-          <div class="chip" data-filter="Client Services" onclick="setFilter('Client Services',this);this.closest('details').removeAttribute('open')">Client Services</div>
-          <div class="chip" data-filter="Administration" onclick="setFilter('Administration',this);this.closest('details').removeAttribute('open')">Administration</div>
+          <button type="button" class="chip" data-filter="Emergency Medicine" aria-pressed="false" onclick="setFilter('Emergency Medicine',this);this.closest('details').removeAttribute('open')">Emergency Medicine</button>
+          <button type="button" class="chip" data-filter="Internal Medicine" aria-pressed="false" onclick="setFilter('Internal Medicine',this);this.closest('details').removeAttribute('open')">Internal Medicine</button>
+          <button type="button" class="chip" data-filter="Surgery" aria-pressed="false" onclick="setFilter('Surgery',this);this.closest('details').removeAttribute('open')">Surgery</button>
+          <button type="button" class="chip" data-filter="Neurology" aria-pressed="false" onclick="setFilter('Neurology',this);this.closest('details').removeAttribute('open')">Neurology</button>
+          <button type="button" class="chip" data-filter="Oncology" aria-pressed="false" onclick="setFilter('Oncology',this);this.closest('details').removeAttribute('open')">Oncology</button>
+          <button type="button" class="chip" data-filter="Urgent Care" aria-pressed="false" onclick="setFilter('Urgent Care',this);this.closest('details').removeAttribute('open')">Urgent Care</button>
+          <button type="button" class="chip" data-filter="Intensive Care Unit" aria-pressed="false" onclick="setFilter('Intensive Care Unit',this);this.closest('details').removeAttribute('open')">ICU</button>
+          <button type="button" class="chip" data-filter="Client Services" aria-pressed="false" onclick="setFilter('Client Services',this);this.closest('details').removeAttribute('open')">Client Services</button>
+          <button type="button" class="chip" data-filter="Administration" aria-pressed="false" onclick="setFilter('Administration',this);this.closest('details').removeAttribute('open')">Administration</button>
         </div>
       </details>
       <details class="dept-menu lang-menu">
         <summary id="langSummary" aria-label="Filter by language">Languages <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></summary>
         <div class="dept-menu-popover lang-menu-popover" id="langPopover" role="menu"></div>
       </details>
-      <div class="chip" data-filter="Favorites" onclick="setFilter('Favorites',this)">Favorites</div>
+      <button type="button" class="chip" data-filter="Favorites" aria-pressed="false" onclick="setFilter('Favorites',this)">Favorites</button>
     </div>
   </div>
 
@@ -1938,7 +1954,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <div class="fixture-banner" id="fixtureBanner" hidden>Synthetic fixtures active (?fixtures=1) — the “Test Colleague” records and test reports are demo data and are never saved.</div>
   <div class="link-notice" id="linkNotice" hidden></div>
   <div class="results-bar">
-    <div class="results-count" id="resultsCount"><strong>32</strong> team members</div>
+    <div class="results-count" id="resultsCount" role="status" aria-live="polite" aria-atomic="true"><strong>32</strong> team members</div>
     <div class="results-right">
       <div class="seg" id="viewSeg" role="tablist" aria-label="Directory view">
         <button class="seg-btn" type="button" role="tab" data-view="directory" aria-selected="true" onkeydown="segKey(event)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Directory</button>
@@ -3786,8 +3802,8 @@ filterBySearch();
 }
 function setFilter(f, el) {
 activeFilter = f;
-document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-el.classList.add('active');
+document.querySelectorAll('.chip').forEach(c => { c.classList.remove('active'); if(c.hasAttribute('aria-pressed')) c.setAttribute('aria-pressed','false'); });
+el.classList.add('active'); if(el.hasAttribute('aria-pressed')) el.setAttribute('aria-pressed','true');
 buildFavGrid();
 filterBySearch();
 }
@@ -3839,7 +3855,7 @@ const phone = emp.phone ||'—';
 const email = emp.email;
 const safeDept = (emp.dept ||'').replace(/"/g,'&quot;');
 return`
-    <div class="emp-card ${fav?'is-fav':''}" data-id="${emp.id}" data-dept="${safeDept}" onclick="openDrawer(${emp.id})" tabindex="0" role="button" aria-label="Open profile: ${emp.name}" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openDrawer(${emp.id});}">
+    <div class="emp-card ${fav?'is-fav':''}" data-id="${emp.id}" data-dept="${safeDept}" onclick="openDrawer(${emp.id})">
       ${isEditMode ? `<button class="card-delete-btn" onclick="deleteContact(${emp.id},event)" title="Remove">✕</button>` : ''}
 
       <div class="emp-visual">${introActive(emp)?newPillHTML():''}
@@ -3859,7 +3875,7 @@ return`
           <div class="emp-name-block">
             ${isEditMode
               ? `<input class="edit-field emp-name" data-id="${emp.id}" data-field="name" value="${emp.name}" onclick="event.stopPropagation()" onchange="autoSaveField(${emp.id},'name',this.value)">`
-              : `<div class="emp-name">${emp.name}</div>`}
+              : `<h3 class="emp-name"><button type="button" class="emp-open" title="Open profile" onclick="event.stopPropagation();openDrawer(${emp.id})">${emp.name}</button></h3>`}
             ${isEditMode
               ? `<input class="edit-field emp-title" data-id="${emp.id}" data-field="title" value="${emp.title}" onclick="event.stopPropagation()" onchange="autoSaveField(${emp.id},'title',this.value)">`
               : `<div class="emp-title">${emp.title}</div>`}
@@ -3875,18 +3891,18 @@ return`
               ? `<input class="edit-field" data-id="${emp.id}" data-field="phone" value="${emp.phone||''}" placeholder="Phone" style="font-size:11px;" onclick="event.stopPropagation()" onchange="autoSaveField(${emp.id},'phone',this.value)">`
               : (emp.phone || '<span style="color:var(--text-muted);font-size:11px;">—</span>')}
           </div>
-          <div class="emp-contact-item" style="color:var(--brand-cyan);font-size:10.8px;overflow:hidden;text-overflow:ellipsis;">
+          <div class="emp-contact-item" style="color:var(--cyan-ink);font-size:11px;overflow:hidden;text-overflow:ellipsis;">
             ${isEditMode
               ? `<input class="edit-field" data-id="${emp.id}" data-field="email" value="${email}" style="font-size:11px;color:var(--brand-cyan);" onclick="event.stopPropagation()" onchange="autoSaveField(${emp.id},'email',this.value)">`
-              : email}
+              : (email||'<span class="emp-none">No email on file</span>')}
           </div>
         </div>
 
-        <div class="emp-ext-row">${emp.ext ? `<button class="emp-ext" onclick="copyExt('${emp.ext}',event)" title="Copy extension"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 3.8h3l1.5 3.7-2 1.4a12 12 0 0 0 5.4 5.4l1.4-2 3.7 1.5v3a1.7 1.7 0 0 1-1.9 1.7A15.7 15.7 0 0 1 4.5 5.7 1.7 1.7 0 0 1 6.2 3.8Z"/></svg></span>Ext. ${emp.ext}</button>` : ''}${_statusChip(emp)}</div>
+        <div class="emp-ext-row">${emp.ext ? `<button class="emp-ext" onclick="copyExt('${emp.ext}',event)" title="Copy extension" aria-label="Copy ${escA(emp.name)}'s extension ${escA(String(emp.ext))}"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 3.8h3l1.5 3.7-2 1.4a12 12 0 0 0 5.4 5.4l1.4-2 3.7 1.5v3a1.7 1.7 0 0 1-1.9 1.7A15.7 15.7 0 0 1 4.5 5.7 1.7 1.7 0 0 1 6.2 3.8Z"/></svg></span>Ext. ${emp.ext}</button>` : ''}${_statusChip(emp)}</div>
 
         <div class="quick-actions">
-          <a href="mailto:${email}" class="qa-btn" onclick="event.stopPropagation()"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></span><span class="qa-label">Email</span></a>
-          ${emp.phone ? `<button class="qa-btn" onclick="copyPhone('${emp.phone}',event)" title="Copy phone"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg></span><span class="qa-label">Copy</span></button>` : ''}
+          ${email?`<a href="mailto:${email}" class="qa-btn" onclick="event.stopPropagation()" aria-label="Email ${escA(emp.name)}"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></span><span class="qa-label">Email</span></a>`:`<button type="button" class="qa-btn qa-none" disabled aria-label="No email on file for ${escA(emp.name)}"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></span><span class="qa-label">No email</span></button>`}
+          ${emp.phone ? `<button class="qa-btn" onclick="copyPhone('${emp.phone}',event)" title="Copy phone" aria-label="Copy ${escA(emp.name)}'s phone number"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg></span><span class="qa-label">Copy</span></button>` : ''}
           <button class="qa-btn fav-btn ${fav?'active':''} ${emp.id===DIR_PINNED_ID?'locked':''}" onclick="toggleFav(${emp.id},event)" title="${emp.id===DIR_PINNED_ID?'Pinned':''}"><span class="qa-ic">${fav?`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg>`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg>`}</span><span class="qa-label">Fav</span></button>
         </div>
       </div>
@@ -4018,7 +4034,7 @@ const dCell = (k, v, full) => v ?`<div class="d-cell${full?' full':''}"><div cla
 let contact ='';
 contact += dCell('Extension', emp.ext ?`Ext. ${emp.ext}`:'');
 contact += dCell('Phone', emp.phone ?`<a href="tel:${emp.phone}">${emp.phone}</a>`:'');
-contact += dCell('Email',`<a href="mailto:${emp.email}">${emp.email}</a>`, true);
+contact += dCell('Email', emp.email?`<a href="mailto:${emp.email}">${emp.email}</a>`:'<span class="emp-none">No email on file</span>', true);
 contact += dCell('Reports To', emp.reportsTo, emp.reportsTo && emp.reportsTo.length > 20);
 if(contact) body +=`<div class="drawer-section"><div class="drawer-section-title">Contact</div><div class="d-grid">${contact}</div></div>`;
 
@@ -4036,10 +4052,10 @@ document.getElementById('drawerBody').innerHTML = body;
 
 
 document.getElementById('drawerActions').innerHTML =`
-    <a href="mailto:${emp.email}" class="drawer-action-btn primary">
+    ${emp.email?`<a href="mailto:${emp.email}" class="drawer-action-btn primary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
       Email
-    </a>
+    </a>`:`<button type="button" class="drawer-action-btn primary" disabled title="No email on file">No email on file</button>`}
     <button onclick="toggleFav(${emp.id},event)" class="drawer-action-btn secondary" style="flex:0 0 auto;${isFav(emp.id)?'color:var(--brand-amber);':''}" aria-label="${isFav(emp.id)?'Remove favorite':'Add to favorites'}" title="${isFav(emp.id)?'Favorited':'Favorite'}">
       ${isFav(emp.id)?`<span class="qa-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg></span>`:`<span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg></span>`}
     </button>
@@ -4347,7 +4363,7 @@ if(dxAnyOpen() || dirView!=='directory'|| document.getElementById('drawer').clas
 if(e.key==='?'){ e.preventDefault(); toggleShortcuts(true); return; }
 if(e.key==='ArrowRight'||e.key==='ArrowDown'){ e.preventDefault(); dirMove(e.key==='ArrowDown'?dirCols(dirCards()):1); return; }
 if(e.key==='ArrowLeft'||e.key==='ArrowUp'){ e.preventDefault(); dirMove(e.key==='ArrowUp'?-dirCols(dirCards()):-1); return; }
-if(e.key==='Enter'){ if(dirSel>=0){ e.preventDefault(); dirOpenSel(); } return; }
+if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.closest&&e.target.closest('button,a[href],input,select,textarea,summary,[role=button],[role=tab],[contenteditable=true]')) return; if(e.key==='Enter'){ if(dirSel>=0){ e.preventDefault(); dirOpenSel(); } return; }
 if(e.key===' '){ if(dirSel>=0){ e.preventDefault(); dirFavSel(); } return; }
 });
 
@@ -7829,7 +7845,7 @@ if(!window.__pvxIsAdmin && typeof dirEditMode!=='undefined'&& dirEditMode
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',_pv3InitFirebase);}else{_pv3InitFirebase();}
 window.PVDirectory={getVisits:()=>visits,refreshActivity};
 })();
-</script><style id="az-index-css">
+</script><style id="az-index-css">/* DTA-D03 n134 */
 .az-bar{position:fixed;left:8px;top:50%;transform:translateY(-50%);z-index:45;
 display:flex;flex-direction:column;align-items:center;gap:0;padding:7px 3px;border-radius:16px;
 background:color-mix(in srgb,var(--surface-1,#F4F9FC) 84%,transparent);
@@ -7848,6 +7864,18 @@ transition:color .12s ease,transform .16s ease,width .18s ease,height .18s ease,
 .az-let.az-empty{opacity:.28;pointer-events:none;}
 .emp-card.az-flash{outline:2px solid var(--brand-cyan,#38BDD2);outline-offset:3px;}
 @media (max-width:860px){.az-bar{display:none;}}
+/* DTA-D03 n134: readable, reachable letters; the rail keeps its own gutter; keyboard focus enlarges it like hover does */
+.az-bar{left:6px;padding:6px 3px;gap:1px}
+.az-let{width:24px;height:22px;font-size:11.5px;border-radius:6px}
+.az-let:focus-visible{outline:2px solid var(--brand-cyan,#38BDD2);outline-offset:1px;color:var(--brand-cyan,#38BDD2)}
+.az-let.az-empty,.az-let:disabled{opacity:.28;pointer-events:none;cursor:default}
+.az-bar.az-kbd{padding:8px 6px;gap:1px;box-shadow:0 10px 28px rgba(4,20,40,.18),0 0 0 1px rgba(56,189,210,.18)}
+.az-bar.az-kbd .az-let{width:26px;height:22px;font-size:12px}
+.az-bar:hover .az-let{width:28px;height:24px;font-size:13px}
+@media (min-width:861px) and (max-width:1366px){.page-content{padding-left:52px}}
+@media (min-width:1367px){.az-let{width:26px;height:24px;font-size:12px}}
+@media (max-height:720px) and (min-width:861px){.az-let{height:18px;font-size:11px}.az-bar{padding:5px 3px;gap:0}}
+@media (prefers-reduced-motion:reduce){.az-let,.az-bar{transition:none}}
 </style>
 <script id="az-index-js">
 (function(){
@@ -7859,7 +7887,11 @@ function cards(){return Array.prototype.slice.call(document.querySelectorAll('#e
 function nameOf(c){var n=c.querySelector('.emp-name');return n?(n.textContent||'').trim():'';}
 function firstFor(L){var cs=cards();for(var i=0;i<cs.length;i++){if(nameOf(cs[i]).charAt(0).toUpperCase()===L)return cs[i];}return null;}
 bar.addEventListener('click',function(e){var b=e.target.closest('.az-let');if(!b)return;var c=firstFor(b.dataset.letter);if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('az-flash');setTimeout(function(){c.classList.remove('az-flash');},900);}});
-function update(){var present={};cards().forEach(function(c){var ch=nameOf(c).charAt(0).toUpperCase();if(ch)present[ch]=1;});Array.prototype.forEach.call(bar.querySelectorAll('.az-let'),function(b){b.classList.toggle('az-empty',!present[b.dataset.letter]);});}
+function update(){var present={};cards().forEach(function(c){var ch=nameOf(c).charAt(0).toUpperCase();if(ch)present[ch]=1;});Array.prototype.forEach.call(bar.querySelectorAll('.az-let'),function(b){var empty=!present[b.dataset.letter];b.classList.toggle('az-empty',empty);b.disabled=empty;});azRove();}
+/* DTA-D03 n134: one Tab stop; arrows, Home and End move between letters that have entries; Enter/Space jumps */
+function azRove(){var ls=Array.prototype.filter.call(bar.querySelectorAll('.az-let'),function(b){return !b.disabled;});var cur=ls.filter(function(b){return b.tabIndex===0;})[0]||ls[0];ls.forEach(function(b){b.tabIndex=(b===cur)?0:-1;});}
+bar.addEventListener('keydown',function(e){var k=e.key;if(k==='Enter'||k===' '){e.stopPropagation();return;}/* the page's card navigation must not also act on these keys */ if(k!=='ArrowDown'&&k!=='ArrowUp'&&k!=='Home'&&k!=='End')return;e.stopPropagation();var ls=Array.prototype.filter.call(bar.querySelectorAll('.az-let'),function(b){return !b.disabled;});if(!ls.length)return;e.preventDefault();var i=ls.indexOf(document.activeElement);var j=k==='Home'?0:k==='End'?ls.length-1:k==='ArrowDown'?Math.min(ls.length-1,i+1):Math.max(0,i-1);ls.forEach(function(b,x){b.tabIndex=x===j?0:-1;});ls[j].focus();});
+bar.addEventListener('focusin',function(){bar.classList.add('az-kbd');});bar.addEventListener('focusout',function(){setTimeout(function(){if(!bar.contains(document.activeElement))bar.classList.remove('az-kbd');},0);});
 if(typeof render==='function'){var _r=render;render=function(){_r.apply(this,arguments);try{update();}catch(e){}};}
 update();
 })();
@@ -8067,6 +8099,187 @@ if(dirView==='org')renderOrgView();
   var lb=document.getElementById('logoutBtn'); if(!lb) return;
   lb.addEventListener('pointermove',function(e){ var r=lb.getBoundingClientRect(); lb.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%'); lb.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%'); });
   lb.addEventListener('pointerleave',function(){ lb.style.setProperty('--mx','50%'); lb.style.setProperty('--my','50%'); });
+})();
+</script>
+
+<!-- PVX-OVERLAY n133 (n132 + initial ':self' + refocus after re-render): closed overlays are hidden and inert; open modals get dialog semantics, focus entry, Tab containment, Escape and focus return -->
+<style>.pvx-closed{visibility:hidden!important}</style>
+<script>
+/* ═══ Pravix shared overlay primitive · n132 ═══
+   One behaviour for every modal, drawer, popover and scrim in the suite (audit FL-01, FL-06, DTA-S02, DTA-A05, DTA-C05, DTA-M01, CL-T05, CL-O11):
+   · CLOSED means closed: once an overlay's exit transition has finished it gets `inert` + visibility:hidden (class .pvx-closed), so its
+     controls leave the Tab order and the accessibility tree. Opacity, transform and pointer-events alone never hide anything from a keyboard.
+   · OPEN means active: a modal overlay gets role=dialog + aria-modal, a name, an initial focus inside it, Tab/Shift+Tab kept inside,
+     Escape → its own Cancel/Close control (so the app's own cancel logic decides about unsaved edits), and focus back to the opener on close.
+   · The app keeps its own open/close code and classes; this watches the class and reacts. Nothing here reads or writes app data.
+   Registry entries: {sel, open:'open'|['open','show'], modal:true, dialog:'.inner-card' (where the dialog semantics go), close:'.close,.btn.ghost',
+     label:'…', labelFrom:'h2', initial:'input', escape:true, delay:450}
+   A registered element is only ever marked closed when it is also visually invisible (opacity 0, display none, or outside the viewport),
+   so a mis-registered element that is really on screen is never hidden by mistake. */
+(function(){
+  if(window.pvxOverlay) return;
+  var REG=[], timers=new WeakMap(), st=new WeakMap(), last=new WeakMap(), known=new WeakMap(), stack=[];
+  function closestRegistered(n){ while(n&&n.nodeType===1){ if(cfgFor(n)) return n; n=n.parentElement; } return null; }
+  function cfgFor(el){ for(var i=REG.length-1;i>=0;i--){ try{ if(el.matches(REG[i].sel)) return REG[i]; }catch(e){} } return null; }
+  function isOpen(el,r){ if(r.openWhen) return !!r.openWhen(el); var o=r.open||'open'; return (Array.isArray(o)?o:[o]).some(function(c){ return el.classList.contains(c); }); }
+  function invisible(el){ var s=getComputedStyle(el); if(s.display==='none'||s.visibility==='hidden'||+s.opacity===0) return true;
+    var b=el.getBoundingClientRect(); return b.width===0||b.height===0||b.right<=0||b.left>=innerWidth||b.bottom<=0||b.top>=innerHeight; }
+  function visibleEl(el){ if(!el||!el.isConnected) return false; var n=el; while(n&&n.nodeType===1){ var s=getComputedStyle(n); if(s.display==='none'||s.visibility==='hidden'||+s.opacity===0) return false; n=n.parentElement; }
+    var b=el.getBoundingClientRect(); return b.width>0&&b.height>0; }
+  function focusables(el){ return [].slice.call(el.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex],[contenteditable=true]')).filter(function(f){
+    if(f.disabled||f.getAttribute('tabindex')==='-1'||f.getAttribute('aria-hidden')==='true') return false; if(f.closest('.pvx-closed,[inert],[hidden]')) return false; return visibleEl(f); }); }
+  function hideNow(el,r){ if(isOpen(el,r)||!invisible(el)) return false; el.classList.add('pvx-closed'); el.setAttribute('inert',''); el.setAttribute('data-pvx-closed','1'); return true; }
+  /* wait for the exit transition, then hide; if it is still moving, keep checking for a while (a .5 s slide must not leave it exposed) */
+  function settle(el,r){ clearTimeout(timers.get(el)); var tries=0, step=function(){ if(isOpen(el,r)) return; if(!hideNow(el,r)&&tries++<16) timers.set(el,setTimeout(step,150)); };
+    timers.set(el,setTimeout(step,r.delay!=null?r.delay:300)); }
+  function reveal(el){ clearTimeout(timers.get(el)); el.classList.remove('pvx-closed'); el.removeAttribute('inert'); el.removeAttribute('data-pvx-closed'); }
+  function name(el,r){ if(el.getAttribute('aria-label')||el.getAttribute('aria-labelledby')) return;
+    var h=r.labelFrom?el.querySelector(r.labelFrom):el.querySelector('h1,h2,h3,.drawer-head h2,.modal-title,.sheet-title');
+    if(h&&h.textContent.trim()){ if(!h.id) h.id='pvxlbl_'+Math.random().toString(36).slice(2,8); el.setAttribute('aria-labelledby',h.id); }
+    else if(r.label) el.setAttribute('aria-label',r.label); }
+  function dialogEl(el,r){ return (r.dialog&&el.querySelector(r.dialog))||el; }
+  function semantics(el,r){ if(r.modal===false) return; var d=dialogEl(el,r); if(!d.getAttribute('role')) d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); name(d,r); }
+  function onOpen(el,r){ reveal(el); semantics(el,r);
+    var opener=document.activeElement; if(opener===document.body||opener===document.documentElement) opener=null;
+    /* n133: the opener may already have been re-rendered away by the time this runs (a list that redraws when a row is picked) — fall back to what held focus a moment ago */
+    if(!opener&&lastFocus.el&&Date.now()-lastFocus.at<1500&&!el.contains(lastFocus.el)) opener=lastFocus.el;
+    if(opener&&el.contains(opener)) opener=(st.get(el)||{}).opener||null;
+    /* opened from inside another overlay (a menu item, say): remember that overlay's own opener as the fallback return point */
+    var host=opener&&opener.closest?closestRegistered(opener.parentElement):null, opener2=host?(last.get(host)||{}).opener||null:null;
+    st.set(el,{opener:opener,opener2:opener2,key:openerKey(opener),at:Date.now()}); last.set(el,{opener:opener,opener2:opener2,key:openerKey(opener)}); if(stack.indexOf(el)<0) stack.push(el);
+    if(r.modal===false&&!r.focus) return;
+    setTimeout(function(){ if(!isOpen(el,r)||!el.isConnected) return; var a=document.activeElement; if(a&&el.contains(a)) return;   /* the app already placed focus: keep it */
+      var f=focusables(el), t=r.initial===':self'?el:(r.initial?el.querySelector(r.initial):null);
+      if(t===el&&!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+      if(t&&!visibleEl(t)) t=null;
+      t=t||f.filter(function(x){ return /^(INPUT|SELECT|TEXTAREA)$/.test(x.tagName)&&!/^(checkbox|radio|file)$/.test(x.type); })[0]||f.filter(function(x){ return !/close|cancel|dismiss/i.test((x.getAttribute('aria-label')||'')+' '+x.className+' '+x.textContent); })[0]||f[0];
+      if(!t){ if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1'); t=el; }
+      try{ t.focus({preventScroll:true}); }catch(e){} },r.focusDelay!=null?r.focusDelay:80); }
+  /* n133: a selector that finds the opener again after the list it sits in re-renders (same id, or same data-pid/data-loc/data-id with the same classes) */
+  function openerKey(o){ if(!o||!o.getAttribute) return null; if(o.id) return '#'+CSS.escape(o.id); var ks=['data-pid','data-loc','data-id','data-key'];
+    for(var i=0;i<ks.length;i++){ var v=o.getAttribute(ks[i]); if(v){ var cls=(o.className&&typeof o.className==='string')?o.className.trim().split(/\s+/).map(function(c){ return '.'+CSS.escape(c); }).join(''):''; return o.tagName.toLowerCase()+cls+'['+ks[i]+'="'+v.replace(/"/g,'\\"')+'"]'; } } return null; }
+  /* n133: the list the opener sits in may redraw right after the overlay closes (the app clears its selection) — if that drops focus, find the opener again by its key */
+  function keepOn(key){ if(!key) return; [120,320,650].forEach(function(ms){ setTimeout(function(){ var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement) return; if(topModal()) return;
+      try{ var o=document.querySelector(key); if(o&&visibleEl(o)) o.focus({preventScroll:true}); }catch(e){} },ms); }); }
+  var lastFocus={el:null,at:0}; document.addEventListener('focusin',function(e){ var x=e.target; if(x&&x!==document.body&&x!==document.documentElement) lastFocus={el:x,at:Date.now()}; },true);
+  function onClose(el,r){ var s=st.get(el)||{}; st.delete(el); var i=stack.indexOf(el); if(i>-1) stack.splice(i,1); settle(el,r);
+    var a=document.activeElement; if(a&&a!==document.body&&!el.contains(a)) return;   /* the app moved focus somewhere sensible already */
+    var cands=[s.opener,s.opener2]; if(s.key){ try{ var again=document.querySelector(s.key); if(again) cands.splice(1,0,again); }catch(e){} }
+    for(var k=0;k<cands.length;k++){ var o=cands[k]; if(o&&o.isConnected&&visibleEl(o)&&!o.closest('.pvx-closed,[inert]')){ try{ o.focus({preventScroll:true}); keepOn(s.key); return; }catch(e){} } }
+    var top=topModal(); if(top){ var f=focusables(top)[0]||top; try{ f.focus({preventScroll:true}); }catch(e){} return; }
+    var m=document.querySelector('main,[role=main]')||document.body; if(m!==document.body&&!m.hasAttribute('tabindex')) m.setAttribute('tabindex','-1'); try{ m.focus({preventScroll:true}); }catch(e){} }
+  function sync(el){ var r=cfgFor(el); if(!r||!el.isConnected) return; var o=isOpen(el,r), was=known.get(el);
+    if(was===undefined){ known.set(el,o); if(o){ reveal(el); semantics(el,r); if(stack.indexOf(el)<0) stack.push(el); } else settle(el,r); return; }
+    if(o===was) return; known.set(el,o); if(o) onOpen(el,r); else onClose(el,r); }
+  function otherDialogOpen(top){ var own=dialogEl(top,cfgFor(top)||{}); return [].slice.call(document.querySelectorAll('[role=dialog],[aria-modal=true]')).some(function(d){ return d!==top&&d!==own&&!d.contains(top)&&!d.closest('.pvx-closed,[inert]')&&visibleEl(d); }); }   /* a dialog nested inside the top one (an end-of-visit sheet in a drawer) counts too */
+  function topModal(){ for(var i=stack.length-1;i>=0;i--){ var el=stack[i], r=cfgFor(el); if(el.isConnected&&r&&r.modal!==false&&isOpen(el,r)&&!invisible(el)) return el; } return null; }
+  /* n133: when an open modal re-renders the element that held focus, the browser drops focus to <body> silently (no blur event); bring it back to the modal container */
+  var refocusT; function refocus(){ clearTimeout(refocusT); refocusT=setTimeout(function(){ var top=topModal(); if(!top) return; var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement) return;
+    if(!top.hasAttribute('tabindex')) top.setAttribute('tabindex','-1'); try{ top.focus({preventScroll:true}); }catch(x){} },60); }
+  var mo=new MutationObserver(function(ms){ var lost=false; ms.forEach(function(m){ if(m.type==='childList'&&m.removedNodes.length) lost=true; if(m.type==='attributes'){ sync(m.target); }
+    else m.addedNodes.forEach(function(n){ if(n.nodeType!==1) return; if(cfgFor(n)) { observe(n); sync(n); } n.querySelectorAll&&REG.forEach(function(r){ n.querySelectorAll(r.sel).forEach(function(x){ observe(x); sync(x); }); }); }); }); if(lost) refocus(); });
+  function observe(el){ if(el.__pvxObs) return; el.__pvxObs=1; mo.observe(el,{attributes:true,attributeFilter:['class','style','hidden','aria-hidden']}); }
+  function scan(){ REG.forEach(function(r){ document.querySelectorAll(r.sel).forEach(function(el){ observe(el); sync(el); }); }); }
+  /* on window, capture phase: runs before the app's own document listeners whatever the event's target */
+  window.addEventListener('keydown',function(e){
+    if(e.defaultPrevented) return; var top=topModal(); if(!top) return; var r=cfgFor(top);
+    /* another dialog is open above this one (one the app mounts on demand and manages itself): leave the keys to the app */
+    if(otherDialogOpen(top)) return;
+    if(e.key==='Tab'){ var f=focusables(top); if(!f.length){ e.preventDefault(); try{ top.focus(); }catch(x){} return; }
+      var a=document.activeElement, i=f.indexOf(a);
+      if(i<0||!top.contains(a)){ e.preventDefault(); f[e.shiftKey?f.length-1:0].focus(); return; }
+      if(!e.shiftKey&&i===f.length-1){ e.preventDefault(); f[0].focus(); } else if(e.shiftKey&&i===0){ e.preventDefault(); f[f.length-1].focus(); } }
+    else if(e.key==='Escape'&&r.escape!==false){ var c=null; (r.close||'.close,[data-close],.btn.ghost,[aria-label^="Close"],[aria-label^="Cancel"]').split(',').some(function(s){ var cands=[].slice.call(top.querySelectorAll(s.trim())).filter(visibleEl); if(cands.length){ c=cands[0]; return true; } return false; });
+      if(typeof r.onEscape==='function'){ e.preventDefault(); r.onEscape(top); } else if(c){ e.preventDefault(); c.click(); } }
+  },true);
+  /* a focus that lands in a closed overlay anyway (programmatic focus from the app) is sent back to the page */
+  document.addEventListener('focusin',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.pvx-closed'); if(!el) return; var top=topModal(); var f=top?(focusables(top)[0]||top):(document.querySelector('main,[role=main]')||document.body); try{ f.focus({preventScroll:true}); }catch(x){} },true);
+  window.pvxOverlay={register:function(list){ (list||[]).forEach(function(r){ if(r&&r.sel) REG.push(r); }); if(document.body){ scan(); mo.observe(document.body,{childList:true,subtree:true}); } else document.addEventListener('DOMContentLoaded',function(){ scan(); mo.observe(document.body,{childList:true,subtree:true}); });
+    window.addEventListener('load',scan); },
+    scan:scan, top:topModal, focusables:focusables, _reg:REG, _state:function(el){ return st.get(el)||null; }, version:'n133'};
+})();
+
+pvxOverlay.register([{"sel": "#drawer.drawer", "open": "open", "modal": true, "close": ".drawer-close"}, {"sel": ".dx-scrim", "open": "show", "modal": true, "dialog": ".dx-panel", "close": "[onclick*=dxClose],.dx-foot button,.dx-close", "escape": false}, {"sel": ".sched-scrim", "open": "show", "modal": true, "dialog": ".sched-panel", "close": "[onclick*=schedClose]"}, {"sel": ".kbd-scrim", "open": "show", "modal": true, "dialog": ".kbd-panel,[role=dialog]", "close": ".kbd-close,[onclick*=Close],[onclick*=close]"}, {"sel": ".drawer-overlay", "open": "open", "modal": false}]);
+</script>
+
+<!-- PVX-TOPBAR n132: brand and controls keep their width; app links overflow into a More menu; Grid and Forms in every app (account-gated) -->
+<style>
+/* PVX-TOPBAR n132 — the brand and the right-hand controls keep their width; the apps get what is left, overflowing into More */
+html body nav.topnav{grid-template-columns:max-content minmax(0,1fr) max-content!important;column-gap:12px}
+html body nav.topnav .brandwrap{flex:0 0 auto;min-width:0}
+html body nav.topnav .nav-center{min-width:0;max-width:100%;justify-self:center!important;overflow:visible!important;flex-wrap:nowrap;position:relative}
+html body nav.topnav .nav-right{flex:0 0 auto}
+@media(max-width:760px){ html body nav.topnav{grid-template-columns:max-content minmax(0,1fr)!important} html body nav.topnav .nav-center{margin:0!important;padding:0!important;justify-content:flex-start} }
+.pvx-more{position:relative;display:flex;flex:0 0 auto}
+.pvx-more[hidden]{display:none!important}
+.pvx-more-btn{font-family:inherit;cursor:pointer}
+.pvx-more-btn[aria-expanded=true]{background:rgba(255,255,255,0.10);color:rgba(255,255,255,.95)}
+body:not(.dark) .pvx-more-btn[aria-expanded=true]{background:#EBEBEB;color:#333}
+.pvx-more-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;min-width:200px;padding:6px;border-radius:14px;display:flex;flex-direction:column;gap:2px;
+  background:#101A32;border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+body:not(.dark) .pvx-more-menu{background:#fff;border-color:rgba(29,29,31,.1);box-shadow:0 18px 44px rgba(20,28,40,.18)}
+.pvx-more-menu[hidden]{display:none!important}
+html body nav.topnav .pvx-more-menu .nav-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:13px!important;letter-spacing:0;white-space:nowrap;width:100%}
+html body nav.topnav .pvx-more-menu .nav-item svg{width:18px;height:18px}
+.nav-item:focus-visible,.pvx-more-btn:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+@media(forced-colors:active){.pvx-more-menu{border:1px solid CanvasText}}
+</style>
+<script id="pvx-app-links-js">/* n132: Grid and Forms links show only for the accounts those apps let in (keep in step with grid/index.html and forms/index.html ALLOWED) */
+(function(){var OK={navGrid:["daniel.giordano@pravix.app"],navForms:["daniel.giordano@pravix.app"]};
+function show(e){e=String(e||"").toLowerCase();Object.keys(OK).forEach(function(id){var a=document.getElementById(id);if(a)a.style.display=OK[id].indexOf(e)>-1?"":"none"})}
+function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
+var hooked=false;function live(){if(hooked)return;try{if(window.firebase&&firebase.apps&&firebase.apps.length&&firebase.auth){hooked=true;firebase.auth().onAuthStateChanged(function(u){if(u)show(u.email);else fromStore()})}}catch(_){}}
+fromStore();live();window.addEventListener("load",function(){live();setTimeout(live,1500)})})();</script>
+<script>
+/* ═══ Pravix shared top bar · n132 (audit RX-01, FL-07, DTA-S01, CL-X02, US-04) ═══
+   The same nav.topnav lives in every app. This block makes it fit any width without collisions:
+   · the brand and the Logout/theme group keep their real width (grid: max-content · 1fr · max-content) — nothing can slide under them;
+   · the app links get the middle; the ones that do not fit move into a "More" menu (a real button with a menu of the same links),
+     instead of being clipped inside a scroller with its scrollbar hidden. The active app always stays visible;
+   · the More menu is keyboard-operable (Enter/Space, arrows, Escape, focus return) and closed state is display:none;
+   · aria-current="page" follows the active link (apps that switch in place call pvxTopbar.setActive(id)). */
+(function(){
+  if(window.pvxTopbar) return;
+  var nav=document.querySelector('nav.topnav'); if(!nav) return;
+  var center=nav.querySelector('.nav-center'); if(!center) return;
+  var more=document.createElement('div'); more.className='pvx-more'; more.hidden=true;
+  more.innerHTML='<button type="button" class="nav-item pvx-more-btn" aria-haspopup="true" aria-expanded="false" aria-label="More apps" title="More apps">'
+    +'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>'
+    +'<div class="pvx-more-menu" role="menu" aria-label="More apps" hidden></div>';
+  center.appendChild(more); var btn=more.querySelector('button'), menu=more.querySelector('.pvx-more-menu');
+  function items(){ return [].slice.call(center.querySelectorAll('.nav-item')).filter(function(a){ return a!==btn&&!a.classList.contains('pvx-more-btn'); }); }
+  function shown(a){ return a.style.display!=='none'&&!a.hidden; }   /* account-gated links (Grid, Forms) are display:none until allowed */
+  var gap=0, busy=false;
+  function layout(){ if(busy) return; busy=true;
+    try{ var all=items(); all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
+      var vis=all.filter(shown); if(!vis.length){ more.hidden=true; return; }
+      gap=parseFloat(getComputedStyle(center).columnGap||getComputedStyle(center).gap)||0;
+      more.hidden=true; var avail=center.clientWidth, w=vis.map(function(a){ return a.getBoundingClientRect().width; }), total=w.reduce(function(s,x){ return s+x; },0)+gap*(vis.length-1);
+      if(total<=avail+0.5){ menu.innerHTML=''; return; }
+      more.hidden=false; var mw=more.getBoundingClientRect().width+gap, keep=0, used=0;
+      for(var i=0;i<vis.length;i++){ if(used+w[i]+(i?gap:0)+mw<=avail){ used+=w[i]+(i?gap:0); keep++; } else break; }
+      var active=vis.findIndex(function(a){ return a.classList.contains('active')||a.getAttribute('aria-current'); });
+      if(active>=keep&&keep>0){ var a=vis.splice(active,1)[0]; vis.splice(keep-1,0,a); center.insertBefore(a,vis[keep]||more); }
+      var hidden=vis.slice(keep); hidden.forEach(function(a){ menu.appendChild(a); a.setAttribute('role','menuitem'); });
+      if(!hidden.length) more.hidden=true; }
+    finally{ busy=false; } }
+  function open(o){ var isOpen=!menu.hidden; if(o===undefined) o=!isOpen; if(o===isOpen) return; menu.hidden=!o; btn.setAttribute('aria-expanded',o?'true':'false');
+    if(o){ var f=menu.querySelector('.nav-item'); if(f) f.focus(); } }
+  btn.addEventListener('click',function(){ open(); });
+  menu.addEventListener('keydown',function(e){ var f=[].slice.call(menu.querySelectorAll('.nav-item')), i=f.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){ e.preventDefault(); (f[i+1]||f[0]).focus(); } else if(e.key==='ArrowUp'){ e.preventDefault(); (f[i-1]||f[f.length-1]).focus(); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); open(false); btn.focus(); } else if(e.key==='Tab'){ open(false); } });
+  btn.addEventListener('keydown',function(e){ if(e.key==='ArrowDown'){ e.preventDefault(); open(true); } else if(e.key==='Escape'&&!menu.hidden){ e.preventDefault(); open(false); } });
+  document.addEventListener('click',function(e){ if(!menu.hidden&&!more.contains(e.target)) open(false); },true);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!menu.hidden&&!more.contains(document.activeElement)) open(false); });
+  function setActive(id){ items().forEach(function(a){ var on=a.id===id; a.classList.toggle('active',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); layout(); }
+  /* keep aria-current in step with the visual active class, for apps that switch in place */
+  items().forEach(function(a){ if(a.classList.contains('active')) a.setAttribute('aria-current','page'); else if(a.getAttribute('aria-current')==='page'&&!a.classList.contains('active')) a.removeAttribute('aria-current'); });
+  var t; function soon(){ clearTimeout(t); t=setTimeout(layout,60); }
+  if(window.ResizeObserver){ new ResizeObserver(soon).observe(nav); } window.addEventListener('resize',soon);
+  new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
+  window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
 })();
 </script>
 </body>
@@ -8289,4 +8502,53 @@ body.dark #sbLogin .logo-drk{display:block;width:139px;}
 
 body.dark .topnav{background:#0d1730;}
 .topnav,.topnav .nav-item,.topnav .nav-item svg,.topnav .cobrand-div,.topnav .pvx-powered,.topnav .logo{transition:background .35s ease,color .35s ease,border-color .35s ease,fill .35s ease,stroke .35s ease,opacity .35s ease;}
+</style>
+
+
+<!-- PVX-N136: copy, states and semantics (batch 5) — directory -->
+<style>
+.pvx-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+:where(h3.emp-name){margin:0}
+:where(button.emp-open){background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;letter-spacing:inherit;text-align:left;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:inherit;min-height:24px;vertical-align:middle}
+.emp-open:focus-visible{outline:none;border-radius:4px;box-shadow:inset 0 -2px 0 var(--cyan-ink,#0F6B82)}
+.emp-card:has(.emp-open:focus-visible){outline:2px solid var(--cyan-ink,#0F6B82);outline-offset:3px}
+.qa-btn.qa-none{cursor:not-allowed;opacity:1;color:var(--ink-400)!important;background:transparent!important;border:1px dashed var(--border,rgba(0,0,0,.14))!important;box-shadow:none!important}
+.drawer-action-btn[disabled]{cursor:not-allowed;color:var(--ink-400);background:transparent;border:1px dashed var(--border,rgba(0,0,0,.14));box-shadow:none}
+.emp-none{color:var(--ink-400);font-style:normal}
+</style>
+<!-- PVX-TYPE n135: contrast + type floor (shared sheet + directory rules) -->
+<style>
+/* PVX-TYPE n135 — contrast and type floor, shared by every Pravix app (batch 4: FL-08, CL-T10, DTA-S03, SCH-01/02).
+   Text colours only: fills, accents, lines and the brand palette are untouched. Every value here was measured against the
+   surfaces it sits on (see n135/REGISTER.md): light muted ink #66666B (≥4.9:1 on white, #F2F4F8, #EDEFF3, #E2F0F6, #F4F4F4),
+   blue-grey muted #52698A for the portal apps (≥5.0:1 on #F2F4F8), cyan-as-text #0F6B82, green-as-text #12623F, amber-as-text
+   #875C00, red-as-text #BE3A2E, blue-as-text #0A66C2; dark muted ink #8FA6BE (≥6.2:1 on every dark surface measured, #1C2333 up).
+   An 11 px floor for labels; the shared top bar's 10 px app labels and the 7 px "Powered by" rise to 11 / 9 px. No color-mix(). */
+:root,body{
+  --ink-400:#66666B; --text-muted:#66666B; --st-meta:#66666B; --muted:#66666B; --tm:#66666B;
+  --cyan-ink:#0F6B82; --green-ink:#12623F; --amber-ink:#875C00; --red-ink:#BE3A2E; --blue-ink:#0A66C2; --p1-fill:#D92B22; --p3-ink:#06341A;
+}
+body.dark,html.dark body,:root.dark{
+  --ink-400:#8FA6BE; --text-muted:#8FA6BE; --st-meta:#A7B8CC; --muted:#8FA6BE; --tm:#8FA6BE;
+  --cyan-ink:#6FD3E4; --green-ink:#5BD6A8; --amber-ink:#F2C744; --red-ink:#FF8A70; --blue-ink:#7CC0FF; --p1-fill:#D92B22; --p3-ink:#06341A;
+}
+/* the portal apps re-declare --ink-400 on the top bar and sub-nav (#8E8E93 / #5E7C9C); same scope, measured values */
+#pvxTopnav,#pvxSubnav{--ink-400:#66666B}
+body.dark #pvxTopnav,body.dark #pvxSubnav{--ink-400:#8FA6BE}
+/* the shared top bar (same block in every app): app labels 10 → 11 px, "Powered by" 7 → 9 px */
+@media (min-width:1101px),(max-width:760px){.topnav .nav-item,#pvxTopnav .nav-item{font-size:11px}}  /* 761–1100 px is the icon-only strip */
+.topnav .pvx-powered,#pvxTopnav .pvx-powered{font-size:9px;letter-spacing:.14em}
+.topnav .pvx-powered,.topnav .nav-item:not(.active){color:var(--ink-400)}
+/* the portal sub-nav: title (10 px, 3.2:1) and the section links (#6E6E73, 4.35:1 on #F2F4F8) */
+.subnav .subnav-title,#pvxSubnav .subnav-title{font-size:11px!important;color:var(--ink-400)!important}
+body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.active){color:var(--ink-400)}
+
+/* ── Directory (DTA-S03 faint text, CL-T10-class metadata): text colours and an 11 px floor; the card layout is unchanged ── */
+body:not(.dark) .apple-filters>.chip.active,body:not(.dark) .apple-filters > .chip.active,body:not(.dark) .chip.active,body:not(.dark) .apple-filters>.chip.active .chip-count,body:not(.dark) .dept-menu[open]>summary{color:var(--cyan-ink)!important}
+body:not(.dark) .qa-btn:first-child,body:not(.dark) .qa-btn.primary,body:not(.dark) .qa-btn:first-child .qa-label{color:var(--cyan-ink)!important}
+body:not(.dark) .qa-btn:first-child:hover,body:not(.dark) .qa-btn:first-child:hover .qa-label{color:#fff!important}
+.emp-card .dept-badge{font-size:11px!important;letter-spacing:.3px!important}
+.emp-visual-kicker,.emp-visual-role,.emp-ext,.emp-status,.section-label,.chip-count,.apple-filters .chip-count,.qa-btn,.qa-label,.emp-contact-item,.emp-contact-item:last-child,.lang-menu-popover .chip .chip-count,.org-meta .dept-badge,#orgView .org-meta .dept-badge,.new-card .nc-role .dept-badge{font-size:11px!important}
+.az-let{font-size:11.5px}
 </style>
