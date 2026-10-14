@@ -1,7 +1,7 @@
 /* Kura planning screens: Expiry & recalls, levels from recorded use, the before-the-weekend heads-up, backorder
    swaps and the morning brief. The numbers come from the engine (backend/planning.py → state.planning); every
    action opens an existing, reviewed dialog (move, waste, order, rule, lot hold). Nothing here changes stock on its own. */
-import { el, Button, Card, EmptyState, Icon, Metric, PageHeader, Search, Tabs } from './ui/components.js?v=c011573571';
+import { el, Button, Card, EmptyState, Icon, Metric, PageHeader, Search, Tabs } from './ui/components.js?v=14284a91d4';
 
 const DAY = 86400000;
 const plural = (n, one, many = one + 's') => `${n} ${Number(n) === 1 ? one : many}`;
@@ -67,7 +67,7 @@ export function expiryPage(k) {
   const atRisk = rows.filter(r => r.lot_status === 'active' && r.days >= 0 && ['transfer', 'at_risk'].includes(r.suggestion?.type));
   const tab = (id, label, list, empty) => ({ id, label: `${label} (${list.length})`, content: planList(list.map(r => expiryRow(k, r)), EmptyState({ title: empty, icon: 'check-circle' })) });
   return [
-    PageHeader({ title: 'Expiry & recalls', description: `Lots expiring in the next ${days} days, whether each area will use them in time, and what to move, use first or remove. Nothing changes until you confirm.`,
+    PageHeader({ title: 'Expiry & recalls', description: `Next ${days} days`,
       actions: [k.act('Planning settings', () => planningSettings(k), 'setting.save', 'secondary', 'settings')] }),
     el('div', { className: 'metrics' }, [
       Metric({ label: 'Expired, still in stock', value: String(by('expired').length), tone: by('expired').length ? 'critical' : 'neutral', detail: 'Record as waste or disposal' }),
@@ -174,7 +174,7 @@ function expiryTitle(rows, soon) {
 export function briefPage(k, push) {
   const brief = planOf(k.state).brief;
   const greeting = (() => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; })();
-  return [PageHeader({ title: 'Morning brief', description: `${greeting}. What needs attention today, as of ${brief?.as_of ? new Date(brief.as_of).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'now'}.`,
+  return [PageHeader({ title: 'Morning brief', description: `${greeting} · as of ${brief?.as_of ? new Date(brief.as_of).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'now'}`,
       actions: [Button({ label: 'Back to Overview', variant: 'secondary', onClick: () => k.navigate('overview') })] }),
     el('div', { className: 'brief-grid' }, briefSections(k, brief)),
     push ? push.card() : null];

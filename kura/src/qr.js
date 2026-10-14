@@ -2,7 +2,7 @@
    A label holds a link to this Kura with #at/<location id>. Scanned in Kura's scanner, or with the iPhone Camera
    (which opens the link), it sets "This device is in …" — or, for a kit, opens its check. Nothing else is in the code:
    no stock, no patient, nothing that changes when the stock does. Drawn with qrcode-generator (MIT, vendor/). */
-import { el } from './ui/components.js?v=c011573571';
+import { el } from './ui/components.js?v=14284a91d4';
 import qrcode from './vendor/qrcode-generator-2.0.4.esm.js';
 
 const SVG = 'http://www.w3.org/2000/svg';

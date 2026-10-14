@@ -1,8 +1,8 @@
 /* Kits & carts — crash carts, anesthesia boxes, procedure kits (engine: backend/kits.py → state.kits).
    Each kit shows whether it is ready to use, its seal and earliest expiry, and the one action it needs next:
    a one-tap seal check, or a restock that records what was used, swaps out short-dated stock and refills it. */
-import { el, Button, EmptyState, Metric, PageHeader } from './ui/components.js?v=c011573571';
-import { choiceCards } from './kit.js?v=c011573571';
+import { el, Button, EmptyState, Metric, PageHeader } from './ui/components.js?v=14284a91d4';
+import { choiceCards } from './kit.js?v=14284a91d4';
 
 const STATUS = { ready: ['success', 'Ready'], expiring: ['warning', 'Expiring soon'], check_due: ['warning', 'Check due'], restock: ['critical', 'Needs restock'],
   expired: ['critical', 'Expired inside'], opened: ['critical', 'Opened'], setup: ['neutral', 'Set contents'] };
@@ -114,7 +114,7 @@ export function kitsPage(k) {
   const K = kitsOf(k.state), kits = K.kits;
   const ready = kits.filter(x => x.status === 'ready' || x.status === 'expiring').length;
   const soonest = kits.map(x => x.earliest_expiry).filter(Boolean).sort()[0];
-  return [PageHeader({ title: 'Kits & carts', description: 'Crash carts, anesthesia boxes and procedure kits: complete, in date and sealed. Restocking records what was used and refills with long-dated stock.',
+  return [PageHeader({ title: 'Kits & carts',
       actions: [k.qrLabels && kits.length ? Button({ label: 'QR labels', onClick: () => k.qrLabels(kits.map(x => k.find('locations', x.id) || { id: x.id, name: x.name, type: 'kit' })) }) : null, k.act('New kit', () => kitEditor(k), 'kit.save', 'primary', 'plus')].filter(Boolean) }),
     kits.length ? el('div', { className: 'metrics' }, [Metric({ label: 'Ready', value: `${ready}/${kits.length}`, tone: ready === kits.length ? 'success' : 'neutral', detail: 'Complete, in date, checked' }),
       Metric({ label: 'Need attention', value: String(K.not_ready), tone: K.not_ready ? 'critical' : 'neutral', detail: 'Opened, short, expired or due' }),

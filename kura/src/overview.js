@@ -3,14 +3,14 @@
    engine's insights (days of coverage are the engine's estimate, shown only when it has enough history). Nothing is
    invented: an area with no stock says so, and a number Kura can't know is shown as "—".
    Areas are the locations directly under the hospital; anything below them (carts, fridges, shelves) rolls up. */
-import { el, Button, EmptyState, Icon } from './ui/components.js?v=c011573571';
-import * as I from './iso.js?v=c011573571';
-import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=c011573571';
+import { el, Button, EmptyState, Icon } from './ui/components.js?v=14284a91d4';
+import * as I from './iso.js?v=14284a91d4';
+import { mountAreaScene, releaseAreaScene, deliveryOf, setSceneSafeArea } from './overview-scene.js?v=14284a91d4';
 // The card icons are drawn with three.js (670 KB): load it only when the Overview first needs icons, not at start-up.
 let iconsMod = null, iconsLoad = null;
 const cachedIcon = (key, theme) => iconsMod ? iconsMod.cachedIcon(key, theme) : null;
-const drawIcons = (keys, theme, onIcon) => { iconsLoad ||= import('./area-icons.js?v=c011573571').then(m => (iconsMod = m)); iconsLoad.then(m => m.drawIcons(keys, theme, onIcon)).catch(() => { /* no WebGL or offline: the 2D icons stay */ }); };
-import { recommendationText, plural, orderRef } from './words.js?v=c011573571';
+const drawIcons = (keys, theme, onIcon) => { iconsLoad ||= import('./area-icons.js?v=14284a91d4').then(m => (iconsMod = m)); iconsLoad.then(m => m.drawIcons(keys, theme, onIcon)).catch(() => { /* no WebGL or offline: the 2D icons stay */ }); };
+import { recommendationText, plural, orderRef } from './words.js?v=14284a91d4';
 export { releaseAreaScene };
 
 const SVG = 'http://www.w3.org/2000/svg';

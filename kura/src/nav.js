@@ -1,6 +1,6 @@
 /* Kura's navigation: five groups in the sidebar, and on an iPhone a bottom tab bar (Today · Stock · Scan · Orders · More).
    Pages keep their ids (#inventory, #orders…), so links, notifications and tests stay the same. */
-import { el, Icon } from './ui/components.js?v=c011573571';
+import { el, Icon } from './ui/components.js?v=14284a91d4';
 
 export const NAV = [
   { id: 'today', label: 'Today', items: [['overview', 'Overview', 'grid'], ['brief', 'Morning brief', 'bell']] },

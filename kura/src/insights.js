@@ -2,7 +2,7 @@
    Layout: a summary card with eight weekly bars, an inventory-value card with the top areas, a filter bar, and a
    board with Items · Waste · Running low tabs, an item list and the chosen item's detail.
    All numbers come from the engine's insights report (backend/workflows.py → insights). Nothing here changes stock. */
-import { el, Button, Icon, PageHeader, EmptyState } from './ui/components.js?v=c011573571';
+import { el, Button, Icon, PageHeader, EmptyState } from './ui/components.js?v=14284a91d4';
 
 const view = { tab: 'all', area: '', q: '', selected: null, week: null };          // kept while Kura redraws the page
 const SVG = 'http://www.w3.org/2000/svg';
@@ -166,7 +166,7 @@ export function insightsView(ctx) {
     const n = (view.area ? 1 : 0) + (view.q ? 1 : 0); count.textContent = String(n); count.hidden = !n;
   }
 
-  const header = PageHeader({ title: 'Insights', description: 'What gets used, what it’s worth and what’s wasted. Every estimate says what it’s based on.', actions: [download.button] });
+  const header = PageHeader({ title: 'Insights', actions: [download.button] });
   const foot = el('p', { className: 'ins-foot' }, 'Value uses what the hospital paid for stock, never client prices. Days of supply show once an item has a week of history with use on 3 different days.');
   if (!hasHistory && !hasStock) return [header, el('section', { className: 'ins-card ins-empty' }, [
     el('span', { className: 'ins-empty-icon', 'aria-hidden': 'true' }, Icon('chart')),

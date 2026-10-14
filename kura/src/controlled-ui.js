@@ -2,7 +2,7 @@
    Safes and when each was last counted, open discrepancies, doses missing a patient or witness, the log with
    running balances, counts with a second person, and the initial / biennial inventory and destruction records.
    Every change goes through an engine command; nothing here edits a record after the fact. */
-import { el, Button, Card, Dropdown, EmptyState, Metric, PageHeader, Tabs } from './ui/components.js?v=c011573571';
+import { el, Button, Card, Dropdown, EmptyState, Metric, PageHeader, Tabs } from './ui/components.js?v=14284a91d4';
 
 const KIND = { receive: 'Received', use: 'Given', emergency: 'Given (emergency)', waste: 'Wasted', dispose: 'Disposed', adjust: 'Count correction', opening: 'Opening balance',
   return: 'Returned to stock', transfer: 'Moved', reverse: 'Reversal' };
@@ -119,7 +119,7 @@ function exportLog(k, itemId) {
 let chosenDrug = null;
 export function controlledPage(k) {
   const C = cplan(k.state);
-  if (!C.enabled) return [PageHeader({ title: 'Controlled drugs', description: 'The DEA record for Schedule II–V drugs: every dose, waste, return and count, with running balances.' }),
+  if (!C.enabled) return [PageHeader({ title: 'Controlled drugs' }),
     EmptyState({ title: 'No controlled drugs yet', icon: 'shield', description: 'Give each controlled item its DEA schedule. From then on Kura asks for the patient on every dose, a witness for waste, and keeps the log.',
       action: k.act('Mark controlled drugs', () => markControlled(k), 'item.save', 'primary') })];
   const reg = C.registrant || {};
@@ -164,7 +164,7 @@ export function controlledPage(k) {
         C.last_inventory ? Button({ label: 'Print last inventory', variant: 'secondary', onClick: () => inventoryRecord(k, C.last_inventory.id) }) : null])] }),
     Card({ title: 'Disposals', description: 'On-site destruction with two witnesses (the DEA Form 41 record) and returns to a reverse distributor.', children: [Button({ label: 'Print disposal record', variant: 'secondary', onClick: () => destructionRecord(k) })] }),
     Card({ title: 'Which drugs are controlled', description: 'Set or change DEA schedules.', children: [k.act('Mark controlled drugs', () => markControlled(k), 'item.save', 'secondary')] })]);
-  return [PageHeader({ title: 'Controlled drugs', description: 'The DEA record for Schedule II–V drugs: every dose, waste, return and count, with running balances. Kura keeps the record; the registrant remains responsible for it.',
+  return [PageHeader({ title: 'Controlled drugs',
       actions: [k.act('DEA registration', () => deaSettings(k), 'setting.save', 'secondary', 'shield'), due[0] ? k.act(`Count ${due[0].location_name}`, () => countDialog(k, due[0].location_id), 'controlled.count', 'primary') : null] }),
     el('div', { className: 'cs-registrant', 'data-ok': String(!!reg.dea_number && C.dea_number_valid !== false) }, reg.dea_number
       ? [el('strong', {}, reg.registrant || 'Registrant'), el('span', {}, ` · DEA ${reg.dea_number}`), C.dea_number_valid === false ? el('span', { className: 'cs-missing' }, ' · check digit does not match') : null]
