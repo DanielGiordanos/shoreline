@@ -15,13 +15,18 @@
      .sha256(bytes)                   → Promise<string>              the fingerprint, hex
      .check(bytes)                    → Promise<{ok, pages, error}>  re-open the result before anyone relies on it
      .toB64 / .fromB64                 base64 helpers for saving in Firestore parts
+     .pdfjs(bytes)                    → Promise<pdf.js document>     for Pravix Find (lib/pvx-find.js)
+     .verifyRect(w, h, corner)        → [x,y,w,h]                    where fill's verify code sits on a w×h page (n126)
+
+   fill's o.verify = {url, code, corner:'br'|'bl'|'tr'|'tl', lang} stamps a QR code for the url and the code in words on every
+   page, on a small white plate, so anyone holding the paper can check it at /v/. The code is all it carries.
 
    A "box" is {id, page, rect:[x,y,w,h] in PDF points from the bottom-left, type:'text'|'check'|'signature'|'date',
    field (optional AcroForm field name), size (font pt, optional), align ('left'|'center')}. */
 (function () {
   'use strict';
   var BASE = (function () { try { var s = document.currentScript && document.currentScript.src; if (s) return s.replace(/[^/]*$/, ''); } catch (e) {} return '/forms/lib/'; })();
-  var VER = '20261013a';
+  var VER = '20261013a', QV = '20261013n';
   var loading = null, PL = null, PJ = null;
 
   function loadScript(src) { return new Promise(function (ok, bad) { var s = document.createElement('script'); s.src = src; s.async = true; s.onload = ok; s.onerror = function () { bad(new Error('Could not load ' + src)); }; document.head.appendChild(s); }); }
@@ -94,11 +99,41 @@
     });
   }
 
+  /* ---------- the verify code (n126) ---------- */
+  var VQ = 42, VG = 6, VT = 118, VM = 16;   /* QR side, gap, text width, distance from the page edges (points) */
+  function verifyRect(w, h, corner) {
+    var c = corner || 'br', W = VQ + VG + VT, x = /l$/.test(c) ? VM : w - VM - W, y = /^t/.test(c) ? h - VM - VQ : VM;
+    return [Math.round(x * 10) / 10, Math.round(y * 10) / 10, W, VQ];
+  }
+  var qrP = null;
+  function qrLib() { if (window.qrcode) return Promise.resolve(window.qrcode); if (!qrP) { qrP = loadScript(BASE + 'vendor/qrcode.js?v=' + QV).then(function () { return window.qrcode; }); qrP.catch(function () { qrP = null; }); } return qrP; }
+  function stampVerify(doc, helv, v) {
+    var qr = window.qrcode(0, 'M'); qr.addData(String(v.url)); qr.make();
+    var n = qr.getModuleCount(), es = v.lang === 'es', ink = PL.rgb(0, 0, 0), grey = PL.rgb(0.32, 0.35, 0.40);
+    var host = String(v.url).replace(/^https?:\/\//, '').replace(/\/?#.*$/, '').replace(/\/$/, '');
+    var l1 = clean((es ? 'Escanee para verificar · ' : 'Scan to verify · ') + host), l2 = clean((es ? 'Código ' : 'Code ') + String(v.code || '').replace(/(.{4})(?=.)/g, '$1 '));
+    doc.getPages().forEach(function (page) {
+      var sz = page.getSize(), r = verifyRect(sz.width, sz.height, v.corner), left = /l$/.test(v.corner || 'br');
+      var qx = left ? r[0] : r[0] + r[2] - VQ, qy = r[1], m = VQ / n;
+      page.drawRectangle({ x: qx - 3, y: qy - 3, width: VQ + 6, height: VQ + 6, color: PL.rgb(1, 1, 1) });
+      for (var row = 0; row < n; row++) {
+        var c = 0;
+        while (c < n) { if (!qr.isDark(row, c)) { c++; continue; } var c0 = c; while (c < n && qr.isDark(row, c)) c++;
+          page.drawRectangle({ x: qx + c0 * m, y: qy + VQ - (row + 1) * m, width: (c - c0) * m + 0.02, height: m + 0.02, color: ink }); }
+      }
+      var size = 6; while (size > 4.5 && Math.max(helv.widthOfTextAtSize(l1, size), helv.widthOfTextAtSize(l2, size)) > VT) size -= 0.25;
+      var w1 = helv.widthOfTextAtSize(l1, size), w2 = helv.widthOfTextAtSize(l2, size), tw = Math.max(w1, w2), tx = left ? qx + VQ + VG : qx - VG - tw;
+      page.drawRectangle({ x: tx - 2, y: qy + VQ / 2 - size * 1.75, width: tw + 4, height: size * 3.4, color: PL.rgb(1, 1, 1) });
+      page.drawText(l1, { x: left ? tx : qx - VG - w1, y: qy + VQ / 2 + size * 0.35, size: size, font: helv, color: grey });
+      page.drawText(l2, { x: left ? tx : qx - VG - w2, y: qy + VQ / 2 - size * 1.05, size: size, font: helv, color: grey });
+    });
+  }
+
   function dataUrlBytes(u) { var i = String(u || '').indexOf(','); return i < 0 ? null : fromB64(u.slice(i + 1)); }
 
   function fill(bytes, boxes, values, o) {
     o = o || {};
-    return ready().then(function () { return PL.PDFDocument.load(copy(bytes), { updateMetadata: false }); }).then(function (doc) {
+    return ready().then(function () { return o.verify ? qrLib() : null; }).then(function () { return PL.PDFDocument.load(copy(bytes), { updateMetadata: false }); }).then(function (doc) {
       var at = o.at ? new Date(o.at) : new Date(0);
       return doc.embedFont(PL.StandardFonts.Helvetica).then(function (helv) {
         var pages = doc.getPages(), form = null; try { form = doc.getForm(); } catch (e) {}
@@ -128,6 +163,7 @@
           page.drawText(text, { x: tx, y: y + (h - size * 0.72) / 2, size: size, font: helv, color: PL.rgb(0.06, 0.07, 0.09) });
         });
         return Promise.all(jobs).then(function () {
+          if (o.verify && o.verify.url) stampVerify(doc, helv, o.verify);
           doc.setProducer('Pravix Forms'); doc.setCreator('Pravix Flow'); doc.setCreationDate(at); doc.setModificationDate(at);
           if (o.title) doc.setTitle(clean(o.title));
           return doc.save({ useObjectStreams: false, addDefaultPage: false, updateFieldAppearances: false });
@@ -204,5 +240,5 @@
   }
 
   window.PvxPdf = { ready: ready, inspect: inspect, renderPage: renderPage, fill: fill, merge: merge, redact: redact, sha256: sha256, check: check,
-    toB64: toB64, fromB64: fromB64, clean: clean, backend: 'pdf-lib 1.17.1 + pdf.js 6.3.289', version: VER };
+    toB64: toB64, fromB64: fromB64, clean: clean, pdfjs: pjDoc, verifyRect: verifyRect, backend: 'pdf-lib 1.17.1 + pdf.js 6.3.289', version: VER };
 })();
