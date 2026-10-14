@@ -195,6 +195,13 @@ body.dark .vt-btn.active{background:var(--surface-1);}
 .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;}
 .filter-chips{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
 .chip{padding:6px 14px;border-radius:20px;font-size:11.5px;font-weight:600;color:var(--text-secondary);background:var(--glass-bg);border:1px solid var(--border);cursor:pointer;transition:all .18s;backdrop-filter:blur(16px);white-space:nowrap;user-select:none;}
+/* DTA-C01 n133: the controls above are real buttons now; these resets keep their look, and give them a focus ring */
+button.chip,button.svc-name,button.legend-item,button.intern-chip-item{font:inherit;font-family:inherit;appearance:none;-webkit-appearance:none;margin:0;border:0;background:transparent;text-align:left;color:inherit}
+button.chip{padding:6px 14px;border-radius:20px;font-size:11.5px;font-weight:600;color:var(--text-secondary);background:var(--glass-bg);border:1px solid var(--border);line-height:normal}
+button.svc-name{font-size:12.5px;font-weight:700;color:var(--text-primary);line-height:1.3;padding:0;display:block}
+button.legend-item,button.intern-chip-item{font-size:12px;color:var(--text-secondary);width:100%}
+button.chip:focus-visible,button.svc-name:focus-visible,button.legend-item:focus-visible,button.intern-chip-item:focus-visible,.block-cell:focus-visible{outline:2px solid var(--brand-cyan);outline-offset:2px}
+.block-cell:focus-visible{outline-offset:-2px;border-radius:8px}
 .chip:hover{border-color:var(--brand-cyan);color:var(--brand-cyan);background:rgba(77,200,224,0.06);}
 .chip.active{background:rgba(77,200,224,0.15);border-color:rgba(77,200,224,0.4);color:var(--brand-cyan);box-shadow:0 0 0 3px rgba(77,200,224,0.08);}
 
@@ -572,6 +579,7 @@ body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,bo
       <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
       <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
       <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
       <script id="pvx-grid-link-js">(function(){var OK=["daniel.giordano@pravix.app"];function el(){return document.getElementById("navGrid")}
 function show(e){var a=el();if(a)a.style.display=(e&&OK.indexOf(String(e).toLowerCase())>-1)?"":"none"}
 function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
@@ -599,7 +607,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   </div>
 
 <!-- PAGE -->
-<div class="page-content">
+<div class="page-content" role="main">
 
   <!-- HERO -->
   <div class="curr-hero">
@@ -609,7 +617,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
           2026 – 2027 Internship Curriculum
         </div>
-        <div class="hero-title">Graduate Veterinarian <span style="color:#4DC8E0;">Program</span></div>
+        <div class="hero-title" role="heading" aria-level="1">Graduate Veterinarian <span style="color:#4DC8E0;">Program</span></div>
         <div class="hero-sub">13 Rotations &nbsp;·&nbsp; 6 Clinical Services &nbsp;·&nbsp; 52 Weeks</div>
         <div class="hero-stats">
           <div class="hero-stat"><div class="hero-stat-num">9</div><div class="hero-stat-label">Blocks</div></div>
@@ -652,25 +660,25 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <div class="toolbar">
     <div class="search-wrap">
       <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input class="search-input" id="currSearch" type="text" placeholder="Search by service, intern, mentor, skill…" oninput="onCurrSearch(this.value)">
+      <input class="search-input" id="currSearch" type="text" placeholder="Search by service, intern, mentor, skill…" aria-label="Search by service, intern, mentor or skill" oninput="onCurrSearch(this.value)">
     </div>
-    <div class="filter-chips" id="currFilterChips">
-      <div class="chip active" data-f="all" onclick="setCurrFilter('all',this)">All</div>
-      <div class="chip" data-f="em" onclick="setCurrFilter('em',this)">Emergency</div>
-      <div class="chip" data-f="im" onclick="setCurrFilter('im',this)">Internal Med</div>
-      <div class="chip" data-f="surg" onclick="setCurrFilter('surg',this)">Surgery</div>
-      <div class="chip" data-f="neuro" onclick="setCurrFilter('neuro',this)">Neurology</div>
-      <div class="chip" data-f="onco" onclick="setCurrFilter('onco',this)">Oncology</div>
-      <div class="chip" data-f="completed" onclick="setCurrFilter('completed',this)">✓ Completed</div>
-      <div class="chip" data-f="current" onclick="setCurrFilter('current',this)">● Current</div>
-      <div class="chip" data-f="upcoming" onclick="setCurrFilter('upcoming',this)">Upcoming</div>
+    <div class="filter-chips" id="currFilterChips" role="group" aria-label="Filter the curriculum">
+      <button type="button" class="chip active" data-f="all" aria-pressed="true" onclick="setCurrFilter('all',this)">All</button>
+      <button type="button" class="chip" data-f="em" aria-pressed="false" onclick="setCurrFilter('em',this)">Emergency</button>
+      <button type="button" class="chip" data-f="im" aria-pressed="false" onclick="setCurrFilter('im',this)">Internal Med</button>
+      <button type="button" class="chip" data-f="surg" aria-pressed="false" onclick="setCurrFilter('surg',this)">Surgery</button>
+      <button type="button" class="chip" data-f="neuro" aria-pressed="false" onclick="setCurrFilter('neuro',this)">Neurology</button>
+      <button type="button" class="chip" data-f="onco" aria-pressed="false" onclick="setCurrFilter('onco',this)">Oncology</button>
+      <button type="button" class="chip" data-f="completed" aria-pressed="false" onclick="setCurrFilter('completed',this)">✓ Completed</button>
+      <button type="button" class="chip" data-f="current" aria-pressed="false" onclick="setCurrFilter('current',this)">● Current</button>
+      <button type="button" class="chip" data-f="upcoming" aria-pressed="false" onclick="setCurrFilter('upcoming',this)">Upcoming</button>
     </div>
   </div>
 
   <!-- CURRICULUM TABLE -->
   <div style="overflow-x:auto;margin-bottom:28px;">
     <div class="table-card" style="overflow:visible;">
-      <table class="curr-table" id="currTable">
+      <table class="curr-table" id="currTable" aria-label="Rotation plan by service and block">
         <thead id="currThead"></thead>
         <tbody id="currTbody"></tbody>
       </table>
@@ -694,7 +702,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <!-- SERVICE DRAWER -->
 <div class="svc-drawer-overlay" id="svcOverlay" onclick="closeSvcDrawer()"></div>
 <div class="svc-drawer" id="svcDrawer">
-  <button class="svc-drawer-close" onclick="closeSvcDrawer()">✕</button>
+  <button class="svc-drawer-close" onclick="closeSvcDrawer()" aria-label="Close service details">✕</button>
   <div class="svc-drawer-hero" id="svcDrawerHero"></div>
   <div class="svc-drawer-body" id="svcDrawerBody"></div>
 </div>
@@ -828,8 +836,8 @@ function setView(mode) {
 // ── FILTERS + SEARCH ──
 function setCurrFilter(f, el) {
   currFilter = f;
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
+  document.querySelectorAll('.chip').forEach(c=>{ c.classList.remove('active'); if(c.hasAttribute('aria-pressed')) c.setAttribute('aria-pressed','false'); });
+  el.classList.add('active'); if(el.hasAttribute('aria-pressed')) el.setAttribute('aria-pressed','true');
   renderTable();
 }
 function onCurrSearch(val) {
@@ -883,12 +891,12 @@ function renderTable() {
   visibleServices.forEach(svc => {
     const color = SVC_COLORS_MAP[svc.id] || '#888';
     bodyHtml += `<tr>
-      <td class="svc-col" style="border-right:1px solid var(--border-subtle);">
+      <td class="svc-col" role="rowheader" style="border-right:1px solid var(--border-subtle);">
         <div class="svc-cell" style="border-left-color:${color};">
           <div class="svc-icon" style="background:${color}22;">
             <span style="font-size:16px;">${svc.icon}</span>
           </div>
-          <div class="svc-name" onclick="openSvcDrawer('${svc.id}')">${svc.name}</div>
+          <button type="button" class="svc-name" data-id="${svc.id}" onclick="openSvcDrawer('${svc.id}')" aria-label="Open ${svc.name}">${svc.name}</button>
         </div>
       </td>`;
 
@@ -925,14 +933,14 @@ function renderTable() {
         const dimByIntern = highlightedIntern && !isHlIntern;
         const dimBySvc = highlightedSvc && svc.id !== highlightedSvc;
         const opacity = (dimByIntern || dimBySvc) ? '0.15' : '1';
-        const textColor = isHlIntern ? color : isMine ? color : (isDark ? '#8B98B4' : '#6B8099');
+        const textColor = isHlIntern ? color : isMine ? color : (isDark ? '#A7B8CC' : '#52698A');
         const bgColor = isHlIntern ? color+'22' : isMine ? color+'18' : 'transparent';
         return `<span class="cell-initials"
           style="color:${textColor};background:${bgColor};opacity:${opacity};transition:opacity .2s;"
           onmouseenter="typeof showPopover==='function' && showPopover(event,'${init}','${svc.id}','${b.num}')"
           onmouseleave="typeof hidePopover==='function' && hidePopover()"
-        >${init}${status==='completed' ? '<span style="font-size:9px;margin-left:2px;color:var(--brand-green);">✓</span>' : ''}</span>`;
-      }).join('<span style="color:var(--border-strong);margin:0 2px;font-size:10px;">|</span>');
+        >${init}${status==='completed' ? '<span style="font-size:11px;margin-left:2px;color:var(--green-ink);">✓</span>' : ''}</span>`;
+      }).join('<span aria-hidden="true" style="color:var(--ink-400);margin:0 2px;font-size:11px;">|</span>');
 
       let statusChip = '';
       if(raw) {
@@ -942,7 +950,7 @@ function renderTable() {
       }
 
       bodyHtml += `<td class="block-col ${isCurr?'is-current':''}" style="${!display && viewMode==='my' ? 'opacity:0.2;' : ''}">
-        <div class="block-cell" onclick="openBlockDetail('${svc.id}','${b.num}')">
+        <div class="block-cell" role="button" tabindex="0" aria-label="${svc.name}, Block ${b.num}: ${parts.length?parts.map(i=>(INTERN_MAP[i]||i)).join(', '):'no one assigned'} — ${status}" onclick="openBlockDetail('${svc.id}','${b.num}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openBlockDetail('${svc.id}','${b.num}')}">
           ${cellContent}
           ${statusChip}
         </div>
@@ -965,7 +973,7 @@ function openSvcDrawer(svcId) {
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
       <div style="width:56px;height:56px;border-radius:16px;background:${color}20;border:2px solid ${color}40;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${svc.icon}</div>
       <div>
-        <div style="font-size:18px;font-weight:800;color:var(--text-primary);margin-bottom:2px;">${svc.name}</div>
+        <div id="svcDrawerTitle" style="font-size:18px;font-weight:800;color:var(--text-primary);margin-bottom:2px;">${svc.name}</div>
         <div style="font-size:12px;color:var(--text-muted);">${svc.dept}</div>
       </div>
     </div>
@@ -1032,14 +1040,14 @@ function openBlockDetail(svcId, blockNum) {
 function toggleSvcHighlight(svcId) {
   highlightedSvc = (highlightedSvc === svcId) ? null : svcId;
   document.querySelectorAll('.legend-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.svc === highlightedSvc);
+    el.classList.toggle('active', el.dataset.svc === highlightedSvc); el.setAttribute('aria-pressed', String(el.dataset.svc === highlightedSvc));
   });
   renderTable();
 }
 function toggleInternHighlight(init) {
   highlightedIntern = (highlightedIntern === init) ? null : init;
   document.querySelectorAll('.intern-chip-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.init === highlightedIntern);
+    el.classList.toggle('active', el.dataset.init === highlightedIntern); el.setAttribute('aria-pressed', String(el.dataset.init === highlightedIntern));
   });
   renderTable();
 }
@@ -1047,10 +1055,10 @@ function toggleInternHighlight(init) {
 function renderLegends() {
   const svcLegend = document.getElementById('svcLegend');
   svcLegend.innerHTML = SERVICES.map(s => `
-    <div class="legend-item" data-svc="${s.id}" onclick="toggleSvcHighlight('${s.id}')" style="cursor:pointer;padding:4px 8px;border-radius:8px;transition:all .18s;" title="Click to highlight">
+    <button type="button" class="legend-item" data-svc="${s.id}" aria-pressed="${highlightedSvc===s.id}" onclick="toggleSvcHighlight('${s.id}')" style="cursor:pointer;padding:4px 8px;border-radius:8px;transition:all .18s;" title="Click to highlight" aria-label="Highlight ${s.name}">
       <div class="legend-dot" style="background:${SVC_COLORS_MAP[s.id]||'#888'};width:9px;height:9px;border-radius:50%;flex-shrink:0;"></div>
       <span>${s.name}</span>
-    </div>
+    </button>
   `).join('');
 
   const internLegend = document.getElementById('internLegend');
@@ -1060,10 +1068,10 @@ function renderLegends() {
     ['SH','Sarah Herron'],['VREC','Resident Coverage']
   ];
   internLegend.innerHTML = interns.map(([init,name]) => `
-    <div class="intern-chip-item" data-init="${init}" onclick="toggleInternHighlight('${init}')" style="cursor:pointer;padding:4px 8px;border-radius:8px;transition:all .18s;" title="Click to highlight ${name}">
+    <button type="button" class="intern-chip-item" data-init="${init}" aria-pressed="${highlightedIntern===init}" onclick="toggleInternHighlight('${init}')" style="cursor:pointer;padding:4px 8px;border-radius:8px;transition:all .18s;" title="Click to highlight ${name}" aria-label="Highlight ${name}">
       <span class="intern-init">${init}</span>
       <span>${name}</span>
-    </div>
+    </button>
   `).join('');
 }
 
@@ -1298,5 +1306,230 @@ renderTable();
   lb.addEventListener('pointerleave',function(){ lb.style.setProperty('--mx','50%'); lb.style.setProperty('--my','50%'); });
 })();
 </script>
+
+<!-- PVX-OVERLAY n133 (n132 + initial ':self' + refocus after re-render): closed overlays are hidden and inert; open modals get dialog semantics, focus entry, Tab containment, Escape and focus return -->
+<style>.pvx-closed{visibility:hidden!important}</style>
+<script>
+/* ═══ Pravix shared overlay primitive · n132 ═══
+   One behaviour for every modal, drawer, popover and scrim in the suite (audit FL-01, FL-06, DTA-S02, DTA-A05, DTA-C05, DTA-M01, CL-T05, CL-O11):
+   · CLOSED means closed: once an overlay's exit transition has finished it gets `inert` + visibility:hidden (class .pvx-closed), so its
+     controls leave the Tab order and the accessibility tree. Opacity, transform and pointer-events alone never hide anything from a keyboard.
+   · OPEN means active: a modal overlay gets role=dialog + aria-modal, a name, an initial focus inside it, Tab/Shift+Tab kept inside,
+     Escape → its own Cancel/Close control (so the app's own cancel logic decides about unsaved edits), and focus back to the opener on close.
+   · The app keeps its own open/close code and classes; this watches the class and reacts. Nothing here reads or writes app data.
+   Registry entries: {sel, open:'open'|['open','show'], modal:true, dialog:'.inner-card' (where the dialog semantics go), close:'.close,.btn.ghost',
+     label:'…', labelFrom:'h2', initial:'input', escape:true, delay:450}
+   A registered element is only ever marked closed when it is also visually invisible (opacity 0, display none, or outside the viewport),
+   so a mis-registered element that is really on screen is never hidden by mistake. */
+(function(){
+  if(window.pvxOverlay) return;
+  var REG=[], timers=new WeakMap(), st=new WeakMap(), last=new WeakMap(), known=new WeakMap(), stack=[];
+  function closestRegistered(n){ while(n&&n.nodeType===1){ if(cfgFor(n)) return n; n=n.parentElement; } return null; }
+  function cfgFor(el){ for(var i=REG.length-1;i>=0;i--){ try{ if(el.matches(REG[i].sel)) return REG[i]; }catch(e){} } return null; }
+  function isOpen(el,r){ if(r.openWhen) return !!r.openWhen(el); var o=r.open||'open'; return (Array.isArray(o)?o:[o]).some(function(c){ return el.classList.contains(c); }); }
+  function invisible(el){ var s=getComputedStyle(el); if(s.display==='none'||s.visibility==='hidden'||+s.opacity===0) return true;
+    var b=el.getBoundingClientRect(); return b.width===0||b.height===0||b.right<=0||b.left>=innerWidth||b.bottom<=0||b.top>=innerHeight; }
+  function visibleEl(el){ if(!el||!el.isConnected) return false; var n=el; while(n&&n.nodeType===1){ var s=getComputedStyle(n); if(s.display==='none'||s.visibility==='hidden'||+s.opacity===0) return false; n=n.parentElement; }
+    var b=el.getBoundingClientRect(); return b.width>0&&b.height>0; }
+  function focusables(el){ return [].slice.call(el.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex],[contenteditable=true]')).filter(function(f){
+    if(f.disabled||f.getAttribute('tabindex')==='-1'||f.getAttribute('aria-hidden')==='true') return false; if(f.closest('.pvx-closed,[inert],[hidden]')) return false; return visibleEl(f); }); }
+  function hideNow(el,r){ if(isOpen(el,r)||!invisible(el)) return false; el.classList.add('pvx-closed'); el.setAttribute('inert',''); el.setAttribute('data-pvx-closed','1'); return true; }
+  /* wait for the exit transition, then hide; if it is still moving, keep checking for a while (a .5 s slide must not leave it exposed) */
+  function settle(el,r){ clearTimeout(timers.get(el)); var tries=0, step=function(){ if(isOpen(el,r)) return; if(!hideNow(el,r)&&tries++<16) timers.set(el,setTimeout(step,150)); };
+    timers.set(el,setTimeout(step,r.delay!=null?r.delay:300)); }
+  function reveal(el){ clearTimeout(timers.get(el)); el.classList.remove('pvx-closed'); el.removeAttribute('inert'); el.removeAttribute('data-pvx-closed'); }
+  function name(el,r){ if(el.getAttribute('aria-label')||el.getAttribute('aria-labelledby')) return;
+    var h=r.labelFrom?el.querySelector(r.labelFrom):el.querySelector('h1,h2,h3,.drawer-head h2,.modal-title,.sheet-title');
+    if(h&&h.textContent.trim()){ if(!h.id) h.id='pvxlbl_'+Math.random().toString(36).slice(2,8); el.setAttribute('aria-labelledby',h.id); }
+    else if(r.label) el.setAttribute('aria-label',r.label); }
+  function dialogEl(el,r){ return (r.dialog&&el.querySelector(r.dialog))||el; }
+  function semantics(el,r){ if(r.modal===false) return; var d=dialogEl(el,r); if(!d.getAttribute('role')) d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); name(d,r); }
+  function onOpen(el,r){ reveal(el); semantics(el,r);
+    var opener=document.activeElement; if(opener===document.body||opener===document.documentElement) opener=null;
+    /* n133: the opener may already have been re-rendered away by the time this runs (a list that redraws when a row is picked) — fall back to what held focus a moment ago */
+    if(!opener&&lastFocus.el&&Date.now()-lastFocus.at<1500&&!el.contains(lastFocus.el)) opener=lastFocus.el;
+    if(opener&&el.contains(opener)) opener=(st.get(el)||{}).opener||null;
+    /* opened from inside another overlay (a menu item, say): remember that overlay's own opener as the fallback return point */
+    var host=opener&&opener.closest?closestRegistered(opener.parentElement):null, opener2=host?(last.get(host)||{}).opener||null:null;
+    st.set(el,{opener:opener,opener2:opener2,key:openerKey(opener),at:Date.now()}); last.set(el,{opener:opener,opener2:opener2,key:openerKey(opener)}); if(stack.indexOf(el)<0) stack.push(el);
+    if(r.modal===false&&!r.focus) return;
+    setTimeout(function(){ if(!isOpen(el,r)||!el.isConnected) return; var a=document.activeElement; if(a&&el.contains(a)) return;   /* the app already placed focus: keep it */
+      var f=focusables(el), t=r.initial===':self'?el:(r.initial?el.querySelector(r.initial):null);
+      if(t===el&&!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+      if(t&&!visibleEl(t)) t=null;
+      t=t||f.filter(function(x){ return /^(INPUT|SELECT|TEXTAREA)$/.test(x.tagName)&&!/^(checkbox|radio|file)$/.test(x.type); })[0]||f.filter(function(x){ return !/close|cancel|dismiss/i.test((x.getAttribute('aria-label')||'')+' '+x.className+' '+x.textContent); })[0]||f[0];
+      if(!t){ if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1'); t=el; }
+      try{ t.focus({preventScroll:true}); }catch(e){} },r.focusDelay!=null?r.focusDelay:80); }
+  /* n133: a selector that finds the opener again after the list it sits in re-renders (same id, or same data-pid/data-loc/data-id with the same classes) */
+  function openerKey(o){ if(!o||!o.getAttribute) return null; if(o.id) return '#'+CSS.escape(o.id); var ks=['data-pid','data-loc','data-id','data-key'];
+    for(var i=0;i<ks.length;i++){ var v=o.getAttribute(ks[i]); if(v){ var cls=(o.className&&typeof o.className==='string')?o.className.trim().split(/\s+/).map(function(c){ return '.'+CSS.escape(c); }).join(''):''; return o.tagName.toLowerCase()+cls+'['+ks[i]+'="'+v.replace(/"/g,'\\"')+'"]'; } } return null; }
+  /* n133: the list the opener sits in may redraw right after the overlay closes (the app clears its selection) — if that drops focus, find the opener again by its key */
+  function keepOn(key){ if(!key) return; [120,320,650].forEach(function(ms){ setTimeout(function(){ var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement) return; if(topModal()) return;
+      try{ var o=document.querySelector(key); if(o&&visibleEl(o)) o.focus({preventScroll:true}); }catch(e){} },ms); }); }
+  var lastFocus={el:null,at:0}; document.addEventListener('focusin',function(e){ var x=e.target; if(x&&x!==document.body&&x!==document.documentElement) lastFocus={el:x,at:Date.now()}; },true);
+  function onClose(el,r){ var s=st.get(el)||{}; st.delete(el); var i=stack.indexOf(el); if(i>-1) stack.splice(i,1); settle(el,r);
+    var a=document.activeElement; if(a&&a!==document.body&&!el.contains(a)) return;   /* the app moved focus somewhere sensible already */
+    var cands=[s.opener,s.opener2]; if(s.key){ try{ var again=document.querySelector(s.key); if(again) cands.splice(1,0,again); }catch(e){} }
+    for(var k=0;k<cands.length;k++){ var o=cands[k]; if(o&&o.isConnected&&visibleEl(o)&&!o.closest('.pvx-closed,[inert]')){ try{ o.focus({preventScroll:true}); keepOn(s.key); return; }catch(e){} } }
+    var top=topModal(); if(top){ var f=focusables(top)[0]||top; try{ f.focus({preventScroll:true}); }catch(e){} return; }
+    var m=document.querySelector('main,[role=main]')||document.body; if(m!==document.body&&!m.hasAttribute('tabindex')) m.setAttribute('tabindex','-1'); try{ m.focus({preventScroll:true}); }catch(e){} }
+  function sync(el){ var r=cfgFor(el); if(!r||!el.isConnected) return; var o=isOpen(el,r), was=known.get(el);
+    if(was===undefined){ known.set(el,o); if(o){ reveal(el); semantics(el,r); if(stack.indexOf(el)<0) stack.push(el); } else settle(el,r); return; }
+    if(o===was) return; known.set(el,o); if(o) onOpen(el,r); else onClose(el,r); }
+  function otherDialogOpen(top){ var own=dialogEl(top,cfgFor(top)||{}); return [].slice.call(document.querySelectorAll('[role=dialog],[aria-modal=true]')).some(function(d){ return d!==top&&d!==own&&!d.contains(top)&&!d.closest('.pvx-closed,[inert]')&&visibleEl(d); }); }   /* a dialog nested inside the top one (an end-of-visit sheet in a drawer) counts too */
+  function topModal(){ for(var i=stack.length-1;i>=0;i--){ var el=stack[i], r=cfgFor(el); if(el.isConnected&&r&&r.modal!==false&&isOpen(el,r)&&!invisible(el)) return el; } return null; }
+  /* n133: when an open modal re-renders the element that held focus, the browser drops focus to <body> silently (no blur event); bring it back to the modal container */
+  var refocusT; function refocus(){ clearTimeout(refocusT); refocusT=setTimeout(function(){ var top=topModal(); if(!top) return; var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement) return;
+    if(!top.hasAttribute('tabindex')) top.setAttribute('tabindex','-1'); try{ top.focus({preventScroll:true}); }catch(x){} },60); }
+  var mo=new MutationObserver(function(ms){ var lost=false; ms.forEach(function(m){ if(m.type==='childList'&&m.removedNodes.length) lost=true; if(m.type==='attributes'){ sync(m.target); }
+    else m.addedNodes.forEach(function(n){ if(n.nodeType!==1) return; if(cfgFor(n)) { observe(n); sync(n); } n.querySelectorAll&&REG.forEach(function(r){ n.querySelectorAll(r.sel).forEach(function(x){ observe(x); sync(x); }); }); }); }); if(lost) refocus(); });
+  function observe(el){ if(el.__pvxObs) return; el.__pvxObs=1; mo.observe(el,{attributes:true,attributeFilter:['class','style','hidden','aria-hidden']}); }
+  function scan(){ REG.forEach(function(r){ document.querySelectorAll(r.sel).forEach(function(el){ observe(el); sync(el); }); }); }
+  /* on window, capture phase: runs before the app's own document listeners whatever the event's target */
+  window.addEventListener('keydown',function(e){
+    if(e.defaultPrevented) return; var top=topModal(); if(!top) return; var r=cfgFor(top);
+    /* another dialog is open above this one (one the app mounts on demand and manages itself): leave the keys to the app */
+    if(otherDialogOpen(top)) return;
+    if(e.key==='Tab'){ var f=focusables(top); if(!f.length){ e.preventDefault(); try{ top.focus(); }catch(x){} return; }
+      var a=document.activeElement, i=f.indexOf(a);
+      if(i<0||!top.contains(a)){ e.preventDefault(); f[e.shiftKey?f.length-1:0].focus(); return; }
+      if(!e.shiftKey&&i===f.length-1){ e.preventDefault(); f[0].focus(); } else if(e.shiftKey&&i===0){ e.preventDefault(); f[f.length-1].focus(); } }
+    else if(e.key==='Escape'&&r.escape!==false){ var c=null; (r.close||'.close,[data-close],.btn.ghost,[aria-label^="Close"],[aria-label^="Cancel"]').split(',').some(function(s){ var cands=[].slice.call(top.querySelectorAll(s.trim())).filter(visibleEl); if(cands.length){ c=cands[0]; return true; } return false; });
+      if(typeof r.onEscape==='function'){ e.preventDefault(); r.onEscape(top); } else if(c){ e.preventDefault(); c.click(); } }
+  },true);
+  /* a focus that lands in a closed overlay anyway (programmatic focus from the app) is sent back to the page */
+  document.addEventListener('focusin',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.pvx-closed'); if(!el) return; var top=topModal(); var f=top?(focusables(top)[0]||top):(document.querySelector('main,[role=main]')||document.body); try{ f.focus({preventScroll:true}); }catch(x){} },true);
+  window.pvxOverlay={register:function(list){ (list||[]).forEach(function(r){ if(r&&r.sel) REG.push(r); }); if(document.body){ scan(); mo.observe(document.body,{childList:true,subtree:true}); } else document.addEventListener('DOMContentLoaded',function(){ scan(); mo.observe(document.body,{childList:true,subtree:true}); });
+    window.addEventListener('load',scan); },
+    scan:scan, top:topModal, focusables:focusables, _reg:REG, _state:function(el){ return st.get(el)||null; }, version:'n133'};
+})();
+
+pvxOverlay.register([{"sel": ".svc-drawer", "open": "open", "modal": true, "close": ".svc-drawer-close", "labelFrom": ".svc-drawer-hero h2,.svc-drawer-hero h3,.svc-drawer-hero .svc-name,.svc-drawer-hero b", "label": "Service details", "initial": ":self"}, {"sel": "#svcOverlay,.svc-overlay", "open": "open", "modal": false}]);
+</script>
+
+<!-- PVX-TOPBAR n132: brand and controls keep their width; app links overflow into a More menu; Grid and Forms in every app (account-gated) -->
+<style>
+/* PVX-TOPBAR n132 — the brand and the right-hand controls keep their width; the apps get what is left, overflowing into More */
+html body nav.topnav{grid-template-columns:max-content minmax(0,1fr) max-content!important;column-gap:12px}
+html body nav.topnav .brandwrap{flex:0 0 auto;min-width:0}
+html body nav.topnav .nav-center{min-width:0;max-width:100%;justify-self:center!important;overflow:visible!important;flex-wrap:nowrap;position:relative}
+html body nav.topnav .nav-right{flex:0 0 auto}
+@media(max-width:760px){ html body nav.topnav{grid-template-columns:max-content minmax(0,1fr)!important} html body nav.topnav .nav-center{margin:0!important;padding:0!important;justify-content:flex-start} }
+.pvx-more{position:relative;display:flex;flex:0 0 auto}
+.pvx-more[hidden]{display:none!important}
+.pvx-more-btn{font-family:inherit;cursor:pointer}
+.pvx-more-btn[aria-expanded=true]{background:rgba(255,255,255,0.10);color:rgba(255,255,255,.95)}
+body:not(.dark) .pvx-more-btn[aria-expanded=true]{background:#EBEBEB;color:#333}
+.pvx-more-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;min-width:200px;padding:6px;border-radius:14px;display:flex;flex-direction:column;gap:2px;
+  background:#101A32;border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+body:not(.dark) .pvx-more-menu{background:#fff;border-color:rgba(29,29,31,.1);box-shadow:0 18px 44px rgba(20,28,40,.18)}
+.pvx-more-menu[hidden]{display:none!important}
+html body nav.topnav .pvx-more-menu .nav-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:13px!important;letter-spacing:0;white-space:nowrap;width:100%}
+html body nav.topnav .pvx-more-menu .nav-item svg{width:18px;height:18px}
+.nav-item:focus-visible,.pvx-more-btn:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+@media(forced-colors:active){.pvx-more-menu{border:1px solid CanvasText}}
+</style>
+<script id="pvx-app-links-js">/* n132: Grid and Forms links show only for the accounts those apps let in (keep in step with grid/index.html and forms/index.html ALLOWED) */
+(function(){var OK={navGrid:["daniel.giordano@pravix.app"],navForms:["daniel.giordano@pravix.app"]};
+function show(e){e=String(e||"").toLowerCase();Object.keys(OK).forEach(function(id){var a=document.getElementById(id);if(a)a.style.display=OK[id].indexOf(e)>-1?"":"none"})}
+function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
+var hooked=false;function live(){if(hooked)return;try{if(window.firebase&&firebase.apps&&firebase.apps.length&&firebase.auth){hooked=true;firebase.auth().onAuthStateChanged(function(u){if(u)show(u.email);else fromStore()})}}catch(_){}}
+fromStore();live();window.addEventListener("load",function(){live();setTimeout(live,1500)})})();</script>
+<script>
+/* ═══ Pravix shared top bar · n132 (audit RX-01, FL-07, DTA-S01, CL-X02, US-04) ═══
+   The same nav.topnav lives in every app. This block makes it fit any width without collisions:
+   · the brand and the Logout/theme group keep their real width (grid: max-content · 1fr · max-content) — nothing can slide under them;
+   · the app links get the middle; the ones that do not fit move into a "More" menu (a real button with a menu of the same links),
+     instead of being clipped inside a scroller with its scrollbar hidden. The active app always stays visible;
+   · the More menu is keyboard-operable (Enter/Space, arrows, Escape, focus return) and closed state is display:none;
+   · aria-current="page" follows the active link (apps that switch in place call pvxTopbar.setActive(id)). */
+(function(){
+  if(window.pvxTopbar) return;
+  var nav=document.querySelector('nav.topnav'); if(!nav) return;
+  var center=nav.querySelector('.nav-center'); if(!center) return;
+  var more=document.createElement('div'); more.className='pvx-more'; more.hidden=true;
+  more.innerHTML='<button type="button" class="nav-item pvx-more-btn" aria-haspopup="true" aria-expanded="false" aria-label="More apps" title="More apps">'
+    +'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>'
+    +'<div class="pvx-more-menu" role="menu" aria-label="More apps" hidden></div>';
+  center.appendChild(more); var btn=more.querySelector('button'), menu=more.querySelector('.pvx-more-menu');
+  function items(){ return [].slice.call(center.querySelectorAll('.nav-item')).filter(function(a){ return a!==btn&&!a.classList.contains('pvx-more-btn'); }); }
+  function shown(a){ return a.style.display!=='none'&&!a.hidden; }   /* account-gated links (Grid, Forms) are display:none until allowed */
+  var gap=0, busy=false;
+  function layout(){ if(busy) return; busy=true;
+    try{ var all=items(); all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
+      var vis=all.filter(shown); if(!vis.length){ more.hidden=true; return; }
+      gap=parseFloat(getComputedStyle(center).columnGap||getComputedStyle(center).gap)||0;
+      more.hidden=true; var avail=center.clientWidth, w=vis.map(function(a){ return a.getBoundingClientRect().width; }), total=w.reduce(function(s,x){ return s+x; },0)+gap*(vis.length-1);
+      if(total<=avail+0.5){ menu.innerHTML=''; return; }
+      more.hidden=false; var mw=more.getBoundingClientRect().width+gap, keep=0, used=0;
+      for(var i=0;i<vis.length;i++){ if(used+w[i]+(i?gap:0)+mw<=avail){ used+=w[i]+(i?gap:0); keep++; } else break; }
+      var active=vis.findIndex(function(a){ return a.classList.contains('active')||a.getAttribute('aria-current'); });
+      if(active>=keep&&keep>0){ var a=vis.splice(active,1)[0]; vis.splice(keep-1,0,a); center.insertBefore(a,vis[keep]||more); }
+      var hidden=vis.slice(keep); hidden.forEach(function(a){ menu.appendChild(a); a.setAttribute('role','menuitem'); });
+      if(!hidden.length) more.hidden=true; }
+    finally{ busy=false; } }
+  function open(o){ var isOpen=!menu.hidden; if(o===undefined) o=!isOpen; if(o===isOpen) return; menu.hidden=!o; btn.setAttribute('aria-expanded',o?'true':'false');
+    if(o){ var f=menu.querySelector('.nav-item'); if(f) f.focus(); } }
+  btn.addEventListener('click',function(){ open(); });
+  menu.addEventListener('keydown',function(e){ var f=[].slice.call(menu.querySelectorAll('.nav-item')), i=f.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){ e.preventDefault(); (f[i+1]||f[0]).focus(); } else if(e.key==='ArrowUp'){ e.preventDefault(); (f[i-1]||f[f.length-1]).focus(); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); open(false); btn.focus(); } else if(e.key==='Tab'){ open(false); } });
+  btn.addEventListener('keydown',function(e){ if(e.key==='ArrowDown'){ e.preventDefault(); open(true); } else if(e.key==='Escape'&&!menu.hidden){ e.preventDefault(); open(false); } });
+  document.addEventListener('click',function(e){ if(!menu.hidden&&!more.contains(e.target)) open(false); },true);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!menu.hidden&&!more.contains(document.activeElement)) open(false); });
+  function setActive(id){ items().forEach(function(a){ var on=a.id===id; a.classList.toggle('active',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); layout(); }
+  /* keep aria-current in step with the visual active class, for apps that switch in place */
+  items().forEach(function(a){ if(a.classList.contains('active')) a.setAttribute('aria-current','page'); else if(a.getAttribute('aria-current')==='page'&&!a.classList.contains('active')) a.removeAttribute('aria-current'); });
+  var t; function soon(){ clearTimeout(t); t=setTimeout(layout,60); }
+  if(window.ResizeObserver){ new ResizeObserver(soon).observe(nav); } window.addEventListener('resize',soon);
+  new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
+  window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
+})();
+</script>
 </body>
+
+
+<!-- PVX-N136: copy, states and semantics (batch 5) — curriculum -->
+<style>
+.pvx-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+<!-- PVX-TYPE n135: contrast + type floor (shared sheet + curriculum rules) -->
+<style>
+/* PVX-TYPE n135 — contrast and type floor, shared by every Pravix app (batch 4: FL-08, CL-T10, DTA-S03, SCH-01/02).
+   Text colours only: fills, accents, lines and the brand palette are untouched. Every value here was measured against the
+   surfaces it sits on (see n135/REGISTER.md): light muted ink #66666B (≥4.9:1 on white, #F2F4F8, #EDEFF3, #E2F0F6, #F4F4F4),
+   blue-grey muted #52698A for the portal apps (≥5.0:1 on #F2F4F8), cyan-as-text #0F6B82, green-as-text #12623F, amber-as-text
+   #875C00, red-as-text #BE3A2E, blue-as-text #0A66C2; dark muted ink #8FA6BE (≥6.2:1 on every dark surface measured, #1C2333 up).
+   An 11 px floor for labels; the shared top bar's 10 px app labels and the 7 px "Powered by" rise to 11 / 9 px. No color-mix(). */
+:root,body{
+  --ink-400:#66666B; --text-muted:#66666B; --st-meta:#66666B; --muted:#66666B; --tm:#66666B;
+  --cyan-ink:#0F6B82; --green-ink:#12623F; --amber-ink:#875C00; --red-ink:#BE3A2E; --blue-ink:#0A66C2; --p1-fill:#D92B22; --p3-ink:#06341A;
+}
+body.dark,html.dark body,:root.dark{
+  --ink-400:#8FA6BE; --text-muted:#8FA6BE; --st-meta:#A7B8CC; --muted:#8FA6BE; --tm:#8FA6BE;
+  --cyan-ink:#6FD3E4; --green-ink:#5BD6A8; --amber-ink:#F2C744; --red-ink:#FF8A70; --blue-ink:#7CC0FF; --p1-fill:#D92B22; --p3-ink:#06341A;
+}
+/* the portal apps re-declare --ink-400 on the top bar and sub-nav (#8E8E93 / #5E7C9C); same scope, measured values */
+#pvxTopnav,#pvxSubnav{--ink-400:#66666B}
+body.dark #pvxTopnav,body.dark #pvxSubnav{--ink-400:#8FA6BE}
+/* the shared top bar (same block in every app): app labels 10 → 11 px, "Powered by" 7 → 9 px */
+@media (min-width:1101px),(max-width:760px){.topnav .nav-item,#pvxTopnav .nav-item{font-size:11px}}  /* 761–1100 px is the icon-only strip */
+.topnav .pvx-powered,#pvxTopnav .pvx-powered{font-size:9px;letter-spacing:.14em}
+.topnav .pvx-powered,.topnav .nav-item:not(.active){color:var(--ink-400)}
+/* the portal sub-nav: title (10 px, 3.2:1) and the section links (#6E6E73, 4.35:1 on #F2F4F8) */
+.subnav .subnav-title,#pvxSubnav .subnav-title{font-size:11px!important;color:var(--ink-400)!important}
+body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.active){color:var(--ink-400)}
+
+/* ── Curriculum (DTA-S03 faint text, CL-T10-class metadata) ── */
+:root,body{--text-muted:#52698A}
+body.dark{--text-muted:#8FA6BE}
+body:not(.dark) .chip.active{color:var(--cyan-ink)!important}
+body:not(.dark) .block-th.is-current .block-num{color:var(--cyan-ink)}
+body:not(.dark) .status-chip.current{color:var(--cyan-ink)}
+body:not(.dark) .status-chip.done{color:var(--green-ink)}
+.hbc-label,.hero-stat-label{color:rgba(255,255,255,.72)}
+.block-dates,.block-num,.current-badge,.hbc-label,.hero-stat-label,.hero-tag,.status-chip,th.svc-col,.hero-left span[style*="font-size:10px"]{font-size:11px!important}
+.status-chip{letter-spacing:.3px;padding:1px 5px;line-height:1.2}
+</style>
 </html>
