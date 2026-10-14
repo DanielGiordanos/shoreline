@@ -6,10 +6,14 @@
 <title>Pravix Treatment Sheets | VCA Shoreline</title>
 <link rel="icon" type="image/png" href="img/3ad4e7dbff.png">
 <meta name="theme-color" content="#0A1222">
-<link rel="stylesheet" href="app.css?v=7ce6ecde7d">
+<link rel="stylesheet" href="app.css?v=410b5eedbe">
 
-<script>window.PVX_LANG_SRC={es:'es.js?v=31a07d7ed7'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
+<script>window.PVX_LANG_SRC={es:'es.js?v=374fd61c4f'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
 <style>html.i18n-wait body{visibility:hidden}</style>
+<!-- CL-T04 n133 -->
+<!-- n134 CL-T03 CL-T06 -->
+<!-- n135 PVX-TYPE -->
+<!-- n136 CL-T09 copy -->
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie (light unless the user chose dark). -->
@@ -44,6 +48,7 @@
       <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
       <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
       <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
       <script id="pvx-grid-link-js">(function(){var OK=["daniel.giordano@pravix.app"];function el(){return document.getElementById("navGrid")}
 function show(e){var a=el();if(a)a.style.display=(e&&OK.indexOf(String(e).toLowerCase())>-1)?"":"none"}
 function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
@@ -63,21 +68,21 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <div class="subnav">
     <div class="subnav-title">Treatment Sheets</div>
     <nav class="switcher" id="clinSwitcher">
-      <button class="seg active" data-ctab="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
-      <button class="seg" data-ctab="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/></svg>Tasks<span class="seg-badge" id="tsTaskBadge"></span></button>
-      <button class="seg" data-ctab="sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Treatment Sheet</button>
-      <button class="seg" data-ctab="vitals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Vitals</button>
+      <button class="seg active" data-ctab="dash" title="Dashboard" aria-label="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
+      <button class="seg" data-ctab="tasks" title="Tasks" aria-label="Tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/></svg>Tasks<span class="seg-badge" id="tsTaskBadge"></span></button>
+      <button class="seg" data-ctab="sheet" title="Treatment Sheet" aria-label="Treatment Sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Treatment Sheet</button>
+      <button class="seg" data-ctab="vitals" title="Vitals" aria-label="Vitals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Vitals</button>
       
-      <button class="seg" data-ctab="timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Timeline</button>
-      <button class="seg" data-ctab="charges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Charges</button>
-      <button class="seg" data-ctab="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Notes</button>
+      <button class="seg" data-ctab="timeline" title="Timeline" aria-label="Timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Timeline</button>
+      <button class="seg" data-ctab="charges" title="Charges" aria-label="Charges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Charges</button>
+      <button class="seg" data-ctab="notes" title="Notes" aria-label="Notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Notes</button>
     </nav>
     <div class="spacer"></div>
     <div class="search">
       <div class="search-wrap">
-        <div class="search-bar">
+        <div class="search-bar"><button type="button" class="ts-search-open" aria-label="Search patients, orders" title="Search"></button>
           <span class="search-icon" aria-hidden="true"></span>
-          <input id="globalSearch" class="search-input" placeholder="Search patients, orders…" autocomplete="off"/>
+          <input id="globalSearch" class="search-input" placeholder="Search patients, orders…" aria-label="Search patients, orders" autocomplete="off"/>
           <div class="actions"><button class="luna-search-orb" type="button" title="L.U.N.A." aria-label="Focus search" onclick="document.getElementById('globalSearch').focus()"><img src="img/ca9eea4e26.webp" alt="" aria-hidden="true"></button></div>
         </div>
       </div>
@@ -106,7 +111,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <aside class="drawer" id="completionDrawer">
   <div class="drawer-head">
     <button class="close" onclick="closeDrawers()" aria-label="Close"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-    <div class="dh-top"><div class="pt-emoji sp-can" id="cd-emoji">CG<span class="sp-tag">CAN</span></div><div><h2 id="cd-title"></h2><div class="sub" id="cd-sub"></div></div></div>
+    <div class="dh-top"><span class="pvx-med sp-can" id="cd-emoji" aria-hidden="true"><span class="pm-mono"><span class="pm-init">C</span><span class="pm-sp">CAN</span></span></span><div><h2 id="cd-title"></h2><div class="sub" id="cd-sub"></div></div></div>
   </div>
   <div class="drawer-body" id="cd-body"></div>
   <div class="drawer-foot" id="cd-foot"></div>
@@ -115,27 +120,209 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <aside class="drawer" id="noteDrawer">
   <div class="drawer-head">
     <button class="close" onclick="closeDrawers()" aria-label="Close"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-    <div class="dh-top"><div class="pt-emoji sp-can">CG<span class="sp-tag">CAN</span></div><div><h2>Add Note</h2><div class="sub">Cookie Giordano · ICU Cage 2</div></div></div>
+    <div class="dh-top"><span class="pvx-med sp-can" aria-hidden="true"><span class="pm-mono"><span class="pm-init">C</span><span class="pm-sp">CAN</span></span></span><div><h2>Add Note</h2><div class="sub">Cookie Giordano · ICU Cage 2</div></div></div>
   </div>
   <div class="drawer-body">
-    <div class="field"><label>Note type</label><select id="note-type"><option value="nursing">Nursing note</option><option value="doctor">Doctor note</option><option value="communication">Communication note</option><option value="event">Event note</option><option value="discharge">Discharge note</option></select></div>
-    <div class="field"><label>Note</label><textarea id="note-body" placeholder="Type your note…"></textarea></div>
+    <div class="field"><label for="note-type">Note type</label><select id="note-type"><option value="nursing">Nursing note</option><option value="doctor">Doctor note</option><option value="communication">Communication note</option><option value="event">Event note</option><option value="discharge">Discharge note</option></select></div>
+    <div class="field"><label for="note-body">Note</label><textarea id="note-body" placeholder="Type your note…"></textarea></div>
   </div>
   <div class="drawer-foot"><button class="btn ghost" onclick="closeDrawers()">Cancel</button><button class="btn primary" onclick="submitNote()">Save Note</button></div>
 </aside>
 
 <div class="ctoast-wrap" id="toastWrap"></div>
 
-<script defer src="core.js?v=e61fe00b71"></script>
+<script defer src="core.js?v=434fb21f36"></script>
 <script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "flowDoctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Larry Berkwitt", "Dianne Kittrell"], "interns": ["Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="d8c5024f";</script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script defer src="store.js?v=fd83a390d9"></script>
+<script defer src="store.js?v=50a1c4cce4"></script>
 
 
 <script defer src="voice.js?v=7a919ece66"></script>
 
+<script>/* CL-T02 n132: compact search — the visible Search button is the Tab stop while collapsed; the field opens on focus/click and closes when left empty */(function(){var s=document.querySelector(".subnav .search"),i=document.getElementById("globalSearch"),b=s&&s.querySelector(".ts-search-open"),mq=window.matchMedia("(max-width:1680px)");if(!s||!i||!b)return;function collapsed(){return mq.matches&&!s.classList.contains("is-open")&&!s.classList.contains("is-focus");}function sync(){var c=collapsed();i.tabIndex=c?-1:0;b.tabIndex=c?0:-1;b.setAttribute("aria-hidden",c?"false":"true");}b.addEventListener("click",function(){s.classList.add("is-open");i.focus();sync();});s.addEventListener("click",function(e){if(!s.contains(document.activeElement)){i.focus();sync();}});i.addEventListener("focus",function(){s.classList.add("is-focus");sync();});i.addEventListener("input",function(){s.classList.toggle("is-open",!!i.value);sync();});i.addEventListener("blur",function(){s.classList.remove("is-focus");if(!i.value)s.classList.remove("is-open");setTimeout(sync,0);});mq.addEventListener?mq.addEventListener("change",sync):mq.addListener(sync);sync();})();</script>
+
+<!-- PVX-OVERLAY n133 (n132 + initial ':self' + refocus after re-render): closed overlays are hidden and inert; open modals get dialog semantics, focus entry, Tab containment, Escape and focus return -->
+<style>.pvx-closed{visibility:hidden!important}</style>
+<script>
+/* ═══ Pravix shared overlay primitive · n132 ═══
+   One behaviour for every modal, drawer, popover and scrim in the suite (audit FL-01, FL-06, DTA-S02, DTA-A05, DTA-C05, DTA-M01, CL-T05, CL-O11):
+   · CLOSED means closed: once an overlay's exit transition has finished it gets `inert` + visibility:hidden (class .pvx-closed), so its
+     controls leave the Tab order and the accessibility tree. Opacity, transform and pointer-events alone never hide anything from a keyboard.
+   · OPEN means active: a modal overlay gets role=dialog + aria-modal, a name, an initial focus inside it, Tab/Shift+Tab kept inside,
+     Escape → its own Cancel/Close control (so the app's own cancel logic decides about unsaved edits), and focus back to the opener on close.
+   · The app keeps its own open/close code and classes; this watches the class and reacts. Nothing here reads or writes app data.
+   Registry entries: {sel, open:'open'|['open','show'], modal:true, dialog:'.inner-card' (where the dialog semantics go), close:'.close,.btn.ghost',
+     label:'…', labelFrom:'h2', initial:'input', escape:true, delay:450}
+   A registered element is only ever marked closed when it is also visually invisible (opacity 0, display none, or outside the viewport),
+   so a mis-registered element that is really on screen is never hidden by mistake. */
+(function(){
+  if(window.pvxOverlay) return;
+  var REG=[], timers=new WeakMap(), st=new WeakMap(), last=new WeakMap(), known=new WeakMap(), stack=[];
+  function closestRegistered(n){ while(n&&n.nodeType===1){ if(cfgFor(n)) return n; n=n.parentElement; } return null; }
+  function cfgFor(el){ for(var i=REG.length-1;i>=0;i--){ try{ if(el.matches(REG[i].sel)) return REG[i]; }catch(e){} } return null; }
+  function isOpen(el,r){ if(r.openWhen) return !!r.openWhen(el); var o=r.open||'open'; return (Array.isArray(o)?o:[o]).some(function(c){ return el.classList.contains(c); }); }
+  function invisible(el){ var s=getComputedStyle(el); if(s.display==='none'||s.visibility==='hidden'||+s.opacity===0) return true;
+    var b=el.getBoundingClientRect(); return b.width===0||b.height===0||b.right<=0||b.left>=innerWidth||b.bottom<=0||b.top>=innerHeight; }
+  function visibleEl(el){ if(!el||!el.isConnected) return false; var n=el; while(n&&n.nodeType===1){ var s=getComputedStyle(n); if(s.display==='none'||s.visibility==='hidden'||+s.opacity===0) return false; n=n.parentElement; }
+    var b=el.getBoundingClientRect(); return b.width>0&&b.height>0; }
+  function focusables(el){ return [].slice.call(el.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex],[contenteditable=true]')).filter(function(f){
+    if(f.disabled||f.getAttribute('tabindex')==='-1'||f.getAttribute('aria-hidden')==='true') return false; if(f.closest('.pvx-closed,[inert],[hidden]')) return false; return visibleEl(f); }); }
+  function hideNow(el,r){ if(isOpen(el,r)||!invisible(el)) return false; el.classList.add('pvx-closed'); el.setAttribute('inert',''); el.setAttribute('data-pvx-closed','1'); return true; }
+  /* wait for the exit transition, then hide; if it is still moving, keep checking for a while (a .5 s slide must not leave it exposed) */
+  function settle(el,r){ clearTimeout(timers.get(el)); var tries=0, step=function(){ if(isOpen(el,r)) return; if(!hideNow(el,r)&&tries++<16) timers.set(el,setTimeout(step,150)); };
+    timers.set(el,setTimeout(step,r.delay!=null?r.delay:300)); }
+  function reveal(el){ clearTimeout(timers.get(el)); el.classList.remove('pvx-closed'); el.removeAttribute('inert'); el.removeAttribute('data-pvx-closed'); }
+  function name(el,r){ if(el.getAttribute('aria-label')||el.getAttribute('aria-labelledby')) return;
+    var h=r.labelFrom?el.querySelector(r.labelFrom):el.querySelector('h1,h2,h3,.drawer-head h2,.modal-title,.sheet-title');
+    if(h&&h.textContent.trim()){ if(!h.id) h.id='pvxlbl_'+Math.random().toString(36).slice(2,8); el.setAttribute('aria-labelledby',h.id); }
+    else if(r.label) el.setAttribute('aria-label',r.label); }
+  function dialogEl(el,r){ return (r.dialog&&el.querySelector(r.dialog))||el; }
+  function semantics(el,r){ if(r.modal===false) return; var d=dialogEl(el,r); if(!d.getAttribute('role')) d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); name(d,r); }
+  function onOpen(el,r){ reveal(el); semantics(el,r);
+    var opener=document.activeElement; if(opener===document.body||opener===document.documentElement) opener=null;
+    /* n133: the opener may already have been re-rendered away by the time this runs (a list that redraws when a row is picked) — fall back to what held focus a moment ago */
+    if(!opener&&lastFocus.el&&Date.now()-lastFocus.at<1500&&!el.contains(lastFocus.el)) opener=lastFocus.el;
+    if(opener&&el.contains(opener)) opener=(st.get(el)||{}).opener||null;
+    /* opened from inside another overlay (a menu item, say): remember that overlay's own opener as the fallback return point */
+    var host=opener&&opener.closest?closestRegistered(opener.parentElement):null, opener2=host?(last.get(host)||{}).opener||null:null;
+    st.set(el,{opener:opener,opener2:opener2,key:openerKey(opener),at:Date.now()}); last.set(el,{opener:opener,opener2:opener2,key:openerKey(opener)}); if(stack.indexOf(el)<0) stack.push(el);
+    if(r.modal===false&&!r.focus) return;
+    setTimeout(function(){ if(!isOpen(el,r)||!el.isConnected) return; var a=document.activeElement; if(a&&el.contains(a)) return;   /* the app already placed focus: keep it */
+      var f=focusables(el), t=r.initial===':self'?el:(r.initial?el.querySelector(r.initial):null);
+      if(t===el&&!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+      if(t&&!visibleEl(t)) t=null;
+      t=t||f.filter(function(x){ return /^(INPUT|SELECT|TEXTAREA)$/.test(x.tagName)&&!/^(checkbox|radio|file)$/.test(x.type); })[0]||f.filter(function(x){ return !/close|cancel|dismiss/i.test((x.getAttribute('aria-label')||'')+' '+x.className+' '+x.textContent); })[0]||f[0];
+      if(!t){ if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1'); t=el; }
+      try{ t.focus({preventScroll:true}); }catch(e){} },r.focusDelay!=null?r.focusDelay:80); }
+  /* n133: a selector that finds the opener again after the list it sits in re-renders (same id, or same data-pid/data-loc/data-id with the same classes) */
+  function openerKey(o){ if(!o||!o.getAttribute) return null; if(o.id) return '#'+CSS.escape(o.id); var ks=['data-pid','data-loc','data-id','data-key'];
+    for(var i=0;i<ks.length;i++){ var v=o.getAttribute(ks[i]); if(v){ var cls=(o.className&&typeof o.className==='string')?o.className.trim().split(/\s+/).map(function(c){ return '.'+CSS.escape(c); }).join(''):''; return o.tagName.toLowerCase()+cls+'['+ks[i]+'="'+v.replace(/"/g,'\\"')+'"]'; } } return null; }
+  /* n133: the list the opener sits in may redraw right after the overlay closes (the app clears its selection) — if that drops focus, find the opener again by its key */
+  function keepOn(key){ if(!key) return; [120,320,650].forEach(function(ms){ setTimeout(function(){ var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement) return; if(topModal()) return;
+      try{ var o=document.querySelector(key); if(o&&visibleEl(o)) o.focus({preventScroll:true}); }catch(e){} },ms); }); }
+  var lastFocus={el:null,at:0}; document.addEventListener('focusin',function(e){ var x=e.target; if(x&&x!==document.body&&x!==document.documentElement) lastFocus={el:x,at:Date.now()}; },true);
+  function onClose(el,r){ var s=st.get(el)||{}; st.delete(el); var i=stack.indexOf(el); if(i>-1) stack.splice(i,1); settle(el,r);
+    var a=document.activeElement; if(a&&a!==document.body&&!el.contains(a)) return;   /* the app moved focus somewhere sensible already */
+    var cands=[s.opener,s.opener2]; if(s.key){ try{ var again=document.querySelector(s.key); if(again) cands.splice(1,0,again); }catch(e){} }
+    for(var k=0;k<cands.length;k++){ var o=cands[k]; if(o&&o.isConnected&&visibleEl(o)&&!o.closest('.pvx-closed,[inert]')){ try{ o.focus({preventScroll:true}); keepOn(s.key); return; }catch(e){} } }
+    var top=topModal(); if(top){ var f=focusables(top)[0]||top; try{ f.focus({preventScroll:true}); }catch(e){} return; }
+    var m=document.querySelector('main,[role=main]')||document.body; if(m!==document.body&&!m.hasAttribute('tabindex')) m.setAttribute('tabindex','-1'); try{ m.focus({preventScroll:true}); }catch(e){} }
+  function sync(el){ var r=cfgFor(el); if(!r||!el.isConnected) return; var o=isOpen(el,r), was=known.get(el);
+    if(was===undefined){ known.set(el,o); if(o){ reveal(el); semantics(el,r); if(stack.indexOf(el)<0) stack.push(el); } else settle(el,r); return; }
+    if(o===was) return; known.set(el,o); if(o) onOpen(el,r); else onClose(el,r); }
+  function otherDialogOpen(top){ var own=dialogEl(top,cfgFor(top)||{}); return [].slice.call(document.querySelectorAll('[role=dialog],[aria-modal=true]')).some(function(d){ return d!==top&&d!==own&&!d.contains(top)&&!d.closest('.pvx-closed,[inert]')&&visibleEl(d); }); }   /* a dialog nested inside the top one (an end-of-visit sheet in a drawer) counts too */
+  function topModal(){ for(var i=stack.length-1;i>=0;i--){ var el=stack[i], r=cfgFor(el); if(el.isConnected&&r&&r.modal!==false&&isOpen(el,r)&&!invisible(el)) return el; } return null; }
+  /* n133: when an open modal re-renders the element that held focus, the browser drops focus to <body> silently (no blur event); bring it back to the modal container */
+  var refocusT; function refocus(){ clearTimeout(refocusT); refocusT=setTimeout(function(){ var top=topModal(); if(!top) return; var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement) return;
+    if(!top.hasAttribute('tabindex')) top.setAttribute('tabindex','-1'); try{ top.focus({preventScroll:true}); }catch(x){} },60); }
+  var mo=new MutationObserver(function(ms){ var lost=false; ms.forEach(function(m){ if(m.type==='childList'&&m.removedNodes.length) lost=true; if(m.type==='attributes'){ sync(m.target); }
+    else m.addedNodes.forEach(function(n){ if(n.nodeType!==1) return; if(cfgFor(n)) { observe(n); sync(n); } n.querySelectorAll&&REG.forEach(function(r){ n.querySelectorAll(r.sel).forEach(function(x){ observe(x); sync(x); }); }); }); }); if(lost) refocus(); });
+  function observe(el){ if(el.__pvxObs) return; el.__pvxObs=1; mo.observe(el,{attributes:true,attributeFilter:['class','style','hidden','aria-hidden']}); }
+  function scan(){ REG.forEach(function(r){ document.querySelectorAll(r.sel).forEach(function(el){ observe(el); sync(el); }); }); }
+  /* on window, capture phase: runs before the app's own document listeners whatever the event's target */
+  window.addEventListener('keydown',function(e){
+    if(e.defaultPrevented) return; var top=topModal(); if(!top) return; var r=cfgFor(top);
+    /* another dialog is open above this one (one the app mounts on demand and manages itself): leave the keys to the app */
+    if(otherDialogOpen(top)) return;
+    if(e.key==='Tab'){ var f=focusables(top); if(!f.length){ e.preventDefault(); try{ top.focus(); }catch(x){} return; }
+      var a=document.activeElement, i=f.indexOf(a);
+      if(i<0||!top.contains(a)){ e.preventDefault(); f[e.shiftKey?f.length-1:0].focus(); return; }
+      if(!e.shiftKey&&i===f.length-1){ e.preventDefault(); f[0].focus(); } else if(e.shiftKey&&i===0){ e.preventDefault(); f[f.length-1].focus(); } }
+    else if(e.key==='Escape'&&r.escape!==false){ var c=null; (r.close||'.close,[data-close],.btn.ghost,[aria-label^="Close"],[aria-label^="Cancel"]').split(',').some(function(s){ var cands=[].slice.call(top.querySelectorAll(s.trim())).filter(visibleEl); if(cands.length){ c=cands[0]; return true; } return false; });
+      if(typeof r.onEscape==='function'){ e.preventDefault(); r.onEscape(top); } else if(c){ e.preventDefault(); c.click(); } }
+  },true);
+  /* a focus that lands in a closed overlay anyway (programmatic focus from the app) is sent back to the page */
+  document.addEventListener('focusin',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.pvx-closed'); if(!el) return; var top=topModal(); var f=top?(focusables(top)[0]||top):(document.querySelector('main,[role=main]')||document.body); try{ f.focus({preventScroll:true}); }catch(x){} },true);
+  window.pvxOverlay={register:function(list){ (list||[]).forEach(function(r){ if(r&&r.sel) REG.push(r); }); if(document.body){ scan(); mo.observe(document.body,{childList:true,subtree:true}); } else document.addEventListener('DOMContentLoaded',function(){ scan(); mo.observe(document.body,{childList:true,subtree:true}); });
+    window.addEventListener('load',scan); },
+    scan:scan, top:topModal, focusables:focusables, _reg:REG, _state:function(el){ return st.get(el)||null; }, version:'n133'};
+})();
+
+pvxOverlay.register([{"sel": "aside.drawer", "open": "open", "modal": true, "close": ".drawer-head .close"}, {"sel": ".confirm,.liaison-modal", "open": "open", "modal": true, "close": ".close,.btn.ghost,[data-cancel]"}, {"sel": "#tsOrderSheet", "open": "show", "modal": true, "dialog": ".op-card", "close": ".op-x", "escape": false}, {"sel": ".pt-sheet,#tvPanel", "open": "show", "modal": true, "close": ".close,.pt-x,[aria-label=Close]"}, {"sel": ".scrim,.brief-scrim,.pt-scrim,#tvScrim", "open": ["open", "show"], "modal": false}, {"sel": ".patient-preview,.pt-pop,.bh-card,#tsInsPop,#fvPanel,#tsNet", "open": "show", "modal": false, "escape": false}]);
+</script>
+
+<!-- PVX-TOPBAR n132: brand and controls keep their width; app links overflow into a More menu; Grid and Forms in every app (account-gated) -->
+<style>
+/* PVX-TOPBAR n132 — the brand and the right-hand controls keep their width; the apps get what is left, overflowing into More */
+html body nav.topnav{grid-template-columns:max-content minmax(0,1fr) max-content!important;column-gap:12px}
+html body nav.topnav .brandwrap{flex:0 0 auto;min-width:0}
+html body nav.topnav .nav-center{min-width:0;max-width:100%;justify-self:center!important;overflow:visible!important;flex-wrap:nowrap;position:relative}
+html body nav.topnav .nav-right{flex:0 0 auto}
+@media(max-width:760px){ html body nav.topnav{grid-template-columns:max-content minmax(0,1fr)!important} html body nav.topnav .nav-center{margin:0!important;padding:0!important;justify-content:flex-start} }
+.pvx-more{position:relative;display:flex;flex:0 0 auto}
+.pvx-more[hidden]{display:none!important}
+.pvx-more-btn{font-family:inherit;cursor:pointer}
+.pvx-more-btn[aria-expanded=true]{background:rgba(255,255,255,0.10);color:rgba(255,255,255,.95)}
+body:not(.dark) .pvx-more-btn[aria-expanded=true]{background:#EBEBEB;color:#333}
+.pvx-more-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;min-width:200px;padding:6px;border-radius:14px;display:flex;flex-direction:column;gap:2px;
+  background:#101A32;border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+body:not(.dark) .pvx-more-menu{background:#fff;border-color:rgba(29,29,31,.1);box-shadow:0 18px 44px rgba(20,28,40,.18)}
+.pvx-more-menu[hidden]{display:none!important}
+html body nav.topnav .pvx-more-menu .nav-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:13px!important;letter-spacing:0;white-space:nowrap;width:100%}
+html body nav.topnav .pvx-more-menu .nav-item svg{width:18px;height:18px}
+.nav-item:focus-visible,.pvx-more-btn:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+@media(forced-colors:active){.pvx-more-menu{border:1px solid CanvasText}}
+</style>
+<script id="pvx-app-links-js">/* n132: Grid and Forms links show only for the accounts those apps let in (keep in step with grid/index.html and forms/index.html ALLOWED) */
+(function(){var OK={navGrid:["daniel.giordano@pravix.app"],navForms:["daniel.giordano@pravix.app"]};
+function show(e){e=String(e||"").toLowerCase();Object.keys(OK).forEach(function(id){var a=document.getElementById(id);if(a)a.style.display=OK[id].indexOf(e)>-1?"":"none"})}
+function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
+var hooked=false;function live(){if(hooked)return;try{if(window.firebase&&firebase.apps&&firebase.apps.length&&firebase.auth){hooked=true;firebase.auth().onAuthStateChanged(function(u){if(u)show(u.email);else fromStore()})}}catch(_){}}
+fromStore();live();window.addEventListener("load",function(){live();setTimeout(live,1500)})})();</script>
+<script>
+/* ═══ Pravix shared top bar · n132 (audit RX-01, FL-07, DTA-S01, CL-X02, US-04) ═══
+   The same nav.topnav lives in every app. This block makes it fit any width without collisions:
+   · the brand and the Logout/theme group keep their real width (grid: max-content · 1fr · max-content) — nothing can slide under them;
+   · the app links get the middle; the ones that do not fit move into a "More" menu (a real button with a menu of the same links),
+     instead of being clipped inside a scroller with its scrollbar hidden. The active app always stays visible;
+   · the More menu is keyboard-operable (Enter/Space, arrows, Escape, focus return) and closed state is display:none;
+   · aria-current="page" follows the active link (apps that switch in place call pvxTopbar.setActive(id)). */
+(function(){
+  if(window.pvxTopbar) return;
+  var nav=document.querySelector('nav.topnav'); if(!nav) return;
+  var center=nav.querySelector('.nav-center'); if(!center) return;
+  var more=document.createElement('div'); more.className='pvx-more'; more.hidden=true;
+  more.innerHTML='<button type="button" class="nav-item pvx-more-btn" aria-haspopup="true" aria-expanded="false" aria-label="More apps" title="More apps">'
+    +'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>'
+    +'<div class="pvx-more-menu" role="menu" aria-label="More apps" hidden></div>';
+  center.appendChild(more); var btn=more.querySelector('button'), menu=more.querySelector('.pvx-more-menu');
+  function items(){ return [].slice.call(center.querySelectorAll('.nav-item')).filter(function(a){ return a!==btn&&!a.classList.contains('pvx-more-btn'); }); }
+  function shown(a){ return a.style.display!=='none'&&!a.hidden; }   /* account-gated links (Grid, Forms) are display:none until allowed */
+  var gap=0, busy=false;
+  function layout(){ if(busy) return; busy=true;
+    try{ var all=items(); all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
+      var vis=all.filter(shown); if(!vis.length){ more.hidden=true; return; }
+      gap=parseFloat(getComputedStyle(center).columnGap||getComputedStyle(center).gap)||0;
+      more.hidden=true; var avail=center.clientWidth, w=vis.map(function(a){ return a.getBoundingClientRect().width; }), total=w.reduce(function(s,x){ return s+x; },0)+gap*(vis.length-1);
+      if(total<=avail+0.5){ menu.innerHTML=''; return; }
+      more.hidden=false; var mw=more.getBoundingClientRect().width+gap, keep=0, used=0;
+      for(var i=0;i<vis.length;i++){ if(used+w[i]+(i?gap:0)+mw<=avail){ used+=w[i]+(i?gap:0); keep++; } else break; }
+      var active=vis.findIndex(function(a){ return a.classList.contains('active')||a.getAttribute('aria-current'); });
+      if(active>=keep&&keep>0){ var a=vis.splice(active,1)[0]; vis.splice(keep-1,0,a); center.insertBefore(a,vis[keep]||more); }
+      var hidden=vis.slice(keep); hidden.forEach(function(a){ menu.appendChild(a); a.setAttribute('role','menuitem'); });
+      if(!hidden.length) more.hidden=true; }
+    finally{ busy=false; } }
+  function open(o){ var isOpen=!menu.hidden; if(o===undefined) o=!isOpen; if(o===isOpen) return; menu.hidden=!o; btn.setAttribute('aria-expanded',o?'true':'false');
+    if(o){ var f=menu.querySelector('.nav-item'); if(f) f.focus(); } }
+  btn.addEventListener('click',function(){ open(); });
+  menu.addEventListener('keydown',function(e){ var f=[].slice.call(menu.querySelectorAll('.nav-item')), i=f.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){ e.preventDefault(); (f[i+1]||f[0]).focus(); } else if(e.key==='ArrowUp'){ e.preventDefault(); (f[i-1]||f[f.length-1]).focus(); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); open(false); btn.focus(); } else if(e.key==='Tab'){ open(false); } });
+  btn.addEventListener('keydown',function(e){ if(e.key==='ArrowDown'){ e.preventDefault(); open(true); } else if(e.key==='Escape'&&!menu.hidden){ e.preventDefault(); open(false); } });
+  document.addEventListener('click',function(e){ if(!menu.hidden&&!more.contains(e.target)) open(false); },true);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!menu.hidden&&!more.contains(document.activeElement)) open(false); });
+  function setActive(id){ items().forEach(function(a){ var on=a.id===id; a.classList.toggle('active',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); layout(); }
+  /* keep aria-current in step with the visual active class, for apps that switch in place */
+  items().forEach(function(a){ if(a.classList.contains('active')) a.setAttribute('aria-current','page'); else if(a.getAttribute('aria-current')==='page'&&!a.classList.contains('active')) a.removeAttribute('aria-current'); });
+  var t; function soon(){ clearTimeout(t); t=setTimeout(layout,60); }
+  if(window.ResizeObserver){ new ResizeObserver(soon).observe(nav); } window.addEventListener('resize',soon);
+  new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
+  window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
+})();
+</script>
 </body>
 </html>
