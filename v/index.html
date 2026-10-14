@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="verify-build" content="20261013n">
+<title>Verify a signed form · VCA Shoreline</title>
+<script>(function(){try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(light|dark)/);if(m)document.documentElement.setAttribute('data-theme',m[1]);}catch(e){}})();</script>
+<style>
+/* Pravix · verify a signed copy (n126, Oct 13 2026). Public: opened from the QR code printed on a signed form.
+   It reads one record by its code — the fingerprint, the day, the hospital, the form's title — and nothing else.
+   A PDF chosen here is fingerprinted in this browser and never sent anywhere. */
+:root{--font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","Segoe UI",Roboto,sans-serif;
+  --bg:#F2F4F8;--s0:#FFFFFF;--s1:#F7F8FB;--ink:#14181F;--ink2:#4B5563;--ink3:#6B7280;--line:rgba(30,45,90,.10);--line2:rgba(30,45,90,.2);
+  --good:#2E8A5E;--good-bg:rgba(72,184,136,.14);--bad:#C2412D;--bad-bg:rgba(232,146,138,.16);--btn:#14181F;--btn-ink:#fff;--focus:#2F7BEA}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#080E1A;--s0:#0E1628;--s1:#131E34;--ink:#E6EEF6;--ink2:#A7C2D8;--ink3:#7A98B8;--line:rgba(150,185,220,.14);--line2:rgba(150,185,220,.3);
+  --good:#7FD6AE;--good-bg:rgba(72,184,136,.16);--bad:#F0A59D;--bad-bg:rgba(232,146,138,.14);--btn:#E6EEF6;--btn-ink:#0B1220}}
+:root[data-theme="dark"]{--bg:#080E1A;--s0:#0E1628;--s1:#131E34;--ink:#E6EEF6;--ink2:#A7C2D8;--ink3:#7A98B8;--line:rgba(150,185,220,.14);--line2:rgba(150,185,220,.3);
+  --good:#7FD6AE;--good-bg:rgba(72,184,136,.16);--bad:#F0A59D;--bad-bg:rgba(232,146,138,.14);--btn:#E6EEF6;--btn-ink:#0B1220}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.brand{display:flex;align-items:center;gap:12px;padding:6px 0 4px}.brand img.vca{height:30px;width:auto}.brand .div{width:1px;height:26px;background:var(--line2)}
+.brand .pvx{display:flex;align-items:center;gap:7px}.brand .pvx small{display:block;font-size:8.5px;letter-spacing:.14em;color:var(--ink3);font-weight:600}.brand .pvx .mk{height:13px;width:auto;margin-top:2px}.brand .pvx .ic{height:22px;width:22px}
+.brand img{display:block}.brand img.lite{display:none}
+:root[data-theme="light"] .brand img.drk{display:none}:root[data-theme="light"] .brand img.lite{display:block}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .brand img.drk{display:none}:root:not([data-theme="dark"]) .brand img.lite{display:block}}
+h1{font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-.02em;margin:6px 0 0}
+.lede{margin:-12px 0 0;font-size:16px;line-height:1.45;color:var(--ink2)}
+.card{background:var(--s0);border-radius:18px;border:1px solid var(--line);overflow:hidden}
+.hero{display:flex;gap:14px;align-items:flex-start;padding:18px 18px 16px}
+.hero i{width:44px;height:44px;flex:0 0 44px;border-radius:22px;display:flex;align-items:center;justify-content:center}
+.hero i svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.hero.good i{background:var(--good-bg);color:var(--good)}.hero.bad i{background:var(--bad-bg);color:var(--bad)}.hero.plain i{background:var(--s1);color:var(--ink2)}
+.hero b{display:block;font-size:19px;font-weight:650;line-height:1.25}.hero span{display:block;font-size:15px;line-height:1.45;color:var(--ink2);margin-top:3px}
+.rows{border-top:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;min-height:48px;padding:12px 18px}.row+.row{border-top:1px solid var(--line)}
+.row span{font-size:15px;color:var(--ink2)}.row b{font-size:15px;font-weight:600;text-align:right;overflow-wrap:anywhere}
+.row code{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:13.5px;font-weight:500}
+.sec h2{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);margin:0 0 8px 4px}
+.drop{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:22px 18px;border:1.5px dashed var(--line2);border-radius:18px;background:var(--s0)}
+.drop.over{border-color:var(--focus);background:rgba(47,123,234,.07)}
+.drop p{margin:0;font-size:15px;line-height:1.45;color:var(--ink2)}
+.btn{min-height:50px;padding:0 22px;border-radius:14px;border:0;background:var(--btn);color:var(--btn-ink);font:600 17px var(--font);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.quiet{background:var(--s1);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn:active{filter:brightness(.9);transform:scale(.985)}.btn[disabled]{opacity:.45;cursor:default;transform:none}
+.btn:focus-visible,input:focus-visible,.link:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+form.code{display:flex;flex-direction:column;gap:12px}
+form.code input{min-height:54px;border-radius:14px;border:1px solid var(--line2);background:var(--s0);padding:0 16px;font:500 20px "SF Mono",ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);width:100%}
+.lbl{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);margin:0 0 -4px 4px}
+.note{font-size:14px;line-height:1.5;color:var(--ink3);margin:0}
+.result{margin-top:12px}
+.link{align-self:flex-start;border:0;background:none;padding:0;min-height:44px;font:inherit;font-size:15px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink3);padding:4px 4px 0}
+.spin{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--line2);border-top-color:var(--ink2);animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}.btn:active{transform:none}}
+@media (prefers-contrast:more){:root{--line:rgba(20,30,60,.35);--line2:rgba(20,30,60,.6);--ink2:#2F3742;--ink3:#3F4856}}
+@media (min-width:600px){h1{font-size:34px}body{padding-top:40px}}
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite">
+  <div class="brand"><img class="vca drk" src="/assets/img/logo-dark.png" alt="VCA Shoreline"><img class="vca lite" src="/assets/img/logo-light.png" alt="VCA Shoreline"></div>
+  <h1>Verify a signed form</h1><p class="lede">Loading…</p>
+</main>
+<script>
+(function(){
+'use strict';
+var PROJECT='shoreline-flow', KEY='AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE';
+var CODE=/^[2-9A-HJ-NP-Z]{16}$/;
+var es=/^es\b/i.test((new URLSearchParams(location.search).get('lang'))||navigator.language||'');
+var T={
+  en:{title:'Verify a signed form',lede:'Scan the code on a signed form, or type the code printed next to it.',enter:'Code',check:'Check',checking:'Checking…',
+    good:'A genuine signed copy',goodSub:function(h){ return 'Signed and filed by '+h+'.'; },signed:'Signed',hospital:'Hospital',pages:'Pages',code:'Code',fp:'Fingerprint',fpAll:'Show the whole fingerprint',
+    pdfH:'Have the PDF?',pdfP:'Choose it to check it hasn’t changed since it was signed. It stays on this device.',choose:'Choose a PDF…',reading:'Checking the PDF…',
+    same:function(d){ return 'Unchanged since it was signed on '+d+'.'; },sameSub:'This file is exactly the copy the hospital filed.',
+    diff:'This PDF is different from the signed original.',diffSub:function(h){ return 'A packet, or a copy with details blacked out, is a new file and won’t match. Ask '+h+' for the original.'; },
+    paper:function(h){ return 'Holding paper? This confirms the form was signed and filed by '+h+'. To check the wording, ask the hospital to compare it with the original on file.'; },
+    notFound:'We couldn’t find this code',notFoundSub:'Check the code and try again. It’s 16 letters and numbers, printed next to the QR code.',
+    bad:'That doesn’t look like a code',badSub:'Codes are 16 letters and numbers, like K7Q2 M9XA 4HCD 3PRT.',
+    offline:'Couldn’t check right now',offlineSub:'Check the connection, then try again.',retry:'Try again',another:'Check another code',
+    privacy:'Nothing about the patient or family is shown here.',lang:'Español',pages1:function(n){ return n+(n===1?' page':' pages'); }},
+  es:{title:'Verificar un formulario firmado',lede:'Escanee el código de un formulario firmado o escriba el código impreso a su lado.',enter:'Código',check:'Verificar',checking:'Verificando…',
+    good:'Una copia firmada auténtica',goodSub:function(h){ return 'Firmada y archivada por '+h+'.'; },signed:'Firmado',hospital:'Hospital',pages:'Páginas',code:'Código',fp:'Huella digital',fpAll:'Ver la huella completa',
+    pdfH:'¿Tiene el PDF?',pdfP:'Elíjalo para comprobar que no ha cambiado desde que se firmó. Se queda en este dispositivo.',choose:'Elegir un PDF…',reading:'Comprobando el PDF…',
+    same:function(d){ return 'Sin cambios desde que se firmó el '+d+'.'; },sameSub:'Este archivo es exactamente la copia que archivó el hospital.',
+    diff:'Este PDF es diferente del original firmado.',diffSub:function(h){ return 'Un paquete, o una copia con datos tapados, es un archivo nuevo y no coincide. Pida el original a '+h+'.'; },
+    paper:function(h){ return '¿Tiene el papel? Esto confirma que '+h+' firmó y archivó el formulario. Para revisar el texto, pida al hospital que lo compare con el original.'; },
+    notFound:'No encontramos este código',notFoundSub:'Revise el código e inténtelo de nuevo. Son 16 letras y números, impresos junto al código QR.',
+    bad:'Eso no parece un código',badSub:'Los códigos son 16 letras y números, como K7Q2 M9XA 4HCD 3PRT.',
+    offline:'No se pudo verificar ahora',offlineSub:'Revise la conexión e inténtelo de nuevo.',retry:'Intentar de nuevo',another:'Verificar otro código',
+    privacy:'Aquí no se muestra nada sobre el paciente ni la familia.',lang:'English',pages1:function(n){ return n+(n===1?' página':' páginas'); }}};
+var L=function(){ return es?T.es:T.en; };
+var $=function(s){ return document.querySelector(s); };
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function pretty(c){ return String(c||'').replace(/(.{4})(?=.)/g,'$1 '); }
+function norm(c){ return String(c||'').toUpperCase().replace(/[^0-9A-Z]/g,''); }
+function day(s){ var m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return ''; try{ return new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString(es?'es-US':'en-US',{month:'long',day:'numeric',year:'numeric'}); }catch(e){ return s; } }
+var ICON={shield:'<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',x:'<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/>',q:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><path d="M12 17.5v.01"/>',doc:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>'};
+function svg(n){ return '<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[n]+'</svg>'; }
+var BRAND='<div class="brand"><img class="vca drk" src="/assets/img/logo-dark.png" alt="VCA Shoreline"><img class="vca lite" src="/assets/img/logo-light.png" alt="VCA Shoreline"><span class="div" aria-hidden="true"></span>'
+  +'<span class="pvx"><img class="ic drk" src="/assets/img/pvx-icon-dark.png" alt=""><img class="ic lite" src="/assets/img/pvx-icon-light.png" alt=""><span><small>POWERED BY</small><img class="mk drk" src="/assets/img/pvx-mark-dark.png" alt="Pravix"><img class="mk lite" src="/assets/img/pvx-mark-light.png" alt="Pravix"></span></span></div>';
+var st={code:'',rec:null,state:'enter',file:null,fpAll:false};
+
+function codeForm(v){ var l=L(); return '<form class="code" id="cf" novalidate><label class="lbl" for="ci">'+l.enter+'</label><input id="ci" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="K7Q2 M9XA 4HCD 3PRT" value="'+esc(pretty(v||''))+'"><button class="btn" type="submit">'+l.check+'</button></form>'; }
+function foot(){ var l=L(); return '<div class="foot"><span>'+l.privacy+'</span><button class="link" type="button" data-act="lang" lang="'+(es?'en':'es')+'">'+l.lang+'</button></div>'; }
+function render(){ var l=L(), h=BRAND; document.documentElement.lang=es?'es':'en'; document.title=l.title+' · VCA Shoreline';
+  h+='<h1>'+l.title+'</h1>';
+  if(st.state==='enter') h+='<p class="lede">'+l.lede+'</p>'+codeForm(st.code);
+  else if(st.state==='loading') h+='<div class="card"><div class="hero plain"><i><span class="spin" aria-hidden="true"></span></i><span><b>'+l.checking+'</b><span>'+esc(pretty(st.code))+'</span></span></div></div>';
+  else if(st.state==='bad') h+='<div class="card"><div class="hero bad"><i>'+svg('q')+'</i><span><b>'+l.bad+'</b><span>'+l.badSub+'</span></span></div></div>'+codeForm(st.code);
+  else if(st.state==='missing') h+='<div class="card"><div class="hero bad"><i>'+svg('q')+'</i><span><b>'+l.notFound+'</b><span>'+l.notFoundSub+'</span></span></div></div>'+codeForm(st.code);
+  else if(st.state==='offline') h+='<div class="card"><div class="hero plain"><i>'+svg('q')+'</i><span><b>'+l.offline+'</b><span>'+l.offlineSub+'</span></span></div></div><button class="btn" type="button" data-act="retry">'+l.retry+'</button>';
+  else if(st.state==='found'){ var r=st.rec, hosp=r.hospital||'VCA Shoreline', fp=String(r.sha256||'');
+    h+='<div class="card" id="rec"><div class="hero good"><i>'+svg('shield')+'</i><span><b>'+l.good+'</b><span>'+esc(r.title||'')+' · '+esc(l.goodSub(hosp))+'</span></span></div><div class="rows">'
+      +'<div class="row"><span>'+l.signed+'</span><b>'+esc(day(r.signed_on))+'</b></div><div class="row"><span>'+l.hospital+'</span><b>'+esc(hosp)+'</b></div>'
+      +(r.pages?'<div class="row"><span>'+l.pages+'</span><b>'+esc(l.pages1(+r.pages))+'</b></div>':'')
+      +'<div class="row"><span>'+l.code+'</span><b><code>'+esc(pretty(st.code))+'</code></b></div>'
+      +'<div class="row"><span>'+l.fp+'</span><b><code>'+esc(st.fpAll?fp.replace(/(.{8})(?=.)/g,'$1 '):fp.slice(0,16).replace(/(.{4})(?=.)/g,'$1 ')+' …')+'</code>'+(st.fpAll?'':'<br><button class="link" type="button" data-act="fp">'+l.fpAll+'</button>')+'</b></div></div></div>';
+    h+='<section class="sec" aria-labelledby="pdfH"><h2 id="pdfH">'+l.pdfH+'</h2><div class="drop" id="drop"><p>'+l.pdfP+'</p><button class="btn quiet" type="button" data-act="pick">'+svg('doc').replace('<svg','<svg style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"')+l.choose+'</button></div><div class="result" id="res">'+resultHtml()+'</div></section>';
+    h+='<p class="note">'+esc(l.paper(hosp))+'</p><button class="link" type="button" data-act="another">'+l.another+'</button>'; }
+  h+=foot(); $('#app').innerHTML=h;
+  var ci=$('#ci'); if(ci&&st.state==='enter'&&!st.code) ci.focus(); }
+function resultHtml(){ var l=L(), f=st.file; if(!f) return ''; if(f.state==='reading') return '<div class="card"><div class="hero plain"><i><span class="spin" aria-hidden="true"></span></i><span><b>'+l.reading+'</b><span>'+esc(f.name)+'</span></span></div></div>';
+  return f.same?'<div class="card" role="status"><div class="hero good"><i>'+svg('shield')+'</i><span><b>'+esc(l.same(day(st.rec.signed_on)))+'</b><span>'+l.sameSub+'</span></span></div></div>'
+    :'<div class="card" role="alert"><div class="hero bad"><i>'+svg('x')+'</i><span><b>'+l.diff+'</b><span>'+esc(l.diffSub(st.rec.hospital||'VCA Shoreline'))+'</span></span></div></div>'; }
+
+function lookup(code){ st.code=code; if(!CODE.test(code)){ st.state='bad'; render(); return; }
+  st.state='loading'; st.rec=null; st.file=null; st.fpAll=false; render();
+  fetch('https://firestore.googleapis.com/v1/projects/'+PROJECT+'/databases/(default)/documents/doc_verify/'+code+'?key='+KEY,{credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store'})
+    .then(function(r){ if(r.status===404) return {missing:true}; if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(j){ if(j.missing){ st.state='missing'; render(); return; } var f=j.fields||{}, g=function(k){ var v=f[k]; return v?(v.stringValue!=null?v.stringValue:v.integerValue!=null?+v.integerValue:v.doubleValue):null; };
+      st.rec={sha256:g('sha256'),signed_on:g('signed_on'),hospital:g('hospital'),title:g('title'),pages:g('pages')}; if(!/^[0-9a-f]{64}$/.test(st.rec.sha256||'')){ st.state='missing'; render(); return; }
+      st.state='found'; render(); })
+    .catch(function(e){ st.state='offline'; render(); }); }
+function sha(buf){ return crypto.subtle.digest('SHA-256',buf).then(function(h){ return Array.prototype.map.call(new Uint8Array(h),function(x){ return ('0'+x.toString(16)).slice(-2); }).join(''); }); }
+function checkFile(file){ if(!file||!st.rec) return; st.file={state:'reading',name:file.name}; var r=$('#res'); if(r) r.innerHTML=resultHtml();
+  file.arrayBuffer().then(sha).then(function(h){ st.file={state:'done',name:file.name,same:h===st.rec.sha256}; var r2=$('#res'); if(r2) r2.innerHTML=resultHtml(); })
+    .catch(function(){ st.file={state:'done',name:file.name,same:false}; var r3=$('#res'); if(r3) r3.innerHTML=resultHtml(); }); }
+function pick(){ var i=document.createElement('input'); i.type='file'; i.accept='application/pdf,.pdf'; i.onchange=function(){ if(i.files&&i.files[0]) checkFile(i.files[0]); }; i.click(); }
+
+document.addEventListener('submit',function(e){ if(e.target.id!=='cf') return; e.preventDefault(); var c=norm($('#ci').value); if(c) history.replaceState(null,'','#'+c); lookup(c); });
+document.addEventListener('input',function(e){ if(e.target.id!=='ci') return; var c=norm(e.target.value).slice(0,16), p=pretty(c); if(e.target.value!==p){ e.target.value=p; } });
+document.addEventListener('click',function(e){ var a=e.target.closest&&e.target.closest('[data-act]'); if(!a) return; var w=a.dataset.act;
+  if(w==='lang'){ es=!es; render(); } else if(w==='retry') lookup(st.code); else if(w==='pick') pick(); else if(w==='fp'){ st.fpAll=true; render(); }
+  else if(w==='another'){ st={code:'',rec:null,state:'enter',file:null,fpAll:false}; history.replaceState(null,'',location.pathname); render(); } });
+['dragenter','dragover'].forEach(function(n){ document.addEventListener(n,function(e){ var d=$('#drop'); if(!d||!st.rec) return; e.preventDefault(); d.classList.add('over'); }); });
+document.addEventListener('dragleave',function(e){ var d=$('#drop'); if(d&&!d.contains(e.relatedTarget)) d.classList.remove('over'); });
+document.addEventListener('drop',function(e){ var d=$('#drop'); if(!d||!st.rec) return; e.preventDefault(); d.classList.remove('over'); var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) checkFile(f); });
+window.addEventListener('hashchange',function(){ var c=norm(location.hash.slice(1)); if(c&&c!==st.code) lookup(c); });
+var c0=norm(location.hash.slice(1)); if(c0) lookup(c0); else render();
+window.__verify={state:function(){ return st; },lookup:lookup,checkFile:checkFile};
+})();
+</script>
+</body>
+</html>
