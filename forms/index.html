@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="forms-build" content="20261013c">
+<meta name="forms-build" content="20261013e">
 <title>Forms · Pravix</title>
 <script>(function(){try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(light|dark)/);if(m)document.documentElement.setAttribute('data-theme',m[1]);}catch(e){}})();</script>
 <style>
 :root{--font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","Segoe UI",Roboto,sans-serif;
   --bg:#080E1A;--nav:#0A1222;--s0:#0E1628;--s1:#131E34;--s2:#192540;--ink:#D8E8F4;--ink2:#A7C2D8;--ink3:#7A98B8;--line:rgba(77,200,224,.10);--line2:rgba(150,185,220,.32);
-  --accent:#187A91;--accent-ink:#4DC8E0;--good:#48B888;--good-ink:#7FD6AE;--warn:#EBC95D;--warn-bg:rgba(235,201,93,.12);--bad:#E8928A;--paper-bg:#060B15;--fill:rgba(150,185,220,.10);--sel:rgba(56,189,210,.14);
-  --b-visit:rgba(56,189,210,.22);--b-visit-line:#1F8FA8;--b-family:rgba(56,189,210,.14);--b-ending:rgba(168,136,224,.22);--b-ending-line:#8064C8;--b-sign:rgba(235,201,93,.28);--b-sign-line:#C49628;--b-none:rgba(150,170,200,.18);--b-none-line:#8A97AB;--b-todo:rgba(232,100,74,.20);--b-todo-line:#E8644A}
-:root[data-theme="light"]{--bg:#F2F4F8;--nav:#FFFFFF;--s0:#FFFFFF;--s1:#F7F8FB;--s2:#EDF0F5;--ink:#14181F;--ink2:#4B5563;--ink3:#6B7280;--line:rgba(30,45,90,.08);--line2:rgba(30,45,90,.18);--accent:#1F7F96;--accent-ink:#1F7F96;--good-ink:#2E8A5E;--warn:#9A6E0E;--warn-bg:rgba(235,201,93,.18);--bad:#C2412D;--paper-bg:#E4E8EF;--fill:rgba(30,45,90,.06);--sel:rgba(31,143,168,.12)}
+  --accent:#187A91;--accent-ink:#4DC8E0;--good:#48B888;--good-ink:#7FD6AE;--warn:#F78B4A;--warn-bg:rgba(247,139,74,.13);--sig:#EBC95D;--selring:#E6EEF6;--bad:#E8928A;--paper-bg:#060B15;--fill:rgba(150,185,220,.10);--sel:rgba(56,189,210,.14);
+  --b-visit:rgba(47,123,234,.20);--b-visit-line:#2F7BEA;--b-family:rgba(47,123,234,.11);--b-ending:rgba(168,136,224,.22);--b-ending-line:#8064C8;--b-sign:rgba(235,201,93,.28);--b-sign-line:#C49628;--b-none:rgba(150,170,200,.18);--b-none-line:#8A97AB;--b-todo:rgba(232,100,74,.20);--b-todo-line:#E8644A}
+:root[data-theme="light"]{--bg:#F2F4F8;--nav:#FFFFFF;--s0:#FFFFFF;--s1:#F7F8FB;--s2:#EDF0F5;--ink:#14181F;--ink2:#4B5563;--ink3:#6B7280;--line:rgba(30,45,90,.08);--line2:rgba(30,45,90,.18);--accent:#1F7F96;--accent-ink:#1F7F96;--good-ink:#2E8A5E;--warn:#C2410C;--warn-bg:rgba(247,139,74,.15);--selring:#14181F;--bad:#C2412D;--paper-bg:#E4E8EF;--fill:rgba(30,45,90,.06);--sel:rgba(31,143,168,.12)}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
@@ -124,7 +124,7 @@ a{color:var(--accent-ink)}
 .bgroup h4{margin:0;display:flex;align-items:center;gap:8px;padding:0 10px 5px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
 .dot{width:9px;height:9px;border-radius:3px;flex:0 0 9px}
 .bitem{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:40px;padding:4px 10px;border:0;border-radius:9px;background:transparent;text-align:left;cursor:pointer}
-.bitem:hover{background:var(--fill)}.bitem.on{background:var(--sel);box-shadow:inset 0 0 0 1px rgba(56,189,210,.45)}
+.bitem:hover{background:var(--fill)}.bitem.on{background:var(--s2);box-shadow:inset 0 0 0 1.5px var(--selring)}
 .bitem b{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .bitem small{font-size:11px;color:var(--ink3);margin-left:4px}
 .bst{font-size:12px;font-weight:650;flex:0 0 auto}.bst.rv{color:var(--warn)}.bst.mp{color:var(--bad)}
@@ -140,12 +140,13 @@ a{color:var(--accent-ink)}
 .rosie .page{touch-action:auto}
 .box{position:absolute;border-radius:3px;cursor:move;display:flex;align-items:center;overflow:visible}
 .box .lab{display:block;padding:0 5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;pointer-events:none;font-family:var(--font);letter-spacing:0}
-.box em{position:absolute;left:0;top:-17px;font-style:normal;font-size:10px;font-weight:700;color:#fff;padding:1px 6px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;font-family:var(--font)}
+.box em{position:absolute;left:0;top:-19px;font-style:normal;font-size:11px;font-weight:700;color:#fff;padding:1px 6px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;font-family:var(--font)}
 .box.small:hover em,.box.small.on em{opacity:1}
-.box.on{outline:2px solid #1F8FA8;outline-offset:1px;box-shadow:0 0 0 5px rgba(56,189,210,.22)!important;z-index:3}
-.box .h{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:6px;background:#fff;border:2px solid #1F8FA8;cursor:nwse-resize;display:none}
+.box.on{outline:2px solid #14181F;outline-offset:2px;box-shadow:0 0 0 6px rgba(20,24,31,.16)!important;z-index:3}
+.box:focus-visible{outline:2px solid #14181F;outline-offset:2px;box-shadow:0 0 0 6px rgba(20,24,31,.22)!important}
+.box .h{position:absolute;right:-7px;bottom:-7px;width:14px;height:14px;border-radius:7px;background:#fff;border:2px solid #14181F;cursor:nwse-resize;display:none}
 .box.on .h{display:block}
-.drawing{position:absolute;border:1.5px dashed #1F8FA8;background:rgba(56,189,210,.12);pointer-events:none}
+.drawing{position:absolute;border:1.5px dashed #14181F;background:rgba(20,24,31,.06);pointer-events:none}
 .zoom{position:sticky;bottom:18px;z-index:5;display:flex;align-items:center;gap:2px;padding:4px;border-radius:13px;background:var(--s1);box-shadow:0 10px 28px rgba(0,0,0,.4);border:1px solid var(--line)}
 .zoom button{min-width:36px;height:36px;border:0;border-radius:9px;background:transparent;font-size:13px;font-weight:600;cursor:pointer;padding:0 10px}
 .zoom button:hover{background:var(--fill)}.zoom button[disabled]{opacity:.35;cursor:default}
@@ -155,7 +156,7 @@ a{color:var(--accent-ink)}
 .insp{flex:1 1 300px;max-width:340px;padding:20px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:18px;max-height:calc(100vh - 130px);overflow:auto;position:sticky;top:130px}
 .insp h3{margin:0;font-size:18px;font-weight:650}.insp .k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
 .insp .pdfname{font-size:12px;color:var(--ink3);margin-top:3px}
-.sugg{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--warn-bg);box-shadow:inset 0 0 0 1px rgba(235,201,93,.3)}
+.sugg{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--warn-bg);box-shadow:inset 0 0 0 1px rgba(247,139,74,.38)}
 .sugg .k{color:var(--warn)}.sugg b{font-size:15px;font-weight:600}.sugg span{font-size:12.5px;line-height:1.45;color:var(--ink2)}
 .sugg .btn.primary{min-height:40px;font-size:14px}
 .fld{display:flex;flex-direction:column;gap:7px}.fld>span,.fld>label{font-size:13px;font-weight:600}.fld small{font-size:12px;color:var(--ink2);line-height:1.45}
@@ -166,7 +167,7 @@ a{color:var(--accent-ink)}
 .search:focus-within{box-shadow:inset 0 0 0 1px var(--line2),0 0 0 3px rgba(56,189,210,.35)}
 .fld .search input:focus-visible{box-shadow:none!important}
 .srcs{display:flex;flex-direction:column;border-radius:12px;background:var(--s0);padding:6px;max-height:300px;overflow:auto;border:1px solid var(--line)}
-.srcs h5{margin:0;padding:8px 8px 4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.srcs h5{margin:0;padding:8px 8px 4px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
 .srcs button{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:0 8px;border:0;border-radius:8px;background:transparent;font-size:13.5px;text-align:left;cursor:pointer}
 .srcs button:hover{background:var(--fill)}.srcs button[aria-pressed="true"]{background:var(--sel);font-weight:600}
 .srcs .none{padding:10px 8px;font-size:13px;color:var(--ink3)}
@@ -211,7 +212,49 @@ input[type=radio]:focus-visible{border-radius:50%}
 .gate h1{margin:0;font-size:22px}.gate p{margin:0;color:var(--ink2);font-size:14px}
 .gate input{min-height:44px;border-radius:11px;border:1px solid var(--line2);background:var(--bg);padding:0 12px;font-size:15px}
 .gate .err{color:var(--bad);font-size:13px}
+/* n125 · HIG pass */
+.zoom{position:static;display:flex;align-items:center;gap:2px;padding:3px;border-radius:12px;background:var(--fill);box-shadow:none;border:0}
+.zoom button{min-width:34px;height:34px;border:0;border-radius:9px;background:transparent;font-size:13px;font-weight:600;cursor:pointer;padding:0 9px}
+.zoom button:hover{background:var(--s2)}.zoom button[disabled]{opacity:.35;cursor:default}
+.zoom .z{min-width:48px;text-align:center;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}.zoom .sep{width:1px;height:18px;background:var(--line2);margin:0 4px}
+.zoom svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
+.chosen{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:4px 6px 4px 14px;border-radius:12px;background:var(--s0);border:1px solid var(--line)}.chosen b{font-size:14px;font-weight:600}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;display:inline-block;animation:spin .8s linear infinite;flex:0 0 15px}
+.toast .spin{margin-right:10px;vertical-align:-3px}@keyframes spin{to{transform:rotate(360deg)}}
+.toast{display:flex;align-items:center;gap:6px}.toast.err{background:#2A1112;color:#FFE4E1;box-shadow:0 12px 30px rgba(0,0,0,.4),inset 0 0 0 1px rgba(232,146,138,.45)}
+.tx{width:32px;height:32px;margin:-6px -8px -6px 6px;border:0;border-radius:8px;background:transparent;color:inherit;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 32px}.tx:hover{background:rgba(255,255,255,.1)}
+.tx svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.mtoast.err{background:#2A1112;color:#FFE4E1;box-shadow:0 8px 22px rgba(0,0,0,.35),inset 0 0 0 1px rgba(232,146,138,.45);padding-right:10px}
+.arch{border-radius:16px}.arch summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:15px;font-weight:650;color:var(--ink2);list-style:none}
+.arch summary::-webkit-details-marker{display:none}.arch summary::before{content:'›';display:inline-block;margin-right:8px;transition:transform .15s}.arch[open] summary::before{transform:rotate(90deg)}
+.btn:active:not([disabled]),.seg button:active,.zoom button:active:not([disabled]),.bitem:active,.srcs button:active,.subnav .tabs button:active,.icon-btn:active,.addbox:active,.tile:active .tthumb{filter:brightness(.88);transform:scale(.985)}
+@media (pointer:coarse){.theme{height:44px}.theme i{width:34px;height:34px;border-radius:17px}.rev .btn,.sugg .btn.primary,.checks .btn,.pnote .btn,.lib-head .btn.primary{min-height:44px}.btn,.seg button,.bitem,.srcs button,.subnav .tabs button,.addbox{min-height:44px}.icon-btn,.zoom button,.tx{min-width:44px;height:44px}.zoom button{min-height:44px}.choices label{min-height:64px}}
+@media (prefers-contrast:more){:root{--line:rgba(200,220,240,.38);--line2:rgba(220,232,244,.7);--ink2:#C9D8E6;--ink3:#AFC3D6}:root[data-theme="light"]{--line:rgba(20,30,60,.28);--line2:rgba(20,30,60,.55);--ink2:#2F3742;--ink3:#3F4856}.box{box-shadow:inset 0 0 0 1.5px currentColor}}
+@media (prefers-reduced-motion:reduce){.btn:active,.tile:active .tthumb{transform:none}.spin{animation-duration:2s}.arch summary::before{transition:none}}
 [hidden]{display:none!important}
+/* n126 · scans map themselves + verify codes */
+.spin.dark{border-color:var(--line2);border-top-color:var(--ink2)}
+.rev .find-t{display:flex;align-items:center;gap:9px}
+.rev .linkish{border:0;background:none;padding:0;min-height:30px;font-size:12.5px;color:var(--ink3);text-decoration:underline;text-underline-offset:2px;cursor:pointer;align-self:flex-start}
+.rev .linkish:hover{color:var(--ink)}
+.paper.finding .page::after{content:'';position:absolute;left:0;right:0;top:0;height:22%;pointer-events:none;border-radius:3px;
+  background:linear-gradient(180deg,rgba(77,130,240,0),rgba(77,130,240,.14) 80%,rgba(77,130,240,.32));animation:pvxscan 1.6s ease-in-out infinite;will-change:transform}
+@keyframes pvxscan{from{transform:translateY(-100%)}to{transform:translateY(455%)}}
+.box.found-todo{border:1.5px dashed var(--b-todo-line)!important;box-shadow:none!important}
+.sugg .row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sugg .row2 .btn.quiet{min-height:40px;font-size:13px}
+.vbox{position:absolute;pointer-events:none;border:1.5px dashed rgba(120,132,150,.75);border-radius:4px;background:rgba(120,132,150,.07);display:flex;align-items:center;justify-content:flex-end;padding:0 6px;gap:6px}
+.vbox.l{flex-direction:row-reverse;justify-content:flex-end}
+.vbox i{width:20px;height:20px;flex:0 0 20px;background:repeating-linear-gradient(90deg,rgba(90,100,118,.55) 0 3px,transparent 3px 5px),repeating-linear-gradient(0deg,rgba(90,100,118,.45) 0 3px,transparent 3px 5px);border-radius:2px}
+.vbox span{font:600 10.5px/1.2 var(--font);color:#5B6575;white-space:nowrap}
+.vbox.clash{border-color:var(--warn);background:rgba(247,139,74,.12)}.vbox.clash span{color:#9A3412}
+.vrow{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line)}
+.vrow .qr{width:34px;height:34px;flex:0 0 34px;border-radius:6px;background:#fff;padding:4px;box-shadow:inset 0 0 0 1px var(--line)}
+.vrow .qr svg{width:100%;height:100%;display:block}
+.vrow>span{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}.vrow b{font-size:14px;font-weight:600}.vrow>span>span{font-size:12.5px;line-height:1.45;color:var(--ink2)}
+.vrow select{min-height:40px;border-radius:10px;border:1px solid var(--line2);background:var(--s0);padding:0 10px;font-size:13.5px}
+.vwarn{margin-top:8px;font-size:12.5px;color:var(--warn);display:flex;gap:8px;align-items:center}
+@media (pointer:coarse){.vrow select,.rev .linkish,.sugg .row2 .btn.quiet{min-height:44px}}
+@media (prefers-reduced-motion:reduce){.paper.finding .page::after{animation:none;top:auto;bottom:0;height:3px;background:rgba(77,130,240,.6)}}
 @media (max-width:900px){.side,.insp{max-width:none;position:static;max-height:none;border:0}.map-bar{top:0}.map-bar .right{justify-content:flex-start}}
 @media (prefers-reduced-motion:reduce){.tthumb{transition:none}}
 </style>
@@ -221,8 +264,8 @@ input[type=radio]:focus-visible{border-radius:50%}
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="lib/pvx-pdf.js?v=20261013b"></script>
-<script src="lib/pvx-forms.js?v=20261013b"></script>
+<script src="lib/pvx-pdf.js?v=20261013n"></script>
+<script src="lib/pvx-forms.js?v=20261013n"></script>
 <script>
 (function(){
 'use strict';
@@ -240,9 +283,18 @@ var ICON={up:'<path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/>'
   trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',dl:'<path d="M12 4v12"/><path d="M6 10l6 6 6-6"/><path d="M4 20h16"/>',ok:'<path d="M5 12l4 4 10-10"/>',
   pen:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.5"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>'};
 function ic(n,c){ return '<svg viewBox="0 0 24 24" aria-hidden="true"'+(c?' class="'+c+'"':'')+'>'+ICON[n]+'</svg>'; }
-var state={user:null,view:'lib',search:'',intent:null,filter:'all',list:[],tpl:null,bytes:null,sel:null,saving:0,savedAt:null,dirty:false,mode:'edit',zoom:null,q:'',previewed:false,sheet:null,pageNo:0};
+var state={user:null,view:'lib',search:'',intent:null,busy:null,archived:[],archOpen:false,showSrc:false,filter:'all',list:[],tpl:null,bytes:null,sel:null,saving:0,savedAt:null,dirty:false,mode:'edit',zoom:null,q:'',previewed:false,sheet:null,pageNo:0};
 function who(){ var u=state.user; return u&&(u.displayName||u.email)||''; }
-function toast(t){ if(state.view==='map'&&$('#pstatus')&&!$('.scrim')){ state.note={t:t,until:Date.now()+2800}; paintStatus(); setTimeout(paintStatus,2900); return; } var e=document.createElement('div'); e.className='toast'; e.setAttribute('role','status'); e.textContent=t; document.body.appendChild(e); setTimeout(function(){ e.remove(); },2600); }
+/* routine notices fade; errors (o.err) and work in progress (o.stay) stay until dismissed or done — nothing important leaves on a timer */
+function toast(t,o){ o=o||{}; var keep=o.err||o.stay;
+  if(state.view==='map'&&$('#pstatus')&&!$('.scrim')){ state.note={t:t,err:!!o.err,until:keep?Infinity:Date.now()+2800}; paintStatus(); if(!keep) setTimeout(paintStatus,2900); return null; }
+  $$('.toast').forEach(function(x){ if(!x.classList.contains('err')&&!x.querySelector('.spin')) x.remove(); });   /* one notice at a time */
+  var e=document.createElement('div'); e.className='toast'+(o.err?' err':''); e.setAttribute('role',o.err?'alert':'status');
+  e.innerHTML=(o.stay?'<span class="spin" aria-hidden="true"></span>':'')+'<span>'+esc(t)+'</span>'+(o.err?'<button type="button" class="tx" aria-label="Dismiss">'+ic('x')+'</button>':'');
+  document.body.appendChild(e); if(!keep) setTimeout(function(){ e.remove(); },2800); return e; }
+function err(t){ return toast(t,{err:true}); }
+function loadJs(src){ return new Promise(function(ok,bad){ var s=document.createElement('script'); s.src=src; s.async=true; s.onload=ok; s.onerror=function(){ bad(new Error('Could not load '+src)); }; document.head.appendChild(s); }); }
+var findLib=null; function needFind(){ if(window.PvxFind) return Promise.resolve(); if(!findLib){ findLib=loadJs('lib/pvx-find.js?v=20261013n'); findLib.catch(function(){ findLib=null; }); } return findLib; }
 function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
 
 /* ---------- sign-in ---------- */
@@ -261,9 +313,9 @@ AUTH.onAuthStateChanged(function(u){ state.user=u||null;
 
 /* ---------- data ---------- */
 function loadList(){ return DB.collection('form_templates').where('tenant_id','==',TENANT).get().then(function(s){
-  state.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(t){ return t.status!=='archived'; })
-    .sort(function(a,b){ return String(b.updated_at||'').localeCompare(String(a.updated_at||'')); }); })
-  .catch(function(e){ console.warn('[forms] list',e); state.list=[]; toast('Couldn’t load the forms. Check the connection.'); }); }
+  var all=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).sort(function(a,b){ return String(b.updated_at||'').localeCompare(String(a.updated_at||'')); });
+  state.list=all.filter(function(t){ return t.status!=='archived'; }); state.archived=all.filter(function(t){ return t.status==='archived'; }); })
+  .catch(function(e){ console.warn('[forms] list',e); state.list=[]; err('Couldn’t load the forms. Check the connection, then reload.'); }); }
 function statusOf(t){ var pr=F.progress(t); if(t.status==='ready') return {k:'ready',t:'Ready'}; if(!pr.total||pr.missing||pr.review) return {k:'todo',t:'Needs review'}; return {k:'draft',t:'Draft'}; }
 function whereText(t){ return t.purpose==='ending'?('Flow › Other ending › Send form'+(t.kind==='died'?' (died)':' (euthanasia)')):'Flow › patient drawer › Send a form'; }
 function whereShort(t){ if(t.purpose==='staff') return 'Employee form'; return t.purpose==='ending'?(t.kind==='died'?'Died ending':'Euthanasia ending'):'Patient drawer'; }
@@ -276,20 +328,22 @@ function saveNow(){ var t=state.tpl; if(!t) return Promise.resolve(); clearTimeo
   if(t.purpose==='staff'&&t.status==='ready') t.status='draft';   /* employee forms never reach Flow */
   var doc={name:t.name||'Untitled form',purpose:t.purpose||'visit',kind:t.purpose==='ending'?(t.kind||'euthanasia'):null,status:t.status==='ready'&&F.progress(t).ready?'ready':(t.status==='ready'?'draft':t.status||'draft'),
     boxes:t.boxes||[],updated_at:new Date().toISOString(),updated_by:who()};
+  if(t.verify) doc.verify=t.verify; if(t.scan) doc.scan=t.scan;
   t.status=doc.status; state.saving++; paintSaved();
   return DB.collection('form_templates').doc(t.id).set(doc,{merge:true}).then(function(){ state.saving--; state.savedAt=new Date(); paintSaved(); })
-    .catch(function(e){ state.saving--; state.dirty=true; paintSaved(); console.warn('[forms] save',e); toast('Not saved — only an admin can change forms.'); }); }
+    .catch(function(e){ state.saving--; state.dirty=true; paintSaved(); console.warn('[forms] save',e); err('Not saved — only an admin can change forms.'); }); }
 function paintSaved(){ var e=$('#saved'); if(!e) return; e.innerHTML=state.saving?'Saving…':state.dirty?'Edited':state.savedAt?ic('ok')+'Saved':''; }
 window.addEventListener('beforeunload',function(e){ if(state.dirty||state.saving){ e.preventDefault(); e.returnValue=''; } });
 
 /* ---------- upload ---------- */
 function pickFile(intent){ state.intent=intent||null; var i=document.createElement('input'); i.type='file'; i.accept='application/pdf,.pdf'; i.onchange=function(){ if(i.files&&i.files[0]) upload(i.files[0]); }; i.click(); }
 function upload(file){
-  if(file.size>15*1024*1024){ toast('That PDF is over 15 MB. Save a smaller copy and try again.'); return; }
-  toast('Reading '+file.name+'…');
+  if(file.size>15*1024*1024){ err('That PDF is over 15 MB. Save a smaller copy and try again.'); return; }
+  if(state.busy) return; state.busy=file.name; var prog=toast('Adding '+file.name+'…',{stay:true}); if(state.view==='lib') renderLib();
+  var done=function(){ state.busy=null; if(prog) prog.remove(); };
   file.arrayBuffer().then(function(buf){ var bytes=new Uint8Array(buf);
     return P.inspect(bytes).then(function(info){
-      if(info.encrypted) throw new Error('This PDF is password-protected. Save an unlocked copy first.');
+      if(info.encrypted){ var pe=new Error('This PDF is password-protected. Save an unlocked copy, then add it again.'); pe.plain=true; throw pe; }
       if(info.pages.some(function(p){ return p.rotate; })) toast('Some pages are rotated; boxes are placed on the page as stored.');
       return P.sha256(bytes).then(function(h){
         var id=F.newId('ft_'), boxes=F.boxesFromFields(info.fields), now=new Date().toISOString();
@@ -298,10 +352,10 @@ function upload(file){
           file:{name:file.name,size:bytes.length,sha256:h,pages:info.pages.map(function(p){ return {w:p.w,h:p.h}; })},boxes:boxes,created_at:now,created_by:who(),updated_at:now,updated_by:who()};
         return F.putParts(DB,'form_templates',id,bytes).then(function(n){ tpl.file.parts=n; return DB.collection('form_templates').doc(id).set(tpl); })
           .then(function(){ tpl.id=id; state.list.unshift(tpl); var g=boxes.filter(function(b){ return b.guess; }).length;
-            openTpl(tpl,bytes); toast(boxes.length?('Found '+boxes.length+' fields in the PDF'+(g?' · '+g+' suggestions to review':'')):'No fields in this PDF — draw a box where each answer goes.'); });
+            done(); openTpl(tpl,bytes); if(boxes.length) toast('Found '+boxes.length+' fields in the PDF'+(g?' · '+g+' suggestions to review':'')); });
       });
     });
-  }).catch(function(e){ console.warn('[forms] upload',e); toast(e&&e.message?e.message:'Couldn’t read that PDF.'); });
+  }).catch(function(e){ console.warn('[forms] upload',e); done(); if(state.view==='lib') renderLib(); err(e&&e.plain?e.message:'Couldn’t add that PDF. Make sure it opens on your computer, then try again.'); });
 }
 
 /* ---------- views ---------- */
@@ -346,13 +400,15 @@ function tile(t){ var pr=F.progress(t), ready=t.status==='ready', staff=t.purpos
 function match(t){ var q=state.search.trim().toLowerCase(); return !q||String(t.name||'').toLowerCase().indexOf(q)>-1; }
 function renderLib(){ state.view='lib'; state.sheet=null; document.body.classList.remove('mapping'); if(location.hash) history.replaceState(null,'',location.pathname);
   var L=state.list, pat=L.filter(function(t){ return t.purpose!=='staff'&&match(t); }), emp=L.filter(function(t){ return t.purpose==='staff'&&match(t); }), open=SLOTS.filter(function(sl){ return !filled(sl); });
-  var h='<main class="lib"><div class="lib-head"><div><h1>Forms</h1><p>Your hospital’s own paperwork — filled by Flow, signed on the iPad.</p></div>'
-    +'<button class="btn primary" type="button" data-act="upload">'+ic('plus')+'Add a form</button></div>';
+  var h='<main class="lib"><div class="lib-head"><div><h1>Forms</h1></div>'
+    +(state.busy?'<button class="btn primary" type="button" disabled><span class="spin" aria-hidden="true"></span>Adding…</button>':'<button class="btn primary" type="button" data-act="upload">'+ic('plus')+'Add a form…</button>')+'</div>';
   if(state.search&&!pat.length&&!emp.length) h+='<div class="nothing">No forms match “'+esc(state.search)+'”.</div>';
-  if(pat.length) h+='<section class="sec" aria-labelledby="yH"><div class="sec-h"><h2 id="yH">Your forms</h2></div><div class="tiles">'+pat.map(tile).join('')+'</div></section>';
+  if(pat.length) h+='<section class="sec" aria-labelledby="yH"><div class="sec-h"><h2 id="yH">Forms on file</h2></div><div class="tiles">'+pat.map(tile).join('')+'</div></section>';
   if(open.length&&!state.search) h+='<section class="sec" aria-labelledby="wH"><div class="sec-h"><h2 id="wH">Flow is ready for '+(open.length===1?'this':'these')+'</h2><p>'+(open.length===1?'It already has':'Each one already has')+' a place in Flow. Add the hospital’s PDF and map it once.</p></div><div class="slots">'
-    +open.map(function(sl){ var i=SLOTS.indexOf(sl); return '<article class="slot"><div class="art"><div class="blank"><i style="background:'+sl.tint+'"><svg viewBox="0 0 24 24" aria-hidden="true" style="stroke:'+sl.ink+'">'+sl.d+'</svg></i></div></div><div class="txt"><small>'+sl.where+'</small><h3>'+sl.t+'</h3><p>'+sl.p+'</p><button class="btn" type="button" data-slot="'+i+'">'+ic('up')+esc(sl.cta)+'</button></div></article>'; }).join('')+'</div></section>';
+    +open.map(function(sl){ var i=SLOTS.indexOf(sl); return '<article class="slot"><div class="art"><div class="blank"><i style="background:'+sl.tint+'"><svg viewBox="0 0 24 24" aria-hidden="true" style="stroke:'+sl.ink+'">'+sl.d+'</svg></i></div></div><div class="txt"><small>'+sl.where+'</small><h3>'+sl.t+'</h3><p>'+sl.p+'</p><button class="btn" type="button" data-slot="'+i+'"'+(state.busy?' disabled':'')+'>'+ic('up')+esc(sl.cta)+'…</button></div></article>'; }).join('')+'</div></section>';
   if(emp.length) h+='<section class="sec" aria-labelledby="eH"><div class="sec-h"><h2 id="eH">Employee forms</h2><p>For the team, not patients. They stay out of Flow; signing them in Pravix comes later.</p></div><div class="tiles">'+emp.map(tile).join('')+'</div></section>';
+  var AR=state.archived.filter(match);
+  if(AR.length) h+='<details class="arch"'+(state.archOpen?' open':'')+'><summary>Archived · '+AR.length+'</summary><div class="signed" role="list">'+AR.map(function(t){ return '<div class="srow" role="listitem"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span><span class="b"><b>'+esc(t.name||'Untitled form')+'</b><span>Archived '+esc(when(t.updated_at))+(t.updated_by?' by '+esc(firstName(t.updated_by)):'')+'</span></span><button class="btn" type="button" data-restore="'+esc(t.id)+'">Restore</button></div>'; }).join('')+'</div></details>';
   h+='<div class="foot"><span class="drophint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/></svg>Or drop a PDF anywhere on this page.</span><button type="button" class="howlink" data-act="how">'+ic('info')+'How Forms works</button></div></main>';
   var fk=document.activeElement&&document.activeElement.id==='fsearch';
   $('#app').innerHTML=shell(h,true);
@@ -364,7 +420,7 @@ function renderLib(){ state.view='lib'; state.sheet=null; document.body.classLis
 var SIGNED=null;
 function renderSigned(){ state.view='signed'; document.body.classList.remove('mapping');
   var q=state.search.trim().toLowerCase(), L=(SIGNED||[]).filter(function(d){ return !q||(String(d.title||'')+' '+String(d.signed_by||'')).toLowerCase().indexOf(q)>-1; });
-  var h='<main class="lib"><div class="lib-head"><div><h1>Signed</h1><p>Every signed form, filled and locked, newest first. Each one opens with its fingerprint checked.</p></div></div>';
+  var h='<main class="lib"><div class="lib-head"><div><h1>Signed</h1></div></div>';
   if(SIGNED==null) h+='<div class="nothing">Loading…</div>';
   else if(!SIGNED.length) h+='<div class="nothing">Nothing signed yet. Signed forms appear here as soon as a family signs on the iPad.</div>';
   else if(!L.length) h+='<div class="nothing">Nothing matches “'+esc(state.search)+'”.</div>';
@@ -373,17 +429,17 @@ function renderSigned(){ state.view='signed'; document.body.classList.remove('ma
   var fk=document.activeElement&&document.activeElement.id==='fsearch';
   $('#app').innerHTML=shell(h,true); if(fk){ var fs=$('#fsearch'); fs.focus(); fs.setSelectionRange(fs.value.length,fs.value.length); }
   if(SIGNED==null) DB.collection('visit_docs').where('tenant_id','==',TENANT).limit(200).get().then(function(s){ SIGNED=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).sort(function(a,b){ return String(b.signed_at||b.created_at||'').localeCompare(String(a.signed_at||a.created_at||'')); }); if(state.view==='signed') renderSigned(); })
-    .catch(function(e){ console.warn('[forms] signed',e); SIGNED=[]; if(state.view==='signed') renderSigned(); toast('Couldn’t load the signed forms.'); }); }
+    .catch(function(e){ console.warn('[forms] signed',e); SIGNED=[]; if(state.view==='signed') renderSigned(); err('Couldn’t load the signed forms. Check the connection, then reload.'); }); }
 function downloadSigned(id){ var d=(SIGNED||[]).filter(function(x){ return x.id===id; })[0]; if(!d) return;
-  F.docBytes(DB,d).then(function(r){ if(!r.intact){ toast('This copy doesn’t match its fingerprint — not downloaded. Ask an admin.'); return; }
+  F.docBytes(DB,d).then(function(r){ if(!r.intact){ err('This copy doesn’t match its fingerprint, so it wasn’t downloaded. Ask an admin.'); return; }
     var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([r.bytes],{type:'application/pdf'})); a.download=(d.title||'signed form')+'.pdf'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000); })
-    .catch(function(e){ toast('Couldn’t open it: '+(e.message||e)); }); }
+    .catch(function(e){ console.warn('[forms] open signed',e); err('Couldn’t open this PDF. Try again in a moment.'); }); }
 function openWelcome(){ var s=document.createElement('div'); s.className='scrim'; s.dataset.kind='welcome';
   var row=function(t,p,d){ return '<div class="row"><i><svg viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg></i><span><b>'+t+'</b><span>'+p+'</span></span></div>'; };
   s.innerHTML='<section class="welcome" role="dialog" aria-modal="true" aria-labelledby="wT"><div class="hd"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg></i><h2 id="wT">Welcome to Forms</h2></div><div class="rows">'
-    +row('Map it once','Point each blank on your PDF at a Pravix field. Pravix suggests most of them for you.','<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')
+    +row('Map it once','Pravix finds the blanks on your PDF — even a scan — and suggests what goes in each. You confirm.','<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>')
     +row('Signed on the iPad','Staff take the iPad into the room; the family checks the details and signs.','<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>')
-    +row('Filed on the visit','The hospital’s own PDF, filled and locked, with a fingerprint that proves it hasn’t changed.','<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')
+    +row('Filed on the visit','The hospital’s own PDF, filled and locked. A verify code on every page proves it’s genuine.','<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>')
     +'</div><button class="btn primary" type="button" data-act="welcome-ok">Continue</button></section>';
   document.body.appendChild(s); var b=s.querySelector('[data-act="welcome-ok"]'); if(b) b.focus(); }
 var thumbs={};
@@ -394,16 +450,16 @@ function thumb(t,sel){ sel=sel||'[data-thumb="'+t.id+'"]'; var el=$(sel); if(!el
 
 function openTpl(t,bytes){ state.tpl=JSON.parse(JSON.stringify(t)); state.tpl.boxes=state.tpl.boxes||[]; state.sel=null; state.view='map'; state.bytes=bytes||null; state.savedAt=new Date();
   $$('.toast').forEach(function(e){ e.remove(); });
-  state.mode='edit'; state.zoom=null; state.q=''; state.previewed=false; state.sheet=null; state.note=null; rosie=null;
+  state.mode='edit'; state.zoom=null; state.q=''; state.previewed=false; state.sheet=null; state.note=null; rosie=null; state.finding=null; state.vclash={};
   history.replaceState(null,'','#tpl='+t.id);
-  (bytes?Promise.resolve(bytes):F.templateBytes(DB,t)).then(function(b){ state.bytes=b; renderMap(); }).catch(function(e){ toast(e.message||'Couldn’t open the PDF'); state.view='lib'; renderLib(); }); renderMap(); }
+  (bytes?Promise.resolve(bytes):F.templateBytes(DB,t)).then(function(b){ state.bytes=b; renderMap(); if(!state.tpl.boxes.length&&!state.tpl.scan) findBoxes(); }).catch(function(e){ console.warn('[forms] open',e); state.view='lib'; renderLib(); err('Couldn’t open this form’s PDF. Try again in a moment.'); }); renderMap(); }
 
-var COLORS={visit:['var(--b-visit)','var(--b-visit-line)','#1F8FA8','#235E6C'],family:['var(--b-family)','var(--b-visit-line)','#38BDD2','#235E6C'],ending:['var(--b-ending)','var(--b-ending-line)','#A888E0','#54448A'],sign:['var(--b-sign)','var(--b-sign-line)','#EBC95D','#6E5208'],staff:['var(--b-none)','var(--b-none-line)','#8A97AB','#3F4856'],none:['var(--b-none)','var(--b-none-line)','#8A97AB','#3F4856'],todo:['var(--b-todo)','var(--b-todo-line)','#E8644A','#93321F']};
+var COLORS={visit:['var(--b-visit)','var(--b-visit-line)','#2F7BEA','#1C4A93'],family:['var(--b-family)','var(--b-visit-line)','#7AA8F2','#1C4A93'],ending:['var(--b-ending)','var(--b-ending-line)','#A888E0','#54448A'],sign:['var(--b-sign)','var(--b-sign-line)','#EBC95D','#6E5208'],staff:['var(--b-none)','var(--b-none-line)','#8A97AB','#3F4856'],none:['var(--b-none)','var(--b-none-line)','#8A97AB','#3F4856'],todo:['var(--b-todo)','var(--b-todo-line)','#E8644A','#93321F']};
 var GROUPS=[['todo','Not mapped yet'],['visit','From the visit'],['family','Family answers'],['ending','Aftercare'],['sign','Signatures'],['staff','Staff types it'],['none','Left blank']];
 function groupName(k){ return (GROUPS.filter(function(g){ return g[0]===k; })[0]||['',''])[1]; }
 function whoOf(b){ if(!F.isMapped(b)) return 'todo'; var s=F.source(b.src); return s?s.who:'none'; }
 function colorOf(b){ return COLORS[whoOf(b)]||COLORS.none; }
-function boxName(b){ var s=F.source(b.src); if(!s) return b.field?F.humanize(b.field):'New box';
+function boxName(b){ var s=F.source(b.src); if(!s) return b.field?F.humanize(b.field):(b.hint||'New box');
   if(s.custom) return (b.label&&b.label.en)||s.t; if(b.src==='aftercare.care'){ var o=(s.opts||[]).filter(function(x){ return x[0]===b.opt; })[0]; return 'Care · '+(o?o[1]:'pick which'); } return s.t.replace(/ · ticks when chosen$/,'').replace(/ \(staff in the room\)$/,''); }
 function boxSub(b){ var s=F.source(b.src); if(!s) return 'Not mapped yet'; return ({visit:'Flow fills it',family:'The family checks it',ending:'From the aftercare choices',sign:'Signed on the iPad',staff:'Staff type it',none:'Left blank'})[s.who]||''; }
 function srcHelp(s){ if(!s) return ''; return ({visit:'Flow fills it from the visit.',family:'The family types it on the iPad. Pre-filled when Flow already knows it.',ending:'From the family’s aftercare choices.',sign:'Signed on the iPad.',staff:'Staff type it when they send the form.',none:'This box stays empty.'})[s.who]||''; }
@@ -413,50 +469,55 @@ function baseW(i){ return state.tpl.file.pages[i].w*SCALE; }
 function zoomNow(){ if(state.zoom!=null) return state.zoom; var pa=$('.paper'), avail=pa?pa.clientWidth-48:900; var z=Math.min(1,avail/baseW(0)); return Math.max(0.4,Math.round(z*100)/100); }
 function renderMap(){
   var t=state.tpl, pr=F.progress(t), pages=(t.file&&t.file.pages)||[], sel=t.boxes.filter(function(b){ return b.id===state.sel; })[0]||null, R=state.mode==='rosie';
+  var z=zoomNow(); state.zoomShown=z;
   document.body.classList.add('mapping');
   var h='<div class="map-bar"><button class="btn quiet" type="button" data-act="back">'+ic('back')+'Forms</button>'
     +'<div class="name"><input class="title" id="tname" value="'+esc(t.name||'')+'" aria-label="Form name" size="'+Math.max(8,Math.min(40,(t.name||'').length+1))+'"><button type="button" class="icon-btn" data-act="rename" aria-label="Rename">'+ic('pen')+'</button><span class="sub">'+pages.length+' page'+(pages.length===1?'':'s')+'</span></div>'
     +'<div class="seg" role="radiogroup" aria-label="View"><button type="button" role="radio" aria-checked="'+!R+'" data-mode="edit">Edit</button><button type="button" role="radio" aria-checked="'+R+'" data-mode="rosie"'+(state.bytes?'':' disabled')+'>Show with Rosie</button></div>'
-    +'<div class="right"><span class="saved" id="saved" aria-live="polite"></span>'
+    +'<div class="right">'+zoomBar()+'<span class="saved" id="saved" aria-live="polite"></span>'
     +(t.status==='ready'?'<button class="btn" type="button" data-act="publish">'+ic('ok')+'In Flow</button>':t.purpose==='staff'?'<button class="btn" type="button" data-act="publish">Employee form</button>':'<button class="btn primary" type="button" data-act="publish">Publish…</button>')+'</div></div>';
   /* left: review progress + boxes grouped by where they come from */
   var rev;
-  if(!pr.total) rev='<div class="rev"><div class="rev-t"><span>No boxes yet</span></div><p>Drag on the page where each answer goes.</p></div>';
-  else if(pr.missing) rev='<div class="rev"><div class="rev-t"><span>Map the boxes</span><em>'+pr.missing+' to map</em></div><div class="bar"><i style="width:'+Math.round(pr.confirmed/pr.total*100)+'%"></i></div><p>'+pr.confirmed+' of '+pr.total+' boxes confirmed.'+(pr.review?' Dashed boxes are Pravix’s guesses.':'')+'</p><button class="btn" type="button" data-act="next">Next box</button></div>';
-  else if(pr.review) rev='<div class="rev"><div class="rev-t"><span>Review suggestions</span><em>'+pr.review+' left</em></div><div class="bar"><i style="width:'+Math.round(pr.confirmed/pr.total*100)+'%"></i></div><p>'+pr.confirmed+' of '+pr.total+' boxes confirmed. Dashed boxes are Pravix’s guesses.</p><button class="btn" type="button" data-act="next">Review next</button></div>';
+  var fnd=t.boxes.filter(function(b){ return b.found; }), fresh=fnd.length&&fnd.every(function(b){ return b.guess||!F.isMapped(b); });
+  var undoFind=fresh?'<button class="linkish" type="button" data-act="unfind">Remove the boxes Pravix found</button>':'';
+  if(state.finding) rev='<div class="rev"><div class="rev-t"><span>Finding the boxes</span></div><p class="find-t"><span class="spin dark" aria-hidden="true"></span><span id="findT">'+esc(state.finding.t)+'</span></p><p>On this computer only — the PDF isn’t sent anywhere.</p></div>';
+  else if(!pr.total) rev='<div class="rev"><div class="rev-t"><span>No boxes yet</span></div><p>'+(t.scan?'Pravix didn’t find any blanks on this PDF. Drag on the page where each answer goes.':'Pravix can look for the blanks — underlines, boxes and tick boxes — and name them from the words printed next to them. Or drag on the page.')+'</p><button class="btn" type="button" data-act="find"'+(state.bytes?'':' disabled')+'>'+(t.scan?'Look again':'Find the boxes')+'</button></div>';
+  else if(pr.missing) rev='<div class="rev"><div class="rev-t"><span>Map the boxes</span><em>'+pr.missing+' to map</em></div><div class="bar"><i style="width:'+Math.round(pr.confirmed/pr.total*100)+'%"></i></div><p>'+pr.confirmed+' of '+pr.total+' boxes confirmed.'+(pr.review||fnd.length?' Dashed boxes are Pravix’s guesses.':'')+'</p><button class="btn" type="button" data-act="next">Next box</button>'+undoFind+'</div>';
+  else if(pr.review) rev='<div class="rev"><div class="rev-t"><span>Review suggestions</span><em>'+pr.review+' left</em></div><div class="bar"><i style="width:'+Math.round(pr.confirmed/pr.total*100)+'%"></i></div><p>'+pr.confirmed+' of '+pr.total+' boxes confirmed. Dashed boxes are Pravix’s guesses.</p><button class="btn" type="button" data-act="next">Review next</button>'+undoFind+'</div>';
   else rev='<div class="rev"><div class="rev-t"><span>'+(pr.total===1?'1 box confirmed':'All '+pr.total+' boxes confirmed')+'</span><em class="good">'+(t.status==='ready'?'In Flow':'Ready')+'</em></div><div class="bar"><i class="good" style="width:100%"></i></div></div>';
   var multi=pages.length>1, sorted=t.boxes.slice().sort(order);
   h+='<div class="map'+(R?' rosie':'')+'"><aside class="side" aria-label="Boxes">'+rev
-    +(pr.hasOwnerSig?'':'<div class="note warn">Draw a box where the owner signs, and set it to <b>Owner signature</b>.</div>')
+    +(pr.hasOwnerSig||state.finding?'':'<div class="note warn">Draw a box where the owner signs, and set it to <b>Owner signature</b>.</div>')
     +'<div role="listbox" aria-label="Boxes on the form" style="display:flex;flex-direction:column;gap:16px">'+GROUPS.map(function(g){ var rows=sorted.filter(function(b){ return whoOf(b)===g[0]; }); if(!rows.length) return '';
       return '<section class="bgroup"><h4><i class="dot" style="background:'+COLORS[g[0]][2]+'"></i>'+g[1]+'</h4>'+rows.map(function(b){ var st=!F.isMapped(b)?'<span class="bst mp">Map</span>':b.guess?'<span class="bst rv">Review</span>':ic('ok','ok-ic');
         return '<button type="button" role="option" aria-selected="'+(b.id===state.sel)+'" class="bitem'+(b.id===state.sel?' on':'')+'" data-sel="'+b.id+'"><b>'+esc(boxName(b))+(multi?'<small>p'+(b.page+1)+'</small>':'')+'</b>'+st+'</button>'; }).join('')+'</section>'; }).join('')+'</div>'
     +'<button class="addbox" type="button" data-act="addhelp">'+ic('plus')+'Draw a box</button></aside>';
   /* the page */
-  var z=zoomNow(); state.zoomShown=z;
-  h+='<section class="paper" aria-label="The PDF">';
+  h+='<section class="paper'+(state.finding?' finding':'')+'" aria-label="The PDF"'+(state.finding?' aria-busy="true"':'')+'>';
   h+='<div class="pstatus" id="pstatus" role="status" aria-live="polite">'+statusHtml()+'</div>';
   pages.forEach(function(pg,i){ h+='<div class="page" data-page="'+i+'" style="width:'+Math.round(baseW(i)*z)+'px">'+(multi?'<span class="pno">Page '+(i+1)+' of '+pages.length+'</span>':'')+'<div class="canvas-slot" style="aspect-ratio:'+pg.w+' / '+pg.h+'"></div></div>'; });
-  h+='<div class="zoom" role="toolbar" aria-label="Zoom"><button type="button" data-zoom="-1" aria-label="Zoom out"'+(z<=ZOOMS[0]?' disabled':'')+'>−</button><span class="z" aria-live="polite">'+Math.round(z*100)+'%</span><button type="button" data-zoom="1" aria-label="Zoom in"'+(z>=ZOOMS[ZOOMS.length-1]?' disabled':'')+'>+</button><span class="sep"></span><button type="button" data-zoom="fit">Fit</button>'
-    +(multi?'<span class="sep"></span><button type="button" data-pg="-1" aria-label="Previous page">'+ic('back')+'</button><span class="z" id="pgno">'+(state.pageNo+1)+' of '+pages.length+'</span><button type="button" data-pg="1" aria-label="Next page">'+ic('fwd')+'</button>':'')+'</div></section>';
+  h+='</section>';
   h+='<aside class="insp" aria-label="Selected box">'+(sel?inspector(sel):formFacts(t))+'</aside></div>';
   var keepFocus=document.activeElement&&document.activeElement.id;
   $('#app').innerHTML=shell(h); paintSaved();
-  if(keepFocus){ var kf=document.getElementById(keepFocus); if(kf){ kf.focus(); if(kf.id==='bq'&&kf.setSelectionRange){ var n=kf.value.length; kf.setSelectionRange(n,n); } } }
   stick();
   if(state.bytes) pages.forEach(function(pg,i){ drawPage(i); });
   if(R) showRosie(); else paintBoxes();
+  if(keepFocus){ var kf=document.getElementById(keepFocus); if(kf){ kf.focus({preventScroll:true}); if(kf.id==='bq'&&kf.setSelectionRange){ var n=kf.value.length; kf.setSelectionRange(n,n); } } }
   if(state.sheet==='publish') openPublish(true);
 }
 /* the bars stay put under the app bar whatever its height (it wraps on narrow screens) */
 function stick(){ var tb=$('.top'), mb=$('.map-bar'); if(!tb||!mb) return; var a=tb.offsetHeight; mb.style.top=a+'px'; var b=a+mb.offsetHeight; $$('.side,.insp').forEach(function(e){ e.style.top=b+'px'; e.style.maxHeight='calc(100vh - '+b+'px)'; }); }
 /* one status line above the page: a notice (for a moment), else the Rosie banner, else the first-time tip */
 function statusHtml(){ var n=state.note;
-  if(n&&n.until>Date.now()) return '<span class="mtoast">'+esc(n.t)+'</span>';
+  if(n&&n.until>Date.now()) return '<span class="mtoast'+(n.err?' err':'')+'" role="'+(n.err?'alert':'status')+'">'+esc(n.t)+(n.err?'<button type="button" class="tx" data-act="note-x" aria-label="Dismiss">'+ic('x')+'</button>':'')+'</span>';
   if(state.mode==='rosie') return '<div class="pnote rosie">Test data for Rosie — nothing is saved to a patient<button class="btn" type="button" data-act="dl-test"'+(rosie&&rosie.bytes?'':' disabled')+'>'+ic('dl')+'Download test copy</button></div>';
-  if(!ls('pvx_forms_tip1')) return '<div class="tip" id="tip">Drag on the page to draw a box. Drag a box to move it; the corner dot resizes it.<button type="button" class="icon-btn" data-act="tip-x" aria-label="Hide tip">'+ic('x')+'</button></div>';
+  if(!ls('pvx_forms_tip1')) return '<div class="tip" id="tip">Drag on the page to draw a box, or use Draw a box. Arrow keys move a box; Option-arrow keys resize it.<button type="button" class="icon-btn" data-act="tip-x" aria-label="Hide tip">'+ic('x')+'</button></div>';
   return ''; }
 function paintStatus(){ var e=$('#pstatus'); if(e) e.innerHTML=statusHtml(); }
+function zoomBar(){ var t=state.tpl, pages=(t.file&&t.file.pages)||[], multi=pages.length>1, z=state.zoomShown||1;
+  return '<div class="zoom" role="toolbar" aria-label="Zoom and pages"><button type="button" data-zoom="-1" aria-label="Zoom out"'+(z<=ZOOMS[0]?' disabled':'')+'>−</button><span class="z" aria-live="polite">'+Math.round(z*100)+'%</span><button type="button" data-zoom="1" aria-label="Zoom in"'+(z>=ZOOMS[ZOOMS.length-1]?' disabled':'')+'>+</button><button type="button" data-zoom="fit">Fit</button>'
+    +(multi?'<span class="sep" aria-hidden="true"></span><button type="button" data-pg="-1" aria-label="Previous page">'+ic('back')+'</button><span class="z" id="pgno">'+(state.pageNo+1)+' of '+pages.length+'</span><button type="button" data-pg="1" aria-label="Next page">'+ic('fwd')+'</button>':'')+'</div>'; }
 function order(a,b){ return (a.page-b.page)||(b.rect[1]-a.rect[1])||(a.rect[0]-b.rect[0]); }
 function formFacts(t){ var pr=F.progress(t), n=(t.file&&t.file.pages||[]).length;
   return '<div><div class="k">This form</div><h3 style="margin-top:4px">'+esc(t.name||'Untitled form')+'</h3>'+(t.file&&t.file.name?'<div class="pdfname">'+esc(t.file.name)+'</div>':'')+'</div>'
@@ -464,14 +525,15 @@ function formFacts(t){ var pr=F.progress(t), n=(t.file&&t.file.pages||[]).length
     +'<div class="note">Select a box on the page or in the list to change it. Drag on the page to add one.</div>'; }
 var pageCanvas={};
 function drawPage(i){ var slot=$('.page[data-page="'+i+'"] .canvas-slot'); if(!slot) return;
-  var key=state.tpl.id+':'+i; if(pageCanvas[key]){ slot.replaceWith(pageCanvas[key]); return; }
-  P.renderPage(state.bytes,i,2).then(function(c){ c.className='canvas-slot'; c.setAttribute('aria-hidden','true'); pageCanvas[key]=c; var s=$('.page[data-page="'+i+'"] .canvas-slot'); if(s&&state.mode!=='rosie') s.replaceWith(c); }); }
+  var key=state.tpl.id+':'+i; if(pageCanvas[key]){ slot.replaceWith(pageCanvas[key]); setTimeout(checkVerify,0); return; }
+  var tid=state.tpl.id;
+  P.renderPage(state.bytes,i,2).then(function(c){ c.className='canvas-slot'; c.setAttribute('aria-hidden','true'); pageCanvas[key]=c; var s=$('.page[data-page="'+i+'"] .canvas-slot'); if(s&&state.mode!=='rosie') s.replaceWith(c); if(state.tpl&&state.tpl.id===tid) checkVerify(); }); }
 function pxScale(i){ var pg=$('.page[data-page="'+i+'"]'), w=state.tpl.file.pages[i].w; return pg?pg.clientWidth/w:SCALE; }
-function paintBoxes(){ $$('.page .box').forEach(function(e){ e.remove(); }); if(state.mode==='rosie') return;
+function paintBoxes(){ $$('.page .box,.page .vbox').forEach(function(e){ e.remove(); }); if(state.mode==='rosie') return; paintVerify();
   state.tpl.boxes.forEach(function(b){ var pg=$('.page[data-page="'+b.page+'"]'); if(!pg) return; var k=pxScale(b.page), H=state.tpl.file.pages[b.page].h, c=colorOf(b), w=b.rect[2]*k, hh=b.rect[3]*k;
-    var e=document.createElement('div'), small=w<44||hh<11; e.className='box'+(b.id===state.sel?' on':'')+(small?' small':''); e.dataset.box=b.id;
+    var e=document.createElement('div'), small=w<44||hh<13; e.className='box'+(b.id===state.sel?' on':'')+(small?' small':'')+(b.found&&!F.isMapped(b)?' found-todo':''); e.dataset.box=b.id; e.id='box-'+b.id; e.tabIndex=0; e.setAttribute('role','button'); e.setAttribute('aria-pressed',String(b.id===state.sel)); e.setAttribute('aria-label',boxName(b)+', page '+(b.page+1)+(!F.isMapped(b)?(b.found?', found by Pravix, not mapped':', not mapped'):b.guess?', suggestion to review':''));
     e.style.cssText='left:'+(b.rect[0]*k)+'px;top:'+((H-b.rect[1]-b.rect[3])*k)+'px;width:'+w+'px;height:'+hh+'px;background:'+c[0]+';'+(b.guess&&F.isMapped(b)?'border:1.5px dashed '+c[1]:'box-shadow:inset 0 0 0 1px '+c[1]);
-    e.innerHTML=(small?'':'<span class="lab" style="color:'+c[3]+';font-size:'+Math.max(8,Math.min(11,hh*0.62)).toFixed(1)+'px">'+esc(boxName(b))+'</span>')+'<em style="background:'+c[2]+';color:'+(whoOf(b)==='sign'?'#3A2C04':'#fff')+'">'+esc(boxName(b))+'</em><span class="h" data-resize="1"></span>';
+    e.innerHTML=(small?'':'<span class="lab" style="color:'+c[3]+';font-size:'+Math.max(10,Math.min(11.5,hh*0.62)).toFixed(1)+'px">'+esc(boxName(b))+'</span>')+'<em style="background:'+c[2]+';color:'+(whoOf(b)==='sign'?'#3A2C04':'#fff')+'">'+esc(boxName(b))+'</em><span class="h" data-resize="1"></span>';
     e.title=boxName(b)+(b.guess?' · suggested':''); pg.appendChild(e); }); }
 function sourcesFor(b){ return F.SOURCES.filter(function(x){ return x.k==='none'||(b.type==='signature'?x.type==='signature':b.type==='check'?x.type==='check':(x.type==='text'||x.type==='date')); }); }
 function srcList(b){ var q=state.q.trim().toLowerCase(), groups={}, n=0;
@@ -479,30 +541,31 @@ function srcList(b){ var q=state.q.trim().toLowerCase(), groups={}, n=0;
   if(!n) return '<div class="none">Nothing matches “'+esc(state.q)+'”.</div>';
   return Object.keys(groups).map(function(g){ return '<h5>'+esc(g)+'</h5>'+groups[g].map(function(x){ var on=b.src===x.k&&!b.guess; return '<button type="button" data-src="'+x.k+'" aria-pressed="'+on+'"><span>'+esc(x.t.replace(/ · ticks when chosen$/,''))+'</span>'+(on?ic('ok','ok-ic'):'')+'</button>'; }).join(''); }).join(''); }
 function inspector(b){ var s=F.source(b.src), types=[['text','Text'],['check','Tick box'],['signature','Signature'],['date','Date']], mapped=F.isMapped(b);
-  var h='<div><div class="k">Page '+(b.page+1)+'</div><h3 style="margin-top:4px">'+esc(boxName(b))+'</h3>'+(b.field?'<div class="pdfname">PDF field “'+esc(b.field)+'”</div>':'')+'</div>';
-  if(b.guess&&s) h+='<div class="sugg"><div class="k">Pravix suggests</div><b>'+esc(groupName(whoOf(b))+' › '+boxName(b))+'</b><span>'+esc(srcHelp(s))+'</span><button class="btn primary" type="button" data-act="confirm">Confirm</button></div>';
-  else if(mapped) h+='<div class="note">'+esc(srcHelp(s))+(s&&s.who==='family'?'':'')+'</div>';
-  h+='<div class="fld"><label for="bq">'+(b.guess?'Or fill it with something else':mapped?'Fill it with':'Fill it with')+'</label><div class="search">'+ic('search')+'<input id="bq" type="text" placeholder="Search fields" value="'+esc(state.q)+'" autocomplete="off"></div><div class="srcs" id="srcs" role="group" aria-label="Fields">'+srcList(b)+'</div></div>';
+  var h='<div><div class="k">Page '+(b.page+1)+'</div><h3 style="margin-top:4px">'+esc(boxName(b))+'</h3>'+(b.field?'<div class="pdfname">PDF field “'+esc(b.field)+'”</div>':b.found?'<div class="pdfname">'+(b.hint&&!/^(Blank line|Tick box|Box)$/.test(b.hint)?'Found next to “'+esc(b.hint)+'”':'Found by Pravix')+'</div>':'')+'</div>';
+  if(b.guess&&s) h+='<div class="sugg"><div class="k">Pravix suggests</div><b>'+esc(groupName(whoOf(b))+' › '+boxName(b))+'</b><span>'+esc(srcHelp(s))+'</span>'+(b.found?'<div class="row2"><button class="btn primary" type="button" data-act="confirm">Confirm</button><button class="btn quiet" type="button" data-act="del">Not a box</button></div>':'<button class="btn primary" type="button" data-act="confirm">Confirm</button>')+'</div>';
+  else if(mapped) h+='<div class="note">'+esc(srcHelp(s))+'</div>';
+  if(mapped&&!state.showSrc) h+=b.guess?'<button class="btn" type="button" data-act="change" style="align-self:flex-start">Fill it with something else…</button>':'<div class="fld"><span>Fills with</span><div class="chosen"><b>'+esc(boxName(b))+'</b><button class="btn" type="button" data-act="change">Change…</button></div></div>';
+  else h+='<div class="fld"><label for="bq">Fill it with</label><div class="search">'+ic('search')+'<input id="bq" type="text" placeholder="Search fields" value="'+esc(state.q)+'" autocomplete="off"></div><div class="srcs" id="srcs" role="group" aria-label="Fields">'+srcList(b)+'</div></div>';
   if(b.src==='aftercare.care') h+='<label class="fld"><span>Tick it when the family chooses</span><select id="bopt"><option value="">Choose…</option>'+s.opts.map(function(o){ return '<option value="'+o[0]+'"'+(b.opt===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('')+'</select></label>';
   if(s&&s.custom){ if(b.src==='family.choice') h+='<label class="fld"><span>The question (same for every box in the group)</span><input type="text" id="bgroup" value="'+esc(b.group||'')+'" placeholder="CPR if the heart stops"></label>';
     h+='<label class="fld"><span>'+(b.src==='family.choice'?'This answer':'What to ask')+' · English</span><input type="text" id="blabel" value="'+esc(b.label&&b.label.en||'')+'" placeholder="'+(b.src==='family.choice'?'Yes, full CPR':'Emergency contact')+'"></label>'
       +'<label class="fld"><span>Español</span><input type="text" id="blabeles" value="'+esc(b.label&&b.label.es||'')+'" placeholder="Opcional"></label>'; }
   h+='<div class="fld"><span>Kind of box</span><div class="seg" role="radiogroup" aria-label="Kind of box">'+types.map(function(x){ return '<button type="button" role="radio" aria-checked="'+(b.type===x[0])+'" data-type="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div></div>'
     +'<div class="grp"><label><span>Required</span><input type="checkbox" role="switch" id="breq"'+(b.required?' checked':'')+'></label></div>'
-    +'<div class="spacer"></div><button class="btn quiet danger" type="button" data-act="del" style="align-self:flex-start;padding:0 4px">Remove box</button>';
+    +'<div class="spacer"></div>'+(b.found&&b.guess&&s?'':'<button class="btn quiet danger" type="button" data-act="del" style="align-self:flex-start;padding:0 4px">'+(b.found&&!mapped?'Not a box — remove it':'Remove box')+'</button>');
   return h; }
 
 /* ---------- Show with Rosie: the real filled PDF, in place ---------- */
 function setMode(m){ if(m===state.mode) return; state.mode=m; if(m==='rosie'){ state.previewed=true; state.sel=null; } renderMap(); }
-function showRosie(){ var t=state.tpl; if(!state.bytes) return; var key=JSON.stringify(t.boxes)+'|'+(t.file&&t.file.sha256);
+function showRosie(){ var t=state.tpl; if(!state.bytes) return; var vc=F.verifyCorner(t), key=JSON.stringify(t.boxes)+'|'+(t.file&&t.file.sha256)+'|'+vc;
   var put=function(){ if(state.mode!=='rosie'||!rosie) return; rosie.canvases.forEach(function(c,i){ var s=$('.page[data-page="'+i+'"] .canvas-slot'); if(s) s.replaceWith(c); });
     var d=$('[data-act="dl-test"]'); if(d) d.disabled=false; };
   if(rosie&&rosie.key===key) return put();
   var ctx=testCtx(); rosie={key:key,canvases:[],bytes:null};
   var R0=rosie;
-  P.fill(state.bytes,t.boxes,F.resolve(t,ctx),{at:new Date().toISOString(),title:(t.name||'Form')+' · test'}).then(function(out){ R0.bytes=out; lastTest=out;
+  P.fill(state.bytes,t.boxes,F.resolve(t,ctx),{at:new Date().toISOString(),title:(t.name||'Form')+' · test',verify:vc==='off'||t.purpose==='staff'?null:{url:F.verifyBase()+'#TESTCOPY',code:'TESTCOPY',corner:vc,lang:'en'}}).then(function(out){ R0.bytes=out; lastTest=out;
     var ch=Promise.resolve(); (t.file.pages||[]).forEach(function(pg,i){ ch=ch.then(function(){ return P.renderPage(out,i,2); }).then(function(c){ c.className='canvas-slot'; c.setAttribute('aria-hidden','true'); R0.canvases[i]=c; }); });
-    return ch; }).then(function(){ if(rosie===R0) put(); }).catch(function(e){ console.warn('[forms] rosie',e); toast('Couldn’t fill the test copy: '+(e.message||e)); }); }
+    return ch; }).then(function(){ if(rosie===R0) put(); }).catch(function(e){ console.warn('[forms] rosie',e); err('Couldn’t make the test copy. Check the boxes, then try Show with Rosie again.'); }); }
 
 /* ---------- publish sheet ---------- */
 function openPublish(repaint){ var t=state.tpl, pr=F.progress(t), live=t.status==='ready'; state.sheet='publish';
@@ -519,9 +582,9 @@ function openPublish(repaint){ var t=state.tpl, pr=F.progress(t), live=t.status=
     +chk(pr.hasOwnerSig,pr.hasOwnerSig?'The owner signs on page '+(sigPage+1):'No box for the owner’s signature yet')
     +chk(pr.hasWitness,pr.hasWitness?'A staff witness signs':'No witness box (optional)',true)
     +chk(state.previewed,state.previewed?'Previewed with Rosie':'Not previewed yet (optional)',true,state.previewed?'':'<button class="btn" type="button" data-act="preview">Show with Rosie</button>')
-    +'</div></div><p class="pub-note">'+(live?'Changes save as you make them. ':'Staff see it in Flow right away. ')+'Forms already signed keep the version they were signed on.</p>')+'</div>'
+    +'</div></div>'+verifySection()+'<p class="pub-note">'+(live?'Changes save as you make them. ':'Staff see it in Flow right away. ')+'Forms already signed keep the version they were signed on.</p>')+'</div>'
     +'<div class="pub-foot">'+(live?'<button class="btn primary" type="button" data-act="close-sheet">Done</button><button class="btn quiet danger" type="button" data-act="unpublish">Take it out of Flow</button>'
-      :staff?'<button class="btn primary" type="button" data-act="close-sheet">Done</button>':'<button class="btn primary" type="button" data-act="do-publish"'+(pr.ready?'':' disabled')+'>Publish</button>')+'</div></div>';
+      :staff?'<button class="btn primary" type="button" data-act="close-sheet">Done</button>':'<button class="btn primary" type="button" data-act="do-publish"'+(pr.ready?'':' disabled')+'>Publish</button>')+'<button class="btn quiet danger" type="button" data-act="archive">Archive form</button></div></div>';
   var s=document.createElement('div'); s.className='scrim'; s.innerHTML=h; document.body.appendChild(s);
   s.addEventListener('click',function(ev){ if(ev.target===s) closeSheet(); });
   thumb(t,'#pubMini');
@@ -529,8 +592,12 @@ function openPublish(repaint){ var t=state.tpl, pr=F.progress(t), live=t.status=
 function closeSheet(){ var s=$('.scrim'); if(s) s.remove(); var was=state.sheet; state.sheet=null; if(was==='publish'){ var b=$('[data-act="publish"]'); if(b) b.focus(); } }
 function openHow(){ var s=document.createElement('div'); s.className='scrim'; s.innerHTML='<div class="sheet pub" role="dialog" aria-modal="true" aria-labelledby="howT"><header><button class="btn quiet" type="button" data-act="close-sheet">Close</button><b id="howT">How Forms works</b><span></span></header><div class="how">'+STEPS+'</div></div>';
   document.body.appendChild(s); s.addEventListener('click',function(ev){ if(ev.target===s) closeSheet(); }); var b=s.querySelector('button'); if(b) b.focus(); }
-function doPublish(){ var t=state.tpl, pr=F.progress(t); if(!pr.ready) return;
-  t.status='ready'; saveNow().then(function(){ closeSheet(); toast('Published · '+whereText(t)); renderMap(); }); }
+function doPublish(){ var t=state.tpl, pr=F.progress(t); if(!pr.ready||state.publishing) return; state.publishing=true;
+  var pb=$('[data-act="do-publish"]'); if(pb){ pb.disabled=true; pb.innerHTML='<span class="spin" aria-hidden="true"></span>Publishing…'; }
+  t.status='ready'; saveNow().then(function(){ state.publishing=false; closeSheet(); toast('Published · '+whereText(t)); renderMap(); }); }
+/* archive, never delete: the form leaves the library and Flow, and comes back from Archived with Restore */
+function archive(){ var t=state.tpl; t.status='archived'; saveNow().then(function(){ var a=state.list.findIndex(function(x){ return x.id===t.id; }); var copy=Object.assign({},a>-1?state.list[a]:{},t); if(a>-1) state.list.splice(a,1); state.archived.unshift(copy); state.tpl=null; state.sel=null; closeSheet(); renderLib(); toast('“'+(t.name||'Form')+'” archived. Restore it from Archived at the bottom of the library.'); }); }
+function restore(id){ var t=state.archived.filter(function(x){ return x.id===id; })[0]; if(!t) return; DB.collection('form_templates').doc(id).set({status:'draft',updated_at:new Date().toISOString(),updated_by:who()},{merge:true}).then(function(){ t.status='draft'; t.updated_at=new Date().toISOString(); state.archived=state.archived.filter(function(x){ return x.id!==id; }); state.list.unshift(t); renderLib(); toast('“'+(t.name||'Form')+'” restored as a draft.'); }).catch(function(e){ console.warn('[forms] restore',e); err('Couldn’t restore it — only an admin can change forms.'); }); }
 function unpublish(){ var t=state.tpl; t.status='draft'; saveNow().then(function(){ closeSheet(); toast('Taken out of Flow. It’s a draft again.'); renderMap(); }); }
 function nextToReview(){ var t=state.tpl, L=t.boxes.slice().sort(order), i=L.findIndex(function(b){ return b.id===state.sel; });
   var todo=function(b){ return !F.isMapped(b)||b.guess; }, after=L.slice(i+1).filter(todo)[0]||L.filter(todo)[0]; return after||null; }
@@ -538,15 +605,16 @@ function nextToReview(){ var t=state.tpl, L=t.boxes.slice().sort(order), i=L.fin
 /* ---------- interactions ---------- */
 function touch(b){ b.guess=false; }
 function setSrc(b,k){ b.src=k||null; var s=F.source(b.src); if(s&&s.type!==b.type&&!(s.type==='date'&&b.type==='text')) b.type=s.type; if(!(s&&s.custom)) b.label=null; else b.label=b.label||{en:'',es:''};
-  if(b.src!=='aftercare.care') b.opt=null; if(b.src==='sign.owner') b.required=true; touch(b); state.q=''; queueSave(); renderMap();
-  var n=document.getElementById(s&&s.custom?(b.src==='family.choice'?'bgroup':'blabel'):b.src==='aftercare.care'?'bopt':''); if(n) n.focus(); else { var x=$('[data-src="'+k+'"]'); if(x) x.focus(); } }
+  if(b.src!=='aftercare.care') b.opt=null; if(b.src==='sign.owner') b.required=true; touch(b); state.q=''; state.showSrc=false; queueSave(); renderMap();
+  var n=document.getElementById(s&&s.custom?(b.src==='family.choice'?'bgroup':'blabel'):b.src==='aftercare.care'?'bopt':''); if(n) n.focus(); else { var x=$('[data-act="change"]'); if(x) x.focus(); } }
 document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) return;
   var go=t.closest('[data-go="lib"]'); if(go){ e.preventDefault(); leave(); return; }
   var a=t.closest('[data-act]'); if(a){ var w=a.dataset.act;
+    if(w==='note-x'){ state.note=null; paintStatus(); return; } if(w==='find'){ findBoxes(); return; } if(w==='unfind'){ unfind(); return; } if(w==='change'){ state.showSrc=true; renderMap(); var q2=$('#bq'); if(q2) q2.focus(); return; } if(w==='archive'){ archive(); return; }
     if(w==='logout'){ AUTH.signOut(); return; } if(w==='theme'){ setTheme(isLight()?'dark':'light'); return; }
     if(w==='welcome-ok'){ ls('pvx_forms_welcome1','1'); closeSheet(); return; }
     if(w==='upload') pickFile(); else if(w==='back') leave(); else if(w==='publish') openPublish(); else if(w==='do-publish') doPublish(); else if(w==='unpublish') unpublish();
-    else if(w==='del') removeSel(); else if(w==='addhelp') toast('Drag on the page where the answer goes.');
+    else if(w==='del') removeSel(); else if(w==='addhelp') addBox();
     else if(w==='close-sheet') closeSheet(); else if(w==='dl-test') downloadTest(); else if(w==='how') openHow();
     else if(w==='rename'){ var n=$('#tname'); if(n){ n.focus(); n.select(); } }
     else if(w==='tip-x'){ ls('pvx_forms_tip1','1'); paintStatus(); }
@@ -558,6 +626,8 @@ document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) re
   var tb=t.closest('[data-tab]'); if(tb){ state.search=''; if(tb.dataset.tab==='signed'){ SIGNED=null; renderSigned(); } else renderLib(); return; }
   var sl2=t.closest('[data-slot]'); if(sl2){ var S=SLOTS[+sl2.dataset.slot]; pickFile({k:S.k,kind:S.kind}); return; }
   var dl=t.closest('[data-dl]'); if(dl){ downloadSigned(dl.dataset.dl); return; }
+  var rs=t.closest('[data-restore]'); if(rs){ restore(rs.dataset.restore); return; }
+  var tx=t.closest('.toast .tx'); if(tx){ tx.closest('.toast').remove(); return; }
   var zm=t.closest('[data-zoom]'); if(zm){ var z=state.zoomShown||1, v=zm.dataset.zoom; if(v==='fit') state.zoom=null; else if(+v>0) state.zoom=ZOOMS.filter(function(x){ return x>z+0.001; })[0]||ZOOMS[ZOOMS.length-1]; else state.zoom=ZOOMS.filter(function(x){ return x<z-0.001; }).pop()||ZOOMS[0]; renderMap(); return; }
   var pgb=t.closest('[data-pg]'); if(pgb){ var n2=state.tpl.file.pages.length; state.pageNo=Math.max(0,Math.min(n2-1,state.pageNo+(+pgb.dataset.pg))); var pe=$('.page[data-page="'+state.pageNo+'"]'); if(pe&&pe.scrollIntoView) pe.scrollIntoView({block:'start',behavior:'smooth'}); var pn=$('#pgno'); if(pn) pn.textContent=(state.pageNo+1)+' of '+n2; return; }
   var f=t.closest('[data-filter]'); if(f){ state.filter=f.dataset.filter; renderLib(); return; }
@@ -567,6 +637,7 @@ document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) re
   var ty=t.closest('[data-type]'); if(ty&&state.sel){ var b=cur(); if(b){ b.type=ty.dataset.type; var s=F.source(b.src); if(s&&s.k!=='none'&&!(b.type==='signature'?s.type==='signature':b.type==='check'?s.type==='check':(s.type==='text'||s.type==='date'))){ b.src=null; b.opt=null; } touch(b); queueSave(); renderMap(); } return; }
 });
 document.addEventListener('change',function(e){ var t=e.target;
+  if(t.id==='vcorner'){ state.tpl.verify={corner:t.value}; rosie=null; queueSave(); paintBoxes(); openPublish(true); var vs=$('#vcorner'); if(vs) vs.focus(); return; }
   if(t.name==='where'){ var v=t.value, T=state.tpl, was=T.purpose==='staff'; T.purpose=v==='visit'?'visit':v==='staff'?'staff':'ending'; T.kind=v==='ending-died'?'died':v==='ending'?'euthanasia':null; queueSave();
     if(was!==(v==='staff')) renderMap(); var c=$('input[name="where"][value="'+v+'"]'); if(c) c.focus(); return; }
   var b=cur(); if(!b) return;
@@ -588,31 +659,42 @@ function refreshSide(){ /* names in the list and on the page follow typing, with
   var h=$('.insp h3'), b0=cur(); if(h&&b0) h.textContent=boxName(b0);
   paintBoxes(); }
 function cur(){ var t=state.tpl; return t&&t.boxes.filter(function(b){ return b.id===state.sel; })[0]||null; }
-function select(id,scroll){ state.sel=id; state.q=''; renderMap(); if(scroll){ var e=$('.box[data-box="'+id+'"]'); if(e&&e.scrollIntoView) e.scrollIntoView({block:'center',behavior:'smooth'}); } }
-function removeSel(){ var t=state.tpl, i=t.boxes.findIndex(function(b){ return b.id===state.sel; }); if(i<0) return; var gone=t.boxes.splice(i,1)[0]; state.sel=null; queueSave(); renderMap(); toast('Box removed · press ⌘Z to bring it back'); lastRemoved=gone; }
+function select(id,scroll){ state.sel=id; state.q=''; state.showSrc=false; renderMap(); if(scroll){ var e=$('.box[data-box="'+id+'"]'); if(e&&e.scrollIntoView) e.scrollIntoView({block:'center',behavior:'smooth'}); } }
+function removeSel(){ var t=state.tpl, i=t.boxes.findIndex(function(b){ return b.id===state.sel; }); if(i<0) return; var gone=t.boxes.splice(i,1)[0], nx=gone.found?nextToReview():null; state.sel=null; queueSave(); lastRemoved=[gone];
+  if(nx&&nx.id!==gone.id){ select(nx.id,true); } else renderMap(); toast('Box removed · press ⌘Z to bring it back'); }
 var lastRemoved=null;
 function leave(){ closeSheet(); (state.dirty?saveNow():Promise.resolve()).then(function(){ var t=state.tpl; if(t){ var i=state.list.findIndex(function(x){ return x.id===t.id; }); if(i>-1) state.list[i]=Object.assign(state.list[i],t); } state.tpl=null; state.sel=null; state.view='lib'; renderLib(); }); }
 document.addEventListener('keydown',function(e){
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'&&$('#fsearch')){ e.preventDefault(); $('#fsearch').focus(); return; }
   if(e.key==='Escape'&&$('.scrim')){ e.preventDefault(); if($('.scrim').dataset.kind==='welcome') ls('pvx_forms_welcome1','1'); closeSheet(); return; }
+  if($('.scrim')&&e.key==='Enter'&&!/BUTTON|TEXTAREA|A/.test((document.activeElement||{}).tagName||'')){ var pr2=$('.scrim .pub-foot .btn.primary:not([disabled]),.scrim [data-act="welcome-ok"]'); if(pr2){ e.preventDefault(); pr2.click(); return; } }
   if($('.scrim')){ if(e.key==='Tab'){ var fs=$$('.scrim button:not([disabled]),.scrim input'); if(fs.length){ var i=fs.indexOf(document.activeElement); if(e.shiftKey&&i<=0){ e.preventDefault(); fs[fs.length-1].focus(); } else if(!e.shiftKey&&i===fs.length-1){ e.preventDefault(); fs[0].focus(); } } } return; }
   if(state.view!=='map') return; var tag=(e.target&&e.target.tagName)||''; if(/INPUT|SELECT|TEXTAREA/.test(tag)) return;
-  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'&&lastRemoved){ e.preventDefault(); state.tpl.boxes.push(lastRemoved); state.sel=lastRemoved.id; lastRemoved=null; queueSave(); renderMap(); return; }
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'&&lastRemoved){ e.preventDefault(); var back=[].concat(lastRemoved); back.forEach(function(x){ state.tpl.boxes.push(x); }); state.sel=back.length===1?back[0].id:null; lastRemoved=null; queueSave(); renderMap(); if(back.length>1) toast(back.length+' boxes are back'); return; }
+  var fb=document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains('box')?document.activeElement:null;
+  if(fb&&(e.key==='Enter'||e.key===' ')&&fb.dataset.box!==state.sel){ e.preventDefault(); select(fb.dataset.box); var nb2=document.getElementById('box-'+fb.dataset.box); if(nb2) nb2.focus({preventScroll:true}); return; }
   var b=cur(); if(!b||state.mode==='rosie') return;
   if(e.key==='Backspace'||e.key==='Delete'){ e.preventDefault(); removeSel(); return; }
   if(e.key==='Escape'){ state.sel=null; renderMap(); return; }
   if(e.key==='Enter'&&document.activeElement===document.body&&b.guess&&F.isMapped(b)){ e.preventDefault(); var c=$('[data-act="confirm"]'); if(c) c.click(); return; }
   var d=e.shiftKey?10:1, m={ArrowLeft:[-d,0],ArrowRight:[d,0],ArrowUp:[0,d],ArrowDown:[0,-d]}[e.key]; if(!m) return; e.preventDefault();
-  b.rect[0]=Math.round((b.rect[0]+m[0])*10)/10; b.rect[1]=Math.round((b.rect[1]+m[1])*10)/10; clampBox(b); queueSave(); paintBoxes(); });
+  if(e.altKey){ var top=b.rect[1]+b.rect[3]; b.rect[2]=Math.max(6,Math.round((b.rect[2]+m[0])*10)/10); b.rect[3]=Math.max(6,Math.round((b.rect[3]+m[1])*10)/10); b.rect[1]=Math.round((top-b.rect[3])*10)/10; }
+  else { b.rect[0]=Math.round((b.rect[0]+m[0])*10)/10; b.rect[1]=Math.round((b.rect[1]+m[1])*10)/10; }
+  clampBox(b); queueSave(); var foc=document.activeElement&&document.activeElement.id; paintBoxes(); if(foc){ var fe=document.getElementById(foc); if(fe) fe.focus({preventScroll:true}); } });
 function clampBox(b){ var pg=state.tpl.file.pages[b.page]; b.rect[2]=Math.max(6,Math.min(b.rect[2],pg.w)); b.rect[3]=Math.max(6,Math.min(b.rect[3],pg.h)); b.rect[0]=Math.max(0,Math.min(b.rect[0],pg.w-b.rect[2])); b.rect[1]=Math.max(0,Math.min(b.rect[1],pg.h-b.rect[3])); }
+function addBox(){ var t=state.tpl, i=Math.min(state.pageNo||0,t.file.pages.length-1), pg=t.file.pages[i], el=$('.page[data-page="'+i+'"]'), cy=pg.h/2;
+  if(el){ var r=el.getBoundingClientRect(), k=pxScale(i), mid=Math.min(Math.max(innerHeight/2,r.top+20),r.bottom-20); cy=pg.h-(mid-r.top)/k; }
+  var b={id:F.newId('b'),page:i,rect:[Math.round((pg.w/2-90)*10)/10,Math.round((cy-9)*10)/10,180,18],type:'text',src:null,opt:null,label:null,required:false};
+  clampBox(b); t.boxes.push(b); state.sel=b.id; state.q=''; state.showSrc=false; tipSeen(); queueSave(); renderMap(); var q=$('#bq'); if(q) q.focus(); toast('Box added. Arrow keys move it; Option-arrow keys resize it.'); }
+document.addEventListener('toggle',function(e){ if(e.target&&e.target.classList&&e.target.classList.contains('arch')) state.archOpen=e.target.open; },true);
 /* drop a PDF anywhere on the library to add it */
 var dz=null, dzN=0;
 function isFileDrag(e){ var t=e.dataTransfer&&e.dataTransfer.types; return t&&[].indexOf.call(t,'Files')>-1; }
-document.addEventListener('dragenter',function(e){ if(!isFileDrag(e)||state.view==='map') return; e.preventDefault(); dzN++; if(!dz){ dz=document.createElement('div'); dz.className='dropzone'; dz.innerHTML='<div><span class="pg" aria-hidden="true"></span><b>Drop to add a form</b><span>Pravix reads its fields and suggests where each one comes from.</span></div>'; document.body.appendChild(dz); } });
+document.addEventListener('dragenter',function(e){ if(!isFileDrag(e)||state.view==='map') return; e.preventDefault(); dzN++; if(!dz){ dz=document.createElement('div'); dz.className='dropzone'; dz.innerHTML='<div><span class="pg" aria-hidden="true"></span><b>Drop to add a form</b><span>Pravix finds the blanks — even on a scan — and suggests what goes in each.</span></div>'; document.body.appendChild(dz); } });
 document.addEventListener('dragover',function(e){ if(!isFileDrag(e)||state.view==='map') return; e.preventDefault(); e.dataTransfer.dropEffect='copy'; });
 document.addEventListener('dragleave',function(e){ if(!dz) return; dzN--; if(dzN<=0){ dz.remove(); dz=null; dzN=0; } });
-document.addEventListener('drop',function(e){ if(!isFileDrag(e)||state.view==='map') return; e.preventDefault(); if(dz){ dz.remove(); dz=null; } dzN=0;
-  var f=[].filter.call(e.dataTransfer.files||[],function(x){ return /pdf$/i.test(x.type)||/\.pdf$/i.test(x.name); })[0]; if(f){ var sc=$('.scrim'); if(sc){ ls('pvx_forms_welcome1','1'); sc.remove(); } upload(f); } else toast('Only PDFs can be added.'); });
+document.addEventListener('drop',function(e){ if(!isFileDrag(e)||state.view==='map') return; e.preventDefault(); if(dz){ dz.remove(); dz=null; } dzN=0; if(state.busy) return;
+  var f=[].filter.call(e.dataTransfer.files||[],function(x){ return /pdf$/i.test(x.type)||/\.pdf$/i.test(x.name); })[0]; if(f){ var sc=$('.scrim'); if(sc){ ls('pvx_forms_welcome1','1'); sc.remove(); } upload(f); } else err('Only PDFs can be added. Save the file as a PDF, then drop it again.'); });
 /* drag: draw a new box, move one, or resize one (pointer events, so mouse, pen and touch all work) */
 var drag=null;
 function tipSeen(){ if(!ls('pvx_forms_tip1')){ ls('pvx_forms_tip1','1'); paintStatus(); } }
@@ -639,6 +721,56 @@ window.addEventListener('resize',function(){ if(state.view==='map'){ stick(); if
 window.addEventListener('scroll',function(){ if(state.view!=='map') return; var P2=$$('.page'); if(P2.length<2) return; var mid=innerHeight/2, best=0, bd=1e9;
   P2.forEach(function(p,i){ var r=p.getBoundingClientRect(), dd=Math.abs((r.top+r.bottom)/2-mid); if(dd<bd){ bd=dd; best=i; } }); if(best!==state.pageNo){ state.pageNo=best; var pn=$('#pgno'); if(pn) pn.textContent=(best+1)+' of '+P2.length; } },{passive:true});
 
+/* ---------- Pravix finds the boxes (n126) ----------
+   For a PDF with no form fields — a flat PDF or a scan. Underlines, boxed fields and tick boxes are found in a picture of
+   each page and named from the words printed next to them (the PDF's own text, or OCR on a scan). It all runs here. */
+function overlapOf(a,b){ var ix=Math.min(a[0]+a[2],b[0]+b[2])-Math.max(a[0],b[0]), iy=Math.min(a[1]+a[3],b[1]+b[3])-Math.max(a[1],b[1]); return ix>0&&iy>0?(ix*iy)/Math.min(a[2]*a[3],b[2]*b[3]):0; }
+function findBoxes(){ var t=state.tpl; if(!t||!state.bytes||state.finding) return; state.finding={t:'Looking for blanks…'}; state.sel=null; renderMap();
+  var bytes=state.bytes;
+  needFind().then(function(){ return window.PvxFind.scan(bytes,{progress:function(m){ if(state.finding&&state.tpl===t){ state.finding.t=m; var e=$('#findT'); if(e) e.textContent=m; } }}); })
+    .then(function(found){ var r=F.boxesFromScan(found,{purpose:t.purpose});
+      var add=r.boxes.filter(function(b){ return !t.boxes.some(function(x){ return x.page===b.page&&overlapOf(x.rect,b.rect)>0.5; }); });
+      var scanNote={at:new Date().toISOString(),by:who(),found:add.length,ocr:!!found.ocr};
+      if(state.tpl!==t){   /* they went back to the library while Pravix looked: keep what it found anyway */
+        var li=state.list.filter(function(x){ return x.id===t.id; })[0]; if(!li||(li.boxes||[]).length) return;
+        li.boxes=add; li.scan=scanNote; li.updated_at=scanNote.at; li.updated_by=who();
+        DB.collection('form_templates').doc(t.id).set({boxes:add,scan:scanNote,updated_at:scanNote.at,updated_by:who()},{merge:true}).catch(function(e){ console.warn('[forms] find save',e); });
+        if(state.view==='lib') renderLib(); return; }
+      t.boxes=t.boxes.concat(add); t.scan=scanNote; state.finding=null;
+      var named=add.filter(function(b){ return F.isMapped(b); }).length;
+      queueSave(); renderMap();
+      if(!add.length) toast('Pravix didn’t find any blanks. Drag on the page where each answer goes.');
+      else toast('Pravix found '+add.length+' box'+(add.length===1?'':'es')+(found.ocr?' on the scan':'')+(named?' · '+named+' suggestion'+(named===1?'':'s')+' to review':'')+(add.length>named?' · '+(add.length-named)+' to map':''));
+      if(found.ocrFailed) err('Couldn’t read the words on this scan, so the boxes aren’t named yet. Select each one to say what goes there.'); })
+    .catch(function(e){ console.warn('[forms] find',e); if(state.tpl!==t) return; state.finding=null; renderMap(); err('Couldn’t look for the boxes. Drag on the page where each answer goes, or try Find the boxes again.'); }); }
+/* take back what Pravix found, as long as none of it has been confirmed yet (⌘Z brings it back) */
+function unfind(){ var t=state.tpl, gone=t.boxes.filter(function(b){ return b.found&&(b.guess||!F.isMapped(b)); }); if(!gone.length) return;
+  t.boxes=t.boxes.filter(function(b){ return gone.indexOf(b)<0; }); lastRemoved=gone; state.sel=null; queueSave(); renderMap(); toast('Removed the boxes Pravix found · press ⌘Z to bring them back'); }
+
+/* ---------- the verify code's spot (n126) ----------
+   Every signed copy gets a small QR code and code on each page (lib/pvx-pdf.js verifyRect). Here it shows as a dashed spot;
+   if it would cover printing, it turns orange — and for a form whose spot was never chosen, Pravix moves it to a clear corner. */
+var VCORNERS=[['br','Bottom right'],['bl','Bottom left'],['tr','Top right'],['tl','Top left'],['off','Off']];
+function vName(c){ return (VCORNERS.filter(function(x){ return x[0]===c; })[0]||VCORNERS[0])[1]; }
+function inkUnder(i,c){ var cv=pageCanvas[state.tpl.id+':'+i]; if(!cv||c==='off') return 0; var pg=state.tpl.file.pages[i], r=P.verifyRect(pg.w,pg.h,c), k=cv.width/pg.w;
+  var x=Math.max(0,Math.floor(r[0]*k)), y=Math.max(0,Math.floor((pg.h-r[1]-r[3])*k)), w=Math.min(cv.width-x,Math.ceil(r[2]*k)), h=Math.min(cv.height-y,Math.ceil(r[3]*k)); if(w<2||h<2) return 1;
+  var d=cv.getContext('2d').getImageData(x,y,w,h).data, n=0; for(var j=0;j<d.length;j+=4){ if(d[j]*299+d[j+1]*587+d[j+2]*114<200000) n++; } return n/(w*h); }
+function checkVerify(){ var t=state.tpl; if(!t||t.purpose==='staff') return; var N=t.file.pages.length, all=true; for(var i=0;i<N;i++) if(!pageCanvas[t.id+':'+i]) all=false;
+  var c=F.verifyCorner(t), clash={}; for(var j=0;j<N;j++) if(pageCanvas[t.id+':'+j]&&inkUnder(j,c)>0.004) clash[j]=true;
+  if(all&&!t.verify&&Object.keys(clash).length){ var pick=['bl','tr','tl'].filter(function(cc){ for(var q=0;q<N;q++) if(inkUnder(q,cc)>0.004) return false; return true; })[0];
+    if(pick){ t.verify={corner:pick,auto:true}; clash={}; rosie=null; queueSave(); } }
+  state.vclash=clash; if(state.mode!=='rosie') paintVerify(); if(state.sheet==='publish') openPublish(true); }
+function paintVerify(){ $$('.page .vbox').forEach(function(e){ e.remove(); }); var t=state.tpl, c=F.verifyCorner(t); if(c==='off'||t.purpose==='staff'||state.mode==='rosie') return;
+  (t.file.pages||[]).forEach(function(pg,i){ var el=$('.page[data-page="'+i+'"]'); if(!el) return; var k=pxScale(i), r=P.verifyRect(pg.w,pg.h,c), v=document.createElement('div');
+    v.className='vbox'+(/l$/.test(c)?' l':'')+(state.vclash&&state.vclash[i]?' clash':''); v.setAttribute('aria-hidden','true');
+    v.style.cssText='left:'+(r[0]*k)+'px;top:'+((pg.h-r[1]-r[3])*k)+'px;width:'+(r[2]*k)+'px;height:'+(r[3]*k)+'px';
+    v.innerHTML='<span>'+(state.vclash&&state.vclash[i]?'Verify code covers printing':'Verify code')+'</span><i></i>'; el.appendChild(v); }); }
+var QRICON='<svg viewBox="0 0 21 21" aria-hidden="true"><path fill="#14181F" d="M0 0h7v7H0zM2 2v3h3V2zM14 0h7v7h-7zm2 2v3h3V2zM0 14h7v7H0zm2 2v3h3v-3zM9 0h2v2H9zm0 4h3v3H9zm-1 5h3v2H8zM13 9h2v3h-2zm4 0h4v2h-4zM9 13h2v4H9zm4 1h3v2h-3zm5 0h3v3h-3zm-4 4h2v3h-2zm4 1h3v2h-3z"/></svg>';
+function verifySection(){ var t=state.tpl, c=F.verifyCorner(t), cl=Object.keys(state.vclash||{}).map(function(k){ return +k+1; });
+  return '<div><div class="pub-h">Verify code</div><div class="vrow"><span class="qr">'+QRICON+'</span><span><b>'+(c==='off'?'No verify code':'On every signed page · '+vName(c).toLowerCase())+'</b><span>Anyone holding a signed copy can scan it to check it’s genuine. The check shows no patient or family details.</span></span>'
+    +'<select id="vcorner" aria-label="Where the verify code goes">'+VCORNERS.map(function(x){ return '<option value="'+x[0]+'"'+(x[0]===c?' selected':'')+'>'+x[1]+'</option>'; }).join('')+'</select></div>'
+    +(c!=='off'&&cl.length?'<div class="vwarn">'+ic('info')+'It covers printing on page '+cl.join(', ')+'. Choose another corner.</div>':c!=='off'&&t.verify&&t.verify.auto?'<p class="pub-note" style="margin-top:8px">Pravix moved it here so it doesn’t cover the printing in the bottom right.</p>':'')+'</div>'; }
+
 /* ---------- test data ---------- */
 function sampleSig(name){ var c=document.createElement('canvas'); c.width=480; c.height=120; var x=c.getContext('2d'); x.strokeStyle='#14181F'; x.lineWidth=3.2; x.lineCap='round'; x.beginPath();
   var seed=name.length; x.moveTo(20,80); for(var i=0;i<9;i++){ x.bezierCurveTo(40+i*48,10+((i*37+seed)%60),60+i*48,110-((i*23+seed)%50),70+i*48,60+((i*13)%30)); } x.stroke(); return c.toDataURL('image/png'); }
@@ -651,7 +783,7 @@ function testCtx(){ var t=state.tpl, ctx=sampleCtx();
   (t.boxes||[]).forEach(function(b){ if(b.src==='family.text'||b.src==='staff.text') ctx.answers[b.id]='Test answer'; if(b.src==='family.check') ctx.answers[b.id]=true; if(b.src==='family.choice'&&ctx.answers['g:'+b.group]==null) ctx.answers['g:'+String(b.group||'Choose one')]=b.id; });
   return ctx; }
 function downloadTest(){ if(!lastTest) return; var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([lastTest],{type:'application/pdf'})); a.download=(state.tpl.name||'form')+' - test.pdf'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000); }
-window.__forms={state:state,signed:function(){ return SIGNED; },render:render,openTpl:openTpl,upload:upload,select:select,saveNow:saveNow,setMode:setMode,rosie:function(){ return rosie; }};
+window.__forms={findBoxes:findBoxes,checkVerify:checkVerify,state:state,signed:function(){ return SIGNED; },render:render,openTpl:openTpl,upload:upload,select:select,saveNow:saveNow,setMode:setMode,rosie:function(){ return rosie; }};
 })();
 </script>
 </body>
