@@ -168,7 +168,12 @@
   var Q = (function () { var o = {}; location.search.replace(/^\?/, '').split('&').forEach(function (kv) { if (!kv) return; var i = kv.indexOf('='); o[decodeURIComponent(kv.slice(0, i < 0 ? kv.length : i))] = i < 0 ? '' : decodeURIComponent(kv.slice(i + 1).replace(/\+/g, ' ')); }); return o; })();
   var EMBED = Q.embed === '1', SHEET = Q.sheet || null, PRE = null;
   try { PRE = Q.pre ? JSON.parse(Q.pre) : null; } catch (e) { PRE = null; }
-  if (EMBED) document.documentElement.classList.add('an-embed');
+  if (EMBED) {
+    document.documentElement.classList.add('an-embed');
+    /* the frame's colour scheme must equal the iframe element's, or the browser paints an opaque grey canvas behind the record */
+    var syncScheme = function () { try { document.documentElement.style.colorScheme = document.body && document.body.classList.contains('dark') ? 'dark' : 'light'; } catch (e) { } };
+    syncScheme(); try { new MutationObserver(syncScheme).observe(document.body, { attributes: true, attributeFilter: ['class'] }); } catch (e) { }
+  }
   var autoOpened = false;
   function sheetRecs() { return allIds().map(recOf).filter(function (r) { return r && SHEET && r.sheet_id === SHEET; }).sort(function (a, b) { return (b.start || b.created_at) - (a.start || a.created_at); }); }
   function kindPill(r) { return r.kind === 'case' ? '<span class="an-pill sheet">Treatment sheet</span>' : '<span class="an-pill training">Training</span>'; }

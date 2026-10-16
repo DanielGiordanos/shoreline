@@ -29,7 +29,10 @@
     var top = frame.getBoundingClientRect().top; frame.style.height = Math.max(420, window.innerHeight - top - 12) + 'px';
   }
   function mirrorTheme() {
-    if (!frame) return; try { var d = frame.contentDocument; if (d && d.body) d.body.classList.toggle('dark', document.body.classList.contains('dark')); } catch (e) { }
+    if (!frame) return;
+    var dark = document.body.classList.contains('dark'), cs = dark ? 'dark' : 'light';
+    frame.style.colorScheme = cs;   /* must equal the record's own scheme, or the browser paints an opaque canvas (the grey box) */
+    try { var d = frame.contentDocument; if (d && d.body) { d.body.classList.toggle('dark', dark); d.documentElement.style.colorScheme = cs; } } catch (e) { }
   }
   function render() {
     var host = document.getElementById('ctab-anes'); if (!host) return;
@@ -46,7 +49,7 @@
     host.innerHTML = '<div class="ts-anes"><div class="ts-anes-head">' + head + '</div><iframe class="ts-anes-frame" title="Anesthesia record" loading="eager"></iframe></div>';
     frame = host.querySelector('iframe'); frameSheet = id;
     frame.addEventListener('load', function () { mirrorTheme(); fit(); });
-    frame.src = srcFor(id); requestAnimationFrame(fit);
+    mirrorTheme(); frame.src = srcFor(id); requestAnimationFrame(fit);
   }
   /* hook into the sheet's tab switcher */
   function install() {
