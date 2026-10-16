@@ -1069,3 +1069,163 @@ html.an-noblur .an-switch:active::after{background:#fff;-webkit-backdrop-filter:
 @media (prefers-contrast:more){.an-switch:active::after{background:#fff!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 0 0 1px #000!important}}
 @media (forced-colors:active){.an-switch:active::after{-webkit-backdrop-filter:none;backdrop-filter:none;background:CanvasText}}
 @media (prefers-reduced-motion:reduce){.an-switch:active::after{scale:1}}
+
+/* ===== n169 — Motion (Apple HIG Motion audit) + Expand =====
+   1. Reduce Motion swaps slides and zooms for short fades instead of removing feedback.
+   2. The glass knob reacts strongly to touch and more subtly to a mouse or trackpad.
+   3. Phone sheets: flick to close, spring back otherwise (in app.js).
+   4. A new reading's highlight is shorter and softer (charting is frequent).
+   6. The loading placeholder breathes gently instead of blinking. */
+@keyframes anFlash{0%{opacity:.75}100%{opacity:0}}
+.an-tile.chg::after{animation-duration:.5s}
+@keyframes anBreathe{from{opacity:.55}to{opacity:1}}
+@media (prefers-reduced-motion:no-preference){.an-skel i{animation:anBreathe 1.4s ease-in-out infinite alternate}}
+@media (prefers-reduced-motion:reduce){
+  .an-scrim{animation:anFadeIn .15s ease-out both!important}
+  .an-scrim .an-sheet,.an-scrim.morph .an-sheet,.an-scrim.morph.big .an-sheet{animation:anFadeIn .15s ease-out both!important;transform:none!important}
+  .an-scrim.out,.an-scrim.out .an-sheet,.an-scrim.morph.out .an-sheet{animation:anFadeOut .12s ease-in both!important}
+  .an-toast.in{animation:anFadeIn .15s ease-out both!important}
+  .an-side.opening{animation:anFadeIn .15s ease-out both!important}
+  .an-tile.chg::after{animation:anFlash .5s ease-out both!important}   /* a colour change, not movement: kept */
+  .an-skel i{animation:none!important;opacity:.8}
+}
+/* phone sheet drag: the sheet springs back if you let go without closing it */
+.an-scrim .an-sheet.an-spring{transition:transform .38s cubic-bezier(.2,.9,.25,1.15)!important}
+.an-scrim .an-sheet.an-fling{transition:transform .22s cubic-bezier(.3,.6,.4,1)!important}
+@media (prefers-reduced-motion:reduce){.an-scrim .an-sheet.an-spring,.an-scrim .an-sheet.an-fling{transition:none!important}}
+/* 2. glass knob: full lens for a finger, a subtle one for a mouse or trackpad */
+@media (hover:hover) and (pointer:fine){
+  .an-switch:active::after{scale:1.06;background:rgba(255,255,255,.62);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.9),inset 0 1px 1px rgba(255,255,255,.7),0 3px 8px rgba(0,0,0,.16)}
+  body.dark .an-switch:active::after{background:rgba(255,255,255,.5)}
+  .an-switch:active::after{width:30px}
+  .an-switch:checked:active::after{transform:translateX(17px)}
+}
+
+/* ===== Expand (iPad and desktop): the record fills the window =====
+   Hides the top bar (and, inside Treatment Sheets, the sheet around it) so the chart gets the whole screen.
+   ⌥F or the button toggles it; Esc or the button returns. Not offered on phones, where the record already fills the screen. */
+#anExpand .ic-in{display:none}
+html.an-expanded #anExpand .ic-in{display:inline}
+html.an-expanded #anExpand .ic-out{display:none}
+@media (max-width:600px){#anExpand{display:none!important}}
+html.an-expanded #pvxTopnav,html.an-expanded #pvxSubnav{display:none!important}
+html.an-expanded .an{max-width:none;padding:1rem 1.5rem 2rem}
+html.an-expanded .an-rhead{margin-top:0}
+html.an-embed.an-expanded .an{padding:1rem 1.25rem 2rem}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.32s;animation-timing-function:cubic-bezier(.32,.72,0,1)}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation-duration:.15s!important}}
+@media print{html.an-expanded #pvxTopnav{display:none}}
+
+/* ===== n170 — premium motion =====
+   Rich motion only for rare moments (confirm, sign); quick and quiet for what happens every few minutes.
+   Everything moves transform/opacity only; Reduce Motion turns each one into a short fade or nothing. */
+:root{
+  /* springs (SwiftUI-style response/damping), sampled into CSS linear() */
+  --an-spring:linear(0, 0.024, 0.082, 0.161, 0.249, 0.34, 0.428, 0.51, 0.586, 0.653, 0.712, 0.763, 0.807, 0.844, 0.875, 0.901, 0.922, 0.939, 0.953, 0.964, 0.973, 0.98, 0.985, 0.989, 0.992, 0.995, 0.997, 0.998, 0.999, 1);
+  --an-spring-snappy:linear(0, 0.04, 0.136, 0.26, 0.391, 0.518, 0.632, 0.73, 0.811, 0.875, 0.924, 0.96, 0.985, 1.002, 1.012, 1.018, 1.02, 1.02, 1.018, 1.016, 1.013, 1.01, 1.008, 1.006, 1.004, 1.003, 1.002, 1.001, 1);
+  --an-spring-bouncy:linear(0, 0.042, 0.144, 0.277, 0.421, 0.56, 0.686, 0.793, 0.879, 0.945, 0.992, 1.024, 1.043, 1.052, 1.054, 1.051, 1.045, 1.038, 1.03, 1.023, 1.016, 1.01, 1.006, 1.002, 1, 0.998, 0.998, 0.997, 0.997, 0.998, 1);
+}
+/* 3. springs on what opens and moves */
+.an-scrim .an-sheet{animation-duration:.48s;animation-timing-function:var(--an-spring-snappy)}
+.an-scrim.morph .an-sheet{animation-duration:.5s;animation-timing-function:var(--an-spring-snappy)}
+.an-scrim.morph.big .an-sheet{animation-duration:.52s;animation-timing-function:var(--an-spring-snappy)}
+@media (max-width:600px){.an-scrim:not(.morph) .an-sheet{animation-duration:.5s;animation-timing-function:var(--an-spring)}}   /* no overshoot: a sheet never lifts off the bottom */
+.an-side.opening{animation-duration:.45s;animation-timing-function:var(--an-spring)}
+.an-toast.in{animation-duration:.45s;animation-timing-function:var(--an-spring-snappy)}
+.an-switch::after{transition:transform .42s var(--an-spring-snappy),width .3s var(--an-spring),background-color .18s ease,box-shadow .18s ease,scale .36s var(--an-spring-bouncy)}
+.an-mk.fresh{animation:anPop2 .5s var(--an-spring-bouncy) both}
+@keyframes anPop2{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.an-bar.fresh{animation-duration:.5s;animation-timing-function:var(--an-spring)}
+.an-mon.fresh{animation-duration:.45s;animation-timing-function:var(--an-spring-snappy)}
+
+/* 1. rolling numbers (replaces the tile highlight) */
+.an-tile.chg::after{display:none!important}
+.an-roll{display:inline-flex}
+.an-dg{display:inline-block;animation:anRollUp .5s var(--an-spring-snappy) both}
+.an-dg.dn{animation-name:anRollDn}
+@keyframes anRollUp{from{opacity:0;transform:translateY(.5em);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+@keyframes anRollDn{from{opacity:0;transform:translateY(-.5em);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+
+/* 2. the tapped thing grows into what it opens */
+::view-transition-group(an-hero){animation-duration:.44s;animation-timing-function:var(--an-spring-snappy)}
+::view-transition-old(an-hero),::view-transition-new(an-hero){animation-duration:.26s;height:100%;object-fit:cover;object-position:top left}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.22s}
+
+/* 4. the selection pill slides and stretches */
+.an-seg.has-pill{position:relative;isolation:isolate}
+.an-segpill{position:absolute;z-index:0;border-radius:999px;background:var(--an-seg-on);box-shadow:0 3px 4px rgba(0,0,0,.12),0 3px .5px rgba(0,0,0,.04),0 0 0 .5px rgba(0,0,0,.04);pointer-events:none;will-change:transform}
+body.dark .an-segpill{box-shadow:0 3px 4px rgba(0,0,0,.36)}
+.an-seg.has-pill button{position:relative;z-index:1}
+.an-seg.has-pill button[aria-checked="true"]{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
+@media (forced-colors:active){.an-segpill{background:Highlight}.an-seg.has-pill button[aria-checked="true"]{color:HighlightText}}
+
+/* 5. the patient's name moves into the toolbar as the big title scrolls away */
+.an-tools .sp{display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
+.an-tbt{font-size:var(--t-body);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transform:translateY(6px);transition:opacity .2s ease,transform .45s var(--an-spring);pointer-events:none}
+html.an-titled .an-tbt{opacity:1;transform:none}
+@supports (animation-timeline:scroll()){
+  @media (prefers-reduced-motion:no-preference){
+    .an-rhead .an-id h1{transform-origin:left center;animation:anTitleAway linear both;animation-timeline:scroll(root);animation-range:0 160px}
+  }
+}
+@keyframes anTitleAway{to{transform:scale(.9);opacity:.35}}
+@media print{.an-tbt{display:none}}
+
+/* 6. a new reading draws in */
+.an-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:anDraw .45s cubic-bezier(.3,.7,.2,1) .05s forwards}
+@keyframes anDraw{to{stroke-dashoffset:0}}
+.an-pt-new{transform-box:fill-box;transform-origin:center;animation:anPt .5s var(--an-spring-bouncy) .2s both}
+@keyframes anPt{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+
+/* 7. the now line glides */
+.an-now{will-change:transform;transition:transform 15s linear}
+
+/* 8. confirm patient: the watermark clears with a sweep, the check draws in */
+@property --an-sw{syntax:'<percentage>';inherits:false;initial-value:0%}
+.an-wm.gone{animation:anSweep .9s cubic-bezier(.4,0,.2,1) both;-webkit-mask-image:linear-gradient(100deg,transparent var(--an-sw),#000 calc(var(--an-sw) + 18%));mask-image:linear-gradient(100deg,transparent var(--an-sw),#000 calc(var(--an-sw) + 18%))}
+@keyframes anSweep{from{--an-sw:-20%}to{--an-sw:105%;opacity:.0}}
+.an-pill.conf.drawn{animation:anChipIn .5s var(--an-spring-bouncy) both;animation-delay:var(--an-d,0ms)}
+.an-pill.conf.drawn .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:anDraw .4s cubic-bezier(.3,.7,.2,1) both;animation-delay:calc(var(--an-d,0ms) + .25s)}
+@keyframes anChipIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+
+/* 9. sign: the seal locks, the record settles */
+.an-signed{align-items:center}
+.an-seal{display:inline-flex;flex:0 0 auto;width:1.75rem;height:1.75rem;margin-right:.25rem;align-items:center;justify-content:center;border-radius:50%;background:var(--an-accent-soft);color:var(--an-accent-ink)}
+.an-seal svg{width:1.125rem;height:1.125rem;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.an-signed.just{animation:anRise .55s var(--an-spring-snappy) both;animation-delay:var(--an-d,0ms)}
+.an-signed.just .an-seal{animation:anChipIn .55s var(--an-spring-bouncy) both;animation-delay:calc(var(--an-d,0ms) + .1s)}
+.an-signed.just .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:anShackle .5s var(--an-spring-snappy) both;animation-delay:calc(var(--an-d,0ms) + .35s)}
+@keyframes anShackle{from{stroke-dashoffset:1;transform:translateY(-2px)}to{stroke-dashoffset:0;transform:none}}
+.an-body.settle{animation:anSettle .9s var(--an-spring) both;animation-delay:var(--an-d,0ms)}
+@keyframes anSettle{from{opacity:.75;transform:scale(1.006)}to{opacity:1;transform:none}}
+
+/* 10. one-shot icon nudges */
+.an-abxic{display:inline-flex;vertical-align:-.15em;margin-right:.3rem;color:currentColor}
+.an-abxic svg{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.an-abx.due .an-abxic,.an-abx.late .an-abxic{color:var(--an-amber-ink,currentColor)}
+.an-abxic.nudge{transform-origin:50% 60%;animation:anNudge .7s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes anNudge{0%{transform:none}20%{transform:rotate(-14deg)}40%{transform:rotate(11deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(3deg)}100%{transform:none}}
+.an-beat{display:inline-flex}
+.an-beat svg{animation:anBeat .9s ease-out both;animation-delay:inherit;transform-origin:center}
+@keyframes anBeat{0%{transform:none}14%{transform:scale(1.28)}28%{transform:scale(1)}42%{transform:scale(1.18)}70%,100%{transform:none}}
+
+/* Reduce Motion: fades only, nothing travels, nothing bounces */
+@media (prefers-reduced-motion:reduce){
+  .an-dg{animation:anFadeIn .15s ease-out both!important;filter:none}
+  ::view-transition-group(an-hero){animation:none!important}
+  .an-segpill{transition:none}
+  .an-tbt{transition:opacity .15s ease}
+  html.an-titled .an-tbt{transform:none}
+  .an-draw{animation:none!important;stroke-dashoffset:0}
+  .an-pt-new,.an-pill.conf.drawn,.an-signed.just,.an-signed.just .an-seal,.an-body.settle{animation:anFadeIn .15s ease-out both!important}
+  .an-pill.conf.drawn .dr,.an-signed.just .dr{animation:none!important;stroke-dashoffset:0}
+  .an-wm.gone{animation:anFadeOut .2s ease-in both!important;-webkit-mask-image:none;mask-image:none}
+  .an-now{transition:none!important}
+  .an-abxic.nudge,.an-beat svg{animation:none!important}
+}
+html.an-noblur .an-dg{filter:none!important}
+/* the toolbar title sits on its own glass capsule so the chart never runs behind the text */
+.an-tbt{padding:.375rem .875rem;border-radius:999px;max-width:100%;background:var(--an-glass);-webkit-backdrop-filter:blur(12px) saturate(160%);backdrop-filter:blur(12px) saturate(160%);box-shadow:var(--an-glass-shadow),inset 0 0 0 .5px var(--an-glass-edge),inset 0 1px 0 var(--an-glass-hi)}
+html.an-noblur .an-tbt{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--an-surface)}
+@media (prefers-reduced-transparency:reduce){.an-tbt{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--an-surface)}}
+@media (prefers-contrast:more){.an-tbt{background:var(--an-surface);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px var(--an-ink)}}

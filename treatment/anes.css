@@ -1,3 +1,12 @@
 /* Treatment Sheets — Anesthesia tab (n166): the sheet's patient header, then the Anesia record filling the rest */
 .ts-anes{display:flex;flex-direction:column;gap:12px}
 .ts-anes-frame{display:block;width:100%;border:0;border-radius:16px;background:transparent;min-height:420px}
+/* n169 — Expand: the Anesthesia record covers the sheet and fills the window (iPad and desktop) */
+.ts-anes.expanded{position:fixed;inset:0;z-index:5000;gap:0;padding:0;background:var(--page-bg,#080E1A);view-transition-name:ts-anes}
+.ts-anes.expanded .ts-anes-head{display:none}
+.ts-anes.expanded .ts-anes-frame{height:100%!important;min-height:0;border-radius:0}
+html.ts-anes-lock,html.ts-anes-lock body{overflow:hidden!important}
+::view-transition-group(ts-anes){animation-duration:.36s;animation-timing-function:cubic-bezier(.32,.72,0,1)}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation-duration:.15s!important}::view-transition-group(ts-anes){animation-name:none}}
+/* the sheet's view animates in with a transform, which would trap a fixed box inside it */
+html.ts-anes-lock #view-clinical,html.ts-anes-lock #ctab-anes{transform:none!important;animation:none!important;filter:none!important}

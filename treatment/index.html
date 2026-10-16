@@ -14,7 +14,7 @@
 <!-- n134 CL-T03 CL-T06 -->
 <!-- n135 PVX-TYPE -->
 <!-- n136 CL-T09 copy -->
-<link rel="stylesheet" href="anes.css?v=n166">
+<link rel="stylesheet" href="anes.css?v=9f481c2b95">
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie (light unless the user chose dark). -->
@@ -144,7 +144,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <script defer src="store.js?v=b562f8485e"></script>
 
 
-<script defer src="anes.js?v=n166"></script>
+<script defer src="anes.js?v=56ec4bcc7c"></script>
 <script defer src="voice.js?v=7a919ece66"></script>
 
 <script>/* CL-T02 n132: compact search — the visible Search button is the Tab stop while collapsed; the field opens on focus/click and closes when left empty */(function(){var s=document.querySelector(".subnav .search"),i=document.getElementById("globalSearch"),b=s&&s.querySelector(".ts-search-open"),mq=window.matchMedia("(max-width:1680px)");if(!s||!i||!b)return;function collapsed(){return mq.matches&&!s.classList.contains("is-open")&&!s.classList.contains("is-focus");}function sync(){var c=collapsed();i.tabIndex=c?-1:0;b.tabIndex=c?0:-1;b.setAttribute("aria-hidden",c?"false":"true");}b.addEventListener("click",function(){s.classList.add("is-open");i.focus();sync();});s.addEventListener("click",function(e){if(!s.contains(document.activeElement)){i.focus();sync();}});i.addEventListener("focus",function(){s.classList.add("is-focus");sync();});i.addEventListener("input",function(){s.classList.toggle("is-open",!!i.value);sync();});i.addEventListener("blur",function(){s.classList.remove("is-focus");if(!i.value)s.classList.remove("is-open");setTimeout(sync,0);});mq.addEventListener?mq.addEventListener("change",sync):mq.addListener(sync);sync();})();</script>

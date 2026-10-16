@@ -54,7 +54,7 @@
       airway: '<path d="M10 3v6.5a5.5 5.5 0 0 0 1 3.2L12 14v7M14 3v6.5"/><path d="M8 21h8"/><circle cx="12" cy="14" r="1.2"/>',
       output: '<path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/><path d="M9 14h6"/>', idcheck: '<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16c.6-1.4 1.5-2 2.5-2s1.9.6 2.5 2M14 10h4M14 13.5h3"/>',
       gas: '<rect x="7.5" y="7" width="9" height="14" rx="3.5"/><path d="M10 7V5h4v2M12 3v2M9 3h6"/>', share: '<path d="M12 3v12M7.5 7.5L12 3l4.5 4.5"/><path d="M6 11H5a1 1 0 00-1 1v8a1 1 0 001 1h14a1 1 0 001-1v-8a1 1 0 00-1-1h-1"/>', print: '<path d="M7 9V3h10v6"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v7H7z"/>', close: '<path d="M6 6l12 12M18 6L6 18"/>', flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>', scale: '<path d="M4 20h16M6 20l1.5-12h9L18 20M9 8a3 3 0 016 0"/>',
-      check: '<path d="M5 12.5l4.5 4.5L19 7"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.2"/>', sidebar: '<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M14.5 4.5v15"/>', stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', pen: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>'
+      check: '<path d="M5 12.5l4.5 4.5L19 7"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.2"/>', sidebar: '<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M14.5 4.5v15"/>', stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', pen: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>', checkd: '<path pathLength="1" class="dr" d="M5 12.5l4.5 4.5L19 7"/>', lockd: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path pathLength="1" class="dr" d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>', timer: '<circle cx="12" cy="13.5" r="7"/><path d="M12 10v3.5l2.2 1.4M10 3h4M12 3v3.5"/>', expand: '<path d="M14 4h6v6M20 4l-6.5 6.5M10 20H4v-6M4 20l6.5-6.5"/>', collapse: '<path d="M19 10h-5V5M14 10l6-6M5 14h5v5M10 14l-6 6"/>'
     };
     return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (P[n] || '') + '</svg>';
   }
@@ -174,6 +174,20 @@
     var syncScheme = function () { try { document.documentElement.style.colorScheme = document.body && document.body.classList.contains('dark') ? 'dark' : 'light'; } catch (e) { } };
     syncScheme(); try { new MutationObserver(syncScheme).observe(document.body, { attributes: true, attributeFilter: ['class'] }); } catch (e) { }
   }
+  /* Expand (n169): the record fills the window — no top bar, and inside Treatment Sheets no sheet around it */
+  var XP = false;
+  function setExpanded(on, fromHost) {
+    on = !!on; if (on === XP) return;
+    var apply = function () {
+      XP = on; document.documentElement.classList.toggle('an-expanded', on);
+      var b = document.getElementById('anExpand');
+      if (b) { b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Exit expanded view' : 'Expand record'); b.title = on ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)'; }
+    };
+    if (EMBED) { if (!fromHost) try { parent.postMessage({ anesia: 'expand', on: on }, location.origin); } catch (e) { } apply(); return; }   /* the sheet animates the frame */
+    if (document.startViewTransition && !fromHost) { try { document.startViewTransition(apply); return; } catch (e) { } }
+    apply();
+  }
+  window.addEventListener('message', function (e) { if (e.origin !== location.origin || !e.data || e.data.anesiaHost !== 'expanded') return; setExpanded(e.data.on, true); });
   var autoOpened = false;
   function sheetRecs() { return allIds().map(recOf).filter(function (r) { return r && SHEET && r.sheet_id === SHEET; }).sort(function (a, b) { return (b.start || b.created_at) - (a.start || a.created_at); }); }
   function kindPill(r) { return r.kind === 'case' ? '<span class="an-pill sheet">Treatment sheet</span>' : '<span class="an-pill training">Training</span>'; }
@@ -197,10 +211,68 @@
   }
   function route() {
     var h = location.hash.replace(/^#/, ''), m = /(?:^|&)r=([\w-]+)/.exec(h);
+    if (S.skipHash !== undefined) { var sk = S.skipHash; S.skipHash = undefined; if (sk === h) return; }   /* a morph already rendered this route */
     S.cur = m ? m[1] : null; if (!S.cur || S.cur !== presRec) stopPresence(); render();
     if (S.cur) setTimeout(scrollToNow, 0);
   }
   window.addEventListener('hashchange', route);
+
+  /* ---------------- n170 motion helpers ---------------- */
+  var MO = { at: {}, from: {}, seg: {} };
+  function rmo() { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
+  function fire(k) { MO.at[k] = performance.now(); }
+  function fired(k) { return MO.at[k] !== undefined; }
+  /* a one-shot animation survives re-renders: it resumes where it is (negative delay) and ends on time */
+  function playing(k, ms) { var t0 = MO.at[k]; if (t0 === undefined) return null; var e = performance.now() - t0; return e < ms ? Math.round(e) : null; }
+  /* the tapped thing grows into what it opens (View Transitions; instant where unsupported) */
+  function morph(fromEl, update, to) {
+    var clear = function () { $$('.an-vt').forEach(function (x) { x.style.viewTransitionName = ''; x.classList.remove('an-vt'); }); };
+    if (!document.startViewTransition || !fromEl || !fromEl.isConnected) { update(); return; }
+    clear(); fromEl.style.viewTransitionName = 'an-hero'; fromEl.classList.add('an-vt');
+    var vt;
+    try {
+      vt = document.startViewTransition(function () {
+        fromEl.style.viewTransitionName = ''; update();
+        var t = typeof to === 'function' ? to() : $(to); if (t) { t.style.viewTransitionName = 'an-hero'; t.classList.add('an-vt'); }
+      });
+    } catch (e) { clear(); update(); return; }
+    vt.finished.then(clear, clear);
+  }
+  /* rolling numbers: only the characters that changed roll in, upward when the value rose */
+  function rollHTML(from, to, ms) {
+    var a = String(from || ''), b = String(to), up = parseFloat(b) >= parseFloat(a), n = Math.max(a.length, b.length);
+    a = Array(n - a.length + 1).join(' ') + a;
+    var pb = Array(n - b.length + 1).join(' ') + b, out = '', k = 0;
+    for (var i = 0; i < n; i++) {
+      var c = pb[i]; if (c === ' ') continue;
+      if (c !== a[i]) { out += '<span class="an-dg ' + (up ? 'up' : 'dn') + '" style="animation-delay:' + ((n - 1 - i) * 35 - ms) + 'ms">' + c + '</span>'; k++; }
+      else out += c;
+    }
+    return out;
+  }
+  /* the selection pill slides (and stretches) from where it was to the chosen segment */
+  function snapSegs() { $$('.an-seg[role=radiogroup]').forEach(function (g) { var pl = $('.an-segpill', g); if (!pl) return; var gr = g.getBoundingClientRect(), r = pl.getBoundingClientRect(); MO.seg[g.getAttribute('aria-label')] = { l: r.left - gr.left, w: r.width }; }); }
+  function pillSegs() {
+    $$('.an-seg[role=radiogroup]').forEach(function (g) {
+      var on = $('[aria-checked="true"]', g); if (!on) return;
+      var key = g.getAttribute('aria-label'), pl = document.createElement('span'); pl.className = 'an-segpill'; pl.setAttribute('aria-hidden', 'true');
+      g.classList.add('has-pill'); g.insertBefore(pl, g.firstChild);
+      var l = on.offsetLeft, w = on.offsetWidth; pl.style.cssText = 'left:0;top:' + on.offsetTop + 'px;height:' + on.offsetHeight + 'px;width:' + w + 'px;transform:translateX(' + l + 'px)';
+      var pv = MO.seg[key]; MO.seg[key] = { l: l, w: w };
+      if (!pv || Math.abs(pv.l - l) < 1 || rmo() || !pl.animate) return;
+      var lo = Math.min(pv.l, l), span = Math.max(pv.l + pv.w, l + w) - lo;
+      pl.animate([{ transform: 'translateX(' + pv.l + 'px)', width: pv.w + 'px' }, { transform: 'translateX(' + (lo + (span - (span * .72 + Math.min(pv.w, w) * .28)) / 2) + 'px)', width: (span * .72 + Math.min(pv.w, w) * .28) + 'px', offset: .45 }, { transform: 'translateX(' + l + 'px)', width: w + 'px' }],
+        { duration: 520, easing: 'linear(0, 0.04, 0.136, 0.26, 0.391, 0.518, 0.632, 0.73, 0.811, 0.875, 0.924, 0.96, 0.985, 1.002, 1.012, 1.018, 1.02, 1.02, 1.018, 1.016, 1.013, 1.01, 1.008, 1.006, 1.004, 1.003, 1.002, 1.001, 1)' });
+    });
+  }
+  /* the now line glides: it is always aimed at where "now" will be at the next tick, so it moves continuously */
+  var TICK = 15000;
+  function glideNow() {
+    var nl = $('.an-now'), cm = S.cm; if (!nl || !cm) return;
+    var base = parseFloat(nl.style.left) || 0, t = now();
+    if (rmo()) { nl.style.transition = 'none'; nl.style.transform = 'translateX(' + Math.round((t - cm.from) * cm.px - base) + 'px)'; return; }
+    nl.style.transform = 'translateX(' + ((t + TICK - cm.from) * cm.px - base).toFixed(1) + 'px)';
+  }
 
   /* ---------------- render ---------------- */
   var lastScroll = 0;
@@ -208,7 +280,9 @@
     var root = $('#anApp'); if (!root) return;
     if (!S.ready) { root.innerHTML = '<div class="an-loading" role="status"><span class="an-spin" aria-hidden="true"></span>Loading…</div>'; return; }
     if (S.gate) { root.innerHTML = gateHTML(); bindGate(); if (EMBED) $$('.an-gate a').forEach(function (x) { x.target = '_top'; }); return; }
+    if (XP && !S.cur) setExpanded(false);   /* Expand belongs to a record; the list never stays expanded */
     var ch = $('.an-chart'); if (ch) lastScroll = ch.scrollLeft;
+    snapSegs();
     var fk = root.contains(document.activeElement) ? keyOf(document.activeElement) : null;
     if (S.vOpen) $$('[data-keep] input', root).forEach(function (el) { if (el.id) S.keep[el.id] = { v: el.value, filled: el.classList.contains('filled') }; });
     var tbOpen = $('[data-vtimebox]', root) && !$('[data-vtimebox]', root).hidden;
@@ -370,7 +444,8 @@
   function confirmChip(r) {
     if (!A.isConfirmed(r)) return '<button type="button" class="an-pill unconf" id="anConfirm">Not confirmed</button>';
     if (!r.confirmed) return '';   /* records from before n161 */
-    return '<span class="an-pill conf" title="Confirmed by ' + esc(r.confirmed.by) + ' at ' + esc(fmtTime(r.confirmed.at)) + '">' + icon('check') + 'Confirmed</span>';
+    var pc = playing('conf:' + r.id, 900);
+    return '<span class="an-pill conf' + (pc !== null ? ' drawn' : '') + '"' + (pc !== null ? ' style="--an-d:-' + pc + 'ms"' : '') + ' title="Confirmed by ' + esc(r.confirmed.by) + ' at ' + esc(fmtTime(r.confirmed.at)) + '">' + icon('checkd') + 'Confirmed</span>';
   }
   /* the patient summary under the name: code status, allergies, ASA, procedure — always on screen */
   function summaryHTML(r) {
@@ -394,7 +469,7 @@
         '<dl class="an-dl">' + rows.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
         '<button type="button" class="an-btn plain" data-cedit style="align-self:flex-start">Something’s wrong — edit details</button>',
       init: function (wr) { $('[data-cedit]', wr).onclick = function () { closeSheet(true); patientSheet(r); }; },
-      submit: function () { change(r.id, { type: 'confirm' }); if (then) setTimeout(function () { var r2 = recOf(r.id); if (r2) then(r2); }, 60); }
+      submit: function () { fire('conf:' + r.id); change(r.id, { type: 'confirm' }); if (then) setTimeout(function () { var r2 = recOf(r.id); if (r2) then(r2); }, 60); }
     });
   }
   /* charting waits for the patient to be confirmed: the action asks first, then carries on */
@@ -467,7 +542,7 @@
   function bindList() {
     if (!$('[data-f]') && !$('#anNew')) return;
     $$('[data-f]').forEach(function (b) { b.onclick = function () { S.filter = b.getAttribute('data-f'); lsSet('filter', S.filter); render(); var t = $('[data-f="' + S.filter + '"]'); if (t) t.focus(); }; });
-    $$('[data-open]').forEach(function (b) { b.onclick = function () { location.hash = 'r=' + b.getAttribute('data-open'); }; });
+    $$('[data-open]').forEach(function (b) { b.onclick = function () { var id = b.getAttribute('data-open'); morph(b, function () { location.hash = 'r=' + id; route(); S.skipHash = 'r=' + id; }, '.an-id'); }; });
     $('#anNew').onclick = function () { patientSheet(null); };
   }
 
@@ -497,6 +572,7 @@
       '<button type="button" class="an-wbig' + (w ? '' : ' none') + '" id="anWeight"' + (signed ? ' disabled' : '') + ' aria-label="' + (w ? 'Weight ' + sig(w) + ' kilograms' + (lw ? ', weighed ' + fmtTime(lw.at) : '') + '. Change weight' : 'No weight. Add weight') + '">' +
       (w ? '<b>' + sig(w) + '<span> kg</span></b><small>' + (lw ? (lw.method === 'estimated' ? 'Estimated ' : 'Weighed ') + fmtTime(lw.at) : '') + '</small>' : '<b>No weight</b><small>Add weight</small>') + '</button>' +
       '<div class="an-ract"><span class="an-save" id="anSave" aria-hidden="true"></span>' + clock + main +
+      '<button type="button" class="an-btn icon" id="anExpand" aria-pressed="' + XP + '" aria-label="' + (XP ? 'Exit expanded view' : 'Expand record') + '" title="' + (XP ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)') + '"><span class="ic-out">' + icon('expand') + '</span><span class="ic-in">' + icon('collapse') + '</span></button>' +
       '<button type="button" class="an-btn icon" id="anShare" aria-label="Share link to this record" title="Share link">' + icon('share') + '</button>' +
       (r.status === 'ended' || r.status === 'signed' ? '<button type="button" class="an-btn icon" id="anPrint" aria-label="Print record" title="Print (⌘P)">' + icon('print') + '</button>' : '') + '</div>' + summaryHTML(r) + '</header><p class="an-vh" role="status" id="anSaveLive"></p>';
     var banners = '';
@@ -504,10 +580,12 @@
     if (!w && !signed) banners += '<div class="an-banner"><span><b>No weight on file.</b> Per-kg doses can’t be calculated and per-kg infusions can’t start. Doses given now are typed in mg and confirmed.</span><button type="button" class="an-btn tinted" data-act="weight">Add weight</button></div>';
     if (S.pumpNotice && S.pumpNotice.id === r.id && S.pumpNotice.items.length) banners += '<div class="an-banner info" role="alert"><span><b>Weight changed — set the pumps.</b> ' + S.pumpNotice.items.map(function (x) { return esc(x.name) + ' ' + (x.from === null ? '—' : sig(x.from)) + ' → <b>' + (x.to === null ? '—' : sig(x.to)) + ' mL/h</b>'; }).join(' · ') + '</span><button type="button" class="an-btn tinted" id="anPumpsSet">Pumps set</button></div>';
     if (!lsGet('tips') && !signed && conf) banners += '<div class="an-tips" role="note" aria-label="Tips"><span><b>Tips</b>Tap any value on the chart to see who charted it, or to strike it through. Undo with the message at the bottom<span class="an-kb">, or ⌘Z. Keyboard: ⌥V vitals, ⌥D drug, ⌥I infusion, ⌥G gas, ⌥E event</span>.</span><button type="button" class="an-btn plain strong" id="anTipsOk">Got it</button></div>';
-    if (signed) banners += '<div class="an-banner info"><span><b>Signed ' + esc(fmtDate(r.signed.at) + ', ' + fmtTime(r.signed.at)) + ' by ' + esc(r.signed.by) + '.</b> The record is read-only. Corrections go in an addendum.</span></div>';
+    var ps = signed ? playing('sign:' + r.id, 1100) : null;
+    if (signed) banners += '<div class="an-banner info an-signed' + (ps !== null ? ' just' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><span class="an-seal" aria-hidden="true">' + icon('lockd') + '</span><span><b>Signed ' + esc(fmtDate(r.signed.at) + ', ' + fmtTime(r.signed.at)) + ' by ' + esc(r.signed.by) + '.</b> The record is read-only. Corrections go in an addendum.</span></div>';
     var dis = signed ? ' disabled' : '';
+    var dk = 'due:' + r.id + ':' + (r.vitals.length ? r.vitals[r.vitals.length - 1].at : r.start); if (due && live && !fired(dk)) fire(dk); var bp2 = due ? playing(dk, 900) : null;
     var tools = '<div class="an-tools" role="toolbar" aria-label="Chart" data-rove="toolbar">' +
-      '<button type="button" class="an-btn primary" data-act="vitals"' + dis + ' aria-label="Vitals now' + (due ? ', vitals due ' + due + ' minutes' : '') + '" title="Vitals now (⌥V)">' + icon('heart') + '<span class="t">Vitals now</span>' + '</button>' +
+      '<button type="button" class="an-btn primary" data-act="vitals"' + dis + ' aria-label="Vitals now' + (due ? ', vitals due ' + due + ' minutes' : '') + '" title="Vitals now (⌥V)">' + (bp2 !== null ? '<span class="an-beat" style="animation-delay:-' + bp2 + 'ms">' + icon('heart') + '</span>' : icon('heart')) + '<span class="t">Vitals now</span>' + '</button>' +
       '<div class="an-group" role="group" aria-label="Chart a drug, infusion, gas or event">' +
       '<button type="button" class="an-btn" data-act="dose"' + dis + ' aria-label="Give drug" title="Give drug (⌥D)">' + icon('syringe') + '<span class="t">Give drug</span></button>' +
       '<button type="button" class="an-btn" data-act="infusion"' + dis + ' aria-label="Infusion" title="Start an infusion (⌥I)">' + icon('drip') + '<span class="t">Infusion</span></button>' +
@@ -515,10 +593,10 @@
       '<button type="button" class="an-btn" data-act="event"' + dis + ' aria-label="Event" title="Event (⌥E)">' + icon('flag') + '<span class="t">Event</span></button>' +
       '<button type="button" class="an-btn" data-act="output"' + dis + ' aria-label="Output" title="Blood loss, urine and other output (⌥O)">' + icon('output') + '<span class="t">Output</span></button>' +
       '<button type="button" class="an-btn" data-act="airway"' + dis + ' aria-label="Airway" title="Airway, lines and ventilation (⌥A)">' + icon('airway') + '<span class="t">Airway</span></button></div>' +
-      '<span class="sp"></span><div class="an-seg an-zoomseg" role="radiogroup" aria-label="Minutes per column" data-rove="radio">' +
+      '<span class="sp"><span class="an-tbt" aria-hidden="true">' + esc(p.name || 'Training patient') + '</span></span><div class="an-seg an-zoomseg" role="radiogroup" aria-label="Minutes per column" data-rove="radio">' +
       [5, 10, 15].map(function (m) { return '<button type="button" role="radio" data-zoom="' + m + '" aria-checked="' + (S.colMin === m) + '" tabindex="' + (S.colMin === m ? 0 : -1) + '" aria-label="' + m + ' minutes per column">' + m + ' min</button>'; }).join('') + '</div>' +
       '<button type="button" class="an-btn" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" title="Totals and history">' + icon('sidebar') + '<span class="t">Totals</span></button></div>';
-    return head + banners + tools + '<div class="an-body' + (insp ? ' insp' : '') + '"><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + (conf ? '' : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
+    return head + banners + tools + '<div class="an-body' + (insp ? ' insp' : '') + (ps !== null ? ' settle' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + (conf ? (playing('conf:' + r.id, 900) !== null ? '<div class="an-wm gone" aria-hidden="true" style="animation-delay:-' + playing('conf:' + r.id, 900) + 'ms"><span>Confirm correct patient</span></div>' : '') : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
       nowHTML(r) + (insp ? '<aside class="an-side' + (S.opening === 'side' ? ' opening' : '') + '" id="anInspector" aria-label="Totals and history">' + sideHTML(r) + '</aside>' : '<aside class="an-side an-print-only" aria-hidden="true">' + sideHTML(r).replace(/ id="an[A-Za-z]+"/g, '') + '</aside>') + '</div>';
   }
 
@@ -552,10 +630,10 @@
       else if (k === 'bp') { val = v.sap !== undefined ? sig(v.sap) + '/' + (v.dap !== undefined ? sig(v.dap) : '—') : sig(v.map); if (v.sap !== undefined && v.map !== undefined) unit = '(' + sig(v.map) + ') mmHg'; else if (v.sap === undefined) unit = 'mmHg mean'; aria = 'Blood pressure ' + (v.sap !== undefined ? v.sap + ' over ' + (v.dap !== undefined ? v.dap : 'unknown') + ', ' : '') + (v.map !== undefined ? 'mean ' + v.map : ''); }
       else { val = sig(v[k]); aria = m[1] + ' ' + v[k] + ' ' + m[2]; }
       var age = v ? Math.floor((t - v.at) / MIN) : null, stale = age !== null && age >= 15;
-      var tk = r.id + ':' + k, pn = performance.now(); if (S.prevTiles[tk] !== undefined && S.prevTiles[tk].v !== val) S.prevTiles[tk].until = pn + 900; var chg = !!(S.prevTiles[tk] && S.prevTiles[tk].until > pn); S.prevTiles[tk] = { v: val, until: S.prevTiles[tk] ? S.prevTiles[tk].until : 0 };   /* a new reading flashes once */
-      return '<button type="button" class="an-tile' + (stale ? ' stale' : '') + (chg ? ' chg' : '') + '" data-vk="' + k + '"' + (chg ? ' style="--an-flash-d:' + Math.round(Math.max(0, 900 - (S.prevTiles[tk].until - pn))) + 'ms"' : '') + (signed ? ' disabled' : '') + ' aria-label="' + esc(aria) + (v ? ', ' + age + ' minutes ago' : '') + (signed ? '' : '. Enter ' + m[1]) + '">' +
+      var tk = r.id + ':' + k, pn = performance.now(); if (S.prevTiles[tk] !== undefined && S.prevTiles[tk].v !== val) { S.prevTiles[tk].until = pn + 600; MO.from[tk] = S.prevTiles[tk].v; fire('roll:' + tk); } var chg = !!(S.prevTiles[tk] && S.prevTiles[tk].until > pn); S.prevTiles[tk] = { v: val, until: S.prevTiles[tk] ? S.prevTiles[tk].until : 0 };   /* a new reading flashes once */
+      return '<button type="button" class="an-tile' + (stale ? ' stale' : '') + (chg ? ' chg' : '') + '" data-vk="' + k + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(aria) + (v ? ', ' + age + ' minutes ago' : '') + (signed ? '' : '. Enter ' + m[1]) + '">' +
         '<span class="hd"><b class="tag v-' + k + '">' + vIcon(k) + m[1] + '</b>' + (signed ? '' : CHEV) + '</span>' +
-        (v ? '<span class="v"><b>' + val + '</b><small>' + unit + '</small></span>' : '<span class="v nd">No data</span>') +
+        (v ? '<span class="v"><b' + (chg && MO.from[tk] ? ' class="an-roll"' : '') + '>' + (chg && MO.from[tk] && playing('roll:' + tk, 600) !== null ? rollHTML(MO.from[tk], val, playing('roll:' + tk, 600)) : val) + '</b><small>' + unit + '</small></span>' : '<span class="v nd">No data</span>') +
         '<span class="f"><span' + (v ? ' data-at="' + v.at + '"' : '') + (v && v.at === lastAt && !stale ? ' class="same"' : '') + '>' + (v ? (age < 1 ? 'Just now' : age + ' min ago') : 'Not yet') + '</span>' + spark(series(k === 'bp' ? 'map' : k), k) + '</span></button>';
     }).join('');
     var gasRows = ['iso', 'sevo', 'o2'].map(function (a) { var g = A.gasAt(r, a, t); return g === null || (g === 0 && a !== 'o2') ? '' : '<button type="button" class="an-nrow" data-gas="' + a + '"' + (signed ? ' disabled' : '') + '><span class="an-key g-' + a + '">' + AGENT[a].name + '</span><b>' + sig(g) + ' <i>' + AGENT[a].unit + '</i></b></button>'; }).join('');
@@ -566,7 +644,8 @@
     }).join('');
     var abx = A.abxStatus(r, r.end && r.end < t ? r.end : t), abxRows = abx.map(function (a) {
       var st = abxState(a, t, live);
-      return '<button type="button" class="an-nrow an-abx ' + st.cls + '" data-abx="' + a.drugId + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(a.name + ', last dose ' + fmtTime(a.last) + '. ' + st.aria) + '"><span><em class="an-dn">' + esc(a.name) + '</em><small>Last ' + esc(fmtTime(a.last)) + (a.redoseMin ? ' · every ' + sig(a.redoseMin) + ' min' : '') + '</small></span><b' + (a.dueAt && live ? ' data-abxdue="' + a.dueAt + '"' : '') + '>' + esc(st.txt) + '</b></button>';
+      var nk = 'abx:' + r.id + ':' + a.drugId + ':' + a.dueAt; if ((st.cls === 'due' || st.cls === 'late') && live && !fired(nk)) fire(nk); var np = playing(nk, 700);
+      return '<button type="button" class="an-nrow an-abx ' + st.cls + '" data-abx="' + a.drugId + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(a.name + ', last dose ' + fmtTime(a.last) + '. ' + st.aria) + '"><span><em class="an-dn"><span class="an-abxic' + (np !== null ? ' nudge' : '') + '"' + (np !== null ? ' style="animation-delay:-' + np + 'ms"' : '') + ' aria-hidden="true">' + icon('timer') + '</span>' + esc(a.name) + '</em><small>Last ' + esc(fmtTime(a.last)) + (a.redoseMin ? ' · every ' + sig(a.redoseMin) + ' min' : '') + '</small></span><b' + (a.dueAt && live ? ' data-abxdue="' + a.dueAt + '"' : '') + '>' + esc(st.txt) + '</b></button>';
     }).join('');
     var devNow = (r.devices || []).filter(function (d) { return !d.void && !d.end; }), vnow = A.ventAt(r, t);
     var devRows = devNow.map(function (d) { return '<button type="button" class="an-nrow an-ndev" data-dev="' + d.id + '"' + (signed ? ' disabled' : '') + '><span><em class="an-dn">' + esc(devShort(d)) + '</em><small>' + esc([d.size, d.cuff, d.site].filter(Boolean).join(' · ')) + '</small></span><b><i>since</i> ' + esc(fmtTime(d.at)) + '</b></button>'; }).join('') +
@@ -603,7 +682,7 @@
     var f = $('#anVForm'); if (!f) return;
     var inputs = $$('input[inputmode]', f);
     inputs.forEach(function (inp) { inp.addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; var vis = inputs.filter(function (x) { return !x.closest('[hidden]'); }), i = vis.indexOf(inp); if (i > -1 && i < vis.length - 1) { e.preventDefault(); vis[i + 1].focus(); } }); });
-    var drop = function () { S.vOpen = null; S.keep = {}; S.vTime = null; lsDel('draft:' + r.id); render(); var b = $('[data-act=vitals]'); if (b) b.focus(); };
+    var drop = function () { morph($('#anVForm'), function () { S.vOpen = null; S.keep = {}; S.vTime = null; lsDel('draft:' + r.id); render(); }, '.an-tiles'); var b = $('[data-act=vitals]'); if (b) b.focus(); };
     var ecgSel = $('#nv_ecg', f), typed = function () { return inputs.some(function (i) { return i.value.trim() !== ''; }) || !!(ecgSel && ecgSel.value); };
     var vm = $('[data-vmore]', f); if (vm) vm.onclick = function () { S.vMore = !S.vMore; var box = $('#anVMore'); box.hidden = !S.vMore; vm.setAttribute('aria-expanded', String(S.vMore)); vm.textContent = S.vMore ? 'Fewer monitors' : 'More monitors'; if (S.vMore) $('#nv_fio2').focus(); };
     var askDrop = function () { if (!typed()) return drop(); var d = $('[data-vdiscard]', f); d.hidden = false; $('[data-vkeep]', f).focus(); };
@@ -641,7 +720,7 @@
         if (ex.errors) Object.keys(ex.errors).forEach(function (k) { var el = $('#nv_' + k), fe = $('[data-ferr="' + k + '"]', f); if (el) el.setAttribute('aria-invalid', 'true'); if (fe) fe.textContent = ex.errors[k]; });
         var bad1 = $('[aria-invalid]', f) || inputs[0]; bad1.focus(); return;
       }
-      S.vOpen = null; S.keep = {}; S.vTime = null; lsDel('draft:' + r.id); render(); var b = $('[data-act=vitals]'); if (b) b.focus();
+      morph($('#anVForm'), function () { S.vOpen = null; S.keep = {}; S.vTime = null; lsDel('draft:' + r.id); render(); }, '.an-tiles'); var b = $('[data-act=vitals]'); if (b) b.focus();
     };
   }
 
@@ -736,14 +815,19 @@
     var Y = function (v) { return Math.round(top + (GH - top * 2) * (1 - Math.min(v, MAXV) / MAXV)); };
     var svg = '<svg class="an-graph" width="' + W + '" height="' + GH + '" role="img" aria-label="' + esc(graphSummary(vs)) + '">';
     [40, 80, 120, 160, 200].forEach(function (g) { svg += '<line x1="0" x2="' + W + '" y1="' + Y(g) + '" y2="' + Y(g) + '" stroke="var(--an-grid-2)" stroke-width="1"/>'; });
-    var mapPts = vs.filter(function (v) { return v.map !== undefined; }).map(function (v) { return X(v.at) + ',' + Y(v.map); });
-    if (mapPts.length > 1) svg += '<polyline points="' + mapPts.join(' ') + '" fill="none" stroke="var(--an-bp)" stroke-width="2"/>';
+    var mapV = vs.filter(function (v) { return v.map !== undefined; }), mapPts = mapV.map(function (v) { return X(v.at) + ',' + Y(v.map); });
+    var newSeg = mapPts.length > 1 && S.fresh === mapV[mapV.length - 1].id;
+    if (newSeg) {   /* the line reaches out to the new point */
+      if (mapPts.length > 2) svg += '<polyline points="' + mapPts.slice(0, -1).join(' ') + '" fill="none" stroke="var(--an-bp)" stroke-width="2"/>';
+      var pa = mapPts[mapPts.length - 2].split(','), pb = mapPts[mapPts.length - 1].split(',');
+      svg += '<line class="an-draw" pathLength="1" x1="' + pa[0] + '" y1="' + pa[1] + '" x2="' + pb[0] + '" y2="' + pb[1] + '" stroke="var(--an-bp)" stroke-width="2"/>';
+    } else if (mapPts.length > 1) svg += '<polyline points="' + mapPts.join(' ') + '" fill="none" stroke="var(--an-bp)" stroke-width="2"/>';
     vs.forEach(function (v) {
-      var x = X(v.at);
-      if (v.sap !== undefined) svg += '<path d="M' + (x - 5) + ' ' + (Y(v.sap) - 4) + 'L' + x + ' ' + (Y(v.sap) + 3) + 'L' + (x + 5) + ' ' + (Y(v.sap) - 4) + '" fill="none" stroke="var(--an-bp)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-      if (v.dap !== undefined) svg += '<path d="M' + (x - 5) + ' ' + (Y(v.dap) + 4) + 'L' + x + ' ' + (Y(v.dap) - 3) + 'L' + (x + 5) + ' ' + (Y(v.dap) + 4) + '" fill="none" stroke="var(--an-bp)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-      if (v.map !== undefined) svg += '<circle cx="' + x + '" cy="' + Y(v.map) + '" r="3.5" fill="var(--an-bp)"/>';
-      if (v.hr !== undefined) svg += '<circle cx="' + x + '" cy="' + Y(v.hr) + '" r="4" fill="var(--an-hr)"/>';
+      var x = X(v.at), nw = S.fresh === v.id ? ' class="an-pt-new"' : '';
+      if (v.sap !== undefined) svg += '<path' + nw + ' d="M' + (x - 5) + ' ' + (Y(v.sap) - 4) + 'L' + x + ' ' + (Y(v.sap) + 3) + 'L' + (x + 5) + ' ' + (Y(v.sap) - 4) + '" fill="none" stroke="var(--an-bp)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      if (v.dap !== undefined) svg += '<path' + nw + ' d="M' + (x - 5) + ' ' + (Y(v.dap) + 4) + 'L' + x + ' ' + (Y(v.dap) - 3) + 'L' + (x + 5) + ' ' + (Y(v.dap) + 4) + '" fill="none" stroke="var(--an-bp)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      if (v.map !== undefined) svg += '<circle' + nw + ' cx="' + x + '" cy="' + Y(v.map) + '" r="3.5" fill="var(--an-bp)"/>';
+      if (v.hr !== undefined) svg += '<circle' + nw + ' cx="' + x + '" cy="' + Y(v.hr) + '" r="4" fill="var(--an-hr)"/>';
     });
     svg += '</svg>';
     var axis = '<div class="an-legend"><span class="an-units">bpm · mmHg</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><circle cx="7" cy="7" r="4" fill="var(--an-hr)"/></svg>HR</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><path d="M2 4L7 11L12 4" fill="none" stroke="var(--an-bp)" stroke-width="2"/></svg>SAP</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><line x1="1" y1="7" x2="13" y2="7" stroke="var(--an-bp)" stroke-width="2"/><circle cx="7" cy="7" r="3" fill="var(--an-bp)"/></svg>MAP</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><path d="M2 10L7 3L12 10" fill="none" stroke="var(--an-bp)" stroke-width="2"/></svg>DAP</span></div>' +
@@ -820,6 +904,8 @@
     on('#anHistAll', function () { S.histAll = !S.histAll; render(); var b = $('#anHistAll'); if (b) b.focus(); });
     on('#anTipsOk', function () { lsSet('tips', 1); render(); var b = $('[data-act=vitals]'); if (b) b.focus(); });
     on('#anShare', function () { shareRecord(r); });
+    var bk = $('.an-back'); if (bk && !SHEET) bk.addEventListener('click', function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); var hd = $('.an-id'); morph(hd, function () { history.pushState(null, '', location.pathname + location.search); route(); }, function () { return $('[data-open="' + r.id + '"]'); }); });
+    on('#anExpand', function () { setExpanded(!XP); var b = $('#anExpand'); if (b) b.focus(); });
     on('#anPrint', function () { printRecord(); });
     $$('[data-zoom]').forEach(function (b) { b.onclick = function () { S.colMin = +b.getAttribute('data-zoom'); lsSet('zoom', S.colMin); lastScroll = 0; render(); scrollToNow(); var z = $('[data-zoom="' + S.colMin + '"]'); if (z) z.focus(); }; });
     $$('[data-act]').forEach(function (b) {
@@ -832,7 +918,7 @@
         });
       };
     });
-    $$('[data-vk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-vk'); openVitals(r, k === 'bp' ? 'sap' : k); }; });
+    $$('[data-vk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-vk'); morph(b, function () { openVitals(r, k === 'bp' ? 'sap' : k); }, '#anVForm'); }; });
     $$('[data-inf]').forEach(function (b) { b.onclick = function () { infusionDetail(r, b.getAttribute('data-inf')); }; });
     $$('[data-entry]').forEach(function (b) { b.onclick = function () { var p = b.getAttribute('data-entry').split(':'); entrySheet(r, p[0], p[1], b); }; });
     $$('[data-gas]').forEach(function (b) { b.onclick = function () { gasSheet(r, b.getAttribute('data-gas')); }; });
@@ -842,6 +928,7 @@
   /* after every render: one Tab stop per chart row and per control group, arrow keys inside (Charts, Segmented controls, Toolbars) */
   function afterRender() {
     if (window.anesiaText) window.anesiaText.fit();
+    pillSegs(); requestAnimationFrame(function () { requestAnimationFrame(glideNow); });
     $$('.an-chart .an-trk').forEach(function (trk) {
       var bs = $$('button', trk).sort(function (a, b) { return a.offsetLeft - b.offsetLeft; }); if (!bs.length) return;
       bs.forEach(function (b, i) { b.tabIndex = i === bs.length - 1 ? 0 : -1; });
@@ -994,11 +1081,23 @@
     wrap.addEventListener('mousedown', function (e) { if (e.target === wrap) requestClose(); });
     /* phones: drag the sheet down by its top to close it */
     (function () {
-      var sh = $('.an-sheet', wrap), y0 = null, dy = 0, zone = [$('.an-grab', wrap), $('.an-sh', wrap)];
+      var sh = $('.an-sheet', wrap), y0 = null, dy = 0, ly = 0, lt = 0, v = 0, zone = [$('.an-grab', wrap), $('.an-sh', wrap)];
       zone.forEach(function (z) {
-        z.addEventListener('touchstart', function (e) { if (window.innerWidth > 600) return; y0 = e.touches[0].clientY; dy = 0; sh.style.transition = 'none'; }, { passive: true });
-        z.addEventListener('touchmove', function (e) { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); sh.style.transform = 'translateY(' + dy + 'px)'; }, { passive: true });
-        z.addEventListener('touchend', function () { if (y0 === null) return; y0 = null; sh.style.transition = ''; sh.style.transform = ''; if (dy > 90) requestClose(); });
+        z.addEventListener('touchstart', function (e) { if (window.innerWidth > 600) return; y0 = ly = e.touches[0].clientY; lt = performance.now(); dy = 0; v = 0; sh.classList.remove('an-spring', 'an-fling'); sh.style.transition = 'none'; sh.style.animation = 'none'; }, { passive: true });
+        z.addEventListener('touchmove', function (e) {
+          if (y0 === null) return; var y = e.touches[0].clientY, t = performance.now();
+          if (t > lt) v = v * .4 + (y - ly) / (t - lt) * .6; ly = y; lt = t;   /* px per ms, smoothed */
+          dy = y - y0; dy = dy < 0 ? dy / 4 : dy;   /* a little resistance upward */
+          sh.style.transform = 'translateY(' + dy + 'px)';
+        }, { passive: true });
+        z.addEventListener('touchend', function () {
+          if (y0 === null) return; y0 = null; sh.style.transition = '';
+          var close = dy > 90 || (v > .5 && dy > 24);   /* a far drag or a quick flick */
+          if (close && !wrap.dirty && !RM()) { sh.classList.add('an-fling'); sh.style.transform = 'translateY(' + (sh.offsetHeight + 24) + 'px)'; setTimeout(function () { closeSheet(); }, 200); return; }
+          sh.classList.add('an-spring'); sh.style.transform = '';
+          setTimeout(function () { sh.classList.remove('an-spring'); }, 400);
+          if (close) requestClose();
+        });
       });
     })();
     wrap.addEventListener('keydown', function (e) {
@@ -1018,7 +1117,7 @@
       if (ids.length) c.setAttribute('aria-describedby', ids.join(' '));
       if (c.tagName === 'INPUT' && !c.getAttribute('enterkeyhint')) c.setAttribute('enterkeyhint', 'done');
     });
-    $$('input[type=checkbox]', wrap).forEach(function (c) { c.setAttribute('role', 'switch'); c.classList.add('an-switch'); });   /* iOS switches, not checkboxes */
+    $$('input[type=checkbox]', wrap).forEach(function (c) { c.setAttribute('role', 'switch'); c.setAttribute('switch', ''); c.classList.add('an-switch'); c.addEventListener('change', function () { try { if (navigator.vibrate && matchMedia('(pointer:coarse)').matches) navigator.vibrate(8); } catch (e) { } }); });   /* iOS switches, not checkboxes */
     $$('input[name=time]', wrap).forEach(function (t) { t.addEventListener('input', function () { t.dataset.touched = '1'; }); });
     setTimeout(function () { var first = $(o.focus || 'input:not([type=checkbox]):not([type=hidden]),select,textarea', wrap) || ok; if (first) first.focus(); }, 30);
     return wrap;
@@ -1028,7 +1127,13 @@
     $$('.an-scrim.out').forEach(function (x) { x.remove(); });
     var w = $('#anSheet'); if (!w) return;
     w.id = 'anSheetOut';   /* the sheet eases out; it is already gone as far as the page is concerned */
-    if (RM()) w.remove(); else { w.classList.add('out'); setTimeout(function () { w.remove(); }, 180); }
+    var sh0 = $('.an-sheet', w);
+    if (sh0 && sh0.animate && !RM()) {   /* retarget from the current position (even mid-opening), never restart */
+      var cs0 = getComputedStyle(sh0), tr0 = cs0.transform, op0 = +cs0.opacity, phone = window.innerWidth <= 600 && !w.classList.contains('morph');
+      sh0.style.animation = 'none'; w.classList.add('out');
+      sh0.animate([{ transform: tr0, opacity: op0 }, { transform: phone ? 'translateY(105%)' : w.classList.contains('morph') ? 'scale(.6)' : 'translateY(12px) scale(.985)', opacity: phone ? op0 : 0 }], { duration: phone ? 240 : 170, easing: 'cubic-bezier(.3,0,.7,.2)', fill: 'forwards' });
+      setTimeout(function () { w.remove(); }, phone ? 250 : 180);
+    } else { w.classList.add('out'); setTimeout(function () { w.remove(); }, RM() ? 130 : 180); }   /* Reduce Motion fades instead of sliding */
     $$('[inert]').forEach(function (el) { el.removeAttribute('inert'); });
     if (silent) return;
     var back = sheetPrev && document.body.contains(sheetPrev) ? sheetPrev : sheetKey ? $(sheetKey) : null;
@@ -1368,7 +1473,7 @@
       title: 'Sign record', primary: 'Sign',
       body: '<p style="margin:0">Sign as <b>' + esc(S.me) + '</b>. After signing the record is read-only; corrections go in an addendum.</p>' +
         (A.weightAt(r, now()) ? '' : '<div class="an-calc warn"><b>No weight on this record</b><span>Doses were typed in mg.</span></div>'),
-      submit: function () { change(r.id, { type: 'sign' }); }
+      submit: function () { fire('sign:' + r.id); change(r.id, { type: 'sign' }); }
     });
   }
   function addendumSheet(r) {
@@ -1403,6 +1508,8 @@
   document.addEventListener('keydown', function (e) {
     var a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
     if ($('#anSheet') || typing || !S.cur) return;
+    if (e.key === 'Escape' && XP && !e.defaultPrevented) { e.preventDefault(); setExpanded(false); return; }   /* an open sheet takes Esc first */
+    if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyF' && window.innerWidth > 600) { e.preventDefault(); setExpanded(!XP); return; }
     if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) redoLast(); else undoLast(); return; }
     /* shortcuts for the frequent actions (shown in each button's tooltip) */
     if (e.altKey && !e.metaKey && !e.ctrlKey) {
@@ -1420,16 +1527,16 @@
     var t = now(), cm = S.cm, due = vitalsDue(r, t), pill = $('.an-nh .an-pill.warn');
     if (!cm || t > cm.to - cm.col || (!!due) !== (!!pill)) { if (!S.vOpen) render(true); return; }
     var ck = $('.an-clock b'); if (ck) ck.textContent = dur(t - r.start);
-    var nl = $('.an-now'); if (nl) nl.style.left = Math.round((t - cm.from) * cm.px) + 'px';
+    glideNow();
     if (pill) pill.textContent = 'Vitals due · ' + due + ' min';
     var vb = $('[data-act="vitals"]'); if (vb) vb.setAttribute('aria-label', 'Vitals now' + (due ? ', vitals due ' + due + ' minutes' : ''));
     $$('.an-tile [data-at]').forEach(function (el) { var age = Math.floor((t - +el.getAttribute('data-at')) / MIN); el.textContent = age < 1 ? 'Just now' : age + ' min ago'; el.closest('.an-tile').classList.toggle('stale', age >= 15); });
     var nt = $('.an-nt'); if (nt) nt.textContent = fmtTime(t);
     var nla = $('[data-last]'); if (nla) nla.textContent = ago(t - +nla.getAttribute('data-last'));
-    $$('[data-abxdue]').forEach(function (el) { var st = abxState({ dueAt: +el.getAttribute('data-abxdue'), redoseMin: 1 }, t, true), row2 = el.closest('.an-abx'); el.textContent = st.txt; if (row2) { row2.classList.remove('ok', 'due', 'late', 'unset'); row2.classList.add(st.cls); } });
+    $$('[data-abxdue]').forEach(function (el) { var st = abxState({ dueAt: +el.getAttribute('data-abxdue'), redoseMin: 1 }, t, true), row2 = el.closest('.an-abx'); el.textContent = st.txt; if (row2) { var was = row2.classList.contains('due') || row2.classList.contains('late'); row2.classList.remove('ok', 'due', 'late', 'unset'); row2.classList.add(st.cls); var ic2 = $('.an-abxic', row2), nk2 = 'abx:' + S.cur + ':' + row2.getAttribute('data-abx') + ':' + el.getAttribute('data-abxdue'); if (!was && (st.cls === 'due' || st.cls === 'late') && ic2 && !fired(nk2)) { fire(nk2); ic2.classList.remove('nudge'); void ic2.offsetWidth; ic2.classList.add('nudge'); } } });
   }
   function ago(ms) { var a = Math.floor(ms / MIN); return a < 1 ? 'just now' : a + ' min ago'; }
-  setInterval(tick, 15000);
+  setInterval(tick, TICK);
   /* coming back to the tab: catch up at once, and retry a waiting save (Multitasking) */
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { tick(); flush(); } });
 
@@ -1473,6 +1580,7 @@
     ticking = false;
     var bar = document.querySelector('.an-tools'), y = window.scrollY, dy = y - lastY; lastY = y;
     var stuck = !!bar && getComputedStyle(bar).position === 'sticky' && bar.getBoundingClientRect().top <= 12 && y > 40;
+    var h1 = document.querySelector('.an-rhead .an-id h1'); root.classList.toggle('an-titled', !!(stuck && h1 && h1.getBoundingClientRect().bottom < bar.getBoundingClientRect().bottom));   /* n170: the name moves into the toolbar */
     root.classList.toggle('an-stuck', stuck);
     if (!stuck) { root.classList.remove('an-compact'); down = 0; return; }
     if (dy > 0) { down += dy; if (down > 48) root.classList.add('an-compact'); }

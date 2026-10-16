@@ -1,4 +1,4 @@
-/* Pravix Treatment Sheets — Anesthesia tab (n166)
+/* Pravix Treatment Sheets — Anesthesia tab (n166, Expand n169)
    The patient's anesthesia record lives in Anesia; this tab shows it inside the sheet, next to Vitals.
    Same origin, same sign-in: Anesia runs in a frame in embed mode (?embed=1&sheet=<id>&pre=<patient from the sheet>).
    Records started here are linked to the sheet (kind "case"); Anesia's own training records are untouched. */
@@ -34,6 +34,20 @@
     frame.style.colorScheme = cs;   /* must equal the record's own scheme, or the browser paints an opaque canvas (the grey box) */
     try { var d = frame.contentDocument; if (d && d.body) { d.body.classList.toggle('dark', dark); d.documentElement.style.colorScheme = cs; } } catch (e) { }
   }
+  /* n169 — Expand: Anesia asks (button, ⌥F, Esc); the sheet makes the frame cover the window and animates it */
+  function expanded() { var b = document.querySelector('#ctab-anes .ts-anes'); return !!(b && b.classList.contains('expanded')); }
+  function setExpanded(on, tellFrame) {
+    var box = document.querySelector('#ctab-anes .ts-anes'); on = !!on;
+    if (!box || box.classList.contains('expanded') === on) return;
+    var apply = function () { box.classList.toggle('expanded', on); document.documentElement.classList.toggle('ts-anes-lock', on); fit(); };
+    if (document.startViewTransition) { try { document.startViewTransition(apply); } catch (e) { apply(); } } else apply();
+    if (tellFrame && frame && frame.contentWindow) try { frame.contentWindow.postMessage({ anesiaHost: 'expanded', on: on }, location.origin); } catch (e) { }
+  }
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !frame || e.source !== frame.contentWindow || !e.data || e.data.anesia !== 'expand') return;
+    setExpanded(e.data.on, false);
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && expanded()) { e.preventDefault(); setExpanded(false, true); } });
   function render() {
     var host = document.getElementById('ctab-anes'); if (!host) return;
     var id = sheetId(), v = V();
@@ -46,6 +60,7 @@
     if (frame && frameSheet === id && frame.isConnected) {   /* same patient: refresh the header only, keep the record as it is */
       var h = host.querySelector('.ts-anes-head'); if (h) h.innerHTML = head; fit(); return;
     }
+    document.documentElement.classList.remove('ts-anes-lock');
     host.innerHTML = '<div class="ts-anes"><div class="ts-anes-head">' + head + '</div><iframe class="ts-anes-frame" title="Anesthesia record" loading="eager"></iframe></div>';
     frame = host.querySelector('iframe'); frameSheet = id;
     frame.addEventListener('load', function () { mirrorTheme(); fit(); });
@@ -60,6 +75,7 @@
       var on = e === 'anes' && !!document.getElementById('ctab-anes');
       var st = document.getElementById('stage'); if (st) st.classList.toggle('anes-active', on);
       clearInterval(poll); poll = null;
+      if (!on) setExpanded(false, true);
       if (on) { render(); poll = setInterval(function () { if (sheetId() !== frameSheet) render(); }, 800); }
     };
     wrapped.__anes = true; window.selectCTab = wrapped;
@@ -69,5 +85,5 @@
   window.addEventListener('load', function () { install(); if (/(^|[#&])tab=anes/.test(location.hash)) window.selectCTab('anes'); });
   window.addEventListener('resize', fit);
   new MutationObserver(mirrorTheme).observe(document.body || document.documentElement, { attributes: true, attributeFilter: ['class'] });
-  window.tsAnes = { render: render, sheetId: sheetId, pre: pre };
+  window.tsAnes = { render: render, sheetId: sheetId, pre: pre, setExpanded: setExpanded };
 })();
