@@ -258,8 +258,169 @@ input[type=radio]:focus-visible{border-radius:50%}
 @media (max-width:900px){.side,.insp{max-width:none;position:static;max-height:none;border:0}.map-bar{top:0}.map-bar .right{justify-content:flex-start}}
 @media (prefers-reduced-motion:reduce){.tthumb{transition:none}}
 </style>
+<!-- PVX-N148 · the shared Pravix top bar -->
+<style id="pvx-logout-css" data-from="shared portal header">
+/* Flow's Logout button, verbatim */
+.logout-button{--mx:50%;--my:50%;--surface-top:rgba(255,255,255,0.96);--surface-bottom:rgba(247,249,252,0.90);--border:rgba(20,28,40,0.08);--border-hover:rgba(20,28,40,0.13);--text:#1d1d1f;--icon:#59616d;--icon-bg-top:rgba(65,72,82,0.055);--icon-bg-bottom:rgba(65,72,82,0.025);--icon-bg-hover-top:rgba(65,72,82,0.075);--icon-bg-hover-bottom:rgba(65,72,82,0.035);--icon-border:rgba(65,72,82,0.10);--icon-border-hover:rgba(65,72,82,0.14);--chevron:rgba(95,104,116,0.46);--chevron-hover:rgba(72,78,88,0.72);--shadow-main:rgba(29,29,31,0.10);--shadow-secondary:rgba(29,29,31,0.06);--shadow-hover-main:rgba(29,29,31,0.115);--shadow-hover-secondary:rgba(29,29,31,0.065);--highlight:rgba(255,255,255,0.72);position:relative;width:auto;height:40px;padding:0 12px 0 8px;border:1px solid var(--border);border-radius:13px;display:grid;grid-template-columns:28px auto 16px;align-items:center;gap:8px;cursor:pointer;color:var(--text);font-family:var(--font);background:linear-gradient(180deg,var(--surface-top),var(--surface-bottom));box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);overflow:hidden;isolation:isolate;transform:translateY(0) scale(1);transition:transform 180ms cubic-bezier(.2,.8,.2,1),border-color 180ms ease,background 180ms ease,box-shadow 180ms ease;}
+body.dark .logout-button{--surface-top:rgba(25,37,64,0.92);--surface-bottom:rgba(17,27,48,0.94);--border:rgba(77,200,224,0.16);--border-hover:rgba(77,200,224,0.30);--text:#D8E8F4;--icon:#A7C2D8;--icon-bg-top:rgba(77,200,224,0.10);--icon-bg-bottom:rgba(77,200,224,0.04);--icon-bg-hover-top:rgba(77,200,224,0.16);--icon-bg-hover-bottom:rgba(77,200,224,0.06);--icon-border:rgba(77,200,224,0.18);--icon-border-hover:rgba(77,200,224,0.30);--chevron:rgba(167,194,216,0.50);--chevron-hover:rgba(216,232,244,0.80);--shadow-main:rgba(0,0,0,0.40);--shadow-secondary:rgba(0,0,0,0.24);--shadow-hover-main:rgba(0,0,0,0.46);--shadow-hover-secondary:rgba(0,0,0,0.26);--highlight:rgba(77,200,224,0.12);}
+.logout-button::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(170px 100px at var(--mx) var(--my),var(--highlight),transparent 68%);opacity:0;transition:opacity 160ms ease;pointer-events:none;z-index:0;}
+.logout-button:hover{border-color:var(--border-hover);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);}
+.logout-button:hover::before{opacity:1;}
+.logout-button:active{transform:scale(0.985);box-shadow:inset 0 2px 5px rgba(0,0,0,0.08);}
+.logout-icon{position:relative;z-index:1;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;color:var(--icon);background:linear-gradient(180deg,var(--icon-bg-top),var(--icon-bg-bottom));border:1px solid var(--icon-border);transition:transform 190ms cubic-bezier(.2,.8,.2,1),background 180ms ease,border-color 180ms ease;}
+.logout-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
+.door-glyph,.exit-arrow{transform-box:fill-box;transform-origin:center;transition:transform 260ms cubic-bezier(.22,1,.36,1),opacity 180ms ease;}
+.logout-button:hover .logout-icon{transform:translateX(-0.5px);background:linear-gradient(180deg,var(--icon-bg-hover-top),var(--icon-bg-hover-bottom));border-color:var(--icon-border-hover);}
+.logout-button:hover .door-glyph{transform:translateX(-0.45px);}
+.logout-button:hover .exit-arrow{transform:translateX(2.2px);}
+.logout-button:active .logout-icon{transform:scale(0.96);}
+.logout-button:active .door-glyph{transform:translateX(-0.2px) scale(.98);}
+.logout-button:active .exit-arrow{transform:translateX(3px) scale(.96);}
+.logout-label{position:relative;z-index:1;text-align:left;font-size:14px;font-weight:600;line-height:1;letter-spacing:-0.015em;color:var(--text);transition:transform 180ms cubic-bezier(.2,.8,.2,1),opacity 180ms ease;}
+.logout-button:hover .logout-label{transform:translateX(1px);}
+.logout-chevron{position:relative;z-index:1;width:16px;height:16px;display:grid;place-items:center;color:var(--chevron);transition:transform 190ms cubic-bezier(.2,.8,.2,1),color 180ms ease;}
+.logout-chevron svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.logout-button:hover .logout-chevron{transform:translateX(1.25px);color:var(--chevron-hover);}
+.logout-button:focus-visible{outline:3px solid rgba(88,166,255,0.55);outline-offset:4px;}
+
+.nav-right{display:flex;align-items:center;gap:10px}
+@media(max-width:1100px){.logout-button{width:40px;padding:0 5px;grid-template-columns:28px;gap:0}.logout-label,.logout-chevron{display:none}}
+</style>
+<style id="pvx-header-css" data-from="shared portal header">
+/* ═══ Pravix portal header — Flow's top bar and sub-nav on the portal pages (Oct 2026; source: VCA/nav/portal-header.css) ═══
+   Flow's rules verbatim (values from Flow's stylesheet), scoped to #pvxTopnav / #pvxSubnav so a page's older nav CSS can't override them.
+   Goes with portal-nav.css (smaller screens) and the Logout CSS (flow_logout.css). */
+#pvxTopnav,#pvxSubnav{--nav-bg:#0A1222;--r-sm:8px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --brand-cyan:#4DC8E0;--ink-400:#8E8E93;--glass-hairline:rgba(0,0,0,0.06);--ease:cubic-bezier(.2,.8,.2,1);--brand-green:#1a9e6e;font-family:var(--font)}
+body.dark #pvxTopnav,body.dark #pvxSubnav{--brand-cyan:#38BDD2;--ink-400:#5E7C9C;--glass-hairline:rgba(77,200,224,0.10);--brand-green:#48B888}
+
+/* top bar (the light-mode lines are !important: some intern pages carry an older !important light header) */
+#pvxTopnav.topnav{z-index:300;background:var(--nav-bg);height:76px;min-height:76px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;justify-content:normal;
+  padding:0 32px;margin:0;box-shadow:0 2px 24px rgba(0,0,0,0.25);backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;transition:background .4s;}
+#pvxTopnav.topnav::before,#pvxTopnav.topnav::after{content:none;display:none}
+body.dark #pvxTopnav.topnav{background:#0D1730;border-bottom:1px solid rgba(255,255,255,0.04);}
+body:not(.dark) #pvxTopnav.topnav{background:rgba(255,255,255,.96)!important;border-bottom:1px solid rgba(29,29,31,.08)!important;box-shadow:0 1px 0 rgba(29,29,31,.03)!important;}
+#pvxTopnav img.logo{height:58.14px;width:auto;max-height:none;}
+#pvxTopnav img.logo-dark{display:none;}
+#pvxTopnav img.logo-light{display:block;}
+body.dark #pvxTopnav img.logo-dark{display:block;}
+body.dark #pvxTopnav img.logo-light{display:none;}
+#pvxTopnav .brandwrap{display:flex;align-items:center;gap:20px;justify-self:start;min-width:0;}
+#pvxTopnav .cobrand-div{width:1px;height:34px;background:#8098ae;opacity:.28;border-radius:1px;flex:0 0 auto;}
+#pvxTopnav .pvx-lockup{display:flex;align-items:center;gap:8px;}
+#pvxTopnav img.pvx-icon{height:34px;width:auto;}
+#pvxTopnav .pvx-word{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;}
+#pvxTopnav .pvx-powered{font-size:7px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);line-height:1;white-space:nowrap;}
+#pvxTopnav img.pvx-mark{height:22px;width:auto;}
+#pvxTopnav img.plogo-dark{display:none;}
+#pvxTopnav img.plogo-light{display:block;}
+body.dark #pvxTopnav img.plogo-dark{display:block;}
+body.dark #pvxTopnav img.plogo-light{display:none;}
+#pvxTopnav .nav-center{justify-self:center;display:flex;gap:3px;align-items:center;position:static;transform:none;margin:0;}
+#pvxTopnav .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 13px;border-radius:var(--r-sm);
+  cursor:pointer;transition:all .2s;color:rgba(255,255,255,0.55);font-size:10px;font-weight:600;letter-spacing:.3px;
+  border:1px solid transparent;text-decoration:none;background:transparent;font-family:var(--font);white-space:nowrap;box-shadow:none;}
+#pvxTopnav .nav-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);}
+#pvxTopnav .nav-item.active{background:rgba(77,200,224,0.15);color:var(--brand-cyan);border-color:rgba(77,200,224,0.25);}
+#pvxTopnav .nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+body:not(.dark) #pvxTopnav .nav-item{color:#333333!important;}
+body:not(.dark) #pvxTopnav .nav-item:hover{background:#EBEBEB!important;color:#636365!important;}
+body:not(.dark) #pvxTopnav .nav-item.active{background:#EBEBEB!important;color:#636365!important;border-color:transparent!important;}
+#pvxTopnav .nav-right{justify-self:end;display:flex;gap:10px;align-items:center;}
+#pvxTopnav .theme-toggle{cursor:pointer;background:none;border:none;border-radius:50px;overflow:hidden;width:72px;height:34px;padding:0;
+  flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,0.15);position:relative;transition:box-shadow .2s;}
+#pvxTopnav .theme-toggle:hover{box-shadow:0 0 0 2px rgba(77,200,224,0.5);}
+#pvxTopnav .theme-toggle img{width:72px;height:34px;object-fit:cover;display:block;border-radius:50px;pointer-events:none;transition:opacity .3s;position:absolute;top:0;left:0;}
+#pvxTopnav .theme-toggle .img-light{opacity:1;} #pvxTopnav .theme-toggle .img-dark{opacity:0;}
+body.dark #pvxTopnav .theme-toggle .img-light{opacity:0;} body.dark #pvxTopnav .theme-toggle .img-dark{opacity:1;}
+body:not(.dark) #pvxTopnav .theme-toggle{box-shadow:0 0 0 1.5px rgba(29,29,31,.12)!important;}
+body:not(.dark) #pvxTopnav .theme-toggle:hover{box-shadow:0 0 0 2px rgba(44,184,210,.5)!important;}
+
+/* smaller screens — portal-nav.css's steps, again at this scope */
+@media(max-width:1280px){#pvxTopnav .nav-item{padding:8px 10px}}
+@media(max-width:1100px) and (min-width:761px){#pvxTopnav .nav-item{font-size:0;gap:0;padding:10px 11px;letter-spacing:0}#pvxTopnav .nav-item svg{width:19px;height:19px}}
+@media(max-width:1024px){#pvxTopnav.topnav{column-gap:10px}}
+@media(max-width:760px){#pvxTopnav.topnav{height:auto;min-height:0;padding:8px 16px 6px}#pvxTopnav .nav-item{flex:0 0 auto;padding:6px 10px}#pvxTopnav img.logo{height:44px}}
+
+/* sub-nav — Flow's: the program's own pages on the left, this page's actions on the right */
+#pvxSubnav.subnav{display:flex;align-items:center;gap:16px;padding:11px 32px;margin:0;position:relative;z-index:200;
+  background:var(--nav-bg);opacity:.97;border-bottom:1px solid var(--glass-hairline);box-shadow:0 6px 20px rgba(0,0,0,0.12);}
+body.dark #pvxSubnav.subnav{background:#101a32;}
+body:not(.dark) #pvxSubnav.subnav{background:#FFFFFF;border-bottom:1px solid rgba(29,29,31,.08);box-shadow:0 1px 0 rgba(29,29,31,.03);}
+#pvxSubnav .subnav-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(77,200,224,0.65);white-space:nowrap;}
+body:not(.dark) #pvxSubnav .subnav-title{color:#86868B;}
+#pvxSubnav .switcher{display:flex;gap:3px;align-items:center;padding:0;background:transparent;border:none;min-width:0;overflow-x:auto;scrollbar-width:none;}
+#pvxSubnav .switcher::-webkit-scrollbar{display:none}
+#pvxSubnav .seg{display:flex;flex-direction:row;align-items:center;gap:7px;border:1px solid transparent;background:transparent;cursor:pointer;min-height:40px;
+  font-family:var(--font);font-size:13px;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.01em;text-decoration:none;white-space:nowrap;
+  padding:8px 14px;border-radius:var(--r-sm);transition:all .2s var(--ease);box-shadow:none;}
+#pvxSubnav .seg svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+#pvxSubnav .seg:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9);}
+#pvxSubnav .seg.active{background:rgba(77,200,224,.15);color:var(--brand-cyan);border-color:rgba(77,200,224,.25);}
+body:not(.dark) #pvxSubnav .seg{color:#6E6E73;}
+body:not(.dark) #pvxSubnav .seg:hover{background:rgba(29,29,31,.05);color:#1D1D1F;}
+body:not(.dark) #pvxSubnav .seg.active{background:#EBEBEB;color:#636365;border-color:transparent;}
+#pvxSubnav .pvx-spacer{flex:1 1 auto}
+#pvxSubnav .pvx-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+#pvxSubnav .pvx-actions:empty{display:none}
+/* the page's own buttons (Edit, Save, Print…): Flow's header button — the Logout button's surface */
+#pvxSubnav .pvx-actions>button{height:40px;border-radius:13px;padding:0 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;
+  border:1px solid rgba(20,28,40,.08);color:#1D1D1F;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,252,.90));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:border-color .18s ease,background .18s ease;margin:0}
+#pvxSubnav .pvx-actions>button:hover{border-color:rgba(20,28,40,.13);background:linear-gradient(180deg,#FFFFFF,rgba(247,249,252,.96))}
+body.dark #pvxSubnav .pvx-actions>button{color:#D8E8F4;border-color:rgba(77,200,224,.16);background:linear-gradient(180deg,rgba(25,37,64,.92),rgba(17,27,48,.94))}
+body.dark #pvxSubnav .pvx-actions>button:hover{border-color:rgba(77,200,224,.30)}
+#pvxSubnav .live-dot{width:7px;height:7px;border-radius:50%;background:var(--brand-green);display:inline-block;
+  animation:live-breathe 3s ease-in-out infinite;box-shadow:0 0 6px rgba(26,158,110,0.6);margin-right:6px;flex-shrink:0;}
+@keyframes live-breathe{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 5px rgba(26,158,110,0.5),0 0 0px rgba(26,158,110,0);}
+  50%{opacity:.7;transform:scale(1.25);box-shadow:0 0 8px rgba(26,158,110,0.7),0 0 12px rgba(26,158,110,0.3);}}
+@media(max-width:1100px){#pvxSubnav .subnav-title{display:none}}
+@media(max-width:760px){
+  #pvxSubnav.subnav{padding:8px 16px;gap:10px}
+  #pvxSubnav .seg{padding:7px 11px;font-size:12.5px}
+  #pvxSubnav .pvx-actions>button{height:36px;padding:0 11px;font-size:12px}}
+@media print{#pvxTopnav,#pvxSubnav{display:none!important}}
+/* a page's own button left in the top bar (Directory's Edit): Flow's header button; its inline colours were for the old navy bar */
+#pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){height:40px!important;border-radius:13px!important;padding:0 14px!important;font-family:var(--font)!important;font-size:13px!important;font-weight:600!important;letter-spacing:normal!important;
+  border:1px solid rgba(20,28,40,.08)!important;color:#1D1D1F!important;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,252,.90))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important}
+body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){color:#D8E8F4!important;border-color:rgba(77,200,224,.16)!important;background:linear-gradient(180deg,rgba(25,37,64,.92),rgba(17,27,48,.94))!important}
+</style>
+<style id="pvx-portal-nav" data-from="shared portal header">
+/* ═══ Pravix portal nav — one file for Flow, Treatment Sheets and OR (Oct 2026; source: VCA/nav/portal-nav.css) ═══
+   Nine apps across the top. Wide: icon + name. Up to 1120 px the Pravix wordmark steps aside; up to 1100 px the apps show icons only
+   (the name is the tooltip). Tablet (≤1024 px) keeps Flow's header layout. Phones (≤760 px): the apps get their own scrolling row,
+   with names, under the logo, Logout and the theme switch. */
+@media(max-width:1120px){.cobrand-div,.topnav img.plogo,.topnav .pvx-lockup{display:none!important}}
+@media(max-width:1280px){.nav-center .nav-item{padding:8px 10px}}
+@media(max-width:1100px) and (min-width:761px){
+  .nav-center .nav-item{font-size:0;gap:0;padding:10px 11px;letter-spacing:0}
+  .nav-center .nav-item svg{width:19px;height:19px}}
+/* tablet header — as Flow has it */
+@media (max-width:1024px){
+ .topnav{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-areas:none!important;column-gap:10px}
+ .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ .topnav .nav-center{grid-column:2!important;grid-row:1!important;justify-self:stretch!important;position:static!important;transform:none!important;left:auto!important;min-width:0;overflow-x:auto;scrollbar-width:none;justify-content:flex-start;-webkit-overflow-scrolling:touch}
+ .topnav .nav-center::-webkit-scrollbar{display:none}
+ .topnav .nav-right{grid-column:3!important;grid-row:1!important}
+ .topnav .cobrand-div,.topnav .pvx-lockup{display:none!important}}
+/* phones */
+@media(max-width:760px){
+ html body .topnav{grid-template-columns:auto minmax(0,1fr)!important;height:auto!important;min-height:0;row-gap:4px;padding:8px 16px 6px}
+ html body .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ html body .topnav .nav-right{grid-column:2!important;grid-row:1!important;justify-self:end!important}
+ html body .topnav .nav-center{grid-column:1/-1!important;grid-row:2!important;justify-self:stretch!important;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:0 -16px;padding:0 12px 2px}
+ html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
+ html body .topnav img.logo{height:44px}}
+</style>
+<style id="pvx-n148-forms-bar">
+/* PVX-N148: the shared bar inside Forms — it sticks like Forms' old bar and sits under Forms' sheets and toasts */
+#pvxTopnav.topnav{position:sticky;top:0;z-index:20}
+#pvxTopnav .nav-item{text-decoration:none}
+#pvxTopnav .nav-item:focus-visible,#pvxTopnav .theme-toggle:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+</style>
 </head>
 <body>
+<script>document.body.classList.toggle('dark',document.documentElement.getAttribute('data-theme')!=='light');</script>
 <div id="app"><div class="gate"><div class="box2"><h1>Forms</h1><p>Loading…</p></div></div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
@@ -368,19 +529,16 @@ var APPS=[['Directory','/directory/','<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00
   ['Rounds','/#app=rounds','<path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/>'],['OR','/or/','<path d="M3 12h4l2-5 4 10 2-5h6"/>'],
   ['Grid','/grid/','<rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/>'],['Forms','./','<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>']];
 var IMG='/assets/img/';
+var PVX_TOPNAV="<nav class=\"topnav pvx-topnav\" id=\"pvxTopnav\"><div class=\"brandwrap\"><img class=\"logo logo-dark\"  src=\"/assets/img/logo-dark.png\" alt=\"VCA Shoreline\"><img class=\"logo logo-light\" src=\"/assets/img/logo-light.png\" alt=\"VCA Shoreline\"><span class=\"cobrand-div\" aria-hidden=\"true\"></span><span class=\"pvx-lockup\"><img class=\"pvx-icon plogo-dark\"  src=\"/assets/img/pvx-icon-dark.png\" alt=\"\"><img class=\"pvx-icon plogo-light\" src=\"/assets/img/pvx-icon-light.png\" alt=\"\"><span class=\"pvx-word\"><span class=\"pvx-powered\">Powered by</span><img class=\"pvx-mark plogo-dark\"  src=\"/assets/img/pvx-mark-dark.png\" alt=\"Pravix\"><img class=\"pvx-mark plogo-light\" src=\"/assets/img/pvx-mark-light.png\" alt=\"Pravix\"></span></span></div><div class=\"nav-center\"><a class=\"nav-item\" href=\"https://shoreline.pravix.app/directory/\" id=\"navDirectory\" title=\"Directory\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 00-3-3.87\"/><path d=\"M16 3.13a4 4 0 010 7.75\"/></svg>Directory</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/sgvp/assets/\" id=\"navAssets\" title=\"Assets\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><line x1=\"8\" y1=\"21\" x2=\"16\" y2=\"21\"/><line x1=\"12\" y1=\"17\" x2=\"12\" y2=\"21\"/></svg>Assets</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/sgvp/\" id=\"navCurriculum\" title=\"Curriculum\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 19.5A2.5 2.5 0 016.5 17H20\"/><path d=\"M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z\"/></svg>Curriculum</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/scheduling/\" id=\"navSchedule\" title=\"Schedule\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><line x1=\"16\" y1=\"2\" x2=\"16\" y2=\"6\"/><line x1=\"8\" y1=\"2\" x2=\"8\" y2=\"6\"/><line x1=\"3\" y1=\"10\" x2=\"21\" y2=\"10\"/></svg>Schedule</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/\" id=\"navFlow\" title=\"Flow\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"6\" height=\"18\" rx=\"1.5\"/><rect x=\"10.5\" y=\"3\" width=\"6\" height=\"12\" rx=\"1.5\"/><rect x=\"18\" y=\"3\" width=\"3\" height=\"8\" rx=\"1.5\"/></svg>Flow</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/#app=ultrasound\" id=\"navUltrasound\" title=\"Ultrasound\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"15\" r=\"1.6\"/><path d=\"M8.6 11.4a4.8 4.8 0 0 1 6.8 0\"/><path d=\"M5.8 8.6a8.8 8.8 0 0 1 12.4 0\"/></svg>Ultrasound</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/treatment/\" id=\"navTreatment\" title=\"Treatment\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"5\" y=\"3.5\" width=\"14\" height=\"17.5\" rx=\"2.5\"/><path d=\"M9 3.5h6v2.5H9z\"/><path d=\"M8.5 10.5h3M8.5 14h3M8.5 17.5h3\"/><path d=\"M14 10.5h1.5M14 14h1.5M14 17.5h1.5\"/></svg>Treatment</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/#app=rounds\" id=\"navRounds\" title=\"Rounds\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 4.5h6\"/><rect x=\"5\" y=\"4.5\" width=\"14\" height=\"16.5\" rx=\"2.5\"/><path d=\"M9 10h6\"/><path d=\"M9 14h6\"/><path d=\"M9 18h3.5\"/></svg>Rounds</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/or/\" id=\"navOR\" title=\"OR\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12h4l2-5 4 10 2-5h6\"/></svg>OR</a><a class=\"nav-item\" href=\"https://shoreline.pravix.app/grid/\" id=\"navGrid\" title=\"Grid\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3.5\" y=\"4\" width=\"17\" height=\"16\" rx=\"2.5\"/><path d=\"M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20\"/></svg>Grid</a><a class=\"nav-item active\" href=\"./\" id=\"navForms\" title=\"Forms\" aria-current=\"page\" data-go=\"lib\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 3h7l5 5v13H7z\"/><path d=\"M14 3v5h5\"/><path d=\"M10 13h6M10 17h6\"/></svg>Forms</a></div><div class=\"nav-right\"><button class=\"logout-button\" id=\"logoutBtn\" type=\"button\" data-act=\"logout\" aria-label=\"Log out\"><span class=\"logout-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><g class=\"door-glyph\"><path d=\"M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1\"/></g><g class=\"exit-arrow\"><path d=\"M12.6 8.7 16 12l-3.4 3.3\"/><path d=\"M8.9 12H16\"/></g></svg></span><span class=\"logout-label\">Logout</span><span class=\"logout-chevron\" aria-hidden=\"true\"><svg viewBox=\"0 0 20 20\"><path d=\"m7.5 5 5 5-5 5\"/></svg></span></button><button class=\"theme-toggle\" id=\"darkBtn\" type=\"button\" data-act=\"theme\" title=\"__THEME__\" aria-label=\"__THEME__\"><img class=\"img-light\" src=\"/assets/img/theme-light.png\" alt=\"Light mode\"><img class=\"img-dark\" src=\"/assets/img/theme-dark.png\" alt=\"Dark mode\"></button></div></nav>";
 function shell(inner,sub){
-  var h='<header class="top"><a class="brand" href="./" data-go="lib" aria-label="Pravix Forms"><img class="vca drk" src="'+IMG+'logo-dark.png" alt="VCA Shoreline"><img class="vca lite" src="'+IMG+'logo-light.png" alt="VCA Shoreline"><span class="div" aria-hidden="true"></span>'
-    +'<span class="pvx"><img class="pvx-ic drk" src="'+IMG+'pvx-icon-dark.png" alt=""><img class="pvx-ic lite" src="'+IMG+'pvx-icon-light.png" alt=""><span class="pvx-t"><small>POWERED BY</small><img class="pvx-mk drk" src="'+IMG+'pvx-mark-dark.png" alt="Pravix"><img class="pvx-mk lite" src="'+IMG+'pvx-mark-light.png" alt="Pravix"></span></span></a>'
-    +'<nav class="apps" aria-label="Pravix apps">'+APPS.map(function(a){ return '<a href="'+a[1]+'"'+(a[0]==='Forms'?' aria-current="page" data-go="lib"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true">'+a[2]+'</svg>'+a[0]+'</a>'; }).join('')+'</nav>'
-    +'<div class="who"><button type="button" class="logout" data-act="logout"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></i>Logout</button>'
-    +'<button type="button" class="theme" data-act="theme" aria-label="'+(isLight()?'Switch to dark mode':'Switch to light mode')+'"><i></i></button></div></header>';
-  if(sub) h+='<div class="subnav"><span class="lbl">PRAVIX FORMS</span><div class="tabs" role="tablist" aria-label="Forms">'
+  var h=PVX_TOPNAV.split('__THEME__').join(isLight()?'Switch to dark mode':'Switch to light mode');   /* PVX-N148: the shared Pravix top bar */
+  if(sub) h+='<div class="subnav"><span class="lbl">PRAVIX FORMS</span><nav class="tabs" aria-label="Forms">'
     +'<button type="button" data-tab="lib"'+(state.view==='lib'?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/><rect x="14" y="15" width="7" height="6" rx="1.5"/></svg>Library</button>'
-    +'<button type="button" data-tab="signed"'+(state.view==='signed'?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Signed</button></div>'
+    +'<button type="button" data-tab="signed"'+(state.view==='signed'?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Signed</button></nav>'
     +'<label class="srch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input type="text" id="fsearch" placeholder="'+(state.view==='signed'?'Search signed forms':'Search forms')+'" aria-label="Search" value="'+esc(state.search)+'" autocomplete="off"><kbd>⌘K</kbd></label></div>';
   return h+inner; }
 function isLight(){ return document.documentElement.getAttribute('data-theme')==='light'; }
-function setTheme(t){ document.documentElement.setAttribute('data-theme',t); try{ document.cookie='pvx_theme='+t+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax'; document.cookie='pvx_theme='+t+';path=/;max-age=31536000;SameSite=Lax'; }catch(e){} var b=$('[data-act="theme"]'); if(b) b.setAttribute('aria-label',t==='light'?'Switch to dark mode':'Switch to light mode'); }
+function setTheme(t){ document.documentElement.setAttribute('data-theme',t); document.body.classList.toggle('dark',t!=='light'); try{ document.cookie='pvx_theme='+t+';domain=.pravix.app;path=/;max-age=31536000;SameSite=Lax'; document.cookie='pvx_theme='+t+';path=/;max-age=31536000;SameSite=Lax'; }catch(e){} var b=$('[data-act="theme"]'); if(b){ b.setAttribute('aria-label',t==='light'?'Switch to dark mode':'Switch to light mode'); b.title=b.getAttribute('aria-label'); } }
 function render(){ if(state.view==='map'&&state.tpl) return renderMap(); if(state.view==='signed') return renderSigned(); renderLib(); }
 var STEPS='<div><span>1 · Map</span>Point each blank on the PDF at a Pravix field. Once.</div><div><span>2 · Send</span>From the patient drawer: Send a form. Reception sees it.</div><div><span>3 · Sign</span>Staff take the iPad into the room. The family signs; staff witness.</div><div><span>4 · File</span>The hospital’s PDF, filled and locked, saved on the visit with its fingerprint.</div>';
 /* the places in Flow that already use a form; a slot shows until a published form fills it */
@@ -402,7 +560,7 @@ function renderLib(){ state.view='lib'; state.sheet=null; document.body.classLis
   var L=state.list, pat=L.filter(function(t){ return t.purpose!=='staff'&&match(t); }), emp=L.filter(function(t){ return t.purpose==='staff'&&match(t); }), open=SLOTS.filter(function(sl){ return !filled(sl); });
   var h='<main class="lib"><div class="lib-head"><div><h1>Forms</h1></div>'
     +(state.busy?'<button class="btn primary" type="button" disabled><span class="spin" aria-hidden="true"></span>Adding…</button>':'<button class="btn primary" type="button" data-act="upload">'+ic('plus')+'Add a form…</button>')+'</div>';
-  if(state.search&&!pat.length&&!emp.length) h+='<div class="nothing">No forms match “'+esc(state.search)+'”.</div>';
+  if(state.search&&!pat.length&&!emp.length) h+='<div class="nothing">No forms match “'+esc(state.search)+'”.<div class="pvx-clear"><button class="btn" type="button" data-act="clear-search">Clear search</button></div></div>';
   if(pat.length) h+='<section class="sec" aria-labelledby="yH"><div class="sec-h"><h2 id="yH">Forms on file</h2></div><div class="tiles">'+pat.map(tile).join('')+'</div></section>';
   if(open.length&&!state.search) h+='<section class="sec" aria-labelledby="wH"><div class="sec-h"><h2 id="wH">Flow is ready for '+(open.length===1?'this':'these')+'</h2><p>'+(open.length===1?'It already has':'Each one already has')+' a place in Flow. Add the hospital’s PDF and map it once.</p></div><div class="slots">'
     +open.map(function(sl){ var i=SLOTS.indexOf(sl); return '<article class="slot"><div class="art"><div class="blank"><i style="background:'+sl.tint+'"><svg viewBox="0 0 24 24" aria-hidden="true" style="stroke:'+sl.ink+'">'+sl.d+'</svg></i></div></div><div class="txt"><small>'+sl.where+'</small><h3>'+sl.t+'</h3><p>'+sl.p+'</p><button class="btn" type="button" data-slot="'+i+'"'+(state.busy?' disabled':'')+'>'+ic('up')+esc(sl.cta)+'…</button></div></article>'; }).join('')+'</div></section>';
@@ -411,9 +569,10 @@ function renderLib(){ state.view='lib'; state.sheet=null; document.body.classLis
   if(AR.length) h+='<details class="arch"'+(state.archOpen?' open':'')+'><summary>Archived · '+AR.length+'</summary><div class="signed" role="list">'+AR.map(function(t){ return '<div class="srow" role="listitem"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span><span class="b"><b>'+esc(t.name||'Untitled form')+'</b><span>Archived '+esc(when(t.updated_at))+(t.updated_by?' by '+esc(firstName(t.updated_by)):'')+'</span></span><button class="btn" type="button" data-restore="'+esc(t.id)+'">Restore</button></div>'; }).join('')+'</div></details>';
   h+='<div class="foot"><span class="drophint"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/></svg>Or drop a PDF anywhere on this page.</span><button type="button" class="howlink" data-act="how">'+ic('info')+'How Forms works</button></div></main>';
   var fk=document.activeElement&&document.activeElement.id==='fsearch';
-  $('#app').innerHTML=shell(h,true);
+  var tf=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.tab; $('#app').innerHTML=shell(h,true); if(tf){ var tfb=$('[data-tab="'+tf+'"]'); if(tfb) tfb.focus(); }
   if(fk){ var fs=$('#fsearch'); fs.focus(); fs.setSelectionRange(fs.value.length,fs.value.length); }
   pat.concat(emp).forEach(function(t){ thumb(t); });
+  var nm=pat.length+emp.length; if(typeof pvxSay==='function') pvxSay(state.search?(nm?nm+' form'+(nm===1?'':'s')+' match':'No forms match “'+state.search+'”'):'');   /* PVX-N142 */
   if(!ls('pvx_forms_welcome1')&&!$('.scrim')) openWelcome();
 }
 /* Signed: every signed PDF on the hospital's visits, newest first */
@@ -423,11 +582,11 @@ function renderSigned(){ state.view='signed'; document.body.classList.remove('ma
   var h='<main class="lib"><div class="lib-head"><div><h1>Signed</h1></div></div>';
   if(SIGNED==null) h+='<div class="nothing">Loading…</div>';
   else if(!SIGNED.length) h+='<div class="nothing">Nothing signed yet. Signed forms appear here as soon as a family signs on the iPad.</div>';
-  else if(!L.length) h+='<div class="nothing">Nothing matches “'+esc(state.search)+'”.</div>';
+  else if(!L.length) h+='<div class="nothing">Nothing matches “'+esc(state.search)+'”.<div class="pvx-clear"><button class="btn" type="button" data-act="clear-search">Clear search</button></div></div>';
   else h+='<div class="signed" role="list">'+L.map(function(d){ return '<div class="srow" role="listitem"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg></span><span class="b"><b>'+esc(d.title||'Signed form')+'</b><span>'+esc([d.signed_by?'Signed by '+d.signed_by:'',d.signed_at?F.fmtDate(d.signed_at,'en')+' '+new Date(d.signed_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'',(d.pages||1)+' page'+((d.pages||1)===1?'':'s'),d.lang==='es'?'in Spanish':''].filter(Boolean).join(' · '))+'</span></span><button class="btn" type="button" data-dl="'+esc(d.id)+'">'+ic('dl')+'Download</button></div>'; }).join('')+'</div>';
   h+='</main>';
   var fk=document.activeElement&&document.activeElement.id==='fsearch';
-  $('#app').innerHTML=shell(h,true); if(fk){ var fs=$('#fsearch'); fs.focus(); fs.setSelectionRange(fs.value.length,fs.value.length); }
+  var tf=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.tab; $('#app').innerHTML=shell(h,true); if(tf){ var tfb=$('[data-tab="'+tf+'"]'); if(tfb) tfb.focus(); } if(fk){ var fs=$('#fsearch'); fs.focus(); fs.setSelectionRange(fs.value.length,fs.value.length); }
   if(SIGNED==null) DB.collection('visit_docs').where('tenant_id','==',TENANT).limit(200).get().then(function(s){ SIGNED=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).sort(function(a,b){ return String(b.signed_at||b.created_at||'').localeCompare(String(a.signed_at||a.created_at||'')); }); if(state.view==='signed') renderSigned(); })
     .catch(function(e){ console.warn('[forms] signed',e); SIGNED=[]; if(state.view==='signed') renderSigned(); err('Couldn’t load the signed forms. Check the connection, then reload.'); }); }
 function downloadSigned(id){ var d=(SIGNED||[]).filter(function(x){ return x.id===id; })[0]; if(!d) return;
@@ -451,7 +610,7 @@ function thumb(t,sel){ sel=sel||'[data-thumb="'+t.id+'"]'; var el=$(sel); if(!el
 function openTpl(t,bytes){ state.tpl=JSON.parse(JSON.stringify(t)); state.tpl.boxes=state.tpl.boxes||[]; state.sel=null; state.view='map'; state.bytes=bytes||null; state.savedAt=new Date();
   $$('.toast').forEach(function(e){ e.remove(); });
   state.mode='edit'; state.zoom=null; state.q=''; state.previewed=false; state.sheet=null; state.note=null; rosie=null; state.finding=null; state.vclash={};
-  history.replaceState(null,'','#tpl='+t.id);
+  history.replaceState(null,'','#tpl='+t.id); try{ window.scrollTo(0,0); }catch(e){}   /* PVX-N142 CL-F02 */
   (bytes?Promise.resolve(bytes):F.templateBytes(DB,t)).then(function(b){ state.bytes=b; renderMap(); if(!state.tpl.boxes.length&&!state.tpl.scan) findBoxes(); }).catch(function(e){ console.warn('[forms] open',e); state.view='lib'; renderLib(); err('Couldn’t open this form’s PDF. Try again in a moment.'); }); renderMap(); }
 
 var COLORS={visit:['var(--b-visit)','var(--b-visit-line)','#2F7BEA','#1C4A93'],family:['var(--b-family)','var(--b-visit-line)','#7AA8F2','#1C4A93'],ending:['var(--b-ending)','var(--b-ending-line)','#A888E0','#54448A'],sign:['var(--b-sign)','var(--b-sign-line)','#EBC95D','#6E5208'],staff:['var(--b-none)','var(--b-none-line)','#8A97AB','#3F4856'],none:['var(--b-none)','var(--b-none-line)','#8A97AB','#3F4856'],todo:['var(--b-todo)','var(--b-todo-line)','#E8644A','#93321F']};
@@ -473,7 +632,7 @@ function renderMap(){
   document.body.classList.add('mapping');
   var h='<div class="map-bar"><button class="btn quiet" type="button" data-act="back">'+ic('back')+'Forms</button>'
     +'<div class="name"><input class="title" id="tname" value="'+esc(t.name||'')+'" aria-label="Form name" size="'+Math.max(8,Math.min(40,(t.name||'').length+1))+'"><button type="button" class="icon-btn" data-act="rename" aria-label="Rename">'+ic('pen')+'</button><span class="sub">'+pages.length+' page'+(pages.length===1?'':'s')+'</span></div>'
-    +'<div class="seg" role="radiogroup" aria-label="View"><button type="button" role="radio" aria-checked="'+!R+'" data-mode="edit">Edit</button><button type="button" role="radio" aria-checked="'+R+'" data-mode="rosie"'+(state.bytes?'':' disabled')+'>Show with Rosie</button></div>'
+    +'<div class="seg" role="radiogroup" aria-label="View"><button type="button" role="radio" aria-checked="'+!R+'" data-mode="edit">Edit</button><button type="button" role="radio" aria-checked="'+R+'" data-mode="rosie"'+(state.bytes?'':' disabled')+'>'+(t.purpose==='staff'?'Preview filled':'Show with Rosie')+'</button></div>'
     +'<div class="right">'+zoomBar()+'<span class="saved" id="saved" aria-live="polite"></span>'
     +(t.status==='ready'?'<button class="btn" type="button" data-act="publish">'+ic('ok')+'In Flow</button>':t.purpose==='staff'?'<button class="btn" type="button" data-act="publish">Employee form</button>':'<button class="btn primary" type="button" data-act="publish">Publish…</button>')+'</div></div>';
   /* left: review progress + boxes grouped by where they come from */
@@ -484,10 +643,10 @@ function renderMap(){
   else if(!pr.total) rev='<div class="rev"><div class="rev-t"><span>No boxes yet</span></div><p>'+(t.scan?'Pravix didn’t find any blanks on this PDF. Drag on the page where each answer goes.':'Pravix can look for the blanks — underlines, boxes and tick boxes — and name them from the words printed next to them. Or drag on the page.')+'</p><button class="btn" type="button" data-act="find"'+(state.bytes?'':' disabled')+'>'+(t.scan?'Look again':'Find the boxes')+'</button></div>';
   else if(pr.missing) rev='<div class="rev"><div class="rev-t"><span>Map the boxes</span><em>'+pr.missing+' to map</em></div><div class="bar"><i style="width:'+Math.round(pr.confirmed/pr.total*100)+'%"></i></div><p>'+pr.confirmed+' of '+pr.total+' boxes confirmed.'+(pr.review||fnd.length?' Dashed boxes are Pravix’s guesses.':'')+'</p><button class="btn" type="button" data-act="next">Next box</button>'+undoFind+'</div>';
   else if(pr.review) rev='<div class="rev"><div class="rev-t"><span>Review suggestions</span><em>'+pr.review+' left</em></div><div class="bar"><i style="width:'+Math.round(pr.confirmed/pr.total*100)+'%"></i></div><p>'+pr.confirmed+' of '+pr.total+' boxes confirmed. Dashed boxes are Pravix’s guesses.</p><button class="btn" type="button" data-act="next">Review next</button>'+undoFind+'</div>';
-  else rev='<div class="rev"><div class="rev-t"><span>'+(pr.total===1?'1 box confirmed':'All '+pr.total+' boxes confirmed')+'</span><em class="good">'+(t.status==='ready'?'In Flow':'Ready')+'</em></div><div class="bar"><i class="good" style="width:100%"></i></div></div>';
+  else rev='<div class="rev"><div class="rev-t"><span>'+(pr.total===1?'1 box confirmed':'All '+pr.total+' boxes confirmed')+'</span><em class="good">'+(t.status==='ready'?'In Flow':t.purpose==='staff'?'Employee form':'Ready')+'</em></div><div class="bar"><i class="good" style="width:100%"></i></div></div>';
   var multi=pages.length>1, sorted=t.boxes.slice().sort(order);
   h+='<div class="map'+(R?' rosie':'')+'"><aside class="side" aria-label="Boxes">'+rev
-    +(pr.hasOwnerSig||state.finding?'':'<div class="note warn">Draw a box where the owner signs, and set it to <b>Owner signature</b>.</div>')
+    +(pr.hasOwnerSig||state.finding||t.purpose==='staff'?'':'<div class="note warn">Draw a box where the owner signs, and set it to <b>Owner signature</b>.</div>')
     +'<div role="listbox" aria-label="Boxes on the form" style="display:flex;flex-direction:column;gap:16px">'+GROUPS.map(function(g){ var rows=sorted.filter(function(b){ return whoOf(b)===g[0]; }); if(!rows.length) return '';
       return '<section class="bgroup"><h4><i class="dot" style="background:'+COLORS[g[0]][2]+'"></i>'+g[1]+'</h4>'+rows.map(function(b){ var st=!F.isMapped(b)?'<span class="bst mp">Map</span>':b.guess?'<span class="bst rv">Review</span>':ic('ok','ok-ic');
         return '<button type="button" role="option" aria-selected="'+(b.id===state.sel)+'" class="bitem'+(b.id===state.sel?' on':'')+'" data-sel="'+b.id+'"><b>'+esc(boxName(b))+(multi?'<small>p'+(b.page+1)+'</small>':'')+'</b>'+st+'</button>'; }).join('')+'</section>'; }).join('')+'</div>'
@@ -507,11 +666,13 @@ function renderMap(){
   if(state.sheet==='publish') openPublish(true);
 }
 /* the bars stay put under the app bar whatever its height (it wraps on narrow screens) */
-function stick(){ var tb=$('.top'), mb=$('.map-bar'); if(!tb||!mb) return; var a=tb.offsetHeight; mb.style.top=a+'px'; var b=a+mb.offsetHeight; $$('.side,.insp').forEach(function(e){ e.style.top=b+'px'; e.style.maxHeight='calc(100vh - '+b+'px)'; }); }
+function stick(){ var tb=$('#pvxTopnav'), mb=$('.map-bar'); if(!tb||!mb) return;
+  if(window.ResizeObserver&&stick.el!==tb){ stick.el=tb; (stick.ro=stick.ro||new ResizeObserver(function(){ if(state.view==='map') stick(); })).disconnect(); stick.ro.observe(tb); stick.ro.observe(mb); }   /* PVX-N142 CL-F01 */
+  var a=tb.offsetHeight; mb.style.top=a+'px'; var b=a+mb.offsetHeight; $$('.side,.insp').forEach(function(e){ e.style.top=b+'px'; e.style.maxHeight='calc(100vh - '+b+'px)'; }); }
 /* one status line above the page: a notice (for a moment), else the Rosie banner, else the first-time tip */
 function statusHtml(){ var n=state.note;
   if(n&&n.until>Date.now()) return '<span class="mtoast'+(n.err?' err':'')+'" role="'+(n.err?'alert':'status')+'">'+esc(n.t)+(n.err?'<button type="button" class="tx" data-act="note-x" aria-label="Dismiss">'+ic('x')+'</button>':'')+'</span>';
-  if(state.mode==='rosie') return '<div class="pnote rosie">Test data for Rosie — nothing is saved to a patient<button class="btn" type="button" data-act="dl-test"'+(rosie&&rosie.bytes?'':' disabled')+'>'+ic('dl')+'Download test copy</button></div>';
+  if(state.mode==='rosie') return '<div class="pnote rosie">'+(state.tpl&&state.tpl.purpose==='staff'?'Test data — nothing is saved':'Test data for Rosie — nothing is saved to a patient')+'<button class="btn" type="button" data-act="dl-test"'+(rosie&&rosie.bytes?'':' disabled')+'>'+ic('dl')+'Download test copy</button></div>';
   if(!ls('pvx_forms_tip1')) return '<div class="tip" id="tip">Drag on the page to draw a box, or use Draw a box. Arrow keys move a box; Option-arrow keys resize it.<button type="button" class="icon-btn" data-act="tip-x" aria-label="Hide tip">'+ic('x')+'</button></div>';
   return ''; }
 function paintStatus(){ var e=$('#pstatus'); if(e) e.innerHTML=statusHtml(); }
@@ -521,7 +682,7 @@ function zoomBar(){ var t=state.tpl, pages=(t.file&&t.file.pages)||[], multi=pag
 function order(a,b){ return (a.page-b.page)||(b.rect[1]-a.rect[1])||(a.rect[0]-b.rect[0]); }
 function formFacts(t){ var pr=F.progress(t), n=(t.file&&t.file.pages||[]).length;
   return '<div><div class="k">This form</div><h3 style="margin-top:4px">'+esc(t.name||'Untitled form')+'</h3>'+(t.file&&t.file.name?'<div class="pdfname">'+esc(t.file.name)+'</div>':'')+'</div>'
-    +'<div class="facts"><div><span>Pages</span><b>'+n+'</b></div><div><span>Boxes</span><b>'+pr.total+'</b></div><div><span>Confirmed</span><b>'+pr.confirmed+' of '+pr.total+'</b></div><div><span>In Flow</span><b>'+(t.status==='ready'?esc(whereShort(t)):'Not yet')+'</b></div></div>'
+    +'<div class="facts"><div><span>Pages</span><b>'+n+'</b></div><div><span>Boxes</span><b>'+pr.total+'</b></div><div><span>Confirmed</span><b>'+pr.confirmed+' of '+pr.total+'</b></div>'+(t.purpose==='staff'?'<div><span>Kept as</span><b>Employee form</b></div>':'<div><span>In Flow</span><b>'+(t.status==='ready'?esc(whereShort(t)):'Not yet')+'</b></div>')+'</div>'
     +'<div class="note">Select a box on the page or in the list to change it. Drag on the page to add one.</div>'; }
 var pageCanvas={};
 function drawPage(i){ var slot=$('.page[data-page="'+i+'"] .canvas-slot'); if(!slot) return;
@@ -574,11 +735,11 @@ function openPublish(repaint){ var t=state.tpl, pr=F.progress(t), live=t.status=
   var row=function(val,title,sub,dis){ return '<label'+(dis?' style="opacity:.5"':'')+'><input type="radio" name="where" value="'+val+'"'+(v===val?' checked':'')+(dis?' disabled':'')+'><span><b>'+title+'</b><span>'+sub+'</span></span></label>'; };
   var chk=function(ok,text,opt,btn){ return '<div>'+(ok?ic('ok','ok-ic'):opt?'<i class="opt-ic" aria-hidden="true"></i>':'<i class="todo-ic" aria-hidden="true"></i>')+'<span'+(opt&&!ok?' class="opt"':'')+'>'+text+'</span>'+(btn||'')+'</div>'; };
   var left=pr.missing+pr.review;
-  var h='<div class="sheet pub" role="dialog" aria-modal="true" aria-labelledby="pubT"><header><button class="btn quiet" type="button" data-act="close-sheet">'+(live?'Close':'Cancel')+'</button><b id="pubT">'+(live?'In Flow':'Publish to Flow')+'</b><span></span></header>'
+  var h='<div class="sheet pub" role="dialog" aria-modal="true" aria-labelledby="pubT"><header><button class="btn quiet" type="button" data-act="close-sheet">'+(live?'Close':'Cancel')+'</button><b id="pubT">'+(live?'In Flow':staff?'Employee form':'Publish to Flow')+'</b><span></span></header>'
     +'<div class="pub-body"><div class="pub-form"><span class="mini" id="pubMini"></span><span><b>'+esc(t.name||'Untitled form')+'</b><span>'+(t.file.pages||[]).length+' page'+((t.file.pages||[]).length===1?'':'s')+' · '+pr.total+' boxes</span></span></div>'
     +'<fieldset style="margin:0;padding:0;border:0"><legend class="pub-h">Where staff find it</legend><div class="choices">'+row('ending','Euthanasia ending','Other ending › Euthanasia › Send form to reception')+row('ending-died','Died ending','Aftercare only, no euthanasia consent')+row('visit','Patient drawer','Send a form, for any visit')+row('staff','Employee form','For the team, not patients · stays out of Flow',live&&!staff)+'</div></fieldset>'
     +(staff?'<p class="pub-note">Employee forms are kept here with your other forms, out of Flow and away from families. Signing them in Pravix comes later.</p>':'<div><div class="pub-h">'+(live?'Live in Flow':'Ready to go live')+'</div><div class="checks">'
-    +chk(!left,left?[pr.missing?pr.missing+' box'+(pr.missing===1?'':'es')+' to map':'',pr.review?pr.review+(pr.missing?'':' box'+(pr.review===1?'':'es'))+' to review':''].filter(Boolean).join(' · '):'All '+pr.total+' boxes confirmed by you',false,left?'<button class="btn" type="button" data-act="review-next">Review</button>':'')
+    +chk(!left&&pr.total>0,left?[pr.missing?pr.missing+' box'+(pr.missing===1?'':'es')+' to map':'',pr.review?pr.review+(pr.missing?'':' box'+(pr.review===1?'':'es'))+' to review':''].filter(Boolean).join(' · '):!pr.total?'No boxes yet — find or draw them on the page':'All '+pr.total+' boxes confirmed by you',false,left?'<button class="btn" type="button" data-act="review-next">Review</button>':'')
     +chk(pr.hasOwnerSig,pr.hasOwnerSig?'The owner signs on page '+(sigPage+1):'No box for the owner’s signature yet')
     +chk(pr.hasWitness,pr.hasWitness?'A staff witness signs':'No witness box (optional)',true)
     +chk(state.previewed,state.previewed?'Previewed with Rosie':'Not previewed yet (optional)',true,state.previewed?'':'<button class="btn" type="button" data-act="preview">Show with Rosie</button>')
@@ -612,6 +773,7 @@ document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) re
   var a=t.closest('[data-act]'); if(a){ var w=a.dataset.act;
     if(w==='note-x'){ state.note=null; paintStatus(); return; } if(w==='find'){ findBoxes(); return; } if(w==='unfind'){ unfind(); return; } if(w==='change'){ state.showSrc=true; renderMap(); var q2=$('#bq'); if(q2) q2.focus(); return; } if(w==='archive'){ archive(); return; }
     if(w==='logout'){ AUTH.signOut(); return; } if(w==='theme'){ setTheme(isLight()?'dark':'light'); return; }
+    if(w==='clear-search'){ state.search=''; if(state.view==='signed') renderSigned(); else renderLib(); var cs=$('#fsearch'); if(cs) cs.focus(); return; }   /* PVX-N142 */
     if(w==='welcome-ok'){ ls('pvx_forms_welcome1','1'); closeSheet(); return; }
     if(w==='upload') pickFile(); else if(w==='back') leave(); else if(w==='publish') openPublish(); else if(w==='do-publish') doPublish(); else if(w==='unpublish') unpublish();
     else if(w==='del') removeSel(); else if(w==='addhelp') addBox();
@@ -623,7 +785,7 @@ document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) re
     else if(w==='preview'){ closeSheet(); setMode('rosie'); }
     return; }
   var md=t.closest('[data-mode]'); if(md){ setMode(md.dataset.mode); return; }
-  var tb=t.closest('[data-tab]'); if(tb){ state.search=''; if(tb.dataset.tab==='signed'){ SIGNED=null; renderSigned(); } else renderLib(); return; }
+  var tb=t.closest('[data-tab]'); if(tb){ var tk=tb.dataset.tab; state.search=''; if(tk==='signed'){ SIGNED=null; renderSigned(); } else renderLib(); var nb=$('[data-tab="'+tk+'"]'); if(nb) nb.focus(); return; }   /* PVX-N142 GKF-F01: focus stays on the section you chose */
   var sl2=t.closest('[data-slot]'); if(sl2){ var S=SLOTS[+sl2.dataset.slot]; pickFile({k:S.k,kind:S.kind}); return; }
   var dl=t.closest('[data-dl]'); if(dl){ downloadSigned(dl.dataset.dl); return; }
   var rs=t.closest('[data-restore]'); if(rs){ restore(rs.dataset.restore); return; }
@@ -785,6 +947,31 @@ function testCtx(){ var t=state.tpl, ctx=sampleCtx();
 function downloadTest(){ if(!lastTest) return; var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([lastTest],{type:'application/pdf'})); a.download=(state.tpl.name||'form')+' - test.pdf'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000); }
 window.__forms={findBoxes:findBoxes,checkVerify:checkVerify,state:state,signed:function(){ return SIGNED; },render:render,openTpl:openTpl,upload:upload,select:select,saveNow:saveNow,setMode:setMode,rosie:function(){ return rosie; }};
 })();
+</script>
+
+<!-- PVX-N142 · Forms: map bar, publish dialog size, no-match, tiles, section nav -->
+<style id="pvx-n142-css">
+/* CL-F06 / GKF-F03: the publish dialog fits the window; its body scrolls and Publish / Done stay in view */
+.scrim:has(> .sheet.pub){align-items:center;padding:24px 16px}
+.sheet.pub{display:flex;flex-direction:column;max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px)}
+.sheet.pub > header,.sheet.pub > .pub-foot{flex:none}
+.sheet.pub > .pub-body{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+.sheet.pub > .pub-foot{padding-top:14px;border-top:1px solid var(--line)}
+/* CL-F05 / GKF-F06: a square preview keeps the page recognisable and brings the name and status up ~90 px */
+.tthumb{aspect-ratio:1/1;padding:16px;min-height:0;overflow:hidden}
+.tthumb .pg{width:auto;height:100%;max-height:100%;min-height:0;aspect-ratio:8.5/11}
+.tthumb .pg img{width:100%;height:100%;object-fit:cover;object-position:top}
+/* light theme contrast (rendered probe): secondary captions were 4.39:1 and the accent links 4.21:1 on the page colour */
+:root[data-theme="light"]{--ink3:#5F6672;--accent-ink:#17738A}
+@media (prefers-contrast:more){:root[data-theme="light"]{--ink3:#3F4856}}
+/* CL-F08: the way out of an empty search */
+.nothing .pvx-clear{margin-top:14px}
+.pvx-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+</style>
+<script id="pvx-n142-js">
+/* one live region outside #app (which is re-rendered on every keystroke), spoken once typing pauses */
+function pvxSay(t){ var el=document.getElementById('pvxLive'); if(!el){ el=document.createElement('div'); el.id='pvxLive'; el.className='pvx-sr'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite'); document.body.appendChild(el); }
+  clearTimeout(pvxSay.t); pvxSay.t=setTimeout(function(){ if(el.textContent!==t) el.textContent=t; },450); }
 </script>
 </body>
 </html>

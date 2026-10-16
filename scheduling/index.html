@@ -894,6 +894,7 @@ body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,bo
 <!-- SCH n134 -->
 </head>
 <body>
+<a class="pvx-skip" href="#mainContent">Skip to schedule</a>
 <script id="pvx-theme-js">
 /* Pravix theme — one Light / Dark choice for every app (Oct 2026; source: VCA/nav/pvx-theme.js).
    The choice lives in the pvx_theme cookie (domain .pravix.app), which Flow, Treatment Sheets, Directory and SGVP already use.
@@ -994,6 +995,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <div class="intern-key-label">Intern Key</div>
   <div class="intern-key" id="internKey"></div>
   <div class="ib-actions">
+    <button type="button" class="ib-btn edit" id="pvxEditBtn" onclick="orbClick()" aria-controls="editBanner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Edit</span></button>
     <button type="button" class="ib-btn pdf" onclick="printMonth()" title="Download this month as PDF">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF
     </button>
@@ -1006,28 +1008,28 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <!-- TABS -->
 <div class="tab-wrap" id="tabWrap" role="tablist" aria-label="Month"></div>
 <h1 class="pvx-sr">Intern schedule</h1>
-<div class="main" id="mainContent" role="main"></div>
+<div class="main" id="mainContent" role="main" tabindex="-1"></div>
 
 <!-- PASSWORD MODAL -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <h3 id="modalTitle">Editor Access</h3>
-    <p>Enter your password to enable editing</p>
-    <input type="password" id="pwInput" aria-label="Password" placeholder="Password" maxlength="30" onkeydown="if(event.key==='Enter')checkPassword()">
-    <button class="modal-btn" onclick="checkPassword()">Unlock Editing</button>
+    <h3 id="modalTitle">Edit the schedule</h3>
+    <p>Editing needs a Pravix admin account.</p>
+    <input type="hidden" id="pwInput">
+    <button class="modal-btn" onclick="checkPassword()">Continue</button>
     <div class="modal-err" id="modalErr"></div>
   </div>
 </div>
 
 <!-- FROST ORB + EDIT GATE (Shadow Schedule style) -->
-<button class="edit-orb" id="editOrb" onclick="orbClick()" title="Edit" aria-label="Edit"></button>
+<button class="edit-orb" id="editOrb" onclick="orbClick()" title="Edit" aria-label="Edit" hidden tabindex="-1"></button>
 <div class="editgate-overlay" id="editGate">
   <div class="editgate-dim" onclick="closeGate()"></div>
   <div class="editgate-card" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
-    <div class="editgate-title" id="gateTitle">Edit Access</div>
-    <div class="editgate-sub">Enter the password to edit the calendar</div>
-    <input type="password" id="gatePass" aria-label="Password" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitGate();}">
-    <button class="editgate-btn" onclick="submitGate()">Unlock</button>
+    <div class="editgate-title" id="gateTitle">Edit the schedule</div>
+    <div class="editgate-sub" id="gateSub">Editing needs a Pravix admin account.</div>
+    <input type="hidden" id="gatePass">
+    <a class="editgate-btn" id="gateSignIn" href="https://shoreline.pravix.app/">Sign in to Pravix</a>
     <div class="editgate-err" id="gateErr"></div>
     <button class="editgate-cancel" onclick="closeGate()">Cancel</button>
   </div>
@@ -1047,6 +1049,39 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <div class="toast" id="toast"></div>
 
+
+<!-- PVX-N147 · Pravix sign-in for editing (replaces the plaintext password) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script id="pvx-n147-js">
+window.__pvxIsAdmin=false; window.__pvxUserEmail='';
+/* the same admin rule as Assets: the owner's email, or sgvp_roles/<email>.admin == true */
+window.__pvxResolveAdmin=async function(user){ if(!user||!user.email) return false; var email=user.email.toLowerCase();
+  if(['daniel.giordano@pravix.app'].indexOf(email)!==-1) return true;
+  try{ var snap=await firebase.firestore().collection('sgvp_roles').doc(email).get(); return !!(snap.exists&&snap.data().admin===true); }catch(e){ return false; } };
+(function(){ var CFG={apiKey:"AIzaSyCf8iXW_wWRLvHi1G4YnYRH-iLpaDufZQE",authDomain:"shoreline-flow.firebaseapp.com",projectId:"shoreline-flow",
+  storageBucket:"shoreline-flow.firebasestorage.app",messagingSenderId:"237404385636",appId:"1:237404385636:web:1ee3ba27f22c946f748a71"};
+  try{ if(!window.firebase||!firebase.auth) return; if(!firebase.apps.length) firebase.initializeApp(CFG);
+    firebase.auth().onAuthStateChanged(async function(u){ window.__pvxUserEmail=(u&&u.email||'').toLowerCase(); window.__pvxIsAdmin=await window.__pvxResolveAdmin(u);
+      if(!window.__pvxIsAdmin){ try{ if(document.body.classList.contains('edit-mode')&&window.disableEditMode) disableEditMode(); }catch(e){} }
+      try{ pvxGateExplain(); }catch(e){} }); }catch(e){ console.warn('[sched] auth',e); } })();
+/* the schedule's new home (shoreline-flow): months and the announcement */
+window.pvxSched={
+  fs:function(){ return firebase.firestore(); },
+  getMonth:function(id){ return this.fs().collection('sched_months').doc(id).get().then(function(s){ return s.exists?s.data():null; }); },
+  setMonth:function(id,days){ return this.fs().collection('sched_months').doc(id).set({days:days,updatedAt:new Date().toISOString(),updatedBy:window.__pvxUserEmail||null}); },
+  setAnnouncement:function(txt){ return this.fs().collection('sched_settings').doc('announcement').set({text:txt,updatedAt:new Date().toISOString(),updatedBy:window.__pvxUserEmail||null}); },
+  listenAnnouncement:function(cb){ try{ return this.fs().collection('sched_settings').doc('announcement').onSnapshot(function(s){ if(s.exists&&s.data().text){ window.__pvxAnnFromFlow=true; cb(s.data().text); } },function(){}); }catch(e){} }
+};
+/* the gate says what is needed: who you're signed in as, and why that account can't edit */
+function pvxGateExplain(){ var sub=document.getElementById('gateSub'), a=document.getElementById('gateSignIn'); if(!sub||!a) return;
+  var e=window.__pvxUserEmail;
+  if(window.__pvxIsAdmin){ sub.textContent='Signed in as '+e+'.'; a.textContent='Start editing'; a.setAttribute('href','#'); a.onclick=function(ev){ ev.preventDefault(); closeGate(); enableEditMode(); }; }
+  else if(e){ sub.textContent='You’re signed in as '+e+', which can’t edit the schedule. Editing needs a Pravix admin account.'; a.textContent='Switch account'; a.setAttribute('href','https://shoreline.pravix.app/#logout'); a.onclick=null; }
+  else { sub.textContent='Editing needs a Pravix admin account. Sign in on Pravix, then come back to this page.'; a.textContent='Sign in to Pravix'; a.setAttribute('href','https://shoreline.pravix.app/'); a.onclick=null; } }
+</script>
+<style id="pvx-n147-css">a.editgate-btn{display:flex;align-items:center;justify-content:center;text-decoration:none}</style>
 <script type="module">
 // ── FIREBASE ──
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1074,13 +1109,17 @@ function setSyncStatus(state) {
   const dot = el ? el.querySelector('span') : null;
   if (!el || !txt) return;
   const states = {
-    syncing: { text:'Syncing…', color:'var(--cyan-ink)',  dotColor:'#4DC8E0', bg:'rgba(77,200,224,0.1)',  border:'rgba(77,200,224,0.25)',  anim:'live-blink 0.6s ease-in-out infinite' },
+    syncing: { text:'Saving…', color:'var(--cyan-ink)',  dotColor:'#4DC8E0', bg:'rgba(77,200,224,0.1)',  border:'rgba(77,200,224,0.25)',  anim:'live-blink 0.6s ease-in-out infinite' },
     saved:   { text:'Saved',        color:'var(--green-ink)',  dotColor:'#1a9e6e', bg:'rgba(26,158,110,0.1)',  border:'rgba(26,158,110,0.25)',   anim:'live-blink 1.4s ease-in-out infinite' },
-    offline: { text:'Offline',      color:'var(--red-ink)',  dotColor:'#E8644A', bg:'rgba(232,100,74,0.1)',  border:'rgba(232,100,74,0.25)',   anim:'none' },
+    offline: { text:'Offline · not saved',      color:'var(--red-ink)',  dotColor:'#E8644A', bg:'rgba(232,100,74,0.1)',  border:'rgba(232,100,74,0.25)',   anim:'none' },
     live:    { text:'Live',         color:'var(--green-ink)',  dotColor:'#1a9e6e', bg:'rgba(26,158,110,0.1)',  border:'rgba(26,158,110,0.25)',   anim:'live-blink 1.4s ease-in-out infinite' },
   };
   const s = states[state] || states.live;
-  txt.textContent = s.text;
+  var was = txt.textContent; txt.textContent = s.text;
+  /* PVX-N143 SCH-14: the pill is visual; a quiet live region speaks only the changes people must act on */
+  var lr = document.getElementById('pvxSyncLive'); if (!lr) { lr = document.createElement('span'); lr.id = 'pvxSyncLive'; lr.className = 'pvx-sr'; lr.setAttribute('role', 'status'); document.body.appendChild(lr); }
+  if (state === 'offline') lr.textContent = "Offline. Changes on this screen aren't saved until the connection is back.";
+  else if (/Offline/.test(was) && state === 'live') lr.textContent = 'Back online.';
   el.style.color  = s.color;
   el.style.background = s.bg;
   el.style.borderColor = s.border;
@@ -1093,6 +1132,8 @@ function setSyncStatus(state) {
 
 // ── FIRESTORE READ/WRITE ──
 async function loadFromCloud(year, month) {
+  try { const v = await window.pvxSched.getMonth(`${year}_${month}`); if (v && v.days) { localStorage.setItem(`sch_${year}_${month}`, JSON.stringify(v.days)); return v.days; } }
+  catch(e) { /* not readable yet (rules not published) or not saved there yet: use the old calendar below */ }
   try {
     const ref = doc(db, 'schedules', `${year}_${month}`);
     const snap = await getDoc(ref);
@@ -1109,8 +1150,8 @@ async function loadFromCloud(year, month) {
 async function saveToCloud(year, month, data) {
   setSyncStatus('syncing');
   try {
-    const ref = doc(db, 'schedules', `${year}_${month}`);
-    await setDoc(ref, { days: data, updatedAt: new Date().toISOString() }, { merge: true });
+    if (!window.__pvxIsAdmin) throw new Error('not an admin');
+    await window.pvxSched.setMonth(`${year}_${month}`, data);   /* PVX-N147: shoreline-flow, admin-only by rule */
     setSyncStatus('saved');
     setTimeout(() => setSyncStatus('live'), 2000);
   } catch(e) {
@@ -1127,7 +1168,7 @@ async function loadSavedAsync(year, month) {
   return local ? JSON.parse(local) : null;
 }
 
-const EDIT_PASSWORD = "Shoreline2026";
+/* PVX-N147 (D-D): the plaintext edit password was removed; editing needs a Pravix admin sign-in */
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const JUNE_DATA = {"1": {"note": "SGS OFF", "lines": ["Mara", "Kelley", "NO UC", "12-12 Polak", "7-7 Amber"]}, "2": {"note": "", "lines": ["Mara", "Kelley", "12-12 Sears", "7-7 Amber"]}, "3": {"note": "", "lines": ["Mara", "Kelley", "12-12 Sabo", "7-7 Amber"]}, "4": {"note": "SM CE", "lines": ["Provost", "Mike", "12-12 Vrana", "7-7 Fowler"]}, "5": {"note": "SM CE", "lines": ["Mara", "Jordan", "12-12 Marissa", "7-7 Klaudia"]}, "6": {"note": "SM SGS CE", "lines": ["Provost", "8-8 Schiff", "12-12 Sabo", "7-7 Kasie"]}, "7": {"note": "", "lines": ["Kelley", "8-8 Schiff", "12-12 Sabo", "7-7 Kasie"]}, "8": {"note": "", "lines": ["Mara", "Kelley", "12-12 Schiff", "7-7 Kasie"]}, "9": {"note": "", "lines": ["Mara", "Mike", "12-12 Schiff", "7-7 Amber"]}, "10": {"note": "MK OFF", "lines": ["Kelley", "12-12 Roche", "7-7 Amber"]}, "11": {"note": "SM CE", "lines": ["Kelley", "Mike", "12-12 Marissa", "7-7 Amber"]}, "12": {"note": "", "lines": ["Mike", "Jordan 8a-10p", "12-12 Marissa", "7-7 Amber"]}, "13": {"note": "", "lines": ["Shaylan", "Mike", "12-12 Tinsley", "7-7 Roche"]}, "14": {"note": "", "lines": ["Mike", "8-8 Shaylan", "12-12 Marissa", "7-7 Roche"]}, "15": {"note": "swap mk/sm", "lines": ["Shaylan", "Kelley", "NO UC", "12-12 Schiff", "7-7 Vrana"]}, "16": {"note": "", "lines": ["Mara", "Kelley", "12-12 Schiff", "7-7 Amber"]}, "17": {"note": "", "lines": ["Mara", "Kelley", "12-12 Schiff", "7-7 Amber"]}, "18": {"note": "swap mk/sm", "lines": ["Mara", "Mike", "12-12 Marissa", "7-7 Fowler"]}, "19": {"note": "", "lines": ["Shaylan", "Mike", "12-12 Marissa", "7-7 Amber"]}, "20": {"note": "", "lines": ["Shaylan", "Schiff", "12-12 Polak", "7-7 Amber"]}, "21": {"note": "", "lines": ["Kelley", "8-8 Mara", "12-12 Schiff", "7-7 Amber"]}, "22": {"note": "MTM swap", "lines": ["Mara", "Mike", "12-12 Schiff", "7-7 Amber"]}, "23": {"note": "KH swap", "lines": ["Schiff", "Kelley", "12-12 Sabo", "7-7 Amber"]}, "24": {"note": "MK OFF", "lines": ["Roche", "Kelley", "12-12 Sabo", "7-7 Amber"]}, "25": {"note": "", "lines": ["Shaylan", "Mike", "12-12 Marissa", "7-7 Roche"]}, "26": {"note": "", "lines": ["7AM–6PM  ·  BK", "12PM–12AM  ·  JH"]}, "27": {"note": "", "lines": ["7AM–6PM  ·  BK", "12PM–12AM  ·  JH"]}, "28": {"note": "", "lines": ["7AM–6PM  ·  BK", "12PM–12AM  ·  JH"]}, "29": {"note": "", "lines": ["7AM–6PM  ·  BK", "12PM–12AM  ·  JH"]}, "30": {"note": "", "lines": ["7AM–6PM  ·  BK", "12PM–12AM  ·  JH"]}};
 const BLOCKS = [{"block": 1, "label": "Block 01", "start": "2026-03-16", "end": "2026-04-19"}, {"block": 2, "label": "Block 02", "start": "2026-04-19", "end": "2026-05-24"}, {"block": 3, "label": "Block 03", "start": "2026-05-24", "end": "2026-07-05"}, {"block": 4, "label": "Block 04", "start": "2026-07-05", "end": "2026-08-09"}, {"block": 5, "label": "Block 05", "start": "2026-08-09", "end": "2026-09-13"}, {"block": 6, "label": "Block 06", "start": "2026-09-13", "end": "2026-10-18"}, {"block": 7, "label": "Block 07", "start": "2026-10-18", "end": "2026-11-22"}, {"block": 8, "label": "Block 08", "start": "2026-11-22", "end": "2027-01-03"}];
@@ -1279,8 +1320,7 @@ function saveAnnouncement(){
   buildTicker(txt);
   // Sync announcement to Firestore so all viewers see it instantly
   setSyncStatus('syncing');
-  const annRef = doc(db, 'settings', 'announcement');
-  setDoc(annRef, { text: txt, updatedAt: new Date().toISOString() })
+  (window.__pvxIsAdmin ? window.pvxSched.setAnnouncement(txt) : Promise.reject(new Error('not an admin')))
     .then(() => { setSyncStatus('saved'); setTimeout(()=>setSyncStatus('live'),2000); })
     .catch(() => setSyncStatus('offline'));
   closeAnnounceModal();
@@ -1298,14 +1338,14 @@ window.toggleDark = function(){
     document.body.classList.add('dark');
   }
 })();
-window.toggleEditModal = function(){if(editMode){disableEditMode();}else{document.getElementById('modalOverlay').classList.add('show');setTimeout(()=>document.getElementById('pwInput').focus(),100);}};
+window.toggleEditModal = function(){ if(editMode){ disableEditMode(); } else { openGate(); } };   /* PVX-N147 */
 /* frost orb + dark-glass gate (Shadow Schedule style) */
-window.orbClick = function(){ if(editMode){ disableEditMode(); } else { openGate(); } };
-window.openGate = function(){ var g=document.getElementById('editGate'); g.style.display='flex'; document.getElementById('gateErr').textContent=''; var i=document.getElementById('gatePass'); i.value=''; setTimeout(function(){i.focus();},60); };
-window.closeGate = function(){ document.getElementById('editGate').style.display='none'; };
-window.submitGate = function(){ if(document.getElementById('gatePass').value===EDIT_PASSWORD){ closeGate(); enableEditMode(); } else { document.getElementById('gateErr').textContent='Incorrect password'; } };
+window.orbClick = function(){ if(editMode){ disableEditMode(); } else if(window.__pvxIsAdmin){ enableEditMode(); } else { openGate(); } };   /* PVX-N147: an admin goes straight in */
+window.openGate = function(){ window.__pvxGateFrom=document.activeElement; var g=document.getElementById('editGate'); g.style.display='flex'; document.getElementById('gateErr').textContent=''; var i=document.getElementById('gateSignIn'); pvxGateExplain(); setTimeout(function(){i.focus();},60); };
+window.closeGate = function(){ document.getElementById('editGate').style.display='none'; var o=window.__pvxGateFrom; window.__pvxGateFrom=null; if(o&&o.focus&&document.contains(o)) try{ o.focus(); }catch(e){} };   /* PVX-N143 */
+window.submitGate = function(){ if(window.__pvxIsAdmin){ closeGate(); enableEditMode(); } else { pvxGateExplain(); } };   /* PVX-N147 */
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ var g=document.getElementById('editGate'); if(g&&g.style.display==='flex'){ closeGate(); } } });
-window.checkPassword   = function(){const pw=document.getElementById('pwInput').value;if(pw===EDIT_PASSWORD){document.getElementById('modalOverlay').classList.remove('show');document.getElementById('pwInput').value='';document.getElementById('modalErr').textContent='';enableEditMode();}else{const inp=document.getElementById('pwInput');inp.classList.add('error');document.getElementById('modalErr').textContent='Incorrect password.';setTimeout(()=>inp.classList.remove('error'),400);inp.value='';inp.focus();}};
+window.checkPassword   = function(){if(window.__pvxIsAdmin){document.getElementById('modalOverlay').classList.remove('show');document.getElementById('pwInput').value='';document.getElementById('modalErr').textContent='';enableEditMode();}else{const inp=document.getElementById('pwInput');inp.classList.add('error');document.getElementById('modalErr').textContent='Incorrect password.';setTimeout(()=>inp.classList.remove('error'),400);inp.value='';inp.focus();}};
 window.saveAll         = saveAll;
 window.printMonth      = printMonth;
 window.requestDayOff   = requestDayOff;
@@ -1495,8 +1535,7 @@ function toggleEditModal(){
   else{document.getElementById('modalOverlay').classList.add('show');setTimeout(()=>document.getElementById('pwInput').focus(),100);}
 }
 function checkPassword(){
-  const pw=document.getElementById('pwInput').value;
-  if(pw===EDIT_PASSWORD){
+  if(window.__pvxIsAdmin){
     document.getElementById('modalOverlay').classList.remove('show');
     document.getElementById('pwInput').value='';
     document.getElementById('modalErr').textContent='';
@@ -1510,6 +1549,7 @@ function checkPassword(){
   }
 }
 function enableEditMode(){
+  if(!window.__pvxIsAdmin){ try{ openGate(); }catch(e){} return; }   /* PVX-N147: no edit mode without an admin sign-in */
   editMode=true;document.body.classList.add('edit-mode');
   document.getElementById('editBtn').textContent='\uD83D\uDD12 Exit Edit Mode';
   document.getElementById('editBtn').classList.add('active');
@@ -1625,6 +1665,7 @@ buildTabs(); buildAll(); initBlock(); initInternKey(); initAnnouncement();
 try {
   const annRef = doc(db, 'settings', 'announcement');
   onSnapshot(annRef, (snap) => {
+    if (window.__pvxAnnFromFlow) return;   /* PVX-N147: the new place wins once it has an announcement */
     if (snap.exists()) {
       const txt = snap.data().text;
       if (txt) {
@@ -1636,6 +1677,11 @@ try {
 } catch(e) { console.warn('Announcement listener failed', e); }
 
 setSyncStatus('live');
+try{ window.pvxSched.listenAnnouncement(function(txt){ localStorage.setItem('announce_text', txt); buildTicker(txt); }); }catch(e){}   /* PVX-N147 */
+/* PVX-N143 SCH-14: follow the browser's connection; a failed save stays "not saved" until a save succeeds */
+window.addEventListener('offline', function(){ window.__pvxNetOff = true; setSyncStatus('offline'); });
+window.addEventListener('online', function(){ if (window.__pvxNetOff) { window.__pvxNetOff = false; setSyncStatus('live'); } });
+if (navigator.onLine === false) { window.__pvxNetOff = true; setSyncStatus('offline'); }
 </script>
 
 <!-- CHANGELOG MODAL -->
@@ -1993,6 +2039,30 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     btn.addEventListener('focus',function(){ bar.classList.add('is-held'); }); btn.addEventListener('blur',function(){ bar.classList.remove('is-held'); });
     window.pvxTicker={set:set}; }
 })();
+</script>
+
+<!-- PVX-N143 · Scheduling: edit control, skip link, shift text size -->
+<style id="pvx-n143-css">
+.ib-btn.edit{background:var(--surface-1);color:var(--text-primary);border-color:var(--border-strong)}
+.ib-btn.edit:hover{background:var(--surface-2)}
+body.edit-mode .ib-btn.edit{background:var(--coral);border-color:var(--coral);color:#fff}
+.edit-orb[hidden]{display:none!important}
+.pvx-skip{position:absolute;left:12px;top:-60px;z-index:100000;padding:10px 16px;border-radius:10px;background:var(--surface-1,#fff);color:var(--text-primary,#0b1a33);font-weight:700;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);text-decoration:none}
+.pvx-skip:focus{top:12px}
+#mainContent:focus{outline:none}
+.pvx-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+/* SCH-06/13: wide day cells (≈170–270 px) carried 11 px shift text; give the schedule the emphasis */
+@media (min-width:1280px){
+  .day-line.shift-am,.day-line.shift-pm,.day-line.shift-swap{font-size:12.5px;padding:3px 8px}
+  .day-line.off,.day-line.swap{font-size:12.5px}
+  .day-num{font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){.ib-btn.edit{transition:none}}
+</style>
+<script id="pvx-n143-js">
+/* the toolbar Edit says what it will do: Edit, or Done while editing */
+(function(){ function sync(){ var b=document.getElementById('pvxEditBtn'); if(!b) return; var on=document.body.classList.contains('edit-mode'); var l=b.querySelector('span'); if(l) l.textContent=on?'Done editing':'Edit'; }
+  new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']}); sync(); })();
 </script>
 </body>
 

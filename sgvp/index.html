@@ -649,18 +649,25 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
   <!-- VIEW TOGGLE -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-    <div class="view-toggle">
-      <button class="vt-btn active" id="btnMyCurr" onclick="setView('my')">My Curriculum</button>
-      <button class="vt-btn" id="btnAllCurr" onclick="setView('all')">Entire Class</button>
+    <div class="view-toggle" role="group" aria-label="Whose curriculum">
+      <button type="button" class="vt-btn active" id="btnMyCurr" aria-pressed="true" onclick="setView('my')">My Curriculum</button>
+      <button type="button" class="vt-btn" id="btnAllCurr" aria-pressed="false" onclick="setView('all')">Entire Class</button>
     </div>
+    <div class="pvx-planbar">
     <div style="font-size:12px;color:var(--text-muted);">Viewing: <strong style="color:var(--text-primary);" id="viewLabel">Sarah Herron</strong></div>
+      <div class="pvx-planrange" id="pvxPlanRange"></div>
+      <div class="pvx-plannav">
+        <button type="button" class="pvx-pn" id="pvxPlanPrev" aria-controls="pvxPlanScroll" aria-label="Earlier blocks"><span aria-hidden="true">‹</span></button>
+        <button type="button" class="pvx-pn" id="pvxPlanNext" aria-controls="pvxPlanScroll" aria-label="Later blocks"><span aria-hidden="true">›</span></button>
+      </div>
+    </div>
   </div>
 
   <!-- TOOLBAR -->
   <div class="toolbar">
     <div class="search-wrap">
       <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input class="search-input" id="currSearch" type="text" placeholder="Search by service, intern, mentor, skill…" aria-label="Search by service, intern, mentor or skill" oninput="onCurrSearch(this.value)">
+      <input class="search-input" id="currSearch" type="text" placeholder="Search by service, director or intern…" aria-label="Search by service, director or intern" aria-describedby="pvxCurrStatus" oninput="onCurrSearch(this.value)">
     </div>
     <div class="filter-chips" id="currFilterChips" role="group" aria-label="Filter the curriculum">
       <button type="button" class="chip active" data-f="all" aria-pressed="true" onclick="setCurrFilter('all',this)">All</button>
@@ -669,14 +676,16 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <button type="button" class="chip" data-f="surg" aria-pressed="false" onclick="setCurrFilter('surg',this)">Surgery</button>
       <button type="button" class="chip" data-f="neuro" aria-pressed="false" onclick="setCurrFilter('neuro',this)">Neurology</button>
       <button type="button" class="chip" data-f="onco" aria-pressed="false" onclick="setCurrFilter('onco',this)">Oncology</button>
-      <button type="button" class="chip" data-f="completed" aria-pressed="false" onclick="setCurrFilter('completed',this)">✓ Completed</button>
-      <button type="button" class="chip" data-f="current" aria-pressed="false" onclick="setCurrFilter('current',this)">● Current</button>
+      <button type="button" class="chip" data-f="completed" aria-pressed="false" onclick="setCurrFilter('completed',this)"><span aria-hidden="true">✓ </span>Completed</button>
+      <button type="button" class="chip" data-f="current" aria-pressed="false" onclick="setCurrFilter('current',this)"><span aria-hidden="true">● </span>Current</button>
       <button type="button" class="chip" data-f="upcoming" aria-pressed="false" onclick="setCurrFilter('upcoming',this)">Upcoming</button>
     </div>
   </div>
 
   <!-- CURRICULUM TABLE -->
-  <div style="overflow-x:auto;margin-bottom:28px;">
+  <div class="pvx-sr" role="heading" aria-level="2" id="pvxPlanTitle">Rotation plan</div>
+  <div class="pvx-status pvx-sr" id="pvxCurrStatus" role="status" aria-live="polite"></div>
+  <div class="pvx-planscroll" id="pvxPlanScroll" role="region" aria-labelledby="pvxPlanTitle" tabindex="0" style="overflow-x:auto;margin-bottom:28px;">
     <div class="table-card" style="overflow:visible;">
       <table class="curr-table" id="currTable" aria-label="Rotation plan by service and block">
         <thead id="currThead"></thead>
@@ -688,11 +697,11 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <!-- LEGENDS -->
   <div class="legends-row">
     <div class="legend-card">
-      <div class="legend-title">Curriculum Legend</div>
+      <div class="legend-title" role="heading" aria-level="2">Curriculum Legend</div>
       <div class="legend-grid" id="svcLegend"></div>
     </div>
     <div class="legend-card">
-      <div class="legend-title">Intern Legend</div>
+      <div class="legend-title" role="heading" aria-level="2">Intern Legend</div>
       <div class="intern-grid" id="internLegend"></div>
     </div>
   </div>
@@ -701,7 +710,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <!-- SERVICE DRAWER -->
 <div class="svc-drawer-overlay" id="svcOverlay" onclick="closeSvcDrawer()"></div>
-<div class="svc-drawer" id="svcDrawer">
+<div class="svc-drawer" id="svcDrawer" aria-labelledby="svcDrawerTitle">
   <button class="svc-drawer-close" onclick="closeSvcDrawer()" aria-label="Close service details">✕</button>
   <div class="svc-drawer-hero" id="svcDrawerHero"></div>
   <div class="svc-drawer-body" id="svcDrawerBody"></div>
@@ -829,6 +838,8 @@ function setView(mode) {
   viewMode = mode;
   document.getElementById('btnMyCurr').classList.toggle('active', mode==='my');
   document.getElementById('btnAllCurr').classList.toggle('active', mode==='all');
+  document.getElementById('btnMyCurr').setAttribute('aria-pressed', String(mode==='my'));
+  document.getElementById('btnAllCurr').setAttribute('aria-pressed', String(mode==='all'));
   document.getElementById('viewLabel').textContent = mode==='my' ? (INTERN_MAP[ME] || 'My Curriculum') : 'Entire Class';
   renderTable();
 }
@@ -861,8 +872,11 @@ function svcMatchesFilter(svc) {
 
 function svcMatchesSearch(svc) {
   if(!currSearch) return true;
-  return [svc.name, svc.director, svc.dept]
-    .some(f => f && f.toLowerCase().includes(currSearch));
+  if([svc.name, svc.director, svc.dept].some(f => f && f.toLowerCase().includes(currSearch))) return true;
+  /* PVX-N138: a row also matches when someone assigned to it matches (name or initials) */
+  const row = GRID[svc.id] || {};
+  return Object.keys(row).some(k => String(row[k]||'').split('|').map(x=>x.trim()).filter(Boolean)
+    .some(i => i.toLowerCase().includes(currSearch) || String(INTERN_MAP[i]||'').toLowerCase().includes(currSearch)));
 }
 
 // ── RENDER TABLE ──
@@ -939,14 +953,14 @@ function renderTable() {
           style="color:${textColor};background:${bgColor};opacity:${opacity};transition:opacity .2s;"
           onmouseenter="typeof showPopover==='function' && showPopover(event,'${init}','${svc.id}','${b.num}')"
           onmouseleave="typeof hidePopover==='function' && hidePopover()"
-        >${init}${status==='completed' ? '<span style="font-size:11px;margin-left:2px;color:var(--green-ink);">✓</span>' : ''}</span>`;
+        >${init}${status==='completed' ? '<span aria-hidden="true" style="font-size:11px;margin-left:2px;color:var(--green-ink);">✓</span>' : ''}</span>`;
       }).join('<span aria-hidden="true" style="color:var(--ink-400);margin:0 2px;font-size:11px;">|</span>');
 
       let statusChip = '';
       if(raw) {
-        if(status === 'completed') statusChip = '<span class="status-chip done">✓</span>';
-        else if(status === 'current') statusChip = '<span class="status-chip current">●</span>';
-        else statusChip = '<span class="status-chip upcoming">◦</span>';
+        if(status === 'completed') statusChip = '<span class="status-chip done" aria-hidden="true">✓</span>';
+        else if(status === 'current') statusChip = '<span class="status-chip current" aria-hidden="true">●</span>';
+        else statusChip = '<span class="status-chip upcoming" aria-hidden="true">◦</span>';
       }
 
       bodyHtml += `<td class="block-col ${isCurr?'is-current':''}" style="${!display && viewMode==='my' ? 'opacity:0.2;' : ''}">
@@ -973,33 +987,33 @@ function openSvcDrawer(svcId) {
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
       <div style="width:56px;height:56px;border-radius:16px;background:${color}20;border:2px solid ${color}40;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${svc.icon}</div>
       <div>
-        <div id="svcDrawerTitle" style="font-size:18px;font-weight:800;color:var(--text-primary);margin-bottom:2px;">${svc.name}</div>
+        <div id="svcDrawerTitle" role="heading" aria-level="2" style="font-size:18px;font-weight:800;color:var(--text-primary);margin-bottom:2px;">${svc.name}</div>
         <div style="font-size:12px;color:var(--text-muted);">${svc.dept}</div>
       </div>
     </div>
-    <div style="display:inline-flex;padding:4px 12px;border-radius:20px;background:${color}18;color:${color};font-size:11px;font-weight:700;border:1px solid ${color}30;">${svc.dept}</div>
+    <div style="display:inline-flex;padding:4px 12px;border-radius:20px;background:${color}18;color:${color};font-size:11px;font-weight:700;border:1px solid ${color}30;"><span style="--svc-d:${pvxLightHex(color)}" class="pvx-svc-ink">${svc.dept}</span></div>
   `;
 
   document.getElementById('svcDrawerBody').innerHTML = `
     <div style="margin-bottom:20px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;">Department Info <span style="flex:1;height:1px;background:var(--border-subtle);display:inline-block;"></span></div>
+      <div role="heading" aria-level="3" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;">Department Info <span style="flex:1;height:1px;background:var(--border-subtle);display:inline-block;"></span></div>
       <div class="drawer-field"><div class="drawer-field-icon">👩‍⚕️</div><div><div class="drawer-field-label">Director</div><div class="drawer-field-val">${svc.director}</div></div></div>
       <div class="drawer-field"><div class="drawer-field-icon">📍</div><div><div class="drawer-field-label">Location</div><div class="drawer-field-val">${svc.location}</div></div></div>
       <div class="drawer-field"><div class="drawer-field-icon">📞</div><div><div class="drawer-field-label">Phone</div><div class="drawer-field-val">${svc.phone}</div></div></div>
     </div>
     <div>
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;">Schedule in this Service <span style="flex:1;height:1px;background:var(--border-subtle);display:inline-block;"></span></div>
+      <div role="heading" aria-level="3" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;">Schedule in this Service <span style="flex:1;height:1px;background:var(--border-subtle);display:inline-block;"></span></div>
       ${BLOCKS.map(b => {
         const assignment = GRID[svcId]?.[b.num] || '';
         const status = getBlockStatus(b);
-        const statusColor = status==='completed' ? 'var(--brand-green)' : status==='current' ? 'var(--brand-cyan)' : 'var(--text-muted)';
-        const statusLabel = status==='completed' ? '✓ Completed' : status==='current' ? '● Current' : '◦ Upcoming';
+        const statusColor = status==='completed' ? 'var(--green-ink)' : status==='current' ? 'var(--cyan-ink)' : 'var(--text-muted)';
+        const statusLabel = status==='completed' ? '<span aria-hidden="true">✓ </span>Completed' : status==='current' ? '<span aria-hidden="true">● </span>Current' : '<span aria-hidden="true">◦ </span>Upcoming';
         return assignment ? `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-subtle);">
           <div style="font-size:12px;font-weight:700;color:var(--text-primary);">Block ${b.num}</div>
           <div style="font-size:11px;color:var(--text-secondary);">${fmtDate(b.start)} – ${fmtDate(b.end)}</div>
-          <div style="font-size:11px;font-weight:700;color:${color};">${assignment}</div>
-          <div style="font-size:9.5px;font-weight:700;color:${statusColor};">${statusLabel}</div>
+          <div class="pvx-svc-ink" style="--svc-d:${pvxLightHex(color)};font-size:11px;font-weight:700;color:${color};">${assignment}</div>
+          <div style="font-size:11px;font-weight:700;color:${statusColor};">${statusLabel}</div>
         </div>` : '';
       }).join('')}
     </div>
@@ -1485,6 +1499,165 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
   window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
+})();
+</script>
+
+<!-- PVX-N138 · Curriculum: search results, schedule overflow, compact hero -->
+<style id="pvx-n138-css">
+/* PUB-CUR-02: the hero keeps its look, a little tighter, so the plan starts higher */
+.curr-hero{padding:22px 36px!important;margin-bottom:18px!important}
+.hero-sub{margin-bottom:12px!important}
+.hero-title{margin-bottom:4px!important}
+.curr-hero .hero-left>div[style*="margin-top:18px"]{margin-top:12px!important}
+.hero-block-card{padding:16px 22px!important}
+.hbc-dates{margin-bottom:10px!important}
+/* C07 */
+.pvx-planbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.pvx-planrange{font-size:12px;color:var(--text-muted)}
+.pvx-plannav{display:flex;gap:6px}
+.pvx-pn{width:36px;height:32px;border-radius:10px;border:1px solid var(--border);background:var(--surface-0);color:var(--text-primary);font:700 18px/1 Inter,Arial,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center}
+body.dark .pvx-pn{background:#131E34;border-color:rgba(77,200,224,.16)}
+.pvx-pn:hover:not(:disabled){border-color:rgba(77,200,224,.45)}
+.pvx-pn:disabled{opacity:.38;cursor:default}
+.pvx-pn:focus-visible,.pvx-planscroll:focus-visible,.pvx-empty-b:focus-visible{outline:2px solid var(--brand-cyan);outline-offset:2px}
+.pvx-planscroll{position:relative;border-radius:var(--radius-xl);scroll-padding-left:172px}
+/* row identity stays while scrolling sideways */
+.pvx-planscroll .curr-table td.svc-col,.pvx-planscroll .curr-table th.svc-col{position:sticky;left:0;z-index:3;background:#F6FAFD}
+body.dark .pvx-planscroll .curr-table td.svc-col,body.dark .pvx-planscroll .curr-table th.svc-col{background:#111A2D}
+.pvx-planscroll .curr-table th.svc-col{z-index:4}
+/* right-edge cue while later blocks are off screen */
+.pvx-planscroll .table-card{position:relative;width:max-content;min-width:100%}
+.pvx-planscroll.more-right .table-card::before{content:'';position:absolute;top:0;right:0;bottom:0;width:44px;z-index:5;pointer-events:none;border-radius:0 var(--radius-xl) var(--radius-xl) 0;
+  background:linear-gradient(90deg,rgba(228,240,248,0),rgba(196,214,230,.85))}
+body.dark .pvx-planscroll.more-right .table-card::before{background:linear-gradient(90deg,rgba(8,14,26,0),rgba(2,6,14,.9))}
+body.dark .pvx-svc-ink[style*='--svc-d']{color:var(--svc-d)!important}
+@media (max-width:600px){.pvx-planscroll .curr-table .svc-col{min-width:128px!important;width:128px!important}.pvx-planscroll{scroll-padding-left:130px}.pvx-planscroll .svc-icon{display:none}}
+/* C04 */
+.pvx-empty-row td{padding:36px 20px!important;text-align:center;border-right:none!important}
+.pvx-empty{display:flex;flex-direction:column;align-items:center;gap:6px;position:sticky;left:0;width:min(100%,560px);margin:0 auto}
+.pvx-empty-t{font-size:15px;font-weight:700;color:var(--text-primary)}
+.pvx-empty-s{font-size:13px;color:var(--text-secondary)}
+.pvx-empty-b{margin-top:8px;padding:9px 18px;border-radius:99px;border:1px solid rgba(77,200,224,.38);background:rgba(77,200,224,.12);color:var(--text-primary);font:600 13px Inter,Arial,sans-serif;cursor:pointer;min-height:36px}
+</style>
+<script id="pvx-n138-js">
+/* service colour mixed toward white for text on the dark drawer (no color-mix in Pravix) */
+window.pvxLightHex=function(h){ h=String(h||'').replace('#',''); if(h.length===3) h=h.split('').map(function(x){return x+x;}).join(''); if(!/^[0-9a-f]{6}$/i.test(h)) return '#D8E8F4';
+  return '#'+[0,2,4].map(function(i){ var v=parseInt(h.slice(i,i+2),16); v=Math.round(v+(255-v)*0.5); return ('0'+v.toString(16)).slice(-2); }).join(''); };
+(function(){
+  var sc=document.getElementById('pvxPlanScroll'), prev=document.getElementById('pvxPlanPrev'), next=document.getElementById('pvxPlanNext'),
+      range=document.getElementById('pvxPlanRange'), st=document.getElementById('pvxCurrStatus');
+  function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function blockThs(){ return [].slice.call(document.querySelectorAll('#currThead th.block-th')); }
+  /* which blocks are fully visible right of the sticky service column */
+  function updateRange(){
+    if(!sc) return; var ths=blockThs(); if(!ths.length){ range.textContent=''; return; }
+    var r=sc.getBoundingClientRect(), svc=document.querySelector('#currThead th.svc-col'), left=r.left+(svc?svc.getBoundingClientRect().width:0), right=r.right;
+    var vis=ths.filter(function(th){ var b=th.getBoundingClientRect(); return b.left>=left-6&&b.right<=right+6; });
+    var num=function(th){ var n=th.querySelector('.block-num'); return n?n.textContent.replace(/[^0-9]/g,''):''; };
+    var all=ths.length, first=vis[0]||ths[0], last=vis[vis.length-1]||ths[ths.length-1];
+    range.textContent=vis.length>=all?('All '+all+' blocks shown'):((first===last?('Block '+num(first)):('Blocks '+num(first)+'–'+num(last)))+' of '+all+' · scroll for more');
+    var maxX=sc.scrollWidth-sc.clientWidth;
+    prev.disabled=sc.scrollLeft<=1; next.disabled=sc.scrollLeft>=maxX-1;
+    sc.classList.toggle('more-right', sc.scrollLeft<maxX-1);
+  }
+  function step(dir){ var th=blockThs()[0], bw=th?th.getBoundingClientRect().width:100, svc=document.querySelector('#currThead th.svc-col'), sw=svc?svc.getBoundingClientRect().width:0;
+    /* one screenful of whole blocks, never less than one */
+    var w=Math.max(1,Math.floor((sc.clientWidth-sw)/bw))*bw; var calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches; sc.scrollBy({left:dir*w,behavior:calm?'auto':'smooth'}); }
+  if(sc){ prev.addEventListener('click',function(){ step(-1); }); next.addEventListener('click',function(){ step(1); });
+    sc.addEventListener('scroll',function(){ updateRange(); },{passive:true}); window.addEventListener('resize',updateRange);
+    /* arrow keys on the region itself scroll it (cells keep their own keys) */
+    sc.addEventListener('keydown',function(e){ if(e.target!==sc) return; if(e.key==='ArrowRight'){ e.preventDefault(); step(1); } else if(e.key==='ArrowLeft'){ e.preventDefault(); step(-1); } }); }
+
+  /* empty result: say so, show what is filtering, offer a way back */
+  var _render=window.renderTable;
+  window.renderTable=function(){
+    _render.apply(this,arguments);
+    var tb=document.getElementById('currTbody'), q=(document.getElementById('currSearch')||{}).value||'';
+    var filt=(typeof currFilter!=='undefined'&&currFilter!=='all')?currFilter:'';
+    var rows=tb?tb.querySelectorAll('tr').length:0;
+    if(tb&&!rows){
+      var cols=1+blockThs().length, what=q.trim()?('“'+esc(q.trim())+'”'):'this filter';
+      tb.innerHTML='<tr class="pvx-empty-row"><td colspan="'+cols+'"><div class="pvx-empty"><div class="pvx-empty-t">No services or interns match '+what+'</div>'
+        +'<div class="pvx-empty-s">'+(q.trim()?'Search looks at service names, directors and interns.':'Try another filter.')+'</div>'
+        +'<button type="button" class="pvx-empty-b" onclick="pvxClearCurr()">'+(q.trim()&&filt?'Clear search and filter':(q.trim()?'Clear search':'Show all services'))+'</button></div></td></tr>';
+    }
+    if(st){ if(q.trim()||filt) st.textContent=rows?(rows+(rows===1?' service shown':' services shown')):'No services or interns match'; else st.textContent=''; }
+    setTimeout(updateRange,0);
+  };
+  window.pvxClearCurr=function(){
+    var i=document.getElementById('currSearch'); if(i){ i.value=''; }
+    var all=document.querySelector('#currFilterChips .chip[data-f="all"]');
+    if(typeof onCurrSearch==='function') onCurrSearch('');
+    if(all&&typeof setCurrFilter==='function'&&typeof currFilter!=='undefined'&&currFilter!=='all') setCurrFilter('all',all);
+    if(i) i.focus();
+  };
+  if(document.readyState!=='loading') updateRange(); else document.addEventListener('DOMContentLoaded',updateRange);
+  window.addEventListener('load',updateRange);
+})();
+</script>
+
+<!-- PVX-N148 · Curriculum: two start groups (decision #6) -->
+<style id="pvx-n148-cur-css">
+.block-th.pvx-after,.curr-table td.pvx-after{opacity:.42}
+.block-th.pvx-after .block-dates::after{content:"After program";display:block;font-weight:700;letter-spacing:.2px;margin-top:2px}
+.pvx-groups{display:grid;gap:10px;margin-top:4px}
+.pvx-grp-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:5px}
+.pvx-grp-h b{font-size:12px;font-weight:700;color:rgba(255,255,255,.85)}
+.pvx-grp-h span{font-size:11.5px;color:rgba(255,255,255,.55)}
+.pvx-grp-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.pvx-grp-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#4DC8E0,#8B4DB5)}
+.pvx-grp-m{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:5px}
+</style>
+<script id="pvx-n148-cur-js">
+(function(){
+  /* from the interns' own pages (programStart / GRAD_DATE / BLOCKS) */
+  var GROUPS=[
+    {id:'mar', name:'March group', interns:['JH','RE','AV'], start:'2026-03-15', end:'2027-02-07',
+     blocks:[['01','2026-03-15'],['02','2026-04-19'],['03','2026-05-24'],['04','2026-07-05'],['05','2026-08-09'],['06','2026-09-13'],['07','2026-10-18'],['08','2026-11-22'],['09','2027-01-03']]},
+    {id:'jul', name:'July group', interns:['BK','KW','SH','MP'], start:'2026-06-15', end:'2027-07-04', blocks:null}];
+  GROUPS[1].blocks=BLOCKS.map(function(b){ return [b.num,b.start]; });
+  window.PVX_GROUPS=GROUPS;
+  function groupOf(k){ for(var i=0;i<GROUPS.length;i++) if(GROUPS[i].interns.indexOf(k)>-1) return GROUPS[i]; return null; }
+  function first(k){ return String(INTERN_MAP[k]||k).split(' ')[0]; }
+  function stats(g){ var now=today(), a=parseDate(g.start), e=parseDate(g.end); var total=Math.max(1,daysBetween(a,e)), el=Math.max(0,daysBetween(a,now));
+    return {pct:Math.min(100,Math.round(el/total*100)), week:Math.min(Math.round(total/7),Math.max(1,Math.ceil(el/7))), weeks:Math.round(total/7),   /* round: a DST hour must not add a week */ left:Math.max(0,daysBetween(now,e)), weeksLeft:Math.max(0,Math.ceil(Math.max(0,daysBetween(now,e))/7)), ends:e.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}), n:g.blocks.length}; }
+  function ownNum(g,start){ for(var i=0;i<g.blocks.length;i++) if(g.blocks[i][1]===start) return g.blocks[i][0]; return null; }
+  function statNum(label){ var out=null; document.querySelectorAll('.hero-stat').forEach(function(h){ var l=h.querySelector('.hero-stat-label'); if(l&&l.textContent.trim()===label) out=h.querySelector('.hero-stat-num'); }); return out; }
+  function hero(){ var g=viewMode==='my'?groupOf(ME):null, sub=document.querySelector('.hero-sub'), bn=statNum('Blocks'), wl=document.getElementById('heroWeeksLeft');
+    var pct=document.getElementById('progPct'), fill=document.getElementById('progFill'), meta=document.getElementById('progMeta'), wrap=fill&&fill.parentNode;
+    var grid=document.getElementById('pvxGroups');
+    if(g){ var t=stats(g);
+      if(sub) sub.innerHTML='13 Rotations &nbsp;·&nbsp; 6 Clinical Services &nbsp;·&nbsp; '+t.weeks+' Weeks';
+      if(bn){ bn.textContent=t.n; bn.parentNode.title=''; }
+      if(wl) wl.textContent=t.weeksLeft;
+      if(grid) grid.hidden=true; if(wrap) wrap.hidden=false; if(pct) pct.hidden=false;
+      if(pct) pct.textContent=t.pct+'%'; if(fill) fill.style.width=t.pct+'%';
+      if(meta){ meta.style.display='flex'; meta.innerHTML='<span>Week <strong style="color:rgba(255,255,255,0.85);">'+t.week+' of '+t.weeks+'</strong></span><span style="opacity:.4;">·</span><span><strong style="color:rgba(255,255,255,0.85);">'+t.left+'</strong> Days Remaining</span><span style="opacity:.4;">·</span><span>Program ends: <strong style="color:rgba(255,255,255,0.85);">'+t.ends+'</strong></span>'; }
+      /* the current-block card in the intern's own numbering */
+      var hb=document.getElementById('hbcBlock'), hn=document.getElementById('hbcNext'), cur=BLOCKS.find(function(b){ return b.num===currentBlockNum; });
+      if(cur&&hb){ var o=ownNum(g,cur.start); if(o) hb.textContent='BLOCK '+o; }
+      if(hn&&cur){ var i=BLOCKS.indexOf(cur), nx=BLOCKS[i+1]; if(nx){ var on=ownNum(g,nx.start); hn.textContent=on?'Next: Block '+on+' begins '+fmtDate(nx.start):'Your program ends '+t.ends; } }
+      return; }
+    /* Entire Class (or no identity): both groups, each with its own line */
+    var ts=GROUPS.map(stats);
+    if(sub) sub.innerHTML='13 Rotations &nbsp;·&nbsp; 6 Clinical Services &nbsp;·&nbsp; 2 start groups';
+    if(bn){ bn.textContent=ts[0].n+' · '+ts[1].n; bn.parentNode.title='March group '+ts[0].n+' blocks · July group '+ts[1].n+' blocks'; }
+    if(wl) wl.textContent=ts[0].weeksLeft+' · '+ts[1].weeksLeft;
+    if(wrap) wrap.hidden=true; if(pct) pct.hidden=true; if(meta) meta.style.display='none';
+    if(!grid&&wrap){ grid=document.createElement('div'); grid.id='pvxGroups'; grid.className='pvx-groups'; wrap.parentNode.insertBefore(grid,wrap); }
+    if(grid){ grid.hidden=false; grid.innerHTML=GROUPS.map(function(g,i){ var t=ts[i];
+      return '<div class="pvx-grp"><div class="pvx-grp-h"><b>'+g.name+' · '+g.interns.map(first).join(', ')+'</b><span>'+t.pct+'%</span></div>'
+        +'<div class="pvx-grp-bar" role="progressbar" aria-label="'+g.name+' progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+t.pct+'"><i style="width:'+t.pct+'%"></i></div>'
+        +'<div class="pvx-grp-m">Week '+t.week+' of '+t.weeks+' · '+t.n+' blocks · ends '+t.ends+'</div></div>'; }).join(''); }
+    var hb2=document.getElementById('hbcBlock'); if(hb2&&currentBlockNum) hb2.textContent='BLOCK '+currentBlockNum;
+  }
+  function table(){ var g=viewMode==='my'?groupOf(ME):null, th=document.querySelectorAll('#currThead .block-th'), end=g?parseDate(g.end):null;
+    BLOCKS.forEach(function(b,i){ var h=th[i]; if(!h) return; var n=h.querySelector('.block-num');
+      var own=g?ownNum(g,b.start):b.num, after=!!(g&&parseDate(b.start)>=end);
+      if(n) n.textContent=after?'—':'BLOCK '+(own||b.num); h.classList.toggle('pvx-after',after);
+      document.querySelectorAll('#currTbody tr').forEach(function(tr){ var c=tr.children[i+1]; if(c) c.classList.toggle('pvx-after',after); }); }); }
+  var _rt=renderTable; renderTable=function(){ var r=_rt.apply(this,arguments); try{ table(); hero(); }catch(e){ console.warn('[curriculum] groups',e); } return r; };
+  try{ table(); hero(); }catch(e){}
 })();
 </script>
 </body>

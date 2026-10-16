@@ -44,6 +44,16 @@
     .gate-card button:disabled { opacity:.6; cursor:default; }
     .gate-card .link { background:none; color:var(--accent); height:auto; margin-top:14px; font-weight:600; }
     .gate-err { min-height:18px; margin-top:12px; font-size:13px; color:var(--danger); }
+    /* PVX-N143 GRD-02/04 */
+    #grid-fail { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:24px; text-align:center; color:var(--ink); background:var(--bg); z-index:5; }
+    #grid-fail[hidden] { display:none; }
+    #grid-fail img { width:40px; height:39px; margin-bottom:6px; }
+    #grid-fail .is-dark { display:none; } :root[data-theme="dark"] #grid-fail .is-dark { display:block; } :root[data-theme="dark"] #grid-fail .is-light { display:none; }
+    #grid-fail h2 { margin:0; font-size:20px; letter-spacing:-.01em; }
+    #grid-fail p { margin:0 0 10px; max-width:380px; font-size:14px; line-height:1.45; color:var(--ink2); }
+    #grid-fail button { min-width:160px; height:44px; border:0; border-radius:10px; background:var(--primary); color:#fff; font:inherit; font-size:15px; font-weight:600; cursor:pointer; }
+    #grid-fail button:focus-visible { outline:3px solid var(--ring); outline-offset:2px; }
+    .sr { position:absolute !important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
   </style>
 </head>
 <body>
@@ -63,10 +73,17 @@
   </div>
   <main class="stage">
     <canvas id="gridcraft_canvas" aria-label="Grid by Pravix spreadsheet"></canvas>
-    <div id="gridcraft_loading">
+    <div id="gridcraft_loading" role="status">
       <img class="is-light" src="assets/pvx-icon-plogo-light.png" alt=""><img class="is-dark" src="assets/pvx-icon-plogo-dark.png" alt="">
-      <span class="spin" aria-hidden="true"></span>Opening Grid…
+      <span class="spin" aria-hidden="true"></span><span id="grid-msg">Opening Grid…</span>
     </div>
+    <div id="grid-fail" role="alert" hidden>
+      <img class="is-light" src="assets/pvx-icon-plogo-light.png" alt=""><img class="is-dark" src="assets/pvx-icon-plogo-dark.png" alt="">
+      <h2>Grid couldn’t open</h2>
+      <p>Part of Grid didn’t download. Check the connection, then try again. Your workbooks and reports aren’t affected.</p>
+      <button type="button" id="grid-retry">Try again</button>
+    </div>
+    <div id="grid-live" class="sr" aria-live="polite"></div>
   </main>
   <script>
     // Keep the browser's bar colour with the theme (Grid's switch changes data-theme).
@@ -96,15 +113,25 @@
     let started = false;
     async function start() {
       if (started) return; started = true;
-      gate.classList.remove('on'); loading.style.display = '';
-      const { default: init } = await import('./gridcraft_web.js?v=' + V);
-      // The engine ships in two parts (GitHub's upload limit); join them, then start.
-      const parts = await Promise.all(['engine.part0', 'engine.part1'].map(p =>
-        fetch('./' + p + '?v=' + V).then(r => { if (!r.ok) throw new Error(p + ' ' + r.status); return r.arrayBuffer(); })));
-      const bytes = new Uint8Array(parts.reduce((n, b) => n + b.byteLength, 0));
-      let at = 0; for (const b of parts) { bytes.set(new Uint8Array(b), at); at += b.byteLength; }
-      init({ module_or_path: bytes });
+      gate.classList.remove('on'); loading.style.display = ''; $('grid-fail').hidden = true; $('grid-msg').textContent = 'Opening Grid…';
+      /* PVX-N143 GRD-04: a slow first open says so instead of spinning silently */
+      const slow = setTimeout(() => { $('grid-msg').textContent = 'Still opening — the first time takes longer on a slow connection.'; }, 15000);
+      try {
+        const { default: init } = await import('./gridcraft_web.js?v=' + V);
+        // The engine ships in two parts (GitHub's upload limit); join them, then start.
+        const parts = await Promise.all(['engine.part0', 'engine.part1'].map(p =>
+          fetch('./' + p + '?v=' + V).then(r => { if (!r.ok) throw new Error(p + ' ' + r.status); return r.arrayBuffer(); })));
+        const bytes = new Uint8Array(parts.reduce((n, b) => n + b.byteLength, 0));
+        let at = 0; for (const b of parts) { bytes.set(new Uint8Array(b), at); at += b.byteLength; }
+        await init({ module_or_path: bytes });
+        clearTimeout(slow); $('grid-live').textContent = 'Grid is open.';
+      } catch (e) {
+        /* PVX-N143 GRD-02: not a dead end — say what happened and offer Try again */
+        clearTimeout(slow); console.warn('[grid] start failed', e); started = false;
+        loading.style.display = 'none'; $('grid-fail').hidden = false; setTimeout(() => $('grid-retry').focus(), 50);
+      }
     }
+    $('grid-retry').addEventListener('click', () => start());
     function show(text, fields) {
       loading.style.display = 'none'; gate.classList.add('on');
       $('gate-text').textContent = text; $('gate-fields').hidden = !fields; $('gate-out').hidden = fields;

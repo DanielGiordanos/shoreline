@@ -1033,7 +1033,7 @@ function initCurrentBlock() {
   const GRAD_DATE    = parseDate('2027-02-07'); // graduation: February 7, 2027
   const programEnd   = GRAD_DATE;
   const totalDays    = daysBetween(programStart, programEnd);
-  const totalWeeks   = Math.max(1, Math.ceil(totalDays / 7));
+  const totalWeeks   = Math.max(1, Math.round(totalDays / 7));   /* PVX-N148: a DST hour must not add a week */
   const elapsed      = Math.max(0, daysBetween(programStart, now));
   const pct          = Math.min(100, Math.round((elapsed / totalDays) * 100));
   const weeksElapsed = Math.ceil(elapsed / 7);
@@ -1656,6 +1656,33 @@ window.__pvxFB=(function(){
   var lb=document.getElementById('logoutBtn'); if(!lb) return;
   lb.addEventListener('pointermove',function(e){ var r=lb.getBoundingClientRect(); lb.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%'); lb.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%'); });
   lb.addEventListener('pointerleave',function(){ lb.style.setProperty('--mx','50%'); lb.style.setProperty('--my','50%'); });
+})();
+</script>
+
+<!-- PVX-N148 · Curriculum: this intern's own block count, weeks and program end (decision #6) -->
+<style id="pvx-n148-cur-css">
+.block-th.pvx-after,.curr-table td.pvx-after{opacity:.42}
+.block-th.pvx-after .block-dates::after{content:"After your program";display:block;font-weight:700;letter-spacing:.2px;margin-top:2px}
+.pvx-groups{display:grid;gap:10px;margin-top:4px}
+.pvx-grp-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:5px}
+.pvx-grp-h b{font-size:12px;font-weight:700;color:rgba(255,255,255,.85)}
+.pvx-grp-h span{font-size:11.5px;color:rgba(255,255,255,.55)}
+.pvx-grp-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.pvx-grp-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#4DC8E0,#8B4DB5)}
+.pvx-grp-m{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:5px}
+</style>
+<script id="pvx-n148-cur-js">
+(function(){
+  var m=String(initCurrentBlock).match(/programStart\s*=\s*parseDate\('([0-9-]+)'\)[\s\S]*?GRAD_DATE\s*=\s*parseDate\('([0-9-]+)'\)/); if(!m) return;
+  var a=parseDate(m[1]), e=parseDate(m[2]);
+  function fix(){ var n=BLOCKS.filter(function(b){ return parseDate(b.start)<e; }).length, w=Math.max(1,Math.round(daysBetween(a,e)/7));
+    document.querySelectorAll('.hero-stat').forEach(function(h){ var l=h.querySelector('.hero-stat-label'); if(l&&l.textContent.trim()==='Blocks') h.querySelector('.hero-stat-num').textContent=n; });
+    var sub=document.querySelector('.hero-sub'); if(sub) sub.innerHTML=sub.innerHTML.replace(/\d+ Weeks/,w+' Weeks');
+    var th=document.querySelectorAll('#currThead .block-th');
+    BLOCKS.forEach(function(b,i){ var after=parseDate(b.start)>=e, h=th[i]; if(h) h.classList.toggle('pvx-after',after);
+      document.querySelectorAll('#currTbody tr').forEach(function(tr){ var c=tr.children[i+1]; if(c) c.classList.toggle('pvx-after',after); }); }); }
+  if(typeof renderTable==='function'){ var _rt=renderTable; renderTable=function(){ var r=_rt.apply(this,arguments); try{ fix(); }catch(x){} return r; }; }
+  try{ fix(); }catch(x){}
 })();
 </script>
 </body>

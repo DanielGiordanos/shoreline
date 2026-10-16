@@ -6908,7 +6908,8 @@ shareBaseUrl:'',
 reports: {
 endpoint:'',
 authHeader:'',
-ownerEmail:''
+ownerEmail:'Daniel.Giordano@vca.com',   /* PVX-N148 decision #5 */
+ownerName:'Daniel Giordano'
 },
 introDefaultDays: 30,
 introMaxLength: 320,
@@ -7338,13 +7339,13 @@ dxOpen('reportScrim','#rp-cat');
 }
 function reportPrimaryBtn(mode){
 if(mode==='endpoint'||mode==='fixture') return`<button class="dx-btn primary" type="submit" id="rp-submit">Submit report</button>`;
-if(mode==='email') return`<button class="dx-btn primary" type="button" id="rp-submit" onclick="reportEmailDraft()">Open email draft</button>`;
+if(mode==='email') return`<button class="dx-btn primary" type="button" id="rp-submit" onclick="reportEmailDraft()">Write email</button>`;
 return`<button class="dx-btn primary" type="button" id="rp-submit" disabled aria-disabled="true">Submit report</button>`;
 }
 function reportModeNote(mode){
 const s=document.getElementById('rp-status'); if(!s) return;
 if(mode==='none') s.innerHTML='<div class="dx-note warn"><strong>Reporting isn’t connected yet.</strong> Set <code>DIR_CONFIG.reports.endpoint</code> (a directory-owner queue) or <code>DIR_CONFIG.reports.ownerEmail</code> (email fallback) to enable it. Nothing you type here is sent or stored.</div>';
-else if(mode==='email') s.innerHTML='<div class="dx-note"><strong>Email fallback.</strong> This opens a pre-filled draft in your mail app — you must send it yourself. It is not submitted to a queue.</div>';
+else if(mode==='email') s.innerHTML='<div class="dx-note">This opens an email to <strong>'+escH(DIR_CONFIG.reports.ownerName||DIR_CONFIG.reports.ownerEmail)+'</strong> ('+escH(DIR_CONFIG.reports.ownerEmail)+') in your mail app, filled in with what you wrote. Press Send there to report it.</div>';   /* PVX-N148 */
 else if(mode==='fixture') s.innerHTML='<div class="dx-note warn"><strong>Synthetic fixture mode.</strong> Reports go to an in-memory test queue on this page only — nothing is sent to anyone.</div>';
 else s.innerHTML='';
 }
@@ -7388,9 +7389,9 @@ function reportEmailDraft(){
 const form=document.getElementById('reportForm'); if(!form) return;
 const id=+form.getAttribute('onsubmit').match(/reportSubmit\((\d+)\)/)[1]; const emp=byId(id); const rep=collectReport(emp);
 const lines=['Directory problem report','','Person: '+rep.personName,'Category: '+rep.categoryLabel, rep.currentValue?'Current value: '+rep.currentValue:'', rep.suggestion?'Suggested correction: '+rep.suggestion:'', rep.explanation?'Details: '+rep.explanation:'', rep.reporter?'Reported by: '+rep.reporter:'','Reported: '+fmtStamp(rep.createdAt)].filter(x=>x!=='');
-const href='mailto:'+encodeURIComponent(DIR_CONFIG.reports.ownerEmail)+'?subject='+encodeURIComponent('Directory correction: '+rep.personName+' — '+rep.categoryLabel)+'&body='+encodeURIComponent(lines.join('\n'));
+const href='mailto:'+DIR_CONFIG.reports.ownerEmail+'?subject='+encodeURIComponent('Directory correction: '+rep.personName+' — '+rep.categoryLabel)+'&body='+encodeURIComponent(lines.join('\n'));
 window.location.href=href;
-document.getElementById('rp-status').innerHTML='<div class="dx-note warn"><strong>Email draft opened.</strong> This report is only delivered once you send the email from your mail app — it has not been submitted anywhere yet.</div>';
+document.getElementById('rp-status').innerHTML='<div class="dx-note warn"><strong>Your mail app should be open.</strong> The report reaches '+escH(DIR_CONFIG.reports.ownerName||'the directory owner')+' when you press Send there. If no email opened, write to '+escH(DIR_CONFIG.reports.ownerEmail)+'.</div>';   /* PVX-N148 */
 }
 
  
@@ -7883,7 +7884,7 @@ var LETTERS='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 var bar=document.createElement('nav'); bar.className='az-bar'; bar.setAttribute('aria-label','Jump to letter');
 LETTERS.forEach(function(L){var b=document.createElement('button');b.type='button';b.className='az-let';b.textContent=L;b.dataset.letter=L;b.setAttribute('aria-label','Jump to '+L);bar.appendChild(b);});
 document.body.appendChild(bar);
-function cards(){return Array.prototype.slice.call(document.querySelectorAll('#empGrid .emp-card, #favGrid .emp-card'));}
+function cards(){return Array.prototype.slice.call(document.querySelectorAll('#empGrid .emp-card:not(.search-hidden), #favGrid .emp-card:not(.search-hidden)'));}
 function nameOf(c){var n=c.querySelector('.emp-name');return n?(n.textContent||'').trim():'';}
 function firstFor(L){var cs=cards();for(var i=0;i<cs.length;i++){if(nameOf(cs[i]).charAt(0).toUpperCase()===L)return cs[i];}return null;}
 bar.addEventListener('click',function(e){var b=e.target.closest('.az-let');if(!b)return;var c=firstFor(b.dataset.letter);if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('az-flash');setTimeout(function(){c.classList.remove('az-flash');},900);}});
@@ -7894,6 +7895,7 @@ bar.addEventListener('keydown',function(e){var k=e.key;if(k==='Enter'||k===' '){
 bar.addEventListener('focusin',function(){bar.classList.add('az-kbd');});bar.addEventListener('focusout',function(){setTimeout(function(){if(!bar.contains(document.activeElement))bar.classList.remove('az-kbd');},0);});
 if(typeof render==='function'){var _r=render;render=function(){_r.apply(this,arguments);try{update();}catch(e){}};}
 update();
+window.pvxAzUpdate=function(){ try{ update(); }catch(e){} var any=bar.querySelector('.az-let:not(:disabled)'); bar.hidden=!any; };
 })();
 </script>
 <!-- PV-MOTION-START -->
@@ -8074,8 +8076,20 @@ out+=line('M185 478 V620 H12 V898 H185 V922 M735 290 V310 H12 V620','medical');
 out+=line('M1810 592 H1834 V974 H1810','danielle');
 out+=line('M1010 326 V348 H1544 V890 H1405 V922 M865 644 V862 H1405 V890 M1135 644 V862','stephanie');
 return`<svg class="oc-lines" width="2130" height="1260" aria-hidden="true">${out}</svg>`;}
+let listMode=false;
+/* PVX-N139 (DTA-D07): the reporting structure as a readable outline — same model as the chart (managers/people/groups) */
+function outline(){
+  const keys=Object.keys(pos), kids=k=>keys.filter(c=>(managers[c]||[])[0]===k);
+  const roots=keys.filter(k=>!(managers[k]||[]).length);
+  const also=k=>(managers[k]||[]).slice(1).map(name);
+  const item=k=>{const p=people[k],g=groups[k]?.(),ch=kids(k),a=also(k);
+    const head=g?`<details class="oc-o-group"><summary><strong>${escH(name(k))}</strong> <span>${g.length} colleagues</span></summary><ul>${g.map(e=>`<li><button type="button" class="oc-o-person" data-profile="${e.id}">${escH(e.name)}</button> <span class="oc-o-title">${escH(e.title||'')}</span></li>`).join('')}</ul></details>`
+      :(p?`<button type="button" class="oc-o-person" data-profile="${p.id}"><strong>${escH(name(k))}</strong></button> <span class="oc-o-title">${escH(title(k))}</span>`:`<strong>${escH(name(k))}</strong>`);
+    return `<li>${head}${a.length?`<div class="oc-o-also">Also reports to ${a.map(escH).join(', ')}</div>`:''}${ch.length?`<ul>${ch.map(item).join('')}</ul>`:''}</li>`;};
+  return `<nav class="oc-outline" aria-label="Reporting structure as a list"><ul>${roots.map(item).join('')}</ul></nav>`;
+}
 function side(){const k=selected,p=people[k],g=groups[k]?.();const parents=managers[k]||[];const children=Object.keys(managers).filter(c=>managers[c].includes(k));const link=c=>`<button type="button" class="oc-relation" data-oc="${c}"><span>${escH(name(c))}</span><span aria-hidden="true">›</span></button>`;return`<aside class="oc-side"><div class="oc-eyebrow">${g?'Team':'Selected colleague'}</div><h3>${escH(name(k))}</h3><p>${g?g.length+' colleagues':escH(title(k))}</p>${k==='gregory'?'<h4>Scope of Leadership</h4><p>Oversees the hospital as a whole and leads non-physician staff. Heather leads the doctors at the same leadership level.</p>':k==='heather'?'<h4>Scope of Leadership</h4><p>Oversees the doctors alongside Gregory, who has hospital-wide oversight. Both oversee Kelley Harpin, Veterinarian Lead.</p>':''}${parents.length?'<h4>'+(parents.length>1?'Shared Reporting':'Reports to')+'</h4>'+parents.map(link).join(''):''}${children.length?'<h4>Direct teams & reports</h4>'+children.map(link).join(''):''}${g?'<div class="oc-roster">'+g.map(e=>`<button type="button" class="oc-relation" data-profile="${e.id}"><span>${escH(e.name)}<small>${escH(e.id===people.daniel?.id?titles.daniel:e.title||'')}</small></span><span aria-hidden="true">›</span></button>`).join('')+'</div>':''}${k==='nelson'?'<h4>Contact</h4><a class="oc-relation" href="tel:+14757319407">(475) 731-9407</a>':''}${k==='joe'?'<h4>Contact</h4><a class="oc-relation" href="tel:+18453252935">(845) 325-2935</a><a class="oc-relation" href="mailto:Joe.Beck@vca.com">Joe.Beck@vca.com</a>':''}${p?.id?`<button class="disposition-card admit oc-profile" type="button" data-profile="${p.id}" aria-label="Open profile"><span class="dc-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span><span class="dc-body"><span class="dc-title">Open profile</span></span><span class="dc-arrow"><svg viewBox="0 0 24 24"><path d="M7 7L17 17"/><path d="M17 11v6h-6"/></svg></span></button>`:''}${k==='stephanie'?'<h4>Head Purchaser</h4><p>Reports to Gregory Lalka and Kristina Staff.</p><h4>Technician</h4><p>Reports to Brandy Fellin and Kimberly Hulme.</p>':''}${['brandy','kimberly'].includes(k)?'<p class="oc-note">Positioned below client services management; reporting lines connect to hospital leadership.</p>':''}</aside>`;}
-renderOrgView=function(){if(dirView!=='org')return;const host=document.getElementById('orgView');if(!host)return;host.innerHTML=`<section class="oc-shell"><header class="oc-header"><div><div class="oc-eyebrow">Shoreline · Organization</div><h2>Reporting structure</h2></div><div class="oc-controls"><button type="button" data-zoom="out" aria-label="Zoom out">−</button><span>${Math.round(scale*100)}%</span><button type="button" data-zoom="in" aria-label="Zoom in">+</button><button type="button" data-zoom="fit">Fit</button></div></header><div class="oc-legend"><span><i></i>Reports to</span><span><i class="shared"></i>Shared Reporting</span></div><div class="oc-layout"><div class="oc-viewport" tabindex="0" aria-label="Organization chart. Scroll horizontally to explore."><div class="oc-size" style="width:${2130*scale}px;height:${1260*scale}px"><div class="oc-canvas" style="transform:scale(${scale})">${lines()}<div class="oc-band" style="left:60px;top:136px">Hospital Leadership</div><div class="oc-band" style="left:60px;top:650px">Client Services</div><div class="oc-band" style="left:60px;top:850px">Medical Team</div><div class="oc-band" style="left:1280px;top:850px">Purchasing &amp; Clinical Support</div><div class="oc-band" style="left:1840px;top:480px">Administrative Support</div><div class="oc-band" style="left:740px;top:480px">Technician Supervision</div><div class="oc-band" style="left:1560px;top:480px">Facilities</div><div class="oc-band" style="left:340px;top:868px">Internship Program</div>${Object.keys(pos).map(card).join('')}</div></div></div>${side()}</div></section>`;host.querySelectorAll('[data-oc]').forEach(b=>b.onclick=()=>{const v=host.querySelector('.oc-viewport'),x=v.scrollLeft,y=v.scrollTop;selected=b.dataset.oc;renderOrgView();const next=host.querySelector('.oc-viewport');next.scrollLeft=x;next.scrollTop=y;host.querySelector(`.oc-card[data-oc="${selected}"]`)?.focus({preventScroll:true});});host.querySelectorAll('[data-profile]').forEach(b=>b.onclick=()=>openDrawer(Number(b.dataset.profile)));host.querySelectorAll('[data-zoom]').forEach(b=>b.onclick=()=>{scale=b.dataset.zoom==='fit'?Math.max(.35,Math.min(1,host.querySelector('.oc-viewport').clientWidth/2130)):Math.max(.35,Math.min(1.25,scale+(b.dataset.zoom==='in'?.1:-.1)));renderOrgView();});};
+renderOrgView=function(){if(dirView!=='org')return;const host=document.getElementById('orgView');if(!host)return;host.innerHTML=`<section class="oc-shell"><header class="oc-header"><div><div class="oc-eyebrow">Shoreline · Organization</div><h2>Reporting structure</h2></div><div class="oc-controls"><button type="button" data-zoom="out" aria-label="Zoom out">−</button><span>${Math.round(scale*100)}%</span><button type="button" data-zoom="in" aria-label="Zoom in">+</button><button type="button" data-zoom="fit" title="Fit the whole chart (overview)">Overview</button><button type="button" data-zoom="100">100%</button><button type="button" data-oclist aria-pressed="${listMode}">List</button></div></header><div class="oc-legend"><span><i></i>Reports to</span><span><i class="shared"></i>Shared Reporting</span></div>${(!listMode&&scale<.7)?'<p class="oc-overview-note" role="note">Overview: the chart is scaled to fit, so names are too small to read. Choose <b>100%</b> to read it, or <b>List</b> for the same structure as text.</p>':''}${listMode?outline():''}<div class="oc-layout"${listMode?' hidden':''}><div class="oc-viewport" tabindex="0" aria-label="Organization chart. Scroll horizontally to explore."><div class="oc-size" style="width:${2130*scale}px;height:${1260*scale}px"><div class="oc-canvas" style="transform:scale(${scale})">${lines()}<div class="oc-band" style="left:60px;top:136px">Hospital Leadership</div><div class="oc-band" style="left:60px;top:650px">Client Services</div><div class="oc-band" style="left:60px;top:850px">Medical Team</div><div class="oc-band" style="left:1280px;top:850px">Purchasing &amp; Clinical Support</div><div class="oc-band" style="left:1840px;top:480px">Administrative Support</div><div class="oc-band" style="left:740px;top:480px">Technician Supervision</div><div class="oc-band" style="left:1560px;top:480px">Facilities</div><div class="oc-band" style="left:340px;top:868px">Internship Program</div>${Object.keys(pos).map(card).join('')}</div></div></div>${side()}</div></section>`;host.querySelectorAll('[data-oc]').forEach(b=>b.onclick=()=>{const v=host.querySelector('.oc-viewport'),x=v.scrollLeft,y=v.scrollTop;selected=b.dataset.oc;renderOrgView();const next=host.querySelector('.oc-viewport');next.scrollLeft=x;next.scrollTop=y;host.querySelector(`.oc-card[data-oc="${selected}"]`)?.focus({preventScroll:true});});host.querySelectorAll('[data-profile]').forEach(b=>b.onclick=()=>openDrawer(Number(b.dataset.profile)));host.querySelectorAll('[data-zoom]').forEach(b=>b.onclick=()=>{scale=b.dataset.zoom==='fit'?Math.max(.35,Math.min(1,host.querySelector('.oc-viewport').clientWidth/2130)):b.dataset.zoom==='100'?1:Math.max(.35,Math.min(1.25,scale+(b.dataset.zoom==='in'?.1:-.1)));listMode=false;renderOrgView();host.querySelector('[data-zoom="'+b.dataset.zoom+'"]')?.focus();});host.querySelectorAll('[data-oclist]').forEach(b=>b.onclick=()=>{listMode=!listMode;renderOrgView();host.querySelector('[data-oclist]')?.focus();});};
 const previousFocus=orgFocus;orgFocus=function(id){const k=Object.keys(people).find(k=>people[k]?.id===id)||Object.keys(groups).find(k=>groups[k]().some(e=>e.id===id));if(k){selected=k;setView('org');}else openDrawer(id);};
 
 function formatPhone(value){const digits=String(value||'').replace(/\D/g,'');const n=digits.length===11&&digits[0]==='1'?digits.slice(1):digits;return n.length===10?'('+n.slice(0,3)+') '+n.slice(3,6)+'-'+n.slice(6):value;}
@@ -8280,6 +8294,91 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
   window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
+})();
+</script>
+
+<!-- PVX-N139 · Directory: letter rail, empty states, profile order, organization overview -->
+<style id="pvx-n139-css">
+body.view-org .az-bar,body.view-reports .az-bar,.az-bar[hidden]{display:none!important}
+.pvx-empty-actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.pvx-empty-b{padding:9px 18px;border-radius:99px;border:1px solid rgba(77,200,224,.38);background:rgba(77,200,224,.12);color:var(--text-primary);font:600 13px Inter,Arial,sans-serif;cursor:pointer;min-height:36px}
+.pvx-empty-b:focus-visible,.oc-o-person:focus-visible,.pvx-assign>summary:focus-visible{outline:2px solid var(--cyan-ink,#0F6B82);outline-offset:2px}
+.pvx-star{display:inline-block;width:1.1em;text-align:center;color:var(--amber-ink,#875C00)}
+/* D06: assignment analytics behind a disclosure, after the directory information */
+.pvx-assign{margin:6px 0 18px;border:1px solid var(--border-subtle,rgba(0,0,0,.08));border-radius:14px;padding:0 14px}
+.pvx-assign>summary{cursor:pointer;padding:12px 0;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);list-style-position:inside}
+.pvx-assign[open]>summary{border-bottom:1px solid var(--border-subtle,rgba(0,0,0,.08));margin-bottom:12px}
+.pvx-assign .pv-activity{margin-top:0}
+/* contrast (rendered probe): the profile's contact links now sit at the top in light mode; section titles; footer */
+body:not(.dark) .d-grid .v a,body:not(.dark) .drawer-field-val a{color:var(--cyan-ink,#0F6B82)!important}
+body:not(.dark) .drawer-section-title,body:not(.dark) .dw-head .drawer-section-title{color:#5E5E63!important}
+.site-footer .footer-text{color:rgba(255,255,255,.72)!important}.site-footer>div:last-child{color:rgba(255,255,255,.66)!important}
+/* D07 */
+.oc-overview-note{margin:0 0 12px;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.45;color:var(--text-secondary);background:rgba(77,200,224,.08);border:1px solid rgba(77,200,224,.22)}
+.oc-controls [data-oclist][aria-pressed="true"]{background:rgba(77,200,224,.16);border-color:rgba(77,200,224,.45)}
+.oc-outline{padding:6px 4px 18px}
+.oc-outline ul{list-style:none;margin:0;padding:0 0 0 20px;border-left:1px solid var(--border-subtle,rgba(0,0,0,.1))}
+.oc-outline>ul{padding-left:0;border-left:0}
+.oc-outline li{margin:8px 0;font-size:14px;color:var(--text-primary)}
+.oc-o-person{background:none;border:0;padding:2px 0;font:inherit;color:var(--cyan-ink,#0F6B82);cursor:pointer;text-align:left}
+.oc-o-person strong{font-weight:700}
+.oc-o-title{color:var(--text-muted);font-size:13px}
+.oc-o-also{font-size:12px;color:var(--text-muted);margin:2px 0 0}
+.oc-o-group>summary{cursor:pointer}
+.oc-o-group>summary span{color:var(--text-muted);font-size:13px}
+.oc-o-group ul{margin-top:6px}
+</style>
+<script id="pvx-n139-js">
+(function(){
+  var GENERIC=null;
+  function el(id){ return document.getElementById(id); }
+  /* D08: the Favorites collection and a search with no match are different situations */
+  var _filter=window.filterBySearch;
+  window.filterBySearch=function(){
+    _filter.apply(this,arguments);
+    var empty=el('emptyState'); if(!empty) return;
+    if(GENERIC===null) GENERIC=empty.innerHTML;
+    var icon=(empty.querySelector('.empty-icon')||{}).outerHTML||'';
+    var q=(el('searchInput')||{}).value||'', favs=(typeof favorites!=='undefined'&&favorites)?favorites.length:0;
+    var filt=(typeof activeFilter!=='undefined')?activeFilter:'all';
+    if(empty.style.display!=='none'){
+      if(filt==='Favorites'&&!favs&&!q.trim()){
+        empty.innerHTML=icon+'<h3>No favorites yet</h3><p>Select the <span class="pvx-star" aria-hidden="true">☆</span> star on a colleague’s card to keep them here.</p>'
+          +'<div class="pvx-empty-actions"><button type="button" class="pvx-empty-b" onclick="pvxDirAll()">Browse all people</button></div>';
+      } else {
+        var what=q.trim()?('No one matches “'+q.trim().replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];})+'”'):'No one matches this filter';
+        var btns=(q.trim()?'<button type="button" class="pvx-empty-b" onclick="pvxDirClearSearch()">Clear search</button>':'')
+          +(filt!=='all'?'<button type="button" class="pvx-empty-b" onclick="pvxDirAll()">Show everyone</button>':'');
+        empty.innerHTML=icon+'<h3>'+what+'</h3><p>'+(filt==='Favorites'?'Search looks only inside your favorites.':'Try a name, role, department or extension.')+'</p>'+(btns?'<div class="pvx-empty-actions">'+btns+'</div>':'');
+      }
+    }
+    if(typeof window.pvxAzUpdate==='function') window.pvxAzUpdate();
+  };
+  window.pvxDirAll=function(){ var c=document.querySelector('.chip[data-filter="all"]'); if(c&&typeof setFilter==='function') setFilter('all',c); var s=el('searchInput'); if(s) s.focus(); };
+  window.pvxDirClearSearch=function(){ if(typeof clearSearch==='function') clearSearch(); var s=el('searchInput'); if(s) s.focus(); };
+
+  /* D06: identity and contact first; patient-assignment analytics (with their caveats) behind a disclosure, last */
+  var assignOpen=false;
+  var _open=window.openDrawer;
+  window.openDrawer=function(){
+    var r=_open.apply(this,arguments);
+    try{
+      var body=el('drawerBody'); if(!body) return r;
+      var secs=[].slice.call(body.children), title=function(c){ var t=c.querySelector&&c.querySelector('.drawer-section-title'); return t?t.textContent.trim().toLowerCase():''; };
+      var pick=function(f){ return secs.filter(f); };
+      var contact=pick(function(c){ return title(c)==='contact'; }), reporting=pick(function(c){ return title(c)==='reporting'; }),
+          week=pick(function(c){ return c.classList&&c.classList.contains('drawer-week'); }), act=el('pv-activity');
+      var front=[].concat(contact, reporting, week);
+      front.reverse().forEach(function(c){ body.insertBefore(c, body.firstChild); });
+      if(act&&!act.closest('.pvx-assign')){
+        var d=document.createElement('details'); d.className='pvx-assign'; d.open=assignOpen;
+        d.innerHTML='<summary>Patient assignments</summary>'; d.addEventListener('toggle',function(){ assignOpen=d.open; });
+        body.appendChild(d); d.appendChild(act);
+      }
+    }catch(e){ console.warn('pvx profile order',e); }
+    return r;
+  };
+  if(typeof window.pvxAzUpdate==='function') window.pvxAzUpdate();
 })();
 </script>
 </body>

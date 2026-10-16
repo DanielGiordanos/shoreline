@@ -9,7 +9,7 @@
 :root{
   --brand-navy:#0C2952; --brand-cyan:#4DC8E0; --brand-purple:#8B4DB5; --brand-coral:#E8644A; --brand-green:#1a9e6e; --brand-amber:#E8A830;
   --bg:#E4F0F8; --surface-0:#FFFFFF; --surface-1:#F4F9FC; --surface-2:#EAF3F8; --nav-bg:#0C2952;
-  --text-primary:#0A2240; --text-secondary:#3A5572; --text-muted:#7A9BB5;
+  --text-primary:#0A2240; --text-secondary:#3A5572; --text-muted:#56708A;
   --border:rgba(12,41,82,0.10); --border-subtle:rgba(12,41,82,0.06); --border-strong:rgba(12,41,82,0.18);
   --glass-bg:rgba(255,255,255,0.32); --glass-border:rgba(255,255,255,0.9);
   --glass-shadow:0 20px 60px rgba(20,50,95,0.14),0 6px 18px rgba(20,50,95,0.07),inset 0 1px 0 rgba(255,255,255,0.98),inset 0 0 0 1px rgba(255,255,255,0.4);
@@ -17,7 +17,7 @@
 }
 body.dark{
   --bg:#080E1A; --surface-0:#0E1628; --surface-1:#131E34; --surface-2:#192540; --nav-bg:#0A1222;
-  --text-primary:#D8E8F4; --text-secondary:#7A98B8; --text-muted:#3A5070;
+  --text-primary:#D8E8F4; --text-secondary:#93AAC4; --text-muted:#7690AE;
   --border:rgba(77,200,224,0.10); --border-subtle:rgba(77,200,224,0.05); --border-strong:rgba(77,200,224,0.18);
   --glass-bg:rgba(14,22,40,0.45); --glass-border:rgba(77,200,224,0.18);
   --glass-shadow:0 8px 40px rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.6),inset 0 1px 0 rgba(77,200,224,0.08);
@@ -415,6 +415,7 @@ body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,bo
       <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
       <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
       <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
       <script id="pvx-grid-link-js">(function(){var OK=["daniel.giordano@pravix.app"];function el(){return document.getElementById("navGrid")}
 function show(e){var a=el();if(a)a.style.display=(e&&OK.indexOf(String(e).toLowerCase())>-1)?"":"none"}
 function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
@@ -622,7 +623,7 @@ function colorCellByText(cell){
   if(!hex){for(const k in map){if(k.startsWith(lc)||lc.startsWith(k)){hex=map[k];break;}}}
   if(hex){const rgb=hexToRgb(hex);
     cell.style.background=rgba(rgb,dark?0.16:0.10);
-    cell.style.color=dark?toHex(lighten(rgb,0.5)):toHex(darken(rgb,0.22));
+    cell.style.color=dark?toHex(lighten(rgb,0.5)):toHex(darken(rgb,0.45));
   }else{cell.style.color='var(--text-primary)';}
 }
 function recolorAll(){document.querySelectorAll('.block-cell').forEach(colorCellByText);}
@@ -728,6 +729,68 @@ function resetAll(){if(confirm('Reset the schedule to defaults? All saved edits 
 })();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&editMode)exitEdit();if((e.ctrlKey||e.metaKey)&&e.key==='s'&&editMode){e.preventDefault();saveAll();}});
 </script>
+
+<!-- PVX-N137 · Shadow schedule: period label, table semantics -->
+<style id="pvx-n137-css">
+body:not(.dark) .block-card .bl-dates{color:#0E7490}
+body:not(.dark) .live{color:#0B6142}
+</style>
+<script id="pvx-n137-js">
+(function(){
+  var MON={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  var RX=/([A-Z][a-z]{2})[a-z]*\.?\s+(\d{1,2})\s*[–—-]\s*([A-Z][a-z]{2})[a-z]*\.?\s+(\d{1,2}),?\s*(\d{4})/;
+  function key(y,m,d){ return y*10000+(m+1)*100+d; }
+  /* Today in the hospital's time zone, so the label does not flip on a viewer's clock. */
+  function today(){
+    var now=window.__pvxNow?new Date(window.__pvxNow):new Date();
+    try{ var p=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now), o={};
+      p.forEach(function(x){ o[x.type]=x.value; }); return key(+o.year,+o.month-1,+o.day); }
+    catch(e){ return key(now.getFullYear(),now.getMonth(),now.getDate()); }
+  }
+  function period(){
+    var lo=null, hi=null, yr=null;
+    Array.prototype.forEach.call(document.querySelectorAll('#weeks .table-card .rng'),function(r){
+      var m=RX.exec(r.textContent||''); if(!m||!(m[1] in MON)||!(m[3] in MON)) return;
+      var y=+m[5], sm=MON[m[1]], em=MON[m[3]], sy=sm>em?y-1:y;
+      var a=key(sy,sm,+m[2]), b=key(y,em,+m[4]);
+      if(lo===null||a<lo) lo=a; if(hi===null||b>hi){ hi=b; yr=y; }
+    });
+    return lo===null?null:{lo:lo,hi:hi,yr:yr};
+  }
+  window.pvxShadowLabel=function(){
+    var lab=document.querySelector('.block-card .bl-lab'); if(!lab) return;
+    var p=period(), t=today(), txt;
+    if(!p) txt='Selected period';
+    else if(t<p.lo) txt='Upcoming · '+p.yr;
+    else if(t>p.hi) txt='Completed · '+p.yr;
+    else txt='Current block · '+p.yr;
+    lab.textContent=txt;
+  };
+  window.pvxShadowSemantics=function(){
+    var h1=document.querySelector('.page-title'); if(h1){ h1.setAttribute('role','heading'); h1.setAttribute('aria-level','1'); }
+    Array.prototype.forEach.call(document.querySelectorAll('#weeks .table-card'),function(card,i){
+      var n=i+1, t=card.querySelector('.tc-head .ttl'), r=card.querySelector('.tc-head .rng'), tb=card.querySelector('table');
+      if(t){ t.id='pvxWk'+n; t.setAttribute('role','heading'); t.setAttribute('aria-level','2'); }
+      if(r) r.id='pvxWkR'+n;
+      if(tb&&t) tb.setAttribute('aria-labelledby','pvxWk'+n+(r?' pvxWkR'+n:''));
+      if(!tb) return;
+      Array.prototype.forEach.call(tb.querySelectorAll('thead th'),function(th){ th.setAttribute('scope','col'); });
+      Array.prototype.forEach.call(tb.querySelectorAll('tbody td.svc-col'),function(td){ td.setAttribute('role','rowheader'); });
+      var note=card.querySelector('.foot span'); if(note) note.id='pvxNote'+n;
+      Array.prototype.forEach.call(tb.querySelectorAll('.block-cell'),function(c){
+        var sup=c.querySelector('sup');
+        if(sup&&note){ sup.setAttribute('aria-hidden','true'); c.setAttribute('aria-describedby','pvxNote'+n); }
+        else c.removeAttribute('aria-describedby');
+      });
+    });
+    var f=document.querySelector('.foot sup'); if(f) f.setAttribute('aria-hidden','true');
+    window.pvxShadowLabel();
+  };
+  var _add=window.addWeek; if(typeof _add==='function') window.addWeek=function(){ _add.apply(this,arguments); window.pvxShadowSemantics(); };
+  var _save=window.saveAll; if(typeof _save==='function') window.saveAll=function(){ _save.apply(this,arguments); window.pvxShadowSemantics(); };
+  window.pvxShadowSemantics();
+})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script>
@@ -787,5 +850,100 @@ window.__pvxResolveAdmin = async function(user){
   lb.addEventListener('pointerleave',function(){ lb.style.setProperty('--mx','50%'); lb.style.setProperty('--my','50%'); });
 })();
 </script>
+
+<!-- PVX-N138 shell: shared top bar (n132) + its type/contrast rules (n135), copied from Curriculum -->
+<!-- PVX-TOPBAR n132: brand and controls keep their width; app links overflow into a More menu; Grid and Forms in every app (account-gated) -->
+<style>
+/* PVX-TOPBAR n132 — the brand and the right-hand controls keep their width; the apps get what is left, overflowing into More */
+html body nav.topnav{grid-template-columns:max-content minmax(0,1fr) max-content!important;column-gap:12px}
+html body nav.topnav .brandwrap{flex:0 0 auto;min-width:0}
+html body nav.topnav .nav-center{min-width:0;max-width:100%;justify-self:center!important;overflow:visible!important;flex-wrap:nowrap;position:relative}
+html body nav.topnav .nav-right{flex:0 0 auto}
+@media(max-width:760px){ html body nav.topnav{grid-template-columns:max-content minmax(0,1fr)!important} html body nav.topnav .nav-center{margin:0!important;padding:0!important;justify-content:flex-start} }
+.pvx-more{position:relative;display:flex;flex:0 0 auto}
+.pvx-more[hidden]{display:none!important}
+.pvx-more-btn{font-family:inherit;cursor:pointer}
+.pvx-more-btn[aria-expanded=true]{background:rgba(255,255,255,0.10);color:rgba(255,255,255,.95)}
+body:not(.dark) .pvx-more-btn[aria-expanded=true]{background:#EBEBEB;color:#333}
+.pvx-more-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;min-width:200px;padding:6px;border-radius:14px;display:flex;flex-direction:column;gap:2px;
+  background:#101A32;border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+body:not(.dark) .pvx-more-menu{background:#fff;border-color:rgba(29,29,31,.1);box-shadow:0 18px 44px rgba(20,28,40,.18)}
+.pvx-more-menu[hidden]{display:none!important}
+html body nav.topnav .pvx-more-menu .nav-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:13px!important;letter-spacing:0;white-space:nowrap;width:100%}
+html body nav.topnav .pvx-more-menu .nav-item svg{width:18px;height:18px}
+.nav-item:focus-visible,.pvx-more-btn:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+@media(forced-colors:active){.pvx-more-menu{border:1px solid CanvasText}}
+</style>
+<script id="pvx-app-links-js">/* n132: Grid and Forms links show only for the accounts those apps let in (keep in step with grid/index.html and forms/index.html ALLOWED) */
+(function(){var OK={navGrid:["daniel.giordano@pravix.app"],navForms:["daniel.giordano@pravix.app"]};
+function show(e){e=String(e||"").toLowerCase();Object.keys(OK).forEach(function(id){var a=document.getElementById(id);if(a)a.style.display=OK[id].indexOf(e)>-1?"":"none"})}
+function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
+var hooked=false;function live(){if(hooked)return;try{if(window.firebase&&firebase.apps&&firebase.apps.length&&firebase.auth){hooked=true;firebase.auth().onAuthStateChanged(function(u){if(u)show(u.email);else fromStore()})}}catch(_){}}
+fromStore();live();window.addEventListener("load",function(){live();setTimeout(live,1500)})})();</script>
+<script>
+/* ═══ Pravix shared top bar · n132 (audit RX-01, FL-07, DTA-S01, CL-X02, US-04) ═══
+   The same nav.topnav lives in every app. This block makes it fit any width without collisions:
+   · the brand and the Logout/theme group keep their real width (grid: max-content · 1fr · max-content) — nothing can slide under them;
+   · the app links get the middle; the ones that do not fit move into a "More" menu (a real button with a menu of the same links),
+     instead of being clipped inside a scroller with its scrollbar hidden. The active app always stays visible;
+   · the More menu is keyboard-operable (Enter/Space, arrows, Escape, focus return) and closed state is display:none;
+   · aria-current="page" follows the active link (apps that switch in place call pvxTopbar.setActive(id)). */
+(function(){
+  if(window.pvxTopbar) return;
+  var nav=document.querySelector('nav.topnav'); if(!nav) return;
+  var center=nav.querySelector('.nav-center'); if(!center) return;
+  var more=document.createElement('div'); more.className='pvx-more'; more.hidden=true;
+  more.innerHTML='<button type="button" class="nav-item pvx-more-btn" aria-haspopup="true" aria-expanded="false" aria-label="More apps" title="More apps">'
+    +'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>'
+    +'<div class="pvx-more-menu" role="menu" aria-label="More apps" hidden></div>';
+  center.appendChild(more); var btn=more.querySelector('button'), menu=more.querySelector('.pvx-more-menu');
+  function items(){ return [].slice.call(center.querySelectorAll('.nav-item')).filter(function(a){ return a!==btn&&!a.classList.contains('pvx-more-btn'); }); }
+  function shown(a){ return a.style.display!=='none'&&!a.hidden; }   /* account-gated links (Grid, Forms) are display:none until allowed */
+  var gap=0, busy=false;
+  function layout(){ if(busy) return; busy=true;
+    try{ var all=items(); all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
+      var vis=all.filter(shown); if(!vis.length){ more.hidden=true; return; }
+      gap=parseFloat(getComputedStyle(center).columnGap||getComputedStyle(center).gap)||0;
+      more.hidden=true; var avail=center.clientWidth, w=vis.map(function(a){ return a.getBoundingClientRect().width; }), total=w.reduce(function(s,x){ return s+x; },0)+gap*(vis.length-1);
+      if(total<=avail+0.5){ menu.innerHTML=''; return; }
+      more.hidden=false; var mw=more.getBoundingClientRect().width+gap, keep=0, used=0;
+      for(var i=0;i<vis.length;i++){ if(used+w[i]+(i?gap:0)+mw<=avail){ used+=w[i]+(i?gap:0); keep++; } else break; }
+      var active=vis.findIndex(function(a){ return a.classList.contains('active')||a.getAttribute('aria-current'); });
+      if(active>=keep&&keep>0){ var a=vis.splice(active,1)[0]; vis.splice(keep-1,0,a); center.insertBefore(a,vis[keep]||more); }
+      var hidden=vis.slice(keep); hidden.forEach(function(a){ menu.appendChild(a); a.setAttribute('role','menuitem'); });
+      if(!hidden.length) more.hidden=true; }
+    finally{ busy=false; } }
+  function open(o){ var isOpen=!menu.hidden; if(o===undefined) o=!isOpen; if(o===isOpen) return; menu.hidden=!o; btn.setAttribute('aria-expanded',o?'true':'false');
+    if(o){ var f=menu.querySelector('.nav-item'); if(f) f.focus(); } }
+  btn.addEventListener('click',function(){ open(); });
+  menu.addEventListener('keydown',function(e){ var f=[].slice.call(menu.querySelectorAll('.nav-item')), i=f.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){ e.preventDefault(); (f[i+1]||f[0]).focus(); } else if(e.key==='ArrowUp'){ e.preventDefault(); (f[i-1]||f[f.length-1]).focus(); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); open(false); btn.focus(); } else if(e.key==='Tab'){ open(false); } });
+  btn.addEventListener('keydown',function(e){ if(e.key==='ArrowDown'){ e.preventDefault(); open(true); } else if(e.key==='Escape'&&!menu.hidden){ e.preventDefault(); open(false); } });
+  document.addEventListener('click',function(e){ if(!menu.hidden&&!more.contains(e.target)) open(false); },true);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!menu.hidden&&!more.contains(document.activeElement)) open(false); });
+  function setActive(id){ items().forEach(function(a){ var on=a.id===id; a.classList.toggle('active',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); layout(); }
+  /* keep aria-current in step with the visual active class, for apps that switch in place */
+  items().forEach(function(a){ if(a.classList.contains('active')) a.setAttribute('aria-current','page'); else if(a.getAttribute('aria-current')==='page'&&!a.classList.contains('active')) a.removeAttribute('aria-current'); });
+  var t; function soon(){ clearTimeout(t); t=setTimeout(layout,60); }
+  if(window.ResizeObserver){ new ResizeObserver(soon).observe(nav); } window.addEventListener('resize',soon);
+  new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
+  window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
+})();
+</script>
+<style id="pvx-n138-type">
+/* PVX-TYPE n135 — shared top bar part only (the page keeps its own text tokens) */
+/* the portal apps re-declare --ink-400 on the top bar and sub-nav (#8E8E93 / #5E7C9C); same scope, measured values */
+#pvxTopnav,#pvxSubnav{--ink-400:#66666B}
+body.dark #pvxTopnav,body.dark #pvxSubnav{--ink-400:#8FA6BE}
+/* the shared top bar (same block in every app): app labels 10 → 11 px, "Powered by" 7 → 9 px */
+@media (min-width:1101px),(max-width:760px){.topnav .nav-item,#pvxTopnav .nav-item{font-size:11px}}  /* 761–1100 px is the icon-only strip */
+.topnav .pvx-powered,#pvxTopnav .pvx-powered{font-size:9px;letter-spacing:.14em}
+.topnav .pvx-powered,.topnav .nav-item:not(.active){color:var(--ink-400)}
+/* the portal sub-nav: title (10 px, 3.2:1) and the section links (#6E6E73, 4.35:1 on #F2F4F8) */
+.subnav .subnav-title,#pvxSubnav .subnav-title{font-size:11px!important;color:var(--ink-400)!important}
+body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.active){color:var(--ink-400)}
+</style>
 </body>
 </html>

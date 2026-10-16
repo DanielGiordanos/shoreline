@@ -11,7 +11,7 @@
   --brand-coral:#E8644A;--brand-green:#1a9e6e;--brand-amber:#E8A830;
   --bg:#E4F0F8;--surface-0:#FFFFFF;--surface-1:#F4F9FC;--surface-2:#EAF3F8;
   --nav-bg:#0C2952;
-  --text-primary:#0A2240;--text-secondary:#3A5572;--text-muted:#7A9BB5;
+  --text-primary:#0A2240;--text-secondary:#3A5572;--text-muted:#56708A;
   --border:rgba(12,41,82,0.10);--border-subtle:rgba(12,41,82,0.06);
   --glass-bg:rgba(255,255,255,0.68);--glass-border:rgba(255,255,255,0.88);
   --glass-shadow:0 8px 40px rgba(10,40,80,0.12),0 2px 4px rgba(10,40,80,0.06),inset 0 1px 0 rgba(255,255,255,0.9);
@@ -22,7 +22,7 @@
 body.dark{
   --bg:#080E1A;--surface-0:#0E1628;--surface-1:#131E34;--surface-2:#192540;
   --nav-bg:#0A1222;
-  --text-primary:#D8E8F4;--text-secondary:#7A98B8;--text-muted:#3A5070;
+  --text-primary:#D8E8F4;--text-secondary:#93AAC4;--text-muted:#7690AE;
   --border:rgba(77,200,224,0.10);--border-subtle:rgba(77,200,224,0.05);
   --glass-bg:rgba(14,22,40,0.75);--glass-border:rgba(77,200,224,0.15);
   --glass-shadow:0 8px 40px rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.6),inset 0 1px 0 rgba(77,200,224,0.08);
@@ -607,7 +607,7 @@ function schWeekHTML(name){
     var hrs=off?'<span class="dw-off">Off</span>':(schFmt(r.start)+'–'+schFmt(r.end));
     rows+='<div class="dw-row'+(isT?' is-today':'')+'"><span class="dw-day">'+SCHED_DAY3[d]+dot+'</span><span class="dw-hours">'+hrs+'</span></div>';
   }
-  return '<div class="drawer-section" id="dwSchedule"><div class="drawer-sec-title">Weekly Schedule</div><div class="dw-rows">'+rows+'</div></div>';
+  return '<div class="drawer-section" id="dwSchedule"><div class="drawer-sec-title" role="heading" aria-level="3">Weekly Schedule</div><div class="dw-rows">'+rows+'</div></div>';
 }
 </script>
 
@@ -640,6 +640,7 @@ function schWeekHTML(name){
       <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
       <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
       <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
       <script id="pvx-grid-link-js">(function(){var OK=["daniel.giordano@pravix.app"];function el(){return document.getElementById("navGrid")}
 function show(e){var a=el();if(a)a.style.display=(e&&OK.indexOf(String(e).toLowerCase())>-1)?"":"none"}
 function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
@@ -681,7 +682,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
           2026 – 2027 Mentorship Program
         </div>
-        <div class="hero-h1">Graduate Veterinarian <span>Mentors</span></div>
+        <div class="hero-h1" role="heading" aria-level="1">Graduate Veterinarian <span>Mentors</span></div>
         <div class="hero-sub">7 Mentor–Intern pairs &nbsp;·&nbsp; VCA Shoreline &nbsp;·&nbsp; Class of 2026–2027</div>
       </div>
     </div>
@@ -690,7 +691,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <!-- SEARCH -->
   <div class="search-wrap">
     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input class="search-input" id="searchInput" type="text" placeholder="Search by mentor, intern, specialty, rotation, certification…" oninput="onSearch(this.value)">
+    <input class="search-input" id="searchInput" type="text" aria-label="Search mentors and interns" placeholder="Search by mentor, intern, specialty, rotation, certification…" oninput="onSearch(this.value)">
+    <div class="pvx-sr" id="pvxSearchStatus" role="status" aria-live="polite"></div>
   </div>
 
   <!-- PAIRS GRID -->
@@ -700,8 +702,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <!-- MENTOR DRAWER -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-<div class="drawer" id="drawer">
-  <button class="drawer-close" onclick="closeDrawer()"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerName" inert>
+  <button type="button" class="drawer-close" onclick="closeDrawer()" aria-label="Close biography"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   <div class="drawer-hero" id="drawerHero"></div>
   <div class="drawer-body" id="drawerBody"></div>
   <div class="drawer-actions" id="drawerActions"></div>
@@ -868,6 +870,8 @@ function mentorMatches(m){
 
 
 // ── RENDER PAIR ROW ──
+/* PVX-N137: rotation colour mixed toward white for text on the dark card (no color-mix in Pravix). */
+function pvxLightHex(h){ h=String(h||'').replace('#',''); if(h.length===3) h=h.split('').map(function(x){return x+x;}).join(''); if(!/^[0-9a-f]{6}$/i.test(h)) return '#D8E8F4'; return '#'+[0,2,4].map(function(i){ var v=parseInt(h.slice(i,i+2),16); v=Math.round(v+(255-v)*0.55); return ('0'+v.toString(16)).slice(-2); }).join(''); }
 function renderPairs(){
   var filtered = MENTORS.filter(mentorMatches);
   var html='';
@@ -883,7 +887,7 @@ function renderPairs(){
     var _ist = (typeof schStatus==='function') ? schStatus(m.intern) : null;
     var internStatusHTML = _ist
       ? '<div class="status-dot '+_ist.cls+'" style="margin-top:8px"><div class="dot"></div>'+_ist.label+'</div>'
-      : '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Next check-in: '+m.nextCheckin+'</div>';
+      : '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">'+((m.nextCheckin&&String(m.nextCheckin).trim().toUpperCase()!=='TBD')?'Next check-in: '+m.nextCheckin:'No check-in recorded')+'</div>';
 
     html+=`<div class="pair-row" id="pair-${m.id}"
       draggable="true"
@@ -899,7 +903,7 @@ function renderPairs(){
         <div class="mentor-card-inner">
           <div class="mentor-photo">${mentorPhotoHTML}</div>
           <div class="mentor-info">
-            <div class="mentor-name">${m.name}</div>
+            <div class="mentor-name" role="heading" aria-level="2">${m.name}</div>
             <div class="mentor-specialty">${m.specialty}</div>
             <div class="mentor-certs">${m.certs}</div>
             <div class="status-dot ${statusClass}">
@@ -907,11 +911,11 @@ function renderPairs(){
               ${statusLabel}
             </div>
             <div class="quick-actions">
-              <a class="qa-btn" href="mailto:${m.email}" onclick="event.stopPropagation()" title="Email"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg><span>Email</span></a>
-              <a class="qa-btn" href="tel:${m.phone}" onclick="event.stopPropagation()" title="Call"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 3.8h3l1.5 3.7-2 1.4a12 12 0 0 0 5.4 5.4l1.4-2 3.7 1.5v3a1.7 1.7 0 0 1-1.9 1.7A15.7 15.7 0 0 1 4.5 5.7 1.7 1.7 0 0 1 6.2 3.8Z"/></svg><span>Phone</span></a>
-              <a class="qa-btn" href="#" onclick="event.preventDefault();event.stopPropagation();openSchedModal('${m.id}');" title="Schedule"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Schedule</span></a>
+              <a class="qa-btn" href="mailto:${m.email}" onclick="event.stopPropagation()" title="Email" aria-label="Email ${m.name} (opens your email app)"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg><span>Email</span></a>
+              ${m.phone?`<a class="qa-btn" href="tel:${m.phone}" onclick="event.stopPropagation()" title="Call" aria-label="Call ${m.name}"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 3.8h3l1.5 3.7-2 1.4a12 12 0 0 0 5.4 5.4l1.4-2 3.7 1.5v3a1.7 1.7 0 0 1-1.9 1.7A15.7 15.7 0 0 1 4.5 5.7 1.7 1.7 0 0 1 6.2 3.8Z"/></svg><span>Phone</span></a>`:'<span class="qa-btn qa-na" title="Phone unavailable">Phone unavailable</span>'}
+              <button type="button" class="qa-btn" onclick="event.stopPropagation();openSchedModal('${m.id}');" title="Schedule" aria-haspopup="dialog" aria-label="Schedule for ${m.name}"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2.5"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Schedule</span></button>
             </div>
-            <div class="read-bio" onclick="event.stopPropagation();openDrawer('${m.id}')"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg> Read Bio</div>
+            <button type="button" class="read-bio" aria-haspopup="dialog" aria-label="Read biography of ${m.name}" onclick="event.stopPropagation();openDrawer('${m.id}')"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg> Read Bio</button>
           </div>
         </div>
       </div>
@@ -932,7 +936,7 @@ function renderPairs(){
           <div class="mentor-info">
             <div class="intern-name">${m.intern}</div>
             <div class="intern-role">Intern · Class of 2027</div>
-            <div class="rotation-badge" style="background:${m.rotationColor}18;color:${m.rotationColor};border:1px solid ${m.rotationColor}30;">
+            <div class="rotation-badge" style="--rc-d:${pvxLightHex(m.rotationColor)};background:${m.rotationColor}18;color:${m.rotationColor};border:1px solid ${m.rotationColor}30;">
               <span style="width:6px;height:6px;border-radius:50%;background:${m.rotationColor};display:inline-block;"></span>
               ${m.internRotation}
             </div>
@@ -943,7 +947,7 @@ function renderPairs(){
     </div>`;
   });
   document.getElementById('pairsGrid').innerHTML = filtered.length ? html
-    : '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px;">No results found</div>';
+    : '<div class="pvx-empty"><div class="pvx-empty-t">No mentors or interns match \u201c'+String(document.getElementById('searchInput').value).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];})+'\u201d</div><div class="pvx-empty-s">Try a name, service or rotation.</div><button type="button" class="pvx-empty-b" onclick="pvxClearSearch()">Clear search</button></div>';
 }
 
 // ── DRAWER ──
@@ -958,7 +962,7 @@ function openDrawer(mentorId){
   document.getElementById('drawerHero').innerHTML=`
     <div class="drawer-photo">${photoSrc?`<img src="${photoSrc}" alt="${m.name}">`:m.id}</div>
     <div>
-      <div class="drawer-name">${m.name}</div>
+      <div class="drawer-name" id="drawerName" role="heading" aria-level="2">${m.name}</div>
       <div class="drawer-title">${m.specialty}</div>
       <div class="drawer-certs">${m.certs}</div>
       <div class="status-dot ${m.status==='available'?'available':'out'}" style="margin-top:4px;">
@@ -972,20 +976,20 @@ function openDrawer(mentorId){
   var ef = isEdit ? 'class="d-ef"' : 'class="d-ef" disabled';
   document.getElementById('drawerBody').innerHTML=`
     <div class="drawer-section">
-      <div class="drawer-sec-title">Contact</div>
+      <div class="drawer-sec-title" role="heading" aria-level="3">Contact</div>
       <div class="drawer-field"><div class="drawer-field-ic"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg></div><div><div class="drawer-field-lbl">Email</div><div class="drawer-field-val"><a href="mailto:${m.email}">${m.email||'—'}</a></div></div></div>
-      <div class="drawer-field"><div class="drawer-field-ic"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div><div><div class="drawer-field-lbl">Phone</div><div class="drawer-field-val"><input ${ef} id="df-phone" value="${m.phone||'—'}" onchange="updateField('${m.id}','phone',this.value)"></div></div></div>
-      <div class="drawer-field"><div class="drawer-field-ic"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div><div class="drawer-field-lbl">Office</div><div class="drawer-field-val"><input ${ef} id="df-office" value="${m.office||'—'}" onchange="updateField('${m.id}','office',this.value)"></div></div></div>
+      <div class="drawer-field"><div class="drawer-field-ic"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div><div><div class="drawer-field-lbl">Phone</div><div class="drawer-field-val">${(!m.phone&&!isEdit)?'<span class="pvx-na">Phone unavailable</span>':`<input ${ef} id="df-phone" aria-label="Phone" value="${m.phone||''}" onchange="updateField('${m.id}','phone',this.value)">`}</div></div></div>
+      <div class="drawer-field"><div class="drawer-field-ic"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div><div class="drawer-field-lbl">Office</div><div class="drawer-field-val"><input ${ef} id="df-office" aria-label="Office" value="${m.office||'—'}" onchange="updateField('${m.id}','office',this.value)"></div></div></div>
     </div>
     ${schWeekHTML(m.name)}
     <div class="drawer-section">
-      <div class="drawer-sec-title">Biography</div>
+      <div class="drawer-sec-title" role="heading" aria-level="3">Biography</div>
       <div class="drawer-field"><div><div class="drawer-field-val" style="line-height:1.7;font-size:12.5px;">
         <textarea ${ef} id="df-bio" rows="5" style="width:100%;resize:vertical;background:transparent;border:${isEdit?'1px solid rgba(77,200,224,0.3)':'none'};border-radius:6px;font-family:Inter,sans-serif;font-size:12.5px;color:var(--text-primary);outline:none;padding:${isEdit?'6px':'0'};" onchange="updateField('${m.id}','bio',this.value)">${m.bio||'—'}</textarea>
       </div></div></div>
     </div>
     <div class="drawer-section">
-      <div class="drawer-sec-title">Education & Training</div>
+      <div class="drawer-sec-title" role="heading" aria-level="3">Education & Training</div>
       <div class="drawer-field"><div class="${(m.id==='HG'||m.id==='MK'||m.id==='JG'||m.id==='SM'||m.id==='SGS'||m.id==='DN'||m.id==='KT') ? 'drawer-field-ic logo-ic' : 'drawer-field-ic'}">${m.id==='HG'||m.id==='MK' ? `<img class="inst-logo" src="${INST_LOGOS.penn}" alt="UPenn">` : m.id==='JG' ? `<img class="inst-logo" src="${INST_LOGOS.umn}" alt="UMN">` : m.id==='SM' ? `<img class="inst-logo" src="${INST_LOGOS.ross}" alt="Ross">` : m.id==='SGS' ? `<img class="inst-logo" src="${INST_LOGOS.tufts}" alt="Tufts">` : m.id==='DN' ? `<img class="inst-logo" src="${INST_LOGOS.cornell}" alt="Cornell">` : m.id==='KT' ? `<img class="inst-logo" src="${INST_LOGOS.tufts}" alt="Tufts">` : '<svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.7 2 6 2s6-1 6-2v-5"/></svg>'}</div><div><div class="drawer-field-lbl">Veterinary School</div><div class="drawer-field-val"><input ${ef} value="${m.school||'—'}" onchange="updateField('${m.id}','school',this.value)"></div></div></div>
       <div class="drawer-field"><div class="${(m.id==='HG'||m.id==='MK'||m.id==='SM'||m.id==='SGS'||m.id==='DN'||m.id==='KT') ? 'drawer-field-ic logo-ic' : 'drawer-field-ic'}">${m.id==='HG' ? `<img class="inst-logo" src="${INST_LOGOS.georgia}" alt="UGA">` : m.id==='MK' ? `<img class="inst-logo" src="${INST_LOGOS.bluepearl}" alt="BluePearl">` : (m.id==='SM'||m.id==='SGS') ? `<img class="inst-logo" src="${INST_LOGOS.vca}" alt="VCA">` : m.id==='DN' ? `<img class="inst-logo" src="${INST_LOGOS.oradell}" alt="Oradell">` : m.id==='KT' ? `<img class="inst-logo" src="${INST_LOGOS.vca}" alt="VCA">` : '<svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'}</div><div><div class="drawer-field-lbl">Internship</div><div class="drawer-field-val"><input ${ef} value="${m.internship||'—'}" onchange="updateField('${m.id}','internship',this.value)"></div></div></div>
       ${m.internship2 ? `<div class="drawer-field"><div class="drawer-field-ic logo-ic"><img class="inst-logo" src="${m.id==='DN' ? INST_LOGOS.dvsc : ''}" alt="Internship 2"></div><div><div class="drawer-field-lbl">Internship</div><div class="drawer-field-val"><input ${ef} value="${m.internship2||''}" onchange="updateField('${m.id}','internship2',this.value)"></div></div></div>` : ''}
@@ -994,11 +998,11 @@ function openDrawer(mentorId){
       <div class="drawer-field"><div class="${(m.id==='HG'||m.id==='MK'||m.id==='JG'||m.id==='SM'||m.id==='SGS'||m.id==='DN'||m.id==='KT') ? 'drawer-field-ic logo-ic' : 'drawer-field-ic'}">${(m.id==='HG'||m.id==='MK'||m.id==='JG'||m.id==='SM'||m.id==='SGS'||m.id==='DN'||m.id==='KT') ? `<img class="inst-logo" src="${INST_LOGOS.vca}" alt="VCA">` : '⏱'}</div><div><div class="drawer-field-lbl">Years at VCA</div><div class="drawer-field-val"><input ${ef} value="${m.yearsVCA||'—'}" onchange="updateField('${m.id}','yearsVCA',this.value)"></div></div></div>
     </div>
     <div class="drawer-section">
-      <div class="drawer-sec-title">Teaching</div>
+      <div class="drawer-sec-title" role="heading" aria-level="3">Teaching</div>
       <div class="drawer-field"><div class="drawer-field-ic"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg></div><div><div class="drawer-field-lbl">Favorite Topics</div><div class="drawer-field-val"><input ${ef} value="${m.topics||'—'}" onchange="updateField('${m.id}','topics',this.value)" style="width:100%;"></div></div></div>
     </div>
     <div class="drawer-section">
-      <div class="drawer-sec-title">Recognition & Achievements</div>
+      <div class="drawer-sec-title" role="heading" aria-level="3">Recognition & Achievements</div>
       <div class="rec-grid" id="recGrid">
         ${(m.recognition||[]).map(function(r){ return `<div class="rec-badge"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 12.5 17 22l-5-3-5 3 1.5-9.5"/></svg> ${r}</div>`; }).join('')}
       </div>
@@ -1008,9 +1012,9 @@ function openDrawer(mentorId){
 
   // Actions
   document.getElementById('drawerActions').innerHTML=`
-    <a href="mailto:${m.email}" class="drawer-act primary"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg> Email</a>
+    <a href="mailto:${m.email}" class="drawer-act primary" aria-label="Email ${m.name} (opens your email app)"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg> Email</a>
     ${m.phone?`<a href="tel:${m.phone}" class="drawer-act secondary"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.09 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Call</a>`:''}
-    <a href="#" onclick="event.preventDefault();openSchedModal('${m.id}')" class="drawer-act secondary"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule</a>
+    <button type="button" onclick="openSchedModal('${m.id}')" class="drawer-act secondary" aria-haspopup="dialog"><svg viewBox="0 0 24 24" class="ic" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule</button>
   `;
 
   document.getElementById('drawerOverlay').classList.add('open');
@@ -1145,11 +1149,11 @@ renderPairs();
 (function(){var M={'benjamin.kerns@vca.com':'/benjamin-kerns.html','kristi.wenger@vca.com':'/kristi-wenger.html','alexa.vanderploeg@vca.com':'/alexa-vanderploeg.html','marissa.peck@vca.com':'/marissa-peck.html','rachel.eberle@vca.com':'/rachel-eberle.html','sarah.herron@vca.com':'/directory'};fetch('/cdn-cgi/access/get-identity').then(function(r){return r.json();}).then(function(d){var em=((d&&d.email)||'').toLowerCase();var u=M[em];if(!u)return;document.querySelectorAll('.nav-item').forEach(function(a){if(a.textContent.trim()==='Profile')a.setAttribute('href',u);});}).catch(function(){});})();
 </script>
 <div class="sm-scrim" id="schedModal" onclick="if(event.target===this)closeSchedModal()">
-  <div class="sm-card" role="dialog" aria-modal="true">
+  <div class="sm-card" role="dialog" aria-modal="true" aria-labelledby="smName" aria-describedby="smStatus" tabindex="-1">
     <div class="sm-head"><div class="sm-av" id="smAv"></div><div><div class="sm-name" id="smName"></div><div class="sm-status" id="smStatus"></div></div></div>
     <div class="sm-lbl">This Week</div>
     <div class="sm-rows" id="smRows"></div>
-    <div class="sm-foot"><a class="sm-checkin" id="smCheckin" href="#">Request Check-in</a><button class="sm-done" onclick="closeSchedModal()">Done</button></div>
+    <div class="sm-foot"><a class="sm-checkin" id="smCheckin" href="#">Request check-in by email</a><button type="button" class="sm-done" onclick="closeSchedModal()">Done</button></div>
   </div>
 </div>
 <script>
@@ -1159,7 +1163,7 @@ function openSchedModal(id){
   if(!m) return;
   var ph=(typeof PHOTOS!=='undefined'&&PHOTOS[m.id])?PHOTOS[m.id]:'';
   document.getElementById('smAv').innerHTML = ph ? '<img src="'+ph+'" alt="">' : (m.initials||m.id);
-  document.getElementById('smName').textContent=m.name;
+  document.getElementById('smName').textContent=m.name;document.getElementById('smCheckin').setAttribute('aria-label','Request a check-in with '+m.name+' by email (opens your email app)');
   var st=(typeof schStatus==='function')?schStatus(m.name):null;
   document.getElementById('smStatus').textContent = st?st.label:(m.status==='available'?'Available':'');
   var wk=(typeof schWeek==='function')?schWeek(m.name):null;
@@ -1278,5 +1282,208 @@ window.__pvxDB = function(){ return null; };
   lb.addEventListener('pointerleave',function(){ lb.style.setProperty('--mx','50%'); lb.style.setProperty('--my','50%'); });
 })();
 </script>
+
+<!-- PVX-N137 · Mentors: dialogs, focus, empty states, contrast -->
+<style id="pvx-n137-css">
+.pvx-sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+button.read-bio{background:none;border:0;padding:0;font-family:inherit;}
+button.read-bio:focus-visible,button.qa-btn:focus-visible,.drawer-act:focus-visible,.drawer-close:focus-visible,.pvx-empty-b:focus-visible,.sm-done:focus-visible,.sm-checkin:focus-visible{outline:2px solid var(--brand-cyan);outline-offset:2px;border-radius:8px}
+button.qa-btn{font-family:inherit;line-height:inherit}
+button.drawer-act{font-family:inherit;border:1px solid var(--border-subtle)}
+.qa-btn.qa-na{cursor:default;opacity:1;color:var(--text-muted);border-style:dashed}
+.qa-btn.qa-na:hover{transform:none;background:rgba(148,163,184,.07);border-color:var(--border-subtle);color:var(--text-muted)}
+.pvx-ro{font-size:13px;color:var(--text-primary);font-weight:500}
+.pvx-ro-p{display:block;white-space:pre-wrap;font-size:12.5px;line-height:1.7}
+body.dark .rotation-badge{color:var(--rc-d)!important}
+body:not(.dark) .read-bio,body:not(.dark) .drawer-field-val a{color:#0E7490}
+body:not(.dark) .status-dot.available{color:#137A55}
+.footer-text{color:rgba(255,255,255,.72)}.footer-text strong{color:rgba(255,255,255,.88)}
+.site-footer>div:last-child{color:rgba(255,255,255,.66)!important}
+body:not(.dark) #pvxSubnav .pvx-actions>span{color:#0B6142!important}
+body.dark #pvxSubnav .pvx-actions>span{color:#4FD1A0!important}
+.pvx-na{font-size:13px;color:var(--text-muted);font-weight:500}
+/* Closed drawer: `inert` (set in script) removes it from focus and the accessibility tree. Not visibility —
+   descendants with `transition:all` would delay becoming focusable on open. */
+.pvx-empty{text-align:center;padding:44px 20px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.pvx-empty-t{font-size:15px;font-weight:700;color:var(--text-primary)}
+.pvx-empty-s{font-size:13px;color:var(--text-secondary)}
+.pvx-empty-b{margin-top:10px;padding:9px 18px;border-radius:99px;border:1px solid rgba(77,200,224,.38);background:rgba(77,200,224,.12);color:var(--text-primary);font:600 13px Inter,Arial,sans-serif;cursor:pointer;min-height:36px}
+.pvx-empty-b:hover{background:rgba(77,200,224,.2)}
+</style>
+<script id="pvx-n137-js">
+(function(){
+  var dw=document.getElementById('drawer'), sm=document.getElementById('schedModal');
+  var dwOpener=null, smOpener=null;
+  if(sm&&!sm.classList.contains('show')) sm.setAttribute('inert','');
+  function focusables(root){ return Array.prototype.filter.call(root.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'),function(el){ return el.offsetParent!==null||el===document.activeElement; }); }
+  function back(el){ try{ if(el&&el.isConnected&&el.focus){ el.focus(); return true; } }catch(e){} return false; }
+  /* An opener can be re-rendered while a dialog is open (search, edit, save); find its replacement. */
+  function relocate(el, sel){ if(el&&el.isConnected) return el; return sel?document.querySelector(sel):null; }
+  function sel(el){ if(!el) return null; var row=el.closest&&el.closest('.pair-row'); if(!row) return null;
+    if(el.classList.contains('read-bio')) return '#'+row.id+' .read-bio';
+    if(el.classList.contains('qa-btn')) return '#'+row.id+' button.qa-btn';
+    return '#'+row.id+' .read-bio'; }
+
+  var _open=window.openDrawer, _close=window.closeDrawer;
+  window.openDrawer=function(id){
+    var wasOpen=dw.classList.contains('open');
+    if(!wasOpen){ var a=document.activeElement; dwOpener={el:a, sel:sel(a)}; }
+    _open.apply(this, arguments);
+    if(!dw.classList.contains('open')) return;
+    dw.removeAttribute('inert');
+    /* Read-only view shows text, not disabled form fields (they read as unavailable controls). */
+    if(!window.editMode){ Array.prototype.forEach.call(dw.querySelectorAll('input.d-ef[disabled],textarea.d-ef[disabled]'),function(f){
+      var ta=f.tagName==='TEXTAREA', d=document.createElement(ta?'div':'span'); d.className=ta?'pvx-ro pvx-ro-p':'pvx-ro';
+      var v=(f.value||'').trim(); d.textContent=v||'—'; f.parentNode.replaceChild(d,f); }); }
+    if(!wasOpen) setTimeout(function(){ var c=dw.querySelector('.drawer-close'); if(c) c.focus(); },30);
+  };
+  window.closeDrawer=function(){
+    var wasOpen=dw.classList.contains('open');
+    if(wasOpen&&dwOpener){ var t=relocate(dwOpener.el, dwOpener.sel); if(!back(t)) back(document.getElementById('searchInput')); }
+    _close.apply(this, arguments);
+    dw.setAttribute('inert','');
+    dwOpener=null;
+  };
+
+  var _sOpen=window.openSchedModal, _sClose=window.closeSchedModal;
+  window.openSchedModal=function(){
+    if(!sm.classList.contains('show')){ var a=document.activeElement; smOpener={el:a, sel:sel(a)}; }
+    _sOpen.apply(this, arguments);
+    if(sm.classList.contains('show')){ sm.removeAttribute('inert'); dw.setAttribute('inert',''); setTimeout(function(){ var d=sm.querySelector('.sm-done'); if(d) d.focus(); },30); }
+  };
+  window.closeSchedModal=function(){
+    var wasOpen=sm.classList.contains('show');
+    _sClose.apply(this, arguments);
+    sm.setAttribute('inert','');
+    if(!wasOpen) return;
+    if(dw.classList.contains('open')) dw.removeAttribute('inert');
+    if(smOpener){ var t=relocate(smOpener.el, smOpener.sel); back(t); }
+    smOpener=null;
+  };
+
+  /* Escape closes only the top layer: the schedule dialog before the biography drawer. */
+  window.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&sm.classList.contains('show')){ e.stopImmediatePropagation(); e.preventDefault(); window.closeSchedModal(); return; }
+    if(e.key!=='Tab') return;
+    var root=sm.classList.contains('show')?sm.querySelector('.sm-card'):(dw.classList.contains('open')?dw:null);
+    if(!root) return;
+    var f=focusables(root); if(!f.length){ e.preventDefault(); return; }
+    var first=f[0], last=f[f.length-1], a=document.activeElement;
+    if(!root.contains(a)){ e.preventDefault(); first.focus(); return; }
+    if(e.shiftKey&&a===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey&&a===last){ e.preventDefault(); first.focus(); }
+  }, true);
+
+  /* Search: announce the result count; recover from zero matches. */
+  var _render=window.renderPairs;
+  window.renderPairs=function(){
+    _render.apply(this, arguments);
+    var st=document.getElementById('pvxSearchStatus'); if(!st) return;
+    var q=(document.getElementById('searchInput')||{}).value||'';
+    if(!q.trim()){ st.textContent=''; return; }
+    var n=document.querySelectorAll('#pairsGrid .pair-row').length;
+    st.textContent=n?(n+(n===1?' pair matches':' pairs match')):'No mentors or interns match';
+  };
+  window.pvxClearSearch=function(){
+    var i=document.getElementById('searchInput'); if(!i) return;
+    i.value=''; if(typeof onSearch==='function') onSearch(''); i.focus();
+  };
+})();
+</script>
+
+<!-- PVX-N138 shell: shared top bar (n132) + its type/contrast rules (n135), copied from Curriculum -->
+<!-- PVX-TOPBAR n132: brand and controls keep their width; app links overflow into a More menu; Grid and Forms in every app (account-gated) -->
+<style>
+/* PVX-TOPBAR n132 — the brand and the right-hand controls keep their width; the apps get what is left, overflowing into More */
+html body nav.topnav{grid-template-columns:max-content minmax(0,1fr) max-content!important;column-gap:12px}
+html body nav.topnav .brandwrap{flex:0 0 auto;min-width:0}
+html body nav.topnav .nav-center{min-width:0;max-width:100%;justify-self:center!important;overflow:visible!important;flex-wrap:nowrap;position:relative}
+html body nav.topnav .nav-right{flex:0 0 auto}
+@media(max-width:760px){ html body nav.topnav{grid-template-columns:max-content minmax(0,1fr)!important} html body nav.topnav .nav-center{margin:0!important;padding:0!important;justify-content:flex-start} }
+.pvx-more{position:relative;display:flex;flex:0 0 auto}
+.pvx-more[hidden]{display:none!important}
+.pvx-more-btn{font-family:inherit;cursor:pointer}
+.pvx-more-btn[aria-expanded=true]{background:rgba(255,255,255,0.10);color:rgba(255,255,255,.95)}
+body:not(.dark) .pvx-more-btn[aria-expanded=true]{background:#EBEBEB;color:#333}
+.pvx-more-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;min-width:200px;padding:6px;border-radius:14px;display:flex;flex-direction:column;gap:2px;
+  background:#101A32;border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+body:not(.dark) .pvx-more-menu{background:#fff;border-color:rgba(29,29,31,.1);box-shadow:0 18px 44px rgba(20,28,40,.18)}
+.pvx-more-menu[hidden]{display:none!important}
+html body nav.topnav .pvx-more-menu .nav-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:13px!important;letter-spacing:0;white-space:nowrap;width:100%}
+html body nav.topnav .pvx-more-menu .nav-item svg{width:18px;height:18px}
+.nav-item:focus-visible,.pvx-more-btn:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+@media(forced-colors:active){.pvx-more-menu{border:1px solid CanvasText}}
+</style>
+<script id="pvx-app-links-js">/* n132: Grid and Forms links show only for the accounts those apps let in (keep in step with grid/index.html and forms/index.html ALLOWED) */
+(function(){var OK={navGrid:["daniel.giordano@pravix.app"],navForms:["daniel.giordano@pravix.app"]};
+function show(e){e=String(e||"").toLowerCase();Object.keys(OK).forEach(function(id){var a=document.getElementById(id);if(a)a.style.display=OK[id].indexOf(e)>-1?"":"none"})}
+function fromStore(){try{if(!window.indexedDB||!indexedDB.databases)return;indexedDB.databases().then(function(l){if(!l.some(function(d){return d.name==="firebaseLocalStorageDb"}))return;var r=indexedDB.open("firebaseLocalStorageDb");r.onsuccess=function(){var db=r.result;try{if(!db.objectStoreNames.contains("firebaseLocalStorage")){db.close();return}var q=db.transaction("firebaseLocalStorage","readonly").objectStore("firebaseLocalStorage").getAll();q.onsuccess=function(){var e="";(q.result||[]).forEach(function(x){if(x&&String(x.fbase_key||"").indexOf("firebase:authUser:")===0&&x.value&&x.value.email)e=x.value.email});show(e);db.close()};q.onerror=function(){db.close()}}catch(_){try{db.close()}catch(__){}}}}).catch(function(){})}catch(_){}}
+var hooked=false;function live(){if(hooked)return;try{if(window.firebase&&firebase.apps&&firebase.apps.length&&firebase.auth){hooked=true;firebase.auth().onAuthStateChanged(function(u){if(u)show(u.email);else fromStore()})}}catch(_){}}
+fromStore();live();window.addEventListener("load",function(){live();setTimeout(live,1500)})})();</script>
+<script>
+/* ═══ Pravix shared top bar · n132 (audit RX-01, FL-07, DTA-S01, CL-X02, US-04) ═══
+   The same nav.topnav lives in every app. This block makes it fit any width without collisions:
+   · the brand and the Logout/theme group keep their real width (grid: max-content · 1fr · max-content) — nothing can slide under them;
+   · the app links get the middle; the ones that do not fit move into a "More" menu (a real button with a menu of the same links),
+     instead of being clipped inside a scroller with its scrollbar hidden. The active app always stays visible;
+   · the More menu is keyboard-operable (Enter/Space, arrows, Escape, focus return) and closed state is display:none;
+   · aria-current="page" follows the active link (apps that switch in place call pvxTopbar.setActive(id)). */
+(function(){
+  if(window.pvxTopbar) return;
+  var nav=document.querySelector('nav.topnav'); if(!nav) return;
+  var center=nav.querySelector('.nav-center'); if(!center) return;
+  var more=document.createElement('div'); more.className='pvx-more'; more.hidden=true;
+  more.innerHTML='<button type="button" class="nav-item pvx-more-btn" aria-haspopup="true" aria-expanded="false" aria-label="More apps" title="More apps">'
+    +'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</button>'
+    +'<div class="pvx-more-menu" role="menu" aria-label="More apps" hidden></div>';
+  center.appendChild(more); var btn=more.querySelector('button'), menu=more.querySelector('.pvx-more-menu');
+  function items(){ return [].slice.call(center.querySelectorAll('.nav-item')).filter(function(a){ return a!==btn&&!a.classList.contains('pvx-more-btn'); }); }
+  function shown(a){ return a.style.display!=='none'&&!a.hidden; }   /* account-gated links (Grid, Forms) are display:none until allowed */
+  var gap=0, busy=false;
+  function layout(){ if(busy) return; busy=true;
+    try{ var all=items(); all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
+      var vis=all.filter(shown); if(!vis.length){ more.hidden=true; return; }
+      gap=parseFloat(getComputedStyle(center).columnGap||getComputedStyle(center).gap)||0;
+      more.hidden=true; var avail=center.clientWidth, w=vis.map(function(a){ return a.getBoundingClientRect().width; }), total=w.reduce(function(s,x){ return s+x; },0)+gap*(vis.length-1);
+      if(total<=avail+0.5){ menu.innerHTML=''; return; }
+      more.hidden=false; var mw=more.getBoundingClientRect().width+gap, keep=0, used=0;
+      for(var i=0;i<vis.length;i++){ if(used+w[i]+(i?gap:0)+mw<=avail){ used+=w[i]+(i?gap:0); keep++; } else break; }
+      var active=vis.findIndex(function(a){ return a.classList.contains('active')||a.getAttribute('aria-current'); });
+      if(active>=keep&&keep>0){ var a=vis.splice(active,1)[0]; vis.splice(keep-1,0,a); center.insertBefore(a,vis[keep]||more); }
+      var hidden=vis.slice(keep); hidden.forEach(function(a){ menu.appendChild(a); a.setAttribute('role','menuitem'); });
+      if(!hidden.length) more.hidden=true; }
+    finally{ busy=false; } }
+  function open(o){ var isOpen=!menu.hidden; if(o===undefined) o=!isOpen; if(o===isOpen) return; menu.hidden=!o; btn.setAttribute('aria-expanded',o?'true':'false');
+    if(o){ var f=menu.querySelector('.nav-item'); if(f) f.focus(); } }
+  btn.addEventListener('click',function(){ open(); });
+  menu.addEventListener('keydown',function(e){ var f=[].slice.call(menu.querySelectorAll('.nav-item')), i=f.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){ e.preventDefault(); (f[i+1]||f[0]).focus(); } else if(e.key==='ArrowUp'){ e.preventDefault(); (f[i-1]||f[f.length-1]).focus(); }
+    else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); open(false); btn.focus(); } else if(e.key==='Tab'){ open(false); } });
+  btn.addEventListener('keydown',function(e){ if(e.key==='ArrowDown'){ e.preventDefault(); open(true); } else if(e.key==='Escape'&&!menu.hidden){ e.preventDefault(); open(false); } });
+  document.addEventListener('click',function(e){ if(!menu.hidden&&!more.contains(e.target)) open(false); },true);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!menu.hidden&&!more.contains(document.activeElement)) open(false); });
+  function setActive(id){ items().forEach(function(a){ var on=a.id===id; a.classList.toggle('active',on); if(on) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); }); layout(); }
+  /* keep aria-current in step with the visual active class, for apps that switch in place */
+  items().forEach(function(a){ if(a.classList.contains('active')) a.setAttribute('aria-current','page'); else if(a.getAttribute('aria-current')==='page'&&!a.classList.contains('active')) a.removeAttribute('aria-current'); });
+  var t; function soon(){ clearTimeout(t); t=setTimeout(layout,60); }
+  if(window.ResizeObserver){ new ResizeObserver(soon).observe(nav); } window.addEventListener('resize',soon);
+  new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
+  window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
+})();
+</script>
+<style id="pvx-n138-type">
+/* PVX-TYPE n135 — shared top bar part only (the page keeps its own text tokens) */
+/* the portal apps re-declare --ink-400 on the top bar and sub-nav (#8E8E93 / #5E7C9C); same scope, measured values */
+#pvxTopnav,#pvxSubnav{--ink-400:#66666B}
+body.dark #pvxTopnav,body.dark #pvxSubnav{--ink-400:#8FA6BE}
+/* the shared top bar (same block in every app): app labels 10 → 11 px, "Powered by" 7 → 9 px */
+@media (min-width:1101px),(max-width:760px){.topnav .nav-item,#pvxTopnav .nav-item{font-size:11px}}  /* 761–1100 px is the icon-only strip */
+.topnav .pvx-powered,#pvxTopnav .pvx-powered{font-size:9px;letter-spacing:.14em}
+.topnav .pvx-powered,.topnav .nav-item:not(.active){color:var(--ink-400)}
+/* the portal sub-nav: title (10 px, 3.2:1) and the section links (#6E6E73, 4.35:1 on #F2F4F8) */
+.subnav .subnav-title,#pvxSubnav .subnav-title{font-size:11px!important;color:var(--ink-400)!important}
+body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.active){color:var(--ink-400)}
+</style>
 </body>
 </html>

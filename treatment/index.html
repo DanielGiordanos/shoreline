@@ -6,9 +6,9 @@
 <title>Pravix Treatment Sheets | VCA Shoreline</title>
 <link rel="icon" type="image/png" href="img/3ad4e7dbff.png">
 <meta name="theme-color" content="#0A1222">
-<link rel="stylesheet" href="app.css?v=410b5eedbe">
+<link rel="stylesheet" href="app.css?v=28658fa69a">
 
-<script>window.PVX_LANG_SRC={es:'es.js?v=374fd61c4f'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
+<script>window.PVX_LANG_SRC={es:'es.js?v=ea367c6e7b'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
 <style>html.i18n-wait body{visibility:hidden}</style>
 <!-- CL-T04 n133 -->
 <!-- n134 CL-T03 CL-T06 -->
@@ -131,13 +131,13 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <div class="ctoast-wrap" id="toastWrap"></div>
 
-<script defer src="core.js?v=434fb21f36"></script>
+<script defer src="core.js?v=434ebffb80"></script>
 <script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "flowDoctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Larry Berkwitt", "Dianne Kittrell"], "interns": ["Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="d8c5024f";</script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script defer src="store.js?v=50a1c4cce4"></script>
+<script defer src="store.js?v=b562f8485e"></script>
 
 
 <script defer src="voice.js?v=7a919ece66"></script>
@@ -241,6 +241,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     scan:scan, top:topModal, focusables:focusables, _reg:REG, _state:function(el){ return st.get(el)||null; }, version:'n133'};
 })();
 
+(function(){ if(document.body&&!document.getElementById("tsModal")){ var m=document.createElement("div"); m.id="tsModal"; document.body.appendChild(m); } })();  /* PVX-N141: exists before its first opening, so the overlay sees it open (focus in, Escape, focus back) */
+pvxOverlay.register([{"sel": "#tsModal", "open": "show", "modal": true, "dialog": ".tm-card", "close": "[data-x]"}]);  /* PVX-N141 TO-04 */
 pvxOverlay.register([{"sel": "aside.drawer", "open": "open", "modal": true, "close": ".drawer-head .close"}, {"sel": ".confirm,.liaison-modal", "open": "open", "modal": true, "close": ".close,.btn.ghost,[data-cancel]"}, {"sel": "#tsOrderSheet", "open": "show", "modal": true, "dialog": ".op-card", "close": ".op-x", "escape": false}, {"sel": ".pt-sheet,#tvPanel", "open": "show", "modal": true, "close": ".close,.pt-x,[aria-label=Close]"}, {"sel": ".scrim,.brief-scrim,.pt-scrim,#tvScrim", "open": ["open", "show"], "modal": false}, {"sel": ".patient-preview,.pt-pop,.bh-card,#tsInsPop,#fvPanel,#tsNet", "open": "show", "modal": false, "escape": false}]);
 </script>
 
@@ -322,6 +324,31 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(ms){ if(ms.some(function(m){ return !more.contains(m.target); })) soon(); }).observe(center,{attributes:true,subtree:true,attributeFilter:['style','class','hidden']});
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
   window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
+})();
+</script>
+
+<!-- PVX-N149 · the lobby screen account can't open Treatment Sheets (keep the list in step with Flow and or/) -->
+<style id="pvx-n149-ts-css">
+#pvxTsLobby{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(10,20,40,.55)}
+#pvxTsLobby .tg-card{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:400px;padding:28px;border-radius:24px;background:#fff;text-align:center;box-shadow:0 30px 80px rgba(10,20,40,.18);font:14px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;line-height:1.45;color:#6e6e73}
+body.dark #pvxTsLobby .tg-card{background:#121826;color:#aeb6c4}
+#pvxTsLobby .tg-card b{font-size:17px;color:#1d1d1f}
+body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
+#pvxTsLobby button{min-height:44px;padding:0 18px;border-radius:12px;border:0;background:#38BDD2;color:#04131B;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+#pvxTsLobby button:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+</style>
+<script id="pvx-n149-ts-js">
+(function(){ var LOBBY=['au733@vca.com'];
+  function gate(on){ var el=document.getElementById('pvxTsLobby'), app=document.querySelector('.app');
+    if(!on){ if(el){ el.remove(); if(app) app.removeAttribute('inert'); } return; }
+    if(el) return; el=document.createElement('div'); el.id='pvxTsLobby'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','pvxTsLobbyT');
+    el.innerHTML='<div class="tg-card"><b id="pvxTsLobbyT">This is the lobby screen account</b><span>Treatment Sheets needs your own Pravix account. Sign in with it on Flow, then come back to this page.</span><button type="button" id="pvxTsLobbyOwn">Sign in with my own account</button></div>';
+    document.body.appendChild(el); if(app) app.setAttribute('inert','');
+    document.getElementById('pvxTsLobbyOwn').onclick=function(){ try{ firebase.auth().signOut().then(function(){ location.href='https://shoreline.pravix.app/'; }); }catch(e){} };
+    setTimeout(function(){ try{ document.getElementById('pvxTsLobbyOwn').focus(); }catch(e){} },60); }
+  function hook(){ try{ if(!window.firebase||!firebase.apps||!firebase.apps.length||!firebase.auth) return false;
+    firebase.auth().onAuthStateChanged(function(u){ gate(!!u&&LOBBY.indexOf(String(u.email||'').toLowerCase())>-1); }); return true; }catch(e){ return false; } }
+  var n=0; (function tryHook(){ if(hook()) return; if(++n<60) setTimeout(tryHook,250); })();
 })();
 </script>
 </body>

@@ -6762,6 +6762,24 @@ messagingSenderId:'237404385636',
 appId:'1:237404385636:web:1ee3ba27f22c946f748a71'
 };
 const SB_LOGIN_EMAIL ='au733@vca.com';
+/* PVX-N149 decision #4: the shared front-desk login is now only the lobby screen's account. Keep in step with or/ and treatment/. */
+const PVX_LOBBY_ACCOUNTS=['au733@vca.com'];
+function pvxIsLobbyAccount(u){ var e=String(u&&u.email||u||'').toLowerCase(); return PVX_LOBBY_ACCOUNTS.indexOf(e)>-1; }
+function pvxLobbyAccountCard(user){
+  var el=document.getElementById('pvxLobbyAcct');
+  if(!user){ if(el){ el.remove(); document.body.classList.remove('sb-locked'); document.querySelectorAll('.app, #mesh').forEach(function(x){ try{ x.removeAttribute('inert'); }catch(e){} }); } return; }
+  try{ var ov=document.getElementById('sbLogin'); if(ov) ov.remove(); }catch(e){}
+  if(el) return;
+  el=document.createElement('div'); el.id='pvxLobbyAcct'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true'); el.setAttribute('aria-labelledby','pvxLaT');
+  el.innerHTML='<div class="card"><h2 id="pvxLaT">This is the lobby screen account</h2>'
+    +'<p>'+String(user.email||'').replace(/[&<>"]/g,'')+' only shows the waiting-room display. To use the board, sign in with your own account.</p>'
+    +'<div class="acts"><button type="button" class="primary" id="pvxLaOwn">Sign in with my own account</button><a href="?display=1" id="pvxLaTv">Open the lobby display</a></div></div>';
+  document.body.appendChild(el); document.body.classList.add('sb-locked');
+  document.querySelectorAll('.app, #mesh').forEach(function(x){ try{ x.setAttribute('inert',''); }catch(e){} });
+  document.getElementById('pvxLaOwn').onclick=function(){ try{ AUTH.signOut(); }catch(e){} };   /* the normal sign-in card follows (showLogin) */
+  setTimeout(function(){ try{ document.getElementById('pvxLaOwn').focus(); }catch(e){} },60);
+}
+
 try{ if(window.firebase && !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); }catch(e){}
 const DB   = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
 /* Offline: keep a local copy of the board so Flow opens and keeps working without a connection. */
@@ -6913,15 +6931,21 @@ init: async function(){
 Backend.mode =/[?&](display|tv|lobby)=?/.test(location.search) ?'lobby':'staff';
 if(!DB){ Backend.setConn('error'); return; }
 Backend.setConn('connecting');
-if(Backend.mode==='lobby'){ return Backend.lobbyStart(); }
+if(Backend.mode==='lobby'){   /* PVX-N149: the lobby screen signs in (its own account), then shows the Client Display */
+  if(!AUTH){ return Backend.lobbyStart(); }
+  if(Backend._authWired) return; Backend._authWired=true;
+  AUTH.onAuthStateChanged(function(user){ if(user){ const ov=document.getElementById('sbLogin'); if(ov) sbFinishLogin(ov); if(!Backend._lobbyOn){ Backend._lobbyOn=true; Backend.lobbyStart(); } }
+    else { Backend._lobbyOn=false; ['unsubAlertLobby','unsubPubLobby'].forEach(function(k){ if(Backend[k]){ try{ Backend[k](); }catch(e){} Backend[k]=null; } }); PATIENTS=[]; try{ renderClient(); }catch(e){} showLogin(); } });
+  return; }
 
 
 if(!AUTH){ showLogin(); return; }
 if(Backend._authWired) return;
 Backend._authWired = true;
 AUTH.onAuthStateChanged(function(user){
-if(user){ try{ CURRENT_USER = userDisplayName(user); }catch(e){} try{ usApplyRoleForUser(user); }catch(e){} const ov=document.getElementById('sbLogin'); if(ov){ sbFinishLogin(ov); } Backend.loadAndSubscribe(); }
-else { showLogin(); }
+if(user&&pvxIsLobbyAccount(user)){ pvxLobbyAccountCard(user); return; }   /* PVX-N149: the lobby account never opens the staff board */
+if(user){ pvxLobbyAccountCard(null); try{ CURRENT_USER = userDisplayName(user); }catch(e){} try{ usApplyRoleForUser(user); }catch(e){} const ov=document.getElementById('sbLogin'); if(ov){ sbFinishLogin(ov); } Backend.loadAndSubscribe(); }
+else { pvxLobbyAccountCard(null); showLogin(); }
 });
 },
 loadShifts: async function(){
@@ -7135,17 +7159,20 @@ function loadState(){ try{ Backend.init(); }catch(e){ if(SB) Backend.setConn('er
 
 /* Oct 2026 — a copy, never the live objects: triage / intake are edited in place, and a live reference made every later change invisible */
 function fvRowsCopy(list){ return (list||[]).map(function(p){ try{ return JSON.parse(JSON.stringify(mapToDb(p))); }catch(e){ return mapToDb(p); } }); }
+function pvxPersistEvt(state,at){ try{ window.dispatchEvent(new CustomEvent('pvx:persist',{detail:{state:state,at:at}})); }catch(e){} }   /* PVX-N148 */
 function persist(){
-if(_persistLock || Backend.mode!=='staff'|| !DB) return;
+if(_persistLock) return;
+if(Backend.mode!=='staff'|| !DB){ pvxPersistEvt('off',Date.now()); return; }   /* PVX-N148 */
 
 const LIVE = PATIENTS.filter(function(p){ return !p._demo; });
 LIVE.forEach(function(p){ if(!p.publicToken) p.publicToken=genToken(); if(!p.trackCode) p.trackCode=genTrackCode(); });
 const rows = LIVE.map(mapToDb);
 const prev = {}; (Backend._lastRows||[]).forEach(function(r){ prev[r.id]=JSON.stringify(r); });
 const changed = LIVE.filter(function(p,i){ return prev[rows[i].id] !== JSON.stringify(rows[i]); });
-if(!changed.length) return;
+if(!changed.length){ pvxPersistEvt('idle',Date.now()); return; }   /* PVX-N148: nothing waiting = everything is on the server */
 clearTimeout(persist._t);
 persist._t = setTimeout(async function(){
+const pvxAt=Date.now();   /* PVX-N148: what this write covers */
 try{
 const batch = DB.batch();
 changed.forEach(function(p){
@@ -7157,7 +7184,8 @@ if(typeof fxCodesSync==='function') fxCodesSync([p],true);   /* n118: codes/{COD
 try{ await batch.commit(); }catch(err){ changed.forEach(function(p){ delete _fxLobby[String(p.id)]; }); if(typeof fvSaveFallback==='function') await fvSaveFallback(changed); else throw err; }
 Backend._lastRows = fvRowsCopy(LIVE);
 if(Backend.conn!=='live') Backend.setConn('live');
-}catch(e){ Backend.setConn('error'); }
+pvxPersistEvt('saved',pvxAt);   /* PVX-N148: the server confirmed */
+}catch(e){ Backend.setConn('error'); pvxPersistEvt('error',pvxAt); }
 }, 250);
 }
 
@@ -7169,7 +7197,7 @@ var existing=document.getElementById('sbLogin');
 if(existing){ if(msg){ var e0=existing.querySelector('#sbErr'); if(e0) e0.textContent=msg; } return; }
 var ov=document.createElement('div'); ov.id='sbLogin';
 ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Sign in to Pravix');
-ov.innerHTML=`<div class="login-wrap"><form class="card" id="sbLoginForm" novalidate><div class="brand"><img class="pravix-logo-img logo-lite" src="assets/img/pravix-logo-lite.png" alt="Pravix"><img class="pravix-logo-img logo-drk" src="assets/img/pravix-logo-drk.png" alt="Pravix"><div class="product">Shoreline Patient Flow</div><div class="secure-line"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>Secure sign in</div></div><div class="heading"><h1>Welcome back</h1><p>Sign in to continue.</p></div><div class="form-stack"><label class="field-label" for="sbEmail">Email</label><div class="field"><div class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="3"></rect><path d="m5.5 8 6.5 5 6.5-5"></path></svg></div><input id="sbEmail" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="name@vca.com" /></div><label class="field-label" for="sbPass" style="margin-top:10px">Password</label><div class="field"><div class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></div><input id="sbPass" type="password" autocomplete="current-password" placeholder="Enter password" /><button class="reveal" id="sbReveal" type="button" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></div><div class="caps-hint" id="sbCaps">Caps Lock is on</div><div class="error" id="sbErr"></div><button type="button" id="sbForgot" style="display:block;margin:2px auto 12px;background:none;border:none;color:var(--accent);font:inherit;font-size:12px;font-weight:600;cursor:pointer;">Forgot password?</button><button class="continue is-inactive" id="sbBtn" type="submit">Sign In</button></div></form><div class="page-foot"><b>VCA Shoreline</b> · Protected Pravix Workspace</div></div>`;
+ov.innerHTML=`<div class="login-wrap"><form class="card" id="sbLoginForm" novalidate><div class="brand"><img class="pravix-logo-img logo-lite" src="assets/img/pravix-logo-lite.png" alt="Pravix"><img class="pravix-logo-img logo-drk" src="assets/img/pravix-logo-drk.png" alt="Pravix"><div class="product">Shoreline Patient Flow</div><div class="secure-line"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>Secure sign in</div></div><div class="heading"><h1>${Backend.mode==='lobby'?'Lobby screen':'Welcome back'}</h1><p id="sbLead">${Backend.mode==='lobby'?'Sign in with the lobby screen account to show the waiting-room display.':'Sign in with your own account.'}</p></div><div class="form-stack"><label class="field-label" for="sbEmail">Email</label><div class="field"><div class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="3"></rect><path d="m5.5 8 6.5 5 6.5-5"></path></svg></div><input id="sbEmail" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="name@vca.com" /></div><label class="field-label" for="sbPass" style="margin-top:10px">Password</label><div class="field"><div class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></div><input id="sbPass" type="password" autocomplete="current-password" placeholder="Enter password" /><button class="reveal" id="sbReveal" type="button" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></div><div class="caps-hint" id="sbCaps">Caps Lock is on</div><div class="error" id="sbErr"></div><button type="button" id="sbForgot" style="display:block;margin:2px auto 12px;background:none;border:none;color:var(--accent);font:inherit;font-size:12px;font-weight:600;cursor:pointer;">Forgot password?</button><button class="continue is-inactive" id="sbBtn" type="submit">Sign In</button></div></form><div class="page-foot"><b>VCA Shoreline</b> · Protected Pravix Workspace</div></div>`;
 document.body.appendChild(ov);
 document.body.classList.add('sb-locked');
 document.querySelectorAll('.app, #mesh').forEach(function(el){ try{ el.setAttribute('inert',''); }catch(e){} });
@@ -8374,7 +8402,7 @@ const extra = u.doctorDiscussionNeeded ?'<span class="us-flag disc">'+US_ICON_WA
 return'<span class="us-flag done">'+US_ICON_REQ+'Ultrasound · Completed '+(u.completedAt?fmtTime(u.completedAt):'')+'</span>'+extra;
 }
 if(p.status!=='Ultrasound') return'';
-if(st==='incomplete') return'<span class="us-flag inc" data-usflag="'+p.id+'" title="Complete the ultrasound request">'+US_ICON_INC+'Ultrasound · Request incomplete</span>';
+if(st==='incomplete') return'<button type="button" class="us-flag inc" data-usflag="'+p.id+'" title="Complete the ultrasound request" aria-label="'+bcEsc('Complete ultrasound request for '+(p.name+' '+(p.last||'')).trim())+'">'+US_ICON_INC+'Ultrasound · Request incomplete</button>';   /* PVX-N145 UR-06 */
 if(st==='in_progress') return'<span class="us-flag prog"><span class="fd"></span>Ultrasound · In Progress</span>';
 if(st==='accepted') return'<span class="us-flag acc">'+US_ICON_REQ+'Ultrasound · Accepted · '+bcEsc(drName(u.acceptedBy))+'</span>';
 const pos=usQueuePos(p);
@@ -8405,16 +8433,16 @@ let scrim=document.getElementById('usScrim'), modal=document.getElementById('usM
 if(!scrim){ scrim=document.createElement('div'); scrim.id='usScrim'; scrim.className='us-scrim'; document.body.appendChild(scrim); scrim.addEventListener('click',closeUltrasound); }
 if(!modal){ modal=document.createElement('div'); modal.id='usModal'; modal.className='us-modal'; document.body.appendChild(modal); }
 modal.innerHTML =
-'<div class="us-head"><div><div class="us-h-t">Ultrasound Request</div>'
-+'<div class="us-h-name">'+bcEsc((p.name+' '+(p.last||'')).trim())+'</div>'
+'<div class="us-head"><div><div class="us-h-t" id="usHT">Ultrasound Request</div>'
++'<div class="us-h-name" id="usHN">'+bcEsc((p.name+' '+(p.last||'')).trim())+'</div>'
 +'<div class="us-h-sub">'+bcEsc(sub)+'</div></div>'
 +'<button class="us-x" id="usX" type="button" aria-label="Close">&times;</button></div>'
 +'<div class="us-body">'
 +'<div class="us-sect"><div class="us-lab">Study</div><div class="us-static">Abdominal Ultrasound</div></div>'
-+'<div class="us-sect"><div class="us-lab">Clinical Question<span class="req">*</span></div>'
-+'<textarea class="us-input" id="usCQ" placeholder="What do you want Internal Medicine to evaluate?">'+bcEsc(u.clinicalQuestion||'')+'</textarea></div>'
++'<div class="us-sect"><label class="us-lab" for="usCQ">Clinical Question<span class="req" aria-hidden="true">*</span></label>'
++'<textarea class="us-input" id="usCQ" required aria-required="true" placeholder="What do you want Internal Medicine to evaluate?">'+bcEsc(u.clinicalQuestion||'')+'</textarea></div>'
 +'<div class="us-sect"><div class="us-lab">Relevant History</div>'+hist+'</div>'
-+'<div class="us-sect"><div class="us-lab">Relevant Diagnostics</div>'+dxAuto
++'<div class="us-sect"><label class="us-lab" for="usDx">Relevant Diagnostics</label>'+dxAuto
 +'<textarea class="us-input" id="usDx" placeholder="Add pertinent lab results, imaging findings, or other diagnostic information…">'+bcEsc(u.diagnosticsNotes||'')+'</textarea></div>'
 +'</div>'
 +'<div class="us-foot"><button class="us-send" id="usSend" type="button">Send to Ultrasound</button></div>';
@@ -8426,10 +8454,12 @@ const dx=modal.querySelector('#usDx'); if(dx) dx.addEventListener('input',functi
 modal.querySelector('#usX').onclick=closeUltrasound;
 send.onclick=sendUltrasound;
 modal.onkeydown=function(e){ if(e.key==='Escape'){ e.preventDefault(); closeUltrasound(); } };
+modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.setAttribute('aria-labelledby','usHT usHN'); modal.removeAttribute('aria-label');   /* PVX-N145 UR-07 */
 RAF ? RAF(function(){ scrim.classList.add('open'); modal.classList.add('open'); }) : (scrim.classList.add('open'),modal.classList.add('open'));
 setTimeout(function(){ try{ cq.focus(); }catch(e){} }, 140);
 }
 function closeUltrasound(){
+const _pvxPid=_usPid; setTimeout(function(){ pvxUsRefocus(_pvxPid,'req'); },80); setTimeout(function(){ pvxUsRefocus(_pvxPid,'req'); },450);   /* PVX-N145 UR-08 */
 const scrim=document.getElementById('usScrim'), modal=document.getElementById('usModal');
 if(scrim) scrim.classList.remove('open');
 if(modal) modal.classList.remove('open');
@@ -9522,7 +9552,7 @@ const stColor = (st==='ready'||st==='next'||st==='in_progress') ?'var(--us-2)'
 : (st==='incomplete') ?'var(--amber)'
 :'var(--ink-500)';
 return`<span class="cb-stat"><b>${bcEsc(p.room||'—')}</b><i>Location</i></span>`
-+`<span class="cb-pill"><span class="cb-statuscol"><span class="cb-statusslot"><span class="cb-statusdot" style="color:${stColor}"></span></span><i>Status</i></span></span>`
++`<span class="cb-stat cb-status"><b><span class="cb-statusdot" aria-hidden="true" style="color:${stColor}"></span>${bcEsc(stLabel||'—')}</b><i>Status</i></span>`   /* PVX-N145 UR-04 */
 +`<span class="cb-pill"><span class="cb-statuscol"><span class="prio prio-${p.prio}" style="width:24px;height:24px;font-size:11px">${PRIO[p.prio].l}</span><i>Priority</i></span></span>`
 +`<span class="cb-stat"><b>${elapsed.v}</b><i>${elapsed.l}</i></span>`;
 }
@@ -9534,6 +9564,8 @@ return drawer;
 }
 function openUsxCase(pid){
 const p=PATIENTS.find(x=>x.id===pid); if(!p||!p.ultrasound) return;
+try{ window.__pvxUsFrom=document.activeElement; window.__pvxUsPid=pid; }catch(e){}
+(function(){ var d=document.getElementById('usxDrawer')||usxEnsureDrawer(); if(d&&!d.__pvxObs){ d.__pvxObs=new MutationObserver(function(){ if(!d.classList.contains('open')&&window.__pvxUsPid){ var id=window.__pvxUsPid; window.__pvxUsPid=null; setTimeout(function(){ pvxUsRefocus(id,'case'); },80); setTimeout(function(){ pvxUsRefocus(id,'case'); },450); } }); d.__pvxObs.observe(d,{attributes:true,attributeFilter:['class']}); } })();   /* PVX-N145 UR-05: however the workspace closes (Escape, scrim, ✕) */
 _usxCase=pid; _usxForceComplete=null;
 usxEnsureDrawer();
 fillUsxCase();
@@ -9541,6 +9573,7 @@ document.getElementById('usxScrim').classList.add('open');
 document.getElementById('usxDrawer').classList.add('open');
 }
 function closeUsxCase(){
+const _pvxPid=_usxCase; setTimeout(function(){ pvxUsRefocus(_pvxPid,'case'); },80); setTimeout(function(){ pvxUsRefocus(_pvxPid,'case'); },450);   /* PVX-N145 UR-05 */
 _usxCase=null; _usxForceComplete=null;
 const s=document.getElementById('usxScrim'), d=document.getElementById('usxDrawer');
 if(s) s.classList.remove('open'); if(d) d.classList.remove('open');
@@ -10234,12 +10267,13 @@ const vv=(key)=>{ const val=v[key]; return (val!=null&&val!=='')?val:null; };
 const temp=vv('temp'), hr=vv('hr'), weight=vv('weight');
 const parts=[];
 parts.push(`<span class="cb-stat"><b>${p.room}</b><i>Location</i></span>`);
-parts.push(`<span class="cb-pill"><span class="cb-statuscol"><span class="cb-statusslot"><span class="cb-statusdot" style="color:${(STATUSES[p.status]||{}).color||'var(--ink-400)'}"></span></span><i>Status</i></span></span>`);
+parts.push(`<span class="cb-stat cb-status"><b><span class="cb-statusdot" aria-hidden="true" style="color:${(STATUSES[p.status]||{}).color||'var(--ink-400)'}"></span>${bcEsc((STATUSES[p.status]||{}).label||p.status||'—')}</b><i>Status</i></span>`);   /* PVX-N144 FLOW-07 */
 parts.push(`<span class="cb-pill"><span class="cb-statuscol"><span class="prio prio-${p.prio}" style="width:24px;height:24px;font-size:11px">${PRIO[p.prio].l}</span><i>Priority</i></span></span>`);
 parts.push(`<span class="cb-stat"><b>${fmtWait(waitMinutes(p))}</b><i>In hospital</i></span>`);
-if(temp)   parts.push(`<span class="cb-stat"><b>${temp}</b><i>Temp</i></span>`);
-if(hr)     parts.push(`<span class="cb-stat"><b>${hr}</b><i>Heart Rate</i></span>`);
-if(weight) parts.push(`<span class="cb-stat"><b>${weight}</b><i>Weight</i></span>`);
+const _u=(x,u)=>/^\s*\d+(\.\d+)?\s*$/.test(String(x))?String(x).trim()+(u==='°F'?' °F':' '+u):String(x);   /* PVX-N144 FLOW-07: units */
+if(temp)   parts.push(`<span class="cb-stat"><b>${bcEsc(_u(temp,'°F'))}</b><i>Temp</i></span>`);
+if(hr)     parts.push(`<span class="cb-stat"><b>${bcEsc(_u(hr,'bpm'))}</b><i>Heart Rate</i></span>`);
+if(weight) parts.push(`<span class="cb-stat"><b>${bcEsc(_u(weight,'kg'))}</b><i>Weight</i></span>`);
 return parts.join('');
 }
  
@@ -12263,7 +12297,7 @@ function _alertVal(id){ const el=document.getElementById(id); return el?el.value
 function _alertChecked(id){ const el=document.getElementById(id); return el?el.checked:true; }
 async function activateAlert(){
 const type = alertDraftType;
-const by = (typeof SB_LOGIN_EMAIL!=="undefined"? SB_LOGIN_EMAIL :"Front Desk");
+const by = (typeof CURRENT_USER!=="undefined"&&CURRENT_USER) ? CURRENT_USER : "Unknown";   /* PVX-N149: the person, not the shared address */
 const t = ALERT_TYPES[type] || ALERT_TYPES.custom;
 const payload = {
 tenant_id: TENANT_ID, type: type,
@@ -12287,7 +12321,7 @@ closeAlertModal();
 notify("Hospital alert activated", t.label, { icon:"info", color: type==="diversion"?"var(--priority-p1)":(type==="limited"?"var(--amber)":"var(--accent)") });
 }
 async function endAlert(silent){
-const by = (typeof SB_LOGIN_EMAIL!=="undefined"? SB_LOGIN_EMAIL :"Front Desk");
+const by = (typeof CURRENT_USER!=="undefined"&&CURRENT_USER) ? CURRENT_USER : "Unknown";   /* PVX-N149: the person, not the shared address */
 if(DB && Backend.mode==="staff"){
 try{ await DB.collection("alerts").doc(TENANT_ID).set({ active:false, ended_at:new Date().toISOString(), ended_by:by }, { merge:true }); }catch(e){}
 currentAlert = null;
@@ -13021,12 +13055,24 @@ renderRounds(true);
 function rdId(){ return'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function rdIso(d){ return (d instanceof Date? d : new Date(d)).toISOString(); }
 function rdDate(v){ return v ? (v instanceof Date? v : new Date(v)) : null; }
-function rdT(v){ const d=rdDate(v); return d? fmtTime(d) :'—'; }
+/* PVX-N143-RD (RD-04): hospital-time clock, the day when it isn't today, the zone when this device is elsewhere */
+function rdTZ(){ try{ return HOSP_TZ||'America/New_York'; }catch(e){ return 'America/New_York'; } }
+const _rdF={}; function rdFmt(k,o){ const z=rdTZ(), key=k+'|'+z; return _rdF[key]||(_rdF[key]=new Intl.DateTimeFormat('en-US',Object.assign({timeZone:z},o))); }
+function rdClock(d){ try{ return rdFmt('clock',{hour:'numeric',minute:'2-digit'}).format(d).replace(/\u202f/g,' '); }catch(e){ return fmtTime(d); } }
+let _rdLocalTz=null; function rdTzTag(d){ try{ if(_rdLocalTz==null) _rdLocalTz=Intl.DateTimeFormat().resolvedOptions().timeZone; if(_rdLocalTz===rdTZ()) return ''; const p=rdFmt('zone',{timeZoneName:'short'}).formatToParts(d).find(x=>x.type==='timeZoneName'); return p?' '+p.value.replace(/^E[DS]T$/,'ET'):''; }catch(e){ return ''; } }
+function rdDaysAgo(d){ try{ return Math.round((Date.parse(_hospDayKey(new Date()))-Date.parse(_hospDayKey(d)))/864e5); }catch(e){ return 0; } }
+function rdDayWord(d){ const n=rdDaysAgo(d); if(n===0) return 'today'; if(n===1) return 'yesterday'; if(n===-1) return 'tomorrow';
+  return rdFmt('md',{month:'short',day:'numeric'}).format(d); }
+function rdT(v){ const d=rdDate(v); if(!d) return '—'; const n=rdDaysAgo(d); return rdClock(d)+rdTzTag(d)+(n===0?'':' '+rdDayWord(d)); }
+function rdEvDay(e,prev,all){ const d=rdDate(e.at); if(!d) return ''; const one=all.every(x=>rdDate(x.at)&&rdDaysAgo(rdDate(x.at))===0); if(one) return '';
+  if(prev&&rdDate(prev.at)&&_hospDayKey(rdDate(prev.at))===_hospDayKey(d)) return '';
+  const w=rdDayWord(d), long=rdFmt('wmd',{weekday:'short',month:'short',day:'numeric'}).format(d);
+  return `<div class="rd-evday">${/^(today|yesterday|tomorrow)$/.test(w)?w.charAt(0).toUpperCase()+w.slice(1)+' · '+long:long}</div>`; }
  
 function rdWhen(v){ const d=rdDate(v); if(!d) return'—';
-return isTodayHosp(d)? fmtTime(d) : d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+const n=rdDaysAgo(d); return n===0? rdClock(d)+rdTzTag(d) : n===1? 'yesterday' : rdDayWord(d); }
 function rdWhenFull(v){ const d=rdDate(v); if(!d) return'—';
-return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+fmtTime(d); }
+return rdFmt('md',{month:'short',day:'numeric'}).format(d)+' · '+rdClock(d)+rdTzTag(d); }
 function rdDayKey(v){ return _hospDayKey(rdDate(v)||new Date()); }
 function rdEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function rdAgo(v){ const d=rdDate(v); if(!d) return'—'; return fmtWait(Math.max(0,Math.round((Date.now()-d.getTime())/60000))); }
@@ -13065,6 +13111,7 @@ try{ const q=JSON.parse(localStorage.getItem(RD_QUEUE_KEY))||{}; RD_QUEUE_DEFS.f
 function rdSaveQueues(){ try{ localStorage.setItem(RD_QUEUE_KEY,JSON.stringify(rdQueues)); }catch(e){} }
 function rdPruneQueues(){ let ch=false; const today=rdRoundsDay(new Date());
 RD_QUEUE_DEFS.forEach(d=>{ const before=rdQueues[d.key].length;
+rdQueues[d.key].forEach(x=>{ if(x.done&&x.doneAt&&rdRoundsDay(x.doneAt)<today&&typeof rdQDel==='function') rdQDel(x.id,true); });   /* PVX-N148: done before today's rounds → removed for everyone */
 rdQueues[d.key]=rdQueues[d.key].filter(x=>!(x.done&&x.doneAt&&rdRoundsDay(x.doneAt)<today));
 if(rdQueues[d.key].length!==before) ch=true; });
 if(ch) rdSaveQueues(); }
@@ -13088,10 +13135,7 @@ let _rdSaveT=null;
 function rdTouch(p,what,skipSnapshot){
 if(p&&what) rdAudit(p,what);
 if(p&&p.rounds&&!skipSnapshot) rdSnapshotToday(p);
-const el=document.getElementById('rdSaveState');
-if(el){ el.textContent='Saving…'; el.classList.add('on');
-clearTimeout(_rdSaveT);
-_rdSaveT=setTimeout(()=>{ el.textContent='Saved'; setTimeout(()=>el.classList.remove('on'),1400); },700); }
+window.__rdWaitSince=Date.now(); if(typeof rdSaveState==='function') rdSaveState('saving');   /* PVX-N148: "Saved" waits for the server (see pvx:persist) */
 renderAll();
 }
 
@@ -13749,7 +13793,7 @@ return`<div class="rd-tmr"><div class="rd-sec-h">Tomorrow</div>
         <button class="x" data-act="q-del" data-key="${d.key}" data-id="${x.id}" aria-label="${rdEsc('Remove: '+x.text)}">✕</button></div>`).join('')}
       <div class="rd-add slim"><input data-input="queue" data-key="${d.key}" placeholder="+ Add" aria-label="${rdEsc('Add to '+d.label)}" autocomplete="off"></div>
     </div>`).join('')}
-    <div class="rd-team-note">This device · syncs when the shared queue ships</div></div>`;
+    <div class="rd-team-note" id="rdTmrNote">${(window.rdQ&&rdQ.live)?'Shared with everyone on Rounds':(window.rdQ&&rdQ.server)?'Connecting…':'Saved on this device only — sign in to share it with the team'}</div></div>`;
 }
 
  
@@ -14079,7 +14123,7 @@ return`<div class="rd-work" data-pid="${pid}">
               <button class="rd-fact" data-act="loc-menu" data-pid="${pid}" title="Change location">${rdEsc(rdNormLoc(r.location)||'Set location')}</button>
               <span class="rd-fact plain day">Hospital Day ${rdDayNum(p)}</span>
               <button class="rd-fact ${r.admitType!=='clinical'?'hold':''}" data-act="type-menu" data-pid="${pid}" title="Admission type">${RD_ADMIT_TYPES[r.admitType]||'Clinical'}</button>
-              <span class="rd-fact plain">Admitted ${admitted?admitted.toLocaleDateString('en-US',{month:'short',day:'numeric'}):''} · ${rdT(r.admittedAt)}${r.admittedBy?(' · '+rdEsc(r.admittedBy)):''}</span>
+              <span class="rd-fact plain">Admitted ${admitted?rdWhenFull(admitted):''}${r.admittedBy?(' · '+rdEsc(r.admittedBy)):''}</span>
             </div>
           </div>
         </div>
@@ -14102,15 +14146,15 @@ return`<div class="rd-work" data-pid="${pid}">
         <div class="rd-sec-h">Active Problems</div>
         <ol class="rd-probs">${probs.filter(x=>x.active!==false).map((x,i)=>`
           <li><span class="i">${i+1}</span><span class="t">${rdEsc(x.label)}</span>
-            <span class="ops"><button data-act="prob-up" data-pid="${pid}" data-id="${x.id}" title="Move up">↑</button><button data-act="prob-resolve" data-pid="${pid}" data-id="${x.id}" title="Mark resolved">✓</button><button data-act="prob-del" data-pid="${pid}" data-id="${x.id}" title="Remove">✕</button></span></li>`).join('')}
+            <span class="ops"><button data-act="prob-up" data-pid="${pid}" data-id="${x.id}" title="Move up" aria-label="${rdEsc('Move up: '+x.label)}"${i===0?' disabled':''}><span aria-hidden="true">↑</span></button><button data-act="prob-resolve" data-pid="${pid}" data-id="${x.id}" title="Mark resolved" aria-label="${rdEsc('Mark resolved: '+x.label)}"><span aria-hidden="true">✓</span></button><button data-act="prob-del" data-pid="${pid}" data-id="${x.id}" title="Remove" aria-label="${rdEsc('Remove problem: '+x.label)}"><span aria-hidden="true">✕</span></button></span></li>`).join('')}
         </ol>
-        ${probs.some(x=>x.active===false)?`<div class="rd-resolved">${probs.filter(x=>x.active===false).map(x=>`<button class="rd-resolved-chip" data-act="prob-restore" data-pid="${pid}" data-id="${x.id}" title="Reactivate">${rdEsc(x.label)} · resolved</button>`).join('')}</div>`:''}
+        ${probs.some(x=>x.active===false)?`<div class="rd-resolved">${probs.filter(x=>x.active===false).map(x=>`<button class="rd-resolved-chip" data-act="prob-restore" data-pid="${pid}" data-id="${x.id}" title="Reactivate" aria-label="${rdEsc('Reactivate problem: '+x.label)}">${rdEsc(x.label)} · resolved</button>`).join('')}</div>`:''}
         ${rdSecAdd(pid,'prob','+ Add problem')}
       </div>
 
       <div class="rd-sec">
         <div class="rd-sec-h">Overnight &amp; Events</div>
-        ${evs.length?`<div class="rd-events">${evs.slice(-14).map(e=>`<div class="rd-ev ${e.kind==='incident'?'incident':''}"><span class="w">${rdT(e.at)}</span><span class="t">${e.kind==='incident'?'<b class="inc">INCIDENT</b> ':''}${rdEsc(e.text)}</span><button class="x" data-act="ev-del" data-pid="${pid}" data-id="${e.id}" title="Remove" aria-label="${rdEsc('Remove event: '+e.text)}">✕</button></div>`).join('')}</div>`
+        ${evs.length?`<div class="rd-events">${evs.slice(-14).map((e,i,a)=>rdEvDay(e,a[i-1],a)+`<div class="rd-ev ${e.kind==='incident'?'incident':''}"><span class="w">${rdDate(e.at)?rdClock(rdDate(e.at))+rdTzTag(rdDate(e.at)):'—'}</span><span class="t">${e.kind==='incident'?'<b class="inc">INCIDENT</b> ':''}${rdEsc(e.text)}</span><button class="x" data-act="ev-del" data-pid="${pid}" data-id="${e.id}" title="Remove" aria-label="${rdEsc('Remove event: '+e.text)}">✕</button></div>`).join('')}</div>`
         :`<div class="rd-empty-line">No events recorded yet.</div>`}
         ${rdSecAdd(pid,'event','+ Add event — “restless overnight”, “ate 1/2 meal at 6am”')}
       </div>
@@ -14540,8 +14584,8 @@ case'handoff-now': rdHandoffNow(p); break;
 case'type-menu': rdMenu(el,Object.keys(RD_ADMIT_TYPES).map(k=>({value:k,label:RD_ADMIT_TYPES[k],on:r.admitType===k})),v=>{
 if(r.admitType!==v){ r.admitType=v; rdTouch(p,'Admission type → '+RD_ADMIT_TYPES[v]); } }); break;
  
-case'q-toggle':{ const x=rdQueues[key].find(q=>q.id===id); if(x){ x.done=!x.done; x.doneAt=x.done?rdIso(new Date()):null; rdSaveQueues(); renderRdCensus(true); } break; }
-case'q-del': rdQueues[key]=rdQueues[key].filter(q=>q.id!==id); rdSaveQueues(); renderRdCensus(true); break;
+case'q-toggle':{ const x=rdQueues[key].find(q=>q.id===id); if(x){ x.done=!x.done; x.doneAt=x.done?rdIso(new Date()):null; rdSaveQueues(); rdQDone(x); renderRdCensus(true); } break; }
+case'q-del': rdQueues[key]=rdQueues[key].filter(q=>q.id!==id); rdSaveQueues(); rdQDel(id); renderRdCensus(true); break;   /* PVX-N148 */
 case'review-mark': rdMarkReviewed(p); break;
 case'timeline-toggle': rdUI.timeline[pid]=!rdUI.timeline[pid]; renderRdCensus(true); break;
 case'history-toggle': rdUI.history[pid]=!rdUI.history[pid]; renderRdCensus(true); break;
@@ -14552,8 +14596,8 @@ function rdHandleInput(inp){
 const kind=inp.dataset.input, pid=inp.dataset.pid, id=inp.dataset.id;
  
 if(kind==='queue'){ const v0=inp.value.trim(); if(!v0) return; const qk=inp.dataset.key;
-rdQueues[qk].push({id:rdId(),text:rdCap(v0),done:false,doneAt:null,at:rdIso(new Date())});
-rdSaveQueues(); renderRdCensus(true); return; }
+const qx={id:rdId(),text:rdCap(v0),done:false,doneAt:null,at:rdIso(new Date())}; rdQueues[qk].push(qx);
+rdSaveQueues(); rdQAdd(qk,qx); renderRdCensus(true); return; }   /* PVX-N148 */
 const p=rdFind(pid); if(!p) return;
 const r=p.rounds, v=inp.value.trim();
 switch(kind){
@@ -19745,5 +19789,203 @@ body.dark .cnt{color:var(--ink-700)}
 /* type floor: labels under 11 px (inline sizes included) */
 .command-kpi__chip,.command-kpi__label,.high-text,.high-icon,.rd-row .lbl,span.lbl,.rd-section-inline-label,.rd-assess .k,.rd-caresec .k,span.nx,.rd-sechead .tri,.rd-chip,.rd-svcchip,.disp-label,.command-kpi__sub,p#dashDate,.cl-hero-sub,#clDate,.cl-livebadge,.dd-md,.rd-row .av,span.rl,#view-client .cl-vlbl,.card .prio,.cb-stat i,label.rd-id-field span{font-size:11px!important}
 </style>
+
+<style id="pvx-n143-rd-css">
+/* RD-04: day headings inside Overnight & Events */
+.rd-evday{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400,#6b7a90);padding:8px 2px 2px}
+.rd-evday:first-child{padding-top:0}
+.rd-ev .w{flex:0 0 auto;min-width:58px}
+</style>
+
+<!-- PVX-N144 · Flow: tables, rooms, drawer, critical alert, New Patient, Client Display, selected state -->
+<style id="pvx-n144-css">
+/* FLOW-01: narrow widths scroll the Patients table sideways (never clip Status / Priority / Arrival / Wait) */
+@media (max-width:1100px){
+  #view-list .tablewrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  #view-list .tablewrap table{min-width:860px}
+}
+#view-list .tablewrap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pvx-tblhint{display:none;margin:0 0 8px;font-size:12px;font-weight:600;color:var(--ink-500)}
+.pvx-tblhint.on{display:block}
+/* FLOW-05: Rooms footer — the team on its own row; time and status share the second */
+.r-foot{flex-wrap:wrap;row-gap:8px}
+.r-foot .dctr{flex:1 0 100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-foot .r-right{flex:1 0 100%;justify-content:space-between;min-width:0}
+/* FLOW-06: the drawer summary reflows into readable groups instead of squeezing seven values into one row */
+.clin-bar{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:12px 14px}
+.clin-bar .cb-stat,.clin-bar .cb-pill{min-width:0}
+.clin-bar .cb-stat b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:24px}
+.clin-bar .cb-status b{display:flex;align-items:center;gap:7px}
+.clin-bar .cb-status .cb-statusdot{flex:0 0 auto}
+/* FLOW-08: the critical alert sits below the app bar, so every destination and the alert's own action stay usable */
+#critIsland{top:var(--pvx-ci-top,12px)!important}
+/* FLOW-09: the eight Command figures sit in balanced rows (4 + 4, or one row of 8 on wide screens; 2 per row on phones) */
+#kpiRow{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (min-width:1700px){ #kpiRow{grid-template-columns:repeat(8,minmax(0,1fr))} }
+@media (max-width:599px){ #kpiRow{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* FLOW-14: inline error under Patient Name */
+.pvx-fielderr{margin-top:6px;font-size:12.5px;font-weight:600;color:var(--priority-p1,#E4342B)}
+.pvx-fielderr:empty{display:none}
+.ap-input[aria-invalid="true"]{border-color:var(--priority-p1,#E4342B)!important}
+/* FLOW-02/03: Client Display — fewer, wider cards; the status gets its own full row; phones stack the side panel below */
+@media (max-width:1699px){
+  #view-client .cl-badgerow{flex-wrap:wrap;row-gap:6px}
+  #view-client .cl-badgerow .cl-badge{flex:1 1 100%;max-width:none;justify-content:flex-start}
+  #view-client .cl-badgerow .cl-doc{flex:1 1 100%}
+  #view-client .cl-name{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.12}
+  /* the full-width status row already names the current step; the small step caption repeated it and collided with it */
+  #view-client .cl-vstep2.current .cl-vlbl{display:none}
+  #view-client .cl-vtl{padding-bottom:clamp(8px,.7vw,12px)}
+}
+@media (max-width:1500px){ #view-client .cl-grid{grid-template-columns:repeat(3,1fr)} }
+@media (max-width:1024px){
+  #view-client .cl-grid{grid-template-columns:repeat(2,1fr)}
+  #view-client .cl-wrap{height:auto;min-height:calc(100vh - 132px);overflow:visible}
+  #view-client .cl-body{grid-template-columns:1fr}
+  #view-client .cl-side{height:auto;padding-bottom:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  #view-client .cl-grid{grid-template-rows:repeat(3,auto)}
+}
+@media (max-width:640px){
+  #view-client .cl-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,auto)}
+}
+</style>
+<script id="pvx-n144-js">
+(function(){
+  var $=function(s,r){ return (r||document).querySelector(s); }, $$=function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+  /* FLOW-01: the table region is named and reachable; a hint appears only when columns are off screen */
+  function tableRegion(){ var w=$('#view-list .tablewrap'); if(!w) return; if(!w.hasAttribute('role')){ w.setAttribute('role','region'); w.setAttribute('aria-label','Patients table'); w.tabIndex=0;
+      var h=document.createElement('p'); h.className='pvx-tblhint'; h.id='pvxTblHint'; h.textContent='Scroll sideways for Status, Priority, Arrival and Wait.'; w.parentNode.insertBefore(h,w); w.setAttribute('aria-describedby','pvxTblHint'); }
+    var over=w.scrollWidth>w.clientWidth+1, h2=$('#pvxTblHint'); if(h2) h2.classList.toggle('on',over); }
+  /* FLOW-08: keep the alert under the app bar while it is on screen (it scrolls away with the page) */
+  var ciRaf=0; function ciTop(){ ciRaf=0; var y=12;
+    /* a dialog or drawer on top: the page behind is inert, so the alert keeps its original place instead of covering the dialog */
+    if($('.addpt-modal.open, .intake-modal.open, .drawer.open, .confirm.open, .modal.open, .sheet.open')){ document.documentElement.style.setProperty('--pvx-ci-top','12px'); return; }
+    $$('.topnav, .subnav').forEach(function(n){ if(n.offsetParent===null&&getComputedStyle(n).position!=='fixed') return; var b=n.getBoundingClientRect(); if(b.height&&b.bottom>0) y=Math.max(y,Math.round(b.bottom+8)); }); document.documentElement.style.setProperty('--pvx-ci-top',y+'px'); }
+  function ciLater(){ if(!ciRaf) ciRaf=requestAnimationFrame(ciTop); }
+  /* FLOW-13: arrival and priority are single-choice groups — roles, checked state, arrow keys */
+  function radios(g,label){ if(!g) return; if(!g.dataset.pvxRg){ g.dataset.pvxRg='1'; g.setAttribute('role','radiogroup'); g.setAttribute('aria-label',label);
+      g.addEventListener('keydown',function(e){ var k=e.key; if(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp','Home','End'].indexOf(k)<0) return; var bs=$$('button',g).filter(function(b){ return b.offsetParent!==null&&!b.disabled; }); var i=bs.indexOf(document.activeElement); if(i<0) return; e.preventDefault();
+        var j=k==='Home'?0:k==='End'?bs.length-1:(i+((k==='ArrowRight'||k==='ArrowDown')?1:-1)+bs.length)%bs.length; bs[j].focus(); bs[j].click(); }); }
+    $$('button',g).forEach(function(b){ var on=b.classList.contains('active'); b.setAttribute('role','radio'); b.setAttribute('aria-checked',on?'true':'false'); b.tabIndex=on?0:-1; }); }
+  /* FLOW-10 (state only), US-04, RD-05: the selected view / shift / filter is exposed, not only coloured */
+  function selected(){ ['#switcher','#switcherUs','#switcherRd'].forEach(function(id){ $$(id+' .seg').forEach(function(b){ if(b.classList.contains('active')) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); }); });
+    $$('#rdShiftSeg button,.rd-svcbtn').forEach(function(b){ b.setAttribute('aria-pressed',b.classList.contains('on')?'true':'false'); });
+    radios($('#apArrival'),'Arrival type'); radios($('#apPrio'),'Priority'); tableRegion(); }
+  var sRaf=0; function later(){ if(!sRaf) sRaf=requestAnimationFrame(function(){ sRaf=0; selected(); }); }
+  function boot(){ selected(); ciTop();
+    new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ var t=ms[i].target; if(t.nodeType===1&&(ms[i].type==='childList'||t.matches('.seg,.ap-seg-btn,.ap-prio-btn,.rd-svcbtn,#rdShiftSeg button'))){ later(); ciLater(); return; } if(ms[i].type==='attributes'&&t.nodeType===1&&/(^|\s)open(\s|$)/.test(t.className||'')!==/(^|\s)open(\s|$)/.test(ms[i].oldValue||'')) ciLater(); } })
+      .observe(document.body,{subtree:true,childList:true,attributes:true,attributeOldValue:true,attributeFilter:['class']});
+    addEventListener('scroll',ciLater,{passive:true,capture:true}); addEventListener('resize',function(){ ciLater(); later(); });
+    /* FLOW-14: a blank name is marked on the field itself, stays until fixed, and is announced */
+    var nm=$('#apName'), cb=$('#apCreate');
+    if(nm&&cb){ nm.setAttribute('required',''); nm.setAttribute('aria-required','true'); var er=document.createElement('div'); er.className='pvx-fielderr'; er.id='apNameErr'; er.setAttribute('role','alert'); nm.parentNode.appendChild(er);
+      var lab=nm.parentNode.querySelector('label'); if(lab&&!lab.htmlFor) lab.htmlFor='apName';
+      cb.addEventListener('click',function(){ if(!String(nm.value||'').trim()){ nm.setAttribute('aria-invalid','true'); nm.setAttribute('aria-describedby','apNameErr'); er.textContent='Enter a patient name.'; setTimeout(function(){ try{ nm.focus(); }catch(e){} },0); } },true);
+      nm.addEventListener('input',function(){ if(String(nm.value||'').trim()&&nm.getAttribute('aria-invalid')==='true'){ nm.removeAttribute('aria-invalid'); er.textContent=''; } }); }
+    var tt=$('#toast'); if(tt&&!tt.hasAttribute('role')){ tt.setAttribute('role','status'); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+<!-- PVX-N145 · Ultrasound: focus return, request button, KPI badges -->
+<style id="pvx-n145-us-css">
+button.us-flag{font:inherit;font-size:11px;font-weight:700;line-height:inherit;text-align:left}
+button.us-flag:focus-visible{outline:2px solid var(--amber,#EBC95D);outline-offset:2px}
+/* UR-02: the Ultrasound figure tiles let their small badges sit inside the tile instead of being cut at the edge */
+#app-ultrasound .command-kpi__top,.app-ultrasound .command-kpi__top,[id^="usxKpis"] .command-kpi__top,#usxCompStats .command-kpi__top{flex-wrap:wrap;row-gap:6px;min-width:0}
+[id^="usxKpis"] .command-kpi__label,#usxCompStats .command-kpi__label{min-width:0;overflow-wrap:anywhere}
+[id^="usxKpis"] .command-kpi__chip,#usxCompStats .command-kpi__chip{flex:0 0 auto;max-width:100%}
+</style>
+<script id="pvx-n145-us-js">
+/* the case workspace / request editor re-render the queue and the board when they close, so the opening control is a new element:
+   find it again by patient (the request button, the case row/card, then the patient's name) and focus it */
+function pvxUsRefocus(pid,kind){ if(!pid) return; var a=document.activeElement; if(a&&a!==document.body&&a.id!=='stage'&&!(a.closest&&a.closest('.pvx-closed'))&&document.contains(a)&&a.offsetParent) return;
+  var o=window.__pvxUsFrom; var c=[];
+  if(o&&document.contains(o)&&o.offsetParent) c.push(o);
+  if(kind==='req') c.push(document.querySelector('[data-usflag="'+pid+'"]'));
+  ['[data-pid="'+pid+'"] .us-open','[data-pid="'+pid+'"][tabindex="0"]','[data-open="'+pid+'"]','tr[data-pid="'+pid+'"]','.usb-card[data-pid="'+pid+'"]','[data-pid="'+pid+'"] .pvx-open','.pvx-open[data-pid="'+pid+'"]','[data-usflag="'+pid+'"]'].forEach(function(s){ Array.prototype.forEach.call(document.querySelectorAll(s),function(e){ c.push(e); }); });
+  for(var i=0;i<c.length;i++){ var e=c[i]; if(e&&e.offsetParent&&!(e.closest&&e.closest('[inert],.pvx-closed'))){ if(e.tabIndex<0&&!/^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(e.tagName)) e.tabIndex=-1; try{ e.focus({preventScroll:false}); }catch(x){} if(document.activeElement===e) break; } }
+ }
+/* UR-05: case cards and rows without their own Open button (e.g. Completed rows) open the case with the keyboard too */
+(function(){ var SEL='.um-next,.um-rrow,.usb-card,#usxCompleted2 tr[data-pid],#usxCompleted tr[data-pid],.ums-detail';
+  function pidOf(e){ return e.dataset.pid||e.dataset.open||((e.querySelector('[data-pid]')||{}).dataset||{}).pid; }
+  function nameOf(pid){ try{ var p=PATIENTS.find(function(x){ return x.id===pid; }); return p?(p.name+' '+(p.last||'')).trim():''; }catch(e){ return ''; } }
+  function wire(){ Array.prototype.forEach.call(document.querySelectorAll(SEL),function(e){ if(e.dataset.pvxCase) return; if(e.querySelector('.us-open,.pvx-open,button')) return; var pid=pidOf(e); if(!pid) return; e.dataset.pvxCase='1'; e.tabIndex=0; e.setAttribute('role','button'); var n=nameOf(pid); if(n) e.setAttribute('aria-label','Open ultrasound case: '+n); }); }
+  document.addEventListener('keydown',function(ev){ var t=ev.target; if(!t||!t.matches||!t.matches(SEL)||!t.dataset.pvxCase) return; if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); window.__pvxUsFrom=t; t.click(); } });
+  var raf=0; new MutationObserver(function(){ if(!raf) raf=requestAnimationFrame(function(){ raf=0; wire(); }); }).observe(document.body,{childList:true,subtree:true}); wire(); })();
+</script>
+
+<!-- PVX-N148 · Rounds: "Saved" after the server confirms; the Tomorrow list on the server -->
+<style id="pvx-n148-rd-css">
+.rd-save.warn{color:var(--amber,#EBC95D)}
+body:not(.dark) .rd-save.warn{color:#8A5A00}
+.rd-save-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+<script id="pvx-n148-rd-js">
+/* the chip: Saving… → Saved (only on the server's word) · Offline · Not saved */
+var _rdSS={t:0,off:0,state:''};
+function rdSaveState(st){ var el=document.getElementById('rdSaveState'); if(!el) return;
+  var live=document.getElementById('rdSaveLive'); if(!live){ live=document.createElement('span'); live.id='rdSaveLive'; live.className='rd-save-live'; live.setAttribute('role','status'); el.parentNode.insertBefore(live,el.nextSibling); }
+  clearTimeout(_rdSS.t); clearTimeout(_rdSS.off); _rdSS.state=st; el.classList.remove('warn');
+  if(st==='saving'){ el.textContent='Saving…'; el.classList.add('on'); live.textContent='';
+    _rdSS.off=setTimeout(function(){ if(_rdSS.state!=='saving') return; var off=!navigator.onLine; try{ off=off||(typeof Backend!=='undefined'&&Backend.conn&&Backend.conn!=='live'); }catch(e){}
+      if(off){ el.textContent='Offline · saves when connected'; el.classList.add('warn'); live.textContent='Offline. Rounds changes will save when the connection is back.'; } },4000); return; }
+  if(st==='saved'){ el.textContent='Saved'; el.classList.add('on'); live.textContent=''; _rdSS.t=setTimeout(function(){ el.classList.remove('on'); },1400); return; }
+  if(st==='error'){ el.textContent='Not saved · retrying'; el.classList.add('on','warn'); live.textContent='Rounds change not saved yet. Retrying.'; return; }
+  if(st==='off'){ el.textContent='Not saved · not connected'; el.classList.add('on','warn'); live.textContent='Not connected. Rounds changes are not being saved.'; return; } }
+window.addEventListener('pvx:persist',function(e){ var d=e.detail||{}; if(!window.__rdWaitSince) return;
+  if((d.state==='saved'||d.state==='idle')&&d.at>=window.__rdWaitSince){ window.__rdWaitSince=0; rdSaveState('saved'); return; }
+  if(d.state==='error'){ rdSaveState('error'); clearTimeout(window.__rdRetryT); window.__rdRetryT=setTimeout(function(){ try{ persist(); }catch(x){} },5000); return; }
+  if(d.state==='off'){ rdSaveState('off'); } });
+
+/* the Tomorrow list on the server: rounds_queue/{id} = {tenant_id, key, text, done, done_at, created_at, created_by, updated_at, updated_by} */
+var rdQ={server:false, live:false, unsub:null, migrated:false, pend:0, dirty:false};
+function rdQDb(){ try{ return (typeof Backend!=='undefined'&&Backend.mode==='staff'&&typeof DB!=='undefined'&&DB&&DB.collection)?DB:null; }catch(e){ return null; } }
+function rdQWho(){ try{ return rdActorName()||null; }catch(e){ return null; } }
+function rdQWrite(p){ var d=rdQDb(); if(!d||!p){ return; } rdQ.pend++; window.__rdQWait=true; rdSaveState('saving');
+  p.then(function(){ rdQ.pend--; if(!rdQ.pend){ window.__rdQWait=false; if(!window.__rdWaitSince) rdSaveState('saved'); } })
+   .catch(function(e){ rdQ.pend--; console.warn('[rounds] tomorrow list',e); rdSaveState('error'); try{ toast('Tomorrow list not saved — check your connection'); }catch(x){} }); }
+function rdQRef(id){ return rdQDb().collection('rounds_queue').doc(String(id)); }
+function rdQAdd(key,x){ var d=rdQDb(); if(!d) return; var now=new Date().toISOString();
+  rdQWrite(rdQRef(x.id).set({tenant_id:TENANT_ID,key:key,text:String(x.text).slice(0,200),done:!!x.done,done_at:x.doneAt||null,created_at:x.at||now,created_by:rdQWho(),updated_at:now,updated_by:rdQWho()})); }
+function rdQDone(x){ var d=rdQDb(); if(!d) return; var now=new Date().toISOString();
+  rdQWrite(rdQRef(x.id).update({done:!!x.done,done_at:x.doneAt||null,updated_at:now,updated_by:rdQWho()})); }
+function rdQDel(id,quiet){ var d=rdQDb(); if(!d) return; var p=rdQRef(id).delete(); if(quiet){ p.catch(function(){}); return; } rdQWrite(p); }
+function rdQPaint(){ var a=document.activeElement, side=document.getElementById('rdSide');
+  if(side&&a&&side.contains(a)&&a.tagName==='INPUT'){ rdQ.dirty=true; return; }   /* never wipe what someone is typing */
+  rdQ.dirty=false; try{ renderRdCensus(true); }catch(e){} }
+document.addEventListener('focusout',function(e){ if(rdQ.dirty&&e.target&&e.target.closest&&e.target.closest('#rdSide')) setTimeout(rdQPaint,0); });
+function rdQApply(snap){ var next={}; RD_QUEUE_DEFS.forEach(function(d){ next[d.key]=[]; });
+  snap.docs.forEach(function(doc){ var v=doc.data()||{}; if(!next[v.key]) return; next[v.key].push({id:doc.id,text:String(v.text||''),done:!!v.done,doneAt:v.done_at||null,at:v.created_at||null}); });
+  RD_QUEUE_DEFS.forEach(function(d){ next[d.key].sort(function(a,b){ return String(a.at||'').localeCompare(String(b.at||'')); }); });
+  /* once: items typed on this device before the list moved to the server are copied up (open ones only) */
+  if(!rdQ.migrated){ rdQ.migrated=true; var MK=RD_QUEUE_KEY+':migrated'; var done=false; try{ done=localStorage.getItem(MK)==='1'; }catch(e){}
+    if(!done){ var ids={}; snap.docs.forEach(function(d){ ids[d.id]=1; });
+      RD_QUEUE_DEFS.forEach(function(d){ (rdQueues[d.key]||[]).forEach(function(x){ if(!ids[x.id]&&!x.done&&x.text){ next[d.key].push(x); rdQAdd(d.key,x); } }); });
+      try{ localStorage.setItem(MK,'1'); }catch(e){} } }
+  rdQueues=next; rdQ.live=true; try{ localStorage.setItem(RD_QUEUE_KEY,JSON.stringify(rdQueues)); }catch(e){}
+  try{ rdPruneQueues(); }catch(e){} rdQPaint(); }
+function rdQConnect(){ if(rdQ.unsub) return; var d=rdQDb(); if(!d) return; rdQ.server=true;
+  try{ rdQ.unsub=d.collection('rounds_queue').where('tenant_id','==',TENANT_ID).onSnapshot(rdQApply,function(e){ console.warn('[rounds] tomorrow list read',e); rdQ.live=false; rdQ.unsub=null; var n=document.getElementById('rdTmrNote'); if(n) n.textContent='Couldn’t load the shared list — showing this device’s copy'; }); }
+  catch(e){ rdQ.unsub=null; } }
+setInterval(rdQConnect,2000); setTimeout(rdQConnect,300);
+</script>
+
+<!-- PVX-N149 · personal sign-in: the lobby account opens only the lobby display -->
+<style id="pvx-n149-flow-css">
+#pvxLobbyAcct{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(5,10,20,.72)}
+#pvxLobbyAcct .card{max-width:440px;width:100%;background:var(--surface-0,#0E1628);color:var(--ink-100,#E6EEF6);border:1px solid rgba(150,185,220,.22);border-radius:18px;padding:26px 24px 20px;box-shadow:0 20px 60px rgba(0,0,0,.45);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif}
+body:not(.dark) #pvxLobbyAcct .card{background:#fff;color:#14181F;border-color:rgba(30,45,90,.12)}
+#pvxLobbyAcct h2{margin:0 0 8px;font-size:20px;font-weight:700;letter-spacing:-.01em}
+#pvxLobbyAcct p{margin:0 0 18px;font-size:14px;line-height:1.45;opacity:.85}
+#pvxLobbyAcct .acts{display:flex;flex-direction:column;gap:10px}
+#pvxLobbyAcct a,#pvxLobbyAcct button{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;font:inherit;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid rgba(150,185,220,.28);background:transparent;color:inherit}
+#pvxLobbyAcct .primary{background:#38BDD2;border-color:#38BDD2;color:#04131B}
+#pvxLobbyAcct a:focus-visible,#pvxLobbyAcct button:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+</style>
+<script id="pvx-n149-flow-js">
+/* pvxLobbyAccountCard lives next to the account list in Flow's main script (the sign-in handler can run before this point) */
+</script>
 </body>
 </html>

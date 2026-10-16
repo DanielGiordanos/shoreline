@@ -149,3 +149,26 @@ body.dark .v-sec-h{color:var(--cyan-ink)}
 #sheetInner .now-chip{font-size:11px;height:18px;bottom:2px}
 body:not(.dark) #sheetInner .now-chip{background:var(--now)}
 #sheetInner .now-chip small.ap,small.ap{font-size:1em;opacity:1}
+
+/* ═══ PVX-N141 (batch 5) ═══ */
+/* CL-T03: a patient tab is wide enough to tell two patients apart — the strip already scrolls sideways (‹ ›), so the
+   tabs no longer squeeze every name to five letters; the close button is a 24 px target of its own */
+.pt-tab:not(.pinned){min-width:220px}
+.pt-tab:not(.pinned) .pt-main{padding:0 14px 0 32px}
+.pt-x{width:24px;height:24px;margin-top:-12px;left:4px}
+.pt-x svg{width:10px;height:10px}
+/* CL-T10: vital captions, weight captions, due labels and the stay pill at 11 px (were 9–10.5 px) */
+.vit .k,.wc .k,.calc-chip .k{font-size:11px;letter-spacing:.02em}
+.rl-due{font-size:11px}
+.ci-pill{font-size:11px}
+.weight-trend text{font-size:10.5px}
+/* TO-03: one allergy control — when the flags under the name already show it, the compact facts don't repeat it */
+body.ts-expand .tsh:has(.tsh-flags .ts-al) .tsh-mini .ts-al{display:none}
+
+/* ═══ PVX-N146 — decisions #1 (C) and #12 (A): no weight on file ═══ */
+.cd-noweight{margin:2px 0 12px;padding:10px 12px;border-radius:10px;background:rgba(240,160,40,.12);border:1px solid rgba(240,160,40,.38);font-size:13px;line-height:1.4}
+.cd-noweight b{font-weight:700}
+.cd-req{font-weight:600;opacity:.8}
+.cd-ack{display:flex;align-items:flex-start;gap:9px;margin:4px 0 10px;padding:9px 11px;border-radius:10px;border:1px solid var(--line,rgba(150,170,200,.28));font-size:13px;line-height:1.35;cursor:pointer}
+.cd-ack input{width:18px;height:18px;margin:1px 0 0;flex:0 0 auto}
+.cd-ack.cd-need{border-color:#E4572E;box-shadow:0 0 0 2px rgba(228,87,46,.25)}

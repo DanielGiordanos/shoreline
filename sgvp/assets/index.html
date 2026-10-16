@@ -1501,6 +1501,20 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   window.pvxSoonCarousel={set:set};
 })();
 </script>
+
+<!-- PVX-N139 · Assets: keyboard scrolling for the static (reduced-motion) Coming Soon strip -->
+<style id="pvx-n139-css">#carousel:focus-visible{outline:2px solid var(--brand-cyan,#38BDD2);outline-offset:3px;border-radius:12px}</style>
+<script id="pvx-n139-js">
+(function(){
+  var t=document.getElementById('carousel'); if(!t||!window.matchMedia) return;
+  var mq=matchMedia('(prefers-reduced-motion: reduce)');
+  function sync(){ var on=mq.matches&&t.scrollWidth>t.clientWidth+1;
+    if(on){ t.tabIndex=0; t.setAttribute('aria-description','Scroll sideways with the arrow keys'); }
+    else { t.removeAttribute('tabindex'); t.removeAttribute('aria-description'); } }
+  t.addEventListener('keydown',function(e){ if(e.target!==t) return; if(e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); t.scrollBy({left:(e.key==='ArrowRight'?1:-1)*Math.round(t.clientWidth*.8)}); } });
+  if(mq.addEventListener) mq.addEventListener('change',sync); window.addEventListener('resize',sync); window.addEventListener('load',sync); sync();
+})();
+</script>
 </body>
 
 

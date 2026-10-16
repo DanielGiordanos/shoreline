@@ -2626,7 +2626,7 @@ const LIVE = !!window.OR_LIVE;
 const MIN = 60;
 function pad(n){ return (n<10?'0':'')+n; }
 function fmtT(m){ if(m==null||isNaN(m)) return '—'; m=Math.round(m); let h=Math.floor(m/60)%24, mm=m%60; const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${pad(mm)} ${ap}`; }
-function fmtShort(m){ if(m==null) return '—'; m=Math.round(m); let h=Math.floor(m/60)%24, mm=m%60; h=h%12||12; return `${h}:${pad(mm)}`; }
+function fmtShort(m){ if(m==null||isNaN(m)) return '—'; m=Math.round(m); let h=Math.floor(m/60)%24, mm=m%60; const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${pad(mm)}\u00a0${ap}`; }   /* PVX-N140: AM/PM always (CL-O04) */
 function fmtDur(m){ m=Math.max(0,Math.round(m)); if(m<60) return `${m} min`; const h=Math.floor(m/60), r=m%60; return r?`${h}h ${r}m`:`${h}h`; }
 function isoDate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function dayOffset(n){ const d=new Date(); d.setDate(d.getDate()+n); return isoDate(d); }
@@ -3088,7 +3088,8 @@ function analytics(){
     Object.values(days).forEach(l=>{ l.sort((a,b)=>a.sched-b.sched); for(let i=1;i<l.length;i++) turnovers.push(evT(l[i],'in_room')-evT(l[i-1],'out_of_room')); }); });
   const validTurnovers=turnovers.filter(t=>t>0&&t<120);
   const avgTurn=validTurnovers.length?Math.round(validTurnovers.reduce((a,b)=>a+b,0)/validTurnovers.length):0;
-  return {byRoom, avgProc, avgRec, onTimePct:first.length?Math.round(onTime/first.length*100):0, delayed, delayedPct:hist.length?Math.round(delayed/hist.length*100):0,
+  return {nProc:procDur.length, nRec:recDur.length, nFirst:first.length, nTurn:validTurnovers.length, nRoomDays:hist.length,
+    byRoom, avgProc, avgRec, onTimePct:first.length?Math.round(onTime/first.length*100):0, delayed, delayedPct:hist.length?Math.round(delayed/hist.length*100):0,
     emergencies:hist.filter(c=>c.type==='emergency').length, addons:hist.filter(c=>c.type==='addon').length, causeList, durRows, avgTurn,
     utilization:Math.round(byRoom.reduce((s,r)=>s+r.pct,0)/byRoom.length), todayCount:today.filter(c=>c.status!=='cancelled').length, todayDone:today.filter(c=>c.status==='complete').length, total:hist.length};
 }
@@ -3230,9 +3231,32 @@ function diffInto(upd,doc,prev){ const keys=new Set(Object.keys(doc).concat(Obje
       new Set(Object.keys(a).concat(Object.keys(b))).forEach(sk=>{ if(same(a[sk],b[sk])) return; upd[P+'.'+sk]=a[sk]===undefined?FV.delete():a[sk]; }); return; }
     if(Array.isArray(a)&&Array.isArray(b)&&b.length&&b.length<a.length&&same(a.slice(0,b.length),b)&&(k==='events'||k==='intraop')){ upd[P]=FV.arrayUnion.apply(null,a.slice(b.length)); return; }
     upd[P]=a; }); }
+/* PVX-N149: past cases (inside the live layer, next to the writer) */
+/* a case is "past" when its day is before today (live milestones were already today-only) */
+function pvxPast(c){ return !!c&&!!c.date&&c.date<TODAY; }
+window.pvxCorr=null;   /* {id, reason, entry} while a correction is open */
+function pvxCorrecting(c){ return !!(pvxCorr&&c&&pvxCorr.id===c.id); }
+function pvxChanged(doc,prev){ const keys=new Set(Object.keys(doc).concat(Object.keys(prev||{}))), out=[]; keys.forEach(k=>{ if(k==='corrections') return; if(JSON.stringify(doc[k])!==JSON.stringify(prev?prev[k]:undefined)) out.push(k); }); return out; }
+const PVX_PART={readiness:'pre-op checks',rman:'pre-op checks',readinessNotes:'pre-op notes',recovery:'recovery',record:'operative record',intraop:'events',events:'milestones',drugs:'drugs',implants:'implants',specimens:'specimens',notes:'notes',timeout:'time out',roomId:'room',sched:'time',date:'date',surgeonId:'surgeon',assistantIds:'assistants',anesthesia:'anesthesia',procedure:'procedure',laterality:'side',status:'status'};
+function pvxPastGuard(c,doc,prev,me,at){
+  const sh=SHEETS.get(c._sheet); if(!sh||!sh.surgery) return 'skip';
+  let base; try{ base=toDoc(caseFrom(sh)); }catch(e){ return 'skip'; }   /* what the record holds, filled the same way as the case */
+  const ch=pvxChanged(doc,base); if(!ch.length) return 'skip';   /* nothing changed: a past case is never rewritten */
+  if(!pvxCorrecting(c)){
+    try{ replaceInto(c,caseFrom(sh)); }catch(e){}
+    try{ toast('Past case — not saved. Choose “Correct this record” to change it.',{error:true}); }catch(e){}
+    try{ safeRender(); }catch(e){} return 'block'; }
+  /* one entry per correction: who, when, why, and which parts changed */
+  c.corrections=Array.isArray(c.corrections)?c.corrections.slice():[];
+  let e=c.corrections.find(x=>x&&x.id===pvxCorr.entry);
+  if(!e){ e={id:pvxCorr.entry, at:at, by:me.name||me.initials||null, uid:me.uid||null, reason:pvxCorr.reason, parts:[]}; c.corrections.push(e); }
+  ch.forEach(k=>{ const n=PVX_PART[k]||k; if(e.parts.indexOf(n)<0) e.parts.push(n); }); e.updated_at=at;
+  return 'noted'; }
+window.pvxPast=pvxPast; window.pvxCorrecting=pvxCorrecting;
 function flushCase(c,extra){ const sh=SHEETS.get(c._sheet); if(!DB||!sh) return Promise.resolve(false);
-  const doc=toDoc(c), prev=WRITTEN.get(c.id), upd=Object.assign({},extra||{}), me=user(), at=nowIso();
+  let doc=toDoc(c); const prev=WRITTEN.get(c.id), upd=Object.assign({},extra||{}), me=user(), at=nowIso();
   if(c._past) return Promise.resolve(false);
+  if(pvxPast(c)){ const g=pvxPastGuard(c,doc,prev,me,at); if(g!=='noted') return Promise.resolve(false); doc=toDoc(c); }   /* PVX-N149: past cases change only in a named correction */
   if(!prev||!sh.surgery||sh.surgery.id!==c.id){ upd.surgery=doc; if(sh.surgery&&sh.surgery.id&&sh.surgery.id!==c.id) upd.surgery_past=FV.arrayUnion(sh.surgery); }   /* a second surgery on the same visit: the first is kept */
   else diffInto(upd,doc,prev);
   const os=orStatusOf(c), osJ=JSON.stringify(os), jobs=[];
@@ -3288,12 +3312,17 @@ setInterval(()=>{ clockAnchor={simMin:minsNow(), realMs:Date.now()}; },60000);
 
 /* ---------- sign-in: the same Pravix account as Flow and Treatment Sheets (shared on this site) ---------- */
 let gate=null;
+/* PVX-N149 decision #4: the shared front-desk login is only the lobby screen's account. Keep in step with Flow and treatment/. */
+const PVX_LOBBY_ACCOUNTS=['au733@vca.com'];
+function pvxIsLobbyAccount(u){ const e=String(u&&u.email||'').toLowerCase(); return PVX_LOBBY_ACCOUNTS.indexOf(e)>-1; }
 function showGate(kind){ if(!gate){ gate=document.createElement('div'); gate.id='orGate'; document.body.appendChild(gate); }
+  if(kind==='lobby'){ gate.innerHTML='<div class="og-card"><b>This is the lobby screen account</b><span>The OR needs your own Pravix account. Sign in with it on Flow, then come back to this page.</span><button type="button" class="btn primary" id="orGateOwn">Sign in with my own account</button></div>';
+    gate.classList.add('show'); storageMessage(''); const b=document.getElementById('orGateOwn'); if(b) b.onclick=()=>{ try{ AUTH.signOut().then(()=>{ location.href='https://shoreline.pravix.app/'; }); }catch(e){} }; return; }   /* PVX-N149 */
   gate.innerHTML=kind==='rules'?'<div class="og-card"><b>The OR can’t reach the database</b><span>Your account doesn’t have access to treatment sheets yet. Ask Daniel to check your access.</span></div>'
     :'<div class="og-card"><b>Sign in to continue</b><span>The OR uses your Pravix Flow account. Sign in on Flow, then come back to this page.</span><a class="btn primary" href="https://shoreline.pravix.app/">Open Flow to sign in</a></div>';
   gate.classList.add('show'); storageMessage(''); }
 function hideGate(){ if(gate) gate.classList.remove('show'); }
-if(AUTH){ AUTH.onAuthStateChanged(u=>{ if(u){ hideGate(); listen(); } else { showGate('signin'); } }); }
+if(AUTH){ AUTH.onAuthStateChanged(u=>{ if(u&&pvxIsLobbyAccount(u)){ showGate('lobby'); return; } if(u){ hideGate(); listen(); } else { showGate('signin'); } }); }   /* PVX-N149 */
 else setTimeout(()=>showGate('rules'),0);
 
 /* ---------- the links ---------- */
@@ -3733,20 +3762,22 @@ function renderBoard(){
     $('#boardSub').textContent=`${fmtDateLong(TODAY)} · ${fmtT(now())} · ${list.length} case${list.length===1?'':'s'}`;
     const late=list.filter(c=>isPre(c)&&lateMin(c)>0), worst=late.length?Math.max(...late.map(lateMin)):0, first=actionNeeded[0];
     $('#boardKpis').innerHTML=[
+      ...(!list.length?[chip('','No cases today')]:[
       actionNeeded.length?chip('crit',`<b>${actionNeeded.length}</b> need${actionNeeded.length===1?'s':''} action · ${esc(pt(first).name)}`,first.id):chip('ok','Nothing blocked'),
-      late.length?chip('warn',`<b>${late.length}</b> running late · up to ${worst} min`):chip('ok','On time'),
+      late.length?chip('warn',`<b>${late.length}</b> running late · up to ${worst} min`):(list.some(isPre)?chip('ok','On time'):'')]),
       chip('',`<b>${active} of ${ROOMS.length}</b> room${ROOMS.length===1?'':'s'} in surgery`),
-      chip(done?'ok':'',`<b>${done} of ${list.length}</b> done`),
+      list.length?chip(done?'ok':'',`<b>${done} of ${list.length}</b> done`):'',
     ].join('');
   } else {
     $('#boardSub').textContent=`${fmtDateLong(date)} · ${list.length} case${list.length===1?'':'s'}${UI.boardMode==='history'?' · completed record':''}`;
     const total=list.length, comp=list.filter(c=>c.status==='complete').length, em=list.filter(c=>c.type!=='scheduled').length, dl=list.filter(c=>c.delay).length;
     const mins=list.filter(c=>evT(c,'in_room')!=null&&evT(c,'out_of_room')!=null).reduce((s,c)=>s+evT(c,'out_of_room')-evT(c,'in_room'),0);
     $('#boardKpis').innerHTML=[
+      ...(!total?[chip('','No cases on this day')]:[
       chip(comp===total&&total?'ok':'',`<b>${comp} of ${total}</b> done`),
       chip('',`<b>${fmtDur(mins)}</b> in the rooms`),
       em?chip('',`<b>${em}</b> add-on or emergency`):'',
-      dl?chip('warn',`<b>${dl}</b> started late`):chip('ok','Started on time'),
+      dl?chip('warn',`<b>${dl}</b> started late`):(list.some(c=>evT(c,'in_room')!=null)?chip('ok','Started on time'):'')]),
     ].join('');
   }
   const expanded=new Set($$('#roomGrid details[open]').map(n=>n.dataset.room));
@@ -3973,7 +4004,15 @@ document.addEventListener('keydown',e=>{
 /* ============================================================
    PRAVIX OR — full case view (Overview · Pre-Op · Procedure · Recovery · Record)
    ============================================================ */
-function openCase(id, tab){ closeDrawer(); closeMenu(); UI.caseId=id; UI.caseTab=tab||'overview'; switchView('case'); }
+function openCase(id, tab){ closeDrawer(); closeMenu();
+  /* PVX-N140 (CL-O09): remember where the case was opened from */
+  if(UI.view!=='case'){ UI.caseFrom=UI.view||'board'; UI.caseFromScroll=($('#stage')||{}).scrollTop||0;
+    try{ history.pushState({pvxOrCase:id},'',location.href); UI.casePushed=true; }catch(e){ UI.casePushed=false; } }
+  UI.caseId=id; UI.caseTab=tab||'overview'; switchView('case'); }
+const OR_VIEW_LABEL={board:'Board',schedule:'Schedule',cases:'Cases',analytics:'Analytics'};
+function leaveCase(){ const to=OR_VIEW_LABEL[UI.caseFrom]?UI.caseFrom:'board', y=UI.caseFromScroll||0; UI.casePushed=false; switchView(to);
+  requestAnimationFrame(()=>{ const st=$('#stage'); if(st) st.scrollTop=y; const op=UI.caseId&&document.querySelector(`[data-id="${UI.caseId}"]`); if(op&&op.focus) try{ op.focus({preventScroll:true}); }catch(e){} }); }
+window.addEventListener('popstate',()=>{ if(UI.view==='case') leaveCase(); });
 $('#caseTabs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; UI.caseTab=b.dataset.tab; renderCase(); });
 
 function panel(title, body, opts){ opts=opts||{};
@@ -3992,15 +4031,15 @@ function renderCase(){
   const c=caseById(UI.caseId); if(!c){ switchView('board'); return; }
   const p=pt(c); const rs=readinessSummary(c); const late=lateMin(c);
   $('#caseHead').innerHTML=`<div>
-      <button class="or-back" id="caseBack">${I.back}Board</button>
+      <button class="or-back" id="caseBack">${I.back}${esc(OR_VIEW_LABEL[UI.caseFrom]||'Board')}</button>
       <div class="or-case-id">${medallion(p,'',c)}<div style="min-width:0"><h1>${esc(p.name)}</h1><div class="proc">${esc(procLabel(c))}</div>
         <div class="or-case-status" style="${stageVars(c)}" role="status"><span><i aria-hidden="true"></i>${esc(caseStatusLine(c))}</span>${late?`<span class="lt">${late} min late</span>`:''}${c.type!=='scheduled'?`<span class="ty">${c.type==='emergency'?'Emergency':'Add-on'}</span>`:''}</div>
-        <div class="meta">${esc(ptLine(p))} · <b>${esc(p.owner)}</b> · ${esc(p.hid)} · ${esc(ROOM[c.roomId].name)} · ${esc(c.service)}</div></div></div>
+        <div class="meta"><b class="or-case-date">${esc(c.date===TODAY?'Today, '+parseISO(c.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}):fmtDateLong(c.date))}</b> · ${esc(ptLine(p))} · <b>${esc(p.owner)}</b> · ${esc(p.hid)} · ${esc(ROOM[c.roomId].name)} · ${esc(c.service)}</div></div></div>
     </div>
     <div class="or-case-side">
       <div class="or-actions"><button class="or-btn" id="caseAnesia">Open Anesia</button>${NEXT_ACTION[c.status]?(()=>{ const nx=NEXT_ACTION[c.status], why=transitionError(c,nx); return `<span class="or-next"><button class="or-btn primary" id="caseAdvance"${why?' aria-disabled="true"':''}>${esc(ACTION_LABEL[nx])}</button>${why?`<small>${esc(why)}</small>`:''}</span>`; })():''}</div>
     </div>`;
-  $('#caseBack').onclick=()=>switchView('board');
+  $('#caseBack').onclick=()=>{ if(UI.casePushed&&history.state&&history.state.pvxOrCase){ history.back(); } else leaveCase(); };
   $('#caseAnesia').onclick=()=>openAnesia(c);
   const adv=$('#caseAdvance'); if(adv) adv.onclick=()=>doAdvance(c);
   $$('#caseTabs button').forEach(b=>{ b.classList.toggle('active',b.dataset.tab===UI.caseTab);
@@ -4394,16 +4433,17 @@ function renderCases(){
 function renderAnalytics(){
   const a=analytics();
   $('#anKpis').innerHTML=[
-    kpiCard('OR utilization', `${a.utilization}<small>%</small>`, 'Rooms in use · 10-hour day', 'cyan', {rail:a.utilization}),
-    kpiCard('Cases today', `${a.todayDone}<small>/ ${a.todayCount}</small>`, 'Complete so far', 'slate', {rail:Math.round(a.todayDone/Math.max(1,a.todayCount)*100)}),
-    kpiCard('Avg procedure', fmtDur(a.avgProc), 'Incision to finish', 'coral'),
-    kpiCard('Avg room turnover', fmtDur(a.avgTurn), 'Out of room → next in room', 'blue'),
-    kpiCard('On-time first cases', `${a.onTimePct}<small>%</small>`, 'In room within 10 min of schedule', a.onTimePct>=80?'green':'amber', {rail:a.onTimePct}),
-    kpiCard('Cases delayed', String(a.delayed), `${a.delayedPct}% of ${a.total} cases`, 'amber'),
-    kpiCard('Emergency cases', String(a.emergencies), `${a.addons} scheduled add-ons`, 'red'),
-    kpiCard('Avg recovery', fmtDur(a.avgRec), 'Recovery start → complete', 'cyan'),
+    /* PVX-N140 (CL-O07): a measure with no sample says so — it never shows 0 % or 0 min — and each says what it counts */
+    kpiCard('OR utilization', a.total?`${a.utilization}<small>%</small>`:'—', a.total?`Rooms in use · 10-hour day · ${a.total} case${a.total===1?'':'s'}, last 30 days`:'No completed cases in the last 30 days', 'cyan', a.total?{rail:a.utilization}:{}),
+    kpiCard('Cases today', a.todayCount?`${a.todayDone}<small>/ ${a.todayCount}</small>`:'—', a.todayCount?'Complete so far':'No cases today', 'slate', a.todayCount?{rail:Math.round(a.todayDone/a.todayCount*100)}:{}),
+    kpiCard('Avg procedure', a.nProc?fmtDur(a.avgProc):'—', a.nProc?`Incision to finish · ${a.nProc} case${a.nProc===1?'':'s'}`:'Not enough data yet', 'coral'),
+    kpiCard('Avg room turnover', a.nTurn?fmtDur(a.avgTurn):'—', a.nTurn?`Out of room → next in room · ${a.nTurn} turnover${a.nTurn===1?'':'s'}`:'Not enough data yet · needs two cases in a room on one day', 'blue'),
+    kpiCard('On-time first cases', a.nFirst?`${a.onTimePct}<small>%</small>`:'—', a.nFirst?`In room within 10 min of schedule · ${a.nFirst} first case${a.nFirst===1?'':'s'}`:'No first cases in the last 30 days', a.nFirst?(a.onTimePct>=80?'green':'amber'):'slate', a.nFirst?{rail:a.onTimePct}:{}),
+    kpiCard('Cases delayed', a.total?String(a.delayed):'—', a.total?`${a.delayedPct}% of ${a.total} case${a.total===1?'':'s'}`:'No completed cases in the last 30 days', 'amber'),
+    kpiCard('Emergency cases', a.total?String(a.emergencies):'—', a.total?`${a.addons} scheduled add-on${a.addons===1?'':'s'}`:'No completed cases in the last 30 days', 'red'),
+    kpiCard('Avg recovery', a.nRec?fmtDur(a.avgRec):'—', a.nRec?`Recovery start → complete · ${a.nRec} case${a.nRec===1?'':'s'}`:'Not enough data yet', 'cyan'),
   ].join('');
-  const util=panel('Utilization by room', a.byRoom.map(r=>`<div class="or-bar"><span class="k">${esc(r.room.name)}<small>${esc(r.room.service)}</small></span><div class="track"><i style="width:${r.pct}%"></i></div><span class="v">${r.pct}%</span></div>`).join(''), {});
+  const util=panel('Utilization by room', !a.total?'<p class="sub">No completed cases in the last 30 days</p>':a.byRoom.map(r=>`<div class="or-bar"><span class="k">${esc(r.room.name)}<small>${esc(r.room.service)}</small></span><div class="track"><i style="width:${r.pct}%"></i></div><span class="v">${r.pct}%</span></div>`).join(''), {});
   const causes=panel('Delay causes', a.causeList.map((d,i)=>`<div class="or-bar"><span class="k" title="${esc(d.reason)}">${esc(d.reason)}</span><div class="track"><i style="width:${d.pct}%;background:${i===0?'var(--or-late)':'var(--accent)'}"></i></div><span class="v">${d.pct}%</span></div>`).join('')||'<div class="or-empty">No delays recorded</div>', {right:`<span class="count">${a.delayed} delayed</span>`});
   const dur=panel('Scheduled vs actual duration · <span style="color:var(--ink-400);font-weight:600">last 30 days</span>', `<div class="or-dur head"><span>Procedure</span><span class="n">Scheduled</span><span class="n">Avg actual</span><span class="n">Cases</span></div>`+a.durRows.map(r=>`<div class="or-dur"><b>${esc(r.proc)}</b><span class="n">${r.sched} min</span><span class="n ${r.actual>r.sched+5?'over':''}">${r.actual} min</span><span class="n">${r.n}</span></div>`).join(''), {cls:'span12'});
   const sample=CASES.filter(c=>c.date<TODAY&&c.date>=dayOffset(-30)&&c.status==='complete'&&c.procedure==='TPLO'&&c.surgeonId==='giannetto'&&evT(c,'procedure_started')!=null&&evT(c,'procedure_finished')!=null);
@@ -4425,7 +4465,7 @@ function addCaseModal(){
   const state={type:'scheduled', priority:'routine'};
   const timeOpts=[]; for(let m=SCHED_START;m<=SCHED_END-30;m+=15) timeOpts.push(m);
   const defT=Math.ceil((now()+30)/15)*15, asap=()=>Math.ceil(now()/5)*5;
-  const days=[0,1,2,3,4,5,7];
+  const days=[0,1,2,3,4,5,6,7];   /* PVX-N140: +6 was missing (CL-O05) */
   openModal({title:'Add case',
     body:`<div class="or-field"><label id="acTypeL">Case type</label><div class="or-pills or-seg3" id="acType" role="radiogroup" aria-labelledby="acTypeL">${[['scheduled','Scheduled'],['addon','Add-on'],['emergency','Emergency']].map(([k,l])=>`<button type="button" role="radio" aria-checked="${k===state.type}" class="or-pill ${k===state.type?'active':''} ${k==='emergency'?'crit':''}" data-type="${k}">${l}</button>`).join('')}</div></div>
       <div class="or-field"><label>Patient</label><select id="acPatient">${bookable().map(p=>`<option value="${p.id}">${esc(p.name)}${p.last?' '+esc(p.last):''} · ${esc(p.breed||p.species)}${LIVE?' · '+esc(p.board==='OP'?'Outpatient':'Inpatient'):''}</option>`).join('')}</select></div>
@@ -4438,7 +4478,7 @@ function addCaseModal(){
         <div class="or-field"><label>Service</label><select id="acService">${SERVICES.map(s=>`<option ${s===serviceFor(PROCEDURES[0])?'selected':''}>${s}</option>`).join('')}</select></div></div>
       <div class="or-field-row3">
         <div class="or-field"><label>Room</label><select id="acRoom">${ROOMS.map(r=>`<option value="${r.id}">${esc(r.name)} · ${esc(r.service)}</option>`).join('')}</select></div>
-        <div class="or-field" id="acDateF"><label>Day</label><select id="acDate">${days.map(n=>`<option value="${dayOffset(n)}">${fmtDate(dayOffset(n))}${n>1?' · '+parseISO(dayOffset(n)).toLocaleDateString('en-US',{month:'short',day:'numeric'}):''}</option>`).join('')}</select></div>
+        <div class="or-field" id="acDateF"><label>Day</label><select id="acDate">${days.map(n=>`<option value="${dayOffset(n)}">${n<=1?fmtDate(dayOffset(n))+' · '+parseISO(dayOffset(n)).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}):fmtDate(dayOffset(n))}</option>`).join('')}</select></div>
         <div class="or-field"><label>Time</label><select id="acTime"></select></div></div>
       <div class="or-field-row">
         <div class="or-field"><label>Estimated duration</label><select id="acDur">${[30,45,60,75,90,105,120,150,180].map(m=>`<option value="${m}" ${m===90?'selected':''}>${fmtDur(m)}</option>`).join('')}</select></div>
@@ -4750,6 +4790,73 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(soon); window.addEventListener('load',soon); layout();
   window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
 })();
+</script>
+
+<!-- PVX-N140 · OR: hidden pagination, dark close symbol -->
+<style id="pvx-n140-css">
+/* CL-O12: the generic .or-btn display:inline-flex overrode [hidden], so "Show more cases" showed with nothing more to show */
+.or-btn[hidden]{display:none!important}
+/* TO-01: the drawer close symbol had no colour of its own (black in dark, 1.73:1); same token as the modal close */
+#drawerClose,.drawer-head .close{color:var(--ink-500)}
+#drawerClose:hover,.drawer-head .close:hover{color:var(--ink-900,currentColor)}
+.or-case-date{font-weight:700}
+/* contrast (rendered probe, light): Scheduled/Complete pills 4.2–4.3:1 and the 'needs action' chip 4.2:1 on their tinted fills */
+body:not(.dark){--st-scheduled:#565D6B;--st-scheduled-rgb:86,93,107;--st-complete:#565D6B;--st-critical:#B0261F;--st-critical-rgb:176,38,31}
+</style>
+
+<!-- PVX-N149 · past OR cases are read-only; corrections are named and kept -->
+<style id="pvx-n149-or-css">
+.pvx-ro-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--or-card,#131E34);border:1px solid rgba(150,185,220,.24);font-size:13.5px;line-height:1.4}
+.pvx-ro-bar .t{flex:1 1 260px;min-width:0}
+.pvx-ro-bar .t b{display:block;font-size:14px;font-weight:700;margin-bottom:2px}
+.pvx-ro-bar.correcting{border-color:#EBC95D;background:rgba(235,201,93,.10)}
+body:not(.dark) .pvx-ro-bar.correcting{border-color:#B7861C;background:#FFF8E6}
+.pvx-ro-bar .btn,.pvx-ro-bar .or-btn{min-height:44px}
+.pvx-ro-log{flex-basis:100%;margin:2px 0 0;padding:0;list-style:none;font-size:12.5px;opacity:.85}
+.pvx-ro-log li{padding:2px 0}
+.pvx-ro [data-pvx-ro]{opacity:.55;cursor:not-allowed}
+.pvx-ro input[data-pvx-ro],.pvx-ro textarea[data-pvx-ro],.pvx-ro select[data-pvx-ro]{opacity:.75;cursor:default;background:transparent!important;border-style:dashed!important;box-shadow:none!important}
+#pvxCorrWhy{width:100%;min-height:84px;box-sizing:border-box;padding:10px 12px;border-radius:10px;font:inherit;font-size:14px}
+</style>
+<script id="pvx-n149-or-js">
+function pvxEsc(v){ return String(v==null?'':v).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
+function pvxDay(d){ try{ return parseISO(d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}); }catch(e){ return d; } }
+function pvxBar(c){ if(!pvxPast(c)) return '';
+  const log=(Array.isArray(c.corrections)?c.corrections:[]).slice(-3).reverse().map(x=>'<li>Corrected '+pvxEsc(new Date(x.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+' by '+pvxEsc(x.by||'—')+(x.parts&&x.parts.length?' ('+pvxEsc(x.parts.join(', '))+')':'')+' — “'+pvxEsc(x.reason)+'”</li>').join('');
+  const n=(c.corrections||[]).length;
+  if(c._past) return '<div class="pvx-ro-bar" role="note"><div class="t"><b>Read-only · '+pvxEsc(pvxDay(c.date))+'</b>An earlier surgery on this visit. It can’t be changed here.</div></div>';
+  if(pvxCorrecting(c)) return '<div class="pvx-ro-bar correcting" role="status"><div class="t"><b>Correcting this '+pvxEsc(pvxDay(c.date))+' record</b>Reason: “'+pvxEsc(pvxCorr.reason)+'”. Changes are saved under your name.</div><button type="button" class="or-btn primary" data-pvx-corr="done">Done correcting</button>'+(log?'<ul class="pvx-ro-log">'+log+'</ul>':'')+'</div>';
+  return '<div class="pvx-ro-bar" role="note"><div class="t"><b>Read-only · '+pvxEsc(pvxDay(c.date))+' case</b>Past cases can’t be changed by accident.'+(n?' Corrected '+n+(n===1?' time.':' times.'):'')+'</div><button type="button" class="or-btn" data-pvx-corr="start">Correct this record…</button>'+(log?'<ul class="pvx-ro-log">'+log+'</ul>':'')+'</div>'; }
+/* the controls that change a case (navigation, the legend and Anesia stay usable) */
+const PVX_EDIT='input,select,textarea,[data-r],[data-rec],[data-rec-field],[data-dest],[data-imp],[data-give],[data-act]:not([data-act="legend"]):not([data-act="anesia"]),#caseAdvance,#drawerMove,#drawerAdvance';
+function pvxLock(root,c){ if(!root) return; const lock=pvxPast(c)&&!pvxCorrecting(c); root.classList.toggle('pvx-ro',lock);
+  root.querySelectorAll(PVX_EDIT).forEach(el=>{ if(el.closest('.pvx-ro-bar')) return;
+    if(lock){ el.setAttribute('data-pvx-ro',''); el.setAttribute('aria-disabled','true');
+      if(/^(INPUT|TEXTAREA)$/.test(el.tagName)){ el.readOnly=true; el.setAttribute('aria-readonly','true'); } else if(el.tagName==='SELECT') el.disabled=true;
+      if(!el.title) el.title='Past case — read-only'; }
+    else if(el.hasAttribute('data-pvx-ro')){ el.removeAttribute('data-pvx-ro'); el.removeAttribute('aria-disabled'); el.removeAttribute('aria-readonly'); if(/^(INPUT|TEXTAREA)$/.test(el.tagName)) el.readOnly=false; if(el.tagName==='SELECT') el.disabled=false; if(el.title==='Past case — read-only') el.title=''; } }); }
+function pvxDecorate(){ try{
+  if(UI.view==='case'&&UI.caseId){ const c=caseById(UI.caseId), body=$('#caseBody'), head=$('#caseHead');
+    if(pvxCorr&&pvxCorr.id!==UI.caseId&&pvxCorr.id!==UI.drawerId) pvxCorr=null;
+    if(body&&c){ const old=body.querySelector(':scope > .pvx-ro-bar'); if(old) old.remove(); const h=pvxBar(c); if(h) body.insertAdjacentHTML('afterbegin',h); pvxLock(body,c); pvxLock(head,c); } }
+  if(UI.drawerId){ const c=caseById(UI.drawerId), db=$('#drawerBody'); if(db&&c){ const old=db.querySelector(':scope > .pvx-ro-bar'); if(old) old.remove(); const h=pvxBar(c); if(h) db.insertAdjacentHTML('afterbegin',h); pvxLock(db,c); pvxLock($('#drawerHead'),c); } }
+}catch(e){ console.warn('[OR read-only]',e); } }
+['renderCase','renderDrawer'].forEach(n=>{ const f=window[n]; if(typeof f!=='function') return; window[n]=function(){ const r=f.apply(this,arguments); pvxDecorate(); return r; }; });
+try{ renderCase=window.renderCase; renderDrawer=window.renderDrawer; }catch(e){}
+/* a locked control does nothing (its own handler never runs) and says why */
+['click','change','input','keydown'].forEach(t=>document.addEventListener(t,ev=>{ const el=ev.target&&ev.target.closest&&ev.target.closest('[data-pvx-ro]'); if(!el) return;
+  if(t==='keydown'&&!(ev.key==='Enter'||ev.key===' '||(/^(INPUT|TEXTAREA)$/.test(el.tagName)&&ev.key.length===1))) return;
+  ev.preventDefault(); ev.stopImmediatePropagation(); if(t==='click'||t==='keydown') try{ toast('Past case — read-only. Choose “Correct this record” to change it.'); }catch(e){} },true));
+/* starting and ending a correction */
+document.addEventListener('click',ev=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('[data-pvx-corr]'); if(!b) return; ev.preventDefault();
+  const c=caseById(UI.view==='case'?UI.caseId:UI.drawerId)||caseById(UI.drawerId); if(!c) return;
+  if(b.dataset.pvxCorr==='done'){ pvxCorr=null; try{ save(); }catch(e){} pvxDecorate(); try{ toast('Correction saved under your name'); }catch(e){} const s=document.querySelector('[data-pvx-corr="start"]'); if(s) s.focus(); return; }
+  openModal({title:'Correct this record', sub:'This '+pvxEsc(pvxDay(c.date))+' case is part of the record. Say why it needs correcting; the reason and your name are kept on the case with what you change.',
+    body:'<label class="or-field" style="display:block"><span style="display:block;margin-bottom:6px;font-weight:600">Reason for the correction</span><textarea id="pvxCorrWhy" maxlength="300" placeholder="e.g. Recovery temperature was entered on the wrong patient"></textarea></label><div id="pvxCorrErr" role="alert" style="color:var(--or-late,#E8644A);font-size:13px;margin-top:6px"></div>',
+    actions:[{label:'Cancel',ghost:true},{label:'Start correction',act:()=>{ const w=(document.getElementById('pvxCorrWhy').value||'').trim();
+      if(w.length<8){ document.getElementById('pvxCorrErr').textContent='Write a short reason (at least 8 characters).'; document.getElementById('pvxCorrWhy').focus(); return false; }
+      pvxCorr={id:c.id, reason:w.slice(0,300), entry:'corr_'+Date.now().toString(36)}; setTimeout(()=>{ pvxDecorate(); const d=document.querySelector('[data-pvx-corr="done"]'); if(d) d.focus(); },0); }}],
+    onOpen:()=>setTimeout(()=>{ const t=document.getElementById('pvxCorrWhy'); if(t) t.focus(); },30) }); });
 </script>
 </body>
 
