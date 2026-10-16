@@ -47,17 +47,67 @@
   function amt(mg) { if (mg === null || mg === undefined) return '—'; return mg > 0 && mg < 1 ? sig(mg * 1000) + ' mcg' : sig(mg) + ' mg'; }
   function amtKg(mgkg) { if (mgkg === null || mgkg === undefined) return ''; return mgkg > 0 && mgkg < 1 ? sig(mgkg * 1000) + ' mcg/kg' : sig(mgkg) + ' mg/kg'; }
   function conc(c) { if (!c) return ''; return c < 1 ? sig(c * 1000) + ' mcg/mL' : sig(c) + ' mg/mL'; }
-  function icon(n) {
-    var P = {
-      plus: '<path d="M12 5v14M5 12h14"/>', back: '<path d="M15 5l-7 7 7 7"/>', heart: '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
-      syringe: '<path d="M18 2l4 4M17 7l-9.5 9.5-3 .5.5-3L14.5 4.5M14 6l4 4M3 21l3-3"/>', drip: '<path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/>',
-      airway: '<path d="M10 3v6.5a5.5 5.5 0 0 0 1 3.2L12 14v7M14 3v6.5"/><path d="M8 21h8"/><circle cx="12" cy="14" r="1.2"/>',
-      output: '<path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/><path d="M9 14h6"/>', idcheck: '<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16c.6-1.4 1.5-2 2.5-2s1.9.6 2.5 2M14 10h4M14 13.5h3"/>',
-      gas: '<rect x="7.5" y="7" width="9" height="14" rx="3.5"/><path d="M10 7V5h4v2M12 3v2M9 3h6"/>', share: '<path d="M12 3v12M7.5 7.5L12 3l4.5 4.5"/><path d="M6 11H5a1 1 0 00-1 1v8a1 1 0 001 1h14a1 1 0 001-1v-8a1 1 0 00-1-1h-1"/>', print: '<path d="M7 9V3h10v6"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v7H7z"/>', close: '<path d="M6 6l12 12M18 6L6 18"/>', flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>', scale: '<path d="M4 20h16M6 20l1.5-12h9L18 20M9 8a3 3 0 016 0"/>',
-      check: '<path d="M5 12.5l4.5 4.5L19 7"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.2"/>', sidebar: '<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M14.5 4.5v15"/>', stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>', pen: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>', checkd: '<path pathLength="1" class="dr" d="M5 12.5l4.5 4.5L19 7"/>', lockd: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path pathLength="1" class="dr" d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>', timer: '<circle cx="12" cy="13.5" r="7"/><path d="M12 10v3.5l2.2 1.4M10 3h4M12 3v3.5"/>', expand: '<path d="M14 4h6v6M20 4l-6.5 6.5M10 20H4v-6M4 20l6.5-6.5"/>', collapse: '<path d="M19 10h-5V5M14 10l6-6M5 14h5v5M10 14l-6 6"/>'
-    };
-    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (P[n] || '') + '</svg>';
+  /* ---- Pravix Symbols (n171): one family on a 24-pt grid, drawn to SF Symbols' rules.
+     Layers: .s = secondary (hierarchical), .b = body (filled in the fill variant), .bf = fill-only area, .k = detail hidden when filled.
+     Weight follows the label's font weight (syncSymbols); size is small / medium / large relative to the text. */
+  var SYM = {
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    back: '<path d="M15 5l-7 7 7 7"/>',
+    heart: '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
+    syringe: '<path class="b s" d="M14.6 4.6l4.8 4.8-9.2 9.2H5.4v-4.8z"/><path d="M17.4 2.6l4 4M19.4 4.6l-2.6 2.6M5.4 18.6l-2.8 2.8"/><path class="s k" d="M12.3 9.1l1.8 1.8M9.7 11.7l1.8 1.8"/>',
+    drip: '<path class="b" d="M12 3.2s6.2 6.6 6.2 11.1a6.2 6.2 0 0 1-12.4 0C5.8 9.8 12 3.2 12 3.2z"/><path class="s k" d="M9.3 14.6a2.8 2.8 0 0 0 2.6 2.7"/>',
+    output: '<path class="b s" d="M12 3.2s6.2 6.6 6.2 11.1a6.2 6.2 0 0 1-12.4 0C5.8 9.8 12 3.2 12 3.2z"/><path d="M12 10.4v6.2M9.4 14l2.6 2.6 2.6-2.6"/>',
+    compose: '<path class="s" d="M11 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V13"/><path class="b" d="M17.8 3.7a1.9 1.9 0 0 1 2.7 2.7l-7.6 7.6-3.6.9.9-3.6z"/>',
+    airway: '<path d="M10 3v6.5a5.5 5.5 0 0 0 1 3.2L12 14v7M14 3v6.5M8 21h8"/><circle class="b s" cx="12" cy="14" r="2"/>',
+    idcheck: '<rect class="b s" x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16c.6-1.4 1.5-2 2.5-2s1.9.6 2.5 2"/><path class="s" d="M14 10h4M14 13.5h3"/>',
+    gas: '<rect class="b" x="7.5" y="7" width="9" height="14" rx="3.5"/><path class="s" d="M10 7V5h4v2M12 3v2M9 3h6"/>',
+    share: '<path class="s" d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v7A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/><path d="M12 3.5v11M8.2 7.3L12 3.5l3.8 3.8"/>',
+    print: '<path class="s" d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    flag: '<path d="M5.5 21V3.5"/><path class="b s" d="M5.5 4h12l-2.6 4.25 2.6 4.25h-12z"/>',
+    scale: '<circle cx="12" cy="5" r="2.2"/><path class="b s" d="M7 8.5h10a1.8 1.8 0 0 1 1.75 1.4l1.9 8.1A2 2 0 0 1 18.7 20.5H5.3A2 2 0 0 1 3.35 18l1.9-8.1A1.8 1.8 0 0 1 7 8.5z"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    checkd: '<path pathLength="1" class="dr" d="M5 12.5l4.5 4.5L19 7"/>',
+    info: '<circle class="b s" cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.2"/>',
+    sidebar: '<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path class="bf" d="M14.5 4.5h4A2.5 2.5 0 0 1 21 7v10a2.5 2.5 0 0 1-2.5 2.5h-4z"/><path d="M14.5 4.5v15"/>',
+    stop: '<rect class="b" x="6" y="6" width="12" height="12" rx="2.5"/>',
+    pen: '<path class="b" d="M4 20h4L19 9l-4-4L4 16v4z"/><path class="s" d="M13 7l4 4"/>',
+    lockd: '<rect class="b s" x="5" y="10.5" width="14" height="10" rx="2.5"/><path pathLength="1" class="dr" d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+    timer: '<circle class="b s" cx="12" cy="13.5" r="7"/><path d="M12 10v3.5l2.2 1.4M10 3h4M12 3v3.5"/>',
+    expand: '<path d="M14 4h6v6M20 4l-6.5 6.5M10 20H4v-6M4 20l6.5-6.5"/>',
+    collapse: '<path d="M19 10h-5V5M14 10l6-6M5 14h5v5M10 14l-6 6"/>',
+    /* vitals: same grid and weight, shown in their fill variant on the tiles */
+    'v-hr': '<path class="b" d="M12 20.3s-7.8-4.6-7.8-10.4A4.3 4.3 0 0 1 12 7.4a4.3 4.3 0 0 1 7.8 2.5c0 5.8-7.8 10.4-7.8 10.4z"/>',
+    'v-spo2': '<path class="b" d="M12 3.2s6.2 6.6 6.2 11.1a6.2 6.2 0 0 1-12.4 0C5.8 9.8 12 3.2 12 3.2zM12 12.2a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 1 0 0-4.8z"/>',
+    'v-bp': '<path class="b" d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 1 0 0-17zM10.3 13.2l5.3-6.1 1.3 1.1-4.2 6.6a2.1 2.1 0 1 1-2.4-1.6z"/>',
+    'v-etco2': '<path d="M12 3v7"/><path class="b" d="M10.6 7.8v5.4c0 3.6-1.6 6.6-4.3 7.2-2 .4-3-1.3-3-3.9 0-4.4 2.5-9.1 4.9-9.1 1.3 0 2.4.2 2.4.4zM13.4 7.8v5.4c0 3.6 1.6 6.6 4.3 7.2 2 .4 3-1.3 3-3.9 0-4.4-2.5-9.1-4.9-9.1-1.3 0-2.4.2-2.4.4z"/>',
+    'v-rr': '<path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h7"/>',
+    'v-temp': '<path class="b" d="M9.5 14.2V5.5a2.5 2.5 0 0 1 5 0v8.7a4.5 4.5 0 1 1-5 0z"/><path class="s k" d="M12 9v7"/>'
+  };
+  var SYMOPT = {"plus":[1.114,0.01,0.01],"back":[1.18,0.33,0.01],"heart":[1.033,0.2,0.01],"syringe":[0.915,-0.36,0.42],"drip":[0.98,0.06,-0.35],"output":[1.014,0.01,-0.52],"airway":[1.039,0.06,-0.39],"idcheck":[0.941,0.46,-0.07],"gas":[1.007,0.01,-0.31],"share":[1.004,0.01,0.48],"print":[0.893,0.01,-0.89],"close":[1.18,0.01,0.01],"flag":[1.016,1.8,0.61],"scale":[0.95,0.01,0.58],"check":[1.18,-0.01,-0.26],"checkd":[1.18,-0.01,-0.26],"info":[0.947,0.01,-0.07],"sidebar":[0.896,-0.23,0.01],"stop":[1.166,0.01,0.01],"pen":[1.021,0.66,-0.64],"lockd":[1.028,0.01,-0.06],"timer":[0.989,-0.05,0.58],"expand":[0.991,0.01,0.01],"collapse":[1.004,0.01,0.01],"v-hr":[1.0,0.01,-0.33],"v-spo2":[0.957,0.01,-0.52],"v-bp":[0.894,-0.12,-0.07],"v-etco2":[0.89,0.01,-0.47],"v-rr":[0.936,0.24,0.57],"v-temp":[0.961,0.01,-0.96],"compose":[0.95,-1.13,1.03]};   /* [scale, dx, dy] from tests/optical_measure.py */
+  var SYMFLIP = { back: 1 };   /* directional symbols mirror in right-to-left layouts */
+  var symN = 0;
+  /* icon(name, {fill, slash, scale: 's'|'m'|'l', cls}) */
+  function icon(n, o) {
+    o = o || {}; var d = SYM[n] || '', op = SYMOPT[n];
+    if (op && (op[0] !== 1 || op[1] || op[2])) d = '<g class="os" style="--an-os:' + op[0] + '" transform="translate(12 12) scale(' + op[0] + ') translate(-12 -12) translate(' + op[1] + ' ' + op[2] + ')">' + d + '</g>';
+    var cls = 'an-ico' + (SYMFLIP[n] ? ' flip' : '') + (o.fill ? ' fill' : '') + (o.slash ? ' slash' : '') + (o.scale ? ' sc-' + o.scale : '') + (o.cls ? ' ' + o.cls : '');
+    if (o.slash) { var id = 'anSl' + (++symN); d = '<defs><mask id="' + id + '" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff"/><path d="M3 3.6l17.4 17.4" stroke="#000" stroke-width="4.6" stroke-linecap="round"/></mask></defs><g mask="url(#' + id + ')">' + d + '</g><path class="sl" d="M4 4l16 16"/>'; }
+    return '<svg class="' + cls + '" viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>';
   }
+  /* weight matching: a symbol's stroke follows the font weight of the label beside it, like SF Symbols */
+  var SYMW = { 100: 1.2, 200: 1.3, 300: 1.45, 400: 1.6, 500: 1.8, 600: 2, 700: 2.25, 800: 2.5, 900: 2.7 };
+  function symWeightFor(fw) { fw = Math.round((parseInt(fw, 10) || 400) / 100) * 100; return SYMW[Math.min(900, Math.max(100, fw))]; }
+  function syncSymbols(root) {
+    $$('svg.an-ico', root || document).forEach(function (svg) {
+      var host = svg.parentElement; while (host && host.tagName !== 'BUTTON' && host.tagName !== 'A' && host.tagName !== 'LABEL' && !/^(B|STRONG|SPAN|EM|H\d|P|DIV|LI)$/.test(host.tagName)) host = host.parentElement;
+      if (!host) return; var w = symWeightFor(getComputedStyle(host).fontWeight);
+      if (svg.__w !== w) { svg.style.setProperty('--an-symw', w + 'px'); svg.__w = w; }
+    });
+  }
+  (function () {   /* everything that appears later (sheets, toasts) is matched too, once per frame */
+    var q = 0; try { new MutationObserver(function () { if (q) return; q = requestAnimationFrame(function () { q = 0; syncSymbols(); }); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { }
+  })();
 
   /* ---------------- saving ---------------- */
   /* Each record = {base (last server copy), pending changes}. The screen shows the pending changes replayed on the base.
@@ -181,7 +231,7 @@
     var apply = function () {
       XP = on; document.documentElement.classList.toggle('an-expanded', on);
       var b = document.getElementById('anExpand');
-      if (b) { b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Exit expanded view' : 'Expand record'); b.title = on ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)'; }
+      if (b) { b.classList.remove('rep'); void b.offsetWidth; b.classList.add('rep'); setTimeout(function () { b.classList.remove('rep'); }, 450); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Exit expanded view' : 'Expand record'); b.title = on ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)'; }
     };
     if (EMBED) { if (!fromHost) try { parent.postMessage({ anesia: 'expand', on: on }, location.origin); } catch (e) { } apply(); return; }   /* the sheet animates the frame */
     if (document.startViewTransition && !fromHost) { try { document.startViewTransition(apply); return; } catch (e) { } }
@@ -445,7 +495,7 @@
     if (!A.isConfirmed(r)) return '<button type="button" class="an-pill unconf" id="anConfirm">Not confirmed</button>';
     if (!r.confirmed) return '';   /* records from before n161 */
     var pc = playing('conf:' + r.id, 900);
-    return '<span class="an-pill conf' + (pc !== null ? ' drawn' : '') + '"' + (pc !== null ? ' style="--an-d:-' + pc + 'ms"' : '') + ' title="Confirmed by ' + esc(r.confirmed.by) + ' at ' + esc(fmtTime(r.confirmed.at)) + '">' + icon('checkd') + 'Confirmed</span>';
+    return '<span class="an-pill conf' + (pc !== null ? ' drawn' : '') + '"' + (pc !== null ? ' style="--an-d:-' + pc + 'ms"' : '') + ' title="Confirmed by ' + esc(r.confirmed.by) + ' at ' + esc(fmtTime(r.confirmed.at)) + '">' + icon('checkd', { scale: 's' }) + 'Confirmed</span>';
   }
   /* the patient summary under the name: code status, allergies, ASA, procedure — always on screen */
   function summaryHTML(r) {
@@ -564,13 +614,13 @@
     var main = r.status === 'planned' ? '<button type="button" class="an-btn primary" id="anStart">Start anesthesia</button>'
       : live ? '<button type="button" class="an-btn" id="anEnd">' + icon('stop') + 'End anesthesia</button>'
       : r.status === 'ended' ? '<button type="button" class="an-btn primary" id="anSign">' + icon('check') + 'Sign record</button>'
-      : '<button type="button" class="an-btn" id="anAdd">' + icon('pen') + 'Add addendum</button>';
+      : '<button type="button" class="an-btn" id="anAdd">' + icon('compose') + 'Add addendum</button>';
     var facts = [cap(p.species), p.breed, p.sex, p.age].filter(Boolean).map(esc).join(' · '), conf = A.isConfirmed(r);
-    var head = '<header class="an-rhead"><a class="an-back" href="#">' + icon('back') + (SHEET ? 'Anesthesia' : 'Records') + '</a>' +
+    var head = '<header class="an-rhead"><a class="an-back" href="#">' + icon('back', { scale: 'l' }) + (SHEET ? 'Anesthesia' : 'Records') + '</a>' +
       '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + statusPill(r) + kindPill(r) + confirmChip(r) + presenceChip(r) + '</h1>' +
       '<div class="sub"><span>' + (facts || 'No details yet') + '</span><button type="button" class="an-info" id="anPatient" aria-label="Patient details">' + icon('info') + '</button></div></div>' +
       '<button type="button" class="an-wbig' + (w ? '' : ' none') + '" id="anWeight"' + (signed ? ' disabled' : '') + ' aria-label="' + (w ? 'Weight ' + sig(w) + ' kilograms' + (lw ? ', weighed ' + fmtTime(lw.at) : '') + '. Change weight' : 'No weight. Add weight') + '">' +
-      (w ? '<b>' + sig(w) + '<span> kg</span></b><small>' + (lw ? (lw.method === 'estimated' ? 'Estimated ' : 'Weighed ') + fmtTime(lw.at) : '') + '</small>' : '<b>No weight</b><small>Add weight</small>') + '</button>' +
+      (w ? '<b>' + sig(w) + '<span> kg</span></b><small>' + (lw ? (lw.method === 'estimated' ? 'Estimated ' : 'Weighed ') + fmtTime(lw.at) : '') + '</small>' : '<b>' + icon('scale', { slash: true, scale: 's' }) + 'No weight</b><small>Add weight</small>') + '</button>' +
       '<div class="an-ract"><span class="an-save" id="anSave" aria-hidden="true"></span>' + clock + main +
       '<button type="button" class="an-btn icon" id="anExpand" aria-pressed="' + XP + '" aria-label="' + (XP ? 'Exit expanded view' : 'Expand record') + '" title="' + (XP ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)') + '"><span class="ic-out">' + icon('expand') + '</span><span class="ic-in">' + icon('collapse') + '</span></button>' +
       '<button type="button" class="an-btn icon" id="anShare" aria-label="Share link to this record" title="Share link">' + icon('share') + '</button>' +
@@ -608,15 +658,9 @@
     var pts = vals.map(function (v, i) { return Math.round(i / (vals.length - 1) * W) + ',' + Math.round(Hh - 2 - (v - lo) / span * (Hh - 4)); }).join(' ');
     return '<svg class="an-spark v-' + (k || '') + '" viewBox="0 0 ' + W + ' ' + Hh + '" width="' + W + '" height="' + Hh + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   }
-  var VICON = {   /* Phosphor Icons, fill weight (MIT, phosphoricons.com) */
-    hr: '<path d="M240,102c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,228.66,16,172,16,102A62.07,62.07,0,0,1,78,40c20.65,0,38.73,8.88,50,23.89C139.27,48.88,157.35,40,178,40A62.07,62.07,0,0,1,240,102Z"/>',
-    spo2: '<path d="M174,47.75a254.19,254.19,0,0,0-41.45-38.3,8,8,0,0,0-9.18,0A254.19,254.19,0,0,0,82,47.75C54.51,79.32,40,112.6,40,144a88,88,0,0,0,176,0C216,112.6,201.49,79.32,174,47.75Zm9.85,105.59a57.6,57.6,0,0,1-46.56,46.55A8.75,8.75,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.63-16.85,33.44-33.45a8,8,0,0,1,15.78,2.68Z"/>',
-    bp: '<path d="M240,152v24a16,16,0,0,1-16,16H115.93a4,4,0,0,1-3.24-6.35L174.27,101a8.21,8.21,0,0,0-1.37-11.3,8,8,0,0,0-11.37,1.61l-72,99.06A4,4,0,0,1,86.25,192H32a16,16,0,0,1-16-16V153.13c0-1.79,0-3.57.13-5.33a4,4,0,0,1,4-3.8H48a8,8,0,0,0,8-8.53A8.17,8.17,0,0,0,47.73,128H23.92a4,4,0,0,1-3.87-5c12-43.84,49.66-77.13,95.52-82.28a4,4,0,0,1,4.43,4V72a8,8,0,0,0,8.53,8A8.17,8.17,0,0,0,136,71.73V44.67a4,4,0,0,1,4.43-4A112.18,112.18,0,0,1,236.23,123a4,4,0,0,1-3.88,5H208.27a8.17,8.17,0,0,0-8.25,7.47,8,8,0,0,0,8,8.53h27.92a4,4,0,0,1,4,3.86C240,149.23,240,150.61,240,152Z"/>',
-    etco2: '<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm-8,128a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V96H64v32a8,8,0,0,1-16,0V88a8,8,0,0,1,8-8h72a8,8,0,0,1,8,8v72h56V128a8,8,0,0,1,16,0Z"/>',
-    rr: '<path d="M120,104H24a8,8,0,0,1-8-8.53A8.17,8.17,0,0,1,24.27,88H112a8,8,0,0,0,8-8.53A8.17,8.17,0,0,0,111.73,72H92.29a4,4,0,0,1-4-4.58A32,32,0,1,1,120,104Zm119.92-2.29a32,32,0,0,0-63.59-2.29,4,4,0,0,0,4,4.58h19.44a8.17,8.17,0,0,1,8.25,7.47,8,8,0,0,1-8,8.53H32.27A8.17,8.17,0,0,0,24,127.47,8,8,0,0,0,32,136H208A32,32,0,0,0,239.92,101.71ZM152,152H40.27A8.17,8.17,0,0,0,32,159.47,8,8,0,0,0,40,168H143.73a8.17,8.17,0,0,1,8.25,7.47,8,8,0,0,1-8,8.53H124.29a4,4,0,0,0-4,4.58A32,32,0,1,0,152,152Z"/>',
-    temp: '<path d="M160,146.08V40a32,32,0,0,0-64,0V146.08a56,56,0,1,0,64,0ZM128,24a16,16,0,0,1,16,16v64H112V40A16,16,0,0,1,128,24Z"/>'
-  };
-  function vIcon(k) { return '<svg class="an-vi" viewBox="0 0 256 256" fill="currentColor" width="18" height="18" aria-hidden="true">' + (VICON[k] || '') + '</svg>'; }
+  /* (n171: the old Phosphor vitals icons are replaced by the Pravix Symbols v-* set) */
+
+  function vIcon(k) { return icon('v-' + k, { fill: true, cls: 'an-vi' }); }
   var CHEV = '<svg class="an-chev" viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path d="M7 4.5l4.5 4.5L7 13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function nowHTML(r) {
     var t = now(), vs = liveVitals(r), signed = r.status === 'signed', due = vitalsDue(r, t), live = r.status === 'active';
@@ -645,7 +689,7 @@
     var abx = A.abxStatus(r, r.end && r.end < t ? r.end : t), abxRows = abx.map(function (a) {
       var st = abxState(a, t, live);
       var nk = 'abx:' + r.id + ':' + a.drugId + ':' + a.dueAt; if ((st.cls === 'due' || st.cls === 'late') && live && !fired(nk)) fire(nk); var np = playing(nk, 700);
-      return '<button type="button" class="an-nrow an-abx ' + st.cls + '" data-abx="' + a.drugId + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(a.name + ', last dose ' + fmtTime(a.last) + '. ' + st.aria) + '"><span><em class="an-dn"><span class="an-abxic' + (np !== null ? ' nudge' : '') + '"' + (np !== null ? ' style="animation-delay:-' + np + 'ms"' : '') + ' aria-hidden="true">' + icon('timer') + '</span>' + esc(a.name) + '</em><small>Last ' + esc(fmtTime(a.last)) + (a.redoseMin ? ' · every ' + sig(a.redoseMin) + ' min' : '') + '</small></span><b' + (a.dueAt && live ? ' data-abxdue="' + a.dueAt + '"' : '') + '>' + esc(st.txt) + '</b></button>';
+      return '<button type="button" class="an-nrow an-abx ' + st.cls + '" data-abx="' + a.drugId + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(a.name + ', last dose ' + fmtTime(a.last) + '. ' + st.aria) + '"><span><em class="an-dn"><span class="an-abxic' + (np !== null ? ' nudge' : '') + '"' + (np !== null ? ' style="animation-delay:-' + np + 'ms"' : '') + ' aria-hidden="true">' + icon('timer', { scale: 's' }) + '</span>' + esc(a.name) + '</em><small>Last ' + esc(fmtTime(a.last)) + (a.redoseMin ? ' · every ' + sig(a.redoseMin) + ' min' : '') + '</small></span><b' + (a.dueAt && live ? ' data-abxdue="' + a.dueAt + '"' : '') + '>' + esc(st.txt) + '</b></button>';
     }).join('');
     var devNow = (r.devices || []).filter(function (d) { return !d.void && !d.end; }), vnow = A.ventAt(r, t);
     var devRows = devNow.map(function (d) { return '<button type="button" class="an-nrow an-ndev" data-dev="' + d.id + '"' + (signed ? ' disabled' : '') + '><span><em class="an-dn">' + esc(devShort(d)) + '</em><small>' + esc([d.size, d.cuff, d.site].filter(Boolean).join(' · ')) + '</small></span><b><i>since</i> ' + esc(fmtTime(d.at)) + '</b></button>'; }).join('') +
@@ -928,6 +972,7 @@
   /* after every render: one Tab stop per chart row and per control group, arrow keys inside (Charts, Segmented controls, Toolbars) */
   function afterRender() {
     if (window.anesiaText) window.anesiaText.fit();
+    syncSymbols();
     pillSegs(); requestAnimationFrame(function () { requestAnimationFrame(glideNow); });
     $$('.an-chart .an-trk').forEach(function (trk) {
       var bs = $$('button', trk).sort(function (a, b) { return a.offsetLeft - b.offsetLeft; }); if (!bs.length) return;
@@ -1335,7 +1380,7 @@
           nw.hidden = true; big.hidden = true; box.innerHTML = '';
           if (!d || !dose) return;
           var b = A.bolus({ dose: dose, unit: unit, weightKg: wt, conc: d.conc });
-          if (!b.ok && b.error === 'needs-weight') { nw.hidden = false; box.innerHTML = '<div class="an-calc warn"><b>Needs a weight</b><span>Add a weight to calculate ' + esc(unit) + ' doses, or type the dose given below.</span></div>'; return; }
+          if (!b.ok && b.error === 'needs-weight') { nw.hidden = false; box.innerHTML = '<div class="an-calc warn"><b>' + icon('scale', { slash: true, scale: 's' }) + 'Needs a weight</b><span>Add a weight to calculate ' + esc(unit) + ' doses, or type the dose given below.</span></div>'; return; }
           if (!b.ok) return;
           box.innerHTML = '<div class="an-calc" aria-live="polite"><b>' + amt(b.mg) + (b.mL !== null ? ' · ' + sig(b.mL) + ' mL' : '') + '</b><span>' + (b.perKg ? esc(sig(num(dose)) + ' ' + unit + ' × ' + sig(wt) + ' kg') : esc(sig(num(dose)) + ' ' + unit)) + (d.conc ? ' · ' + esc(conc(d.conc)) : ' · no concentration, so no volume') + (b.perKg ? '' : wt ? ' · ' + amtKg(b.mg / wt) : '') + '</span></div>';
           var prev = r.doses.filter(function (x) { return !x.void && d.id && x.drugId === d.id && x.mg; }).sort(function (a, c) { return c.at - a.at; })[0];
@@ -1370,7 +1415,7 @@
           if (d && d.kind === 'fluid' && !/^mL/.test(unit)) { $$('[data-chips=unit] .an-chip', w).forEach(function (c) { c.setAttribute('aria-pressed', c.getAttribute('data-v') === 'mL/kg/h'); }); $('[name=unit]', w).value = unit = 'mL/kg/h'; }
           if (!d || rt === '') return;
           var p = A.rate({ rate: rt, unit: unit, weightKg: wt, conc: d.conc });
-          if (!p.ok && p.error === 'needs-weight') { box.innerHTML = '<div class="an-calc warn"><b>Needs a weight</b><span>Per-kg infusions can’t start without a weight. Add one, or set the rate in mL/h.</span></div>'; return; }
+          if (!p.ok && p.error === 'needs-weight') { box.innerHTML = '<div class="an-calc warn"><b>' + icon('scale', { slash: true, scale: 's' }) + 'Needs a weight</b><span>Per-kg infusions can’t start without a weight. Add one, or set the rate in mL/h.</span></div>'; return; }
           if (!p.ok) return;
           box.innerHTML = '<div class="an-calc" aria-live="polite"><b>Pump ' + (p.mLPerH !== null ? sig(p.mLPerH) + ' mL/h' : '—') + '</b><span>' + (p.mgPerH !== null ? amt(p.mgPerH) + ' per hour' : '') + (A.perKg(unit) ? ' · at ' + sig(wt) + ' kg' : '') + (d.conc ? ' · ' + conc(d.conc) : (d.kind === 'fluid' ? '' : ' · add the concentration to get mL/h')) + '</span></div>';
         };
@@ -1507,7 +1552,8 @@
   }
   document.addEventListener('keydown', function (e) {
     var a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
-    if ($('#anSheet') || typing || !S.cur) return;
+    if ($('#anSheet')) { if (e.key === 'Escape' && !$('#anSheet').contains(document.activeElement)) { e.preventDefault(); var xb = $('#anSheet [data-x]'); if (xb) xb.click(); } return; }   /* n172: Esc before focus has moved into a new sheet */
+    if (typing || !S.cur) return;
     if (e.key === 'Escape' && XP && !e.defaultPrevented) { e.preventDefault(); setExpanded(false); return; }   /* an open sheet takes Esc first */
     if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyF' && window.innerWidth > 600) { e.preventDefault(); setExpanded(!XP); return; }
     if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) redoLast(); else undoLast(); return; }

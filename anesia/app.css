@@ -1229,3 +1229,44 @@ html.an-noblur .an-dg{filter:none!important}
 html.an-noblur .an-tbt{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--an-surface)}
 @media (prefers-reduced-transparency:reduce){.an-tbt{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--an-surface)}}
 @media (prefers-contrast:more){.an-tbt{background:var(--an-surface);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px var(--an-ink)}}
+
+/* ===== n171 — Pravix Symbols (SF Symbols rules on our own custom symbols) =====
+   One family on a 24-pt grid. Monochrome by default; hierarchical layers; outline / fill / slash variants;
+   small / medium / large scales relative to the text; stroke weight matched to the label's font weight (JS sets --an-symw). */
+svg.an-ico{width:var(--an-sym,1.2em)!important;height:var(--an-sym,1.2em)!important;flex:0 0 auto;overflow:visible;vertical-align:-.22em;
+  fill:none!important;stroke:currentColor!important;stroke-width:var(--an-symw,1.8px)!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+svg.an-ico.sc-s{--an-sym:1em;vertical-align:-.16em}
+svg.an-ico.sc-l{--an-sym:1.45em;vertical-align:-.32em}
+/* hierarchical: the secondary layer sits back, like SF's hierarchical rendering */
+svg.an-ico .s{opacity:.45}
+svg.an-ico .b{fill-rule:evenodd}
+svg.an-ico .bf{stroke:none;fill:none}
+/* fill variant: bodies become solid; inner details that would vanish are dropped */
+svg.an-ico.fill .b,svg.an-ico.fill .bf{fill:currentColor}
+svg.an-ico.fill .b{stroke-width:calc(var(--an-symw,1.8px) * .5)}   /* holes (cut-outs) stay open when filled */
+svg.an-ico.fill .k{display:none}
+/* slash variant: the line cuts a gap through the symbol (mask) and draws on top */
+svg.an-ico .sl{opacity:1}
+/* Increase Contrast and forced colors: every layer at full strength */
+@media (prefers-contrast:more){svg.an-ico .s{opacity:1}}
+@media (forced-colors:active){svg.an-ico .s{opacity:1}svg.an-ico{stroke:CanvasText!important}svg.an-ico.fill .b,svg.an-ico.fill .bf{fill:CanvasText}}
+/* the old fixed pixel sizes give way to the text-relative scales */
+.an-tile .an-vi{flex:0 0 auto}
+.an-pill svg.an-ico,.an-calc svg.an-ico,.an-wbig svg.an-ico{margin-right:.25em}
+.an-wbig.none b{display:inline-flex;align-items:center}
+.an-seal svg.an-ico{--an-sym:1.15em}
+/* replace: the outgoing symbol hides, the incoming one scales up (SF "off-up") */
+@keyframes anSymIn{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+svg.an-ico.rep,.rep>.ic-in>svg.an-ico,.rep>.ic-out>svg.an-ico{animation:anSymIn .42s var(--an-spring-bouncy) both;transform-origin:center}
+@media (prefers-reduced-motion:reduce){svg.an-ico.rep,.rep>.ic-in>svg.an-ico,.rep>.ic-out>svg.an-ico{animation:anFadeIn .15s ease-out both}}
+/* the drawn-in check and lock keep working with the new classes */
+svg.an-ico .dr{opacity:1}
+
+/* ===== n172 — Apple Icons HIG: optical sizing and centering =====
+   Each symbol carries a measured correction (scale + nudge, like the HIG's "padding for optical alignment").
+   The stroke is divided by the scale so every symbol keeps exactly the weight of its label. */
+svg.an-ico g.os{stroke-width:calc(var(--an-symw,1.8px) / var(--an-os,1))}
+svg.an-ico.fill g.os .b{stroke-width:calc(var(--an-symw,1.8px) * .5 / var(--an-os,1))}
+/* right-to-left layouts mirror directional symbols (back) — never the share arrow, which points up */
+[dir="rtl"] svg.an-ico.flip,svg.an-ico.flip:dir(rtl){transform:scaleX(-1)}
+[dir="rtl"] .an-chev{transform:scaleX(-1)}
