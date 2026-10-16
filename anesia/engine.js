@@ -248,8 +248,8 @@
       if (v[k] === undefined || v[k] === null || v[k] === '') return;
       var n = num(v[k]), L = VITALS[k];
       if (n === null) { errors[k] = 'Enter a number'; return; }
-      if (n < L.min || n > L.max) { errors[k] = L.short + ' must be ' + L.min + '–' + L.max + ' ' + L.unit; return; }
-      if (L.whole && n % 1) { errors[k] = L.short + ' is a whole number, ' + L.min + '–' + L.max; return; }
+      if (n < L.min || n > L.max) { errors[k] = 'Enter ' + L.short + ' from ' + L.min + ' to ' + L.max + ' ' + L.unit; return; }
+      if (L.whole && n % 1) { errors[k] = 'Enter ' + L.short + ' as a whole number from ' + L.min + ' to ' + L.max; return; }
       out[k] = n; any = true;
     });
     if (v.ecg) { if (ECG[v.ecg]) { out.ecg = v.ecg; any = true; } else errors.ecg = 'Choose the rhythm'; }
@@ -311,13 +311,13 @@
       }
       case 'remove': {
         var dv = find(rec.devices || [], op.deviceId); if (!dv || dv.void) fail('That airway or line is not on this record.', 'missing');
-        if (dv.end) fail('Already removed.', 'state'); if (t < dv.at) fail('It can\'t come out before it went in.', 'time');
+        if (dv.end) fail('This is already removed. Its removal time is on the chart.', 'state'); if (t < dv.at) fail('It can’t come out before it went in.', 'time');
         dv.end = t; dv.endBy = by; detail = 'Removed ' + DEVICES[dv.kind] + (dv.size ? ' ' + dv.size : ''); break;
       }
       case 'vent': {
         if (!VENT[op.mode]) fail('Choose the ventilation mode.', 'mode');
         var VL = { tv: [1, 3000, 'Tidal volume', 'mL'], rate: [1, 80, 'Rate', 'br/min'], peep: [0, 30, 'PEEP', 'cmH₂O'], pip: [1, 60, 'Peak pressure', 'cmH₂O'] }, vo = { id: (op.eid || uid('vt')), mode: op.mode, at: t, by: by, ca: at };
-        Object.keys(VL).forEach(function (k) { if (op[k] === undefined || op[k] === '' || op[k] === null) return; var n = num(op[k]), L = VL[k]; if (n === null || n < L[0] || n > L[1]) fail(L[2] + ' must be ' + L[0] + '–' + L[1] + ' ' + L[3] + '.', k); vo[k] = n; });
+        Object.keys(VL).forEach(function (k) { if (op[k] === undefined || op[k] === '' || op[k] === null) return; var n = num(op[k]), L = VL[k]; if (n === null || n < L[0] || n > L[1]) fail('Enter ' + L[2] + ' from ' + L[0] + ' to ' + L[1] + ' ' + L[3] + '.', k); vo[k] = n; });
         if (!rec.vents) rec.vents = []; rec.vents.push(vo);
         detail = 'Ventilation: ' + VENT[op.mode]; break;
       }
@@ -335,7 +335,7 @@
       }
       case 'handoff': {
         var so = find(rec.staff || [], op.staffId); if (!so || so.void || so.to) fail('That person is not on the case now.', 'missing');
-        if (t < so.from) fail('The handoff can\'t be before they joined.', 'time');
+        if (t < so.from) fail('The handoff can’t be before they joined.', 'time');
         so.to = t; so.toBy = by;
         var nn = String(op.name || '').trim();
         if (nn) rec.staff.push({ id: (op.eid || uid('st')), name: nn.slice(0, 80), role: so.role, from: t, to: null, by: by, ca: at, from_handoff: so.id });
@@ -358,7 +358,7 @@
       case 'drug': {   /* add a drug to this record's list: name, kind (drug|fluid|gas), conc mg/mL */
         var name = String(op.name || '').trim(); if (!name) fail('Name the drug.', 'name');
         var conc = op.conc === '' || op.conc === undefined || op.conc === null ? null : num(op.conc);
-        if (conc !== null && conc <= 0) fail('Concentration must be more than 0.', 'conc');
+        if (conc !== null && conc <= 0) fail('Enter a concentration above 0.', 'conc');
         var id = op.id || (op.eid || uid('d'));
         rec.drugs.push({ id: id, name: name.slice(0, 60), kind: op.kind || 'drug', conc: conc, concLabel: op.concLabel || '', route: op.route || '' });
         detail = 'Added ' + name; break;
@@ -388,16 +388,16 @@
       }
       case 'rate': {
         var inf = find(rec.infusions, op.infusionId); if (!inf || inf.void) fail('That infusion is not on this record.', 'missing');
-        if (inf.end) fail('That infusion has stopped.', 'stopped');
+        if (inf.end) fail('That infusion has stopped. Start a new one to continue.', 'stopped');
         var rn = num(op.rate); if (rn === null || rn < 0) fail('Enter the rate.', 'rate');
-        if (t < inf.start) fail('A rate change can\'t be before the infusion started.', 'time');
+        if (t < inf.start) fail('A rate change can’t be before the infusion started.', 'time');
         inf.changes.push({ id: (op.eid || uid('c')), at: t, rate: rn, by: by, ca: at });
         detail = (drug(rec, inf.drugId) || {}).name + ' → ' + sig(rn) + ' ' + inf.unit; break;
       }
       case 'stop': {
         var inf2 = find(rec.infusions, op.infusionId); if (!inf2 || inf2.void) fail('That infusion is not on this record.', 'missing');
-        if (inf2.end) fail('That infusion has already stopped.', 'stopped');
-        if (t < inf2.start) fail('It can\'t stop before it started.', 'time');
+        if (inf2.end) fail('That infusion has already stopped. Start a new one to continue.', 'stopped');
+        if (t < inf2.start) fail('It can’t stop before it started.', 'time');
         inf2.end = t; inf2.endBy = by; inf2.endCa = at; detail = (drug(rec, inf2.drugId) || {}).name + ' stopped'; break;
       }
       case 'gas': {
@@ -428,8 +428,8 @@
         detail = 'Anesthesia started'; break;
       }
       case 'end': {
-        if (rec.status !== 'active') fail('Anesthesia is not running.', 'state');
-        if (t < rec.start) fail('It can\'t end before it started.', 'time');
+        if (rec.status !== 'active') fail('Start anesthesia first.', 'state');
+        if (t < rec.start) fail('It can’t end before it started.', 'time');
         rec.end = t; rec.status = 'ended';
         rec.infusions.forEach(function (i) { if (!i.void && !i.end) { i.end = t; i.endBy = by; } });
         rec.events.push({ id: (op.eid || uid('e')), at: t, kind: 'anesthesia_end', note: '', by: by });
@@ -441,7 +441,7 @@
         if (!(op.list in lists)) fail('That entry can’t be struck through here. Reload the record and try again.', 'list');
         var arr = op.list === 'weight' ? rec.patient.weights : rec[lists[op.list]], it = find(arr, op.id);
         if (!it) fail('That entry is not on this record.', 'missing');
-        if (it.void) fail('Already struck through.', 'void');
+        if (it.void) fail('This entry is already struck through. Nothing more to do.', 'void');
         var why = String(op.reason || '').trim(); if (why.length < 4) fail('Say why (at least 4 characters).', 'reason');
         it.void = { at: at, by: by, reason: why.slice(0, 200) };
         detail = 'Struck through ' + op.list + ': ' + why; break;
@@ -450,8 +450,8 @@
         var mine = function (x) { return x && x.by === by && x.ca && at - x.ca <= UNDO_MS && at >= x.ca; }, what = null;
         if (op.kind === 'stop') {
           var si = find(rec.infusions, op.id);
-          if (!si || !si.end || si.endBy !== by || !si.endCa || at - si.endCa > UNDO_MS) fail('This can no longer be undone.', 'undo');
-          if (rec.status !== 'active') fail('Anesthesia has ended; the infusion can\'t restart.', 'undo');
+          if (!si || !si.end || si.endBy !== by || !si.endCa || at - si.endCa > UNDO_MS) fail('Undo works for 2 minutes. Strike the entry through instead.', 'undo');
+          if (rec.status !== 'active') fail('Anesthesia has ended; the infusion can’t restart.', 'undo');
           si.end = null; delete si.endBy; delete si.endCa; what = 'stopping ' + ((drug(rec, si.drugId) || {}).name || 'the infusion');
         } else if (op.kind === 'rate') {
           rec.infusions.forEach(function (i) { var c = find(i.changes || [], op.id); if (c && mine(c)) { i.changes.splice(i.changes.indexOf(c), 1); what = 'rate change on ' + ((drug(rec, i.drugId) || {}).name || 'an infusion'); } });
@@ -459,13 +459,13 @@
           var L = { dose: rec.doses, infusion: rec.infusions, gas: rec.gases, vitals: rec.vitals, event: rec.events, output: rec.outputs || [], device: rec.devices || [], vent: rec.vents || [], timeout: rec.timeouts || [], staff: rec.staff || [], weight: rec.patient.weights }[op.kind];
           if (!L) fail('Nothing to undo.', 'undo');
           var it2 = find(L, op.id);
-          if (it2 && op.kind === 'event' && /^anesthesia_/.test(it2.kind)) fail('Anesthesia start and end can\'t be undone here.', 'undo');
+          if (it2 && op.kind === 'event' && /^anesthesia_/.test(it2.kind)) fail('Anesthesia start and end can’t be undone here.', 'undo');
           if (it2 && op.kind === 'device' && it2.end) fail('This has been removed since; strike it through instead.', 'undo');
           if (it2 && op.kind === 'staff' && it2.to) fail('This person has handed off since; strike it through instead.', 'undo');
           if (it2 && op.kind === 'infusion' && ((it2.changes || []).length || it2.end)) fail('This infusion has changed since; stop it or strike it through instead.', 'undo');
           if (it2 && mine(it2) && !it2.void) { L.splice(L.indexOf(it2), 1); what = op.kind === 'output' ? (OUTPUTS[it2.kind] || 'output').toLowerCase() + ' ' + sig(it2.mL) + ' mL' : op.kind === 'dose' ? ((drug(rec, it2.drugId) || {}).name || 'dose') + ' ' + sig(it2.mg) + ' mg' : op.kind === 'weight' ? 'weight ' + sig(it2.kg) + ' kg' : op.kind; }
         }
-        if (!what) fail('This can no longer be undone.', 'undo');
+        if (!what) fail('Undo works for 2 minutes. Strike the entry through instead.', 'undo');
         detail = 'Undid ' + what; break;
       }
       case 'sign': {

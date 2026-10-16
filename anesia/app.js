@@ -353,7 +353,7 @@
   }
 
   function gateHTML() {
-    if (S.gate === 'lobby') return '<div class="an-gate"><h1 id="anGateT">This is the lobby screen account</h1><p>Anesia needs your own Pravix account. Sign in with it on Flow, then come back to this page.</p><button type="button" class="an-btn primary" id="anGateOwn">Sign in with my own account</button></div>';
+    if (S.gate === 'lobby') return '<div class="an-gate"><h1 id="anGateT">This is the lobby screen account</h1><p>Anesia needs your own Pravix account. Sign in with it on Flow, then come back to this page.</p><button type="button" class="an-btn primary" id="anGateOwn">Sign in with your account</button></div>';
     return '<div class="an-gate"><h1 id="anGateT">Sign in to use Anesia</h1><p>Anesia uses your Pravix account. Sign in on Flow and you’ll come straight back here.</p><a class="an-btn primary" href="' + esc(signInURL()) + '">Sign in on Flow</a></div>';
   }
   function signInURL() { return 'https://shoreline.pravix.app/?next=' + encodeURIComponent(location.pathname + location.hash); }
@@ -379,7 +379,7 @@
       body: (a ? '<dl class="an-dl"><dt>Last dose</dt><dd>' + esc(fmtTime(a.last)) + '</dd><dt>Doses so far</dt><dd>' + a.doses + '</dd></dl>' : '') +
         '<div class="an-f"><label for="aI">Redose every</label><div class="an-unit"><input class="an-in an-tnum" id="aI" name="min" inputmode="numeric" autocomplete="off" value="' + (d.redoseMin ? sig(d.redoseMin) : '') + '"><span class="u">min</span></div><span class="hint">Use your hospital’s protocol. Anesia has no built-in interval; leave it empty to turn the timer off.</span></div>' +
         '<label class="an-check"><input type="checkbox" name="abx" checked>Count ' + esc(d.name) + ' as an antibiotic</label>' +
-        '<button type="button" class="an-btn plain" data-give style="align-self:flex-start">Give a dose now</button>',
+        '<button type="button" class="an-btn plain" data-give style="align-self:flex-start">Give drug</button>',
       init: function (w) { $('[data-give]', w).onclick = function () { closeSheet(true); doseSheet(r); }; },
       submit: function (w) { change(r.id, { type: 'redose', drugId: drugId, min: val(w, 'min').trim(), abx: val(w, 'abx') }); }
     });
@@ -430,7 +430,7 @@
     openSheet({
       title: devShort(d), primary: null, focus: '[data-x]', anchor: anchor,
       body: '<dl class="an-dl">' + rows.map(function (p) { return '<dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd>'; }).join('') + '</dl>' +
-        (can ? '<div style="display:flex;gap:.5rem;flex-wrap:wrap">' + (d.end ? '' : '<button type="button" class="an-btn" data-remove>Removed…</button>') + '<button type="button" class="an-btn danger" data-void>Strike through…</button></div>' : ''),
+        (can ? '<div style="display:flex;gap:.5rem;flex-wrap:wrap">' + (d.end ? '' : '<button type="button" class="an-btn" data-remove>Remove…</button>') + '<button type="button" class="an-btn danger" data-void>Strike through…</button></div>' : ''),
       init: function (w) {
         var rm = $('[data-remove]', w); if (rm) rm.onclick = function () { closeSheet(true); timeSheet(r, 'Remove ' + devShort(d).toLowerCase(), 'Removed', function (t) { change(r.id, { type: 'remove', deviceId: d.id, at: t }); }); };
         var vb = $('[data-void]', w); if (vb) vb.onclick = function () { voidSheet(r, 'device', d.id, devShort(d)); };
@@ -579,8 +579,8 @@
         '<span class="s">' + esc(r.procedure || 'No procedure entered') + '</span>' +
         '<span class="m">' + kindPill(r) + esc(r.start ? fmtDate(r.start) + ' · ' + fmtTime(r.start) : 'Created ' + fmtDate(r.created_at)) + (r.team.resident ? ' · ' + esc(r.team.resident) : '') + '</span></button></li>';
     }).join('');
-    var empty = { active: ['No training cases in progress', 'Start a new training record for the case you are about to anesthetize.'], ended: ['Nothing waiting to be signed', 'Ended records appear here until they are signed.'], signed: ['No signed records yet', 'Signed records stay here, read-only.'] }[S.filter];
-    return '<header class="an-lhead"><div><h1>Anesia</h1><p>Anesthesia records for training cases. They are not part of the medical record.</p></div>' +
+    var empty = { active: ['No training records in progress', 'Start a training record for the patient you are about to anesthetize.'], ended: ['Nothing waiting to be signed', 'Ended records appear here until they are signed.'], signed: ['No signed records yet', 'Signed records stay here, read-only.'] }[S.filter];
+    return '<header class="an-lhead"><div><h1>Anesia</h1><p>Anesthesia records for training. They are not part of the medical record.</p></div>' +
       '<button type="button" class="an-btn primary" id="anNew">' + icon('plus') + 'New training record</button></header>' +
       (S.mode === 'local' ? '<div class="an-banner info"><span><b>Preview.</b> Records are saved on this device only.</span></div>' : '') +
       '<div class="an-seg" role="radiogroup" aria-label="Show records" data-rove="radio">' + tab('active', 'In progress') + tab('ended', 'To sign') + tab('signed', 'Signed') + '</div>' +
@@ -628,8 +628,8 @@
     var banners = '';
     if (!conf && !signed) banners += '<div class="an-confirm" role="alert"><span class="ic" aria-hidden="true">' + icon('idcheck') + '</span><span><b>Confirm the patient</b>Check the name, weight and procedure against the cage card before you chart.</span><button type="button" class="an-btn danger" id="anConfirmB">Confirm patient</button></div>';
     if (!w && !signed) banners += '<div class="an-banner"><span><b>No weight on file.</b> Per-kg doses can’t be calculated and per-kg infusions can’t start. Doses given now are typed in mg and confirmed.</span><button type="button" class="an-btn tinted" data-act="weight">Add weight</button></div>';
-    if (S.pumpNotice && S.pumpNotice.id === r.id && S.pumpNotice.items.length) banners += '<div class="an-banner info" role="alert"><span><b>Weight changed — set the pumps.</b> ' + S.pumpNotice.items.map(function (x) { return esc(x.name) + ' ' + (x.from === null ? '—' : sig(x.from)) + ' → <b>' + (x.to === null ? '—' : sig(x.to)) + ' mL/h</b>'; }).join(' · ') + '</span><button type="button" class="an-btn tinted" id="anPumpsSet">Pumps set</button></div>';
-    if (!lsGet('tips') && !signed && conf) banners += '<div class="an-tips" role="note" aria-label="Tips"><span><b>Tips</b>Tap any value on the chart to see who charted it, or to strike it through. Undo with the message at the bottom<span class="an-kb">, or ⌘Z. Keyboard: ⌥V vitals, ⌥D drug, ⌥I infusion, ⌥G gas, ⌥E event</span>.</span><button type="button" class="an-btn plain strong" id="anTipsOk">Got it</button></div>';
+    if (S.pumpNotice && S.pumpNotice.id === r.id && S.pumpNotice.items.length) banners += '<div class="an-banner info" role="alert"><span><b>Weight changed — set the pumps.</b> ' + S.pumpNotice.items.map(function (x) { return esc(x.name) + ' ' + (x.from === null ? '—' : sig(x.from)) + ' → <b>' + (x.to === null ? '—' : sig(x.to)) + ' mL/h</b>'; }).join(' · ') + '</span><button type="button" class="an-btn tinted" id="anPumpsSet">Mark pumps set</button></div>';
+    if (!lsGet('tips') && !signed && conf) banners += '<div class="an-tips" role="note" aria-label="Tips"><span><b>Tips</b>' + (matchMedia('(pointer:coarse)').matches ? 'Tap' : 'Click') + ' any value on the chart to see who charted it, or to strike it through. Undo with the message at the bottom<span class="an-kb">, or ⌘Z. Keyboard: ⌥V vitals, ⌥D drug, ⌥I infusion, ⌥G gas, ⌥E event</span>.</span><button type="button" class="an-btn plain strong" id="anTipsOk">Got it</button></div>';
     var ps = signed ? playing('sign:' + r.id, 1100) : null;
     if (signed) banners += '<div class="an-banner info an-signed' + (ps !== null ? ' just' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><span class="an-seal" aria-hidden="true">' + icon('lockd') + '</span><span><b>Signed ' + esc(fmtDate(r.signed.at) + ', ' + fmtTime(r.signed.at)) + ' by ' + esc(r.signed.by) + '.</b> The record is read-only. Corrections go in an addendum.</span></div>';
     var dis = signed ? ' disabled' : '';
@@ -876,7 +876,7 @@
     svg += '</svg>';
     var axis = '<div class="an-legend"><span class="an-units">bpm · mmHg</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><circle cx="7" cy="7" r="4" fill="var(--an-hr)"/></svg>HR</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><path d="M2 4L7 11L12 4" fill="none" stroke="var(--an-bp)" stroke-width="2"/></svg>SAP</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><line x1="1" y1="7" x2="13" y2="7" stroke="var(--an-bp)" stroke-width="2"/><circle cx="7" cy="7" r="3" fill="var(--an-bp)"/></svg>MAP</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><path d="M2 10L7 3L12 10" fill="none" stroke="var(--an-bp)" stroke-width="2"/></svg>DAP</span></div>' +
       '<div class="an-axis" aria-hidden="true">' + [40, 80, 120, 160, 200].map(function (g) { return '<i style="top:' + Y(g) + 'px">' + g + '</i>'; }).join('') + '</div>';
-    rows.push('<div class="an-row"><div class="an-lab" style="justify-content:flex-start;padding-top:.75rem">' + axis + '</div><div class="an-trk an-grid-bg" ' + css.replace('style="', 'style="min-height:' + GH + 'px;') + '>' + svg + (vs.length ? '' : '<span class="an-empty-t">Vitals appear here. Enter them with Vitals now.</span>') + '</div></div>');
+    rows.push('<div class="an-row"><div class="an-lab" style="justify-content:flex-start;padding-top:.75rem">' + axis + '</div><div class="an-trk an-grid-bg" ' + css.replace('style="', 'style="min-height:' + GH + 'px;') + '>' + svg + (vs.length ? '' : '<span class="an-empty-t">Vitals appear here. <button type="button" class="an-btn plain sm" data-act="vitals"' + (r.status === 'signed' ? ' disabled' : '') + '>Enter vitals</button></span>') + '</div></div>');
     MON.forEach(function (m) {
       var k = m[0];
       var cells = r.vitals.filter(function (v) { return k === 'bp' ? (v.sap !== undefined || v.map !== undefined) : v[k] !== undefined; }).map(function (v) {
@@ -1360,7 +1360,7 @@
   function doseSheet(r) {
     var t = now();
     openSheet({
-      title: 'Give drug', primary: 'Record dose',
+      title: 'Give drug', primary: 'Give drug',
       body: drugFields(r, ['drug']) +
         '<div class="an-f"><label for="dDo">Dose</label><input class="an-in an-tnum" id="dDo" name="dose" inputmode="decimal" autocomplete="off"></div>' +
         '<div class="an-f"><span class="lab">Unit</span>' + chips('unit', A.BOLUS_UNITS.map(function (u) { return [u, u]; }), 'mg/kg') + '</div>' +
@@ -1477,7 +1477,7 @@
     var opts = Object.keys(A.EVENTS).filter(function (k) { return k !== 'anesthesia_start' && k !== 'anesthesia_end'; }).map(function (k) { return [k, A.EVENTS[k]]; });
     openSheet({
       title: 'Event', primary: 'Add', quiet: true,
-      body: (!(A.timeoutStatus(r) || {}).complete && r.status !== 'signed' ? '<div class="an-tline an-towarn"><span>Time-out ' + (A.timeoutStatus(r) ? 'not complete' : 'not done yet') + ' — do it before incision.</span><button type="button" class="an-btn plain sm" data-dotimeout>Do time-out</button></div>' : '') + '<div class="an-f"><span class="lab">What happened</span>' + chips('kind', opts, '') + '</div><div class="an-f"><label for="eN">Note</label><textarea class="an-ta" id="eN" name="note" maxlength="300"></textarea></div>' + timeField(now()),
+      body: (!(A.timeoutStatus(r) || {}).complete && r.status !== 'signed' ? '<div class="an-tline an-towarn"><span>Time-out ' + (A.timeoutStatus(r) ? 'not complete' : 'not done yet') + ' — do it before incision.</span><button type="button" class="an-btn plain sm" data-dotimeout>Start time-out</button></div>' : '') + '<div class="an-f"><span class="lab">What happened</span>' + chips('kind', opts, '') + '</div><div class="an-f"><label for="eN">Note</label><textarea class="an-ta" id="eN" name="note" maxlength="300"></textarea></div>' + timeField(now()),
       focus: '.an-chip', init: function (w) { bindTime(w); bindChips(w); var dt = $('[data-dotimeout]', w); if (dt) dt.onclick = function () { closeSheet(true); timeoutSheet(r); }; },
       submit: function (w) { if (!val(w, 'kind')) bad('Choose what happened.'); if (val(w, 'kind') === 'note' && !val(w, 'note').trim()) bad('Write the note.', 'note'); change(r.id, { type: 'event', kind: val(w, 'kind'), note: val(w, 'note'), at: readTime(w, r), eid: A.uid('e') }); }
     });
@@ -1506,7 +1506,7 @@
   function voidSheet(r, list, id, what) {
     openSheet({
       title: 'Strike through', primary: 'Strike through', danger: true,
-      body: '<p style="margin:0">' + esc(what) + ' stays on the record, crossed out, with your name and reason. It no longer counts in the totals. A strike-through can’t be undone.</p><div class="an-f"><label for="vR">Reason</label><input class="an-in" id="vR" name="reason" maxlength="200" autocomplete="off" placeholder="For example, charted on the wrong case"></div>',
+      body: '<p style="margin:0">' + esc(what) + ' stays on the record, struck through, with your name and reason. It no longer counts in the totals. A strike-through can’t be undone.</p><div class="an-f"><label for="vR">Reason</label><input class="an-in" id="vR" name="reason" maxlength="200" autocomplete="off" placeholder="For example, charted on the wrong case"></div>',
       submit: function (w) { try { change(r.id, { type: 'void', list: list, id: id, reason: val(w, 'reason') }); } catch (e) { e.field = 'reason'; throw e; } }
     });
   }
