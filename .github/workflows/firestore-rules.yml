@@ -1,0 +1,40 @@
+# Publishes firestore.rules to the shoreline-flow Firebase project.
+# Runs when firestore.rules changes on main, or by hand (Actions › Publish Firestore rules › Run workflow).
+# Needs one repository secret, FIREBASE_SERVICE_ACCOUNT: the JSON key of a service account with the
+# "Firebase Rules Admin" role (created by Daniel). Without it the run says so and does nothing.
+# firebase-tools compiles the rules first: a rules error fails the run and nothing is published.
+name: Publish Firestore rules
+on:
+  push:
+    branches: [main]
+    paths: ['firestore.rules']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: firestore-rules
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the deploy key is set
+        id: key
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then echo "::warning::No FIREBASE_SERVICE_ACCOUNT secret yet. Nothing was published."; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.skip != '1'
+        with:
+          node-version: 20
+      - name: Publish firestore.rules to shoreline-flow
+        if: steps.key.outputs.skip != '1'
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx -y firebase-tools@13.29.1 deploy --only firestore:rules --project shoreline-flow --non-interactive
+          rm -f "$RUNNER_TEMP/sa.json"
