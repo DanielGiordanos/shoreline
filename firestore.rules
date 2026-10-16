@@ -1,0 +1,353 @@
+// Oct 15 2026 (n149) — decision #4: personal sign-in. The shared front-desk login (au733@vca.com) is now only the lobby
+//   screen's account: it can read the lobby display and nothing else. Every rule that allowed any signed-in account now
+//   allows staff() (signed in, and not the lobby account). The lobby display needs a sign-in (it was public).
+//   Publish ONLY after every front-desk person has their own account — until then this locks the shared login out.
+// Oct 15 2026 (n147) — D-A: On the way rules tightened (tenant + field lists); D-D: sched_months / sched_settings (admin-only writes).
+rules_version = '2';
+// Oct 13 2026 (n127) — On the way: incoming and eta_log (the two blocks marked "Oct 13 (n127)").
+// Oct 13 2026 (n126) — verify codes: doc_verify (the block marked "Oct 13 (n126)"; nothing else changed).
+// Oct 13 2026 — Pravix Forms (forms/ page + Flow n122): form_templates, visit_docs, form_requests (the three blocks marked "Oct 13"; nothing else changed).
+// Oct 12 2026 — codes: tracker codes need the pet's name and stop when the visit ends (the codes block below; nothing else changed).
+// Oct 9 2026 (Kura web) — everything in firestore.rules.kura-pending, plus kura/{space}: Kura on shoreline.pravix.app/kura.
+// Oct 7 2026 — goes with Flow patch_flow_round2.py. Based on the live rules published Oct 2; changes are marked "Oct 7".
+//   · pub: the public may open a visit by its tracker token but no longer list them (staff still list).
+//   · lobby: new display-only collection for the waiting-room screen.
+//   · messages: readable only under a token you already have; a family message must belong to a real tracker link.
+//   · staff can read family messages across visits (Flow's new-message alert), which was always denied.
+//   · rules for paths the apps already use that had none (they fell to the final deny): voice_stats,
+//     tenants/{tenant}/directory, ts_prefs, ts_usage, ts_stats, and staff saves of ts_settings house_doses / snippets.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // n149: the lobby screen account (keep in step with Flow, or/ and treatment/)
+    function lobbyAccount() { return request.auth != null && request.auth.token.get('email', '').lower() in ['au733@vca.com']; }
+    function staff() { return request.auth != null && !lobbyAccount(); }
+        function sgvpAdmin() {
+      return request.auth != null
+        && ( request.auth.token.email.lower() == 'daniel.giordano@pravix.app' || roleAdmin() );    }
+
+    match /curriculum/{docId} {
+      allow read:  if staff();
+      allow write: if sgvpAdmin();
+    }
+    match /sgvp_profiles/{docId} {
+      allow read:  if staff();
+      allow write: if sgvpAdmin();
+    }
+    match /sgvp_updates/{docId} {
+      allow read:  if staff();
+      allow write: if sgvpAdmin();
+    }
+match /client_intakes/{docId} {
+  allow create: if request.resource.data.tenant_id is string
+                && request.resource.data.record is map
+                && request.resource.size() < 200 * 1024;
+  allow read, update, delete: if staff();
+}
+    match /visits/{id} {
+      allow read, write: if staff();
+    }
+
+    // Oct 7 — family tracker feed. The document id IS the private tracker token: open by id, never listed by the public.
+    match /pub/{token} {
+      allow get: if true;
+      allow list: if staff();
+      allow create, delete: if staff();
+      // A family may change only its CPR/DNR choice, only while the visit is open. Flow shows it to staff as
+      // "Client request — confirm"; it never becomes the badge on its own. resus_recorded_at may be the server time
+      // (FieldValue.serverTimestamp(), checked against request.time) or, as today's tracker sends, a text time.
+      allow update: if staff()
+        || ( request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['resus_pref','resus_status','resus_recorded_at'])
+             && resource.data.is_active == true
+             && ( request.resource.data.resus_pref == null
+                  || ( request.resource.data.resus_pref is string && request.resource.data.resus_pref.size() <= 24 ) )
+             && ( request.resource.data.resus_recorded_at == request.time
+                  || request.resource.data.resus_recorded_at == null
+                  || ( request.resource.data.resus_recorded_at is string && request.resource.data.resus_recorded_at.size() <= 40 ) ) );
+    }
+
+    // Oct 7 — waiting-room screen (index.html?display). Display-only copy per visit, keyed by the visit id: no tracker
+    // token, owner, phone, room or CPR/DNR. Staff Flow adds it, keeps it current and removes it when the visit ends.
+    match /lobby/{id} {
+      allow read: if request.auth != null;   // n149: the lobby screen signs in (lobby account or staff)
+      allow create, update: if staff()
+        && request.resource.data.keys().hasOnly(['tenant_id','patient_name','species','breed','age','age_estimated',
+                                                 'status','prio','doctor_id','arrival_time','timeline','is_active']);
+      allow delete: if staff();
+    }
+
+    // Oct 12 — family tracker check-in codes. A code opens a tracker only together with the pet's name: Flow writes
+    // codes/{CODE}-{petname} (v:2), and only while the visit is open and before expires_at (30 days after check-in at most).
+    // Old code-only documents (codes/{CODE}), closed visits and unknown codes can't be read at all.
+    match /codes/{code} {
+      allow get: if resource.data.get('v', 0) == 2
+        && resource.data.get('is_active', false) == true
+        && resource.data.get('expires_at', null) is timestamp
+        && resource.data.expires_at > request.time;
+      allow list: if false;
+      allow write: if staff();
+    }
+
+    // Oct 7 — family ↔ staff chat: readable only under a token you already have (pub can't be listed by the
+    // public, and the collection-group read below is staff only); a family message must belong to a real tracker link.
+    match /messages/{token}/items/{id} {
+      allow get, list: if true;
+      allow create: if staff()
+        || ( request.resource.data.sender == 'client'
+             && request.resource.data.body is string
+             && request.resource.data.body.size() > 0
+             && request.resource.data.body.size() <= 1000
+             && exists(/databases/$(database)/documents/pub/$(token)) );
+      allow update, delete: if staff();
+    }
+    // Oct 7 — Flow's "new message from family" listener (collectionGroup('items')).
+    match /{path=**}/items/{id} {
+      allow read: if staff();
+    }
+
+    // Oct 7 — voice command counts (Flow and Treatment Sheets, voice_stats/{tenant}_{day}).
+    match /voice_stats/{id} {
+      allow read, write: if staff();
+    }
+    // Oct 7 — shared staff directory roster (Flow reads tenants/shoreline/directory/roster; the Directory app edits it).
+    match /tenants/{tenant}/directory/{doc} {
+      allow read: if staff();
+      allow write: if sgvpAdmin() || (staff() && request.auth.token.directoryEditor == true);
+    }
+
+    match /shifts/{tenant} {
+      allow get: if true;
+      allow write: if staff();
+    }
+    match /alerts/{tenant} {
+      allow get: if true;
+      allow write: if staff();
+    }
+
+    match /sgvp_mentors/{docId} {
+    allow read: if staff();
+    allow write: if sgvpAdmin();
+    }
+    match /sgvp_roles/{docId} {
+    allow read: if staff();
+    allow write: if sgvpAdmin();
+    }
+
+    function roleAdmin() {
+    return exists(/databases/$(database)/documents/sgvp_roles/$(request.auth.token.email.lower()))
+    && get(/databases/$(database)/documents/sgvp_roles/$(request.auth.token.email.lower())).data.admin == true;
+    }
+
+
+    // Treatment Sheets — Charges code list: staff read; owner writes; 'map' (hospital codes per drug) writable by staff
+    match /charge_codes/{doc} {
+      allow read: if staff();
+      allow write: if (doc == 'map' && staff()) || sgvpAdmin();
+    }
+    // Treatment Sheets — per-intern draft switch: staff read; owner writes; listed editors may change interns, not editors
+    // Oct 7: staff may also save the shared house doses and snippets (the app keeps them on one device until this rule exists)
+    match /ts_settings/{doc} {
+      allow read: if staff();
+      allow write: if sgvpAdmin()
+        || ((doc == 'house_doses' || doc == 'snippets') && staff())
+        || (resource != null
+            && request.auth.token.email.lower() in resource.data.get('editors', [])
+            && request.resource.data.get('editors', []) == resource.data.get('editors', []));
+    }
+    // Oct 7 — Treatment Sheets: each person's language (ts_prefs/{uid}), usage counts and on-time report history
+    match /ts_prefs/{uid} {
+      allow read, write: if staff() && request.auth.uid == uid;
+    }
+    match /ts_usage/{id} {
+      allow read, write: if staff();
+    }
+    match /ts_stats/{id} {
+      allow read, write: if staff();
+    }
+    // Oct 9 2026 — Kura stock link (Treatment Sheets store/kura.js → Kura's pull connector). Each recorded dose is one event
+    // kura_outbox/{hospital}/events/{eventId}: staff create it once (server time, no Kura field); Kura's own staff account reads
+    // them and may only add its acknowledgement field "kura". Events are never changed otherwise or deleted.
+    match /kura_outbox/{hospital}/events/{eventId} {
+      allow read: if staff();
+      allow create: if staff()
+        && request.resource.data.event_id == eventId
+        && request.resource.data.hospital == hospital
+        && request.resource.data.env is string
+        && request.resource.data.env.size() < 20000
+        && request.resource.data.written_at == request.time
+        && !('kura' in request.resource.data);
+      allow update: if staff()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kura']);
+      allow delete: if false;
+    }
+    match /sheets/{sheetId} {
+      allow read: if staff();
+      allow create: if staff()
+        && request.resource.data.tenant_id is string
+        && request.resource.data.status == 'active'
+        && request.resource.data.patient is map;
+      allow update: if staff()
+        && request.resource.data.tenant_id == resource.data.tenant_id;
+      allow delete: if false;   // sheets are closed, never deleted
+      // charting by day + archived audit (Treatment Sheets)
+      match /{sub=**} {
+        allow read, create, update: if staff();
+        allow delete: if false;
+      }
+    }
+    // Oct 9 2026 — Kura on shoreline.pravix.app/kura (kura/{space}). Only Daniel for now. The page runs Kura's engine on the
+    // device; Firebase keeps the shared record: a head {seq}, one log entry per change (written once, never changed or
+    // deleted, numbered with no gaps because the head moves with it), full copies in checkpoints/, settings in meta/.
+    function kuraOwner() {
+      return request.auth != null && request.auth.token.email.lower() == 'daniel.giordano@pravix.app';
+    }
+    match /kura/{space} {
+      allow read: if kuraOwner();
+      allow create: if kuraOwner() && request.resource.data.seq == 1;
+      allow update: if kuraOwner() && request.resource.data.seq == resource.data.seq + 1;
+      allow delete: if false;
+      match /log/{entry} {
+        allow read: if kuraOwner();
+        allow create: if kuraOwner()
+          && request.resource.data.seq is int
+          && getAfter(/databases/$(database)/documents/kura/$(space)).data.seq == request.resource.data.seq;
+        allow update, delete: if false;
+        match /parts/{part} {
+          allow read: if kuraOwner();
+          allow create: if kuraOwner();
+          allow update, delete: if false;
+        }
+      }
+      match /checkpoints/{cp} {
+        allow read: if kuraOwner();
+        allow create: if kuraOwner() && request.resource.data.seq is int;
+        allow update, delete: if false;
+        match /parts/{part} {
+          allow read: if kuraOwner();
+          allow create: if kuraOwner();
+          allow update, delete: if false;
+        }
+      }
+      match /meta/{doc} {
+        allow read, create, update: if kuraOwner();
+        allow delete: if false;
+      }
+    }
+    // Oct 13 — Pravix Forms. The hospital's own PDFs and how each box is filled: staff read them (Flow fills them);
+    // only the owner / role admins map and publish them (shoreline.pravix.app/forms).
+    match /form_templates/{id} {
+      allow read: if staff();
+      allow write: if sgvpAdmin();
+      match /parts/{part} {
+        allow read: if staff();
+        allow write: if sgvpAdmin();
+      }
+    }
+    // Oct 13 — signed PDFs on a visit. Written once and never changed (only the "printed" note may be added), never deleted.
+    // Staff only: none of this is in pub (the family tracker) or lobby (the waiting room).
+    match /visit_docs/{id} {
+      allow read: if staff();
+      allow create: if staff()
+        && request.resource.data.visit_id is string
+        && request.resource.data.sha256 is string && request.resource.data.sha256.size() == 64;
+      allow update: if staff() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['printed_at', 'printed_by']);
+      allow delete: if false;
+      match /parts/{part} {
+        allow read: if staff();
+        allow create: if staff();
+        allow update, delete: if false;
+      }
+    }
+    // Oct 13 — forms a doctor sends to reception (requested → with the family → signed, or cancelled). Never deleted.
+    match /form_requests/{id} {
+      allow read, create, update: if staff();
+      allow delete: if false;
+    }
+    // Oct 13 (n126) — verify codes printed on signed PDFs. The document id IS the 16-character code: anyone holding the
+    // paper may open that one record, never list them. It holds only the fingerprint, the day it was signed, the
+    // hospital and the form's title — no pet, owner, visit or staff. Written once by staff when a form is signed; never
+    // changed or deleted.
+    match /doc_verify/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if staff()
+        && code.matches('^[2-9A-HJ-NP-Z]{16}$')
+        && request.resource.data.keys().hasOnly(['v','sha256','signed_on','hospital','title','pages','tenant_id','created_at'])
+        && request.resource.data.sha256 is string && request.resource.data.sha256.size() == 64
+        && request.resource.data.signed_on is string && request.resource.data.signed_on.size() == 10
+        && request.resource.data.title is string && request.resource.data.title.size() <= 120
+        && request.resource.data.hospital is string && request.resource.data.hospital.size() <= 80;
+      allow update, delete: if false;
+    }
+    // Oct 13 (n127) — On the way: families who called and are driving in. Staff only (never in pub or lobby); kept, not
+    // deleted: when they arrive or aren't coming, Flow clears the town, phone and owner from the record.
+    // Oct 15 (n147, decision D-A) — tightened before publishing: the hospital is checked on every read and write, a new
+    // record may carry only the fields Flow writes, and an update may change only the arrival fields (never the tenant,
+    // the name, who created it or when).
+    function otwTenant() { return 'shoreline'; }
+    match /incoming/{id} {
+      allow read: if staff() && resource.data.tenant_id == otwTenant();
+      allow create: if staff()
+        && request.resource.data.tenant_id == otwTenant()
+        && request.resource.data.status == 'on_the_way'
+        && request.resource.data.name is string && request.resource.data.name.size() > 0
+        && request.resource.data.keys().hasOnly(['tenant_id','status','name','species','breed','owner','phone','prio','reason',
+             'from','leave_min','leave_at','minutes','minutes_source','shift','eta_first','eta_at','eta_lo','eta_hi',
+             'eta_updated_at','refreshes','doctor','room_plan','created_at','created_by']);
+      allow update: if staff()
+        && resource.data.tenant_id == otwTenant()
+        && request.resource.data.tenant_id == resource.data.tenant_id
+        && request.resource.data.status in ['on_the_way', 'arrived', 'cancelled']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','arrived_at','visit_id','from','phone',
+             'owner','cancelled_at','cancelled_by','minutes','eta_at','eta_lo','eta_hi','eta_updated_at','refreshes',
+             'leave_at','shift','room_plan']);
+      allow delete: if false;
+    }
+    // Oct 13 (n127) — how long arrivals really took vs the estimate, so Flow learns. Town, hour and minutes only.
+    // Oct 15 (n147) — the hospital is checked too.
+    match /eta_log/{id} {
+      allow read: if staff() && resource.data.tenant_id == otwTenant();
+      allow create: if staff()
+        && request.resource.data.tenant_id == otwTenant()
+        && request.resource.data.keys().hasOnly(['tenant_id','town','dow','hour','leave_min','predicted_min','actual_min','source','at'])
+        && request.resource.data.predicted_min is int && request.resource.data.actual_min is int;
+      allow update, delete: if false;
+    }
+    // Oct 15 (n147, decision D-D) — the intern schedule (Scheduling page) moves into this project. Anyone may read it, as
+    // with the old shoreline-calendar project (the page is public); only a Pravix admin may change it. The plaintext
+    // password that used to guard editing is gone from the page.
+    match /sched_months/{id} {
+      allow read: if true;
+      allow write: if sgvpAdmin()
+        && id.matches('^[0-9]{4}_[0-9]{1,2}$')
+        && request.resource.data.keys().hasOnly(['days','updatedAt','updatedBy']);
+    }
+    match /sched_settings/{id} {
+      allow read: if true;
+      allow write: if sgvpAdmin()
+        && id == 'announcement'
+        && request.resource.data.keys().hasOnly(['text','updatedAt','updatedBy'])
+        && request.resource.data.text is string && request.resource.data.text.size() <= 2000;
+    }
+    // Oct 15 (n148, decision #7) — Rounds' Tomorrow list (Rechecks, Drop-offs, OP Ultrasound), shared by everyone on Rounds.
+    // One document per item. Staff of this hospital only; the hospital, the list and who created the item never change.
+    match /rounds_queue/{id} {
+      allow read: if staff() && resource.data.tenant_id == otwTenant();
+      allow create: if staff()
+        && request.resource.data.tenant_id == otwTenant()
+        && request.resource.data.key in ['recheck', 'dropoff', 'opus']
+        && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 200
+        && request.resource.data.done is bool
+        && request.resource.data.keys().hasOnly(['tenant_id','key','text','done','done_at','created_at','created_by','updated_at','updated_by']);
+      allow update: if staff()
+        && resource.data.tenant_id == otwTenant()
+        && request.resource.data.done is bool
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done','done_at','updated_at','updated_by']);
+      allow delete: if staff() && resource.data.tenant_id == otwTenant();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
