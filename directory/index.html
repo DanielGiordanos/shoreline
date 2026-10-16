@@ -8266,15 +8266,17 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   var gap=0, busy=false;
   function layout(){ if(busy) return; busy=true;
     try{ var all=items(); all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
-      var vis=all.filter(shown); if(!vis.length){ more.hidden=true; return; }
+      var vis=all.filter(shown); var PIN=['navGrid'];   /* PVX-N150: Grid always in More (unless it is the current app) */
+      var pin=vis.filter(function(a){ return PIN.indexOf(a.id)>-1&&!(a.classList.contains('active')||a.getAttribute('aria-current')); }); vis=vis.filter(function(a){ return pin.indexOf(a)<0; });
+      if(!vis.length&&!pin.length){ more.hidden=true; return; }
       gap=parseFloat(getComputedStyle(center).columnGap||getComputedStyle(center).gap)||0;
       more.hidden=true; var avail=center.clientWidth, w=vis.map(function(a){ return a.getBoundingClientRect().width; }), total=w.reduce(function(s,x){ return s+x; },0)+gap*(vis.length-1);
-      if(total<=avail+0.5){ menu.innerHTML=''; return; }
+      if(!pin.length&&total<=avail+0.5){ menu.innerHTML=''; return; }
       more.hidden=false; var mw=more.getBoundingClientRect().width+gap, keep=0, used=0;
       for(var i=0;i<vis.length;i++){ if(used+w[i]+(i?gap:0)+mw<=avail){ used+=w[i]+(i?gap:0); keep++; } else break; }
       var active=vis.findIndex(function(a){ return a.classList.contains('active')||a.getAttribute('aria-current'); });
       if(active>=keep&&keep>0){ var a=vis.splice(active,1)[0]; vis.splice(keep-1,0,a); center.insertBefore(a,vis[keep]||more); }
-      var hidden=vis.slice(keep); hidden.forEach(function(a){ menu.appendChild(a); a.setAttribute('role','menuitem'); });
+      var hidden=vis.slice(keep).concat(pin); hidden.sort(function(x,y){ return all.indexOf(x)-all.indexOf(y); }); hidden.forEach(function(a){ menu.appendChild(a); a.setAttribute('role','menuitem'); });
       if(!hidden.length) more.hidden=true; }
     finally{ busy=false; } }
   function open(o){ var isOpen=!menu.hidden; if(o===undefined) o=!isOpen; if(o===isOpen) return; menu.hidden=!o; btn.setAttribute('aria-expanded',o?'true':'false');
