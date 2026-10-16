@@ -14,6 +14,7 @@
 <!-- n134 CL-T03 CL-T06 -->
 <!-- n135 PVX-TYPE -->
 <!-- n136 CL-T09 copy -->
+<link rel="stylesheet" href="anes.css?v=n166">
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie (light unless the user chose dark). -->
@@ -47,6 +48,7 @@
       <a class="nav-item active" href="#" id="navTreatment" title="Treatment" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17.5" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><path d="M8.5 10.5h3M8.5 14h3M8.5 17.5h3"/><path d="M14 10.5h1.5M14 14h1.5M14 17.5h1.5"/></svg>Treatment</a>
       <a class="nav-item" href="https://shoreline.pravix.app/#app=rounds" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
       <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/anesia/" id="navAnesia" title="Anesia"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5l3.2-3.2"/><path d="M9.5 3h5"/><path d="M12 3v3"/></svg>Anesia</a>
       <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
       <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
       <script id="pvx-grid-link-js">(function(){var OK=["daniel.giordano@pravix.app"];function el(){return document.getElementById("navGrid")}
@@ -72,6 +74,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <button class="seg" data-ctab="tasks" title="Tasks" aria-label="Tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/></svg>Tasks<span class="seg-badge" id="tsTaskBadge"></span></button>
       <button class="seg" data-ctab="sheet" title="Treatment Sheet" aria-label="Treatment Sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Treatment Sheet</button>
       <button class="seg" data-ctab="vitals" title="Vitals" aria-label="Vitals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Vitals</button>
+      <button class="seg" data-ctab="anes" title="Anesthesia" aria-label="Anesthesia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M10 2.5h4M12 2.5v3"/></svg>Anesthesia</button>
       
       <button class="seg" data-ctab="timeline" title="Timeline" aria-label="Timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Timeline</button>
       <button class="seg" data-ctab="charges" title="Charges" aria-label="Charges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Charges</button>
@@ -96,6 +99,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <div class="ctab hidden" id="ctab-tasks"></div>
       <div class="ctab hidden" id="ctab-sheet"></div>
       <div class="ctab hidden" id="ctab-vitals"></div>
+      <div class="ctab hidden" id="ctab-anes"></div>
       
       <div class="ctab hidden" id="ctab-timeline"></div>
       <div class="ctab hidden" id="ctab-charges"></div>
@@ -140,6 +144,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <script defer src="store.js?v=b562f8485e"></script>
 
 
+<script defer src="anes.js?v=n166"></script>
 <script defer src="voice.js?v=7a919ece66"></script>
 
 <script>/* CL-T02 n132: compact search — the visible Search button is the Tab stop while collapsed; the field opens on focus/click and closes when left empty */(function(){var s=document.querySelector(".subnav .search"),i=document.getElementById("globalSearch"),b=s&&s.querySelector(".ts-search-open"),mq=window.matchMedia("(max-width:1680px)");if(!s||!i||!b)return;function collapsed(){return mq.matches&&!s.classList.contains("is-open")&&!s.classList.contains("is-focus");}function sync(){var c=collapsed();i.tabIndex=c?-1:0;b.tabIndex=c?0:-1;b.setAttribute("aria-hidden",c?"false":"true");}b.addEventListener("click",function(){s.classList.add("is-open");i.focus();sync();});s.addEventListener("click",function(e){if(!s.contains(document.activeElement)){i.focus();sync();}});i.addEventListener("focus",function(){s.classList.add("is-focus");sync();});i.addEventListener("input",function(){s.classList.toggle("is-open",!!i.value);sync();});i.addEventListener("blur",function(){s.classList.remove("is-focus");if(!i.value)s.classList.remove("is-open");setTimeout(sync,0);});mq.addEventListener?mq.addEventListener("change",sync):mq.addListener(sync);sync();})();</script>

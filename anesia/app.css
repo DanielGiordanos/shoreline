@@ -1,0 +1,1052 @@
+/* Pravix Anesia (n151) — Pravix colors, flat surfaces, Apple HIG type, spacing and targets.
+   Sizes are in rem so the browser's text size setting scales the page (Dynamic Type on iPad Safari, zoom on desktop).
+   Type scale (HIG): large title 2.125rem · title 2 1.375rem · title 3 1.25rem · headline 1.0625rem semibold · body 1.0625rem ·
+   callout 1rem · subhead 0.9375rem · footnote 0.8125rem · caption 0.75rem (the smallest size used anywhere). */
+:root,body{
+  --an-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  --an-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --an-mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --an-bg:#F5F5F7; --an-surface:#FFFFFF; --an-surface-2:#F2F2F4; --an-surface-3:#E9E9EC;
+  --an-line:rgba(29,29,31,.10); --an-line-2:rgba(29,29,31,.16); --an-grid:rgba(29,29,31,.06); --an-grid-2:rgba(29,29,31,.12);
+  --an-ink:#1D1D1F; --an-ink-2:#48484A; --an-ink-3:#6E6E73;
+  --an-accent:#38BDD2; --an-on-accent:#04131B; --an-accent-ink:#0F6B82; --an-accent-soft:rgba(56,189,210,.14); --an-accent-bar:rgba(56,189,210,.24);
+  --an-green:#1a9e6e; --an-green-ink:#12623F; --an-green-soft:rgba(26,158,110,.12);
+  --an-amber:#E8A830; --an-amber-ink:#875C00; --an-amber-soft:rgba(232,168,48,.16);
+  --an-red:#D92B22; --an-red-ink:#BE3A2E; --an-red-soft:rgba(217,43,34,.10);
+  --an-purple:#8B4DB5; --an-purple-ink:#6E3A93; --an-purple-bar:rgba(139,77,181,.20);
+  --an-o2-bar:rgba(26,158,110,.20);
+  --an-focus:#0F6B82;
+  --an-r-s:8px; --an-r-m:12px; --an-r-l:16px; --an-r-xl:20px;
+  --an-label-w:11rem;
+}
+body.dark{
+  --an-bg:#0A1222; --an-surface:#111B2E; --an-surface-2:#172338; --an-surface-3:#1E2C45;
+  --an-line:rgba(150,185,220,.14); --an-line-2:rgba(150,185,220,.24); --an-grid:rgba(150,185,220,.07); --an-grid-2:rgba(150,185,220,.14);
+  --an-ink:#E6EEF6; --an-ink-2:#C3D0DE; --an-ink-3:#A7B8CC;
+  --an-accent:#38BDD2; --an-on-accent:#04131B; --an-accent-ink:#6FD3E4; --an-accent-soft:rgba(56,189,210,.16); --an-accent-bar:rgba(56,189,210,.26);
+  --an-green:#48B888; --an-green-ink:#5BD6A8; --an-green-soft:rgba(72,184,136,.14);
+  --an-amber:#F2C744; --an-amber-ink:#F2C744; --an-amber-soft:rgba(242,199,68,.14);
+  --an-red:#FF6B57; --an-red-ink:#FF8A70; --an-red-soft:rgba(255,107,87,.13);
+  --an-purple:#B48BD6; --an-purple-ink:#CDB0E6; --an-purple-bar:rgba(180,139,214,.24);
+  --an-o2-bar:rgba(72,184,136,.22);
+  --an-focus:#6FD3E4;
+}
+html{font-size:100%;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--an-bg);color:var(--an-ink);font-family:var(--an-font);font-size:1.0625rem;line-height:1.47;-webkit-font-smoothing:antialiased}
+.an *,.an *::before,.an *::after{box-sizing:border-box}
+.an{max-width:1600px;margin:0 auto;padding:1.5rem 2rem 4rem}
+.an [hidden],.an-sheet [hidden]{display:none!important}
+.an :focus-visible{outline:2px solid var(--an-focus);outline-offset:2px;border-radius:6px}
+.an-vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.an-tnum{font-variant-numeric:tabular-nums}
+
+/* ---------- buttons (44 pt targets) ---------- */
+.an-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:0 1.125rem;border-radius:var(--an-r-m);
+  border:1px solid var(--an-line-2);background:var(--an-surface);color:var(--an-ink);font:inherit;font-size:1rem;font-weight:600;cursor:pointer;
+  text-decoration:none;white-space:nowrap;transition:background-color .15s ease,border-color .15s ease}
+.an-btn:hover{background:var(--an-surface-2)}
+.an-btn:active{background:var(--an-surface-3)}
+.an-btn.primary{background:var(--an-accent);border-color:var(--an-accent);color:var(--an-on-accent)}
+.an-btn.primary:hover{background:#2FB0C4;border-color:#2FB0C4}
+.an-btn.danger{color:var(--an-red-ink)}
+.an-btn.plain{border-color:transparent;background:transparent;color:var(--an-accent-ink)}
+.an-btn.plain:hover{background:var(--an-accent-soft)}
+.an-btn[disabled],.an-btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.an-btn svg{width:1.25rem;height:1.25rem;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.an-btn.icon{width:44px;padding:0}
+
+/* ---------- list of records ---------- */
+.an-lhead{display:flex;align-items:flex-end;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;margin:.5rem 0 1.5rem}
+.an-lhead h1{margin:0;font-family:var(--an-display);font-size:2.125rem;line-height:1.2;font-weight:700;}
+.an-lhead p{margin:.25rem 0 0;color:var(--an-ink-3);font-size:1rem}
+.an-seg{display:inline-flex;padding:2px;border-radius:10px;background:var(--an-surface-3);gap:2px;margin-bottom:1rem}
+.an-seg button{min-height:36px;min-width:6rem;padding:0 1rem;border:0;border-radius:8px;background:transparent;color:var(--an-ink);font:inherit;font-size:.9375rem;font-weight:500;cursor:pointer}
+.an-seg button[aria-selected="true"]{background:var(--an-surface);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+body.dark .an-seg button[aria-selected="true"]{background:#2A3A57}
+@media (pointer:coarse){.an-seg button{min-height:44px}}
+.an-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(20rem,1fr));gap:1rem}
+.an-card{display:flex;flex-direction:column;gap:.5rem;width:100%;text-align:left;padding:1.125rem 1.25rem;border-radius:var(--an-r-l);border:1px solid var(--an-line);
+  background:var(--an-surface);color:inherit;font:inherit;cursor:pointer;transition:border-color .15s ease}
+.an-card:hover{border-color:var(--an-line-2)}
+.an-card .t{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.an-card b{font-size:1.0625rem;font-weight:600}
+.an-card .s{color:var(--an-ink-3);font-size:.9375rem}
+.an-card .m{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;font-size:.8125rem;color:var(--an-ink-3)}
+.an-empty{padding:3rem 1.5rem;text-align:center;color:var(--an-ink-3);border:1px dashed var(--an-line-2);border-radius:var(--an-r-l)}
+.an-empty b{display:block;color:var(--an-ink);font-size:1.25rem;font-weight:600;margin-bottom:.375rem}
+
+/* status pills */
+.an-pill{display:inline-flex;align-items:center;gap:.375rem;min-height:1.5rem;padding:0 .625rem;border-radius:999px;font-size:.8125rem;font-weight:600;white-space:nowrap;
+  background:var(--an-surface-2);color:var(--an-ink-2)}
+.an-pill.active{background:var(--an-green-soft);color:var(--an-green-ink)}
+.an-pill.active::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--an-green)}
+.an-pill.signed{background:var(--an-accent-soft);color:var(--an-accent-ink)}
+.an-pill.warn{background:var(--an-amber-soft);color:var(--an-amber-ink)}
+.an-pill.training{background:transparent;border:1px solid var(--an-line-2);color:var(--an-ink-3)}
+
+/* ---------- record header ---------- */
+.an-rhead{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:1rem 1.25rem;align-items:center;margin-bottom:1rem}
+.an-back{text-decoration:none;display:inline-flex;align-items:center;gap:.25rem;min-height:44px;padding:0 .75rem 0 .375rem;border:0;border-radius:var(--an-r-m);background:transparent;color:var(--an-accent-ink);font:inherit;font-size:1.0625rem;cursor:pointer}
+.an-back:hover{background:var(--an-accent-soft)}
+.an-back svg{width:1.375rem;height:1.375rem;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.an-id{min-width:0}
+.an-id h1,.an-id h2{margin:0;font-family:var(--an-display);font-size:1.375rem;line-height:1.27;font-weight:700;display:flex;align-items:center;gap:.625rem;flex-wrap:wrap}
+.an-id .sub{margin-top:.125rem;color:var(--an-ink-3);font-size:.9375rem;display:flex;gap:.375rem .875rem;flex-wrap:wrap;align-items:center}
+.an-weight{display:inline-flex;align-items:center;gap:.375rem;min-height:2.25rem;padding:0 .75rem;border-radius:999px;border:1px solid var(--an-line-2);background:var(--an-surface);color:var(--an-ink);font:inherit;font-size:.9375rem;font-weight:600;cursor:pointer}
+.an-weight.none{border-color:var(--an-amber);background:var(--an-amber-soft);color:var(--an-amber-ink)}
+@media (pointer:coarse){.an-weight{min-height:44px}.an-mk{min-height:2.25rem}}
+.an-ract{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;justify-content:flex-end}
+.an-clock{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}
+.an-clock b{font-size:1.375rem;font-weight:600;font-variant-numeric:tabular-nums}
+.an-clock span{font-size:.8125rem;color:var(--an-ink-3)}
+.an-save{font-size:.8125rem;color:var(--an-ink-3);min-width:6rem;text-align:right}
+.an-save.bad{color:var(--an-amber-ink);font-weight:600}
+
+/* ---------- tools ---------- */
+.an-tools{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:0 0 1rem}
+.an-tools .an-btn{background:var(--an-surface)}
+.an-tools .an-btn.primary{background:var(--an-accent)}
+.an-tools .sp{flex:1 1 auto}
+.an-zoom{display:inline-flex;align-items:center;gap:.5rem;color:var(--an-ink-3);font-size:.9375rem}
+
+/* ---------- body: chart + side ---------- */
+.an-body{display:grid;grid-template-columns:minmax(0,1fr) 17.5rem;gap:1rem;align-items:start}
+.an-body.insp{grid-template-columns:minmax(0,1fr) 17.5rem 22rem}
+@media (max-width:1499px){.an-body.insp{grid-template-columns:minmax(0,1fr) 17.5rem}.an-body.insp .an-side{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(20rem,1fr));gap:1rem}}
+.an-panel{background:var(--an-surface);border:1px solid var(--an-line);border-radius:var(--an-r-l)}
+.an-panel>h3{margin:0;padding:.875rem 1.125rem .5rem;font-size:1.0625rem;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.an-panel>h3 small{font-size:.8125rem;font-weight:400;color:var(--an-ink-3)}
+.an-side{display:flex;flex-direction:column;gap:1rem}
+
+/* chart */
+.an-chart{overflow-x:auto;overflow-y:hidden;border-radius:var(--an-r-l);-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.an-chart-in{position:relative;min-width:100%}
+.an-row{display:grid;grid-template-columns:var(--an-label-w) auto;border-top:1px solid var(--an-line)}
+.an-row:first-child{border-top:0}
+.an-lab{position:sticky;left:0;z-index:3;background:var(--an-surface);padding:.5rem .75rem .5rem 1rem;border-right:1px solid var(--an-line);
+  display:flex;flex-direction:column;justify-content:center;min-width:0;font-size:.9375rem;line-height:1.25}
+.an-lab b{font-weight:600;font-size:.9375rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-lab span{font-size:.75rem;color:var(--an-ink-3);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;line-height:1.25}
+.an-lab.grp{font-size:.75rem;font-weight:600;letter-spacing:.02em;color:var(--an-ink-3);padding-top:.625rem;padding-bottom:.25rem}
+.an-trk{position:relative;min-height:2.75rem}
+.an-row.grp .an-trk{min-height:1.75rem}
+.an-row.grp{background:var(--an-surface-2)}
+.an-row.grp .an-lab{background:var(--an-surface-2)}
+.an-row.time{position:sticky;top:0;z-index:4;background:var(--an-surface)}
+.an-row.time .an-trk{min-height:2.75rem}
+.an-tick{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding-left:.375rem;font-size:.8125rem;color:var(--an-ink-3);font-variant-numeric:tabular-nums;border-left:1px solid var(--an-grid-2);white-space:nowrap}
+.an-tick.hr{color:var(--an-ink);font-weight:600}
+
+/* data inside tracks */
+.an-mk{position:absolute;top:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:.25rem;min-height:1.75rem;padding:0 .5rem;
+  border-radius:999px;border:1px solid var(--an-line-2);background:var(--an-surface);color:var(--an-ink);font:inherit;font-size:.8125rem;font-weight:600;
+  font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer;z-index:2}
+.an-mk::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--c,var(--an-c-other));flex:0 0 auto}
+.an-mk:hover{border-color:var(--an-accent)}
+.an-mk.l1{top:30%}.an-mk.l2{top:70%}
+.an-mk.void{text-decoration:line-through;color:var(--an-ink-3);border-style:dashed}
+.an-mk.void::before{background:var(--an-ink-3)}
+.an-mk.nw{border-color:var(--an-amber)}
+.an-mk.ev::before{border-radius:2px;background:var(--an-ink-2)}
+.an-bar{position:absolute;top:.5rem;bottom:.5rem;border-radius:6px;background:var(--cs,var(--an-surface-3));border-left:3px solid var(--c,var(--an-c-other));display:flex;align-items:center;overflow:hidden;cursor:pointer;
+  border-top:0;border-right:0;border-bottom:0;padding:0;font:inherit;color:inherit;text-align:left}
+.an-bar.run{border-top-right-radius:0;border-bottom-right-radius:0}
+.an-bar.gas-iso{--c:var(--an-g-iso);--cs:var(--an-g-iso-s)}.an-bar.gas-sevo{--c:var(--an-g-sevo);--cs:var(--an-g-sevo-s)}
+.an-bar.gas-o2{--c:var(--an-g-o2);--cs:var(--an-g-o2-s)}
+.an-bar.void{background:transparent;border:1px dashed var(--an-line-2)}
+.an-seglab{will-change:transform;position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 .5rem;font-size:.8125rem;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--an-ink)}
+.an-seglab::before{content:"";position:absolute;left:0;top:20%;bottom:20%;border-left:1px solid var(--an-line-2)}
+.an-seglab:first-child::before,.an-seglab.slid::before{display:none}
+.an-mon{position:absolute;top:0;bottom:0;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;min-width:2.5rem;padding:0 .25rem;border:0;background:transparent;
+  font:inherit;font-size:.9375rem;font-weight:500;font-variant-numeric:tabular-nums;color:var(--an-ink);cursor:pointer;border-radius:6px}
+.an-mon:hover{background:var(--an-accent-soft)}
+.an-mon.void{text-decoration:line-through;color:var(--an-ink-3)}
+.an-mon.calc{color:var(--an-ink-3)}
+.an-now{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--an-nowline);z-index:3;pointer-events:none}
+.an-now::before{content:"";position:absolute;top:0;left:-4px;width:10px;height:10px;border-radius:50%;background:var(--an-nowline)}
+.an-evline{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--an-line-2);z-index:1;pointer-events:none}
+.an-overlay{position:absolute;top:0;bottom:0;left:var(--an-label-w);right:0;pointer-events:none}
+.an-graph{display:block}
+.an-graph text{font-family:var(--an-font);font-size:.75rem;fill:var(--an-ink-3)}
+.an-axis{position:absolute;top:0;right:.75rem;bottom:0;width:2rem}
+.an-axis i{position:absolute;right:0;transform:translateY(-50%);font-style:normal;font-size:.75rem;color:var(--an-ink-3);font-variant-numeric:tabular-nums}
+.an-legend{display:flex;flex-direction:column;gap:.125rem;font-size:.75rem;color:var(--an-ink-2)}
+.an-legend span{display:flex;align-items:center;gap:.375rem}
+.an-legend svg{width:.875rem;height:.875rem;flex:0 0 auto}
+.an-grid-bg{background-image:repeating-linear-gradient(90deg,var(--an-grid) 0 1px,transparent 1px var(--an-col)),repeating-linear-gradient(90deg,var(--an-grid-2) 0 1px,transparent 1px calc(var(--an-col)*3))}
+.an-add{position:absolute;top:50%;transform:translateY(-50%);font-size:.8125rem;color:var(--an-ink-3)}
+
+/* side panels */
+.an-tot{width:100%;border-collapse:collapse;font-size:.9375rem}
+.an-tot th{font-size:.75rem;font-weight:600;color:var(--an-ink-3);text-align:right;padding:.25rem 1rem .375rem .25rem}
+.an-tot th:first-child,.an-tot td:first-child{text-align:left;padding-left:1.125rem;white-space:normal}
+.an-tot td{white-space:nowrap;padding:.5rem 1rem .5rem .25rem;border-top:1px solid var(--an-line);text-align:right;font-variant-numeric:tabular-nums;vertical-align:top}
+.an-tot td small{display:block;font-size:.75rem;color:var(--an-ink-3)}
+.an-tot tr.flu td{color:var(--an-ink-2)}
+.an-pnote{margin:0;padding:.75rem 1.125rem 1rem;font-size:.8125rem;color:var(--an-ink-3)}
+.an-inf{list-style:none;margin:0;padding:0 0 .5rem}
+.an-inf li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.125rem .75rem;padding:.625rem 1.125rem;border-top:1px solid var(--an-line);align-items:center}
+.an-inf li b{font-weight:600;font-size:.9375rem}
+.an-inf li span{font-size:.8125rem;color:var(--an-ink-3)}
+.an-inf li .pump{grid-row:span 2;font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.an-inf li .pump small{display:block;font-size:.75rem;font-weight:400;color:var(--an-ink-3)}
+.an-hist{list-style:none;margin:0;padding:0 0 .5rem}
+.an-hist li{display:grid;grid-template-columns:4rem minmax(0,1fr);gap:.75rem;padding:.5rem 1.125rem;border-top:1px solid var(--an-line);font-size:.875rem}
+.an-hist li time{color:var(--an-ink-3);font-variant-numeric:tabular-nums}
+.an-hist li span small{display:block;color:var(--an-ink-3);font-size:.75rem}
+.an-banner{display:flex;align-items:flex-start;gap:.75rem;padding:.875rem 1.125rem;border-radius:var(--an-r-m);margin:0 0 1rem;background:var(--an-amber-soft);color:var(--an-ink);font-size:.9375rem}
+.an-banner b{color:var(--an-amber-ink)}
+.an-banner .an-btn{margin-left:auto}
+.an-banner.info{background:var(--an-accent-soft)}
+.an-banner.info b{color:var(--an-accent-ink)}
+
+/* ---------- sheets (modal) ---------- */
+.an-scrim{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.36);display:flex;align-items:center;justify-content:center;padding:1.5rem}
+body.dark .an-scrim{background:rgba(0,0,0,.56)}
+.an-sheet{width:min(36rem,100%);max-height:min(48rem,calc(100vh - 3rem));display:flex;flex-direction:column;background:var(--an-surface);color:var(--an-ink);
+  border-radius:var(--an-r-xl);box-shadow:0 24px 64px rgba(0,0,0,.24);overflow:hidden;font-family:var(--an-font)}
+.an-sheet *{box-sizing:border-box}
+.an-sh{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.5rem;padding:.5rem .5rem;border-bottom:1px solid var(--an-line)}
+.an-sh h2{margin:0;font-size:1.0625rem;font-weight:600;text-align:center}
+.an-sh .l{justify-self:start}.an-sh .r{justify-self:end}
+.an-sb{padding:1.25rem 1.5rem 1.5rem;overflow:auto;display:flex;flex-direction:column;gap:1rem}
+.an-f{display:flex;flex-direction:column;gap:.375rem;min-width:0}
+.an-f>label,.an-f>.lab{font-size:.9375rem;font-weight:600}
+.an-f .hint{font-size:.8125rem;color:var(--an-ink-3)}
+.an-f .err{font-size:.8125rem;color:var(--an-red-ink);font-weight:600}
+.an-in,.an-sel,.an-ta{width:100%;min-height:44px;padding:.5rem .875rem;border-radius:var(--an-r-m);border:1px solid var(--an-line-2);background:var(--an-surface);color:var(--an-ink);font:inherit;font-size:1.0625rem}
+.an-ta{min-height:5.5rem;resize:vertical;line-height:1.4}
+.an-in[aria-invalid="true"]{border-color:var(--an-red);background:var(--an-red-soft)}
+.an-in:focus,.an-sel:focus,.an-ta:focus{outline:2px solid var(--an-focus);outline-offset:0;border-color:transparent}
+.an-unit{display:flex;align-items:stretch;gap:.5rem}
+.an-unit .an-in{flex:1 1 auto}
+.an-unit .u{display:flex;align-items:center;padding:0 .25rem;color:var(--an-ink-3);font-size:1rem;white-space:nowrap}
+.an-two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.an-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem 1rem}
+@media (max-width:560px){.an-two{grid-template-columns:1fr}.an-three{grid-template-columns:1fr 1fr}}
+.an-chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.an-chip{min-height:44px;padding:0 1rem;border-radius:999px;border:1px solid var(--an-line-2);background:var(--an-surface);color:var(--an-ink);font:inherit;font-size:.9375rem;font-weight:500;cursor:pointer}
+.an-chip[aria-pressed="true"]{background:var(--an-accent-soft);border:2px solid var(--an-accent-ink);color:var(--an-accent-ink);font-weight:600}
+.an-calc{padding:.875rem 1rem;border-radius:var(--an-r-m);background:var(--an-surface-2);font-size:1rem}
+.an-calc b{font-size:1.375rem;font-weight:700;font-variant-numeric:tabular-nums;display:block}
+.an-calc span{font-size:.8125rem;color:var(--an-ink-3)}
+.an-calc.warn{background:var(--an-amber-soft)}
+.an-calc.warn b{font-size:1.0625rem;color:var(--an-amber-ink)}
+.an-check{display:flex;gap:.75rem;align-items:flex-start;min-height:44px;padding:.625rem .75rem;border-radius:var(--an-r-m);border:1px solid var(--an-amber);background:var(--an-amber-soft);font-size:.9375rem;cursor:pointer}
+.an-check input{width:1.375rem;height:1.375rem;margin:0;flex:0 0 auto;accent-color:var(--an-accent-ink)}
+.an-time{display:flex;gap:.5rem;align-items:center}
+.an-time .an-in{max-width:10rem}
+.an-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.5rem 1rem;margin:0;font-size:.9375rem}
+.an-dl dt{color:var(--an-ink-3)}
+.an-dl dd{margin:0;font-weight:500}
+.an-sheet .formerr{color:var(--an-red-ink);font-size:.9375rem;font-weight:600}
+
+/* toast */
+.an-toast{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);z-index:1100;max-width:min(32rem,calc(100vw - 2rem));padding:.75rem 1.125rem;border-radius:var(--an-r-m);
+  background:#1D1D1F;color:#F5F5F7;font-family:var(--an-font);font-size:.9375rem;box-shadow:0 8px 24px rgba(0,0,0,.24)}
+body.dark .an-toast{background:#E6EEF6;color:#0A1222}
+
+/* gate */
+.an-gate{max-width:28rem;margin:4rem auto;padding:2rem;text-align:center;background:var(--an-surface);border:1px solid var(--an-line);border-radius:var(--an-r-xl)}
+.an-gate h1{margin:0 0 .5rem;font-size:1.375rem;font-weight:700}
+.an-gate p{margin:0 0 1.25rem;color:var(--an-ink-3);font-size:1rem}
+
+/* smaller screens */
+@media (max-width:900px){.an{padding:1rem 1rem 3rem}.an-rhead{grid-template-columns:minmax(0,1fr) auto;gap:.5rem 1rem}.an-back{grid-column:1/-1;justify-self:start;margin-left:-.5rem}.an-ract{grid-column:1/-1;justify-content:space-between}}
+@media (max-width:760px){.an-body,.an-body.insp{grid-template-columns:minmax(0,1fr)}.an-nowcol{order:-1;position:static;max-height:none}.an-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.an-body.insp .an-side{display:flex}}
+@media (max-width:600px){
+  :root,body{--an-label-w:7.5rem}
+  .an-lhead h1{font-size:1.75rem}
+  .an-tools .an-btn .t{display:none}.an-tools .an-btn{width:44px;padding:0}
+  .an-tools .an-btn.primary .t{display:inline}.an-tools .an-btn.primary{width:auto;padding:0 1rem}
+  .an-scrim{align-items:flex-end;padding:0}
+  .an-sheet{width:100%;max-height:92vh;border-radius:var(--an-r-xl) var(--an-r-xl) 0 0}
+  .an-list{grid-template-columns:1fr}
+  .an-tot td,.an-tot th{padding-right:.625rem;padding-left:.25rem}.an-tot td:first-child{overflow-wrap:anywhere}
+}
+@media (prefers-reduced-motion:reduce){.an *,.an-sheet *{transition:none!important;animation:none!important}}
+@media (prefers-contrast:more){:root,body{--an-line:rgba(29,29,31,.28);--an-line-2:rgba(29,29,31,.44)}body.dark{--an-line:rgba(200,220,240,.34);--an-line-2:rgba(200,220,240,.5)}}
+@media print{#pvxTopnav,.an-tools,.an-back,.an-save{display:none!important}.an-chart{overflow:visible}body{background:#fff}}
+
+/* ===== n152 ===== */
+/* header: the name and the weight are the two facts that matter */
+.an-info{display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;margin:-.375rem 0;border:0;border-radius:50%;background:transparent;color:var(--an-accent-ink);cursor:pointer;flex:0 0 auto}
+.an-info:hover{background:var(--an-accent-soft)}
+.an-info svg{width:1.375rem;height:1.375rem;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round}
+.an-id .sub{align-items:center}
+.an-wbig{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:.125rem;min-height:3.5rem;padding:.375rem 1rem;border-radius:var(--an-r-m);border:1px solid var(--an-line-2);background:var(--an-surface);color:var(--an-ink);font:inherit;cursor:pointer;text-align:left}
+.an-wbig:hover{border-color:var(--an-accent)}
+.an-wbig b{font-family:var(--an-display);font-size:1.75rem;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums}
+.an-wbig b span{font-size:1.0625rem;font-weight:600;color:var(--an-ink-2)}
+.an-wbig small{font-size:.8125rem;color:var(--an-ink-3)}
+.an-wbig.none{border-color:var(--an-amber);background:var(--an-amber-soft)}
+.an-wbig.none b{font-size:1.25rem;color:var(--an-amber-ink)}
+.an-wbig.none small{color:var(--an-amber-ink)}
+.an-wbig[disabled]{cursor:default}
+/* toolbar */
+.an-btn.sm{min-height:36px;padding:0 .75rem;font-size:.9375rem}
+.an-btn{position:relative}
+.an-dot{position:absolute;top:6px;right:6px;width:.625rem;height:.625rem;border-radius:50%;background:var(--an-amber);box-shadow:0 0 0 2px var(--an-accent)}
+.an-zoomseg{margin:0}
+.an-zoomseg button{min-width:4.5rem}
+.an-tools .an-btn[aria-pressed="true"]{background:var(--an-accent-soft);border-color:var(--an-accent);color:var(--an-accent-ink)}
+/* the Now column */
+.an-nowcol{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow:auto;background:var(--an-surface);border:1px solid var(--an-line);border-radius:var(--an-r-l);padding:.75rem .75rem 1rem}
+.an-nh{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.125rem .25rem .625rem}
+.an-nh h3{margin:0;font-size:1.25rem;font-weight:700;font-family:var(--an-display)}
+.an-nt{font-size:.9375rem;color:var(--an-ink-3);font-variant-numeric:tabular-nums}
+.an-nowcol h4{margin:1rem .25rem .375rem;font-size:.8125rem;font-weight:600;color:var(--an-ink-3)}
+.an-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
+.an-tile{display:flex;flex-direction:column;align-items:flex-start;gap:.125rem;min-height:5.5rem;padding:.625rem .75rem;border-radius:var(--an-r-m);border:1px solid var(--an-line);background:var(--an-surface-2);color:var(--an-ink);font:inherit;text-align:left;cursor:pointer;min-width:0}
+.an-tile:hover{border-color:var(--an-accent)}
+.an-tile[disabled]{cursor:default}
+.an-tile .k{font-size:.8125rem;font-weight:600;color:var(--an-ink-2)}
+.an-tile .k i{font-style:normal;font-weight:400;color:var(--an-ink-3)}
+.an-tile .v{font-family:var(--an-display);font-size:1.875rem;line-height:1.1;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.an-tile .v small{font-size:1rem;font-weight:500;color:var(--an-ink-2)}
+.an-tile .f{display:flex;align-items:center;justify-content:space-between;gap:.25rem;width:100%;font-size:.75rem;color:var(--an-ink-3)}
+.an-tile.stale .v{color:var(--an-ink-3)}
+.an-spark{color:var(--an-ink-3);flex:0 1 auto;max-width:55%}
+.an-nlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.375rem}
+.an-nrow{display:flex;align-items:center;justify-content:space-between;gap:.75rem;width:100%;min-height:44px;padding:.375rem .75rem;border-radius:var(--an-r-m);border:1px solid var(--an-line);background:var(--an-surface-2);color:var(--an-ink);font:inherit;font-size:.9375rem;text-align:left;cursor:pointer}
+.an-nrow:hover{border-color:var(--an-accent)}
+.an-nrow[disabled]{cursor:default}
+.an-nrow span{display:flex;flex-direction:column;min-width:0}
+.an-nrow span small{font-size:.75rem;color:var(--an-ink-3)}
+.an-nrow b{font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.an-nrow b i{font-style:normal;font-size:.8125rem;font-weight:400;color:var(--an-ink-3)}
+/* vitals typed in the Now column */
+.an-vform{display:flex;flex-direction:column;gap:.625rem}
+.an-vgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
+.an-vf{display:flex;flex-direction:column;gap:.25rem;min-width:0}
+.an-vf span{font-size:.8125rem;font-weight:600}
+.an-vf span i{font-style:normal;font-weight:400;color:var(--an-ink-3)}
+.an-vf .an-in{font-size:1.25rem;font-weight:600;padding:.375rem .625rem}
+.an-vf .err{font-style:normal;font-size:.75rem;color:var(--an-red-ink);font-weight:600}
+.an-vf .err:empty{display:none}
+.an-vwhen{display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:.9375rem;color:var(--an-ink-2)}
+.an-vacts{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.an-vacts .sp{flex:1 1 auto}
+.an-vform .formerr{margin:0;font-size:.8125rem;color:var(--an-red-ink);font-weight:600}
+.an-vform .formerr:empty{display:none}
+/* drugs with an infusion and boluses share a row: boluses above the bar */
+.an-trk.both .an-bar{top:2.375rem;bottom:.375rem}
+.an-trk.both .an-mk{top:1.2rem}
+/* blood pressure on one row */
+.an-mon.bp{flex-direction:column;line-height:1.15;min-width:3.5rem}
+.an-mon.bp small{font-size:.75rem;color:var(--an-ink-2);font-weight:500}
+.an-mon.bp small.calc{color:var(--an-ink-3)}
+.an-empty-t{position:absolute;left:1rem;top:50%;transform:translateY(-50%);font-size:.9375rem;color:var(--an-ink-3);position:sticky}
+/* one-line "Now · Change" rows in sheets */
+.an-tline{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:44px;padding:.25rem .25rem .25rem .875rem;border-radius:var(--an-r-m);background:var(--an-surface-2);font-size:1rem}
+.an-tline b{font-weight:600}
+[data-tbox] .lab{display:block;font-size:.9375rem;font-weight:600;margin-bottom:.375rem}
+[data-rbox]{display:flex;flex-direction:column;gap:1rem}
+/* toast with Undo */
+.an-toast{display:flex;align-items:center;gap:1rem}
+.an-toast[hidden]{display:none}
+.an-tbtn{min-height:36px;padding:0 .75rem;margin:-.375rem -.5rem -.375rem 0;border:0;border-radius:8px;background:transparent;color:#6FD3E4;font:inherit;font-weight:700;cursor:pointer}
+body.dark .an-tbtn{color:#0F6B82}
+.an-tbtn:focus-visible{outline:2px solid currentColor}
+/* warning banners read as amber in dark mode, not olive */
+body.dark .an-banner{background:#1B2233;box-shadow:inset 3px 0 0 var(--an-amber)}
+body.dark .an-banner.info{background:#13233A;box-shadow:inset 3px 0 0 var(--an-accent)}
+body.dark .an-calc.warn{background:#1B2233;box-shadow:inset 3px 0 0 var(--an-amber)}
+@media (pointer:coarse){.an-btn.sm,.an-tbtn{min-height:44px}.an-info{width:44px;height:44px}.an-mon{min-width:3rem}}
+@media (max-width:600px){.an-zoomseg button{min-width:3.25rem;padding:0 .5rem}.an-wbig b{font-size:1.375rem}}
+
+/* n152 polish */
+.an-id .sub{flex-wrap:nowrap}
+.an-id .sub>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-tile[data-vk="bp"],.an-tile[data-vk="temp"]{grid-column:span 2}
+.an-tile .f{white-space:nowrap}
+.an-nowcol .an-inf li{display:block;padding:0;border:0}
+
+/* ===== n153 motion — short, purposeful, transform and opacity only (60 fps); none with Reduce Motion ===== */
+:root{--an-ease:cubic-bezier(.32,.72,0,1);--an-ease-out:cubic-bezier(.4,0,1,1)}
+@keyframes anFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes anFadeOut{from{opacity:1}to{opacity:0}}
+@keyframes anRise{from{opacity:0;transform:translateY(20px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes anSink{from{opacity:1;transform:none}to{opacity:0;transform:translateY(12px) scale(.99)}}
+@keyframes anUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes anDown{from{transform:none}to{transform:translateY(100%)}}
+@keyframes anPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}70%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}100%{transform:translate(-50%,-50%) scale(1)}}
+@keyframes anGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes anMon{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translateX(-50%)}}
+@keyframes anToast{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes anSlideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes anFlash{0%{opacity:1}100%{opacity:0}}
+/* sheets rise in and ease out (from the bottom on phones) */
+.an-scrim{animation:anFadeIn .2s ease-out both}
+.an-scrim .an-sheet{animation:anRise .32s var(--an-ease) both}
+.an-scrim.out{animation:anFadeOut .16s ease-in both;pointer-events:none}
+.an-scrim.out .an-sheet{animation:anSink .16s var(--an-ease-out) both}
+@media (max-width:600px){.an-scrim .an-sheet{animation:anUp .36s var(--an-ease) both}.an-scrim.out .an-sheet{animation:anDown .2s var(--an-ease-out) both}}
+/* the toast slides up */
+.an-toast.in{animation:anToast .28s var(--an-ease) both}
+/* what you just charted appears in place */
+.an-mk.fresh{animation:anPop .32s var(--an-ease) both}
+.an-mk.l1.fresh,.an-mk.l2.fresh{animation:none}
+.an-bar.fresh{transform-origin:left center;animation:anGrow .36s var(--an-ease) both}
+.an-mon.fresh{animation:anMon .28s var(--an-ease) both}
+/* a new reading flashes its tile once */
+.an-tile{position:relative;overflow:hidden}
+.an-tile.chg::after{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--an-accent-soft);pointer-events:none;animation:anFlash .9s ease-out both;animation-delay:calc(var(--an-flash-d,0ms) * -1)}
+/* panels that open on request */
+.an-vform.opening{animation:anFadeIn .2s ease-out both}
+.an-side.opening{animation:anSlideIn .26s var(--an-ease) both}
+.an-banner{animation:anFadeIn .2s ease-out both}
+@media (prefers-reduced-motion:reduce){.an-scrim,.an-scrim .an-sheet,.an-scrim.out,.an-scrim.out .an-sheet,.an-toast.in,.an-tile.chg::after{animation:none!important}}
+.an-sheet .formerr:empty{display:none}
+
+/* ===== n154 colour roles =====
+   Pravix cyan = something you can tap (filled main buttons, links, selected chips, focus). Nothing else is cyan.
+   Each vital has one colour, matching the anesthesia monitor, used on its key, its graph marks and its trend line; numbers stay ink.
+   Agents follow the vaporizer colours; drugs the ISO 26825 syringe-label classes (as a dot or an edge only).
+   Red is kept for alarms (none yet); amber for "needs attention". Shapes and labels always carry the meaning too.
+   Every colour is at least 3:1 against its surface in both modes (non-text contrast). */
+:root,body{
+  --an-hr:#1E8E3E; --an-bp:#D1355B; --an-spo2:#1F6FD1; --an-co2:#946F00; --an-temp:#6E6E73;
+  --an-g-iso:#8B4DB5; --an-g-iso-s:rgba(139,77,181,.16); --an-g-sevo:#946F00; --an-g-sevo-s:rgba(148,111,0,.14); --an-g-o2:#1E8E3E; --an-g-o2-s:rgba(30,142,62,.13);
+  --an-c-induction:#946F00; --an-c-opioid:#0A66C2; --an-c-benzo:#B85C00; --an-c-vaso:#8E3FBF; --an-c-local:#6E6E73; --an-c-anticho:#1E8E3E; --an-c-antiemetic:#C8553D; --an-c-other:#6E6E73; --an-c-fluid:#86868B;
+  --an-c-induction-s:rgba(148,111,0,.13); --an-c-opioid-s:rgba(10,102,194,.12); --an-c-benzo-s:rgba(184,92,0,.12); --an-c-vaso-s:rgba(142,63,191,.12); --an-c-local-s:rgba(110,110,115,.12); --an-c-anticho-s:rgba(30,142,62,.12); --an-c-antiemetic-s:rgba(200,85,61,.12); --an-c-other-s:rgba(110,110,115,.12); --an-c-fluid-s:rgba(134,134,139,.13);
+  --an-nowline:rgba(29,29,31,.55);
+}
+body.dark{
+  --an-hr:#30D158; --an-bp:#FF6F91; --an-spo2:#64A8FF; --an-co2:#FFD60A; --an-temp:#C3D0DE;
+  --an-g-iso:#BF8CF0; --an-g-iso-s:rgba(191,140,240,.20); --an-g-sevo:#FFD60A; --an-g-sevo-s:rgba(255,214,10,.15); --an-g-o2:#30D158; --an-g-o2-s:rgba(48,209,88,.16);
+  --an-c-induction:#FFD60A; --an-c-opioid:#4DA3FF; --an-c-benzo:#FF9F0A; --an-c-vaso:#BF5AF2; --an-c-local:#A1A1AA; --an-c-anticho:#30D158; --an-c-antiemetic:#FF8A73; --an-c-other:#8FA6BE; --an-c-fluid:#8FA6BE;
+  --an-c-induction-s:rgba(255,214,10,.14); --an-c-opioid-s:rgba(77,163,255,.18); --an-c-benzo-s:rgba(255,159,10,.16); --an-c-vaso-s:rgba(191,90,242,.18); --an-c-local-s:rgba(161,161,170,.16); --an-c-anticho-s:rgba(48,209,88,.15); --an-c-antiemetic-s:rgba(255,138,115,.16); --an-c-other-s:rgba(143,166,190,.15); --an-c-fluid-s:rgba(143,166,190,.15);
+  --an-nowline:rgba(230,238,246,.62);
+}
+.c-induction{--c:var(--an-c-induction);--cs:var(--an-c-induction-s)} .c-opioid{--c:var(--an-c-opioid);--cs:var(--an-c-opioid-s)}
+.c-benzo{--c:var(--an-c-benzo);--cs:var(--an-c-benzo-s)} .c-vaso{--c:var(--an-c-vaso);--cs:var(--an-c-vaso-s)}
+.c-local{--c:var(--an-c-local);--cs:var(--an-c-local-s)} .c-anticho{--c:var(--an-c-anticho);--cs:var(--an-c-anticho-s)}
+.c-antiemetic{--c:var(--an-c-antiemetic);--cs:var(--an-c-antiemetic-s)} .c-other{--c:var(--an-c-other);--cs:var(--an-c-other-s)} .c-fluid{--c:var(--an-c-fluid);--cs:var(--an-c-fluid-s)}
+.v-hr{--k:var(--an-hr)} .v-bp{--k:var(--an-bp)} .v-spo2{--k:var(--an-spo2)} .v-etco2,.v-rr{--k:var(--an-co2)} .v-temp{--k:var(--an-temp)}
+.g-iso{--k:var(--an-g-iso)} .g-sevo{--k:var(--an-g-sevo)} .g-o2{--k:var(--an-g-o2)}
+/* a key: the label in ink, led by a short bar in the vital's colour */
+.an-key{display:inline-flex;align-items:center;gap:.4rem}
+.an-key::before{content:"";width:.25rem;height:.875rem;border-radius:2px;background:var(--k,var(--an-ink-3));flex:0 0 auto}
+.an-spark[class*="v-"]{color:var(--k)}
+.an-cdot{display:inline-block;width:.5rem;height:.5rem;border-radius:50%;background:var(--c,var(--an-c-other));margin-right:.45rem;vertical-align:middle;flex:0 0 auto;font-style:normal}
+.an-chip .an-cdot{margin-right:.4rem}
+.an-chip[aria-pressed="true"] .an-cdot{box-shadow:none}
+.an-dn{font-style:normal;display:flex;align-items:center}
+.an-lab b{display:flex;align-items:center}
+.an-tot td .an-cdot{margin-right:.5rem}
+.an-nrow span.an-key{flex-direction:row;align-items:center}
+
+/* ===== n155 — HIG audit fixes ===== */
+/* Dynamic Type: on iPad and iPhone Safari the system text size drives the rem scale */
+@supports (font: -apple-system-body) { @media (pointer: coarse) { html { font: -apple-system-body; } body { font-family: var(--an-font); } } }
+/* safe areas (Home Screen, notch, home indicator) */
+body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.an-toast{bottom:calc(1.5rem + env(safe-area-inset-bottom))}
+@media (max-width:600px){.an-sheet{padding-bottom:env(safe-area-inset-bottom)}}
+/* the toolbar's selected state and pressed states that show on touch screens too */
+.an-chip:active,.an-card:active,.an-tile:active,.an-nrow:active,.an-mk:active,.an-mon:active,.an-bar:active,.an-weight:active,.an-wbig:active,.an-info:active,.an-seg button:active{filter:brightness(.92)}
+body.dark .an-chip:active,body.dark .an-card:active,body.dark .an-tile:active,body.dark .an-nrow:active,body.dark .an-mk:active,body.dark .an-mon:active,body.dark .an-bar:active,body.dark .an-wbig:active,body.dark .an-seg button:active{filter:brightness(1.18)}
+@media (prefers-reduced-motion:no-preference){.an-card:active,.an-tile:active,.an-chip:active{transform:scale(.98)}}
+/* chart targets: at least 44 pt to touch, whatever their size on screen */
+.an-mk::after,.an-mon::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:44px;transform:translate(-50%,-50%)}
+.an-lab{box-shadow:4px 0 6px -4px rgba(0,0,0,.25)}
+body.dark .an-lab{box-shadow:4px 0 8px -4px rgba(0,0,0,.6)}
+/* the destructive style: strike-through and discard */
+.an-btn.destr{background:#D92B22;border-color:#D92B22;color:#fff}
+.an-btn.destr:hover{background:#C2241C;border-color:#C2241C}
+.an-btn[disabled].primary{opacity:.4}
+/* "Discard your changes?" inside the sheet */
+.an-discard{display:flex;flex-direction:column;gap:.375rem;margin:.75rem 1.5rem 0;padding:1rem;border-radius:var(--an-r-m);background:var(--an-surface-2);box-shadow:inset 3px 0 0 #D92B22}
+.an-discard[hidden]{display:none}
+.an-discard b{font-size:1.0625rem}
+.an-discard span{font-size:.9375rem;color:var(--an-ink-3)}
+.an-discard div{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.5rem}
+.an-vdiscard{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.625rem .75rem;border-radius:var(--an-r-m);background:var(--an-surface-2);box-shadow:inset 3px 0 0 #D92B22;font-size:.9375rem;font-weight:600}
+.an-vdiscard[hidden]{display:none}
+.an-vdiscard span{flex:1 1 100%}
+/* phones: a grabber; the sheet follows the finger */
+.an-grab{display:none}
+@media (max-width:600px){.an-grab{display:block;width:2.25rem;height:.3125rem;border-radius:3px;background:var(--an-line-2);margin:.5rem auto -.25rem}}
+/* popovers beside what was tapped (wide screens) */
+.an-scrim.pop{background:transparent;display:block;padding:0}
+.an-scrim.pop .an-sheet{position:fixed;max-height:min(30rem,calc(100vh - 2rem));box-shadow:0 12px 40px rgba(0,0,0,.28),0 0 0 1px var(--an-line-2)}
+body.dark .an-scrim.pop .an-sheet{box-shadow:0 12px 40px rgba(0,0,0,.6),0 0 0 1px var(--an-line-2)}
+/* loading */
+.an-loading{display:flex;align-items:center;justify-content:center;gap:.75rem;min-height:40vh;color:var(--an-ink-3);font-size:1.0625rem}
+.an-spin{width:1.25rem;height:1.25rem;border-radius:50%;border:2.5px solid var(--an-line-2);border-top-color:var(--an-ink-2);animation:anSpin .9s linear infinite}
+@keyframes anSpin{to{transform:rotate(360deg)}}
+.an-skel{display:flex;flex-direction:column;gap:.625rem;padding:1.25rem;border-radius:var(--an-r-l);border:1px solid var(--an-line);background:var(--an-surface);min-height:8.5rem}
+.an-skel i{display:block;height:.875rem;border-radius:6px;background:var(--an-surface-3)}
+.an-skel i:nth-child(1){width:55%;height:1.125rem}.an-skel i:nth-child(2){width:80%}.an-skel i:nth-child(3){width:40%}
+@media (prefers-reduced-motion:no-preference){.an-skel i{animation:anFadeIn 1.2s ease-in-out infinite alternate}}
+@media (prefers-reduced-motion:reduce){.an-spin{animation:none;border-top-color:var(--an-line-2)}}
+/* toast: Undo/Redo and a dismiss button */
+.an-tx{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;margin:-.375rem -.625rem -.375rem -.5rem;border:0;border-radius:8px;background:transparent;color:inherit;opacity:.7;cursor:pointer}
+.an-tx svg{width:1rem;height:1rem;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round}
+@media (pointer:coarse){.an-tx{width:44px;height:44px}}
+/* the Now column: sticky only when it fits — no scrolling inside the page */
+.an-nowcol{max-height:none;overflow:visible}
+.an-nowcol.tall{position:static}
+.an-nh h2{margin:0;font-size:1.25rem;font-weight:700;font-family:var(--an-display)}
+.an-nowcol h3{margin:1rem .25rem .375rem;font-size:.8125rem;font-weight:600;color:var(--an-ink-3)}
+/* boxes in a box: tiles and rows rely on fill alone */
+.an-tile,.an-nrow{border-color:transparent}
+/* Apple Pencil / touch: wider vitals boxes while typing */
+@media (pointer:coarse) and (min-width:761px){.an-body:has(.an-vform){grid-template-columns:minmax(0,1fr) 21rem}.an-body.insp:has(.an-vform){grid-template-columns:minmax(0,1fr) 21rem}}
+/* units on the graph axis, presence, history, tips */
+.an-units{font-weight:600;color:var(--an-ink-3);margin-bottom:.125rem}
+.an-pres{background:var(--an-surface-2);color:var(--an-ink-2);font-weight:500}
+.an-more{margin:0 .625rem .75rem}
+[data-dfind]{margin-bottom:.5rem}
+.an-vh-focus:focus{outline:none}
+h3[tabindex="-1"]:focus{outline:none}
+/* print: the whole record on paper */
+@media print{
+  @page{size:landscape;margin:12mm}
+  body{background:#fff!important;color:#000}
+  #pvxTopnav,#pvxSubnav,.an-tools,.an-back,.an-save,.an-toast,#anShare,#anPrint,.an-tips,.an-banner .an-btn,.an-info,#anEnd,#anSign,#anAdd,#anStart{display:none!important}
+  .an{padding:0;max-width:none}
+  .an-body,.an-body.insp{display:block}
+  .an-chartp{overflow:hidden;break-inside:auto}
+  .an-chart{overflow:hidden!important}
+  .an-lab{position:static;box-shadow:none}
+  .an-nowcol{position:static;margin-top:1rem;break-inside:avoid}
+  .an-side{display:block!important;margin-top:1rem}
+  .an-panel,.an-tile,.an-nrow{box-shadow:none}
+  .an-now{display:none}
+  .an-hist li{break-inside:avoid}
+}
+.an-print-only{display:none!important}
+@media print{.an-print-only{display:block!important}}
+.an-id .sub>span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+@media (pointer:coarse){.an-kb{display:none}}
+@media print{.an-nowcol,#anHistAll{display:none!important}.an-lab b,.an-lab span{color:#000}}
+
+/* ===== n156 button styles (HIG): filled · tinted · gray · plain — no outlines =====
+   Filled cyan: the one main action of a screen. Tinted: secondary actions to find quickly. Gray: everyday actions.
+   Plain: navigation and dismissal. Destructive: red. Pressed: a soft darken, never a colour jump.
+   Shapes: 12 px rounded rectangles for buttons, concentric 10 px segments inside 12 px controls, capsules for chips,
+   circles for icon-only buttons. */
+:root,body{--an-fill:rgba(118,118,128,.12);--an-fill-2:rgba(118,118,128,.18);--an-seg-on:#FFFFFF}
+body.dark{--an-fill:rgba(118,118,128,.24);--an-fill-2:rgba(118,118,128,.32);--an-seg-on:#3A4A66}
+.an-btn{border:0;background:var(--an-fill);color:var(--an-ink);transition:background-color .15s ease,filter .15s ease,opacity .15s ease}
+.an-btn:hover{background:var(--an-fill-2)}
+.an-btn:active{background:var(--an-fill-2);filter:brightness(.94)}
+body.dark .an-btn:active{filter:brightness(1.15)}
+.an-btn.primary{background:var(--an-accent);color:var(--an-on-accent)}
+.an-btn.primary:hover{background:#2FB0C4}
+.an-btn.primary:active{filter:brightness(.92)}
+.an-btn.tinted{background:var(--an-accent-soft);color:var(--an-accent-ink)}
+.an-btn.tinted:hover{background:rgba(56,189,210,.22)}
+.an-btn.plain{background:transparent;color:var(--an-accent-ink)}
+.an-btn.plain:hover{background:var(--an-accent-soft)}
+.an-btn.plain.strong{font-weight:700}
+.an-btn.danger{background:var(--an-red-soft);color:var(--an-red-ink)}
+.an-btn.danger:hover{background:rgba(217,43,34,.16)}
+.an-btn.destr{background:#D92B22;color:#fff}
+.an-btn.icon{border-radius:50%}
+.an-btn[disabled],.an-btn[aria-disabled="true"]{opacity:.4;filter:none}
+.an-tools .an-btn{background:var(--an-fill)}
+.an-tools .an-btn.primary{background:var(--an-accent)}
+.an-tools .an-btn[aria-pressed="true"]{background:var(--an-accent-soft);color:var(--an-accent-ink)}
+/* the charting tools: one joined control */
+.an-group{display:inline-flex;align-items:stretch;border-radius:var(--an-r-m);background:var(--an-fill);overflow:hidden}
+.an-group .an-btn{background:transparent;border-radius:0;position:relative}
+.an-group .an-btn:hover{background:var(--an-fill)}
+.an-group .an-btn+.an-btn::before{content:"";position:absolute;left:0;top:25%;bottom:25%;width:1px;background:var(--an-line-2)}
+.an-group .an-btn:focus-visible{outline-offset:-3px;border-radius:var(--an-r-m)}
+@media (max-width:600px){.an-group .an-btn{width:44px;padding:0}}
+/* segmented controls: a raised segment in a gray track */
+.an-seg{padding:2px;border-radius:var(--an-r-m);background:var(--an-fill);gap:0}
+.an-seg button{border-radius:10px;font-weight:500;color:var(--an-ink);transition:background-color .15s ease}
+.an-seg button[aria-checked="true"],.an-seg button[aria-selected="true"]{background:var(--an-seg-on);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+body.dark .an-seg button[aria-checked="true"],body.dark .an-seg button[aria-selected="true"]{box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.an-zoomseg{min-height:44px}
+.an-zoomseg button{min-height:40px}
+@media (pointer:coarse){.an-zoomseg button,.an-seg button{min-height:44px}}
+/* chips: gray capsules; the chosen one tinted with a strong edge */
+.an-chip{border:2px solid transparent;background:var(--an-fill)}
+.an-chip:hover{background:var(--an-fill-2)}
+/* the weight control: a gray card, amber when missing */
+.an-wbig{border:0;background:var(--an-fill)}
+.an-wbig:hover{background:var(--an-fill-2)}
+.an-wbig.none{background:var(--an-amber-soft);box-shadow:inset 0 0 0 1.5px var(--an-amber)}
+/* steppers: round */
+[data-step]{border-radius:50%!important}
+/* plain small buttons keep a comfortable hit area */
+.an-btn.plain.sm{padding:0 .625rem}
+@media print{.an-btn{background:none!important}}
+
+/* ===== n157 — matched to Apple's button reference (Daniel's images, 16 Oct) =====
+   Medium buttons (44 pt) are capsules; gray and tinted buttons carry the tint colour in their label, as Apple's do;
+   checkboxes become iOS switches; segmented controls and the joined toolbar are capsules too. */
+.an-btn,.an-group,.an-seg,.an-zoomseg{border-radius:999px}
+.an-seg button,.an-zoomseg button{border-radius:999px}
+.an-group .an-btn{border-radius:0}
+.an-group .an-btn:first-child{border-radius:999px 0 0 999px}
+.an-group .an-btn:last-child{border-radius:0 999px 999px 0}
+.an-group .an-btn:focus-visible{border-radius:999px}
+.an-btn{padding:0 1.25rem}
+.an-btn.sm{padding:0 .875rem}
+.an-btn.icon{padding:0}
+/* gray buttons: gray fill, tint-coloured label and icon */
+.an-btn:not(.primary):not(.tinted):not(.plain):not(.danger):not(.destr){color:var(--an-accent-ink)}
+.an-tools .an-btn:not(.primary){color:var(--an-accent-ink)}
+.an-wbig{color:var(--an-ink)}
+/* the big weight card and the record cards stay rounded rectangles (content, not buttons) */
+.an-wbig{border-radius:var(--an-r-l)}
+/* iOS switch */
+.an-switch{appearance:none;-webkit-appearance:none;position:relative;flex:0 0 auto;width:51px!important;height:31px!important;margin:0 0 0 auto!important;border-radius:999px;background:rgba(120,120,128,.32);cursor:pointer;transition:background-color .2s ease;order:2}
+body.dark .an-switch{background:rgba(120,120,128,.36)}
+.an-switch::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 3px 1px rgba(0,0,0,.06);transition:transform .25s cubic-bezier(.32,.72,0,1)}
+.an-switch:checked{background:#34C759}
+body.dark .an-switch:checked{background:#30D158}
+.an-switch:checked::after{transform:translateX(20px)}
+.an-switch:focus-visible{outline:2px solid var(--an-focus);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.an-switch,.an-switch::after{transition:none}}
+@media (forced-colors:active){.an-switch{border:1px solid CanvasText}.an-switch:checked::after{background:CanvasText}}
+.an-check{align-items:center;justify-content:space-between}
+.an-check:has(.an-switch){padding:.5rem .75rem .5rem 1rem}
+/* ===== n157 — Figma: Apple Health UI Kit (file IirsDixOemqmi6EmjDPdjy) =====
+   Now tiles follow the kit's health widget (47:1595): a white card on the grouped gray, a coloured tag
+   (18 pt glyph + Semibold label), a chevron, the value in SF Pro Rounded Bold with its unit beside it in gray.
+   Segmented controls follow the kit's picker (29:559). Pravix monitor colours stay; units use our --an-ink-3 (#848484 is under 4.5:1). */
+:root,body{--an-rounded:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif}
+.an-nowcol{background:var(--an-surface-2);border-color:transparent}
+body.dark .an-nowcol{background:var(--an-surface)}
+.an-tiles{gap:.625rem}
+.an-tile,.an-nowcol .an-nrow{background:var(--an-surface);border:0}
+body.dark .an-tile,body.dark .an-nowcol .an-nrow{background:var(--an-surface-3)}
+.an-tile{gap:.5rem;padding:.75rem .875rem .625rem;border-radius:10px;min-height:0;justify-content:space-between}
+.an-tile:hover{background:var(--an-surface);box-shadow:0 0 0 1.5px var(--an-accent)}
+body.dark .an-tile:hover{background:var(--an-surface-3)}
+.an-tile[disabled]:hover{box-shadow:none}
+.an-tile .hd{display:flex;align-items:center;justify-content:space-between;gap:.25rem;width:100%;min-width:0}
+.an-tile .tag{display:inline-flex;align-items:center;gap:2px;min-width:0;font-family:var(--an-display);font-size:1rem;line-height:1.25;font-weight:600;color:var(--k,var(--an-ink-2));white-space:nowrap}
+.an-tile .an-vi{flex:0 0 18px;width:18px;height:18px}
+.an-tile .an-chev{flex:0 0 18px;width:18px;height:18px;color:var(--an-ink-3);opacity:.7}
+.an-tile .v{display:flex;align-items:flex-end;gap:4px;flex-wrap:wrap;font-family:var(--an-rounded);line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums}
+.an-tile .v b{font-size:1.75rem;font-weight:700;letter-spacing:.01em}
+.an-tile .v small{padding-bottom:2px;font-size:.875rem;font-weight:700;color:var(--an-ink-3);white-space:nowrap}
+.an-tile .v.nd{font-size:1.25rem;color:var(--an-ink-3);min-height:1.925rem;align-items:center}
+.an-tile .f{font-size:.875rem;color:var(--an-ink-3)}
+.an-tile.stale .v b{color:var(--an-ink-3)}
+/* segmented picker */
+.an-seg,.an-zoomseg{display:inline-flex;align-items:stretch;padding:4px;gap:4px;border-radius:8px;background:var(--an-fill);min-height:0}
+.an-seg button,.an-zoomseg button{position:relative;min-height:36px;padding:0 .875rem;border:.5px solid transparent;border-radius:6.93px;font-size:.8125rem;font-weight:500;letter-spacing:-.005em;color:var(--an-ink);box-shadow:none}
+.an-seg button+button::before{content:"";position:absolute;left:-2.5px;top:25%;bottom:25%;width:1px;background:rgba(60,60,67,.36);transition:opacity .15s ease}
+body.dark .an-seg button+button::before{background:rgba(235,235,245,.24)}
+.an-seg button[aria-checked="true"]::before,.an-seg button[aria-checked="true"]+button::before,
+.an-seg button[aria-selected="true"]::before,.an-seg button[aria-selected="true"]+button::before{opacity:0}
+.an-seg button[aria-checked="true"],.an-seg button[aria-selected="true"]{background:var(--an-seg-on);border-color:rgba(0,0,0,.04);font-weight:600;letter-spacing:-.08px;box-shadow:0 3px 4px rgba(0,0,0,.12),0 3px .5px rgba(0,0,0,.04)}
+body.dark .an-seg button[aria-checked="true"],body.dark .an-seg button[aria-selected="true"]{border-color:transparent;box-shadow:0 3px 4px rgba(0,0,0,.36)}
+.an-seg button:hover:not([aria-checked="true"]):not([aria-selected="true"]){background:rgba(118,118,128,.08)}
+@media (pointer:coarse){.an-seg button,.an-zoomseg button{min-height:44px}}
+@media (forced-colors:active){.an-seg button[aria-checked="true"]{border:2px solid Highlight}}
+/* ===== n158 — calmer system + glass on the floating layer only =====
+   Content (cards, chart, tiles) is flat and solid. Glass is only on things that float over content:
+   the toolbar when the chart scrolls under it, sheets, popovers, the undo message and the tips card.
+   Glass = translucent fill + blur 20px + hairline + top highlight. No color-mix(). Falls back to solid. */
+:root,body{
+  --an-glass:rgba(255,255,255,.72); --an-glass-strong:rgba(255,255,255,.86);
+  --an-glass-edge:rgba(0,0,0,.06); --an-glass-hi:rgba(255,255,255,.7);
+  --an-glass-shadow:0 8px 32px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.06);
+  --an-hair:rgba(29,29,31,.07);
+}
+body.dark{
+  --an-glass:rgba(23,35,56,.70); --an-glass-strong:rgba(23,35,56,.86);
+  --an-glass-edge:rgba(255,255,255,.08); --an-glass-hi:rgba(255,255,255,.08);
+  --an-glass-shadow:0 8px 32px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.3);
+  --an-hair:rgba(150,185,220,.09);
+}
+.an-glass,.an-tools,.an-scrim .an-sheet,.an-toast{
+  background:var(--an-glass);
+  -webkit-backdrop-filter:blur(12px) saturate(160%);backdrop-filter:blur(12px) saturate(160%);
+  box-shadow:var(--an-glass-shadow),inset 0 0 0 .5px var(--an-glass-edge),inset 0 1px 0 var(--an-glass-hi);
+}
+.an-scrim .an-sheet{background:var(--an-glass-strong)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .an-tools,.an-scrim .an-sheet,.an-toast{background:var(--an-surface)}
+}
+@media (prefers-reduced-transparency:reduce){
+  .an-tools,.an-scrim .an-sheet,.an-toast{background:var(--an-surface)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+}
+@media (forced-colors:active){.an-tools,.an-scrim .an-sheet,.an-toast{border:1px solid CanvasText}}
+
+/* --- header: type does the work, fewer boxes --- */
+.an-rhead{align-items:flex-start}
+.an-id h1{font-size:1.75rem;line-height:1.15;letter-spacing:-.01em}
+.an-id .sub{color:var(--an-ink-3);font-size:.9375rem}
+.an-wbig{background:transparent!important;padding:.25rem .75rem;min-height:44px;align-items:flex-end;text-align:right}
+.an-wbig:hover{background:var(--an-fill)!important}
+.an-wbig b{font-family:var(--an-rounded);font-size:1.75rem;font-weight:700}
+.an-wbig b span{font-size:1rem;color:var(--an-ink-3)}
+.an-wbig small{color:var(--an-ink-3);font-size:.8125rem}
+.an-wbig.none{background:var(--an-amber-soft)!important}
+.an-clock b{font-family:var(--an-rounded);font-size:1.75rem;font-weight:700;letter-spacing:.01em}
+.an-clock span{font-size:.8125rem;color:var(--an-ink-3)}
+.an-save{font-size:.8125rem;color:var(--an-ink-3)}
+
+/* --- toolbar: one floating glass bar, plain tools inside --- */
+.an-tools{position:sticky;top:.5rem;z-index:20;gap:.25rem;padding:6px;border-radius:999px;margin:0 0 1rem}
+.an-tools .an-group{background:transparent;gap:0}
+.an-tools .an-btn:not(.primary){background:transparent;color:var(--an-accent-ink)}
+.an-tools .an-btn:not(.primary):hover{background:var(--an-fill)}
+.an-tools .an-group .an-btn{border-radius:999px!important}
+.an-group .an-btn+.an-btn::before{display:none}
+.an-tools .an-group{border-left:1px solid var(--an-line);border-radius:0;margin-left:.25rem;padding-left:.25rem}
+.an-tools .an-zoomseg{background:var(--an-fill)}
+.an-tools .sp{flex:1}
+
+/* segmented: capsules, so every control shares one shape */
+.an-seg,.an-zoomseg{border-radius:999px;padding:3px;gap:2px}
+.an-seg button,.an-zoomseg button{border-radius:999px;min-height:38px}
+.an-seg button+button::before{left:-1.5px}
+@media (pointer:coarse){.an-seg button,.an-zoomseg button{min-height:44px}}
+
+/* --- tips: an inline tip, like Apple's TipKit (solid content, not a banner, never covers anything) --- */
+.an-tips{display:flex;align-items:center;gap:.875rem;margin:0 0 1rem;padding:.75rem .75rem .75rem 1rem;border-radius:var(--an-r-l);background:var(--an-surface);font-size:.875rem;line-height:1.4;color:var(--an-ink-2)}
+.an-tips::before{content:"";flex:0 0 28px;height:28px;border-radius:50%;background:var(--an-accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%2338BDD2'%3E%3Cpath d='M176 232a8 8 0 0 1-8 8H88a8 8 0 0 1 0-16h80a8 8 0 0 1 8 8Zm40-128a87.55 87.55 0 0 1-33.64 69.21A16.24 16.24 0 0 0 176 186v6a16 16 0 0 1-16 16H96a16 16 0 0 1-16-16v-6a16 16 0 0 0-6.23-12.66A87.59 87.59 0 0 1 40 104.49C39.74 56.83 78.26 17.14 125.88 16A88 88 0 0 1 216 104Z'/%3E%3C/svg%3E") center/16px no-repeat}
+.an-tips>span{flex:1}
+.an-tips b{display:block;margin-bottom:.0625rem;font-size:.9375rem;color:var(--an-ink)}
+.an-tips .an-btn{flex:0 0 auto}
+@media print{.an-tips{display:none!important}}
+
+/* --- content cards: solid, no outlines, on the page background --- */
+.an-panel{border-color:transparent}
+.an-card{border-color:transparent}
+.an-nowcol{background:transparent!important;border:0;padding:0 0 1rem}
+.an-nh{align-items:flex-start;padding:.25rem .25rem .75rem}
+.an-nh h2{font-size:1.375rem;line-height:1.2}
+.an-nlast{margin:.125rem 0 0;font-size:.8125rem;color:var(--an-ink-3)}
+.an-tile,.an-nowcol .an-nrow{background:var(--an-surface)!important}
+.an-tile .f{align-items:flex-end;min-height:22px}
+.an-tile .f .same{visibility:hidden}
+.an-tile.stale .f span{color:var(--an-amber-ink,var(--an-ink-2))}
+.an-spark{margin-left:auto}
+.an-spark polyline{stroke-width:2}
+.an-tile .an-chev{opacity:.45}
+.an-tile .tag{font-size:.9375rem}
+
+/* --- the chart: quieter grid, thin lines instead of colour bands, soft edges --- */
+.an-row{border-top-color:var(--an-hair)}
+.an-lab{border-right-color:var(--an-hair);box-shadow:none!important}
+body.dark .an-lab{box-shadow:none!important}
+.an-row.grp,.an-row.grp .an-lab{background:var(--an-surface)}
+.an-lab.grp{padding-top:1rem;padding-bottom:.25rem;font-size:.75rem;letter-spacing:0}
+.an-row.grp+.an-row{border-top-color:transparent}
+.an-grid-bg{background-image:repeating-linear-gradient(90deg,var(--an-hair) 0 1px,transparent 1px calc(var(--an-col)*3))}
+.an-tick{border-left-color:transparent}
+.an-tick.hr{border-left-color:var(--an-line)}
+.an-evline{border-left:1px solid var(--an-line)}
+.an-bar{top:.375rem;bottom:.375rem;background:transparent;border-left:0;border-radius:0;overflow:visible}
+.an-bar::after{content:"";position:absolute;left:0;right:0;bottom:2px;height:4px;border-radius:2px;background:var(--c,var(--an-c-other))}
+.an-bar.run::after{border-top-right-radius:0;border-bottom-right-radius:0}
+.an-bar:hover::after{height:6px}
+.an-bar.void{border:0}
+.an-bar.void::after{background:repeating-linear-gradient(90deg,var(--an-ink-3) 0 4px,transparent 4px 8px);height:2px}
+.an-seglab{bottom:8px;padding:0 .375rem 0 0;font-weight:600}
+.an-seglab::before{top:auto;bottom:-6px;height:8px;border-left:2px solid var(--an-surface)}
+.an-chartp{position:relative}
+.an-chartp::after{content:"";position:absolute;top:0;right:0;bottom:0;width:2rem;border-radius:0 var(--an-r-l) var(--an-r-l) 0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(255,255,255,0),var(--an-surface));z-index:5}
+body.dark .an-chartp::after{background:linear-gradient(90deg,rgba(17,27,46,0),var(--an-surface))}
+.an-lab::after{content:"";position:absolute;top:0;bottom:0;right:-2rem;width:2rem;pointer-events:none;background:linear-gradient(90deg,var(--an-surface),rgba(255,255,255,0))}
+body.dark .an-lab::after{background:linear-gradient(90deg,var(--an-surface),rgba(17,27,46,0))}
+.an-mk{border-color:var(--an-line)}
+@media print{.an-chartp::after,.an-lab::after{display:none}.an-tools{position:static}}
+
+/* toast: glass, readable */
+.an-toast{color:var(--an-ink)!important;background:var(--an-glass-strong)!important}
+body.dark .an-toast{color:var(--an-ink)!important}
+.an-toast{border-radius:999px;padding:.625rem .75rem .625rem 1.25rem}
+/* sheets are large and nearly opaque: frosted solid (no blur) costs nothing and looks the same */
+.an-scrim:not(.pop) .an-sheet{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--an-surface)}
+/* glass guard fallback: frosted solid, no blur */
+html.an-noblur .an-tools,html.an-noblur .an-toast,html.an-noblur .an-scrim .an-sheet{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.an-noblur .an-tools{background:rgba(255,255,255,.94)}
+html.an-noblur body.dark .an-tools{background:rgba(23,35,56,.95)}
+html.an-noblur .an-toast,html.an-noblur .an-scrim .an-sheet{background:var(--an-surface)!important}
+.an-nowcol{top:calc(.5rem + 56px + .75rem)}
+@media (max-width:760px){.an-tools{top:.25rem}}
+@media (max-width:760px){.an-tools{border-radius:22px}}
+@media (max-width:600px){.an-tools{position:static}.an-nowcol{top:auto}}
+/* ===== n159 — the rest of Apple's Liquid Glass guidance (Materials, Liquid Glass color, Adopting Liquid Glass) ===== */
+/* 1+2. The toolbar is grouped glass pills; labels and icons on glass are monochrome, colour only on the primary action */
+.an-tools{background:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important;padding:0;gap:.5rem;border-radius:0}
+.an-tools>.an-group,.an-tools>.an-zoomseg,.an-tools>#anInsp{
+  background:var(--an-glass)!important;-webkit-backdrop-filter:blur(12px) saturate(160%);backdrop-filter:blur(12px) saturate(160%);
+  box-shadow:var(--an-glass-shadow),inset 0 0 0 .5px var(--an-glass-edge),inset 0 1px 0 var(--an-glass-hi);border-radius:999px}
+.an-tools>.an-group{padding:0 4px;margin:0;border:0}
+.an-tools>.an-zoomseg{padding:4px}
+.an-tools>#anInsp{padding:0 1.125rem}
+.an-tools>[data-act=vitals]{box-shadow:0 4px 14px rgba(56,189,210,.35)}
+.an-tools .an-btn:not(.primary),.an-tools .an-btn:not(.primary) svg{color:var(--an-ink)!important}
+@media (pointer:coarse){.an-tools .an-group .an-btn{min-height:44px}}
+.an-tools>#anInsp[aria-pressed="true"],.an-tools>#anInsp[aria-pressed="true"] svg{color:var(--an-accent-ink)!important}
+.an-tools .an-group .an-btn{min-height:44px}
+html.an-noblur .an-tools>.an-group,html.an-noblur .an-tools>.an-zoomseg,html.an-noblur .an-tools>#anInsp{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(255,255,255,.94)!important}
+html.an-noblur body.dark .an-tools>.an-group,html.an-noblur body.dark .an-tools>.an-zoomseg,html.an-noblur body.dark .an-tools>#anInsp{background:rgba(23,35,56,.95)!important}
+@media (prefers-reduced-transparency:reduce){.an-tools>.an-group,.an-tools>.an-zoomseg,.an-tools>#anInsp{background:var(--an-surface)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
+/* 3. scroll edge effect: content softens as it runs under the bar (a gradient, no blur cost) */
+.an-tools::before{content:"";position:absolute;left:-1rem;right:-1rem;top:-.75rem;bottom:-1.5rem;z-index:-1;pointer-events:none;opacity:0;transition:opacity .2s ease;
+  background:linear-gradient(180deg,var(--an-bg) 0%,var(--an-bg) 45%,rgba(245,245,247,0) 100%)}
+body.dark .an-tools::before{background:linear-gradient(180deg,var(--an-bg) 0%,var(--an-bg) 45%,rgba(10,18,34,0) 100%)}
+html.an-stuck .an-tools::before{opacity:1}
+.an-tools{isolation:isolate}
+/* 4. the toolbar shrinks to icons while scrolling down */
+html.an-compact .an-tools>.an-group .t,html.an-compact .an-tools>#anInsp .t{display:none}
+html.an-compact .an-tools>.an-group .an-btn{padding:0 .75rem}
+html.an-compact .an-tools>#anInsp{padding:0 .75rem}
+html.an-compact .an-tools>.an-group,html.an-compact .an-tools>#anInsp{animation:anFadeIn .18s ease-out}
+/* 5. popovers and sheets grow out of what you tapped */
+@keyframes anMorph{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:none}}
+@keyframes anMorphBig{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}
+@keyframes anMorphOut{to{opacity:0;transform:scale(.6)}}
+@media (min-width:601px){
+  .an-scrim.morph .an-sheet{animation:anMorph .34s var(--an-ease) both}
+  .an-scrim.morph.big .an-sheet{animation:anMorphBig .36s var(--an-ease) both}
+  .an-scrim.morph.out .an-sheet{animation:anMorphOut .16s var(--an-ease-out) both}
+}
+@media (prefers-reduced-motion:reduce){.an-scrim.morph .an-sheet,.an-scrim.morph.out .an-sheet,html.an-compact .an-tools>*{animation:none!important}}
+/* 6. rounder sheets; on phones the sheet floats inset from the edges */
+.an-sheet{border-radius:28px}
+.an-scrim.pop .an-sheet{border-radius:22px}
+@media (max-width:600px){
+  .an-scrim{padding:0 8px calc(8px + env(safe-area-inset-bottom))}
+  .an-sheet{border-radius:28px!important;max-height:calc(100vh - 3rem)}
+}
+/* 8. the switch knob stretches while you hold it */
+.an-switch::after{transition:transform .25s cubic-bezier(.32,.72,0,1),width .2s cubic-bezier(.32,.72,0,1)}
+.an-switch:active::after{width:34px}
+.an-switch:checked:active::after{transform:translateX(13px)}
+/* ===== n160 — light mode: page-level primary buttons use Flow's patient-drawer card (Admit / Discharge) =====
+   Taken from Flow's .disposition-card in light mode: white, borderless, 16 px radius, the cool light-layer shadow,
+   a soft blue-grey line icon (#8FB0C4), a 650-weight ink title, and a muted diagonal arrow that slides on hover.
+   Hover lifts 1 px and nudges the icon; press scales to .986. Dark mode keeps the cyan. Sheet confirms are unchanged. */
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn){
+  background:#FFFFFF;color:#181A1F;border:0;border-radius:16px;font-weight:650;letter-spacing:-.015em;gap:10px;padding:0 14px 0 12px;
+  box-shadow:0 1px 2px rgba(30,45,90,.04),0 8px 24px rgba(30,45,90,.05);
+  transition:transform 160ms cubic-bezier(.2,.8,.2,1),box-shadow 160ms ease,background 160ms ease}
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn) svg{color:#8FB0C4;stroke-width:1.65;transition:transform 160ms cubic-bezier(.2,.8,.2,1)}
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn)::after{content:"";width:16px;height:16px;flex:0 0 16px;margin-left:4px;background:rgba(150,171,191,.5);opacity:.55;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7'/%3E%3Cpath d='M11 7h6v6'/%3E%3C/svg%3E") center/16px no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7'/%3E%3Cpath d='M11 7h6v6'/%3E%3C/svg%3E") center/16px no-repeat;
+  transition:background-color 160ms ease,opacity 160ms ease}
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn):hover:not([disabled]){background:#FFFFFF;transform:translateY(-1px);box-shadow:0 2px 6px rgba(30,45,90,.06),0 12px 28px rgba(30,45,90,.08)}
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn):hover:not([disabled]) svg{transform:translate3d(1px,-1px,0) scale(1.01)}
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn):hover:not([disabled])::after{background:rgba(110,130,150,.95);opacity:1;animation:anDcOut 400ms cubic-bezier(.2,.8,.2,1) 70ms both}
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn):active:not([disabled]){transform:translateY(0) scale(.986);filter:none}
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn):focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,177,201,.22),0 8px 24px rgba(30,45,90,.05)}
+@keyframes anDcOut{0%{transform:translate(-1px,1px);opacity:.42}62%{transform:translate(4px,-4px);opacity:1}82%{transform:translate(2px,-2px)}100%{transform:translate(3px,-3px);opacity:1}}
+/* in the toolbar: same card, no cyan glow; when vitals are due the icon turns amber */
+body:not(.dark) .an-tools>[data-act=vitals]{box-shadow:0 1px 2px rgba(30,45,90,.04),0 8px 24px rgba(30,45,90,.05)}
+body:not(.dark) .an-tools>[data-act=vitals][aria-label*="due"] svg{color:#C98A1B!important}
+@media (prefers-reduced-motion:reduce){body:not(.dark) .an-btn.primary,body:not(.dark) .an-btn.primary svg,body:not(.dark) .an-btn.primary::after{transition:none!important;animation:none!important}body:not(.dark) .an-btn.primary:hover{transform:none!important}}
+@media (forced-colors:active){body:not(.dark) .an-btn.primary{border:1px solid ButtonText}body:not(.dark) .an-btn.primary::after{background:ButtonText}}
+/* ===== n161 — confirm patient, patient summary strip, outputs and fluid balance ===== */
+/* confirmation chip in the title row */
+.an-pill.unconf{border:0;cursor:pointer;background:var(--an-red-soft);color:var(--an-red-ink);font:inherit;font-size:.8125rem;font-weight:700}
+.an-pill.unconf::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--an-red)}
+.an-pill.unconf:hover{filter:brightness(.96)}
+.an-pill.conf{background:var(--an-green-soft);color:var(--an-green-ink)}
+.an-pill.conf svg{width:.875rem;height:.875rem;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+@media (pointer:coarse){.an-pill.unconf{min-height:44px;padding:0 1rem}}
+/* the confirm prompt (above the toolbar until confirmed) */
+.an-confirm{display:flex;align-items:center;gap:.875rem;margin:0 0 1rem;padding:.75rem .75rem .75rem 1rem;border-radius:var(--an-r-l);background:var(--an-surface);box-shadow:inset 0 0 0 1.5px var(--an-red-soft);font-size:.9375rem;color:var(--an-ink-2)}
+.an-confirm .ic{flex:0 0 36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--an-red-soft);color:var(--an-red-ink)}
+.an-confirm .ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.an-confirm>span:nth-child(2){flex:1}
+.an-confirm b{display:block;color:var(--an-ink);font-size:1rem}
+@media (max-width:600px){.an-confirm{flex-wrap:wrap}.an-confirm .an-btn{width:100%}}
+/* watermark over the chart until confirmed (one tiled SVG: no layout, no cost) */
+.an-chartp.unconf{position:relative}
+.an-wm{position:absolute;inset:0;z-index:6;pointer-events:none;border-radius:inherit;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='300'%3E%3Ctext x='280' y='160' text-anchor='middle' transform='rotate(-20 280 150)' font-family='-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' letter-spacing='2' fill='%23D92B22' fill-opacity='.16'%3ECONFIRM CORRECT PATIENT%3C/text%3E%3C/svg%3E");background-repeat:repeat}
+body.dark .an-wm{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='300'%3E%3Ctext x='280' y='160' text-anchor='middle' transform='rotate(-20 280 150)' font-family='-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' letter-spacing='2' fill='%23FF6B57' fill-opacity='.18'%3ECONFIRM CORRECT PATIENT%3C/text%3E%3C/svg%3E")}
+.an-wm span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media print{.an-wm{display:block}}
+/* confirm sheet */
+.an-cfm{display:flex;flex-direction:column;align-items:center;text-align:center;gap:.25rem;padding:.5rem 0 .25rem}
+.an-cfm .ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--an-fill);color:var(--an-ink-2);margin-bottom:.375rem}
+.an-cfm .ic svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.an-cfm b{font-family:var(--an-display);font-size:1.5rem;line-height:1.2}
+.an-cfm small{color:var(--an-ink-3);font-size:.875rem}
+/* patient summary strip */
+.an-sum{display:flex;flex-wrap:wrap;gap:.375rem;margin-top:.5rem}
+.an-sum-i{display:inline-flex;align-items:center;gap:.375rem;min-height:36px;max-width:22rem;padding:0 .875rem;border:0;border-radius:999px;background:var(--an-surface);
+  box-shadow:inset 0 0 0 .5px var(--an-line-2);color:var(--an-ink);font:inherit;font-size:.875rem;cursor:pointer;text-align:left}
+.an-sum-i .k{font-size:.75rem;font-weight:600;color:var(--an-ink-3)}
+.an-sum-i .v{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-sum-i:hover{box-shadow:inset 0 0 0 1px var(--an-line-2);filter:brightness(.98)}
+.an-sum-i.dnr{background:var(--an-red-soft);box-shadow:none}.an-sum-i.dnr .v,.an-sum-i.dnr .k{color:var(--an-red-ink)}.an-sum-i.dnr .v{font-weight:800;letter-spacing:.02em}
+.an-sum-i.cpr{background:var(--an-green-soft);box-shadow:none}.an-sum-i.cpr .v,.an-sum-i.cpr .k{color:var(--an-green-ink)}
+.an-sum-i.alg{background:var(--an-amber-soft);box-shadow:none}.an-sum-i.alg .v,.an-sum-i.alg .k{color:var(--an-amber-ink)}
+.an-sum-i.none{background:transparent;box-shadow:inset 0 0 0 1px var(--an-line-2)}.an-sum-i.none .v{color:var(--an-ink-3);font-weight:500}
+@media (pointer:coarse){.an-sum-i{min-height:44px;align-items:center}}
+@media print{.an-sum-i{box-shadow:inset 0 0 0 1px #999!important;background:#fff!important}}
+/* outputs on the chart and the balance */
+.an-mk.out{--c:var(--an-ink-3)}
+.an-mk.out.k-ebl{--c:var(--an-red)}
+.an-mk.out.k-urine{--c:#C9A227}
+.an-bal .an-tot tr.hd th{padding-top:.75rem;text-align:left;font-size:.75rem;font-weight:600;color:var(--an-ink-3)}
+.an-bal .an-tot tr.net td{border-top:1px solid var(--an-line-2);font-weight:700;padding-top:.5rem}
+.an-nbal{cursor:default}
+.an-nbal span{color:var(--an-ink-3);font-size:.8125rem}
+@media (max-width:1499px){.an-body.insp .an-side{align-items:start}}
+/* n162 — the watermark is one big line of text (not a tiled pattern), kept in view while the chart scrolls */
+.an-wm,body.dark .an-wm{background-image:none;clip-path:inset(0 round var(--an-r-l))}
+.an-wm span{position:sticky;top:calc(50vh - 3rem);display:block;width:auto;height:auto;overflow:visible;clip:auto;margin:11rem auto 0;
+  text-align:center;font-family:var(--an-display);font-size:clamp(1.5rem,3.9vw,4.25rem);line-height:1;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  color:rgba(217,43,34,.14);transform:rotate(-12deg);white-space:nowrap}
+body.dark .an-wm span{color:rgba(255,107,87,.16)}
+@media (max-width:760px){.an-wm span{margin-top:8rem;font-size:5vw}}
+@media print{.an-wm span{position:static;margin-top:12rem}}
+/* ===== n163 — antibiotic redose, airway & lines, ventilation, time-out, team, more monitors ===== */
+/* more monitors in the vitals form */
+.an-vmore{align-self:flex-start;margin:.25rem 0 0}
+.an-vgrid2{margin-top:.5rem}
+.an-vecg{grid-column:1/-1}
+.an-vecg .an-sel{width:100%}
+/* extra monitor rows */
+.v-more{--k:var(--an-ink-3)}
+.an-mon.txt{font-size:.8125rem;font-weight:600}
+/* airway & lines and ventilation on the chart */
+.an-bar.dev{--c:#8FB0C4}
+body.dark .an-bar.dev{--c:#7A98B8}
+.an-bar.vent{--c:var(--an-spo2)}
+/* antibiotics in the Now column */
+.an-abx b{font-size:.9375rem;font-variant-numeric:tabular-nums}
+.an-abx.unset b{color:var(--an-accent-ink);font-weight:600}
+.an-abx.due{box-shadow:inset 0 0 0 1.5px var(--an-amber)}
+.an-abx.due b{color:var(--an-amber-ink)}
+.an-abx.late{background:var(--an-red-soft)!important}
+.an-abx.late b,.an-abx.late .an-dn{color:var(--an-red-ink)}
+/* airway sheet tabs */
+.an-atabs{align-self:flex-start;margin:0}
+/* time-out checklist */
+.an-tolist{display:flex;flex-direction:column;gap:.375rem}
+.an-toi span{display:flex;flex-direction:column;gap:.125rem;flex:1;min-width:0}
+.an-toi small{font-size:.8125rem;color:var(--an-ink-3);font-weight:400}
+.an-towarn{background:var(--an-amber-soft);border-radius:var(--an-r-m);padding:.5rem .5rem .5rem .875rem;color:var(--an-amber-ink);font-weight:600}
+/* team sheet */
+.an-team{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.an-team li{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.625rem 0;border-bottom:1px solid var(--an-line)}
+.an-team li span{display:flex;flex-direction:column}
+.an-team li small{color:var(--an-ink-3);font-size:.8125rem}
+.an-team li.gone b{color:var(--an-ink-3);font-weight:500}
+@media print{.an-abx.late{background:none!important}}
+/* n163 — the summary strip is its own row under the title (one line on iPad); tools go icon-only below 1280 px */
+.an-rhead>.an-sum{grid-column:2/-1;margin-top:-.375rem}
+@media (max-width:900px){.an-rhead>.an-sum{grid-column:1/-1;margin-top:0}}
+@media (max-width:1279px){.an-tools>.an-group .t{display:none}.an-tools>.an-group .an-btn{padding:0 .875rem}}
+.an-ndev b{font-size:.9375rem;font-weight:600}.an-ndev b i{font-weight:400}
+.an-toi{background:var(--an-fill)!important;border-color:transparent!important;color:var(--an-ink)!important}.an-toi:has(input:checked){background:var(--an-green-soft)!important}
+.an-sheet .an-check:has(.an-switch){background:var(--an-fill);border-color:transparent}.an-sheet [data-big] .an-check{background:var(--an-amber-soft);border-color:var(--an-amber)}
+/* ===== n164 — Apple typography (HIG › Typography) =====
+   One set of text styles, mapped to Apple's iOS/iPadOS defaults (Large Title 34 · Title 1 28 · Title 2 22 · Title 3 20 ·
+   Headline/Body 17 · Callout 16 · Subhead 15 · Footnote 13 · Caption 12). Body text is Regular, emphasis Semibold; Medium
+   is kept only where Apple's own control uses it (unselected segments). No hand tracking: SF tracks itself at every size
+   (all-caps text keeps a little extra). Sizes are rem, so they follow the Larger Text setting on iPad and iPhone. */
+:root,body{
+  --t-large:2.125rem; --t-title1:1.75rem; --t-title2:1.375rem; --t-title3:1.25rem; --t-body:1.0625rem;
+  --t-callout:1rem; --t-subhead:.9375rem; --t-footnote:.8125rem; --t-caption:.75rem;
+}
+/* 14 pt is not an Apple text style: snap to Subhead (15) or Footnote (13) */
+.an-hist li,.an-tile .f,.an-tile .v small,.an-sum-i{font-size:var(--t-footnote)}
+.an-tips,.an-cfm small{font-size:var(--t-subhead)}
+.an-cfm b{font-size:var(--t-title1)}
+/* weights: Regular for reading, Semibold for emphasis */
+.an-mon,.an-mon.bp small,.an-chip,.an-dl dd,.an-pres,.an-sum-i.none .v,.an-team li.gone b{font-weight:400}
+.an-mon{font-weight:400}
+body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn){font-weight:600}
+/* no hand tracking (all-caps watermark and the DNR label keep theirs) */
+.an-tile .v b,.an-seg button,.an-zoomseg button,.an-id h1,.an-clock b,.an-lab.grp,body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn){letter-spacing:normal}
+.an-seg button[aria-checked="true"],.an-seg button[aria-selected="true"]{letter-spacing:normal}
+/* minimise truncation: the facts line wraps instead of cutting off */
+.an-id .sub{flex-wrap:wrap}
+.an-id .sub>span{white-space:normal;overflow:visible;display:inline;-webkit-line-clamp:unset}
+
+/* Larger Text: content grows, chrome is capped (Apple: grow what people care about, not the tab titles) */
+.an-tools .an-btn,.an-back{font-size:min(var(--t-body),19px)}
+.an-seg button,.an-zoomseg button{font-size:min(var(--t-footnote),15px)}
+.an-sum-i{font-size:min(var(--t-footnote),15px)}
+.an-sum-i .k{font-size:min(var(--t-caption),13px)}
+.an-pill{font-size:min(var(--t-footnote),15px)}
+.an-tools .an-btn svg{width:1.25em;height:1.25em}
+/* chart cells sit on a 5-minute grid: they grow a little, then stop, so neighbours never overlap */
+.an-mon{font-size:min(var(--t-subhead),17px)}
+.an-mk,.an-seglab,.an-tick{font-size:min(var(--t-footnote),15px)}
+.an-lab b{font-size:min(var(--t-subhead),18px)}
+.an-lab span{font-size:min(var(--t-caption),14px)}
+/* big text (html.an-bigtext, set from the real root size): the header stacks — name, then weight + clock + actions, then the summary */
+html.an-bigtext .an-rhead{grid-template-columns:minmax(0,1fr) auto;gap:.5rem 1rem}
+html.an-bigtext .an-back{grid-column:1/-1;justify-self:start;margin-left:-.5rem}
+html.an-bigtext .an-id{grid-column:1/-1}
+html.an-bigtext .an-wbig{justify-self:start;text-align:left;align-items:flex-start;padding-left:0}
+html.an-bigtext .an-ract{grid-column:2/3;justify-content:flex-end;flex-wrap:wrap}
+html.an-bigtext .an-rhead>.an-sum{grid-column:1/-1;margin-top:0}
+html.an-bigtext .an-tools>.an-group .t,html.an-bigtext .an-tools>#anInsp .t{display:none}
+html.an-bigtext .an-tools>.an-group .an-btn,html.an-bigtext .an-tools>#anInsp{padding:0 .75rem}
+/* very big text: one vital per row in the Now column */
+html.an-hugetext .an-tiles{grid-template-columns:minmax(0,1fr)!important}
+html.an-hugetext .an-tile[data-vk]{grid-column:auto}
+html.an-hugetext .an-tips span .an-kb{display:none}
+/* n164 fixes found by the text-size checks */
+@media (max-width:600px){.an-tools::before{display:none}}   /* the scroll-edge fade reached 16 px past a phone screen */
+.an-lab b{white-space:normal;overflow:visible;text-overflow:clip;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere;line-height:1.2}
+html.an-toolsicons .an-tools>.an-group .t,html.an-toolsicons .an-tools>#anInsp .t{display:none}
+html.an-toolsicons .an-tools>.an-group .an-btn,html.an-toolsicons .an-tools>#anInsp{padding:0 .75rem}
+@media (max-width:700px){html.an-bigtext .an-rhead{grid-template-columns:minmax(0,1fr)}html.an-bigtext .an-ract{grid-column:1/-1;justify-content:flex-start}}
+.an-btn{font-size:min(var(--t-body),21px);max-width:100%}.an-btn .t,.an-btn{white-space:normal}
+/* ===== n165 — Apple HIG › Color =====
+   1. Contrast: HR/O₂ green 4.2 → 5.1:1, the DNR chip 4.3 → 4.9:1, device bars 2.3 → 3.4:1 (light mode). Same hues.
+   2. One meaning per color: ventilation leaves SpO₂ blue (now slate), urine leaves EtCO₂ yellow (now grey with its label).
+   3. Nothing by color alone: a redose due soon says "Due in 8 min".
+   4. Increase Contrast (prefers-contrast: more): darker text and separators, outlined controls, solid glass.
+   5. Wide color (Display P3) where the screen supports it. */
+:root,body{--an-hr:#1A7F38;--an-g-o2:#1A7F38;--an-red-ink:#B0342A;--an-vent:#5B7083;--an-dev:#6E8FA6}
+body.dark{--an-hr:#30D158;--an-g-o2:#30D158;--an-red-ink:#FF8A70;--an-vent:#9FB3C8;--an-dev:#7A98B8}
+.an-bar.dev{--c:var(--an-dev)!important}
+body.dark .an-bar.dev{--c:var(--an-dev)!important}
+.an-bar.vent{--c:var(--an-vent)}
+.an-mk.out.k-urine{--c:var(--an-ink-3)}
+/* n165 — wide color (Display P3) on screens that support it: the same hues, about 15% more vivid; contrast re-checked per color */
+@supports (color:color(display-p3 1 1 1)){@media (color-gamut:p3){
+  :root,body{--an-hr:color(display-p3 0.225 0.515 0.240);--an-bp:color(display-p3 0.800 0.232 0.349);--an-spo2:color(display-p3 0.180 0.421 0.840);--an-co2:color(display-p3 0.574 0.447 0.114);--an-g-iso:color(display-p3 0.513 0.285 0.715);--an-g-o2:color(display-p3 0.225 0.515 0.240);--an-g-sevo:color(display-p3 0.574 0.447 0.114);--an-c-opioid:color(display-p3 0.137 0.388 0.781);--an-c-induction:color(display-p3 0.585 0.450 0.100);--an-c-benzo:color(display-p3 0.717 0.378 0.094);--an-c-vaso:color(display-p3 0.521 0.229 0.757);--an-c-anticho:color(display-p3 0.254 0.576 0.267);--an-c-antiemetic:color(display-p3 0.771 0.347 0.242);--an-accent:color(display-p3 0.385 0.731 0.812);--an-accent-ink:color(display-p3 0.163 0.420 0.520);--an-red:color(display-p3 0.840 0.214 0.151);--an-green:color(display-p3 0.268 0.635 0.445);--an-amber:color(display-p3 0.872 0.669 0.291)}
+  body.dark{--an-hr:color(display-p3 0.387 0.848 0.383);--an-bp:color(display-p3 0.972 0.441 0.559);--an-spo2:color(display-p3 0.419 0.646 1.000);--an-co2:color(display-p3 1.000 0.866 0.228);--an-g-iso:color(display-p3 0.717 0.531 0.945);--an-g-o2:color(display-p3 0.387 0.848 0.383);--an-g-sevo:color(display-p3 1.000 0.866 0.228);--an-c-opioid:color(display-p3 0.349 0.627 1.000);--an-c-induction:color(display-p3 1.000 0.866 0.228);--an-c-benzo:color(display-p3 0.998 0.646 0.179);--an-c-vaso:color(display-p3 0.704 0.332 0.957);--an-c-anticho:color(display-p3 0.387 0.848 0.383);--an-c-antiemetic:color(display-p3 0.981 0.550 0.447);--an-accent:color(display-p3 0.347 0.744 0.837);--an-accent-ink:color(display-p3 0.502 0.829 0.905);--an-red:color(display-p3 0.982 0.436 0.341);--an-green:color(display-p3 0.386 0.736 0.546);--an-amber:color(display-p3 0.957 0.801 0.315)}
+}}
+/* Increase Contrast — light */
+@media (prefers-contrast:more){
+  :root,body{
+    --an-ink:#000000; --an-ink-2:#2C2C2E; --an-ink-3:#48484A;
+    --an-line:rgba(0,0,0,.28); --an-line-2:rgba(0,0,0,.42); --an-hair:rgba(0,0,0,.22); --an-grid:rgba(0,0,0,.12); --an-grid-2:rgba(0,0,0,.22);
+    --an-accent-ink:#0A5466; --an-green-ink:#0B4D30; --an-amber-ink:#6B4700; --an-red-ink:#8E1F17;
+    --an-hr:#0F6A2B; --an-g-o2:#0F6A2B; --an-bp:#B0213F; --an-spo2:#1556A8; --an-co2:#755800; --an-g-iso:#6E2E99; --an-dev:#4F6F86; --an-vent:#3F5468;
+    --an-fill:rgba(118,118,128,.22); --an-fill-2:rgba(118,118,128,.30);
+  }
+  body.dark{
+    --an-ink:#FFFFFF; --an-ink-2:#E2EAF3; --an-ink-3:#C9D6E4;
+    --an-line:rgba(190,215,240,.34); --an-line-2:rgba(190,215,240,.5); --an-hair:rgba(190,215,240,.26); --an-grid:rgba(190,215,240,.14); --an-grid-2:rgba(190,215,240,.26);
+    --an-accent-ink:#9BE6F2; --an-green-ink:#8BEBC6; --an-amber-ink:#FFE17A; --an-red-ink:#FFB0A0;
+    --an-hr:#5BE57E; --an-bp:#FF9DB5; --an-spo2:#9CC8FF; --an-co2:#FFE45C; --an-g-iso:#D7B5FF; --an-dev:#A9C1D8; --an-vent:#C3D3E3;
+    --an-fill:rgba(118,118,128,.36); --an-fill-2:rgba(118,118,128,.46);
+  }
+  /* controls get a visible edge, as Apple's do with Increase Contrast */
+  .an-btn:not(.primary):not(.plain),.an-chip,.an-seg,.an-zoomseg,.an-tile,.an-nowcol .an-nrow,.an-panel,.an-card,.an-sum-i,.an-in,.an-sel,.an-ta{box-shadow:inset 0 0 0 1px var(--an-line-2)!important}
+  body:not(.dark) .an-btn.primary:not(.an-sheet .an-btn){box-shadow:inset 0 0 0 1.5px var(--an-ink)!important}
+  /* glass becomes solid */
+  .an-tools>.an-group,.an-tools>.an-zoomseg,.an-tools>#anInsp,.an-toast,.an-scrim .an-sheet{background:var(--an-surface)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .an-tools::before{opacity:0!important}
+  .an-wm span{color:rgba(176,52,42,.24)}
+  body.dark .an-wm span{color:rgba(255,138,112,.26)}
+}
+@media (prefers-contrast:more){.an-tools .an-group .an-btn{box-shadow:none!important}.an-tools>.an-group{box-shadow:inset 0 0 0 1px var(--an-line-2)!important}}
+/* ===== n166 — Anesia inside the Treatment Sheet (embed mode) ===== */
+html.an-embed #pvxTopnav,html.an-embed .pvx-topnav{display:none!important}
+html.an-embed body{background:transparent}
+html.an-embed .an{padding-top:.75rem}
+.an-shead h2{margin:0;font-family:var(--an-display);font-size:var(--t-title1,1.75rem);line-height:1.2;font-weight:700}
+.an-shead p{margin:.25rem 0 0;color:var(--an-ink-3);font-size:var(--t-subhead,.9375rem)}
+.an-pill.sheet{background:transparent;border:1px solid var(--an-line-2);color:var(--an-ink-3)}

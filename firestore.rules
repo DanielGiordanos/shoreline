@@ -346,6 +346,43 @@ match /client_intakes/{docId} {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done','done_at','updated_at','updated_by']);
       allow delete: if staff() && resource.data.tenant_id == otwTenant();
     }
+    // Oct 16 (n151) — Anesia: anesthesia records for training cases (residents' teaching cases, not the medical record).
+    // Staff of this hospital only. A record is never deleted; its hospital, id, creator and kind never change;
+    // once signed, only addenda (and the history and last-changed stamp that go with them) can be added.
+    // A save reads the record first inside a transaction, so reading a record that doesn't exist yet is allowed.
+    match /anesia_records/{id} {
+      allow read: if staff() && (resource == null || resource.data.tenant_id == 'shoreline');
+      allow create: if staff()
+        && request.resource.data.tenant_id == 'shoreline'
+        && request.resource.data.kind in ['training', 'case']
+        && (request.resource.data.kind == 'training' || request.resource.data.sheet_id is string)
+        && request.resource.data.id == id
+        && request.resource.data.status in ['planned', 'active', 'ended', 'signed'];
+      allow update: if staff()
+        && resource.data.tenant_id == 'shoreline'
+        && request.resource.data.tenant_id == 'shoreline'
+        && request.resource.data.kind == resource.data.kind
+        && request.resource.data.get('sheet_id', null) == resource.data.get('sheet_id', null)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.created_by == resource.data.created_by
+        && request.resource.data.created_at == resource.data.created_at
+        && request.resource.data.status in ['planned', 'active', 'ended', 'signed']
+        && (resource.data.status != 'signed'
+            || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['addenda', 'audit', 'updated_at', 'updated_by']));
+      allow delete: if false;
+    }
+    // Oct 16 (n155) — Anesia: who has a training record open (one small document per person and record, refreshed every minute).
+    match /anesia_presence/{id} {
+      allow read: if staff() && (resource == null || resource.data.tenant_id == 'shoreline');
+      allow create, update: if staff()
+        && request.resource.data.tenant_id == 'shoreline'
+        && request.resource.data.uid == request.auth.uid
+        && id == request.resource.data.rec + '_' + request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() <= 120
+        && request.resource.data.at is number
+        && request.resource.data.keys().hasOnly(['tenant_id', 'rec', 'uid', 'name', 'at']);
+      allow delete: if staff() && resource.data.uid == request.auth.uid;
+    }
     match /{document=**} {
       allow read, write: if false;
     }

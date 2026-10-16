@@ -1,0 +1,3 @@
+/* Treatment Sheets — Anesthesia tab (n166): the sheet's patient header, then the Anesia record filling the rest */
+.ts-anes{display:flex;flex-direction:column;gap:12px}
+.ts-anes-frame{display:block;width:100%;border:0;border-radius:16px;background:transparent;min-height:420px}
