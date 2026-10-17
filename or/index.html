@@ -2648,7 +2648,8 @@ function anesiaDriven(c){ return LIVE && !!(c._anesia && c._anesia.rec); }
 function anOf(c){ const a=c._anesia; if(!anesiaDriven(c)) return c.anesthesia||null;
   const d0=parseISO(c.date||TODAY).getTime(), m=ms=>(ms==null||!isFinite(ms))?null:(ms-d0)/60000, L=a.last||{}, v=k=>(L[k]==null||L[k]==='')?'—':L[k];
   const state=a.status==='active'?'active':(a.status==='ended'||a.status==='signed')?'ended':'assessment';
-  const mode=a.status==='active'?'Under anesthesia':a.status==='signed'?'Anesthesia ended · record signed':a.status==='ended'?'Anesthesia ended · not signed':'Record started · not yet under';
+  const rc=a.recovery||null, rx=rc&&rc.marks&&rc.marks.extubation?new Date(rc.marks.extubation):null;
+  const mode=a.status==='ended'&&rc&&!rc.end?'In recovery'+(rx?' · extubated '+rx.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):''):a.status==='ended'&&rc&&rc.end?'Recovered · to '+rc.dest+' · record not signed':a.status==='active'?'Under anesthesia':a.status==='signed'?'Anesthesia ended · record signed':a.status==='ended'?'Anesthesia ended · not signed':'Record started · not yet under';
   return {mode, state, start:m(a.start), end:m(a.end), signed:!!a.signed, rec:a.rec, confirmed:!!a.confirmed, asa:a.asa||'', timeout:!!a.timeout,
     hr:v('hr'), map:v('map'), spo2:v('spo2'), etco2:L.etco2!=null?L.etco2:null, temp:L.temp!=null?L.temp:null, real:!!a.last}; }
 

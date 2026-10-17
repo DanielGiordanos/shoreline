@@ -18,3 +18,4 @@ html.ts-anes-lock #view-clinical,html.ts-anes-lock #ctab-anes{transform:none!imp
 #clinSwitcher .seg-badge.anes.done{display:none}
 @keyframes tsAnesPulse{0%,100%{opacity:1}50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){#clinSwitcher .seg-badge.anes.live::before{animation:none}}
+#clinSwitcher .seg-badge.anes.rec{background:#8B4DB5;color:#fff}

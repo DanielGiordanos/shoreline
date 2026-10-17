@@ -93,11 +93,12 @@
     var el = b.querySelector('.seg-badge.anes'); if (!el) { el = document.createElement('span'); el.className = 'seg-badge anes'; el.setAttribute('aria-live', 'polite'); b.appendChild(el); }
     var a = AN.sum, st = a && a.rec ? a.status : null, txt = '', cls = 'seg-badge anes', title = 'Anesthesia';
     if (st === 'active') { var m = Math.max(0, Math.round((Date.now() - (a.start || Date.now())) / 60000)); txt = (m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + ' min'); cls += ' live'; title = 'Under anesthesia · ' + txt + (a.last && a.last.hr ? ' · HR ' + a.last.hr : '') + (a.last && a.last.spo2 ? ' · SpO₂ ' + a.last.spo2 + '%' : ''); }
-    else if (st === 'ended') { txt = 'Unsigned'; cls += ' over'; title = 'Anesthesia ended · record not signed'; }
+    else if (st === 'ended' && a.recovery && !a.recovery.end) { var rm = Math.max(0, Math.round((Date.now() - (a.recovery.start || Date.now())) / 60000)), lc = a.recovery.last; txt = 'Recovery ' + (rm >= 60 ? Math.floor(rm / 60) + 'h ' + (rm % 60) + 'm' : rm + ' min'); cls += ' rec'; title = 'In recovery · ' + rm + ' min' + (lc && lc.temp != null ? ' · ' + lc.temp + ' °F' : '') + (lc && lc.pain != null ? ' · pain ' + lc.pain + '/4' : ''); }   /* n180 */
+    else if (st === 'ended') { txt = 'Unsigned'; cls += ' over'; title = 'Anesthesia ended · record not signed' + (a.recovery && a.recovery.dest ? ' · recovered, to ' + a.recovery.dest : ''); }
     else if (st === 'signed') { cls += ' done'; title = 'Anesthesia record signed'; }
     else if (st === 'planned') { title = 'Anesthesia record started, patient not yet under'; }
     el.className = cls; el.textContent = txt; b.title = title; b.setAttribute('aria-label', title);
-    clearInterval(AN.tick); AN.tick = null; if (st === 'active') AN.tick = setInterval(anBadge, 30000);
+    clearInterval(AN.tick); AN.tick = null; if (st === 'active' || /\brec\b/.test(cls)) AN.tick = setInterval(anBadge, 30000);
   }
   function watchSheet() {
     var id = sheetId(); if (id === AN.id) return; AN.id = id; AN.sum = null;

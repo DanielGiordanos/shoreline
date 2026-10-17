@@ -1505,3 +1505,124 @@ body.dark .dnr-pill .flatline-dot{stroke:rgba(255,255,255,.42);}
 @media (max-width:600px){.an-codebtn{margin:.25rem 0 0;display:flex}}
 @media (forced-colors:active){.cpr-pill,.dnr-pill{border-color:CanvasText}}
 @media print{.cpr-pill .ecg-dot,.dnr-pill .flatline-dot{display:none}.cpr-pill .ecg-live,.dnr-pill .flatline-live{stroke-dasharray:none!important;stroke-dashoffset:0!important}}
+/* ---------------- n179: the header is back to n176; only Flow's trace stays, inside the Code item, in the item's colours ---------------- */
+.an-sum-i .cpr-pill.mini,.an-sum-i .dnr-pill.mini{width:auto;height:auto;padding:0;gap:.375rem;border:0;border-radius:0;background:none;color:inherit;overflow:visible;contain:none;isolation:auto;cursor:inherit;transition:none}
+.an-sum-i .cpr-pill.mini:hover,.an-sum-i .dnr-pill.mini:hover,.an-sum-i .cpr-pill.mini:active,.an-sum-i .dnr-pill.mini:active{transform:none}
+.an-sum-i .mini .ecg,.an-sum-i .mini .flatline{flex:none;width:2.75rem;height:1.125rem}
+.an-sum-i .mini .label{font:inherit;letter-spacing:inherit}
+.an-sum-i .mini .ecg-live,.an-sum-i .mini .flatline-live{stroke-width:1.6}
+.an-sum-i .mini .ecg-base,.an-sum-i .mini .flatline-base{stroke-width:1.2}
+.an-sum-i .v:has(.mini){display:inline-flex;align-items:center}
+
+/* ---------------- n180: Recovery ---------------- */
+.an-pill.rec,body.dark .an-pill.rec{background:var(--an-purple);color:#fff}
+.an-rec{display:flex;flex-direction:column;gap:.625rem;margin:0 0 .875rem;padding:.75rem;border-radius:var(--an-r-m);background:var(--an-surface-2);box-shadow:inset 0 0 0 1px var(--an-line),inset 3px 0 0 var(--an-purple)}
+.an-rec.done{box-shadow:inset 0 0 0 1px var(--an-line)}
+.an-rech{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;padding:0 .25rem}
+.an-rech h2{margin:0;font-size:1.0625rem;font-weight:700;color:var(--an-ink)}
+.an-rech p{margin:.125rem 0 0;font-size:.8125rem;color:var(--an-ink-3)}
+.an-rmarks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
+.an-rmk{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:.125rem;min-height:56px;padding:.5rem .625rem .5rem 2rem;border:0;border-radius:var(--an-r-s);background:var(--an-fill);color:var(--an-ink);font:inherit;text-align:left;cursor:pointer;transition:transform .16s var(--an-ease),background-color .2s}
+.an-rmk .ic{position:absolute;left:.5rem;top:.6rem;width:1.125rem;height:1.125rem;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--an-line-2);display:grid;place-items:center}
+.an-rmk b{font-size:.9375rem;font-weight:600}
+.an-rmk .tm{font-size:.8125rem;color:var(--an-ink-3)}
+.an-rmk.done{background:var(--an-green-soft)}
+.an-rmk.done .ic{box-shadow:none;background:var(--an-green);color:#fff}
+.an-rmk.done .ic svg{width:.75rem;height:.75rem}
+.an-rmk.done .tm{color:var(--an-green-ink);font-weight:600}
+.an-rmk:active:not(:disabled){transform:scale(.97)}
+.an-rmk:disabled{cursor:default}
+.an-rmk:focus-visible,.an-rck:focus-visible{outline:2px solid var(--an-focus,var(--an-accent));outline-offset:2px}
+.an-rcheckb{width:100%;justify-content:center}
+.an-rchecks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.an-rck{display:flex;gap:.625rem;width:100%;min-height:44px;align-items:center;padding:.375rem .25rem;border:0;border-top:1px solid var(--an-line);background:none;color:var(--an-ink-2);font:inherit;font-size:.875rem;text-align:left;cursor:pointer}
+.an-rchecks li:first-child .an-rck{border-top:0}
+.an-rck .tm{flex:none;width:4.5rem;color:var(--an-ink-3);font-variant-numeric:tabular-nums}
+.an-rck .vals b{color:var(--an-ink);font-weight:600}
+.an-rck i{font-style:normal;font-weight:700}
+.an-rck i.up{color:var(--an-green-ink)}
+.an-rck i.dn{color:var(--an-amber-ink)}
+.an-rnone,.an-rmore{margin:0;padding:0 .25rem;font-size:.8125rem;color:var(--an-ink-3)}
+@media (prefers-reduced-motion:reduce){.an-rmk{transition:none}.an-rmk:active:not(:disabled){transform:none}}
+@media (forced-colors:active){.an-rmk{border:1px solid ButtonText}.an-rmk.done .ic{background:Highlight}}
+
+/* ---------------- n181: ready to leave recovery, temperature forecast ---------------- */
+.an-rready{display:flex;flex-direction:column;gap:.25rem;padding:.625rem .75rem;border-radius:var(--an-r-s);font-size:.875rem}
+.an-rready.ok{flex-direction:row;align-items:center;gap:.5rem;background:var(--an-green-soft);color:var(--an-green-ink)}
+.an-rready.ok .ic{display:grid;place-items:center;width:1.125rem;height:1.125rem;border-radius:50%;background:var(--an-green);color:#fff}
+.an-rready.ok .ic svg{width:.75rem;height:.75rem}
+.an-rready.wait{background:var(--an-fill);color:var(--an-ink-2)}
+.an-rready b{color:var(--an-ink);font-weight:600}
+.an-rready.ok b{color:var(--an-green-ink)}
+.an-rready ul{margin:0;padding:0 0 0 1.1rem;display:flex;flex-direction:column;gap:.125rem}
+.an-rtemp{display:flex;align-items:baseline;gap:.5rem;margin:0;padding:0 .25rem;font-size:.875rem;font-weight:600;color:var(--an-green-ink)}
+.an-rtemp.dn{color:var(--an-amber-ink)}
+.an-rtemp .k{font-size:.75rem;font-weight:600;color:var(--an-ink-3)}
+
+/* ---------------- n182: recovery colour, calmer — one green (Pravix P3 #5CC75A), used only for the checks ----------------
+   The mint tint on every finished tile, the banner and the forecast text added up to a wash of seafoam on navy.
+   Now finished milestones stay neutral tiles with a small solid check; green marks "done", nothing else. */
+.an-rec{--an-ok:#5CC75A}
+.an-rmk.done{background:var(--an-fill)}
+.an-rmk.done .ic{background:var(--an-ok);color:#0A1222}
+.an-rmk.done .tm{color:var(--an-ink-2);font-weight:500;font-variant-numeric:tabular-nums}
+.an-rready.ok{background:var(--an-fill);color:var(--an-ink)}
+.an-rready.ok b{color:var(--an-ink)}
+.an-rready.ok .ic{background:var(--an-ok);color:#0A1222}
+.an-rtemp{color:var(--an-ink-2);font-weight:500}
+.an-rtemp.dn{color:var(--an-amber-ink);font-weight:600}
+.an-rck i.up{color:var(--an-ok)}
+body:not(.dark) .an-rec{--an-ok:#2E9B33}
+body:not(.dark) .an-rmk.done .ic,body:not(.dark) .an-rready.ok .ic{color:#fff}
+
+/* ---------------- n182: dark mode — no cyan-filled buttons; every primary button wears Flow's Admit/Discharge card face ----------------
+   (sheet Save/Create/Give drug/Start/Sign/End anesthesia, the vitals Save, New training record). Light mode keeps its primary fill. */
+body.dark .an .an-btn.primary,body.dark .an-sheet .an-btn.primary,body.dark .an-btn.primary{
+  border:1px solid rgba(255,255,255,.09)!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.035)),#16233A!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important;color:rgba(245,248,252,.96)!important;font-weight:600!important;letter-spacing:normal!important;
+  transition:transform 160ms cubic-bezier(.2,.8,.2,1),border-color 160ms ease,background 160ms ease,box-shadow 160ms ease}
+body.dark .an-btn.primary svg.an-ico{color:#8FB0C4!important}
+body.dark .an-btn.primary:hover:not([disabled]){transform:translateY(-1px);border-color:rgba(255,255,255,.14)!important;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.045)),#16233A!important;box-shadow:0 6px 16px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.05)!important;filter:none}
+body.dark .an-btn.primary:active:not([disabled]){transform:scale(.986);filter:none}
+body.dark .an-btn.primary:focus-visible{outline:none;border-color:rgba(88,194,216,.38)!important;box-shadow:0 0 0 3px rgba(59,177,201,.12),inset 0 1px 0 rgba(255,255,255,.04)!important}
+body.dark .an-btn.primary[disabled]{opacity:.42}
+@media (prefers-contrast:more){body.dark .an-btn.primary{border-color:var(--an-line-2)!important}}
+@media (prefers-reduced-motion:reduce){body.dark .an-btn.primary{transition:none!important}body.dark .an-btn.primary:hover{transform:none!important}}
+@media (forced-colors:active){body.dark .an-btn.primary{border:1px solid ButtonText!important}}
+
+/* ---------------- n183: Recovery icons, Apple's design (SF Symbols: circle → checkmark.circle.fill, Bounce on mark) ---------------- */
+svg.an-sf{display:block;width:100%;height:100%;overflow:visible;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+svg.an-sf .dot{fill:currentColor;stroke:none}
+svg.an-sf .ring{stroke-width:1.5}
+svg.an-sf .disc{fill:var(--an-ok,#5CC75A);stroke:none}
+svg.an-sf .tick{stroke:#0A1222;stroke-width:2.1}
+body:not(.dark) svg.an-sf .tick{stroke:#fff}
+.an-rmk .ic,.an-rmk.done .ic,.an-rready .ic,.an-rready.ok .ic{width:1.3rem;height:1.3rem;background:none!important;box-shadow:none!important;border-radius:0;color:var(--an-ink-3)}
+.an-rmk .ic{left:.5rem;top:.55rem}
+.an-rmk .ic svg.an-sf,.an-rready .ic svg.an-sf{width:100%;height:100%}
+.an-rmk.done .ic svg,.an-rmk.done .ic svg.an-sf{width:100%;height:100%}
+.an-rready.wait b{display:flex;align-items:center;gap:.5rem}
+.an-rready.wait .ic{color:var(--an-amber-ink)}
+.an-rready.ok .ic{color:inherit}
+/* touch-down feedback on the tile (not on release) */
+.an-rmk:active:not(:disabled){transform:scale(.97);transition:transform 100ms ease-out}
+/* SF Bounce: the symbol dips and springs back as the check draws on */
+.an-sf.bounce{animation:anSfBounce .5s var(--an-spring-bouncy,cubic-bezier(.34,1.56,.64,1)) both;transform-origin:50% 50%}
+.an-sf.bounce .tick{stroke-dasharray:1;stroke-dashoffset:1;animation:anSfDraw .32s cubic-bezier(.2,.8,.2,1) .12s forwards}
+@keyframes anSfBounce{0%{transform:scale(.6);opacity:.4}45%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
+@keyframes anSfDraw{to{stroke-dashoffset:0}}
+/* trend glyphs */
+.an-rck i.up,.an-rck i.dn{display:inline-block;width:.85em;height:.85em;vertical-align:-.08em;margin-left:.1em}
+.an-rck i.up svg,.an-rck i.dn svg{stroke-width:2.2}
+.an-rtemp{align-items:center}
+.an-rtemp svg.th{flex:none;width:1rem;height:1rem;color:var(--an-ink-3)}
+.an-rtemp svg.tr{flex:none;width:.95rem;height:.95rem;stroke-width:2.1;color:var(--an-ok,#5CC75A)}
+.an-rtemp.dn svg.tr{color:var(--an-amber-ink)}
+.an-pill.due svg.pc{display:inline-block;width:.95em;height:.95em;margin-right:.3em;vertical-align:-.12em;stroke-width:2}
+@media (prefers-reduced-motion:reduce){.an-sf.bounce{animation:none}.an-sf.bounce .tick{animation:none;stroke-dashoffset:0}.an-rmk:active:not(:disabled){transform:none}}
+@media (forced-colors:active){svg.an-sf .disc{fill:Highlight}svg.an-sf .tick{stroke:HighlightText}}
+.an-rtemp{align-items:flex-start;gap:.5rem}
+.an-rtemp svg.th{margin-top:.1rem}
+.an-rtemp .tx{flex:1;min-width:0}
+.an-rtemp .tx svg.tr{display:inline-block;vertical-align:-.12em;margin-right:.3rem}

@@ -1,6 +1,6 @@
 /* Pravix Anesia — record model and dose engine (n151).
    Pure functions, no DOM: the page (anesia/index.html) and the tests (tests/engine.test.js) both use this file.
-   Training records only: patients are teaching cases for anesthesia residents, not the hospital's medical record.
+   Training records only: patients are teaching cases for interns, not the hospital's medical record.
 
    Rules the engine keeps:
    · Every amount is stored in mg (concentrations in mg/mL). mcg is a display/entry unit only.
@@ -97,6 +97,7 @@
       start: null, end: null,
       drugs: [], doses: [], infusions: [], gases: [], vitals: [], events: [], outputs: [], addenda: [],
       devices: [], vents: [], timeouts: [], staff: [],
+      recovery: null,                       /* n180: opens when anesthesia ends — milestones, checks, then where the patient went */
       audit: [], signed: null
     };
   }
@@ -136,7 +137,7 @@
     var open = TIMEOUT.filter(function (i) { return t.items.indexOf(i[0]) < 0; }).map(function (i) { return i[1]; });
     return { at: t.at, by: t.by, open: open, complete: !open.length, id: t.id };
   }
-  var ROLES = { resident: 'Resident', supervisor: 'Supervisor', technician: 'Technician', surgeon: 'Surgeon', student: 'Student', other: 'Other' };
+  var ROLES = { resident: 'Intern', supervisor: 'Supervisor', technician: 'Technician', surgeon: 'Surgeon', student: 'Student', other: 'Other' };
   function staffOn(rec, t) { return (rec.staff || []).filter(function (x) { return !x.void && x.from <= t && (!x.to || x.to > t); }); }
 
   /* ---------- fluid balance ---------- */
@@ -264,6 +265,13 @@
     position: 'Positioned', incision: 'Incision', closure: 'Closure', procedure_end: 'Procedure end',
     anesthesia_end: 'Anesthesia end', extubation: 'Extubation', recovery: 'To recovery', note: 'Note'
   };
+
+  /* ---------- n180: recovery ---------- */
+  var RMARKS = { extubation: 'Extubated', headup: 'Head up', sternal: 'Sternal', standing: 'Standing' };
+  var MENTATION = { alert: 'Alert', quiet: 'Quiet', sedated: 'Sedated', dysphoric: 'Dysphoric', obtunded: 'Obtunded' };
+  var RDEST = { Wards: 'Wards', ICU: 'ICU', Isolation: 'Isolation' };   /* the treatment sheet's locations */
+  var RCHECK = { temp: [77, 113, '°F'], hr: [0, 400, 'bpm'], rr: [0, 150, 'br/min'], spo2: [0, 100, '%'] };
+  function inRecovery(rec) { return !!(rec && rec.status === 'ended' && rec.recovery && !rec.recovery.end); }
 
   /* ---------- changes ---------- */
   function clone(x) { return JSON.parse(JSON.stringify(x)); }
@@ -433,13 +441,59 @@
         rec.end = t; rec.status = 'ended';
         rec.infusions.forEach(function (i) { if (!i.void && !i.end) { i.end = t; i.endBy = by; } });
         rec.events.push({ id: (op.eid || uid('e')), at: t, kind: 'anesthesia_end', note: '', by: by });
-        detail = 'Anesthesia ended'; break;
+        rec.recovery = { start: t, by: by, marks: {}, checks: [], end: null, endBy: '', dest: '' };
+        detail = 'Anesthesia ended · recovery started'; break;
+      }
+      case 'rmark': {
+        if (!inRecovery(rec)) fail(rec.recovery && rec.recovery.end ? 'Recovery has ended.' : 'Recovery starts when anesthesia ends.', 'state');
+        if (!RMARKS[op.kind]) fail('Choose the milestone.', 'kind');
+        var mk = rec.recovery.marks, prev = mk[op.kind];
+        if (op.at === null) {
+          if (!prev) fail('Nothing to clear.', 'kind');
+          if (prev.evId) rec.events = rec.events.filter(function (e) { return e.id !== prev.evId; });
+          delete mk[op.kind]; detail = RMARKS[op.kind] + ' cleared'; break;
+        }
+        if (t < rec.recovery.start - 30 * MIN && op.kind !== 'extubation') fail('That is before recovery started.', 'time');
+        var m = { at: t, by: by, ca: at };
+        if (op.kind === 'extubation') {
+          var evId = prev && prev.evId, pe = evId ? find(rec.events, evId) : null;
+          if (pe) pe.at = t;
+          else if (!rec.events.some(function (e) { return e.kind === 'extubation' && !e.void; })) { evId = uid('e'); rec.events.push({ id: evId, at: t, kind: 'extubation', note: '', by: by, ca: at }); }
+          else evId = null;
+          if (evId) m.evId = evId;
+        }
+        mk[op.kind] = m;
+        detail = RMARKS[op.kind] + (prev ? ' · time changed' : ''); break;
+      }
+      case 'rcheck': {
+        if (!inRecovery(rec)) fail(rec.recovery && rec.recovery.end ? 'Recovery has ended.' : 'Recovery starts when anesthesia ends.', 'state');
+        var v = op.values || {}, out = {}, errs = {}, any = false;
+        Object.keys(RCHECK).forEach(function (k) {
+          if (v[k] === undefined || v[k] === null || String(v[k]).trim() === '') return;
+          var n = num(v[k]), L = RCHECK[k];
+          if (n === null || n < L[0] || n > L[1]) errs[k] = L[0] + '–' + L[1] + ' ' + L[2]; else { out[k] = n; any = true; }
+        });
+        if (v.pain !== undefined && v.pain !== null && v.pain !== '') { var pn = num(v.pain); if (pn === null || pn < 0 || pn > 4 || Math.round(pn) !== pn) errs.pain = '0–4'; else { out.pain = pn; any = true; } }
+        if (v.mentation) { if (!MENTATION[v.mentation]) errs.mentation = 'Choose one'; else { out.mentation = v.mentation; any = true; } }
+        if (v.note) { out.note = String(v.note).trim().slice(0, 300); if (out.note) any = true; }
+        if (Object.keys(errs).length) { var ce = new Error('Check the highlighted values.'); ce.code = 'rcheck'; ce.errors = errs; throw ce; }
+        if (!any) fail('Enter at least one value.', 'empty');
+        if (t < rec.recovery.start) fail('That is before recovery started.', 'time');
+        rec.recovery.checks.push(Object.assign({ id: (op.eid || uid('r')), at: t, by: by, ca: at }, out));
+        detail = 'Recovery check'; break;
+      }
+      case 'rend': {
+        if (!inRecovery(rec)) fail('Recovery isn’t open.', 'state');
+        if (!RDEST[op.dest]) fail('Choose where the patient went.', 'dest');
+        if (t < rec.recovery.start) fail('Recovery can’t end before it started.', 'time');
+        rec.recovery.end = t; rec.recovery.endBy = by; rec.recovery.dest = op.dest;
+        detail = 'Recovery ended · ' + RDEST[op.dest]; break;
       }
       case 'void': {   /* strike an entry through, with a reason; it stays on the record */
-        var lists = { dose: 'doses', infusion: 'infusions', gas: 'gases', vitals: 'vitals', event: 'events', output: 'outputs', device: 'devices', vent: 'vents', timeout: 'timeouts', staff: 'staff', weight: null };
+        var lists = { dose: 'doses', infusion: 'infusions', gas: 'gases', vitals: 'vitals', event: 'events', output: 'outputs', device: 'devices', vent: 'vents', timeout: 'timeouts', staff: 'staff', weight: null, rcheck: null };
         if (lists[op.list] && !rec[lists[op.list]]) rec[lists[op.list]] = [];
         if (!(op.list in lists)) fail('That entry can’t be struck through here. Reload the record and try again.', 'list');
-        var arr = op.list === 'weight' ? rec.patient.weights : rec[lists[op.list]], it = find(arr, op.id);
+        var arr = op.list === 'weight' ? rec.patient.weights : op.list === 'rcheck' ? (rec.recovery ? rec.recovery.checks : []) : rec[lists[op.list]], it = find(arr, op.id);
         if (!it) fail('That entry is not on this record.', 'missing');
         if (it.void) fail('This entry is already struck through. Nothing more to do.', 'void');
         var why = String(op.reason || '').trim(); if (why.length < 4) fail('Say why (at least 4 characters).', 'reason');
@@ -453,6 +507,14 @@
           if (!si || !si.end || si.endBy !== by || !si.endCa || at - si.endCa > UNDO_MS) fail('Undo works for 2 minutes. Strike the entry through instead.', 'undo');
           if (rec.status !== 'active') fail('Anesthesia has ended; the infusion can’t restart.', 'undo');
           si.end = null; delete si.endBy; delete si.endCa; what = 'stopping ' + ((drug(rec, si.drugId) || {}).name || 'the infusion');
+        } else if (op.kind === 'rmark') {   /* n180 */
+          var rm = rec.recovery && rec.recovery.marks[op.id];
+          if (!rm || !mine(rm) || !inRecovery(rec)) fail('Undo works for 2 minutes. Change the time instead.', 'undo');
+          if (rm.evId) rec.events = rec.events.filter(function (e) { return e.id !== rm.evId; });
+          delete rec.recovery.marks[op.id]; what = (RMARKS[op.id] || 'milestone').toLowerCase();
+        } else if (op.kind === 'rcheck') {
+          var rcs = rec.recovery ? rec.recovery.checks : [], rc = find(rcs, op.id);
+          if (rc && mine(rc) && !rc.void) { rcs.splice(rcs.indexOf(rc), 1); what = 'recovery check'; }
         } else if (op.kind === 'rate') {
           rec.infusions.forEach(function (i) { var c = find(i.changes || [], op.id); if (c && mine(c)) { i.changes.splice(i.changes.indexOf(c), 1); what = 'rate change on ' + ((drug(rec, i.drugId) || {}).name || 'an infusion'); } });
         } else {
@@ -470,6 +532,7 @@
       }
       case 'sign': {
         if (rec.status !== 'ended') fail('End anesthesia before signing.', 'state');
+        if (inRecovery(rec)) fail('End recovery before signing.', 'recovery');
         rec.status = 'signed'; rec.signed = { at: at, by: by };
         detail = 'Signed'; break;
       }
@@ -516,7 +579,7 @@
     num: num, sig: sig, BOLUS_UNITS: BOLUS_UNITS, RATE_UNITS: RATE_UNITS, perKg: perKg,
     bolus: bolus, rate: rate, newRecord: newRecord, weightAt: weightAt, drug: drug, segments: segments, rateAt: rateAt,
     infused: infused, pumpNow: pumpNow, totals: totals, gasAt: gasAt, VITALS: VITALS, checkVitals: checkVitals,
-    EVENTS: EVENTS, OUTPUTS: OUTPUTS, ECG: ECG, isAbx: isAbx, abxStatus: abxStatus, DEVICES: DEVICES, VENT: VENT, ventAt: ventAt, TIMEOUT: TIMEOUT, timeoutStatus: timeoutStatus, ROLES: ROLES, staffOn: staffOn, balance: balance, isConfirmed: isConfirmed, UNDO_MS: UNDO_MS, apply: apply, weightImpact: weightImpact, span: span, uid: uid, MIN: MIN, HOUR: HOUR
+    EVENTS: EVENTS, OUTPUTS: OUTPUTS, RMARKS: RMARKS, MENTATION: MENTATION, RDEST: RDEST, inRecovery: inRecovery, ECG: ECG, isAbx: isAbx, abxStatus: abxStatus, DEVICES: DEVICES, VENT: VENT, ventAt: ventAt, TIMEOUT: TIMEOUT, timeoutStatus: timeoutStatus, ROLES: ROLES, staffOn: staffOn, balance: balance, isConfirmed: isConfirmed, UNDO_MS: UNDO_MS, apply: apply, weightImpact: weightImpact, span: span, uid: uid, MIN: MIN, HOUR: HOUR
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Anesia = api;
 })(typeof window !== 'undefined' ? window : this);

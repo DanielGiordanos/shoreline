@@ -155,7 +155,7 @@
     el.classList.toggle('bad', st === 'offline' || st === 'error' || st === 'denied');
     var live = $('#anSaveLive'); if (live) live.textContent = (st === 'offline' || st === 'error' || st === 'denied') ? el.textContent : '';   /* saving stays silent */
   }
-  var UNDO = { dose: 'dose', infusion: 'infusion', rate: 'rate', stop: 'stop', gas: 'gas', vitals: 'vitals', event: 'event', weight: 'weight', output: 'output', device: 'device', vent: 'vent', timeout: 'timeout', staff: 'staff' };
+  var UNDO = { dose: 'dose', infusion: 'infusion', rate: 'rate', stop: 'stop', gas: 'gas', vitals: 'vitals', event: 'event', weight: 'weight', output: 'output', device: 'device', vent: 'vent', timeout: 'timeout', staff: 'staff', rcheck: 'rcheck', rmark: 'rmark' };
   function change(id, op, extra) {
     var s = slot(id), ctx = { by: S.me, at: now() };
     var cur = recOf(id), uk = UNDO[op.type];
@@ -255,9 +255,10 @@
   function resusPill(code, size) {
     var n = String(code || '').toUpperCase(); if (!RESUS_NAME[n]) return '';
     var dnr = n === 'DNR', tip = 'Code status: ' + RESUS_NAME[n] + (size === 'flow' ? ' · set in Flow' : '');
-    if (dnr) return '<span class="dnr-pill" title="' + esc(tip) + '"><span class="flatline" aria-hidden="true"><svg class="flatline-svg" viewBox="0 0 76 26" preserveAspectRatio="xMidYMid meet"><path class="flatline-base" d="M1 13 H75"/><path class="flatline-live" d="M1 13 H75"/><circle class="flatline-dot" cx="1" cy="13" r="1.7"/></svg></span><span class="label">DNR</span></span>';
+    var mini = size === 'mini' ? ' mini' : '';
+    if (dnr) return '<span class="dnr-pill' + mini + '" title="' + esc(tip) + '"><span class="flatline" aria-hidden="true"><svg class="flatline-svg" viewBox="0 0 76 26" preserveAspectRatio="xMidYMid meet"><path class="flatline-base" d="M1 13 H75"/><path class="flatline-live" d="M1 13 H75"/><circle class="flatline-dot" cx="1" cy="13" r="1.7"/></svg></span><span class="label">DNR</span></span>';
     var d = 'M1 13 C4 13,5 13,7 13 C8 13,9 11.8,10.2 11.3 C11.4 10.8,12.2 12.1,13.4 13 L16 13 L17.2 14.3 L18.5 10.5 L20.1 2.7 L21.6 21.4 L23.2 12.2 L26 13 C28 13,29 12.8,30 12.5 C32 11.2,33.4 9.8,35 10.2 C37 10.7,38 12.5,40 13 L42 13 C45 13,46 13,48 13 C49 13,50 11.8,51.2 11.3 C52.4 10.8,53.2 12.1,54.4 13 L57 13 L58.2 14.3 L59.5 10.5 L61.1 2.7 L62.6 21.4 L64.2 12.2 L67 13 C69 13,70 12.8,71 12.5 C72.5 11.4,73.5 10.4,75 10.8';
-    return '<span class="cpr-pill" title="' + esc(tip) + '"><span class="ecg" aria-hidden="true"><svg class="ecg-svg" viewBox="0 0 76 26" preserveAspectRatio="xMidYMid meet"><path class="ecg-base" d="' + d + '"/><path class="ecg-live" d="' + d + '"/><circle class="ecg-dot" cx="1" cy="13" r="1.7"/></svg></span><span class="label">' + n + '</span></span>';
+    return '<span class="cpr-pill' + mini + '" title="' + esc(tip) + '"><span class="ecg" aria-hidden="true"><svg class="ecg-svg" viewBox="0 0 76 26" preserveAspectRatio="xMidYMid meet"><path class="ecg-base" d="' + d + '"/><path class="ecg-live" d="' + d + '"/><circle class="ecg-dot" cx="1" cy="13" r="1.7"/></svg></span><span class="label">' + n + '</span></span>';
   }
   /* the code status to show: for a sheet record, the treatment sheet's (Flow's) as it is now; otherwise the record's */
   function sheetCode() { var c = SH && SH.patient ? String(SH.patient.code || '').toUpperCase() : ''; return CODE_LABEL[c] ? c : ''; }
@@ -278,6 +279,8 @@
     if (lv) { last = { at: lv.at }; ['hr', 'rr', 'sap', 'map', 'dap', 'spo2', 'etco2', 'temp'].forEach(function (k) { if (lv[k] !== undefined && lv[k] !== null && lv[k] !== '') last[k] = lv[k]; }); }
     var to = A.timeoutStatus(r), w = A.weightAt(r, now());
     return { v: 1, rec: r.id, status: r.status, procedure: r.procedure || '', start: r.start || null, end: r.end || null, signed: r.signed ? { at: r.signed.at, by: r.signed.by || '' } : null,
+      recovery: r.recovery ? (function (rc) { var lc = rc.checks.filter(function (c) { return !c.void; }).slice(-1)[0] || null, mk = {}; Object.keys(rc.marks || {}).forEach(function (k) { mk[k] = rc.marks[k].at; });
+        return { start: rc.start, end: rc.end || null, dest: rc.dest || '', marks: mk, last: lc ? { at: lc.at, temp: lc.temp === undefined ? null : lc.temp, hr: lc.hr === undefined ? null : lc.hr, pain: lc.pain === undefined ? null : lc.pain, mentation: lc.mentation || '' } : null }; })(r.recovery) : null,
       confirmed: !!r.confirmed, asa: r.patient.asa ? r.patient.asa + (r.patient.emergency ? 'E' : '') : '', timeout: !!(to && to.complete), kg: w || null, last: last, doses: r.doses.filter(function (d) { return !d.void; }).length,
       at: r.updated_at || now(), by: r.updated_by || '' };
   }
@@ -640,7 +643,7 @@
   function teamSheet(r) {
     var t = now(), ro = r.status === 'signed', st = (r.staff || []).filter(function (x) { return !x.void; }).sort(function (a, b) { return a.from - b.from; });
     var meIn = teamNames(r, t).indexOf(S.me) >= 0;
-    var list = '<ul class="an-team"><li><span><b>' + esc(r.team.resident || '—') + '</b><small>Resident</small></span></li><li><span><b>' + esc(r.team.supervisor || '—') + '</b><small>Supervisor</small></span></li>' +
+    var list = '<ul class="an-team"><li><span><b>' + esc(r.team.resident || '—') + '</b><small>Intern</small></span></li><li><span><b>' + esc(r.team.supervisor || '—') + '</b><small>Supervisor</small></span></li>' +
       st.map(function (x) { return '<li class="' + (x.to ? 'gone' : '') + '"><span><b>' + esc(x.name) + '</b><small>' + esc(A.ROLES[x.role]) + ' · ' + esc(fmtTime(x.from)) + (x.to ? '–' + esc(fmtTime(x.to)) : ' – now') + '</small></span>' + (!x.to && !ro ? '<button type="button" class="an-btn plain sm" data-hand="' + x.id + '">Hand off</button>' : '') + '</li>'; }).join('') + '</ul>';
     openSheet({
       title: 'Team', primary: ro ? null : 'Add', quiet: true,
@@ -678,7 +681,8 @@
   /* the patient summary under the name: code status, allergies, ASA, procedure — always on screen */
   function summaryHTML(r) {
     var p = r.patient, ro = r.status === 'signed', tag = function (cls, k, v, aria) { return '<button type="button" class="an-sum-i ' + cls + '" data-sum aria-label="' + esc(aria) + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></button>'; };
-    var cs = codeOf(r), code = CODE_LABEL[cs] ? '' : tag('none', 'Code', 'Not recorded', 'Code status not recorded. Add it');   /* n178: a recorded code shows as Flow's pill beside the name */
+    var cs = codeOf(r), fl = r.kind === 'case' && sheetCode() ? ', from Flow' : '';
+    var code = cs === 'DNR' ? tag('dnr', 'Code', resusPill(cs, 'mini'), 'Code status: do not resuscitate' + fl) : CODE_LABEL[cs] ? tag('cpr', 'Code', resusPill(cs, 'mini'), 'Code status: ' + RESUS_NAME[cs] + fl) : tag('none', 'Code', 'Not recorded', 'Code status not recorded. Add it');   /* n179: the Code item as before, with Flow's trace */
     var alg = p.allergies ? tag('alg', 'Allergies', esc(p.allergies), 'Allergies: ' + p.allergies) : p.nka ? tag('nka', 'Allergies', 'None known', 'No known allergies') : tag('none', 'Allergies', 'Not recorded', 'Allergies not recorded. Add them');
     var asa = p.asa ? tag('', 'ASA', esc(p.asa + (p.emergency ? 'E' : '')), 'ASA ' + p.asa + (p.emergency ? ' emergency' : '')) : '';
     var pr = r.procedure ? tag('proc', 'Procedure', esc(r.procedure), 'Procedure: ' + r.procedure) : '';
@@ -729,6 +733,7 @@
   function statusPill(r) {
     if (r.status === 'active') return '<span class="an-pill active">Under anesthesia</span>';
     if (r.status === 'signed') return '<span class="an-pill signed">Signed</span>';
+    if (A.inRecovery(r)) return '<span class="an-pill rec">In recovery</span>';
     if (r.status === 'ended') return '<span class="an-pill warn">Ended · not signed</span>';
     return '<span class="an-pill">Planned</span>';
   }
@@ -788,14 +793,16 @@
     var t = now(), w = A.weightAt(r, t), p = r.patient, signed = r.status === 'signed', live = r.status === 'active';
     var lw = lastWeighed(r), due = vitalsDue(r, t), insp = inspectorOpen();
     var clock = live ? '<div class="an-clock"><b>' + dur(t - r.start) + '</b><span>Anesthesia time</span></div>'
+      : A.inRecovery(r) ? '<div class="an-clock"><b>' + dur(t - r.recovery.start) + '</b><span>Recovery time</span></div>'
       : r.start && r.end ? '<div class="an-clock"><b>' + dur(r.end - r.start) + '</b><span>' + fmtTime(r.start) + '–' + fmtTime(r.end) + '</span></div>' : '';
     var main = r.status === 'planned' ? '<button type="button" class="an-btn primary an-dc" id="anStart">Start anesthesia</button>'
       : live ? '<button type="button" class="an-btn an-dc" id="anEnd">' + icon('stop') + 'End anesthesia</button>'
+      : A.inRecovery(r) ? '<button type="button" class="an-btn an-dc" id="anREnd">' + icon('stop') + 'End recovery</button>'
       : r.status === 'ended' ? '<button type="button" class="an-btn primary an-dc" id="anSign">' + icon('check') + 'Sign record</button>'
       : '<button type="button" class="an-btn an-dc" id="anAdd">' + icon('compose') + 'Add addendum</button>';
     var facts = [cap(p.species), p.breed, p.sex, p.age].filter(Boolean).map(esc).join(' · '), conf = A.isConfirmed(r);
     var head = '<header class="an-rhead"><a class="an-back" href="#">' + icon('back', { scale: 'l' }) + (SHEET ? 'Anesthesia' : 'Records') + '</a>' +
-      '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + (CODE_LABEL[codeOf(r)] ? '<button type="button" class="an-codebtn" id="anCode" aria-label="Code status ' + codeOf(r) + ', ' + RESUS_NAME[codeOf(r)] + (r.kind === 'case' && sheetCode() ? ', from Flow' : '') + '. Patient details">' + resusPill(codeOf(r), r.kind === 'case' && sheetCode() ? 'flow' : '') + '</button>' : '') + statusPill(r) + kindPill(r, true) + confirmChip(r) + presenceChip(r) + '</h1>' +
+      '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + statusPill(r) + kindPill(r, true) + confirmChip(r) + presenceChip(r) + '</h1>' +
       '<div class="sub"><span>' + (facts || 'No details yet') + '</span><button type="button" class="an-info" id="anPatient" aria-label="Patient details">' + icon('info') + '</button></div></div>' +
       '<button type="button" class="an-wbig' + (w ? '' : ' none') + '" id="anWeight"' + (signed ? ' disabled' : '') + ' aria-label="' + (w ? 'Weight ' + sig(w) + ' kilograms' + (lw ? ', weighed ' + fmtTime(lw.at) : '') + '. Change weight' : 'No weight. Add weight') + '">' +
       (w ? '<b>' + sig(w) + '<span> kg</span></b><small>' + (lw ? (lw.method === 'estimated' ? 'Estimated ' : 'Weighed ') + fmtTime(lw.at) : '') + '</small>' : '<b>' + icon('scale', { slash: true, scale: 's' }) + 'No weight</b><small>Add weight</small>') + '</button>' +
@@ -875,7 +882,7 @@
       (vnow ? '<div class="an-nrow an-nbal"><span>Ventilation</span><b style="font-size:.9375rem">' + esc(A.VENT[vnow.mode]) + '</b></div>' : '');
     var fb = A.balance(r, r.end && r.end < t ? r.end : t), fbRow = (r.outputs || []).length ? '<h3>Fluid balance</h3><div class="an-nlist"><div class="an-nrow an-nbal"><span>In ' + sig(fb.inTotal) + ' · out ' + sig(fb.outTotal) + ' mL</span><b>' + (fb.net >= 0 ? '+' : '−') + sig(Math.abs(fb.net)) + ' <i>mL</i></b></div></div>' : '';
     var form = S.vOpen && S.vOpen === r.id && !signed ? vitalsFormHTML(r) : '';
-    return '<aside class="an-nowcol" aria-label="Now">' +
+    return '<aside class="an-nowcol" aria-label="Now">' + recoveryHTML(r, t) +
       '<div class="an-nh"><div><h2>Now</h2>' + (lastAt ? '<p class="an-nlast">Last check ' + (live ? '<span data-last="' + lastAt + '">' + ago(t - lastAt) + '</span>' : 'at ' + fmtTime(lastAt)) + '</p>' : '<p class="an-nlast">No vitals yet</p>') + '</div>' + (due ? '<span class="an-pill warn due" role="status">Vitals due · ' + due + ' min</span>' : '<span class="an-nt">' + fmtTime(t) + '</span>') + '</div>' +
       (form || '<div class="an-tiles">' + tiles + '</div>') +
       (abxRows ? '<h3>Antibiotics</h3><div class="an-nlist">' + abxRows + '</div>' : '') +
@@ -1113,12 +1120,15 @@
     $$('[data-dev]').forEach(function (b) { b.onclick = function () { deviceSheet(r, b.getAttribute('data-dev'), b); }; });
     on('#anEnd', function () { timeSheet(r, 'End anesthesia', 'End anesthesia', function (t) { change(id, { type: 'end', at: t }); }, 'Running infusions stop at this time.'); });
     on('#anSign', function () { signSheet(r); });
+    on('#anREnd', function () { rEndSheet(r); });
+    on('#anRCheck', function () { rCheckSheet(r); });
+    $$('[data-rmk]').forEach(function (b) { b.onclick = function () { rMark(r, b.getAttribute('data-rmk'), b); }; });
+    $$('[data-rck]').forEach(function (b) { b.onclick = function () { rCheckDetail(r, b.getAttribute('data-rck'), b); }; });
     on('#anAdd', function () { addendumSheet(r); });
     on('#anPatient', function () { patientSheet(r, r.status === 'signed'); });
     on('#anWeight', function () { weightSheet(r); });
     on('#anPumpsSet', function () { S.pumpNotice = null; render(); });
     on('#anEmer', function () { emergencySheet(r); });
-    on('#anCode', function () { patientSheet(r, r.status === 'signed'); });
     on('#anInsp', function () {
       S.inspector = !inspectorOpen(); lsSet('inspector', S.inspector); S.opening = S.inspector ? 'side' : null; render(); S.opening = null;
       var side = $('#anInspector');
@@ -1364,8 +1374,9 @@
     $$('[inert]').forEach(function (el) { el.removeAttribute('inert'); });
     if (silent) return;
     var back = sheetPrev && document.body.contains(sheetPrev) ? sheetPrev : sheetKey ? $(sheetKey) : null;
+    if (!back && /^#an(Start|End|REnd|Sign)$/.test(sheetKey || '')) back = $('#anREnd') || $('#anSign') || $('#anEnd') || $('#anAdd');   /* n180 */
     if (!back || back.disabled) back = $('#anApp');
-    try { back.focus(); } catch (e) { }
+    try { back.focus({ preventScroll: true }); } catch (e) { }
   }
   function bad(msg, field) { var e = new Error(msg); e.field = field; throw e; }
   function val(w, n) { var el = $('[name="' + n + '"]', w); return el ? (el.type === 'checkbox' ? el.checked : el.value) : ''; }
@@ -1408,7 +1419,7 @@
 
   function patientSheet(r, readOnly) {
     if (r && readOnly) {
-      var pr = r.patient, rows = [['Species', cap(pr.species)], ['Breed', pr.breed], ['Sex', pr.sex], ['Age', pr.age], ['ASA', pr.asa ? pr.asa + (pr.emergency ? 'E' : '') : ''], ['Code status', pr.cpr || 'Not recorded'], ['Allergies', pr.allergies || (pr.nka ? 'None known' : 'Not recorded')], ['Procedure', r.procedure], ['Confirmed', r.confirmed ? r.confirmed.by + ', ' + fmtTime(r.confirmed.at) : A.isConfirmed(r) ? '—' : 'Not yet'], ['Resident', r.team.resident], ['Supervisor', r.team.supervisor]].filter(function (x) { return x[1]; });
+      var pr = r.patient, rows = [['Species', cap(pr.species)], ['Breed', pr.breed], ['Sex', pr.sex], ['Age', pr.age], ['ASA', pr.asa ? pr.asa + (pr.emergency ? 'E' : '') : ''], ['Code status', pr.cpr || 'Not recorded'], ['Allergies', pr.allergies || (pr.nka ? 'None known' : 'Not recorded')], ['Procedure', r.procedure], ['Confirmed', r.confirmed ? r.confirmed.by + ', ' + fmtTime(r.confirmed.at) : A.isConfirmed(r) ? '—' : 'Not yet'], ['Intern', r.team.resident], ['Supervisor', r.team.supervisor]].filter(function (x) { return x[1]; });
       openSheet({ title: pr.name || 'Patient', primary: null, focus: '[data-x]', body: '<dl class="an-dl">' + rows.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' });
       var xb = $('#anSheet [data-x]'); if (xb) xb.textContent = 'Close'; return;
     }
@@ -1429,7 +1440,7 @@
         '<div class="an-two"><div class="an-f"><span class="lab">Code status</span>' + (isCase && sheetCode() ? '<div class="an-codef">' + resusPill(sheetCode()) + '<span class="hint">From Flow. Change it there.</span></div><input type="hidden" name="cpr" value="' + sheetCode() + '">' : chips('cpr', [['', 'Not recorded'], ['ALS', 'ALS'], ['BLS', 'BLS'], ['CPR', 'CPR'], ['DNR', 'DNR']], p.cpr || '')) + '</div>' +
         '<div class="an-f"><label for="pAl">Allergies</label><input class="an-in" id="pAl" name="allergies" maxlength="300" autocomplete="off" value="' + esc(p.allergies || '') + '" placeholder="Drug or other allergies"><label class="an-check" style="margin-top:.375rem"><input type="checkbox" name="nka"' + (p.nka ? ' checked' : '') + '>No known allergies</label></div></div>' +
         '<div class="an-f"><label for="pP">Procedure</label><input class="an-in" id="pP" name="procedure" maxlength="160" value="' + esc(r ? r.procedure : '') + '"></div>' +
-        '<div class="an-two"><div class="an-f"><label for="pR">Resident</label><input class="an-in" id="pR" name="resident" maxlength="80" value="' + esc(r ? r.team.resident : S.me) + '"></div>' +
+        '<div class="an-two"><div class="an-f"><label for="pR">Intern</label><input class="an-in" id="pR" name="resident" maxlength="80" value="' + esc(r ? r.team.resident : S.me) + '"></div>' +
         '<div class="an-f"><label for="pSu">Supervisor</label><input class="an-in" id="pSu" name="supervisor" maxlength="80" value="' + esc(r ? r.team.supervisor : '') + '"></div></div>',
       init: function (w) {
         bindChips(w);
@@ -1821,6 +1832,145 @@
   function timeSheet(r, title, primary, fn, note) {
     openSheet({ title: title, primary: primary, body: (note ? '<p style="margin:0;color:var(--an-ink-3)">' + esc(note) + '</p>' : '') + timeField(now()), init: bindTime, submit: function (w) { fn(readTime(w, r)); } });
   }
+
+  /* ---------------- n180: Recovery ---------------- */
+  var RCHECK_MIN = 15, PAIN = [['0', '0 · None'], ['1', '1 · Mild'], ['2', '2 · Moderate'], ['3', '3 · Moderate to severe'], ['4', '4 · Severe']];
+  function rMarkAt(r, k) {   /* a milestone; an Extubation event charted during anesthesia counts as the extubation */
+    var m = r.recovery && r.recovery.marks[k]; if (m) return m.at;
+    if (k === 'extubation') { var e = r.events.filter(function (x) { return x.kind === 'extubation' && !x.void; })[0]; if (e) return e.at; }
+    return null;
+  }
+  function rChecks(r) { return r.recovery ? r.recovery.checks.filter(function (c) { return !c.void; }).sort(function (a, b) { return a.at - b.at; }) : []; }
+
+  /* n183: SF Symbols shapes for Recovery (24-pt grid, rounded caps and joins, regular weight 1.75) */
+  var SFR = {
+    circle: '<circle cx="12" cy="12" r="9.1" class="ring"/>',
+    done: '<circle cx="12" cy="12" r="10" class="disc"/><path class="tick" pathLength="1" d="M7.4 12.4l3.1 3.1 6.1-6.7"/>',
+    warn: '<circle cx="12" cy="12" r="9.1" class="ring"/><path d="M12 7.4v5.6"/><circle cx="12" cy="16.4" r="1.15" class="dot"/>',
+    thermo: '<path d="M10 4.9a2 2 0 0 1 4 0v8.4a4.1 4.1 0 1 1-4 0z"/><path d="M12 9.6v6.1"/><circle cx="12" cy="16.9" r="1.6" class="dot"/>',
+    upright: '<path d="M7.5 16.5l9-9M9.6 7.5h6.9v6.9"/>', downright: '<path d="M7.5 7.5l9 9M16.5 9.6v6.9H9.6"/>',
+    up: '<path d="M12 18.5v-13M7 10.5l5-5 5 5"/>', down: '<path d="M12 5.5v13M7 13.5l5 5 5-5"/>',
+    clock: '<circle cx="12" cy="12" r="8.6" class="ring"/><path d="M12 7.6V12l3 1.9"/>'
+  };
+  function sfr(n, cls) { return '<svg class="an-sf' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (SFR[n] || '') + '</svg>'; }
+  /* n181: the temperature trend from the last (up to 4) recovery temperatures: °F per hour, and when it reaches TEMP_OK at this rate */
+  var TEMP_OK = 100;
+  function rTemp(r, t) {
+    var pts = rChecks(r).filter(function (c) { return c.temp !== undefined; }).slice(-4);
+    if (pts.length < 2) return pts.length ? { last: pts[0].temp, at: pts[0].at, n: 1 } : null;
+    var x0 = pts[0].at, n = pts.length, sx = 0, sy = 0, sxx = 0, sxy = 0;
+    pts.forEach(function (c) { var x = (c.at - x0) / 3600000; sx += x; sy += c.temp; sxx += x * x; sxy += x * c.temp; });
+    var den = n * sxx - sx * sx, last = pts[n - 1];
+    if (den <= 0 || (last.at - x0) < 5 * MIN) return { last: last.temp, at: last.at, n: n };
+    var slope = (n * sxy - sx * sy) / den, out = { last: last.temp, at: last.at, n: n, slope: slope };
+    if (slope > 0.05 && last.temp < TEMP_OK) { var h = (TEMP_OK - last.temp) / slope; if (h <= 8) out.eta = last.at + h * 3600000; else out.slow = true; }
+    return out;
+  }
+  /* n181: what still stands between this patient and leaving recovery — listed, never decided */
+  function rReady(r, t) {
+    if (!A.inRecovery(r)) return null;
+    var miss = [], cs = rChecks(r), lc = cs[cs.length - 1], tt = rTemp(r, t), due = rDue(r, t);
+    Object.keys(A.RMARKS).forEach(function (k) { if (!rMarkAt(r, k)) miss.push(A.RMARKS[k] + ' not recorded'); });
+    if (!cs.length) miss.push('No recovery check yet'); else if (due) miss.push('Check overdue (' + due + ' min)');
+    if (tt && tt.slope !== undefined && tt.slope < -0.05) miss.push('Temperature falling');
+    if (lc && lc.pain !== undefined && lc.pain >= 3) miss.push('Pain ' + lc.pain + '/4 at the last check');
+    if (lc && (lc.mentation === 'dysphoric' || lc.mentation === 'obtunded')) miss.push(A.MENTATION[lc.mentation] + ' at the last check');
+    return miss;
+  }
+  function rReadyHTML(r, t) {
+    var m = rReady(r, t); if (!m) return '';
+    if (!m.length) return '<div class="an-rready ok" role="status"><span class="ic" aria-hidden="true">' + sfr('done') + '</span><b>Ready to leave recovery</b></div>';
+    return '<div class="an-rready wait" role="status"><b><span class="ic" aria-hidden="true">' + sfr('warn') + '</span>Not ready yet</b><ul>' + m.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+  }
+  function rTempHTML(r, t) {
+    var tt = rTemp(r, t); if (!tt || tt.slope === undefined) return '';
+    var rate = (tt.slope >= 0 ? '+' : '−') + sig(Math.abs(Math.round(tt.slope * 10) / 10)) + ' °F/h', txt, cls = '';
+    if (tt.slope < -0.05) { txt = 'Temperature falling · ' + rate; cls = ' dn'; }
+    else if (tt.last >= TEMP_OK) txt = 'Temperature ' + sig(tt.last) + ' °F · ' + rate;
+    else if (tt.eta) txt = 'Rising ' + rate + ' · about ' + TEMP_OK + ' °F by ' + fmtTime(tt.eta);
+    else if (tt.slow) { txt = 'Rising slowly · ' + rate; cls = ' dn'; }
+    else txt = 'Temperature steady · ' + rate;
+    return '<p class="an-rtemp' + cls + '" role="status" aria-label="Temperature forecast: ' + esc(txt) + '">' + sfr('thermo', 'th') + '<span class="tx">' + (tt.slope < -0.05 ? sfr('downright', 'tr') : tt.slope > 0.05 ? sfr('upright', 'tr') : '') + esc(txt) + '</span></p>';
+  }
+  function rDue(r, t) { if (!A.inRecovery(r)) return null; var c = rChecks(r), last = c.length ? c[c.length - 1].at : r.recovery.start, m = Math.floor((t - last) / MIN); return m >= RCHECK_MIN ? m : null; }
+  function recoveryHTML(r, t) {
+    var rc = r.recovery; if (!rc) return '';
+    var open = A.inRecovery(r), due = rDue(r, t), cs = rChecks(r);
+    var marks = Object.keys(A.RMARKS).map(function (k) {
+      var at = rMarkAt(r, k);
+      return '<button type="button" class="an-rmk' + (at ? ' done' : '') + '" data-rmk="' + k + '"' + (open ? '' : ' disabled') + ' aria-label="' + esc(A.RMARKS[k]) + (at ? ' at ' + fmtTime(at) + (open ? '. Change the time' : '') : open ? '. Record it now' : ', not recorded') + '">' +
+        '<span class="ic" aria-hidden="true">' + (at ? sfr('done', S.fresh === k ? 'bounce fresh' : '') : sfr('circle')) + '</span><b>' + esc(A.RMARKS[k]) + '</b><span class="tm">' + (at ? esc(fmtTime(at)) : open ? 'Not yet' : '—') + '</span></button>';
+    }).join('');
+    var rows = cs.slice(-4).reverse().map(function (c, i, arr) {
+      var prev = cs[cs.indexOf(c) - 1], tr = '';
+      if (c.temp !== undefined && prev && prev.temp !== undefined) tr = c.temp > prev.temp ? ' <i class="up" role="img" aria-label="rising">' + sfr('up') + '</i>' : c.temp < prev.temp ? ' <i class="dn" role="img" aria-label="falling">' + sfr('down') + '</i>' : '';
+      var bits = [];
+      if (c.temp !== undefined) bits.push('<b>' + sig(c.temp) + ' °F' + tr + '</b>');
+      if (c.hr !== undefined) bits.push('HR ' + sig(c.hr)); if (c.rr !== undefined) bits.push('RR ' + sig(c.rr)); if (c.spo2 !== undefined) bits.push('SpO₂ ' + sig(c.spo2) + '%');
+      if (c.pain !== undefined) bits.push('Pain ' + c.pain + '/4'); if (c.mentation) bits.push(esc(A.MENTATION[c.mentation]));
+      return '<li><button type="button" class="an-rck" data-rck="' + c.id + '"><span class="tm">' + esc(fmtTime(c.at)) + '</span><span class="vals">' + bits.join(' · ') + '</span></button></li>';
+    }).join('');
+    return '<section class="an-rec' + (open ? ' open' : ' done') + '" aria-labelledby="anRecH">' +
+      '<div class="an-rech"><div><h2 id="anRecH">Recovery</h2><p>' + (open ? 'Since ' + esc(fmtTime(rc.start)) + ' · ' + dur(t - rc.start) : esc(fmtTime(rc.start)) + '–' + esc(fmtTime(rc.end)) + ' · to ' + esc(A.RDEST[rc.dest] || rc.dest)) + '</p></div>' +
+      (due ? '<span class="an-pill warn due" role="status">' + sfr('clock', 'pc') + 'Check due · ' + due + ' min</span>' : '') + '</div>' +
+      rReadyHTML(r, t) +
+      '<div class="an-rmarks" role="group" aria-label="Recovery milestones">' + marks + '</div>' +
+      (open ? '<button type="button" class="an-btn an-dc an-rcheckb" id="anRCheck">' + icon('heart') + 'Recovery check</button>' : '') +
+      rTempHTML(r, t) + (rows ? '<ul class="an-rchecks" aria-label="Recovery checks">' + rows + '</ul>' + (cs.length > 4 ? '<p class="an-rmore">' + (cs.length - 4) + ' earlier ' + (cs.length - 4 === 1 ? 'check' : 'checks') + ' in History</p>' : '') : open ? '<p class="an-rnone">No checks yet. The first is due ' + (due ? 'now' : 'in ' + Math.max(1, RCHECK_MIN - Math.floor((t - rc.start) / MIN)) + ' min') + '.</p>' : '') +
+      '</section>';
+  }
+  function rMark(r, k, anchor) {
+    var at = rMarkAt(r, k), own = r.recovery && r.recovery.marks[k];
+    if (!at) { change(r.id, { type: 'rmark', kind: k, at: now(), eid: k }); return; }
+    openSheet({ title: A.RMARKS[k], primary: 'Save', quiet: true, anchor: anchor,
+      body: timeField(at, 'Time', true) + (own ? '<button type="button" class="an-btn plain destr" data-rclear style="align-self:flex-start">Clear ' + esc(A.RMARKS[k].toLowerCase()) + '</button>' : '<p class="hint" style="margin:0">From the Extubation event on the chart.</p>'),
+      init: function (w) { bindTime(w); var c = $('[data-rclear]', w); if (c) c.onclick = function () { try { change(r.id, { type: 'rmark', kind: k, at: null }, { noUndo: true }); closeSheet(); } catch (e) { toast(e.message); } }; },
+      submit: function (w) { change(r.id, { type: 'rmark', kind: k, at: readTime(w, r), eid: k }, { noUndo: true }); } });
+  }
+  function rCheckSheet(r) {
+    var cs = rChecks(r), last = cs[cs.length - 1];
+    var fld = function (n, l, u, ph) { return '<div class="an-f"><label for="rc_' + n + '">' + l + '</label><div class="an-unit"><input class="an-in an-tnum" id="rc_' + n + '" name="' + n + '" inputmode="decimal" autocomplete="off"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '><span class="u">' + u + '</span></div><em class="err" data-ferr="' + n + '"></em></div>'; };
+    openSheet({ title: 'Recovery check', primary: 'Save',
+      body: (last ? '<p class="hint" style="margin:0">Last check ' + esc(fmtTime(last.at)) + (last.temp !== undefined ? ' · ' + sig(last.temp) + ' °F' : '') + '</p>' : '') +
+        '<div class="an-two">' + fld('temp', 'Temperature', '°F') + fld('hr', 'Heart rate', 'bpm') + '</div><div class="an-two">' + fld('rr', 'Respiratory rate', 'br/min') + fld('spo2', 'SpO₂', '%', 'If measured') + '</div>' +
+        '<div class="an-f"><span class="lab" id="rcPl">Pain score</span>' + chips('pain', PAIN, '') + '<span class="hint">0–4, as on the acute pain scale.</span></div>' +
+        '<div class="an-f"><span class="lab">Mentation</span>' + chips('mentation', Object.keys(A.MENTATION).map(function (k) { return [k, A.MENTATION[k]]; }), '') + '</div>' +
+        '<div class="an-f"><label for="rc_note">Note</label><input class="an-in" id="rc_note" name="note" maxlength="300" autocomplete="off" placeholder="Optional"></div>' + timeField(now()),
+      focus: '#rc_temp',
+      init: function (w) { bindTime(w); bindChips(w); },
+      submit: function (w) {
+        var v = { temp: val(w, 'temp'), hr: val(w, 'hr'), rr: val(w, 'rr'), spo2: val(w, 'spo2'), pain: val(w, 'pain'), mentation: val(w, 'mentation'), note: val(w, 'note') };
+        try { change(r.id, { type: 'rcheck', values: v, at: readTime(w, r) }); }
+        catch (e) {
+          if (e.code === 'rcheck' && e.errors) { var k0 = Object.keys(e.errors)[0]; $$('[data-ferr]', w).forEach(function (x) { x.textContent = e.errors[x.getAttribute('data-ferr')] ? 'Enter ' + e.errors[x.getAttribute('data-ferr')] : ''; }); e.field = k0; }
+          else if (e.code === 'empty') e.field = 'temp';
+          throw e;
+        }
+      } });
+  }
+  function rCheckDetail(r, id, anchor) {
+    var c = (r.recovery ? r.recovery.checks : []).filter(function (x) { return x.id === id; })[0]; if (!c) return;
+    var rows = [['Time', fmtTime(c.at)], ['By', c.by]];
+    if (c.temp !== undefined) rows.push(['Temperature', sig(c.temp) + ' °F']); if (c.hr !== undefined) rows.push(['Heart rate', sig(c.hr) + ' bpm']); if (c.rr !== undefined) rows.push(['Respiratory rate', sig(c.rr) + ' br/min']);
+    if (c.spo2 !== undefined) rows.push(['SpO₂', sig(c.spo2) + '%']); if (c.pain !== undefined) rows.push(['Pain score', c.pain + ' of 4']); if (c.mentation) rows.push(['Mentation', A.MENTATION[c.mentation]]); if (c.note) rows.push(['Note', c.note]);
+    var canVoid = !c.void && r.status !== 'signed';
+    openSheet({ title: 'Recovery check', primary: null, focus: '[data-x]', anchor: anchor,
+      body: '<dl class="an-dl">' + rows.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' + (canVoid ? '<button type="button" class="an-btn danger" data-void style="align-self:flex-start">Strike through…</button>' : ''),
+      init: function (w) { var b = $('[data-void]', w); if (b) b.onclick = function () { voidSheet(r, 'rcheck', id, 'This recovery check'); }; } });
+    var xb = $('#anSheet [data-x]'); if (xb) xb.textContent = 'Close';
+  }
+  function rEndSheet(r) {
+    var missing = Object.keys(A.RMARKS).filter(function (k) { return !rMarkAt(r, k); }).map(function (k) { return A.RMARKS[k]; }), cs = rChecks(r), last = cs[cs.length - 1];
+    openSheet({ title: 'End recovery', primary: 'End recovery',
+      body: '<div class="an-f"><span class="lab">Where is the patient going?</span>' + chips('dest', Object.keys(A.RDEST).map(function (k) { return [k, A.RDEST[k]]; }), '') + '</div>' +
+        (missing.length ? '<div class="an-calc warn"><b>Not recorded: ' + esc(missing.join(', ')) + '</b><span>You can still end recovery. Record them first if they happened.</span></div>' : '') +
+        (function () { var o = (rReady(r, now()) || []).filter(function (x) { return !/not recorded$/.test(x); }); return o.length ? '<div class="an-calc warn"><b>' + esc(o.join(' · ')) + '</b><span>The team decides; this is what the record shows.</span></div>' : ''; })() +
+        (last ? '<p class="hint" style="margin:0">Last check ' + esc(fmtTime(last.at)) + (last.temp !== undefined ? ' · ' + sig(last.temp) + ' °F' : '') + (last.pain !== undefined ? ' · pain ' + last.pain + '/4' : '') + '</p>' : '<div class="an-calc warn"><b>No recovery checks recorded</b><span>Add one before the patient leaves, if you can.</span></div>') +
+        timeField(now()),
+      init: function (w) { bindTime(w); bindChips(w); var ok = $('[data-ok]', w), sync = function () { ok.disabled = !val(w, 'dest'); ok.title = ok.disabled ? 'Choose where the patient is going first' : ''; }; $$('[data-chips=dest] .an-chip', w).forEach(function (c) { c.addEventListener('click', function () { setTimeout(sync, 0); }); }); sync(); },
+      submit: function (w) { if (!val(w, 'dest')) bad('Choose where the patient is going.', 'dest'); change(r.id, { type: 'rend', dest: val(w, 'dest'), at: readTime(w, r) }); } });
+  }
+
   function signSheet(r) {
     openSheet({
       title: 'Sign record', primary: 'Sign',
