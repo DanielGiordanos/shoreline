@@ -10,3 +10,11 @@ html.ts-anes-lock,html.ts-anes-lock body{overflow:hidden!important}
 @media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation-duration:.15s!important}::view-transition-group(ts-anes){animation-name:none}}
 /* the sheet's view animates in with a transform, which would trap a fixed box inside it */
 html.ts-anes-lock #view-clinical,html.ts-anes-lock #ctab-anes{transform:none!important;animation:none!important;filter:none!important}
+/* n176 — the record's state on the tab: under anesthesia (green, minutes), ended but unsigned (amber), signed (quiet) */
+#clinSwitcher .seg-badge.anes{letter-spacing:0;font-weight:700}
+#clinSwitcher .seg-badge.anes.live{background:#5CC75A;color:#0A1222;padding-left:14px;position:relative}
+#clinSwitcher .seg-badge.anes.live::before{content:"";position:absolute;left:5px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:#0A1222;animation:tsAnesPulse 2s ease-in-out infinite}
+#clinSwitcher .seg-badge.anes.over{background:#F2C744;color:#0A1222}
+#clinSwitcher .seg-badge.anes.done{display:none}
+@keyframes tsAnesPulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){#clinSwitcher .seg-badge.anes.live::before{animation:none}}

@@ -1270,3 +1270,153 @@ svg.an-ico.fill g.os .b{stroke-width:calc(var(--an-symw,1.8px) * .5 / var(--an-o
 /* right-to-left layouts mirror directional symbols (back) — never the share arrow, which points up */
 [dir="rtl"] svg.an-ico.flip,svg.an-ico.flip:dir(rtl){transform:scaleX(-1)}
 [dir="rtl"] .an-chev{transform:scaleX(-1)}
+
+/* ===== n174 — main actions use Flow's patient-drawer card (Admit / Discharge), dark and light =====
+   Vitals now, Start / End anesthesia, Sign record, Add addendum and Totals. Taken from Flow's .disposition-card:
+   dark — hairline border rgba(255,255,255,.07), 16 px radius, a faint white gradient, inset top light, 650-weight title,
+   soft blue-grey line icon #8FB0C4 and a muted diagonal arrow that brightens on hover; hover lifts 1 px.
+   Light — white, borderless, the cool light-layer shadow (n160). Sheets keep their own buttons. */
+.an .an-btn.an-dc,.an .an-tools>.an-btn.an-dc,.an .an-tools>#anInsp.an-dc{
+  border:1px solid rgba(255,255,255,.07)!important;border-radius:16px!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.03)),#131F33!important;   /* an opaque base: the toolbar floats over the chart */
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03)!important;color:rgba(245,248,252,.96)!important;
+  font-weight:600!important;letter-spacing:normal!important;gap:10px;padding:0 14px 0 12px;   /* Flow's 650/-.015em is Inter's; on SF the system weights and tracking (n164) read the same */
+  transition:transform 160ms cubic-bezier(.2,.8,.2,1),border-color 160ms ease,background 160ms ease,box-shadow 160ms ease}
+.an .an-btn.an-dc svg.an-ico{color:#8FB0C4;transition:transform 160ms cubic-bezier(.2,.8,.2,1)}
+.an .an-btn.an-dc::after{content:"";width:16px;height:16px;flex:0 0 16px;margin-left:4px;background:rgba(150,171,191,.5);opacity:.55;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7'/%3E%3Cpath d='M11 7h6v6'/%3E%3C/svg%3E") center/16px no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7'/%3E%3Cpath d='M11 7h6v6'/%3E%3C/svg%3E") center/16px no-repeat;
+  transition:background-color 160ms ease,opacity 160ms ease}
+.an .an-btn.an-dc:hover:not([disabled]),.an .an-tools>#anInsp.an-dc:hover:not([disabled]){transform:translateY(-1px);border-color:rgba(255,255,255,.125)!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.04)),#131F33!important;box-shadow:0 7px 18px rgba(0,0,0,.11),inset 0 1px 0 rgba(255,255,255,.04)!important}
+.an .an-btn.an-dc:hover:not([disabled]) svg.an-ico{transform:translate3d(1px,-1px,0) scale(1.01)}
+.an .an-btn.an-dc:hover:not([disabled])::after{background:rgba(190,208,222,.95);opacity:1;animation:anDcOut 400ms cubic-bezier(.2,.8,.2,1) 70ms both}
+.an .an-btn.an-dc:active:not([disabled]){transform:translateY(0) scale(.986);filter:none}
+.an .an-btn.an-dc:focus-visible{outline:none;border-color:rgba(88,194,216,.38)!important;box-shadow:0 0 0 3px rgba(59,177,201,.10),inset 0 1px 0 rgba(255,255,255,.03)!important}
+.an .an-btn.an-dc[disabled]{opacity:.42}
+/* light: Flow's light drawer card */
+body:not(.dark) .an .an-btn.an-dc,body:not(.dark) .an .an-tools>.an-btn.an-dc,body:not(.dark) .an .an-tools>#anInsp.an-dc{background:#FFFFFF!important;border-color:transparent!important;color:#181A1F!important;
+  box-shadow:0 1px 2px rgba(30,45,90,.04),0 8px 24px rgba(30,45,90,.05)!important}
+body:not(.dark) .an .an-btn.an-dc:hover:not([disabled]){background:#FFFFFF!important;border-color:transparent!important;box-shadow:0 2px 6px rgba(30,45,90,.06),0 12px 28px rgba(30,45,90,.08)!important}
+body:not(.dark) .an .an-btn.an-dc:hover:not([disabled])::after{background:rgba(110,130,150,.95)}
+body:not(.dark) .an .an-btn.an-dc:focus-visible{box-shadow:0 0 0 3px rgba(59,177,201,.22),0 8px 24px rgba(30,45,90,.05)!important}
+/* states keep their meaning: vitals due turns the icon amber; Totals open is shown by an accent edge (HIG: tint, not a swapped icon) */
+.an .an-btn.an-dc[data-act=vitals][aria-label*="due"] svg.an-ico{color:var(--an-amber)}
+body:not(.dark) .an .an-btn.an-dc[data-act=vitals][aria-label*="due"] svg.an-ico{color:#C98A1B}
+.an .an-tools>#anInsp.an-dc[aria-pressed="true"]{border-color:rgba(88,194,216,.38)!important;background:linear-gradient(180deg,rgba(56,189,210,.12),rgba(56,189,210,.06)),#131F33!important}
+body:not(.dark) .an .an-tools>#anInsp.an-dc[aria-pressed="true"]{background:#FFFFFF!important}
+.an .an-btn.an-dc[aria-pressed="true"] svg.an-ico{color:var(--an-accent-ink)}
+body:not(.dark) .an .an-tools>#anInsp.an-dc[aria-pressed="true"]{box-shadow:0 0 0 1.5px rgba(15,107,130,.45),0 8px 24px rgba(30,45,90,.05)!important}
+/* compact toolbar and phones: the arrow gives way to the label */
+html.an-compact .an-tools>.an-btn.an-dc::after,html.an-toolsicons .an-tools>.an-btn.an-dc::after{display:none}
+@media (max-width:600px){.an .an-btn.an-dc::after{display:none}}
+@media (prefers-contrast:more){.an .an-btn.an-dc{border-color:var(--an-line-2)!important}body:not(.dark) .an .an-btn.an-dc{border:1px solid var(--an-ink)!important}}
+@media (prefers-reduced-motion:reduce){.an .an-btn.an-dc,.an .an-btn.an-dc svg.an-ico,.an .an-btn.an-dc::after{transition:none!important;animation:none!important}.an .an-btn.an-dc:hover{transform:none!important}}
+@media (forced-colors:active){.an .an-btn.an-dc{border:1px solid ButtonText!important}.an .an-btn.an-dc::after{background:ButtonText}}
+@media print{.an .an-btn.an-dc::after{display:none}}
+
+/* ===== n174 — status pills wear Flow's priority badge colours (measured from Flow's rendered .prio badges) =====
+   Under anesthesia and Confirmed = P3 fill #5CC75A; Vitals due = P2 fill #F2C744 (Flow --priority-p3 / --priority-p2).
+   Lettering = the page background navy #0A1222 (Daniel, n174: "lettering should match the background colour"),
+   so the words read as cut out of the pill. Same in light and dark. The dot and the check take the lettering colour.
+   Contrast: navy on P3 8.71:1, on P2 11.61:1. */
+.an-pill.active,body.dark .an-pill.active,.an-pill.conf,body.dark .an-pill.conf{background:#5CC75A!important;color:#0A1222!important}
+.an-pill.active::before{background:#0A1222!important}
+.an-pill.conf svg.an-ico{color:#0A1222}
+.an-pill.warn.due,body.dark .an-pill.warn.due{background:#F2C744!important;color:#0A1222!important}
+@media (forced-colors:active){.an-pill.active,.an-pill.conf,.an-pill.warn.due{border:1px solid CanvasText}}
+
+/* ===== n175 — premium motion, round 2 ===== */
+/* 1. opening a record: header, summary, toolbar, chart and Now column settle in one after another (once per open) */
+@keyframes anEnter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.an-enter .an-rhead .an-back,.an-enter .an-rhead .an-id,.an-enter .an-rhead .an-wbig,.an-enter .an-rhead .an-ract,.an-enter .an-sum,.an-enter .an-confirm,.an-enter .an-banner,.an-enter .an-chartp,.an-enter .an-nowcol{animation:anEnter .55s var(--an-spring) both}
+.an-enter .an-tools{animation:anFadeIn .4s ease-out both}   /* the sticky toolbar fades only: a moving toolbar would misreport when it is stuck */
+.an-enter .an-rhead .an-id{animation-delay:30ms}.an-enter .an-rhead .an-wbig{animation-delay:60ms}.an-enter .an-rhead .an-ract{animation-delay:80ms}
+.an-enter .an-sum{animation-delay:110ms}.an-enter .an-confirm,.an-enter .an-banner{animation-delay:140ms}.an-enter .an-tools{animation-delay:170ms}
+.an-enter .an-chartp{animation-delay:210ms}.an-enter .an-nowcol{animation-delay:250ms}
+.an-enter .an-chart .an-row{animation:anEnter .5s var(--an-spring) both}
+.an-enter .an-chart .an-row:nth-child(1){animation-delay:230ms}.an-enter .an-chart .an-row:nth-child(2){animation-delay:250ms}.an-enter .an-chart .an-row:nth-child(3){animation-delay:270ms}
+.an-enter .an-chart .an-row:nth-child(4){animation-delay:290ms}.an-enter .an-chart .an-row:nth-child(5){animation-delay:310ms}.an-enter .an-chart .an-row:nth-child(6){animation-delay:330ms}
+.an-enter .an-chart .an-row:nth-child(7){animation-delay:350ms}.an-enter .an-chart .an-row:nth-child(8){animation-delay:370ms}.an-enter .an-chart .an-row:nth-child(n+9){animation-delay:390ms}
+.an-enter .an-tile{animation:anEnter .5s var(--an-spring) both}
+.an-enter .an-tile:nth-child(1){animation-delay:270ms}.an-enter .an-tile:nth-child(2){animation-delay:300ms}.an-enter .an-tile:nth-child(3){animation-delay:330ms}
+.an-enter .an-tile:nth-child(4){animation-delay:360ms}.an-enter .an-tile:nth-child(5){animation-delay:390ms}.an-enter .an-tile:nth-child(6){animation-delay:420ms}
+
+/* 3. trend sheet */
+.an-scrim.vtin,.an-scrim.vtin .an-sheet{animation:none!important}
+.an-trendwrap{padding:.25rem 0 .5rem}
+.an-trend{display:block;width:100%;height:auto;overflow:visible}
+.an-trend .g{stroke:var(--an-grid-2);stroke-width:1}
+.an-trend text{fill:var(--an-ink-3);font-size:12px;font-family:var(--an-font)}
+.an-trend .l{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.an-trend .a{fill:currentColor;opacity:.12}
+.an-trend circle{fill:currentColor}
+.an-trend.v-hr{color:var(--an-hr)}.an-trend.v-spo2{color:var(--an-spo2)}.an-trend.v-bp{color:var(--an-bp)}.an-trend.v-etco2{color:var(--an-co2)}.an-trend.v-rr{color:var(--an-co2)}.an-trend.v-temp{color:var(--an-temp)}
+.an-trend-empty{margin:.5rem 0;color:var(--an-ink-3)}
+.an-tile .an-spark{cursor:zoom-in}
+
+/* 4. light catches the glass toolbar */
+.an-tools>.an-group,.an-tools>.an-zoomseg{position:relative}
+.an-tools>.an-group::after,.an-tools>.an-zoomseg::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s ease;
+  background:radial-gradient(140px circle at var(--lx,50%) var(--ly,50%),rgba(255,255,255,.16),rgba(255,255,255,.04) 45%,transparent 70%)}
+body:not(.dark) .an-tools>.an-group::after,body:not(.dark) .an-tools>.an-zoomseg::after{background:radial-gradient(140px circle at var(--lx,50%) var(--ly,50%),rgba(255,255,255,.7),rgba(255,255,255,.2) 45%,transparent 70%)}
+.an-tools.lit>.an-group::after,.an-tools.lit>.an-zoomseg::after{opacity:1}
+html.an-noblur .an-tools>.an-group::after,html.an-noblur .an-tools>.an-zoomseg::after{display:none}
+@media (prefers-reduced-transparency:reduce),(prefers-contrast:more){.an-tools>.an-group::after,.an-tools>.an-zoomseg::after{display:none}}
+
+/* 5. the undo window: a ring drains over the 2 minutes; when it is spent the button steps back */
+@property --an-ur{syntax:'<percentage>';inherits:false;initial-value:100%}
+.an-tbtn.ring{position:relative}
+.an-tbtn.ring::before{content:"";position:absolute;inset:-3px;border-radius:999px;pointer-events:none;padding:2px;
+  background:conic-gradient(var(--an-accent) var(--an-ur),rgba(150,171,191,.18) 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:anUndoRing var(--an-ud,120000ms) steps(240,end) both;animation-delay:var(--an-ue,0ms)}   /* repaint twice a second, not every frame */
+@keyframes anUndoRing{from{--an-ur:100%}to{--an-ur:0%}}
+.an-tbtn.spent{opacity:.45}.an-tbtn.spent::before{display:none}
+.an-toast{touch-action:pan-y;transition:translate .25s var(--an-spring),opacity .2s ease}
+/* 6. a check draws in with every saved change, and a sheet's button turns into a check as it closes */
+.an-tok{display:inline-flex;color:var(--an-green-ink);margin-right:.125rem}
+.an-tok .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:anDraw .4s cubic-bezier(.3,.7,.2,1) .08s forwards}
+.an-btn.an-done{min-width:3.5rem}
+.an-btn.an-done svg.an-ico{--an-sym:1.3em}
+.an-btn.an-done .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:anDraw .3s cubic-bezier(.3,.7,.2,1) forwards}
+
+/* 8. skeleton in the record's shape, so the record appears in place */
+.an-skelrec{display:flex;flex-direction:column;gap:1rem;padding:.5rem 0}
+.an-skelrec i{display:block;border-radius:10px;background:var(--an-surface-3)}
+.an-skelrec .sk-h{display:flex;flex-direction:column;gap:.5rem}.an-skelrec .sk-h i:nth-child(1){width:min(22rem,60%);height:2rem}.an-skelrec .sk-h i:nth-child(2){width:min(16rem,45%);height:1rem}
+.an-skelrec .sk-chips,.an-skelrec .sk-tools{display:flex;gap:.5rem;flex-wrap:wrap}.an-skelrec .sk-chips i{width:7.5rem;height:2.25rem;border-radius:999px}
+.an-skelrec .sk-tools i{height:2.75rem;border-radius:999px}.an-skelrec .sk-tools i:nth-child(1){width:9rem}.an-skelrec .sk-tools i:nth-child(2){width:24rem;max-width:50%}.an-skelrec .sk-tools i:nth-child(3){width:7rem;margin-left:auto}
+.an-skelrec .sk-body{display:grid;grid-template-columns:minmax(0,1fr) 20rem;gap:1rem}
+.an-skelrec .sk-chart,.an-skelrec .sk-now{display:flex;flex-direction:column;gap:.75rem;padding:1rem;border-radius:var(--an-r-l);background:var(--an-surface)}
+.an-skelrec .sk-chart i{height:2.5rem}.an-skelrec .sk-now i{height:5.5rem}
+@media (max-width:900px){.an-skelrec .sk-body{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.an-skelrec i{animation:anBreathe 1.4s ease-in-out infinite alternate}}
+
+/* 9. press and hold a chart mark: it lifts, the page softens behind, a preview card appears */
+.an-chart .an-mk,.an-chart .an-mon,.an-chart .an-bar{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.an-lifted{z-index:30!important;scale:1.12;box-shadow:0 10px 28px rgba(0,0,0,.35);transition:scale .3s var(--an-spring-bouncy)}
+.an-peekbg{position:fixed;inset:0;z-index:25;background:rgba(5,10,20,.28);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);pointer-events:none;animation:anFadeIn .2s ease-out both}
+body:not(.dark) .an-peekbg{background:rgba(245,245,247,.35)}
+html.an-noblur .an-peekbg{-webkit-backdrop-filter:none;backdrop-filter:none}
+.an-peek{position:fixed;z-index:1200;display:flex;flex-direction:column;gap:.25rem;padding:.875rem 1rem;border-radius:18px;background:var(--an-glass-strong,var(--an-surface));
+  -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);box-shadow:0 18px 48px rgba(0,0,0,.35),inset 0 0 0 .5px var(--an-glass-edge,rgba(255,255,255,.12));
+  color:var(--an-ink);pointer-events:none;animation:anPeekIn .36s var(--an-spring-snappy) both}
+.an-peek b{font-size:var(--t-subhead);font-weight:600}.an-peek span{font-size:var(--t-footnote);color:var(--an-ink-3)}
+@keyframes anPeekIn{from{opacity:0;scale:.86}to{opacity:1;scale:1}}
+.an-peek.out,.an-peekbg.out{animation:anFadeOut .15s ease-in both}
+html.an-noblur .an-peek{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--an-surface)}
+
+/* Reduce Motion: fades only */
+@media (prefers-reduced-motion:reduce){
+  .an-enter *{animation-name:anFadeIn!important;animation-duration:.15s!important;animation-delay:0s!important;transform:none}
+  .an-lifted{scale:1;transition:none}
+  .an-peek{animation:anFadeIn .12s ease-out both}
+  .an-tok .dr,.an-btn.an-done .dr{animation:none;stroke-dashoffset:0}
+  .an-toast{transition:none}
+}
+@media print{.an-peek,.an-peekbg{display:none}}
+/* ---------------- n176: the "Treatment sheet" pill is a link back to the sheet when the record is opened outside the frame ---------------- */
+a.an-pill.sheet{text-decoration:none;cursor:pointer;transition:border-color .15s var(--an-ease,ease),color .15s var(--an-ease,ease)}
+a.an-pill.sheet:hover{border-color:var(--an-ink-3);color:var(--an-ink)}
+a.an-pill.sheet:focus-visible{outline:2px solid var(--an-accent);outline-offset:2px}

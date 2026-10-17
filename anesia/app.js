@@ -196,7 +196,7 @@
       s.pending.splice(0, n); s.base = next; S.server[id] = next; persistSlot(id);
       if (!s.pending.length) lsSet('rec:' + id, { base: next, pending: [] });
       if (dropped.length) toast('A change couldn’t be saved: ' + dropped[0]);
-      saveChip('saved'); softRender();
+      saveChip('saved'); softRender(); syncSheet(id);
       if (Object.keys(S.local).some(function (k) { return S.local[k].pending.length; })) flush();
     }).catch(function (e) {
       save.inflight = false; clearTimeout(save.waitT);
@@ -216,8 +216,39 @@
   }
   /* n166 — opened inside a Treatment Sheet: ?embed=1&sheet=<sheet id>&pre=<patient from the sheet, JSON> */
   var Q = (function () { var o = {}; location.search.replace(/^\?/, '').split('&').forEach(function (kv) { if (!kv) return; var i = kv.indexOf('='); o[decodeURIComponent(kv.slice(0, i < 0 ? kv.length : i))] = i < 0 ? '' : decodeURIComponent(kv.slice(i + 1).replace(/\+/g, ' ')); }); return o; })();
-  var EMBED = Q.embed === '1', SHEET = Q.sheet || null, PRE = null;
+  var EMBED = Q.embed === '1', SHEET = Q.sheet || null, PRE = null, SH = null;   /* SH: the treatment sheet document, live (n176) */
   try { PRE = Q.pre ? JSON.parse(Q.pre) : null; } catch (e) { PRE = null; }
+  var CODE_LABEL = { ALS: 'advanced life support', BLS: 'basic life support', CPR: 'CPR', DNR: 'do not resuscitate' };
+  function sheetSex(x) { x = String(x || '').toLowerCase(); if (/neut|castr|^mn$/.test(x)) return 'Male neutered'; if (/spay|^fs$/.test(x)) return 'Female spayed'; if (/^m|male/.test(x)) return 'Male'; if (/^f|female/.test(x)) return 'Female'; return ''; }
+  /* the patient as the sheet has it now — the same reading Treatment Sheets' own tab makes (treatment/anes.js) */
+  function preFromSheet(sh) {
+    var v = (sh && sh.patient) || {}, code = String(v.code || '').toUpperCase(), alg = String(v.allergies || '').trim();
+    var nka = !alg || /^(none|none known|nka|no known allergies|—|-)$/i.test(alg);
+    return { name: v.name && v.name !== 'Unnamed patient' ? String(v.name) : '', species: /^(cat|fel)/i.test(v.species || '') ? 'cat' : /^(dog|can)/i.test(v.species || 'dog') ? 'dog' : 'other',
+      breed: v.breed && v.breed !== '—' ? String(v.breed) : '', sex: sheetSex(v.sex), age: v.age && v.age !== '—' ? String(v.age) : '', kg: Number(v.weight) || '',
+      cpr: CODE_LABEL[code] ? code : '', allergies: nka ? '' : alg, nka: nka };
+  }
+  /* 4. what the sheet (and through it the OR) learns from this record: one small field, rewritten after each save */
+  var SHEET_SYNC = {};
+  function sheetSummary(r) {
+    var lv = r.vitals.filter(function (v) { return !v.void; }).sort(function (a, b) { return b.at - a.at; })[0] || null, last = null;
+    if (lv) { last = { at: lv.at }; ['hr', 'rr', 'sap', 'map', 'dap', 'spo2', 'etco2', 'temp'].forEach(function (k) { if (lv[k] !== undefined && lv[k] !== null && lv[k] !== '') last[k] = lv[k]; }); }
+    var to = A.timeoutStatus(r), w = A.weightAt(r, now());
+    return { v: 1, rec: r.id, status: r.status, procedure: r.procedure || '', start: r.start || null, end: r.end || null, signed: r.signed ? { at: r.signed.at, by: r.signed.by || '' } : null,
+      confirmed: !!r.confirmed, asa: r.patient.asa ? r.patient.asa + (r.patient.emergency ? 'E' : '') : '', timeout: !!(to && to.complete), kg: w || null, last: last, doses: r.doses.filter(function (d) { return !d.void; }).length,
+      at: r.updated_at || now(), by: r.updated_by || '' };
+  }
+  function syncSheet(id) {
+    if (S.mode !== 'server' || !S.db) return;
+    var r = recOf(id); if (!r || r.kind !== 'case' || !r.sheet_id) return;
+    /* the sheet shows its latest record: a second record for the same visit replaces the first */
+    var latest = allIds().map(recOf).filter(function (x) { return x && x.kind === 'case' && x.sheet_id === r.sheet_id; })
+      .sort(function (a, b) { return (b.start || b.created_at) - (a.start || a.created_at); })[0];
+    if (!latest || latest.id !== r.id) return;
+    var sum = sheetSummary(r), j = JSON.stringify(sum); if (SHEET_SYNC[r.sheet_id] === j) return;
+    SHEET_SYNC[r.sheet_id] = j;
+    S.db.collection('sheets').doc(r.sheet_id).update({ anesthesia: JSON.parse(j) }).catch(function (e) { delete SHEET_SYNC[r.sheet_id]; console.warn('[Anesia → sheet]', e); });
+  }
   if (EMBED) {
     document.documentElement.classList.add('an-embed');
     /* the frame's colour scheme must equal the iframe element's, or the browser paints an opaque grey canvas behind the record */
@@ -240,7 +271,11 @@
   window.addEventListener('message', function (e) { if (e.origin !== location.origin || !e.data || e.data.anesiaHost !== 'expanded') return; setExpanded(e.data.on, true); });
   var autoOpened = false;
   function sheetRecs() { return allIds().map(recOf).filter(function (r) { return r && SHEET && r.sheet_id === SHEET; }).sort(function (a, b) { return (b.start || b.created_at) - (a.start || a.created_at); }); }
-  function kindPill(r) { return r.kind === 'case' ? '<span class="an-pill sheet">Treatment sheet</span>' : '<span class="an-pill training">Training</span>'; }
+  function kindPill(r, link) {
+    if (r.kind !== 'case') return '<span class="an-pill training">Training</span>';
+    if (!link || EMBED || !r.sheet_id) return '<span class="an-pill sheet">Treatment sheet</span>';
+    return '<a class="an-pill sheet" href="/treatment/#sheet=' + encodeURIComponent(r.sheet_id) + '&tab=anes" title="Open the treatment sheet">Treatment sheet</a>';
+  }
   function boot() {
     /* remembered per device (Launching): zoom and the list filter */
     var z0 = lsGet('zoom'), f0 = lsGet('filter'); if ([5, 10, 15].indexOf(z0) > -1) S.colMin = z0; if (['active', 'ended', 'signed'].indexOf(f0) > -1) S.filter = f0;
@@ -253,6 +288,9 @@
       if (!u) { S.gate = 'signin'; render(); return; }
       if (LOBBY.indexOf(String(u.email || '').toLowerCase()) > -1) { S.gate = 'lobby'; render(); return; }
       S.gate = null; S.mode = 'server'; S.me = nameOf(u);
+      if (SHEET && !S.unsubSheet) S.unsubSheet = S.db.collection('sheets').doc(SHEET).onSnapshot(function (d) {
+        if (!d.exists) return; SH = d.data(); PRE = preFromSheet(SH); S.dirtyUi = true; softRender();
+      }, function (e) { console.warn('[Anesia ← sheet]', e); });
       S.unsubList = S.db.collection(COL).where('tenant_id', '==', TENANT).onSnapshot(function (q) {
         var m = {}; q.forEach(function (d) { m[d.id] = d.data(); }); S.server = m; S.loaded = true; softRender();
       }, function (e) { if (e && e.code === 'permission-denied') saveChip('denied'); });
@@ -324,11 +362,106 @@
     nl.style.transform = 'translateX(' + ((t + TICK - cm.from) * cm.px - base).toFixed(1) + 'px)';
   }
 
+
+  /* ---------------- n175 motion ---------------- */
+  var ZK = ['data-entry', 'data-inf', 'data-gas', 'data-dev'];
+  function zkey(el) { for (var i = 0; i < ZK.length; i++) { var v = el.getAttribute(ZK[i]); if (v) return ZK[i] + '=' + v + (el.classList.contains('an-bar') ? ':' + Array.prototype.indexOf.call(el.parentNode.children, el) : ''); } return el.classList.contains('an-now') ? 'now' : null; }
+  function zoomSnap() {
+    var ch = $('.an-chart'); if (!ch || rmo()) return null; var out = {}, cr = ch.getBoundingClientRect();
+    $$('.an-mk,.an-mon,.an-bar,.an-now', ch).forEach(function (el) { var k = zkey(el); if (!k) return; var r = el.getBoundingClientRect(); if (r.right < cr.left - 400 || r.left > cr.right + 400) return; out[k] = { l: r.left, w: r.width }; });
+    return out;
+  }
+  function zoomPlay(snap) {
+    var ch = $('.an-chart'); if (!snap || !ch) return;
+    $$('.an-mk,.an-mon,.an-bar,.an-now', ch).forEach(function (el) {
+      var k = zkey(el), o = k && snap[k]; if (!o || !el.animate) return; var r = el.getBoundingClientRect(), dx = o.l - r.left; if (Math.abs(dx) < 1 && Math.abs(o.w - r.width) < 1) return;
+      var opt = { duration: 460, easing: 'linear(0, 0.04, 0.136, 0.26, 0.391, 0.518, 0.632, 0.73, 0.811, 0.875, 0.924, 0.96, 0.985, 1.002, 1.012, 1.018, 1.02, 1.018, 1.013, 1.008, 1.004, 1.002, 1)' };
+      if (el.classList.contains('an-bar')) el.animate([{ marginLeft: dx + 'px', width: o.w + 'px' }, { marginLeft: '0px', width: r.width + 'px' }], opt);
+      else { var base = getComputedStyle(el).transform; base = base === 'none' ? '' : ' ' + base; el.animate([{ transform: 'translateX(' + dx + 'px)' + base }, { transform: (base || 'none') }], opt); }
+    });
+    $$('.an-graph', ch).forEach(function (g) { if (g.animate) g.animate([{ opacity: .25 }, { opacity: 1 }], { duration: 380, easing: 'ease-out' }); });
+  }
+  /* 3. a sparkline grows into the vital's trend */
+  var VNAME = { hr: ['Heart rate', 'bpm'], spo2: ['SpO₂', '%'], bp: ['Mean arterial pressure', 'mmHg'], etco2: ['EtCO₂', 'mmHg'], rr: ['Respiratory rate', 'br/min'], temp: ['Temperature', '°F'] };
+  function trendSVG(r, k) {
+    var key = k === 'bp' ? 'map' : k, vs = liveVitals(r).filter(function (v) { return v[key] !== undefined; });
+    if (vs.length < 2) return '<p class="an-trend-empty">Not enough readings for a trend yet.</p>';
+    var W = 560, H = 220, P = 28, t0 = vs[0].at, t1 = vs[vs.length - 1].at, vals = vs.map(function (v) { return v[key]; }), lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    var pad = (hi - lo) * .2 || 2; lo -= pad; hi += pad;
+    var X = function (t) { return P + (t - t0) / Math.max(1, t1 - t0) * (W - 2 * P); }, Y = function (v) { return P / 2 + (1 - (v - lo) / (hi - lo)) * (H - 1.5 * P); };
+    var pts = vs.map(function (v) { return X(v.at).toFixed(1) + ',' + Y(v[key]).toFixed(1); }).join(' ');
+    var area = 'M' + X(t0).toFixed(1) + ',' + (H - P) + ' L' + pts.split(' ').join(' L') + ' L' + X(t1).toFixed(1) + ',' + (H - P) + 'Z';
+    return '<svg class="an-trend v-' + k + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(VNAME[k][0] + ' from ' + fmtTime(t0) + ' to ' + fmtTime(t1) + ': ' + vals.join(', ') + ' ' + VNAME[k][1]) + '">' +
+      [hi - pad, (hi + lo) / 2, lo + pad].map(function (g) { return '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + Y(g).toFixed(1) + '" y2="' + Y(g).toFixed(1) + '" class="g"/><text x="2" y="' + (Y(g) + 4).toFixed(1) + '">' + sig(Math.round(g)) + '</text>'; }).join('') +
+      '<path class="a" d="' + area + '"/><polyline class="l" points="' + pts + '"/>' + vs.map(function (v) { return '<circle cx="' + X(v.at).toFixed(1) + '" cy="' + Y(v[key]).toFixed(1) + '" r="3.5"/>'; }).join('') +
+      '<text x="' + P + '" y="' + (H - 6) + '">' + fmtTime(t0) + '</text><text x="' + (W - P) + '" y="' + (H - 6) + '" text-anchor="end">' + fmtTime(t1) + '</text></svg>';
+  }
+  function openTrend(r, k, fromEl) {
+    var go = function () { openSheet({ title: VNAME[k][0], body: '<div class="an-trendwrap">' + trendSVG(r, k) + '</div>', anchor: null }); var w = $('#anSheet'); if (w) w.classList.add('vtin'); };
+    var spark = fromEl && $('.an-spark', fromEl);
+    if (spark) morph(spark, go, '#anSheet .an-trend'); else go();
+  }
+  /* 4. light catches the glass toolbar (follows the pointer; off on slow devices and with Reduce Transparency) */
+  (function () {
+    var raf = 0, last = null;
+    document.addEventListener('pointermove', function (e) {
+      last = e; if (raf) return;
+      raf = requestAnimationFrame(function () {
+        raf = 0; var bar = $('.an-tools'); if (!bar) return;
+        var on = last.target && last.target.closest && last.target.closest('.an-tools');
+        bar.classList.toggle('lit', !!on);
+        if (!on) return;
+        $$('.an-tools>.an-group,.an-tools>.an-zoomseg', bar).forEach(function (g) { var r = g.getBoundingClientRect(); g.style.setProperty('--lx', (last.clientX - r.left).toFixed(0) + 'px'); g.style.setProperty('--ly', (last.clientY - r.top).toFixed(0) + 'px'); });
+      });
+    }, { passive: true });
+  })();
+  /* 7. totals count up when the panel opens */
+  function countUp(root) {
+    if (rmo() || !root) return;
+    var els = $$('.an-tot td:nth-child(2),.an-tot td:nth-child(3),.an-bal td', root), t0 = performance.now(), D = 650, items = [];
+    els.forEach(function (el) {
+      var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); var n;
+      while ((n = w.nextNode())) { var txt = n.nodeValue; if (!/\d/.test(txt)) continue; items.push({ n: n, txt: txt }); }
+    });
+    var fmt = function (txt, f) { return txt.replace(/\d+(?:\.\d+)?/g, function (m) { var dec = (m.split('.')[1] || '').length, v = parseFloat(m) * f; return dec ? v.toFixed(dec) : String(Math.round(v)); }); };
+    var step = function (now) {
+      var e = Math.min(1, (now - t0) / D), f = 1 - Math.pow(1 - e, 3);
+      items.forEach(function (it) { if (it.n.isConnected) it.n.nodeValue = e >= 1 ? it.txt : fmt(it.txt, f); });
+      if (e < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  /* 9. press and hold a chart mark to peek at it */
+  (function () {
+    var timer = 0, sx = 0, sy = 0, peek = null, eat = false;
+    var MK = '.an-chart .an-mk,.an-chart .an-mon,.an-chart .an-bar';
+    function close() { clearTimeout(timer); timer = 0; if (!peek) return; var p0 = peek; peek = null; p0.mark.classList.remove('an-lifted'); p0.bg.classList.add('out'); p0.card.classList.add('out'); setTimeout(function () { p0.bg.remove(); p0.card.remove(); }, rmo() ? 0 : 160); }
+    document.addEventListener('pointerdown', function (e) {
+      var m = e.target.closest && e.target.closest(MK); if (!m || e.button > 0) return; sx = e.clientX; sy = e.clientY; clearTimeout(timer);
+      timer = setTimeout(function () {
+        timer = 0; var r = m.getBoundingClientRect();
+        var bg = document.createElement('div'); bg.className = 'an-peekbg'; document.body.appendChild(bg);
+        var card = document.createElement('div'); card.className = 'an-peek'; card.setAttribute('role', 'tooltip');
+        card.innerHTML = '<b>' + esc(m.getAttribute('aria-label') || m.textContent.trim()) + '</b><span>Release to close · tap to open</span>';
+        document.body.appendChild(card);
+        var cw = Math.min(320, window.innerWidth - 24), x = Math.min(Math.max(12, r.left + r.width / 2 - cw / 2), window.innerWidth - cw - 12), above = r.top > 140;
+        card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;' + (above ? 'top:' + (r.top - 12) + 'px;transform-origin:50% 100%;translate:0 -100%' : 'top:' + (r.bottom + 12) + 'px;transform-origin:50% 0');
+        m.classList.add('an-lifted'); peek = { mark: m, bg: bg, card: card }; eat = true;
+        try { if (navigator.vibrate && matchMedia('(pointer:coarse)').matches) navigator.vibrate(6); } catch (x) { }
+      }, 450);
+    }, true);
+    document.addEventListener('pointermove', function (e) { if (timer && (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8)) { clearTimeout(timer); timer = 0; } }, { passive: true });
+    ['pointerup', 'pointercancel'].forEach(function (t) { document.addEventListener(t, function () { clearTimeout(timer); timer = 0; if (peek) close(); }, true); });
+    document.addEventListener('click', function (e) { if (eat) { eat = false; if (e.target.closest && e.target.closest(MK)) { e.preventDefault(); e.stopPropagation(); } } }, true);
+    document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest(MK)) e.preventDefault(); });
+    window.addEventListener('scroll', close, { passive: true, capture: true });
+  })();
+
   /* ---------------- render ---------------- */
   var lastScroll = 0;
   function render(soft) {
     var root = $('#anApp'); if (!root) return;
-    if (!S.ready) { root.innerHTML = '<div class="an-loading" role="status"><span class="an-spin" aria-hidden="true"></span>Loading…</div>'; return; }
+    if (!S.ready) { root.innerHTML = '<div class="an-loading an-skelrec" role="status"><span class="an-vh">Loading…</span><div class="sk-h"><i></i><i></i></div><div class="sk-chips"><i></i><i></i><i></i><i></i></div><div class="sk-tools"><i></i><i></i><i></i></div><div class="sk-body"><div class="sk-chart"><i></i><i></i><i></i><i></i><i></i></div><div class="sk-now"><i></i><i></i><i></i><i></i></div></div></div>'; return; }
     if (S.gate) { root.innerHTML = gateHTML(); bindGate(); if (EMBED) $$('.an-gate a').forEach(function (x) { x.target = '_top'; }); return; }
     if (XP && !S.cur) setExpanded(false);   /* Expand belongs to a record; the list never stays expanded */
     var ch = $('.an-chart'); if (ch) lastScroll = ch.scrollLeft;
@@ -338,11 +471,13 @@
     var tbOpen = $('[data-vtimebox]', root) && !$('[data-vtimebox]', root).hidden;
     if (S.cur) {
       var rec = recOf(S.cur);
-      if (!rec && S.mode === 'server' && !S.loaded) { root.innerHTML = '<div class="an-loading" role="status"><span class="an-spin" aria-hidden="true"></span>Loading the record…</div>'; return; }
+      if (!rec && S.mode === 'server' && !S.loaded) { root.innerHTML = '<div class="an-loading an-skelrec" role="status"><span class="an-vh">Loading the record…</span><div class="sk-h"><i></i><i></i></div><div class="sk-chips"><i></i><i></i><i></i><i></i></div><div class="sk-tools"><i></i><i></i><i></i></div><div class="sk-body"><div class="sk-chart"><i></i><i></i><i></i><i></i><i></i></div><div class="sk-now"><i></i><i></i><i></i><i></i></div></div></div>'; return; }
       if (!rec) { root.innerHTML = '<div class="an-gate"><h1>Record not found</h1><p>It may still be loading, or it was opened from another hospital.</p><a class="an-btn primary" href="#">All records</a></div>'; return; }
+      var wasSkel = !!$('.an-skelrec', root), fresh = S.shownRec !== rec.id; S.shownRec = rec.id;
       root.innerHTML = recordHTML(rec); bindRecord(rec);
+      if (fresh || wasSkel) { root.classList.remove('an-enter'); void root.offsetWidth; root.classList.add('an-enter'); clearTimeout(S.enterT); S.enterT = setTimeout(function () { root.classList.remove('an-enter'); if (window.anesiaBar) window.anesiaBar.update(); }, 1100); }
       var c2 = $('.an-chart'); if (c2) { c2.scrollLeft = lastScroll; c2.addEventListener('scroll', function () { if (!stickRaf) stickRaf = requestAnimationFrame(stickLabels); }, { passive: true }); stickLabels(); }
-    } else { root.innerHTML = listHTML(); bindList(); }
+    } else { S.shownRec = null; root.innerHTML = listHTML(); bindList(); }
     Object.keys(S.keep).forEach(function (id) { var el = document.getElementById(id); if (el && S.keep[id]) { el.value = S.keep[id].v; el.classList.toggle('filled', !!S.keep[id].filled); } });
     if (tbOpen && $('[data-vtimebox]', root)) $('[data-vtimebox]', root).hidden = false;
     if (S.fresh && $('.fresh', root)) { var fz = S.fresh; setTimeout(function () { if (S.fresh === fz) S.fresh = null; }, 700); }
@@ -500,7 +635,7 @@
   /* the patient summary under the name: code status, allergies, ASA, procedure — always on screen */
   function summaryHTML(r) {
     var p = r.patient, ro = r.status === 'signed', tag = function (cls, k, v, aria) { return '<button type="button" class="an-sum-i ' + cls + '" data-sum aria-label="' + esc(aria) + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></button>'; };
-    var code = p.cpr === 'DNR' ? tag('dnr', 'Code', 'DNR', 'Code status: do not resuscitate') : p.cpr === 'CPR' ? tag('cpr', 'Code', 'CPR', 'Code status: CPR') : tag('none', 'Code', 'Not recorded', 'Code status not recorded. Add it');
+    var code = p.cpr === 'DNR' ? tag('dnr', 'Code', 'DNR', 'Code status: do not resuscitate') : CODE_LABEL[p.cpr] ? tag('cpr', 'Code', esc(p.cpr), 'Code status: ' + CODE_LABEL[p.cpr]) : tag('none', 'Code', 'Not recorded', 'Code status not recorded. Add it');
     var alg = p.allergies ? tag('alg', 'Allergies', esc(p.allergies), 'Allergies: ' + p.allergies) : p.nka ? tag('nka', 'Allergies', 'None known', 'No known allergies') : tag('none', 'Allergies', 'Not recorded', 'Allergies not recorded. Add them');
     var asa = p.asa ? tag('', 'ASA', esc(p.asa + (p.emergency ? 'E' : '')), 'ASA ' + p.asa + (p.emergency ? ' emergency' : '')) : '';
     var pr = r.procedure ? tag('proc', 'Procedure', esc(r.procedure), 'Procedure: ' + r.procedure) : '';
@@ -611,13 +746,13 @@
     var lw = lastWeighed(r), due = vitalsDue(r, t), insp = inspectorOpen();
     var clock = live ? '<div class="an-clock"><b>' + dur(t - r.start) + '</b><span>Anesthesia time</span></div>'
       : r.start && r.end ? '<div class="an-clock"><b>' + dur(r.end - r.start) + '</b><span>' + fmtTime(r.start) + '–' + fmtTime(r.end) + '</span></div>' : '';
-    var main = r.status === 'planned' ? '<button type="button" class="an-btn primary" id="anStart">Start anesthesia</button>'
-      : live ? '<button type="button" class="an-btn" id="anEnd">' + icon('stop') + 'End anesthesia</button>'
-      : r.status === 'ended' ? '<button type="button" class="an-btn primary" id="anSign">' + icon('check') + 'Sign record</button>'
-      : '<button type="button" class="an-btn" id="anAdd">' + icon('compose') + 'Add addendum</button>';
+    var main = r.status === 'planned' ? '<button type="button" class="an-btn primary an-dc" id="anStart">Start anesthesia</button>'
+      : live ? '<button type="button" class="an-btn an-dc" id="anEnd">' + icon('stop') + 'End anesthesia</button>'
+      : r.status === 'ended' ? '<button type="button" class="an-btn primary an-dc" id="anSign">' + icon('check') + 'Sign record</button>'
+      : '<button type="button" class="an-btn an-dc" id="anAdd">' + icon('compose') + 'Add addendum</button>';
     var facts = [cap(p.species), p.breed, p.sex, p.age].filter(Boolean).map(esc).join(' · '), conf = A.isConfirmed(r);
     var head = '<header class="an-rhead"><a class="an-back" href="#">' + icon('back', { scale: 'l' }) + (SHEET ? 'Anesthesia' : 'Records') + '</a>' +
-      '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + statusPill(r) + kindPill(r) + confirmChip(r) + presenceChip(r) + '</h1>' +
+      '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + statusPill(r) + kindPill(r, true) + confirmChip(r) + presenceChip(r) + '</h1>' +
       '<div class="sub"><span>' + (facts || 'No details yet') + '</span><button type="button" class="an-info" id="anPatient" aria-label="Patient details">' + icon('info') + '</button></div></div>' +
       '<button type="button" class="an-wbig' + (w ? '' : ' none') + '" id="anWeight"' + (signed ? ' disabled' : '') + ' aria-label="' + (w ? 'Weight ' + sig(w) + ' kilograms' + (lw ? ', weighed ' + fmtTime(lw.at) : '') + '. Change weight' : 'No weight. Add weight') + '">' +
       (w ? '<b>' + sig(w) + '<span> kg</span></b><small>' + (lw ? (lw.method === 'estimated' ? 'Estimated ' : 'Weighed ') + fmtTime(lw.at) : '') + '</small>' : '<b>' + icon('scale', { slash: true, scale: 's' }) + 'No weight</b><small>Add weight</small>') + '</button>' +
@@ -635,7 +770,7 @@
     var dis = signed ? ' disabled' : '';
     var dk = 'due:' + r.id + ':' + (r.vitals.length ? r.vitals[r.vitals.length - 1].at : r.start); if (due && live && !fired(dk)) fire(dk); var bp2 = due ? playing(dk, 900) : null;
     var tools = '<div class="an-tools" role="toolbar" aria-label="Chart" data-rove="toolbar">' +
-      '<button type="button" class="an-btn primary" data-act="vitals"' + dis + ' aria-label="Vitals now' + (due ? ', vitals due ' + due + ' minutes' : '') + '" title="Vitals now (⌥V)">' + (bp2 !== null ? '<span class="an-beat" style="animation-delay:-' + bp2 + 'ms">' + icon('heart') + '</span>' : icon('heart')) + '<span class="t">Vitals now</span>' + '</button>' +
+      '<button type="button" class="an-btn primary an-dc" data-act="vitals"' + dis + ' aria-label="Vitals now' + (due ? ', vitals due ' + due + ' minutes' : '') + '" title="Vitals now (⌥V)">' + (bp2 !== null ? '<span class="an-beat" style="animation-delay:-' + bp2 + 'ms">' + icon('heart') + '</span>' : icon('heart')) + '<span class="t">Vitals now</span>' + '</button>' +
       '<div class="an-group" role="group" aria-label="Chart a drug, infusion, gas or event">' +
       '<button type="button" class="an-btn" data-act="dose"' + dis + ' aria-label="Give drug" title="Give drug (⌥D)">' + icon('syringe') + '<span class="t">Give drug</span></button>' +
       '<button type="button" class="an-btn" data-act="infusion"' + dis + ' aria-label="Infusion" title="Start an infusion (⌥I)">' + icon('drip') + '<span class="t">Infusion</span></button>' +
@@ -645,7 +780,7 @@
       '<button type="button" class="an-btn" data-act="airway"' + dis + ' aria-label="Airway" title="Airway, lines and ventilation (⌥A)">' + icon('airway') + '<span class="t">Airway</span></button></div>' +
       '<span class="sp"><span class="an-tbt" aria-hidden="true">' + esc(p.name || 'Training patient') + '</span></span><div class="an-seg an-zoomseg" role="radiogroup" aria-label="Minutes per column" data-rove="radio">' +
       [5, 10, 15].map(function (m) { return '<button type="button" role="radio" data-zoom="' + m + '" aria-checked="' + (S.colMin === m) + '" tabindex="' + (S.colMin === m ? 0 : -1) + '" aria-label="' + m + ' minutes per column">' + m + ' min</button>'; }).join('') + '</div>' +
-      '<button type="button" class="an-btn" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" title="Totals and history">' + icon('sidebar') + '<span class="t">Totals</span></button></div>';
+      '<button type="button" class="an-btn an-dc" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" title="Totals and history">' + icon('sidebar') + '<span class="t">Totals</span></button></div>';
     return head + banners + tools + '<div class="an-body' + (insp ? ' insp' : '') + (ps !== null ? ' settle' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + (conf ? (playing('conf:' + r.id, 900) !== null ? '<div class="an-wm gone" aria-hidden="true" style="animation-delay:-' + playing('conf:' + r.id, 900) + 'ms"><span>Confirm correct patient</span></div>' : '') : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
       nowHTML(r) + (insp ? '<aside class="an-side' + (S.opening === 'side' ? ' opening' : '') + '" id="anInspector" aria-label="Totals and history">' + sideHTML(r) + '</aside>' : '<aside class="an-side an-print-only" aria-hidden="true">' + sideHTML(r).replace(/ id="an[A-Za-z]+"/g, '') + '</aside>') + '</div>';
   }
@@ -675,7 +810,7 @@
       else { val = sig(v[k]); aria = m[1] + ' ' + v[k] + ' ' + m[2]; }
       var age = v ? Math.floor((t - v.at) / MIN) : null, stale = age !== null && age >= 15;
       var tk = r.id + ':' + k, pn = performance.now(); if (S.prevTiles[tk] !== undefined && S.prevTiles[tk].v !== val) { S.prevTiles[tk].until = pn + 600; MO.from[tk] = S.prevTiles[tk].v; fire('roll:' + tk); } var chg = !!(S.prevTiles[tk] && S.prevTiles[tk].until > pn); S.prevTiles[tk] = { v: val, until: S.prevTiles[tk] ? S.prevTiles[tk].until : 0 };   /* a new reading flashes once */
-      return '<button type="button" class="an-tile' + (stale ? ' stale' : '') + (chg ? ' chg' : '') + '" data-vk="' + k + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(aria) + (v ? ', ' + age + ' minutes ago' : '') + (signed ? '' : '. Enter ' + m[1]) + '">' +
+      return '<button type="button" class="an-tile' + (stale ? ' stale' : '') + (chg ? ' chg' : '') + '" data-vk="' + k + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(aria) + (v ? ', ' + age + ' minutes ago' : '') + (signed ? '' : '. Enter ' + m[1]) + (v ? '. Press T for the trend' : '') + '" aria-keyshortcuts="T">' +
         '<span class="hd"><b class="tag v-' + k + '">' + vIcon(k) + m[1] + '</b>' + (signed ? '' : CHEV) + '</span>' +
         (v ? '<span class="v"><b' + (chg && MO.from[tk] ? ' class="an-roll"' : '') + '>' + (chg && MO.from[tk] && playing('roll:' + tk, 600) !== null ? rollHTML(MO.from[tk], val, playing('roll:' + tk, 600)) : val) + '</b><small>' + unit + '</small></span>' : '<span class="v nd">No data</span>') +
         '<span class="f"><span' + (v ? ' data-at="' + v.at + '"' : '') + (v && v.at === lastAt && !stale ? ' class="same"' : '') + '>' + (v ? (age < 1 ? 'Just now' : age + ' min ago') : 'Not yet') + '</span>' + spark(series(k === 'bp' ? 'map' : k), k) + '</span></button>';
@@ -697,7 +832,7 @@
     var fb = A.balance(r, r.end && r.end < t ? r.end : t), fbRow = (r.outputs || []).length ? '<h3>Fluid balance</h3><div class="an-nlist"><div class="an-nrow an-nbal"><span>In ' + sig(fb.inTotal) + ' · out ' + sig(fb.outTotal) + ' mL</span><b>' + (fb.net >= 0 ? '+' : '−') + sig(Math.abs(fb.net)) + ' <i>mL</i></b></div></div>' : '';
     var form = S.vOpen && S.vOpen === r.id && !signed ? vitalsFormHTML(r) : '';
     return '<aside class="an-nowcol" aria-label="Now">' +
-      '<div class="an-nh"><div><h2>Now</h2>' + (lastAt ? '<p class="an-nlast">Last check ' + (live ? '<span data-last="' + lastAt + '">' + ago(t - lastAt) + '</span>' : 'at ' + fmtTime(lastAt)) + '</p>' : '<p class="an-nlast">No vitals yet</p>') + '</div>' + (due ? '<span class="an-pill warn" role="status">Vitals due · ' + due + ' min</span>' : '<span class="an-nt">' + fmtTime(t) + '</span>') + '</div>' +
+      '<div class="an-nh"><div><h2>Now</h2>' + (lastAt ? '<p class="an-nlast">Last check ' + (live ? '<span data-last="' + lastAt + '">' + ago(t - lastAt) + '</span>' : 'at ' + fmtTime(lastAt)) + '</p>' : '<p class="an-nlast">No vitals yet</p>') + '</div>' + (due ? '<span class="an-pill warn due" role="status">Vitals due · ' + due + ' min</span>' : '<span class="an-nt">' + fmtTime(t) + '</span>') + '</div>' +
       (form || '<div class="an-tiles">' + tiles + '</div>') +
       (abxRows ? '<h3>Antibiotics</h3><div class="an-nlist">' + abxRows + '</div>' : '') +
       (gasRows ? '<h3>Gases</h3><div class="an-nlist">' + gasRows + '</div>' : '') +
@@ -951,7 +1086,7 @@
     var bk = $('.an-back'); if (bk && !SHEET) bk.addEventListener('click', function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); var hd = $('.an-id'); morph(hd, function () { history.pushState(null, '', location.pathname + location.search); route(); }, function () { return $('[data-open="' + r.id + '"]'); }); });
     on('#anExpand', function () { setExpanded(!XP); var b = $('#anExpand'); if (b) b.focus(); });
     on('#anPrint', function () { printRecord(); });
-    $$('[data-zoom]').forEach(function (b) { b.onclick = function () { S.colMin = +b.getAttribute('data-zoom'); lsSet('zoom', S.colMin); lastScroll = 0; render(); scrollToNow(); var z = $('[data-zoom="' + S.colMin + '"]'); if (z) z.focus(); }; });
+    $$('[data-zoom]').forEach(function (b) { b.onclick = function () { var zs = zoomSnap(); S.colMin = +b.getAttribute('data-zoom'); lsSet('zoom', S.colMin); lastScroll = 0; render(); scrollToNow(); zoomPlay(zs); var z = $('[data-zoom="' + S.colMin + '"]'); if (z) z.focus(); }; });
     $$('[data-act]').forEach(function (b) {
       b.onclick = function () {
         var a = b.getAttribute('data-act');
@@ -962,7 +1097,7 @@
         });
       };
     });
-    $$('[data-vk]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-vk'); morph(b, function () { openVitals(r, k === 'bp' ? 'sap' : k); }, '#anVForm'); }; });
+    $$('[data-vk]').forEach(function (b) { b.onclick = function (e) { var k = b.getAttribute('data-vk'); if (e && e.target.closest && e.target.closest('.an-spark')) { openTrend(r, k, b); return; } morph(b, function () { openVitals(r, k === 'bp' ? 'sap' : k); }, '#anVForm'); }; b.addEventListener('keydown', function (e) { if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); openTrend(r, b.getAttribute('data-vk'), b); } }); });
     $$('[data-inf]').forEach(function (b) { b.onclick = function () { infusionDetail(r, b.getAttribute('data-inf')); }; });
     $$('[data-entry]').forEach(function (b) { b.onclick = function () { var p = b.getAttribute('data-entry').split(':'); entrySheet(r, p[0], p[1], b); }; });
     $$('[data-gas]').forEach(function (b) { b.onclick = function () { gasSheet(r, b.getAttribute('data-gas')); }; });
@@ -972,6 +1107,7 @@
   /* after every render: one Tab stop per chart row and per control group, arrow keys inside (Charts, Segmented controls, Toolbars) */
   function afterRender() {
     if (window.anesiaText) window.anesiaText.fit();
+    var sideOpen = $('.an-side.opening'); if (sideOpen) countUp(sideOpen);
     syncSymbols();
     pillSegs(); requestAnimationFrame(function () { requestAnimationFrame(glideNow); });
     $$('.an-chart .an-trk').forEach(function (trk) {
@@ -1102,7 +1238,7 @@
     var form = $('form', wrap), err = $('[data-err]', wrap);
     function submit() {
       err.textContent = ''; $$('[aria-invalid]', wrap).forEach(function (el) { el.removeAttribute('aria-invalid'); }); $$('[data-ferr]', wrap).forEach(function (el) { el.textContent = ''; });
-      try { if (o.submit(wrap) !== false) { wrap.dirty = false; closeSheet(); } }
+      try { if (o.submit(wrap) !== false) { wrap.dirty = false; var okb = $('[data-ok]', wrap); if (okb && !rmo()) { okb.classList.add('an-done'); okb.setAttribute('aria-label', 'Saved'); okb.innerHTML = icon('checkd'); } closeSheet(); } }
       catch (e) {
         err.textContent = e.message || 'Something went wrong.';
         if (e.errors) Object.keys(e.errors).forEach(function (k) { var f = $('[name="' + k + '"]', wrap), fe = $('[data-ferr="' + k + '"]', wrap); if (f) f.setAttribute('aria-invalid', 'true'); if (fe) fe.textContent = e.errors[k]; });
@@ -1230,7 +1366,7 @@
       openSheet({ title: pr.name || 'Patient', primary: null, focus: '[data-x]', body: '<dl class="an-dl">' + rows.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' });
       var xb = $('#anSheet [data-x]'); if (xb) xb.textContent = 'Close'; return;
     }
-    var fromSheet = !r && SHEET && PRE, p = r ? r.patient : fromSheet ? { name: PRE.name || '', species: PRE.species || 'dog', breed: PRE.breed || '', sex: PRE.sex || '', age: PRE.age || '', cpr: PRE.cpr || '', allergies: PRE.allergies || '', nka: !!PRE.nka } : { species: 'dog' }, edit = !!r;
+    var fromSheet = !r && !!SHEET, P0 = PRE || {}, p = r ? r.patient : fromSheet ? { name: P0.name || '', species: P0.species || 'dog', breed: P0.breed || '', sex: P0.sex || '', age: P0.age || '', cpr: P0.cpr || '', allergies: P0.allergies || '', nka: !!P0.nka } : { species: 'dog' }, edit = !!r;
     var isCase = (r && r.kind === 'case') || fromSheet;
     openSheet({
       title: edit ? 'Patient details' : fromSheet ? 'Start anesthesia record' : 'New training record', primary: edit ? 'Done' : 'Create', quiet: edit,
@@ -1241,10 +1377,10 @@
         '<div class="an-three"><div class="an-f"><label for="pB">Breed</label><input class="an-in" id="pB" name="breed" maxlength="60" value="' + esc(p.breed || '') + '"></div>' +
         '<div class="an-f"><label for="pS">Sex</label><select class="an-sel" id="pS" name="sex">' + ['', 'Male', 'Male neutered', 'Female', 'Female spayed'].map(function (x) { return '<option' + (x === (p.sex || '') ? ' selected' : '') + ' value="' + x + '">' + (x || '—') + '</option>'; }).join('') + '</select></div>' +
         '<div class="an-f"><label for="pA">Age</label><input class="an-in" id="pA" name="age" maxlength="20" value="' + esc(p.age || '') + '" placeholder="4 y"></div></div>' +
-        (edit ? '' : '<div class="an-f"><span class="lab">Weight was</span>' + chips('method', [['measured', 'Measured on a scale'], ['estimated', 'Estimated']], 'measured') + '</div>') + (edit ? '' : '<div class="an-f"><label for="pW">Weight</label><div class="an-unit"><input class="an-in an-tnum" id="pW" name="kg" inputmode="decimal" autocomplete="off" value="' + (fromSheet && PRE.kg ? esc(String(PRE.kg)) : '') + '"><span class="u">kg</span></div><span class="hint">Leave empty if the patient hasn’t been weighed. Per-kg doses need a weight.</span></div>') +
+        (edit ? '' : '<div class="an-f"><span class="lab">Weight was</span>' + chips('method', [['measured', 'Measured on a scale'], ['estimated', 'Estimated']], 'measured') + '</div>') + (edit ? '' : '<div class="an-f"><label for="pW">Weight</label><div class="an-unit"><input class="an-in an-tnum" id="pW" name="kg" inputmode="decimal" autocomplete="off" value="' + (fromSheet && P0.kg ? esc(String(P0.kg)) : '') + '"><span class="u">kg</span></div><span class="hint">Leave empty if the patient hasn’t been weighed. Per-kg doses need a weight.</span></div>') +
         '<div class="an-two"><div class="an-f"><span class="lab">ASA status</span>' + chips('asa', [['', '—'], ['I', 'I'], ['II', 'II'], ['III', 'III'], ['IV', 'IV'], ['V', 'V']], p.asa || '') + '</div>' +
         '<label class="an-f" style="justify-content:flex-end"><span class="an-check" style="border-color:var(--an-line-2);background:transparent"><input type="checkbox" name="emergency"' + (p.emergency ? ' checked' : '') + '>Emergency (E)</span></label></div>' +
-        '<div class="an-two"><div class="an-f"><span class="lab">Code status</span>' + chips('cpr', [['', 'Not recorded'], ['CPR', 'CPR'], ['DNR', 'DNR']], p.cpr || '') + '</div>' +
+        '<div class="an-two"><div class="an-f"><span class="lab">Code status</span>' + chips('cpr', [['', 'Not recorded'], ['ALS', 'ALS'], ['BLS', 'BLS'], ['CPR', 'CPR'], ['DNR', 'DNR']], p.cpr || '') + '</div>' +
         '<div class="an-f"><label for="pAl">Allergies</label><input class="an-in" id="pAl" name="allergies" maxlength="300" autocomplete="off" value="' + esc(p.allergies || '') + '" placeholder="Drug or other allergies"><label class="an-check" style="margin-top:.375rem"><input type="checkbox" name="nka"' + (p.nka ? ' checked' : '') + '>No known allergies</label></div></div>' +
         '<div class="an-f"><label for="pP">Procedure</label><input class="an-in" id="pP" name="procedure" maxlength="160" value="' + esc(r ? r.procedure : '') + '"></div>' +
         '<div class="an-two"><div class="an-f"><label for="pR">Resident</label><input class="an-in" id="pR" name="resident" maxlength="80" value="' + esc(r ? r.team.resident : S.me) + '"></div>' +
@@ -1532,10 +1668,24 @@
   function liveUndo() { var t = now(); S.undoStack = S.undoStack.filter(function (e) { return t - e.ts <= A.UNDO_MS && e.rid === S.cur; }); return S.undoStack; }
   function offerUndo(msg, redo) {
     var el = $('#anToast'); if (!el) return; clearTimeout(S.toastT);
-    el.innerHTML = '<span>' + esc(msg) + '</span><button type="button" class="an-tbtn" id="anUndo">' + (redo ? 'Redo' : 'Undo') + '</button><button type="button" class="an-tx" id="anToastX" aria-label="Dismiss">' + icon('close') + '</button>';
+    var ue = S.undoStack[S.undoStack.length - 1], left = !redo && ue ? Math.max(0, Math.round(A.UNDO_MS - (now() - ue.ts))) : 0;
+    el.innerHTML = '<span class="an-tok" aria-hidden="true">' + icon('checkd', { scale: 's' }) + '</span><span>' + esc(msg) + '</span><button type="button" class="an-tbtn' + (left ? ' ring' : '') + '" id="anUndo"' + (left ? ' style="--an-ud:' + A.UNDO_MS + 'ms;--an-ue:-' + (A.UNDO_MS - left) + 'ms"' : '') + '>' + (redo ? 'Redo' : 'Undo') + '</button><button type="button" class="an-tx" id="anToastX" aria-label="Dismiss">' + icon('close') + '</button>';
     showToast(el);
     $('#anUndo').onclick = function () { if (redo) redoLast(); else undoLast(); };
     $('#anToastX').onclick = function () { el.hidden = true; };
+    var ub = $('#anUndo'); if (ub && left) { clearTimeout(S.undoRingT); S.undoRingT = setTimeout(function () { if (ub.isConnected) ub.classList.add('spent'); }, left); }
+    swipeAway(el);
+  }
+  /* the undo message follows a finger or mouse sideways or down, and a flick sends it away */
+  function swipeAway(el) {
+    if (el.__sw) return; el.__sw = true; var x0 = null, y0 = 0, dx = 0, dy = 0, t0 = 0;
+    el.addEventListener('pointerdown', function (e) { if (e.target.closest('button')) return; x0 = e.clientX; y0 = e.clientY; dx = dy = 0; t0 = performance.now(); el.style.transition = 'none'; try { el.setPointerCapture(e.pointerId); } catch (x) { } });
+    el.addEventListener('pointermove', function (e) { if (x0 === null) return; dx = e.clientX - x0; dy = Math.max(0, e.clientY - y0); el.style.translate = dx + 'px ' + dy + 'px'; el.style.opacity = String(Math.max(.2, 1 - (Math.abs(dx) + dy) / 260)); });
+    el.addEventListener('pointerup', function () {
+      if (x0 === null) return; x0 = null; var v = (Math.abs(dx) + dy) / Math.max(1, performance.now() - t0); el.style.transition = '';
+      if (Math.abs(dx) > 90 || dy > 50 || v > .6) { el.style.translate = (Math.abs(dx) > dy ? (dx > 0 ? 1 : -1) * 420 + 'px 0' : '0 120px'); el.style.opacity = '0'; setTimeout(function () { el.hidden = true; el.style.translate = ''; el.style.opacity = ''; }, 220); }
+      else { el.style.translate = ''; el.style.opacity = ''; }
+    });
   }
   function undoLast() {
     var e = liveUndo().pop(); var el = $('#anToast');

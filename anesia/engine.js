@@ -279,7 +279,7 @@
         var idBefore = rec.patient.name + '|' + rec.patient.species;
         ['name', 'species', 'breed', 'sex', 'age', 'asa'].forEach(function (k) { if (op[k] !== undefined) rec.patient[k] = String(op[k]).slice(0, 120); });
         if (op.emergency !== undefined) rec.patient.emergency = !!op.emergency;
-        if (op.cpr !== undefined) { if (['', 'CPR', 'DNR'].indexOf(op.cpr) < 0) fail('Choose CPR or DNR.', 'cpr'); rec.patient.cpr = op.cpr; }
+        if (op.cpr !== undefined) { if (['', 'ALS', 'BLS', 'CPR', 'DNR'].indexOf(op.cpr) < 0) fail('Choose ALS, BLS, CPR or DNR.', 'cpr'); rec.patient.cpr = op.cpr; }
         if (op.allergies !== undefined) rec.patient.allergies = String(op.allergies).trim().slice(0, 300);
         if (op.nka !== undefined) rec.patient.nka = !!op.nka && !rec.patient.allergies;
         /* a different name or species is a different patient: it has to be confirmed again */

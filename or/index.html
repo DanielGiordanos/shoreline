@@ -1820,7 +1820,7 @@ body:is(.dark,:not(.dark)) .or-late{text-transform:none;letter-spacing:0;font:65
 .or-drug-h{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-400);margin:2px 4px 2px;}
 .or-drug-h~.or-drug-h{margin-top:14px;}
 .or-drug-err{color:var(--st-critical);font-weight:700;}
-body.or-live .or-vitals{display:none;}   /* vitals live in the anesthesia record; the live OR never shows made-up numbers */
+body.or-live .or-anesia:not(.real) .or-vitals{display:none;}   /* vitals live in the anesthesia record; the live OR never shows made-up numbers */
 /* live: sign-in / access gate, and what the live OR doesn't have yet (Anesia isn't connected) */
 #orGate{position:fixed;inset:0;z-index:9800;display:none;place-items:center;padding:16px;background:rgba(255,255,255,.92);}
 body.dark #orGate{background:rgba(8,14,26,.92);}
@@ -1830,7 +1830,6 @@ body.dark #orGate{background:rgba(8,14,26,.92);}
 #orGate .og-card b{font-size:17px;font-weight:700;letter-spacing:-.01em;}
 #orGate .og-card span{color:var(--ink-500);}
 #orGate .og-card .btn{align-self:flex-start;margin-top:6px;text-decoration:none;}
-body.or-live [data-act="anesia"],body.or-live #caseAnesia,body.or-live #drawerAnesia{display:none;}
 body.or-live .or-demo-banner{display:none;}
 /* ============================================================
    PRAVIX OR — Flow's colours (Oct 2026): the same tokens as Pravix Flow, light and dark, read from Flow's stylesheet,
@@ -2643,6 +2642,15 @@ const TODAY = dayOffset(0);
 const SIM_START_MIN = 11*60+24;
 let clockAnchor = { simMin: SIM_START_MIN, realMs: Date.now() };
 function now(){ return clockAnchor.simMin + (Date.now()-clockAnchor.realMs)/60000; }
+/* n176: in live, the anesthesia state is Anesia's own summary on the treatment sheet (sheets/<id>.anesthesia); the demo keeps its invented one.
+   Anesia's times are epoch ms; the OR's are minutes of the case's day. */
+function anesiaDriven(c){ return LIVE && !!(c._anesia && c._anesia.rec); }
+function anOf(c){ const a=c._anesia; if(!anesiaDriven(c)) return c.anesthesia||null;
+  const d0=parseISO(c.date||TODAY).getTime(), m=ms=>(ms==null||!isFinite(ms))?null:(ms-d0)/60000, L=a.last||{}, v=k=>(L[k]==null||L[k]==='')?'—':L[k];
+  const state=a.status==='active'?'active':(a.status==='ended'||a.status==='signed')?'ended':'assessment';
+  const mode=a.status==='active'?'Under anesthesia':a.status==='signed'?'Anesthesia ended · record signed':a.status==='ended'?'Anesthesia ended · not signed':'Record started · not yet under';
+  return {mode, state, start:m(a.start), end:m(a.end), signed:!!a.signed, rec:a.rec, confirmed:!!a.confirmed, asa:a.asa||'', timeout:!!a.timeout,
+    hr:v('hr'), map:v('map'), spo2:v('spo2'), etco2:L.etco2!=null?L.etco2:null, temp:L.temp!=null?L.temp:null, real:!!a.last}; }
 
 /* ---------- status model ----------
    Detailed statuses are preserved on every case (its timeline).
@@ -3180,7 +3188,8 @@ function fastingLine(sh){ const O=sh.orders||{}, M=marksOf(sh); let best=null;
 
 /* ---------- readiness from Flow and Treatment Sheets ---------- */
 function autoReady(sh){ const out={}, L=liveOrders(sh), p=sh.patient||{}, code=String(p.code||'').toUpperCase(), M=marksOf(sh), O=sh.orders||{};
-  if(code==='CPR'||code==='DNR') out.cpr=code+' · from Flow';
+  if(code==='CPR'||code==='DNR'||code==='ALS'||code==='BLS') out.cpr=code+' · from the sheet';
+  const an=sh.anesthesia; if(an&&an.rec&&an.confirmed) out.anesthesia='Patient confirmed in Anesia'+(an.asa?' · ASA '+an.asa:'');   /* n176 */
   const meds=L.filter(o=>o.type==='med'); if(meds.length) out.meds=meds.length+' medication'+(meds.length===1?'':'s')+' on the sheet';
   const abx=meds.find(o=>ABX.test(o.name||'')); if(abx) out.abx=abx.name+' on the sheet';
   const fl=L.find(o=>o.type==='fluid'||o.cont||o.kind==='fluid'); if(fl) out.ivc=(fl.name||'Fluids')+' running · from the sheet';
@@ -3205,6 +3214,7 @@ function toDoc(c){ const out={};
   return JSON.parse(JSON.stringify(out)); }
 function caseFrom(sh){ const s=JSON.parse(JSON.stringify(sh.surgery));
   const c=mkCase(Object.assign({}, s, {patientId:sh._id, _sheet:sh._id}));
+  c._anesia=sh.anesthesia&&typeof sh.anesthesia==='object'?sh.anesthesia:null;   /* n176: Anesia's summary */
   ['assistantIds','events','intraop','implants','specimens','kura','drugs'].forEach(k=>{ if(!Array.isArray(c[k])) c[k]=[]; });
   ['readinessNotes','recovery','rman'].forEach(k=>{ if(!c[k]||typeof c[k]!=='object') c[k]={}; });
   if(!c.timeout||typeof c.timeout!=='object') c.timeout={done:false,t:null,checks:{}}; if(!c.timeout.checks) c.timeout.checks={};
@@ -3499,7 +3509,7 @@ function caseFlags(c){
   /* documentation */
   if(c.readiness.consent==='pending') add('consentX'); else if(c.readiness.consent==='done'&&!done) add('consent');
   if(c.readiness.imaging==='pending') add('imagingX');
-  if(c.anesthesia && c.anesthesia.state==='ended' && (!LIVE||c.anesthesia.signed)) (c.anesthesia.signed?add('record'):add('recordX'));
+  { const an=anOf(c); if(an && an.state==='ended' && (!LIVE||an.signed)) (an.signed?add('record'):add('recordX')); }
   if(done) ((c.record&&c.record.status==='signed')?add('note'):add('noteX'));
   const asa=asaFlag(c); if(asa) f.push(asa);
   const rank=x=>({crit:0,warn:1,info:2,ok:3})[x.tone];
@@ -3926,10 +3936,10 @@ function renderDrawer(){
   const times=[['Scheduled',c.sched],['Entered OR',evT(c,'in_room')],['Incision',evT(c,'procedure_started')],[inRoom(c)||isPre(c)?'Expected finish':'Out of OR', inRoom(c)||isPre(c)?expectedFinish(c):evT(c,'out_of_room')]];
   const timesHtml=times.map(([k,v])=>`<div class="d-cell"><div class="k">${k}</div><div class="v ${v==null?'muted':''}">${v==null?'—':fmtT(v)}</div></div>`).join('');
 
-  const an=c.anesthesia;
-  const anesia = an ? `<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active':an.state==='ended'?'Ended '+fmtShort(an.end):an.state==='assessment'?'Pre-op assessment':'Planned'}</span></div>
+  const an=anOf(c);
+  const anesia = an ? `<div class="or-anesia${an.real?' real':''}"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active':an.state==='ended'?'Ended '+fmtShort(an.end):an.state==='assessment'?'Pre-op assessment':'Planned'}</span></div>
       <div class="or-anesia-mode">${esc(an.mode)}</div>
-      ${an.state==='active'||an.state==='assessment'?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}%</div></div><div><div class="k">${an.etco2?'EtCO₂':'Temp'}</div><div class="v">${esc(an.etco2||an.temp||'—')}</div></div></div>`:''}
+      ${an.state==='active'||an.state==='assessment'?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}${an.spo2==='—'?'':'%'}</div></div><div><div class="k">${an.etco2?'EtCO₂':'Temp'}</div><div class="v">${esc(an.etco2||an.temp||'—')}</div></div></div>`:''}
       ${an.start?`<div class="sub">Anesthesia start ${fmtT(an.start)}${an.end?` · end ${fmtT(an.end)}`:''}</div>`:`<div class="sub">${c.readiness.anesthesia==='done'?'Pre-op assessment complete':'Pre-op assessment incomplete'}</div>`}</div>`
     : `<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">Not started</span></div><div class="sub" style="margin-top:6px">${c.readiness.anesthesia==='done'?'Pre-op assessment complete · General anesthesia planned':'Pre-op assessment incomplete'}</div></div>`;
 
@@ -3972,6 +3982,8 @@ function doAdvance(c){
   render(); if(UI.drawerId===c.id) renderDrawer();
 }
 function openAnesia(c){
+  if(LIVE){ const a=c._anesia, id=c._sheet||c.patientId; if(!id){ toast('This case has no treatment sheet'); return; }
+    window.open('/anesia/?sheet='+encodeURIComponent(id)+(a&&a.rec?'#r='+encodeURIComponent(a.rec):''), '_blank', 'noopener'); return; }   /* n176 */
   const p=pt(c);
   openModal({title:'Open Anesia', sub:`Anesia is the Pravix anesthesia record. OR only shows the summary — the full record lives there.`,
     body:`<div class="or-anesia" style="margin-bottom:6px"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${esc(p.name)} · ${esc(procLabel(c))}</span></div>
@@ -4068,9 +4080,9 @@ function tabOverview(c){
     ${c.impact&&c.impact.minutes?`<div class="or-impact" style="margin-top:12px"><div><b>Schedule impact</b><span>Delays the next case in ${esc(ROOM[c.impact.roomId].name)} by ≈ ${c.impact.minutes} min</span></div></div>`:''}
     ${c.notes?`<div class="or-alert is-ok" style="margin:14px 0 0"><div class="ai">i</div><div><b>Note</b><span>${esc(c.notes)}</span></div></div>`:''}`, {cls:'span5'});
   const tl=panel('Surgical timeline', timelineHtml(c), {cls:'span5', right:`<span class="count">${c.events.length} events</span>`});
-  const an=c.anesthesia;
-  const anesia=panel('Anesia', an?`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active':an.state==='ended'?'Ended':'Pre-op assessment'}</span></div><div class="or-anesia-mode">${esc(an.mode)}</div>
-      ${an.hr?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}%</div></div><div><div class="k">Temp</div><div class="v">${esc(orTempF(an.temp)||'—')}</div></div></div>`:''}
+  const an=anOf(c);
+  const anesia=panel('Anesia', an?`<div class="or-anesia${an.real?' real':''}"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active':an.state==='ended'?'Ended':'Pre-op assessment'}</span></div><div class="or-anesia-mode">${esc(an.mode)}</div>
+      ${an.hr?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}${an.spo2==='—'?'':'%'}</div></div><div><div class="k">Temp</div><div class="v">${esc(orTempF(an.temp)||'—')}</div></div></div>`:''}
       <div class="sub">${an.start?`Anesthesia start ${fmtT(an.start)}`:'Not yet started'}${an.end?` · end ${fmtT(an.end)}`:''}</div></div>`
     :`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">Not started</span></div><div class="sub" style="margin-top:6px">${c.readiness.anesthesia==='done'?'Pre-op assessment complete':'Pre-op assessment incomplete'}</div></div>`, {cls:'span7', right:`<button class="or-btn sm luna" data-act="anesia">Open Anesia</button>`});
   const flags=panel('Flags &amp; considerations', flagList(c), {cls:'span5', right:`<button class="or-btn sm" data-act="legend">Icon legend…</button>`});
@@ -4117,11 +4129,11 @@ function tabProcedure(c){
   const controls=`<div class="or-actions">${nxtOk?`<span class="or-next"><button class="or-btn primary" data-status="${nxt}"${why?' aria-disabled="true"':''}>${esc(ACTION_LABEL[nxt])}</button>${why?`<small>${esc(why)}</small>`:''}</span>`:`<span class="or-quiet">${isPre(c)?'The OR steps start when the patient goes in.':'All OR steps are recorded.'}</span>`}</div>
     <p style="font-size:12px;color:var(--ink-400);margin:12px 0 0;line-height:1.5">${LIVE?'Tap each step as it happens — Flow and the treatment sheet update straight away.':'In production these arrive automatically: Anesia posts induction and recovery, Flow posts arrival and the ICU hand-off. Buttons simulate that here.'}</p>`;
   const stagePanel=panel('Procedure stage', strip+controls, {right:`${stagePill(c,'lg')}`});
-  const an=c.anesthesia;
-  const anesia=panel('Anesia', an?`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active · '+fmtDur(now()-an.start):an.state==='ended'?'Ended '+fmtShort(an.end):'Pre-op assessment'}</span></div><div class="or-anesia-mode">${esc(an.mode)}</div>
-      ${an.state==='active'?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}%</div></div><div><div class="k">EtCO₂</div><div class="v">${esc(an.etco2||'—')}</div></div></div>`:''}
+  const an=anOf(c);
+  const anesia=panel('Anesia', an?`<div class="or-anesia${an.real?' real':''}"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active · '+fmtDur(now()-an.start):an.state==='ended'?'Ended '+fmtShort(an.end):'Pre-op assessment'}</span></div><div class="or-anesia-mode">${esc(an.mode)}</div>
+      ${an.state==='active'?`<div class="or-vitals"><div><div class="k">HR</div><div class="v">${esc(an.hr)}</div></div><div><div class="k">MAP</div><div class="v">${esc(an.map)}</div></div><div><div class="k">SpO₂</div><div class="v">${esc(an.spo2)}${an.spo2==='—'?'':'%'}</div></div><div><div class="k">EtCO₂</div><div class="v">${esc(an.etco2||'—')}</div></div></div>`:''}
       <div class="sub">${an.start?`Anesthesia start ${fmtT(an.start)}`:'Not started'}${an.end?` · end ${fmtT(an.end)}`:''}${an.temp?` · Temp ${esc(orTempF(an.temp))}`:''}</div></div>`
-    :`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">Not started</span></div><div class="sub" style="margin-top:6px">Anesthesia has not started. ${LIVE?'Its start is recorded with Start anesthesia.':'OR will update when Anesia records induction.'}</div></div>`, {cls:'span4', right:`${an&&an.state==='active'?'<button class="or-btn sm" data-act="an-end">End anesthesia</button>':''}<button class="or-btn sm luna" data-act="anesia">Open Anesia</button>`});
+    :`<div class="or-anesia"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">Not started</span></div><div class="sub" style="margin-top:6px">Anesthesia has not started. ${LIVE?'The OR shows it as soon as Anesia records it.':'OR will update when Anesia records induction.'}</div></div>`, {cls:'span4', right:`${an&&an.state==='active'&&!an.real?'<button class="or-btn sm" data-act="an-end">End anesthesia</button>':''}<button class="or-btn sm luna" data-act="anesia">Open Anesia</button>`});
   const events=panel('Intraoperative events', c.intraop.length?`<div class="or-list">${c.intraop.slice().sort((a,b)=>b.t-a.t).map(e=>`<div class="or-li"><span class="tm">${fmtShort(e.t)}</span><span class="tt">${esc(e.type)}${e.note?`<small>${esc(e.note)}</small>`:''}</span><span class="st ${['Hemorrhage','Hypotension','Arrhythmia','Complication'].includes(e.type)?'warn':'muted'}">${['Hemorrhage','Hypotension','Arrhythmia','Complication'].includes(e.type)?'Clinical':'Logged'}</span></div>`).join('')}</div>`:`<div class="or-empty">No events recorded</div>`, {cls:'span8', right:`<button class="or-btn sm primary" data-act="event">${I.plus}Add event</button>`});
   const implants=panel('Implants', c.implants.length?`<div class="or-list">${c.implants.map(i=>`<div class="or-li or-implant"><span class="tt">${esc(i.product)}<span class="spec"><span><b>Mfr</b> ${esc(i.manufacturer)}</span><span><b>Size</b> ${esc(i.size)}</span><span><b>Lot</b> ${esc(i.lot)}</span><span><b>Serial</b> ${esc(i.serial)}</span><span><b>Exp</b> ${esc(i.exp)}</span><span><b>Qty</b> ${i.qty}</span></span><small>${esc(pt(c).name)} · ${esc(procLabel(c))} · ${esc(person(c.surgeonId).name)} · ${fmtT(i.t)}</small></span><span class="st">Placed</span></div>`).join('')}</div>`:`<div class="or-empty">No implants recorded</div>`, {cls:'span6', right:`<button class="or-btn sm" data-act="scan">${I.scan}Scan barcode…</button>`});
   const specimens=panel('Specimens', c.specimens.length?`<div class="or-list">${c.specimens.map(s=>`<div class="or-li" data-spec="${s.id}"><span class="tm">${fmtShort(s.t)}</span><span class="tt">${esc(s.type)} · ${esc(s.site)}${s.laterality&&s.laterality!=='N/A'?' · '+esc(s.laterality):''}<small>${esc(s.test)} · ${esc(s.container)} · ${esc(s.destination)}</small></span><button class="or-btn sm" data-specnext="${s.id}" ${s.status==='Received'?'disabled':''} title="Advance status">${esc(s.status)}${s.status!=='Received'?' →':''}</button></div>`).join('')}</div>`:`<div class="or-empty">No specimens collected</div>`, {cls:'span6', right:`<button class="or-btn sm" data-act="specimen">${I.plus}Add specimen…</button>`});
@@ -4188,7 +4200,7 @@ function tabRecovery(c){
 const RECORD_FIELDS=[['preDx','Preoperative diagnosis'],['postDx','Postoperative diagnosis'],['proc','Procedure performed'],['surgeon','Surgeon'],['assistants','Assistants'],['anesthesia','Anesthesia'],['findings','Findings',true],['description','Procedure description',true],['implants','Implants'],['specimens','Specimens'],['complications','Complications'],['ebl','Estimated blood loss'],['closure','Closure',true],['plan','Postoperative plan',true]];
 function defaultRecord(c){ const r=c.record||{}; return Object.assign({
     preDx:'', postDx:'', proc:procLabel(c), surgeon:person(c.surgeonId).full||person(c.surgeonId).name, assistants:c.assistantIds.map(a=>person(a).name).join(', ')||'None',
-    anesthesia:`${c.anesthesia?c.anesthesia.mode:'General'} · ${person(c.anesthesiaId).name}${c.anesthesia&&c.anesthesia.start?` · ${fmtT(c.anesthesia.start)}${c.anesthesia.end?'–'+fmtT(c.anesthesia.end):''}`:''}`,
+    anesthesia:(an=>`${an?an.mode:'General'} · ${person(c.anesthesiaId).name}${an&&an.start?` · ${fmtT(an.start)}${an.end?'–'+fmtT(an.end):''}`:''}`)(anOf(c)),
     findings:'', description:'', implants:c.implants.map(i=>`${i.product} · ${i.size} · Lot ${i.lot}`).join('\n')||'None', specimens:c.specimens.map(s=>`${s.type} · ${s.site} · ${s.test}`).join('\n')||'None',
     complications:c.intraop.filter(e=>['Hemorrhage','Hypotension','Arrhythmia','Complication'].includes(e.type)).map(e=>`${e.type} (${fmtShort(e.t)})${e.note?' — '+e.note:''}`).join('\n')||'None', ebl:'', closure:'', plan:'', status:'draft' }, r); }
 function tabRecord(c){
@@ -4238,8 +4250,8 @@ function caseAction(c, act, btn){
     case 'drug': drugModal(c); break;
     case 'scan': scanModal(c); break;
     case 'specimen': specimenModal(c); break;
-    case 'extubate': c.recovery.extubated=now(); if(c.anesthesia&&c.anesthesia.state==='active'){ c.anesthesia.state='ended'; c.anesthesia.end=c.recovery.extubated; toast('Extubated · anesthesia ended '+fmtT(c.anesthesia.end)); } save(); renderCase(); break;
-    case 'an-end': if(c.anesthesia&&c.anesthesia.state==='active'){ c.anesthesia.state='ended'; c.anesthesia.end=now(); save(); toast('Anesthesia ended '+fmtT(c.anesthesia.end)); renderCase(); } break;
+    case 'extubate': c.recovery.extubated=now(); if(!anesiaDriven(c)&&c.anesthesia&&c.anesthesia.state==='active'){ c.anesthesia.state='ended'; c.anesthesia.end=c.recovery.extubated; toast('Extubated · anesthesia ended '+fmtT(c.anesthesia.end)); } save(); renderCase(); break;
+    case 'an-end': if(!anesiaDriven(c)&&c.anesthesia&&c.anesthesia.state==='active'){ c.anesthesia.state='ended'; c.anesthesia.end=now(); save(); toast('Anesthesia ended '+fmtT(c.anesthesia.end)); renderCase(); } break;
     case 'rec-complete': doAdvance(c); break;
     case 'send-flow': sendToFlow(c); break;
     case 'luna-draft': lunaDraft(c); break;
@@ -4302,7 +4314,7 @@ function lunaDraft(c){
   r.preDx=r.preDx||`[Demo] ${p.name} — presenting diagnosis for ${procLabel(c)}`;
   r.postDx=r.postDx||'[Demo] Same as preoperative';
   r.findings=r.findings||`[Demo draft — not clinical fact] Findings would be summarised here from the surgeon's dictation. Timeline: incision ${evT(c,'procedure_started')!=null?fmtT(evT(c,'procedure_started')):'—'}${evT(c,'closing')!=null?`, closing ${fmtT(evT(c,'closing'))}`:''}.`;
-  r.description=r.description||`[Demo draft] ${procLabel(c)} performed by ${r.surgeon} under ${c.anesthesia?c.anesthesia.mode.toLowerCase():'general anesthesia'}. ${c.intraop.length} intraoperative event${c.intraop.length===1?'':'s'} logged${c.implants.length?`; ${c.implants.length} implant${c.implants.length===1?'':'s'} placed`:''}${c.specimens.length?`; ${c.specimens.length} specimen${c.specimens.length===1?'':'s'} collected`:''}.`;
+  r.description=r.description||`[Demo draft] ${procLabel(c)} performed by ${r.surgeon} under ${anOf(c)?anOf(c).mode.toLowerCase():'general anesthesia'}. ${c.intraop.length} intraoperative event${c.intraop.length===1?'':'s'} logged${c.implants.length?`; ${c.implants.length} implant${c.implants.length===1?'':'s'} placed`:''}${c.specimens.length?`; ${c.specimens.length} specimen${c.specimens.length===1?'':'s'} collected`:''}.`;
   r.ebl=r.ebl||'[Demo] Estimate pending';
   r.closure=r.closure||'[Demo] Closure per preference card';
   r.plan=r.plan||`[Demo] Post-operative plan to ${c.recovery&&c.recovery.destination?c.recovery.destination:'destination'} — analgesia, monitoring and recheck to be confirmed by surgeon.`;

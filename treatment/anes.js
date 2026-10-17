@@ -1,4 +1,4 @@
-/* Pravix Treatment Sheets — Anesthesia tab (n166, Expand n169)
+/* Pravix Treatment Sheets — Anesthesia tab (n166, Expand n169, state badge n176)
    The patient's anesthesia record lives in Anesia; this tab shows it inside the sheet, next to Vitals.
    Same origin, same sign-in: Anesia runs in a frame in embed mode (?embed=1&sheet=<id>&pre=<patient from the sheet>).
    Records started here are linked to the sheet (kind "case"); Anesia's own training records are untouched. */
@@ -21,7 +21,7 @@
     var nka = !alg || /^(none|none known|nka|no known allergies|—|-)$/i.test(alg);
     return { name: v.patient && v.patient !== 'Unnamed patient' ? v.patient : '', species: /^(cat|fel)/i.test(v.species || '') ? 'cat' : /^(dog|can)/i.test(v.species || 'dog') ? 'dog' : 'other',
       breed: v.breed && v.breed !== '—' ? v.breed : '', sex: sexOf(v.sex), age: v.age && v.age !== '—' ? v.age : '', kg: Number(v.weight) || '',
-      cpr: code === 'DNR' ? 'DNR' : code === 'CPR' ? 'CPR' : '', allergies: nka ? '' : alg, nka: nka };
+      cpr: ['ALS', 'BLS', 'CPR', 'DNR'].indexOf(code) > -1 ? code : '', allergies: nka ? '' : alg, nka: nka };   /* n176: the sheet's four codes, not just CPR/DNR */
   }
   function srcFor(id) { return '/anesia/?embed=1&sheet=' + encodeURIComponent(id) + '&pre=' + encodeURIComponent(JSON.stringify(pre())); }
   function fit() {
@@ -85,5 +85,29 @@
   window.addEventListener('load', function () { install(); if (/(^|[#&])tab=anes/.test(location.hash)) window.selectCTab('anes'); });
   window.addEventListener('resize', fit);
   new MutationObserver(mirrorTheme).observe(document.body || document.documentElement, { attributes: true, attributeFilter: ['class'] });
-  window.tsAnes = { render: render, sheetId: sheetId, pre: pre, setExpanded: setExpanded };
+  /* n176 — the record's state on the tab, from the summary Anesia writes onto the sheet (sheets/<id>.anesthesia):
+     under anesthesia (green, with the minutes), ended but not signed (amber), signed (quiet). Watched even when the tab is closed. */
+  var AN = { id: null, unsub: null, sum: null, tick: null };
+  function anBadge() {
+    var b = document.querySelector('#clinSwitcher .seg[data-ctab=anes]'); if (!b) return;
+    var el = b.querySelector('.seg-badge.anes'); if (!el) { el = document.createElement('span'); el.className = 'seg-badge anes'; el.setAttribute('aria-live', 'polite'); b.appendChild(el); }
+    var a = AN.sum, st = a && a.rec ? a.status : null, txt = '', cls = 'seg-badge anes', title = 'Anesthesia';
+    if (st === 'active') { var m = Math.max(0, Math.round((Date.now() - (a.start || Date.now())) / 60000)); txt = (m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + ' min'); cls += ' live'; title = 'Under anesthesia · ' + txt + (a.last && a.last.hr ? ' · HR ' + a.last.hr : '') + (a.last && a.last.spo2 ? ' · SpO₂ ' + a.last.spo2 + '%' : ''); }
+    else if (st === 'ended') { txt = 'Unsigned'; cls += ' over'; title = 'Anesthesia ended · record not signed'; }
+    else if (st === 'signed') { cls += ' done'; title = 'Anesthesia record signed'; }
+    else if (st === 'planned') { title = 'Anesthesia record started, patient not yet under'; }
+    el.className = cls; el.textContent = txt; b.title = title; b.setAttribute('aria-label', title);
+    clearInterval(AN.tick); AN.tick = null; if (st === 'active') AN.tick = setInterval(anBadge, 30000);
+  }
+  function watchSheet() {
+    var id = sheetId(); if (id === AN.id) return; AN.id = id; AN.sum = null;
+    if (AN.unsub) { try { AN.unsub(); } catch (e) { } AN.unsub = null; }
+    anBadge(); if (!id) return;
+    try {
+      var fb = window.firebase; if (!fb || !fb.apps || !fb.apps.length) return;
+      AN.unsub = fb.firestore().collection('sheets').doc(id).onSnapshot(function (d) { AN.sum = d.exists ? (d.data() || {}).anesthesia || null : null; if (sheetId() === id) anBadge(); }, function (e) { console.warn('[sheet ← Anesia]', e); });
+    } catch (e) { }
+  }
+  setInterval(watchSheet, 1000); window.addEventListener('load', watchSheet);
+  window.tsAnes = { render: render, sheetId: sheetId, pre: pre, setExpanded: setExpanded, state: function () { return AN.sum; } };
 })();
