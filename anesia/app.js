@@ -16,8 +16,12 @@
     ['Glycopyrrolate', 'drug', 0.2, 'IV'], ['Hydromorphone', 'drug', 2, 'IV'], ['Ketamine', 'drug', 100, 'IV'], ['Lidocaine', 'drug', 20, 'IV'],
     ['Maropitant', 'drug', 10, 'IV'], ['Methadone', 'drug', 10, 'IV'], ['Midazolam', 'drug', 5, 'IV'], ['Norepinephrine', 'drug', 1, 'IV'],
     ['Propofol', 'drug', 10, 'IV'],
+    /* n177: emergency drugs, at Pravix's stock strengths (vasopressin is in units, so it has no mg/mL) */
+    ['Epinephrine', 'drug', 1, 'IV'], ['Vasopressin', 'drug', null, 'IV'], ['Amiodarone', 'drug', 50, 'IV'], ['Esmolol', 'drug', 10, 'IV'],
+    ['Naloxone', 'drug', 0.4, 'IV'], ['Flumazenil', 'drug', 0.1, 'IV'], ['Atipamezole', 'drug', 5, 'IM'], ['Calcium gluconate', 'drug', 100, 'IV'], ['Dextrose', 'drug', 500, 'IV'],
     ['Lactated Ringer’s', 'fluid', null, 'IV'], ['Plasma-Lyte A', 'fluid', null, 'IV'], ['0.9% sodium chloride', 'fluid', null, 'IV']
-  ].map(function (d) { return { name: d[0], kind: d[1], conc: d[2], route: d[3] }; });
+  ].map(function (d) { return { name: d[0], kind: d[1], conc: d[2], route: d[3] }; })
+   .sort(function (a, b) { return (a.kind === b.kind ? 0 : a.kind === 'fluid' ? 1 : -1) || (a.kind === 'fluid' ? 0 : a.name.localeCompare(b.name)); });
   var ROUTES = ['IV', 'IM', 'SC', 'PO', 'Epidural', 'Local'];
   /* Drug classes coloured as the international syringe-label standard (ISO 26825): induction agents yellow, opioids blue,
      benzodiazepines orange, vasopressors violet, local anesthetics grey, anticholinergics green, antiemetics salmon.
@@ -52,6 +56,7 @@
      Weight follows the label's font weight (syncSymbols); size is small / medium / large relative to the text. */
   var SYM = {
     plus: '<path d="M12 5v14M5 12h14"/>',
+    emer: '<rect class="b s" x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M12 8v8M8 12h8"/>',
     back: '<path d="M15 5l-7 7 7 7"/>',
     heart: '<path d="M3 12h4l2-5 4 10 2-5h6"/>',
     syringe: '<path class="b s" d="M14.6 4.6l4.8 4.8-9.2 9.2H5.4v-4.8z"/><path d="M17.4 2.6l4 4M19.4 4.6l-2.6 2.6M5.4 18.6l-2.8 2.8"/><path class="s k" d="M12.3 9.1l1.8 1.8M9.7 11.7l1.8 1.8"/>',
@@ -84,7 +89,7 @@
     'v-rr': '<path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h7"/>',
     'v-temp': '<path class="b" d="M9.5 14.2V5.5a2.5 2.5 0 0 1 5 0v8.7a4.5 4.5 0 1 1-5 0z"/><path class="s k" d="M12 9v7"/>'
   };
-  var SYMOPT = {"plus":[1.114,0.01,0.01],"back":[1.18,0.33,0.01],"heart":[1.033,0.2,0.01],"syringe":[0.915,-0.36,0.42],"drip":[0.98,0.06,-0.35],"output":[1.014,0.01,-0.52],"airway":[1.039,0.06,-0.39],"idcheck":[0.941,0.46,-0.07],"gas":[1.007,0.01,-0.31],"share":[1.004,0.01,0.48],"print":[0.893,0.01,-0.89],"close":[1.18,0.01,0.01],"flag":[1.016,1.8,0.61],"scale":[0.95,0.01,0.58],"check":[1.18,-0.01,-0.26],"checkd":[1.18,-0.01,-0.26],"info":[0.947,0.01,-0.07],"sidebar":[0.896,-0.23,0.01],"stop":[1.166,0.01,0.01],"pen":[1.021,0.66,-0.64],"lockd":[1.028,0.01,-0.06],"timer":[0.989,-0.05,0.58],"expand":[0.991,0.01,0.01],"collapse":[1.004,0.01,0.01],"v-hr":[1.0,0.01,-0.33],"v-spo2":[0.957,0.01,-0.52],"v-bp":[0.894,-0.12,-0.07],"v-etco2":[0.89,0.01,-0.47],"v-rr":[0.936,0.24,0.57],"v-temp":[0.961,0.01,-0.96],"compose":[0.95,-1.13,1.03]};   /* [scale, dx, dy] from tests/optical_measure.py */
+  var SYMOPT = {"plus":[1.114,0.01,0.01],"emer":[0.958,0.01,0.01],"back":[1.18,0.33,0.01],"heart":[1.033,0.2,0.01],"syringe":[0.915,-0.36,0.42],"drip":[0.98,0.06,-0.35],"output":[1.014,0.01,-0.52],"airway":[1.039,0.06,-0.39],"idcheck":[0.941,0.46,-0.07],"gas":[1.007,0.01,-0.31],"share":[1.004,0.01,0.48],"print":[0.893,0.01,-0.89],"close":[1.18,0.01,0.01],"flag":[1.016,1.8,0.61],"scale":[0.95,0.01,0.58],"check":[1.18,-0.01,-0.26],"checkd":[1.18,-0.01,-0.26],"info":[0.947,0.01,-0.07],"sidebar":[0.896,-0.23,0.01],"stop":[1.166,0.01,0.01],"pen":[1.021,0.66,-0.64],"lockd":[1.028,0.01,-0.06],"timer":[0.989,-0.05,0.58],"expand":[0.991,0.01,0.01],"collapse":[1.004,0.01,0.01],"v-hr":[1.0,0.01,-0.33],"v-spo2":[0.957,0.01,-0.52],"v-bp":[0.894,-0.12,-0.07],"v-etco2":[0.89,0.01,-0.47],"v-rr":[0.936,0.24,0.57],"v-temp":[0.961,0.01,-0.96],"compose":[0.95,-1.13,1.03]};   /* [scale, dx, dy] from tests/optical_measure.py */
   var SYMFLIP = { back: 1 };   /* directional symbols mirror in right-to-left layouts */
   var symN = 0;
   /* icon(name, {fill, slash, scale: 's'|'m'|'l', cls}) */
@@ -208,6 +213,32 @@
   }
   window.addEventListener('online', function () { flush(); });
 
+  /* n178: Flow's pill motion (Flow's CprEcg): the live stroke draws on behind the dot, one beat every 2.75 s. Reduce Motion: a still, full line. */
+  (function () {
+    var DUR = 2750, raf = null, t0 = null, RMQ = null;
+    try { RMQ = matchMedia('(prefers-reduced-motion: reduce)'); } catch (e) { }
+    function lines() { return Array.prototype.slice.call(document.querySelectorAll('.cpr-pill .ecg-live, .dnr-pill .flatline-live')); }
+    function prep(live) { if (live.__len) return live.__len; var len = 0; try { len = live.getTotalLength(); } catch (e) { } if (len) { live.__len = len; live.style.strokeDasharray = len; live.style.strokeDashoffset = len; } return len; }
+    function frame(ts) {
+      raf = null; if (document.hidden) return;
+      var L = lines(); if (!L.length) { t0 = null; return; }
+      if (RMQ && RMQ.matches) { L.forEach(function (l) { l.style.strokeDasharray = ''; l.style.strokeDashoffset = '0'; }); return; }
+      if (t0 === null) t0 = ts; var prog = ((ts - t0) % DUR) / DUR;
+      L.forEach(function (live) {
+        var len = prep(live); if (!len || !live.getClientRects().length) return;
+        var dot = live.parentNode.querySelector('.ecg-dot, .flatline-dot'), pt = live.getPointAtLength(prog * len);
+        if (dot) { dot.setAttribute('cx', pt.x.toFixed(2)); dot.setAttribute('cy', pt.y.toFixed(2)); }
+        live.style.strokeDashoffset = (len * (1 - prog)).toFixed(2);
+      });
+      raf = requestAnimationFrame(frame);
+    }
+    function kick() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); }
+    try { new MutationObserver(kick).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { }
+    document.addEventListener('visibilitychange', kick); if (RMQ && RMQ.addEventListener) RMQ.addEventListener('change', kick);
+    window.anesiaPillMotion = function () { return { running: !!raf }; };
+    kick();
+  })();
+
   /* ---------------- start-up and sign-in ---------------- */
   function nameOf(u) {
     if (!u) return '';
@@ -219,6 +250,18 @@
   var EMBED = Q.embed === '1', SHEET = Q.sheet || null, PRE = null, SH = null;   /* SH: the treatment sheet document, live (n176) */
   try { PRE = Q.pre ? JSON.parse(Q.pre) : null; } catch (e) { PRE = null; }
   var CODE_LABEL = { ALS: 'advanced life support', BLS: 'basic life support', CPR: 'CPR', DNR: 'do not resuscitate' };
+  /* n177 — Pravix's code status pill: the one Flow and Treatment Sheets draw (an ECG trace; flat for DNR), same motion */
+  var RESUS_NAME = { DNR: 'Do not resuscitate', CPR: 'Resuscitate (CPR)', ALS: 'Advanced life support', BLS: 'Basic life support' };
+  function resusPill(code, size) {
+    var n = String(code || '').toUpperCase(); if (!RESUS_NAME[n]) return '';
+    var dnr = n === 'DNR', tip = 'Code status: ' + RESUS_NAME[n] + (size === 'flow' ? ' · set in Flow' : '');
+    if (dnr) return '<span class="dnr-pill" title="' + esc(tip) + '"><span class="flatline" aria-hidden="true"><svg class="flatline-svg" viewBox="0 0 76 26" preserveAspectRatio="xMidYMid meet"><path class="flatline-base" d="M1 13 H75"/><path class="flatline-live" d="M1 13 H75"/><circle class="flatline-dot" cx="1" cy="13" r="1.7"/></svg></span><span class="label">DNR</span></span>';
+    var d = 'M1 13 C4 13,5 13,7 13 C8 13,9 11.8,10.2 11.3 C11.4 10.8,12.2 12.1,13.4 13 L16 13 L17.2 14.3 L18.5 10.5 L20.1 2.7 L21.6 21.4 L23.2 12.2 L26 13 C28 13,29 12.8,30 12.5 C32 11.2,33.4 9.8,35 10.2 C37 10.7,38 12.5,40 13 L42 13 C45 13,46 13,48 13 C49 13,50 11.8,51.2 11.3 C52.4 10.8,53.2 12.1,54.4 13 L57 13 L58.2 14.3 L59.5 10.5 L61.1 2.7 L62.6 21.4 L64.2 12.2 L67 13 C69 13,70 12.8,71 12.5 C72.5 11.4,73.5 10.4,75 10.8';
+    return '<span class="cpr-pill" title="' + esc(tip) + '"><span class="ecg" aria-hidden="true"><svg class="ecg-svg" viewBox="0 0 76 26" preserveAspectRatio="xMidYMid meet"><path class="ecg-base" d="' + d + '"/><path class="ecg-live" d="' + d + '"/><circle class="ecg-dot" cx="1" cy="13" r="1.7"/></svg></span><span class="label">' + n + '</span></span>';
+  }
+  /* the code status to show: for a sheet record, the treatment sheet's (Flow's) as it is now; otherwise the record's */
+  function sheetCode() { var c = SH && SH.patient ? String(SH.patient.code || '').toUpperCase() : ''; return CODE_LABEL[c] ? c : ''; }
+  function codeOf(r) { return (r && r.kind === 'case' && r.sheet_id === SHEET && sheetCode()) || (r && r.patient.cpr) || ''; }
   function sheetSex(x) { x = String(x || '').toLowerCase(); if (/neut|castr|^mn$/.test(x)) return 'Male neutered'; if (/spay|^fs$/.test(x)) return 'Female spayed'; if (/^m|male/.test(x)) return 'Male'; if (/^f|female/.test(x)) return 'Female'; return ''; }
   /* the patient as the sheet has it now — the same reading Treatment Sheets' own tab makes (treatment/anes.js) */
   function preFromSheet(sh) {
@@ -635,7 +678,7 @@
   /* the patient summary under the name: code status, allergies, ASA, procedure — always on screen */
   function summaryHTML(r) {
     var p = r.patient, ro = r.status === 'signed', tag = function (cls, k, v, aria) { return '<button type="button" class="an-sum-i ' + cls + '" data-sum aria-label="' + esc(aria) + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></button>'; };
-    var code = p.cpr === 'DNR' ? tag('dnr', 'Code', 'DNR', 'Code status: do not resuscitate') : CODE_LABEL[p.cpr] ? tag('cpr', 'Code', esc(p.cpr), 'Code status: ' + CODE_LABEL[p.cpr]) : tag('none', 'Code', 'Not recorded', 'Code status not recorded. Add it');
+    var cs = codeOf(r), code = CODE_LABEL[cs] ? '' : tag('none', 'Code', 'Not recorded', 'Code status not recorded. Add it');   /* n178: a recorded code shows as Flow's pill beside the name */
     var alg = p.allergies ? tag('alg', 'Allergies', esc(p.allergies), 'Allergies: ' + p.allergies) : p.nka ? tag('nka', 'Allergies', 'None known', 'No known allergies') : tag('none', 'Allergies', 'Not recorded', 'Allergies not recorded. Add them');
     var asa = p.asa ? tag('', 'ASA', esc(p.asa + (p.emergency ? 'E' : '')), 'ASA ' + p.asa + (p.emergency ? ' emergency' : '')) : '';
     var pr = r.procedure ? tag('proc', 'Procedure', esc(r.procedure), 'Procedure: ' + r.procedure) : '';
@@ -752,7 +795,7 @@
       : '<button type="button" class="an-btn an-dc" id="anAdd">' + icon('compose') + 'Add addendum</button>';
     var facts = [cap(p.species), p.breed, p.sex, p.age].filter(Boolean).map(esc).join(' · '), conf = A.isConfirmed(r);
     var head = '<header class="an-rhead"><a class="an-back" href="#">' + icon('back', { scale: 'l' }) + (SHEET ? 'Anesthesia' : 'Records') + '</a>' +
-      '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + statusPill(r) + kindPill(r, true) + confirmChip(r) + presenceChip(r) + '</h1>' +
+      '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + (CODE_LABEL[codeOf(r)] ? '<button type="button" class="an-codebtn" id="anCode" aria-label="Code status ' + codeOf(r) + ', ' + RESUS_NAME[codeOf(r)] + (r.kind === 'case' && sheetCode() ? ', from Flow' : '') + '. Patient details">' + resusPill(codeOf(r), r.kind === 'case' && sheetCode() ? 'flow' : '') + '</button>' : '') + statusPill(r) + kindPill(r, true) + confirmChip(r) + presenceChip(r) + '</h1>' +
       '<div class="sub"><span>' + (facts || 'No details yet') + '</span><button type="button" class="an-info" id="anPatient" aria-label="Patient details">' + icon('info') + '</button></div></div>' +
       '<button type="button" class="an-wbig' + (w ? '' : ' none') + '" id="anWeight"' + (signed ? ' disabled' : '') + ' aria-label="' + (w ? 'Weight ' + sig(w) + ' kilograms' + (lw ? ', weighed ' + fmtTime(lw.at) : '') + '. Change weight' : 'No weight. Add weight') + '">' +
       (w ? '<b>' + sig(w) + '<span> kg</span></b><small>' + (lw ? (lw.method === 'estimated' ? 'Estimated ' : 'Weighed ') + fmtTime(lw.at) : '') + '</small>' : '<b>' + icon('scale', { slash: true, scale: 's' }) + 'No weight</b><small>Add weight</small>') + '</button>' +
@@ -780,6 +823,7 @@
       '<button type="button" class="an-btn" data-act="airway"' + dis + ' aria-label="Airway" title="Airway, lines and ventilation (⌥A)">' + icon('airway') + '<span class="t">Airway</span></button></div>' +
       '<span class="sp"><span class="an-tbt" aria-hidden="true">' + esc(p.name || 'Training patient') + '</span></span><div class="an-seg an-zoomseg" role="radiogroup" aria-label="Minutes per column" data-rove="radio">' +
       [5, 10, 15].map(function (m) { return '<button type="button" role="radio" data-zoom="' + m + '" aria-checked="' + (S.colMin === m) + '" tabindex="' + (S.colMin === m ? 0 : -1) + '" aria-label="' + m + ' minutes per column">' + m + ' min</button>'; }).join('') + '</div>' +
+      '<button type="button" class="an-btn an-dc an-emb" id="anEmer" aria-haspopup="dialog" aria-label="Emergency drugs" title="Emergency drugs, calculated for this patient">' + icon('emer') + '<span class="t">Emergency</span></button>' +
       '<button type="button" class="an-btn an-dc" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" title="Totals and history">' + icon('sidebar') + '<span class="t">Totals</span></button></div>';
     return head + banners + tools + '<div class="an-body' + (insp ? ' insp' : '') + (ps !== null ? ' settle' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + (conf ? (playing('conf:' + r.id, 900) !== null ? '<div class="an-wm gone" aria-hidden="true" style="animation-delay:-' + playing('conf:' + r.id, 900) + 'ms"><span>Confirm correct patient</span></div>' : '') : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
       nowHTML(r) + (insp ? '<aside class="an-side' + (S.opening === 'side' ? ' opening' : '') + '" id="anInspector" aria-label="Totals and history">' + sideHTML(r) + '</aside>' : '<aside class="an-side an-print-only" aria-hidden="true">' + sideHTML(r).replace(/ id="an[A-Za-z]+"/g, '') + '</aside>') + '</div>';
@@ -1073,6 +1117,8 @@
     on('#anPatient', function () { patientSheet(r, r.status === 'signed'); });
     on('#anWeight', function () { weightSheet(r); });
     on('#anPumpsSet', function () { S.pumpNotice = null; render(); });
+    on('#anEmer', function () { emergencySheet(r); });
+    on('#anCode', function () { patientSheet(r, r.status === 'signed'); });
     on('#anInsp', function () {
       S.inspector = !inspectorOpen(); lsSet('inspector', S.inspector); S.opening = S.inspector ? 'side' : null; render(); S.opening = null;
       var side = $('#anInspector');
@@ -1380,7 +1426,7 @@
         (edit ? '' : '<div class="an-f"><span class="lab">Weight was</span>' + chips('method', [['measured', 'Measured on a scale'], ['estimated', 'Estimated']], 'measured') + '</div>') + (edit ? '' : '<div class="an-f"><label for="pW">Weight</label><div class="an-unit"><input class="an-in an-tnum" id="pW" name="kg" inputmode="decimal" autocomplete="off" value="' + (fromSheet && P0.kg ? esc(String(P0.kg)) : '') + '"><span class="u">kg</span></div><span class="hint">Leave empty if the patient hasn’t been weighed. Per-kg doses need a weight.</span></div>') +
         '<div class="an-two"><div class="an-f"><span class="lab">ASA status</span>' + chips('asa', [['', '—'], ['I', 'I'], ['II', 'II'], ['III', 'III'], ['IV', 'IV'], ['V', 'V']], p.asa || '') + '</div>' +
         '<label class="an-f" style="justify-content:flex-end"><span class="an-check" style="border-color:var(--an-line-2);background:transparent"><input type="checkbox" name="emergency"' + (p.emergency ? ' checked' : '') + '>Emergency (E)</span></label></div>' +
-        '<div class="an-two"><div class="an-f"><span class="lab">Code status</span>' + chips('cpr', [['', 'Not recorded'], ['ALS', 'ALS'], ['BLS', 'BLS'], ['CPR', 'CPR'], ['DNR', 'DNR']], p.cpr || '') + '</div>' +
+        '<div class="an-two"><div class="an-f"><span class="lab">Code status</span>' + (isCase && sheetCode() ? '<div class="an-codef">' + resusPill(sheetCode()) + '<span class="hint">From Flow. Change it there.</span></div><input type="hidden" name="cpr" value="' + sheetCode() + '">' : chips('cpr', [['', 'Not recorded'], ['ALS', 'ALS'], ['BLS', 'BLS'], ['CPR', 'CPR'], ['DNR', 'DNR']], p.cpr || '')) + '</div>' +
         '<div class="an-f"><label for="pAl">Allergies</label><input class="an-in" id="pAl" name="allergies" maxlength="300" autocomplete="off" value="' + esc(p.allergies || '') + '" placeholder="Drug or other allergies"><label class="an-check" style="margin-top:.375rem"><input type="checkbox" name="nka"' + (p.nka ? ' checked' : '') + '>No known allergies</label></div></div>' +
         '<div class="an-f"><label for="pP">Procedure</label><input class="an-in" id="pP" name="procedure" maxlength="160" value="' + esc(r ? r.procedure : '') + '"></div>' +
         '<div class="an-two"><div class="an-f"><label for="pR">Resident</label><input class="an-in" id="pR" name="resident" maxlength="80" value="' + esc(r ? r.team.resident : S.me) + '"></div>' +
@@ -1493,7 +1539,7 @@
     return { id: null, name: v === 'new' ? val(w, 'dname') : lk.name, kind: lk.kind, conc: c };
   }
 
-  function doseSheet(r) {
+  function doseSheet(r, preset) {
     var t = now();
     openSheet({
       title: 'Give drug', primary: 'Give drug',
@@ -1504,7 +1550,7 @@
         '<div data-big hidden><label class="an-check"><input type="checkbox" name="confirmBig"><span data-bigtxt></span></label></div>' +
         '<div class="an-tline" data-rsum><span>Route and time: <b data-sumtxt>IV · Now</b></span><button type="button" class="an-btn plain sm" data-ropen aria-expanded="false" aria-controls="anRbox">Change</button></div>' +
         '<div data-rbox id="anRbox" hidden><div class="an-f"><span class="lab">Route</span>' + chips('route', ROUTES.map(function (x) { return [x, x]; }), 'IV') + '</div>' + timeField(t, 'Time', true) + '</div>',
-      focus: recentDrugs(r, ['drug']).length ? '[data-pick]' : '[name=drug]',
+      focus: preset ? '[data-ok]' : recentDrugs(r, ['drug']).length ? '[data-pick]' : '[name=drug]',
       init: function (w) {
         bindTime(w);
         var ro = $('[data-ropen]', w), rbox = $('[data-rbox]', w), ti = $('[name=time]', w);
@@ -1524,6 +1570,7 @@
           if (ratio >= 5 || (b.mL !== null && b.mL > 50)) { big.hidden = false; $('[data-bigtxt]', w).textContent = ratio >= 5 ? 'This is ' + Math.round(ratio) + '× the last ' + d.name + ' dose (' + amt(prev.mg) + ' at ' + fmtTime(prev.at) + '). I’ve checked it.' : 'This is ' + sig(b.mL) + ' mL. I’ve checked the dose and the concentration.'; }
         };
         bindDrug(w, r, upd); bindChips(w, function (n) { upd(); if (n === 'route') $('[data-sumtxt]', w).textContent = val(w, 'route') + ' · ' + ($('[name=time]', w).dataset.touched === '1' ? fmtTime(readClockSafe($('[name=time]', w).value)) : 'Now'); }); $('[name=dose]', w).oninput = upd; $('[name=conc]', w).oninput = upd;
+        if (preset) presetDose(w, r, preset, upd);
       },
       submit: function (w) {
         var pk = pickDrug(r, w, 'drug'), t1 = readTime(w, r);
@@ -1536,6 +1583,131 @@
         change(r.id, op);
       }
     });
+  }
+
+
+  /* ---------------- n177: Emergency drugs ---------------- */
+  /* Strengths: Pravix's stock list (Treatment Sheets). Where Pravix lists more than one, the person chooses the one in the crash cart
+     (remembered on this device). Doses: the Pravix drug database, found by indication; no dose is ever made up here. */
+  var STOCK = {
+    Epinephrine: { s: [[1, '1 mg/mL (1:1,000)'], [0.1, '0.1 mg/mL (1:10,000)']], pick: 1 }, Atropine: { s: [[0.54, '0.54 mg/mL'], [0.4, '0.4 mg/mL']], pick: 1 },
+    Vasopressin: { s: [[20, '20 U/mL']], u: 'U' }, Lidocaine: { s: [[20, '2% · 20 mg/mL']] }, Amiodarone: { s: [[50, '50 mg/mL']] }, Esmolol: { s: [[10, '10 mg/mL']] },
+    Glycopyrrolate: { s: [[0.2, '0.2 mg/mL']] }, Naloxone: { s: [[0.4, '0.4 mg/mL']] }, Flumazenil: { s: [[0.1, '0.1 mg/mL']] }, Atipamezole: { s: [[5, 'Antisedan 5 mg/mL']] },
+    'Calcium gluconate': { s: [[100, '10% · 100 mg/mL']] }, Dextrose: { s: [[500, '50% · 500 mg/mL']] }
+  };
+  var EMER = [
+    { g: 'Cardiac arrest (CPR)', cpr: true, items: [['Epinephrine', /nonshockable CPR/i], ['Atropine', /nonshockable CPR/i], ['Vasopressin', /shockable/i], ['Lidocaine', /shockable CPR/i], ['Amiodarone', /shockable CPR/i], ['Esmolol', /shockable CPR/i]] },
+    { g: 'Bradycardia', items: [['Glycopyrrolate', /bradycardia during anesthesia/i]] },
+    { g: 'Reversal', items: [['Naloxone', /revers|opioid overdose/i], ['Flumazenil', /revers|benzodiazepine/i], ['Atipamezole', /revers|alpha-?2/i]] },
+    { g: 'High potassium and low glucose', items: [['Calcium gluconate', /hyperkal/i], ['Dextrose', /symptomatic hypoglycemia/i]] }
+  ];
+  var DRUGDB = { st: 'idle', cbs: [] };
+  function loadDrugDB(cb) {
+    if (window.PRAVIX_DRUGS) { DRUGDB.st = 'ok'; return cb(); }
+    DRUGDB.cbs.push(cb); if (DRUGDB.st === 'loading') return; DRUGDB.st = 'loading';
+    var sc = document.createElement('script'); sc.src = '/treatment/drugs.js'; sc.async = true;
+    var done = function (ok) { DRUGDB.st = ok && window.PRAVIX_DRUGS ? 'ok' : 'fail'; var c = DRUGDB.cbs.splice(0); c.forEach(function (f) { try { f(); } catch (e) { console.warn(e); } }); };
+    sc.onload = function () { done(true); }; sc.onerror = function () { done(false); }; document.head.appendChild(sc);
+    setTimeout(function () { if (DRUGDB.st === 'loading') done(false); }, 8000);
+  }
+  function tidy(x) { x = String(x || '').trim(); if (x.length >= 30) { x = x.replace(/\s+\S*$/, ''); x = x.replace(/\s+(during|in|for|with|after|until)\b.*$/i, ''); } return x.replace(/q(\d+[–-]\d+)min\b/, 'q$1 min'); }   /* the database cuts its notes at 30 characters */
+  /* the regimens for this drug, species and indication, folded into one dose (or one range) */
+  function regimen(name, re, sp) {
+    var D = (window.PRAVIX_DRUGS && window.PRAVIX_DRUGS.d) || [], d = D.filter(function (x) { return x.n === name; })[0]; if (!d) return null;
+    var rs = d.r.filter(function (x) { return x.d && x.d[3] === 'kg' && re.test(x.i || '') && (x.s || []).indexOf(sp) > -1 && !/CRI|continuous/i.test((x.ro || '') + ' ' + (x.fo || '')); });
+    if (!rs.length) return null;
+    var u = rs[0].d[2]; rs = rs.filter(function (x) { return x.d[2] === u; });
+    return { lo: Math.min.apply(null, rs.map(function (x) { return x.d[0]; })), hi: Math.max.apply(null, rs.map(function (x) { return x.d[1]; })), u: u === 'IU' ? 'U' : u,
+      route: rs[0].ro || '', freq: tidy(rs[0].fo), ind: tidy(rs[0].i), src: rs[0].u || '' };
+  }
+  function stockPick(name) { var st = STOCK[name]; if (!st) return null; if (!st.pick) return st.s[0]; var v = lsGet('emStock:' + name); return st.s.filter(function (x) { return x[0] === v; })[0] || null; }
+  /* one end of a dose, worked out for this weight: what to draw up, and what Give drug is filled in with */
+  function emerAmount(name, dose, u, kg, conc) {
+    var out = { dose: dose, u: u };
+    if (u === 'mL') { out.mL = dose * kg; out.mg = conc ? out.mL * conc : null; out.preset = { dose: +out.mL.toPrecision(3), unit: 'mL' }; out.big = sig(out.mL) + ' mL'; out.small = out.mg ? amt(out.mg) : ''; return out; }
+    if (u === 'U') { var U = dose * kg; out.mL = U / 20; out.preset = { dose: +out.mL.toPrecision(3), unit: 'mL' }; out.big = sig(U) + ' U'; out.small = sig(out.mL) + ' mL'; return out; }
+    var mgPerKg = u === 'mcg' ? dose / 1000 : u === 'g' ? dose * 1000 : dose;
+    out.mg = mgPerKg * kg; out.mL = conc ? out.mg / conc : null;
+    out.preset = u === 'mcg' ? { dose: dose, unit: 'mcg/kg' } : { dose: +(mgPerKg).toPrecision(4), unit: 'mg/kg' };
+    out.big = u === 'g' ? sig(out.mg / 1000) + ' g' : amt(out.mg); out.small = out.mL !== null ? sig(out.mL) + ' mL' : ''; return out;
+  }
+  function lastGiven(r, name) {
+    var ids = r.drugs.filter(function (d) { return d.name.toLowerCase() === name.toLowerCase(); }).map(function (d) { return d.id; });
+    return r.doses.filter(function (x) { return !x.void && ids.indexOf(x.drugId) > -1; }).sort(function (a, b) { return b.at - a.at; })[0] || null;
+  }
+  function emerBody(r) {
+    var kg = A.weightAt(r, now()), sp = r.patient.species, code = codeOf(r), dnr = code === 'DNR', ro = r.status !== 'active', fromFlow = r.kind === 'case' && !!sheetCode();
+    var db = DRUGDB.st, wt = (r.patient.weights || []).slice(-1)[0];
+    var h = '<div class="an-em-head"><div class="an-em-w"><span class="k">Weight</span>' + (kg ? '<b class="an-tnum">' + sig(kg) + ' kg</b><span class="s">' + esc((wt && wt.method === 'estimated' ? 'Estimated' : 'Weighed') + (wt && wt.at ? ' ' + fmtTime(wt.at) : '')) + ' · ' + esc(cap(sp)) + '</span>' : '<b>No weight</b><button type="button" class="an-btn plain sm" data-emw>Add weight</button>') + '</div>' +
+      '<div class="an-em-code"><span class="k">Code status</span>' + (CODE_LABEL[code] ? resusPill(code) + '<span class="s">' + (fromFlow ? 'From Flow' : 'On this record') + '</span>' : '<b>Not recorded</b>') + '</div></div>';
+    if (r.status === 'planned') h += '<p class="an-em-note strong">Calculated ahead for this patient. Give opens once anesthesia has started.</p>';
+    else if (r.status !== 'active') h += '<p class="an-em-note strong">Anesthesia has ended, so drugs can’t be given on this record.</p>';
+    if (dnr) h += '<div class="an-banner warn" role="note"><span><b>Do not resuscitate.</b> The CPR drugs are shown for reference only. Don’t give them without the doctor.</span></div>';
+    if (sp === 'other') h += '<div class="an-banner info"><span>The Pravix drug database has dog and cat doses only. Strengths are shown; enter any dose yourself.</span></div>';
+    if (db === 'loading') h += '<p class="an-em-note" role="status">Loading the Pravix drug database…</p>';
+    else if (db === 'fail') h += '<div class="an-banner warn"><span>The Pravix drug database didn’t load, so no doses are shown. Strengths are still listed.</span></div>';
+    else h += '<p class="an-em-note">Reference doses from the Pravix drug database (Plumb’s), for this weight. Check the dose and the vial before you give it.</p>';
+    EMER.forEach(function (G) {
+      h += '<section class="an-em-g' + (G.cpr && dnr ? ' dnr' : '') + '"><h3>' + esc(G.g) + (G.cpr && dnr ? '<span class="an-em-dnr">DNR</span>' : '') + '</h3><ul class="an-em-list">';
+      G.items.forEach(function (it) {
+        var name = it[0], st = STOCK[name], rec = r.drugs.filter(function (d) { return d.kind === 'drug' && d.name.toLowerCase() === name.toLowerCase(); })[0];
+        var pick = rec && rec.conc ? [rec.conc, conc(rec.conc) + ' · on this record'] : stockPick(name), cc = st && st.u === 'U' ? null : pick ? pick[0] : null;
+        var rg = db === 'ok' && sp !== 'other' ? regimen(name, it[1], sp) : null, lg = lastGiven(r, name);
+        var row = '<li class="an-em-row" data-em="' + esc(name) + '"><div class="nm"><b>' + esc(name) + '</b><span>' +
+          (rg ? esc(sig(rg.lo) + (rg.hi !== rg.lo ? '–' + sig(rg.hi) : '') + ' ' + rg.u + '/kg' + (rg.route ? ' ' + rg.route : '') + (rg.freq ? ' · ' + rg.freq : '')) : db === 'ok' && sp !== 'other' ? 'No ' + esc(sp) + ' dose in the Pravix drug database' : '') + '</span>' +
+          (lg ? '<span class="lg">Last given ' + esc(fmtTime(lg.at)) + ' · ' + esc(amt(lg.mg)) + ' (' + Math.max(0, Math.round((now() - lg.at) / 60000)) + ' min ago)</span>' : '') + '</div>';
+        /* strength: one, or a choice */
+        row += '<div class="st">' + (st && st.pick && !(rec && rec.conc) ? '<div class="an-chips sm" role="group" aria-label="' + esc(name) + ' strength">' + st.s.map(function (x) { return '<button type="button" class="an-chip" data-emst="' + esc(name) + '" data-v="' + x[0] + '" aria-pressed="' + (!!pick && pick[0] === x[0]) + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>' : '<span class="stk">' + esc(pick ? pick[1] : st ? st.s[0][1] : '') + '</span>') + '</div>';
+        var ends = rg ? (rg.hi !== rg.lo ? [rg.lo, rg.hi] : [rg.lo]) : [];
+        row += '<div class="amt">';
+        if (!rg) row += '<button type="button" class="an-btn sm" data-emgive="' + esc(name) + '"' + (ro || (st && st.pick && !pick) ? ' disabled' : '') + '>Give…</button>';
+        else if (!kg) row += '<span class="nw">Needs a weight</span>';
+        else ends.forEach(function (e, i) {
+          var a = emerAmount(name, e, rg.u, kg, cc), need = st && st.pick && !pick;
+          row += '<button type="button" class="an-em-give" data-emgive="' + esc(name) + '" data-dose="' + a.preset.dose + '" data-unit="' + a.preset.unit + '"' + (ro || need ? ' disabled' : '') + ' aria-label="Give ' + esc(name) + ' ' + esc(a.big) + (a.small ? ', ' + esc(a.small) : '') + (ends.length > 1 ? (i ? ', high end' : ', low end') : '') + '">' +
+            '<b class="an-tnum">' + esc(a.big) + '</b><span class="an-tnum">' + (need ? 'Choose the strength' : esc(a.small || '')) + '</span>' + (ends.length > 1 ? '<i>' + (i ? 'High' : 'Low') + '</i>' : '') + '</button>';
+        });
+        row += '</div></li>';
+        h += row;
+      });
+      h += '</ul></section>';
+    });
+    return h;
+  }
+  function emergencySheet(r) {
+    openSheet({ title: 'Emergency drugs', primary: null, focus: '[data-x]', body: '<div class="an-em" id="anEm">' + emerBody(r) + '</div>',
+      init: function (w) {
+        var sh = $('.an-sheet', w); if (sh) sh.classList.add('an-emsheet');
+        var xb = $('[data-x]', w); if (xb) xb.textContent = 'Close';
+        var paint = function () { var box = $('#anEm', w); if (!box) return; var f = document.activeElement && document.activeElement.getAttribute && (document.activeElement.getAttribute('data-emst') ? '[data-emst="' + document.activeElement.getAttribute('data-emst') + '"][data-v="' + document.activeElement.getAttribute('data-v') + '"]' : null); box.innerHTML = emerBody(recOf(r.id) || r); bind(); if (f) { var el = $(f, box); if (el) el.focus(); } };
+        var bind = function () {
+          $$('[data-emst]', w).forEach(function (c) { c.onclick = function () { lsSet('emStock:' + c.getAttribute('data-emst'), +c.getAttribute('data-v')); paint(); }; });
+          var wb = $('[data-emw]', w); if (wb) wb.onclick = function () { weightSheet(recOf(r.id) || r); };
+          $$('[data-emgive]', w).forEach(function (b) {
+            b.onclick = function () {
+              var name = b.getAttribute('data-emgive'), pk = stockPick(name), st = STOCK[name];
+              var ps = { name: name, conc: st && st.u === 'U' ? null : pk ? pk[0] : undefined, dose: b.hasAttribute('data-dose') ? b.getAttribute('data-dose') : null, unit: b.getAttribute('data-unit') || 'mg/kg' };
+              needConfirm(recOf(r.id) || r, function (r2) { doseSheet(r2, ps); });
+            };
+          });
+        };
+        bind();
+        if (DRUGDB.st !== 'ok') loadDrugDB(paint);
+      } });
+  }
+  /* Give drug, filled in from the emergency sheet: the drug (the one on the record, or added at Pravix's strength), the unit and the dose */
+  function presetDose(w, r, ps, upd) {
+    var nm = ps.name.toLowerCase(), onRec = r.drugs.filter(function (d) { return d.kind === 'drug' && d.name.toLowerCase() === nm; })[0];
+    var li = -1; LIB.forEach(function (d, i) { if (li < 0 && d.name.toLowerCase() === nm) li = i; });
+    var v = onRec ? 'rec:' + onRec.id : li > -1 ? 'lib:' + li : '';
+    var chip = v && $('[data-pick="' + v + '"]', w), sel = $('[name=drug]', w);
+    if (chip) chip.click();
+    else if (v && sel) { var ds = $('[data-dsel]', w); if (ds) ds.hidden = false; $$('[data-pick]', w).forEach(function (x) { x.setAttribute('aria-pressed', String(x.getAttribute('data-pick') === 'other')); }); sel.value = v; sel.onchange(); }
+    if (!onRec && ps.conc !== undefined) { var ci = $('[name=conc]', w); if (ci) ci.value = ps.conc === null ? '' : ps.conc; }
+    var uc = $('[data-chips=unit] [data-v="' + ps.unit + '"]', w); if (uc && uc.getAttribute('aria-pressed') !== 'true') uc.click();
+    if (ps.dose !== null && ps.dose !== undefined) $('[name=dose]', w).value = ps.dose;
+    upd();
+    var ok = $('[data-ok]', w); if (ok && ps.dose !== null && ps.dose !== undefined) setTimeout(function () { try { ok.focus(); } catch (e) { } }, 0); else { var dz = $('[name=dose]', w); if (dz) setTimeout(function () { dz.focus(); }, 0); }
   }
 
   function infusionSheet(r) {

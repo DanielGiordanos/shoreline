@@ -1420,3 +1420,88 @@ html.an-noblur .an-peek{-webkit-backdrop-filter:none;backdrop-filter:none;backgr
 a.an-pill.sheet{text-decoration:none;cursor:pointer;transition:border-color .15s var(--an-ease,ease),color .15s var(--an-ease,ease)}
 a.an-pill.sheet:hover{border-color:var(--an-ink-3);color:var(--an-ink)}
 a.an-pill.sheet:focus-visible{outline:2px solid var(--an-accent);outline-offset:2px}
+
+.an-codef{display:flex;align-items:center;gap:.75rem;min-height:44px}
+.an-codef .hint{margin:0}
+
+/* ---------------- n177: Emergency drugs ---------------- */
+.an-emb svg.an-ico{color:var(--an-red)!important}
+.an-sheet.an-emsheet{max-width:760px}
+.an-em{display:flex;flex-direction:column;gap:1rem}
+.an-em-head{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.an-em-head>div{display:flex;flex-direction:column;gap:.25rem;padding:.875rem 1rem;border-radius:var(--an-r-m);background:var(--an-fill)}
+.an-em-head .k{font-size:.8125rem;font-weight:600;color:var(--an-ink-3)}
+.an-em-head b{font-size:1.375rem;font-weight:700;letter-spacing:-.01em;color:var(--an-ink)}
+.an-em-head .s{font-size:.8125rem;color:var(--an-ink-3)}
+.an-em-head .an-btn{align-self:flex-start;margin-left:-.75rem}
+.an-em-note{margin:0;font-size:.875rem;color:var(--an-ink-3)}
+.an-em .an-banner{margin:0}
+.an-em-g h3{display:flex;align-items:center;gap:.5rem;margin:.25rem 0 .5rem;font-size:.9375rem;font-weight:700;color:var(--an-ink)}
+.an-em-dnr{font-size:.75rem;font-weight:700;padding:.125rem .5rem;border-radius:999px;background:var(--an-purple);color:#fff}
+.an-em-list{list-style:none;margin:0;padding:0;border-radius:var(--an-r-m);background:var(--an-surface-2);box-shadow:inset 0 0 0 1px var(--an-line)}
+.an-em-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;align-items:center;gap:.75rem;padding:.75rem 1rem;min-height:60px}
+.an-em-row+.an-em-row{box-shadow:0 -1px 0 var(--an-line)}
+.an-em-row .nm{display:flex;flex-direction:column;gap:.125rem;min-width:0}
+.an-em-row .nm b{font-size:1rem;font-weight:600;color:var(--an-ink)}
+.an-em-row .nm span{font-size:.8125rem;color:var(--an-ink-3)}
+.an-em-row .nm .lg{color:var(--an-accent-ink);font-weight:600}
+.an-em-row .stk{font-size:.8125rem;color:var(--an-ink-2)}
+.an-chips.sm .an-chip{min-height:32px;padding:0 .625rem;font-size:.8125rem}
+.an-em-row .amt{display:flex;gap:.5rem;justify-content:flex-end}
+.an-em-row .nw{font-size:.875rem;color:var(--an-amber-ink);font-weight:600}
+.an-em-give{position:relative;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-width:6.5rem;min-height:52px;padding:.375rem .875rem;border:0;border-radius:var(--an-r-m);background:var(--an-red-soft);color:var(--an-red-ink);font:inherit;cursor:pointer;transition:transform .16s var(--an-ease),background-color .16s}
+.an-em-give b{font-size:1.0625rem;font-weight:700;line-height:1.15}
+.an-em-give span{font-size:.8125rem;opacity:.85}
+.an-em-give i{position:absolute;left:.625rem;top:.375rem;font-style:normal;font-size:.6875rem;font-weight:700;opacity:.7}
+.an-em-give:hover{filter:brightness(1.06)}
+.an-em-give:active{transform:scale(.97)}
+.an-em-give:focus-visible{outline:2px solid var(--an-focus,var(--an-accent));outline-offset:2px}
+.an-em-give:disabled{opacity:.45;cursor:default;transform:none}
+.an-em-g.dnr .an-em-give{background:transparent;box-shadow:inset 0 0 0 1px var(--an-line-2);color:var(--an-ink-2)}
+@media (max-width:600px){.an-em-head{grid-template-columns:1fr}.an-em-row{grid-template-columns:1fr auto}.an-em-row .st{grid-column:1/-1;order:3}}
+@media (prefers-contrast:more){.an-em-give{box-shadow:inset 0 0 0 1.5px currentColor}}
+@media (forced-colors:active){.an-em-give{border:1px solid ButtonText}}
+@media print{.an-emb{display:none!important}}
+/* n177: once the toolbar is pinned with the patient's name (or compact), Emergency is icon-only so the bar stays one row */
+html.an-titled .an-tools>#anEmer .t,html.an-compact .an-tools>#anEmer .t{display:none}
+html.an-titled .an-tools>#anEmer,html.an-compact .an-tools>#anEmer{padding:0 .75rem}
+html.an-titled .an-tools>#anEmer::after,html.an-compact .an-tools>#anEmer::after{display:none}
+@media (max-width:1100px){.an-tools>#anEmer .t{display:none}.an-tools>#anEmer{padding:0 .75rem}.an-tools>#anEmer::after{display:none}}
+html.an-titled .an-tools>#anInsp .t{display:none}
+html.an-titled .an-tools>#anInsp{padding:0 .75rem}
+.an-em-note.strong{color:var(--an-ink-2);font-weight:600}
+
+/* ---------------- n178: code status = Flow's own CPR and DNR pills (copied from Flow's drawer, unchanged) ---------------- */
+.cpr-pill{--red:#248A46;--red-strong:#248A46;--red-bg:rgba(36,138,70,.08);--red-border:rgba(36,138,70,.28);position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;width:138px;height:42px;padding:0 14px 0 11px;border:1px solid transparent;border-radius:14px;color:var(--red-strong);background:transparent;overflow:hidden;isolation:isolate;contain:paint;vertical-align:middle;white-space:nowrap;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease;}
+body.dark .cpr-pill{--red:#43B471;--red-strong:#4CBE7A;--red-bg:rgba(45,138,80,.16);--red-border:rgba(63,180,113,.32);}
+.cpr-pill:hover{transform:translateY(-1px);}
+.cpr-pill:active{transform:scale(.985);}
+.cpr-pill .ecg{position:relative;z-index:1;flex:1 1 auto;min-width:0;height:26px;overflow:hidden;contain:paint;transform:translateZ(0);-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);}
+.cpr-pill .ecg-svg{display:block;width:100%;height:100%;}
+.cpr-pill .ecg-base,.cpr-pill .ecg-live{fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.cpr-pill .ecg-base{stroke:currentColor;opacity:.20;stroke-width:1.1;}
+.cpr-pill .ecg-live{stroke:currentColor;stroke-width:1.4;}
+.cpr-pill .ecg-dot{fill:#f8fff9;stroke:rgba(38,127,69,.45);stroke-width:.4;}
+body.dark .cpr-pill .ecg-dot{stroke:rgba(255,255,255,.42);}
+.cpr-pill .label{position:relative;z-index:1;flex:none;font-size:14px;line-height:1;font-weight:700;letter-spacing:-.012em;}
+@media (prefers-reduced-motion:reduce){.cpr-pill .ecg-live{stroke-dashoffset:0!important;}}
+.dnr-pill{--dnr:#8B4DB5;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;width:138px;height:42px;padding:0 14px 0 11px;border:1px solid transparent;border-radius:14px;color:var(--dnr);background:transparent;overflow:hidden;isolation:isolate;contain:paint;vertical-align:middle;white-space:nowrap;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease;}
+.dnr-pill:hover{transform:translateY(-1px);}
+.dnr-pill:active{transform:scale(.985);}
+.dnr-pill:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(139,77,181,.10);}
+.dnr-pill .flatline{position:relative;z-index:1;flex:1 1 auto;min-width:0;height:26px;overflow:hidden;contain:paint;transform:translateZ(0);-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);}
+.dnr-pill .flatline-svg{display:block;width:100%;height:100%;}
+.dnr-pill .flatline-base,.dnr-pill .flatline-live{fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.dnr-pill .flatline-base{stroke:currentColor;opacity:.20;stroke-width:1.1;}
+.dnr-pill .flatline-live{stroke:currentColor;stroke-width:1.4;}
+.dnr-pill .flatline-dot{fill:#FBF9FF;stroke:rgba(139,77,181,.42);stroke-width:.4;}
+body.dark .dnr-pill .flatline-dot{stroke:rgba(255,255,255,.42);}
+.dnr-pill .label{position:relative;z-index:1;flex:none;font-size:14px;line-height:1;font-weight:700;letter-spacing:-.012em;}
+@media (prefers-reduced-motion:reduce){.dnr-pill .flatline-live{stroke-dashoffset:0!important;}}
+.an-codebtn{display:inline-flex;align-items:center;margin:0 .25rem 0 .5rem;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:pointer;vertical-align:middle;border-radius:14px}
+.an-codebtn:focus-visible{outline:2px solid var(--an-focus,var(--an-accent));outline-offset:2px}
+.an-codebtn .cpr-pill,.an-codebtn .dnr-pill{cursor:inherit}
+.an-em-code .cpr-pill,.an-em-code .dnr-pill,.an-codef .cpr-pill,.an-codef .dnr-pill{margin-left:-11px}
+@media (max-width:600px){.an-codebtn{margin:.25rem 0 0;display:flex}}
+@media (forced-colors:active){.cpr-pill,.dnr-pill{border-color:CanvasText}}
+@media print{.cpr-pill .ecg-dot,.dnr-pill .flatline-dot{display:none}.cpr-pill .ecg-live,.dnr-pill .flatline-live{stroke-dasharray:none!important;stroke-dashoffset:0!important}}
