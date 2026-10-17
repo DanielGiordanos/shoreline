@@ -167,12 +167,12 @@ body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){co
  html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
  html body .topnav img.logo{height:44px}}
 </style>
-<link rel="stylesheet" href="app.css?v=7edb344069">
+<link rel="stylesheet" href="app.css?v=4961659ce5">
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script defer src="engine.js?v=67a3d99dfb"></script>
-<script defer src="app.js?v=4d15867a87"></script>
+<script defer src="app.js?v=4585b7a792"></script>
 </head>
 <body class="dark">
 <a class="an-vh" href="#anApp" style="position:absolute" onfocus="this.classList.remove('an-vh')" onblur="this.classList.add('an-vh')">Skip to the record</a>
@@ -332,5 +332,12 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   window.pvxTopbar={layout:layout,setActive:setActive,version:'n132'};
 })();
 </script>
+<style id="pvx-n189-topbar">
+/* PVX-N189 - the selected app in the shared top bar: fill variant on touch (iOS tab bar), outline with a mouse (Mac toolbar) */
+@media (hover:none) and (pointer:coarse){
+  .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
+</style>
 </body>
 </html>

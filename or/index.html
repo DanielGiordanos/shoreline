@@ -4874,6 +4874,13 @@ document.addEventListener('click',ev=>{ const b=ev.target&&ev.target.closest&&ev
       pvxCorr={id:c.id, reason:w.slice(0,300), entry:'corr_'+Date.now().toString(36)}; setTimeout(()=>{ pvxDecorate(); const d=document.querySelector('[data-pvx-corr="done"]'); if(d) d.focus(); },0); }}],
     onOpen:()=>setTimeout(()=>{ const t=document.getElementById('pvxCorrWhy'); if(t) t.focus(); },30) }); });
 </script>
+<style id="pvx-n189-topbar">
+/* PVX-N189 - the selected app in the shared top bar: fill variant on touch (iOS tab bar), outline with a mouse (Mac toolbar) */
+@media (hover:none) and (pointer:coarse){
+  .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
+</style>
 </body>
 
 <!-- PVX-TYPE n135: contrast + type floor (shared sheet + or rules) -->

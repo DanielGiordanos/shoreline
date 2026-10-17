@@ -358,5 +358,12 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   var n=0; (function tryHook(){ if(hook()) return; if(++n<60) setTimeout(tryHook,250); })();
 })();
 </script>
+<style id="pvx-n189-topbar">
+/* PVX-N189 - the selected app in the shared top bar: fill variant on touch (iOS tab bar), outline with a mouse (Mac toolbar) */
+@media (hover:none) and (pointer:coarse){
+  .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
+</style>
 </body>
 </html>

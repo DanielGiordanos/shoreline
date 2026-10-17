@@ -432,13 +432,15 @@
   function trendSVG(r, k) {
     var key = k === 'bp' ? 'map' : k, vs = liveVitals(r).filter(function (v) { return v[key] !== undefined; });
     if (vs.length < 2) return '<p class="an-trend-empty">Not enough readings for a trend yet.</p>';
-    var W = 560, H = 220, P = 28, t0 = vs[0].at, t1 = vs[vs.length - 1].at, vals = vs.map(function (v) { return v[key]; }), lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-    var pad = (hi - lo) * .2 || 2; lo -= pad; hi += pad;
+    var W = 560, H = 220, P = 28, t0 = vs[0].at, t1 = vs[vs.length - 1].at, vals = vs.map(function (v) { return v[key]; }), rg = vRange(vals, k), lo = rg[0], hi = rg[1];
+    var pad = (hi - lo) * .15; lo -= pad; hi += pad; if (VCAP[k] !== undefined && hi > VCAP[k] + pad) { lo -= hi - VCAP[k] - pad; hi = VCAP[k] + pad; }
     var X = function (t) { return P + (t - t0) / Math.max(1, t1 - t0) * (W - 2 * P); }, Y = function (v) { return P / 2 + (1 - (v - lo) / (hi - lo)) * (H - 1.5 * P); };
     var pts = vs.map(function (v) { return X(v.at).toFixed(1) + ',' + Y(v[key]).toFixed(1); }).join(' ');
     var area = 'M' + X(t0).toFixed(1) + ',' + (H - P) + ' L' + pts.split(' ').join(' L') + ' L' + X(t1).toFixed(1) + ',' + (H - P) + 'Z';
     return '<svg class="an-trend v-' + k + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(VNAME[k][0] + ' from ' + fmtTime(t0) + ' to ' + fmtTime(t1) + ': ' + vals.join(', ') + ' ' + VNAME[k][1]) + '">' +
-      [hi - pad, (hi + lo) / 2, lo + pad].map(function (g) { return '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + Y(g).toFixed(1) + '" y2="' + Y(g).toFixed(1) + '" class="g"/><text x="2" y="' + (Y(g) + 4).toFixed(1) + '">' + sig(Math.round(g)) + '</text>'; }).join('') +
+      (function () { var gs = [hi - pad, (hi + lo) / 2, lo + pad], st = [1, 0.5, 0.1], q = 1;   /* n191: labels never repeat */
+        for (var i = 0; i < st.length; i++) { q = st[i]; var lab = gs.map(function (g) { return Math.round(g / q) * q; }); if (lab[0] !== lab[1] && lab[1] !== lab[2]) break; }
+        return gs.map(function (g) { var t = Math.round(g / q) * q; return '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + Y(g).toFixed(1) + '" y2="' + Y(g).toFixed(1) + '" class="g"/><text x="2" y="' + (Y(g) + 4).toFixed(1) + '">' + sig(q < 1 ? Math.round(t * 10) / 10 : t) + '</text>'; }).join(''); })() +
       '<path class="a" d="' + area + '"/><polyline class="l" points="' + pts + '"/>' + vs.map(function (v) { return '<circle cx="' + X(v.at).toFixed(1) + '" cy="' + Y(v[key]).toFixed(1) + '" r="3.5"/>'; }).join('') +
       '<text x="' + P + '" y="' + (H - 6) + '">' + fmtTime(t0) + '</text><text x="' + (W - P) + '" y="' + (H - 6) + '" text-anchor="end">' + fmtTime(t1) + '</text></svg>';
   }
@@ -838,11 +840,23 @@
 
   /* the Now column: how the patient is right now — big numbers, a short trend, the settings and pumps in force */
   var TILES = [['hr', 'HR', 'bpm'], ['spo2', 'SpO₂', '%'], ['bp', 'BP', 'mmHg'], ['etco2', 'EtCO₂', 'mmHg'], ['rr', 'RR', 'br/min'], ['temp', 'Temp', '°F']];
+  /* n191: a minimum span per vital, so a small wobble looks small (centred on the readings) */
+  var VSPAN = { hr: 30, spo2: 10, bp: 20, map: 20, etco2: 10, rr: 10, temp: 2 };
+  var VCAP = { spo2: 100 };
+  function vRange(vals, k) {
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), need = VSPAN[k] || 0;
+    if (hi - lo < need) { var mid = (hi + lo) / 2; lo = mid - need / 2; hi = mid + need / 2; }
+    if (hi === lo) { lo -= 1; hi += 1; }
+    var cap = VCAP[k]; if (cap !== undefined && hi > cap) { lo -= hi - cap; hi = cap; }   /* SpO2 can't pass 100 % */
+    if (lo < 0) { hi -= lo; lo = 0; }
+    return [lo, hi];
+  }
   function spark(vals, k) {
     if (vals.length < 2) return '';
-    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), W = 72, Hh = 22, span = hi - lo || 1;
-    var pts = vals.map(function (v, i) { return Math.round(i / (vals.length - 1) * W) + ',' + Math.round(Hh - 2 - (v - lo) / span * (Hh - 4)); }).join(' ');
-    return '<svg class="an-spark v-' + (k || '') + '" viewBox="0 0 ' + W + ' ' + Hh + '" width="' + W + '" height="' + Hh + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+    var rg = vRange(vals, k), lo = rg[0], hi = rg[1], W = 72, Hh = 22, span = hi - lo;
+    var xy = vals.map(function (v, i) { return [Math.round(i / (vals.length - 1) * (W - 3)) + 1, Math.round((Hh - 3 - (v - lo) / span * (Hh - 6)) * 10) / 10]; });
+    var pts = xy.map(function (q) { return q[0] + ',' + q[1]; }).join(' '), end = xy[xy.length - 1];
+    return '<svg class="an-spark v-' + (k || '') + '" viewBox="0 0 ' + W + ' ' + Hh + '" width="' + W + '" height="' + Hh + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><circle cx="' + end[0] + '" cy="' + end[1] + '" r="2" fill="currentColor"/></svg>';
   }
   /* (n171: the old Phosphor vitals icons are replaced by the Pravix Symbols v-* set) */
 

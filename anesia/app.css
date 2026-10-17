@@ -1626,3 +1626,7 @@ body:not(.dark) svg.an-sf .tick{stroke:#fff}
 .an-rtemp svg.th{margin-top:.1rem}
 .an-rtemp .tx{flex:1;min-width:0}
 .an-rtemp .tx svg.tr{display:inline-block;vertical-align:-.12em;margin-right:.3rem}
+
+/* ===== n191 — charts: one sparkline style shared with Flow (1.75 pt line, dot on the latest reading) ===== */
+.an-spark polyline{stroke-width:1.75}
+.an-spark circle{stroke:none}
