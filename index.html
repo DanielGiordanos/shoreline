@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script id="pvx-n195-boot">/* PVX-N195 - launch: the first frame is already the first screen's colour */
+(function(){try{var d=document.documentElement,m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/),t=(m&&m[1])||'dark';
+d.classList.add('pvx-boot',t==='dark'?'pvx-pre-dark':'pvx-pre-light');d.style.background=t==='dark'?'#080E1A':'#F2F4F8';d.style.colorScheme=t;}catch(e){}})();</script>
+<style id="pvx-n195-boot-css">html.pvx-boot body,html.pvx-boot body *,html.pvx-boot body *::before,html.pvx-boot body *::after{transition:none!important}
+html.pvx-pre-dark body:not(.dark){background:#080E1A!important}</style>
 <script id="pvx-n187-gi">/* PVX-N187 - glyph icons: one vector set instead of text characters (24-pt grid, round caps, 1em) */
 window.PVX_GI=(function(){function g(n,d){return '<svg class="pvx-gi pvx-gi-'+n+'" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+d+'</svg>';}
 return {check:g('check','<path d="M5 12.5l4.5 4.5L19 7"/>'),xmark:g('xmark','<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
@@ -5576,7 +5581,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
 </style>
 </head>
 <body>
-<script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#F2F4F8';}catch(e){}}window.__pvxPaintCanvas=paint;try{if(/[#&]app=(rounds|ultrasound)\b/.test(location.hash))document.documentElement.classList.add('pvx-app-boot');}catch(e){}try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
+<script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#F2F4F8';}catch(e){}}window.__pvxPaintCanvas=paint;try{var W=JSON.parse(localStorage.getItem('pvx:flow:where')||'null');if(W&&W.app&&Date.now()-W.at<432e5&&!location.hash&&!/[?&](tv|visit|patient)=/.test(location.search)&&(W.app!=='flow'||(W.view&&W.view!=='dashboard'))){history.replaceState(null,'',location.pathname+location.search+'#app='+W.app);window.__pvxRestore=W;document.documentElement.classList.add('pvx-app-boot');}}catch(e){}try{if(/[#&]app=(rounds|ultrasound)\b/.test(location.hash))document.documentElement.classList.add('pvx-app-boot');}catch(e){}try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
 
 
 <div class="app">
@@ -5611,7 +5616,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
       <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
     </div>
     <div class="nav-right">      <button class="logout-button" id="logoutBtn" type="button" onclick="logout()" aria-label="Log out"><span class="logout-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="door-glyph"><path d="M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1"/></g><g class="exit-arrow"><path d="M12.6 8.7 16 12l-3.4 3.3"/><path d="M8.9 12H16"/></g></svg></span><span class="logout-label">Logout</span><span class="logout-chevron" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m7.5 5 5 5-5 5"/></svg></span></button>
-      <button class="theme-toggle" onclick="toggleDark()" title="Toggle theme" aria-label="Toggle theme">
+      <button class="theme-toggle" onclick="toggleDark()" title="Switch light and dark" aria-label="Switch light and dark">
         <img class="img-light" src="assets/img/theme-light.png" alt="Light">
         <img class="img-dark"  src="assets/img/theme-dark.png"  alt="Dark">
       </button>
@@ -5654,7 +5659,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
           <span class="search-icon" aria-hidden="true"></span>
           <input id="globalSearch" class="search-input" placeholder="Search anything…" aria-label="Search anything" autocomplete="off"/>
           <span class="premium-search-caret" aria-hidden="true"></span>
-          <div class="actions"><button class="luna-search-orb" id="searchLuna" type="button" title="L.U.N.A." aria-label="Focus search"><img src="assets/img/luna-orb.webp" alt="" aria-hidden="true"></button></div>
+          <div class="actions"><button class="luna-search-orb" id="searchLuna" type="button" title="Search patients, rooms and commands" aria-label="Focus search"><img src="assets/img/luna-orb.webp" alt="" aria-hidden="true"></button></div>
         </div>
       </div>
       <div class="search-results" id="searchResults"></div>
@@ -5679,7 +5684,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
       </button>
     </nav>
     <div class="spacer"></div>
-    <div class="usx-role" id="usxRole" title="Role view — per-user enforcement arrives with named accounts">
+    <div class="usx-role" id="usxRole" title="Choose your view: Internal Medicine controls, or view only">
       <button data-role="im" class="on">IM Controls</button>
       <button data-role="view">View Only</button>
     </div>
@@ -5708,7 +5713,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
             <span class="search-icon" aria-hidden="true"></span>
             <input id="rdSearch" class="search-input" placeholder="Search rounds…" aria-label="Search rounds" autocomplete="off"/>
             <span class="premium-search-caret" aria-hidden="true"></span>
-            <div class="actions"><button class="luna-search-orb" id="rdSearchLuna" type="button" title="L.U.N.A." aria-label="Focus search"><img src="assets/img/luna-orb.webp" alt="" aria-hidden="true"></button></div>
+            <div class="actions"><button class="luna-search-orb" id="rdSearchLuna" type="button" title="Search patients, rooms and commands" aria-label="Focus search"><img src="assets/img/luna-orb.webp" alt="" aria-hidden="true"></button></div>
           </div>
         </div>
       </div>
@@ -5888,7 +5893,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
       </div>
       <div class="kpis" id="usxCompStats"></div>
       <div class="usx-ctable">
-        <div class="usx-sec"><h3>Completed Today</h3><span class="cnt" id="usxCCount2">0</span><span class="hint">Click a row to review the case</span></div>
+        <div class="usx-sec"><h3>Completed Today</h3><span class="cnt" id="usxCCount2">0</span><span class="hint"><span class="pvx-tapclick">Click</span> a row to review the case</span></div>
         <div id="usxCompleted2"></div>
       </div>
     </section>
@@ -5912,7 +5917,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
             <button data-shift="evening">Evening</button>
             <button data-shift="overnight">Overnight</button>
           </div>
-          <button class="rd-headbtn" id="rdDisplayBtn" title="Large display for the rounds room">
+          <button class="rd-headbtn" id="rdDisplayBtn" title="Large display for the rounds room" aria-pressed="false" aria-label="Rounds display">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             Display
           </button>
@@ -6264,13 +6269,13 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
     <div class="ap-sect">
       <h4>Patient Information</h4>
       <div class="ap-grid c2" style="margin-bottom:13px">
-        <div class="ap-field"><label>Patient Name</label><input class="ap-input" id="apName" placeholder="e.g. Cookie"></div>
-        <div class="ap-field"><label>Species</label>
-          <select class="ap-input ap-select" id="apSpecies" required>
+        <div class="ap-field"><label>Patient Name <span class="pvx-req" aria-hidden="true">*</span></label><input class="ap-input" id="apName" placeholder="e.g. Cookie" aria-required="true"></div>
+        <div class="ap-field"><label>Species <span class="pvx-req" aria-hidden="true">*</span></label>
+          <select class="ap-input ap-select" id="apSpecies" required aria-describedby="apSpeciesHint">
             <option value="" selected hidden>Select Species</option>
             <option>Canine</option>
             <option>Feline</option>
-          </select></div>
+          </select><div class="ap-hint" id="apSpeciesHint" aria-live="polite"></div></div>
       </div>
       <div class="ap-grid c2" style="margin-bottom:13px">
         <div class="ap-field"><label>Breed</label>
@@ -6278,7 +6283,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
             <input class="ap-input" id="apBreed" placeholder="e.g. Turkish Van" autocomplete="off">
             <div class="bc-panel" id="apBreedPanel"></div>
           </div></div>
-        <div class="ap-field"><label>Age</label><input class="ap-input" id="apAge" placeholder="e.g. 4y"></div>
+        <div class="ap-field"><label>Age</label><div class="pvx-uwrap"><input class="ap-input" id="apAge" inputmode="numeric" autocomplete="off" placeholder="e.g. 4" aria-describedby="apAgeHint"><div class="pvx-unit" role="radiogroup" aria-label="Age unit" data-unit-for="apAge"><button type="button" role="radio" aria-checked="true" data-u="y" aria-label="Years">y</button><button type="button" role="radio" aria-checked="false" data-u="mo" aria-label="Months">mo</button></div></div><div class="ap-hint" id="apAgeHint" aria-live="polite"></div></div>
       </div>
       <div class="ap-grid c2">
         <div class="ap-field"><label>Sex</label>
@@ -6286,7 +6291,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
             <input class="ap-input" id="apSex" placeholder="Select Sex" autocomplete="off">
             <div class="bc-panel" id="apSexPanel"></div>
           </div></div>
-        <div class="ap-field"><label>Weight</label><input class="ap-input" id="apWeight" placeholder="e.g. 24 kg or 50 lb" autocomplete="off"><div class="ap-hint" id="apWeightHint">Enter weight in kg or lb.</div></div>
+        <div class="ap-field"><label>Weight</label><div class="pvx-uwrap"><input class="ap-input" id="apWeight" inputmode="decimal" placeholder="e.g. 24" autocomplete="off" aria-describedby="apWeightHint"><div class="pvx-unit" role="radiogroup" aria-label="Weight unit" data-unit-for="apWeight"><button type="button" role="radio" aria-checked="true" data-u="kg">kg</button><button type="button" role="radio" aria-checked="false" data-u="lb">lb</button></div></div><div class="ap-hint" id="apWeightHint" aria-live="polite"></div></div>
       </div>
     </div>
 
@@ -6294,7 +6299,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
       <h4>Owner Information</h4>
       <div class="ap-grid c2">
         <div class="ap-field"><label>Owner Name</label><input class="ap-input" id="apOwner" placeholder="e.g. Daniel Giordano"></div>
-        <div class="ap-field"><label>Phone Number</label><input class="ap-input" id="apPhone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="14" placeholder="(203) 555-0134"></div>
+        <div class="ap-field"><label>Phone Number</label><input class="ap-input" id="apPhone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="14" placeholder="(203) 555-0134" aria-describedby="apPhoneHint"><div class="ap-hint" id="apPhoneHint" aria-live="polite"></div></div>
       </div>
     </div>
 
@@ -8348,7 +8353,7 @@ function cardHTML(p){
 const w=waitMinutes(p);const wc=w>120?'crit':w>45?'warn':'';
 return`<div class="card" draggable="true" data-pid="${p.id}">
     <span class="edge" style="background:${PRIO[p.prio].c}"></span>
-    <div class="c-top">${mono(p,'patient-medallion patient-medallion--compact')}<b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)} · ${p.status}">${bcEsc(p.name)} ${bcEsc(p.last)}</button>${msgBadge(p)}</b> <button type="button" class="pvx-move" data-pid="${p.id}" data-kind="stage" aria-label="Move ${bcEsc(p.name)} to another stage" title="Move…">${PVX_MOVE_ICON}</button><span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:0.625rem">${PRIO[p.prio].l}</span></div>
+    <div class="c-top">${mono(p,'patient-medallion patient-medallion--compact')}<b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)} · ${p.status}">${bcEsc(p.name)} ${bcEsc(p.last)}</button>${msgBadge(p)}</b> <button type="button" class="pvx-move" data-pid="${p.id}" data-kind="stage" aria-label="Move ${bcEsc(p.name)} to another stage" title="Move to another stage">${PVX_MOVE_ICON}</button><span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:0.625rem">${PRIO[p.prio].l}</span></div>
     <div class="c-reason">${bcEsc(compactProblems(p))}</div>${typeof fgCard==='function'?fgCard(p):''}${typeof fvOrChip==='function'?fvOrChip(p):''}
     ${usFlag(p)}${typeof fvWaitChip==='function'?fvWaitChip(p):''}${typeof fvPresenceChip==='function'?fvPresenceChip(p):''}
     <div class="c-meta"><div class="l">${p.doctor==='unassigned'?'<span class="muted" style="font-size:0.75rem">No doctor</span>':docAv(p.doctor)}${p.liaison?liaAv(p.liaison):''}${ctAvRow(p)}
@@ -8367,18 +8372,20 @@ function wireDnD(){
 document.querySelectorAll('.card').forEach(c=>{
 c.addEventListener('dragstart',e=>{dragId=c.dataset.pid;c.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
 c.addEventListener('dragend',()=>{c.classList.remove('dragging');dragId=null;
-document.querySelectorAll('.col').forEach(x=>x.classList.remove('drop'));
-document.querySelectorAll('.cz-target').forEach(x=>x.classList.remove('cz-over'));
+document.querySelectorAll('.col').forEach(x=>{ x.classList.remove('drop'); const b=x.querySelector('.col-body'); if(b) b._pvxN=0; });
+document.querySelectorAll('.cz-target').forEach(x=>{ x.classList.remove('cz-over'); x._pvxN=0; });
 const bd=document.getElementById('board'); if(bd) bd.classList.remove('board-dim');});
 c.addEventListener('click',()=>{ if(!c.classList.contains('dragging')) openDrawer(c.dataset.pid); });
 });
 document.querySelectorAll('[data-usflag]').forEach(el=>{ el.onclick=e=>{ e.stopPropagation(); openUltrasoundRequest(el.getAttribute('data-usflag')); }; });
 document.querySelectorAll('.col-body').forEach(col=>{
 const parent=col.closest('.col');
-col.addEventListener('dragover',e=>{e.preventDefault();parent.classList.add('drop');});
-col.addEventListener('dragleave',()=>parent.classList.remove('drop'));
+col.addEventListener('dragenter',()=>{ if(dragId) col._pvxN=(col._pvxN||0)+1; });   /* PVX-N192: entering a card inside isn't leaving */
+col.addEventListener('dragover',e=>{ const p=dragId&&PATIENTS.find(x=>x.id===dragId); if(!p) return; e.preventDefault();
+  const ok=p.status!==col.dataset.status; e.dataTransfer.dropEffect=ok?'move':'none'; parent.classList.toggle('drop',ok); });
+col.addEventListener('dragleave',()=>{ if(col._pvxN>1){ col._pvxN--; return; } col._pvxN=0; parent.classList.remove('drop'); });
 col.addEventListener('drop',e=>{
-e.preventDefault();parent.classList.remove('drop');
+e.preventDefault();parent.classList.remove('drop'); col._pvxN=0;
 const p=PATIENTS.find(x=>x.id===dragId);
 const newStatus=col.dataset.status;
 if(p && p.status!==newStatus){ moveStatus(p,newStatus); }
@@ -9092,9 +9099,9 @@ el.innerHTML=`
     });
     rows.addEventListener('drop',e=>{
       if(!_usxDrag) return; e.preventDefault();
-      [...rows.querySelectorAll('.um-rrow')].forEach((c,i)=>{ const p=PATIENTS.find(x=>x.id===c.dataset.pid); if(p&&p.ultrasound) p.ultrasound.queuePosition=i+1; });
+      const _pvxQ0=pvxQueueSnap(); [...rows.querySelectorAll('.um-rrow')].forEach((c,i)=>{ const p=PATIENTS.find(x=>x.id===c.dataset.pid); if(p&&p.ultrasound) p.ultrasound.queuePosition=i+1; });
       _usxDrag=null;
-      notify('Queue updated','Ultrasound order changed by Internal Medicine',{icon:'move',color:'var(--s-ultrasound)'});
+      pvxQueueUndo(_pvxQ0);
       renderAll();
     });
   }
@@ -9426,9 +9433,9 @@ function renderUsxBoard(){
       });
       wrap.addEventListener('drop',e=>{
         if(!_usxDrag) return; e.preventDefault();
-        [...wrap.querySelectorAll('.usb-card')].forEach((c,i)=>{ const p=PATIENTS.find(x=>x.id===c.dataset.pid); if(p&&p.ultrasound) p.ultrasound.queuePosition=i+1; });
+        const _pvxQ0=pvxQueueSnap(); [...wrap.querySelectorAll('.usb-card')].forEach((c,i)=>{ const p=PATIENTS.find(x=>x.id===c.dataset.pid); if(p&&p.ultrasound) p.ultrasound.queuePosition=i+1; });
         _usxDrag=null;
-        notify('Queue updated','Ultrasound order changed by Internal Medicine',{icon:'move',color:'var(--s-ultrasound)'});
+        pvxQueueUndo(_pvxQ0);
         renderAll();
       });
     }
@@ -9804,9 +9811,10 @@ function wireCompleteZones(){
 document.querySelectorAll('.cz-target').forEach(z=>{
 z.addEventListener('dragover',e=>{ if(!dragId) return; e.preventDefault(); z.classList.add('cz-over');
 const bd=document.getElementById('board'); if(bd) bd.classList.add('board-dim'); });
-z.addEventListener('dragleave',()=>{ z.classList.remove('cz-over');
+z.addEventListener('dragenter',()=>{ if(dragId) z._pvxN=(z._pvxN||0)+1; });
+z.addEventListener('dragleave',()=>{ if(z._pvxN>1){ z._pvxN--; return; } z._pvxN=0; z.classList.remove('cz-over');
 const bd=document.getElementById('board'); if(bd) bd.classList.remove('board-dim'); });
-z.addEventListener('drop',e=>{ e.preventDefault(); z.classList.remove('cz-over');
+z.addEventListener('drop',e=>{ e.preventDefault(); z.classList.remove('cz-over'); z._pvxN=0;
 const bd=document.getElementById('board'); if(bd) bd.classList.remove('board-dim');
 const p=PATIENTS.find(x=>x.id===dragId); if(!p) return;
 const final=z.dataset.final;
@@ -9898,7 +9906,7 @@ return`<div class="room ${waiting?'occupied':''}" data-room="${rm}" data-room-na
         ${waiting?`<div class="room-accent" style="background:var(--s-waiting)"></div>`:''}
         <div class="r-top"><div><div class="r-name"><button type="button" class="pvx-open" data-loc="Lobby" aria-label="Open Lobby">Lobby</button></div><div class="r-spec">Waiting area</div></div>
           <span class="r-state ${waiting?'clean':'avail'}">${waiting?waiting+' Waiting':'Empty'}</span></div>
-        ${waiting?occupants.slice(0,3).map(p=>`<div class="r-pt r-drag" draggable="true" data-pid="${p.id}" style="margin-bottom:8px">${mono(p,'patient-medallion patient-medallion--compact','width:30px;height:30px;font-size:0.6875rem')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)}">${bcEsc(p.name)}</button><button type="button" class="pvx-move" data-pid="${p.id}" data-kind="room" aria-label="Move ${bcEsc(p.name)} to another room" title="Move…">${PVX_MOVE_ICON}</button></b><span>${fmtWait(waitMinutes(p))} · ${PRIO[p.prio].l}</span></div></div>`).join('')+(waiting>3?`<div class="muted" style="font-size:0.75rem;margin-top:4px">+${waiting-3} more</div>`:''):`<div class="r-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>No patients waiting</div>`}
+        ${waiting?occupants.slice(0,3).map(p=>`<div class="r-pt r-drag" draggable="true" data-pid="${p.id}" style="margin-bottom:8px">${mono(p,'patient-medallion patient-medallion--compact','width:30px;height:30px;font-size:0.6875rem')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)}">${bcEsc(p.name)}</button><button type="button" class="pvx-move" data-pid="${p.id}" data-kind="room" aria-label="Move ${bcEsc(p.name)} to another room" title="Move to another room">${PVX_MOVE_ICON}</button></b><span>${fmtWait(waitMinutes(p))} · ${PRIO[p.prio].l}</span></div></div>`).join('')+(waiting>3?`<div class="muted" style="font-size:0.75rem;margin-top:4px">+${waiting-3} more</div>`:''):`<div class="r-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>No patients waiting</div>`}
       </div>`;
 }
 const p=occupants[0];
@@ -9910,7 +9918,7 @@ return`<div class="room" data-room="${rm}" data-room-name="${rm}">
       </div>`;
 }
 const rmin=roomMinutes(p); const rcls=rmin>120?'crit':rmin>60?'warn':'';
-return`<div class="room occupied r-drag" draggable="true" data-pid="${p.id}" data-room-name="${rm}"> <div class="room-accent" style="background:${STATUSES[p.status].color}"></div> <div class="r-top"><div><div class="r-name">${rm}</div>${spec?`<div class="r-spec">${spec}</div>`:'<div class="r-spec">&nbsp;</div>'}</div> <span class="r-state busy">In Use</span><button type="button" class="pvx-move" data-pid="${p.id}" data-kind="room" aria-label="Move ${bcEsc(p.name)} to another room" title="Move…">${PVX_MOVE_ICON}</button></div>
+return`<div class="room occupied r-drag" draggable="true" data-pid="${p.id}" data-room-name="${rm}"> <div class="room-accent" style="background:${STATUSES[p.status].color}"></div> <div class="r-top"><div><div class="r-name">${rm}</div>${spec?`<div class="r-spec">${spec}</div>`:'<div class="r-spec">&nbsp;</div>'}</div> <span class="r-state busy">In Use</span><button type="button" class="pvx-move" data-pid="${p.id}" data-kind="room" aria-label="Move ${bcEsc(p.name)} to another room" title="Move to another room">${PVX_MOVE_ICON}</button></div>
       <div class="r-pt">${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)} · ${rm}">${bcEsc(p.name)} ${bcEsc(p.last)}</button></b><span>${bcEsc(p.species)} · ${bcEsc(compactProblems(p).slice(0,26))}${compactProblems(p).length>26?'…':''}</span></div></div>
       ${typeof fgRoom==='function'?fgRoom(p):''}
       <div class="r-foot"><div class="dctr">${p.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(p.doctor)+doc(p.doctor).name}</div>
@@ -9943,11 +9951,11 @@ return`<div class="room" data-room-name="Treatment">
 }
 const lead=occ[0], rmin=roomMinutes(lead);
 const rows = occ.slice(1,4).map(p=>`
-      <div class="r-pt r-drag" draggable="true" data-pid="${p.id}" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--glass-hairline)"> ${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)}">${bcEsc(p.name)} ${bcEsc(p.last)}</button><button type="button" class="pvx-move" data-pid="${p.id}" data-kind="room" aria-label="Move ${bcEsc(p.name)} to another room" title="Move…">${PVX_MOVE_ICON}</button></b><span>${bcEsc(p.species)} · ${p.status}</span></div></div>`).join('');
+      <div class="r-pt r-drag" draggable="true" data-pid="${p.id}" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--glass-hairline)"> ${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)}">${bcEsc(p.name)} ${bcEsc(p.last)}</button><button type="button" class="pvx-move" data-pid="${p.id}" data-kind="room" aria-label="Move ${bcEsc(p.name)} to another room" title="Move to another room">${PVX_MOVE_ICON}</button></b><span>${bcEsc(p.species)} · ${p.status}</span></div></div>`).join('');
 const more = occ.length>4 ?`<div class="muted" style="font-size:0.75rem;margin-top:6px">+${occ.length-4} more in treatment</div>`:'';
 return`<div class="room occupied" data-room-name="Treatment"> <div class="room-accent" style="background:#2FB6B9"></div> <div class="r-top"><div><div class="r-name"><button type="button" class="pvx-open" data-loc="Treatment" aria-label="Open Treatment">Treatment</button></div><div class="r-spec">ICU • Treatment • Wards</div></div>
         <span class="r-state busy">In Use</span></div>
-      <div class="r-pt r-drag" draggable="true" data-pid="${lead.id}">${mono(lead,'patient-medallion patient-medallion--compact')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${lead.id}" aria-label="Open patient: ${bcEsc(lead.name)} ${bcEsc(lead.last)}">${bcEsc(lead.name)} ${bcEsc(lead.last)}</button><button type="button" class="pvx-move" data-pid="${lead.id}" data-kind="room" aria-label="Move ${bcEsc(lead.name)} to another room" title="Move…">${PVX_MOVE_ICON}</button></b><span>${bcEsc(lead.species)} · ${bcEsc(compactProblems(lead).slice(0,26))}${compactProblems(lead).length>26?'…':''}</span></div></div>
+      <div class="r-pt r-drag" draggable="true" data-pid="${lead.id}">${mono(lead,'patient-medallion patient-medallion--compact')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${lead.id}" aria-label="Open patient: ${bcEsc(lead.name)} ${bcEsc(lead.last)}">${bcEsc(lead.name)} ${bcEsc(lead.last)}</button><button type="button" class="pvx-move" data-pid="${lead.id}" data-kind="room" aria-label="Move ${bcEsc(lead.name)} to another room" title="Move to another room">${PVX_MOVE_ICON}</button></b><span>${bcEsc(lead.species)} · ${bcEsc(compactProblems(lead).slice(0,26))}${compactProblems(lead).length>26?'…':''}</span></div></div>
       ${typeof fgRoom==='function'?fgRoom(lead):''}${rows}${more}
       <div class="r-foot"><div class="dctr">${lead.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(lead.doctor)+doc(lead.doctor).name}</div>
         <div class="r-right"><span class="r-timer" title="Time in Treatment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(lead.status)}</div></div>
@@ -9965,24 +9973,27 @@ grid.querySelectorAll('.room').forEach(r=>{ if(canDropRoom(p,r.dataset.roomName)
 });
 el.addEventListener('dragend',()=>{
 el.classList.remove('dragging'); roomDragId=null;
-grid.querySelectorAll('.room').forEach(r=>r.classList.remove('room-available','room-drop','room-nodrop'));
+grid.querySelectorAll('.room').forEach(r=>{ r.classList.remove('room-available','room-drop','room-nodrop'); r._pvxN=0; });
 });
 });
 grid.querySelectorAll('.room').forEach(room=>{
 const target=room.dataset.roomName;
+room.addEventListener('dragenter',()=>{ if(!roomDragId) return; room._pvxN=(room._pvxN||0)+1; if(room._pvxN!==1) return;   /* PVX-N192 */
+const p=PATIENTS.find(x=>x.id===roomDragId); if(p&&p.room!==target&&!canDropRoom(p,target)&&window.pvxSay) pvxSay(target+' is occupied'); });
 room.addEventListener('dragover',e=>{
 if(!roomDragId) return;
 const p=PATIENTS.find(x=>x.id===roomDragId);
 if(p && p.room===target) return;
 e.preventDefault();
 const ok=canDropRoom(p,target);
+e.dataTransfer.dropEffect=ok?'move':'none';   /* PVX-N192: refused before release - "not allowed", and the patient slides back */
 room.classList.toggle('room-drop',ok);
 room.classList.toggle('room-nodrop',!ok);
 });
-room.addEventListener('dragleave',()=>room.classList.remove('room-drop','room-nodrop'));
+room.addEventListener('dragleave',()=>{ if(room._pvxN>1){ room._pvxN--; return; } room._pvxN=0; room.classList.remove('room-drop','room-nodrop'); });
 room.addEventListener('drop',e=>{
 e.preventDefault();
-room.classList.remove('room-drop','room-nodrop');
+room.classList.remove('room-drop','room-nodrop'); room._pvxN=0;
 const p=PATIENTS.find(x=>x.id===roomDragId);
 if(!p || p.room===target) return;
 if(!canDropRoom(p,target)){ toast('Room already occupied'); return; }
@@ -10070,7 +10081,7 @@ document.querySelectorAll('#roomGrid .room').forEach(r=>{ if(canDropRoom(p,r.dat
 });
 row.addEventListener('dragend',()=>{
 row.classList.remove('dragging'); roomDragId=null;
-document.querySelectorAll('#roomGrid .room').forEach(r=>r.classList.remove('room-available','room-drop','room-nodrop'));
+document.querySelectorAll('#roomGrid .room').forEach(r=>{ r.classList.remove('room-available','room-drop','room-nodrop'); r._pvxN=0; });
 });
 row.addEventListener('click',()=>{ if(!row.classList.contains('dragging')){ const pid=row.dataset.pid; closeLocDrawer(); openDrawer(pid); } });
 });
@@ -10362,7 +10373,7 @@ document.getElementById('triEditBody').innerHTML=`
     <div class="ap-sect"><h4>History</h4>
       <div class="ap-field"><input class="ap-input" id="triEditHistory" value="${esc(t.history)}" placeholder="Owner history"></div></div>
     <div class="ap-sect"><h4>Completed By</h4>
-      <div class="ap-field"><input class="ap-input" id="triEditBy" value="${esc(t.by||'Daniel Giordano')}" placeholder="Clinician name"></div></div>`;
+      <div class="ap-field"><input class="ap-input" id="triEditBy" value="${esc(t.by||(typeof CURRENT_USER==='string'?CURRENT_USER:''))}" placeholder="Clinician name"></div></div>`;
 
 document.querySelectorAll('#triEditBody [data-vk]').forEach(el=>{ const c=TRIAGE_VITALS.find(x=>x.key===el.dataset.vk);
 if(c&&c.fmt){ const run=()=>{ el.value=c.fmt(el.value); }; el.addEventListener('blur',run); el.addEventListener('keydown',e=>{ if(e.key==='Enter') run(); }); } });
@@ -10387,7 +10398,7 @@ if(val!==''){ assess[el.dataset.ak]=(c&&c.fmt&&el.tagName!=='SELECT')?c.fmt(val)
 t.vitals=vitals; t.assess=assess;
 t.chief=document.getElementById('triEditChief').value.split(',').map(s=>s.trim()).filter(Boolean);
 t.history=document.getElementById('triEditHistory').value.trim();
-t.by=document.getElementById('triEditBy').value.trim()||'Daniel Giordano';
+t.by=document.getElementById('triEditBy').value.trim()||(typeof CURRENT_USER==='string'?CURRENT_USER:'');
 t.at=fmtTime(new Date());
 t.status='complete';
 closeTriageEdit();
@@ -10403,7 +10414,7 @@ const nameEl=document.getElementById('dName');
 nameEl.textContent=`${p.name} ${p.last}`.trim();
 const dResus=document.getElementById('dResus'); if(dResus){ dResus.innerHTML=resusPill(p); try{ CprEcg.mount(); }catch(e){} }
 nameEl.classList.add('editable-hint');
-nameEl.title='Click to edit name';
+nameEl.title='Edit name';
 makeEditable(nameEl, val=>{
 val=val.trim(); if(!val){ nameEl.textContent=`${p.name} ${p.last}`.trim(); return; }
 const words=val.split(/\s+/);
@@ -12401,7 +12412,7 @@ const teardown=function(){ ['click','keydown','touchstart'].forEach(function(ev)
 }
 function _onFsChange(){
 const fs=!!(document.fullscreenElement||document.webkitFullscreenElement);
-document.body.classList.toggle('fs-mode', fs);
+document.body.classList.toggle('fs-mode', fs&&(document.body.classList.contains('tv-mode')||document.body.classList.contains('client-mode')));   /* PVX-N194 */
 if(fs){ ensureFsExit(); fsPokeExit(); removeFsHint(); }
 else { const b=document.getElementById('fsExit'); if(b) b.classList.remove('show'); }
 }
@@ -12693,16 +12704,17 @@ document.getElementById('apPrio').addEventListener('click',e=>{const b=e.target.
 
 [['apName',fmtTitleCase],['apOwner',fmtTitleCase],['apPhone',fmtPhone],['apAge',fmtAge]].forEach(([id,fn])=>{
 const el=document.getElementById(id); if(!el) return;
-el.addEventListener('blur',()=>{ el.value=fn(el.value); });
-el.addEventListener('keydown',e=>{ if(e.key==='Enter') el.value=fn(el.value); });
+el.addEventListener('blur',()=>{ if(!(id==='apAge'&&/^\d+$/.test(el.value.trim()))) el.value=fn(el.value); });
+el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!(id==='apAge'&&/^\d+$/.test(el.value.trim()))) el.value=fn(el.value); });
 });
 
 (function(){
 const el=document.getElementById('apWeight'), hint=document.getElementById('apWeightHint');
 if(!el) return;
 function normalize(){
-const res=parseWeightInput(el.value);
-if(res.valid){ el.value=res.display; apWeightKg=res.kg; if(hint) hint.classList.remove('show'); }
+const bareW=/^\d+(?:\.\d+)?$/.test(el.value.trim()), uW=document.querySelector('[data-unit-for="apWeight"] [aria-checked=true]');   /* PVX-N193 */
+const res=parseWeightInput(bareW?el.value.trim()+' '+(uW?uW.getAttribute('data-u'):'kg'):el.value);
+if(res.valid){ if(!bareW) el.value=res.display; apWeightKg=res.kg; if(hint) hint.classList.remove('show'); }
 else if(res.empty){ apWeightKg=null; if(hint) hint.classList.remove('show'); }
 else { apWeightKg=null; if(hint) hint.classList.add('show'); }
 }
@@ -13871,7 +13883,7 @@ return`<div class="rd-handoff">
       <button class="doc ${curName?'':'muted'}" data-act="cur-menu" data-pid="${pid}" title="${curTip}" aria-label="${rdEsc('Current doctor for '+rdNameOf(pid)+' — '+(curName||'Unassigned'))}" aria-haspopup="menu">${rdEsc(curName||'Unassigned')}</button></div>
     <span class="har" aria-hidden="true">→</span>
     <div class="hcol"><span class="lbl">Next</span>
-      <button class="doc ${nextName?'':'muted'}" data-act="next-menu" data-pid="${pid}" title="${nextName?'Takes over next — click to change or hand off':'Assign the doctor taking over next'}" aria-label="${rdEsc('Next doctor for '+rdNameOf(pid)+' — '+(nextName||'Unassigned'))}" aria-haspopup="menu">${rdEsc(nextName||'Unassigned')}</button></div>
+      <button class="doc ${nextName?'':'muted'}" data-act="next-menu" data-pid="${pid}" title="${nextName?'Change or hand off the next doctor':'Assign the doctor taking over next'}" aria-label="${rdEsc('Next doctor for '+rdNameOf(pid)+' — '+(nextName||'Unassigned'))}" aria-haspopup="menu">${rdEsc(nextName||'Unassigned')}</button></div>
   </div>`;
 }
 function rdFinHTML(p){
@@ -13881,7 +13893,7 @@ const est=rdLowEnd(a), dep=a?a.deposited:null, bal=rdBalance(p), tone=rdMoneyTon
 return`<div class="rd-finrow" data-act="row-fin" data-pid="${p.id}" role="button" tabindex="0" title="Open authorization &amp; financials" aria-label="Authorization and financials for ${rdEsc(rdFullName(p))}">
     <div class="fcol"><span class="lbl">Low end</span><span class="v">${rdMoney(est)}</span></div>
     <div class="fcol"><span class="lbl">Deposit</span><span class="v">${rdMoney(dep)}</span></div>
-    <div class="fcol"><span class="lbl">To low end</span><span class="v bal${tone?' '+tone:''}" title="Low end − current charges">${rdRemain(bal)}</span></div>
+    <div class="fcol"><span class="lbl">To low end</span><span class="v bal${tone?' '+tone:''}" title="Estimate low end minus charges so far">${rdRemain(bal)}</span></div>
   </div>`;
 }
 
@@ -13985,7 +13997,7 @@ function rdSecAdd(pid,input,ph){ const nm=rdNameOf(pid); return`<div class="rd-a
 
  
 function rdFinEditable(pid,key,val){
-return`<b class="rd-fin-edit" data-fin-key="${key}" data-pid="${pid}" title="Double-click to edit">${rdMoney(val)}</b>`;
+return`<b class="rd-fin-edit" data-fin-key="${key}" data-pid="${pid}" role="button" tabindex="0" title="Edit amount">${rdMoney(val)}</b>`;
 }
 function rdAuthHTML(p){
 const pid=p.id, a=rdAuthRead(p)||{hours:[],estimate:null,deposited:null,bill:null,cubexDob:false,payers:[],approvals:[]};
@@ -14032,7 +14044,7 @@ return`<div class="rd-auth-stack">
           <div><span>High End</span>${rdFinEditable(pid,'estimate',high)}</div>
           <div><span>Deposit</span>${rdFinEditable(pid,'deposited',deposit)}</div>
           <div><span>Current charges</span><b class="rd-fin-computed">${charges!=null?rdMoney(charges):'—'}</b></div>
-          <div><span>Left to low end</span><b class="rd-fin-computed${mtone?' '+mtone:''}" title="Low end − current charges">${rdRemain(balance)}</b></div>
+          <div><span>Left to low end</span><b class="rd-fin-computed${mtone?' '+mtone:''}" title="Estimate low end minus charges so far">${rdRemain(balance)}</b></div>
         </div>
         ${depositRequired!=null?`<div class="rd-deposit-rule ${depositMet?'is-met':'is-low'}"><span aria-hidden="true">${depositMet?PVX_GI.check:PVX_GI.bang}</span><div><b>${depositMet?'75% deposit met':'Deposit below 75% minimum'}</b><small>${depositMet?('Minimum '+rdMoney(depositRequired)+' · Deposit '+rdMoney(deposit)):('Minimum '+rdMoney(depositRequired)+' · '+rdMoney(depositShortfall)+' more needed')}</small></div></div>`:''}
         ${high!=null?`<div class="rd-est-runway">
@@ -14580,7 +14592,7 @@ case'ho-review': if(r.handoff){ r.handoff.reviewedBy=rdActorName(); r.handoff.re
  
 case'auth-add':{ const h=+key; const a=rdAuth(p); a.hours.push({h:h,at:rdIso(new Date()),by:rdActorName()}); p.timeline.push({label:'Care authorized +'+h+'h',at:new Date(),meta:rdActorName()}); rdTouch(p,'Authorization +'+h+'h ('+rdAuthHours(p)+'h total)'); break; }
 case'auth-custom': rdMenu(el,[{value:'6',label:'+6 hours'},{value:'12',label:'+12 hours'},{value:'18',label:'+18 hours'},{value:'36',label:'+36 hours'},{value:'72',label:'+72 hours'}],v=>{ const a=rdAuth(p); a.hours.push({h:+v,at:rdIso(new Date()),by:rdActorName()}); rdTouch(p,'Authorization +'+v+'h ('+rdAuthHours(p)+'h total)'); }); break;
-case'auth-more': rdMenu(el,[{value:'change',label:'Change authorized hours'},{value:'undo',label:'Undo last extension'}],v=>{ const a=rdAuth(p); if(v==='undo'&&a.hours.length){ const x=a.hours.pop(); rdTouch(p,'Authorization extension undone'+(x?(' · '+x.h+'h'):'') ); } else if(v==='change'){ const cur=rdAuthHours(p); const nv=prompt('Set total authorized hours',cur||24); if(nv!==null&&+nv>=0){ a.hours=[{h:+nv,at:rdIso(new Date()),by:rdActorName()}]; rdTouch(p,'Authorization set to '+nv+'h'); } } }); break;
+case'auth-more': rdMenu(el,[{value:'change',label:'Change authorized hours'},{value:'undo',label:'Undo last extension'}],v=>{ const a=rdAuth(p); if(v==='undo'&&a.hours.length){ const x=a.hours.pop(); rdTouch(p,'Authorization extension undone'+(x?(' · '+x.h+'h'):'') ); } else if(v==='change'){ const cur=rdAuthHours(p); pvxHoursSheet(cur||24,function(nv){ a.hours=[{h:nv,at:rdIso(new Date()),by:rdActorName()}]; rdTouch(p,'Authorization set to '+nv+'h'); }); } }); break;
 case'auth-toggle-perm': rdUI['authPerm'+pid]=!rdUI['authPerm'+pid]; renderRdCensus(true); break;
 case'auth-toggle-hist': rdUI['authHist'+pid]=!rdUI['authHist'+pid]; renderRdCensus(true); break;
  
@@ -14840,12 +14852,16 @@ else if(b.dataset.a==='task'){ const t=(r.tasks||[]).find(x=>x.id===b.dataset.id
 }
 
  
-function rdToggleDisplay(){
-const on=document.body.classList.toggle('rd-display');
+function rdDisplayState(on){   /* PVX-N194: the page and the button agree */
+document.body.classList.toggle('rd-display',on);
 const btn=document.getElementById('rdDisplayBtn');
-if(btn) btn.classList.toggle('on',on);
-try{ if(on&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-else if(!on&&document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+if(btn){ btn.classList.toggle('on',on); btn.setAttribute('aria-pressed',String(on)); btn.setAttribute('aria-label','Rounds display'); btn.title=on?'Exit rounds display':'Large display for the rounds room'; }
+}
+function rdToggleDisplay(force){
+const on=typeof force==='boolean'?force:!document.body.classList.contains('rd-display');
+window.__rdDisplayWant=on; rdDisplayState(on);
+try{ if(on&&!document.fullscreenElement&&document.documentElement.requestFullscreen){ window.__rdFs=true; const pr=document.documentElement.requestFullscreen(); if(pr&&pr.catch) pr.catch(function(){ window.__rdFs=false; }); }
+else if(!on&&document.fullscreenElement&&window.__rdFs){ window.__rdFs=false; document.exitFullscreen(); } }catch(e){}
 }
 
 
@@ -15382,7 +15398,7 @@ function alertHTML(p,more){
     if(on.length&&rest.length&&showAll){ h+='<div class="ci-all"><div class="ci-docs">'+rest.map(function(d,i){return docBtn(d,[],(.03+i*.02).toFixed(3));}).join('')+'</div></div>'; }
     h+='<div class="ci-foot ci-s" style="--d:.16s">'+(on.length&&rest.length?'<button class="ci-link" type="button" data-all="1">'+(showAll?'Hide other doctors':'Another doctor')+'</button>':'<span></span>')+(on.length?'<span class="ci-keys">'+(on.length>1?'Press 1 to '+Math.min(9,on.length):'Press 1')+'</span>':'')+'<button class="ci-link" type="button" data-cancel="1">Cancel</button></div></div>';
   } else if(!soundOn()){
-    h+='<div class="ci-hint ci-s" style="--d:.18s">Sound is off on this screen. Click anywhere in Flow to turn it on.</div>';
+    h+='<div class="ci-hint ci-s" style="--d:.18s">Sound is off on this screen. '+(matchMedia('(pointer:coarse)').matches?'Tap':'Click')+' anywhere in Flow to turn it on.</div>';
   }
   return h;
 }
@@ -15728,7 +15744,7 @@ function build(){
   if(!ENABLED) return;
   window.addEventListener('online',netState); window.addEventListener('offline',netState); setTimeout(netState,0);
   talk=document.createElement('button'); talk.id='fvTalk'; talk.type='button';
-  talk.setAttribute('aria-label','Talk to Flow'); talk.title='Talk to Flow  ·  click, or hold Space';
+  talk.setAttribute('aria-label','Talk to Flow'); talk.title='Click, or hold Space, to talk';
   talk.innerHTML=MIC+'<span class="fv-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
   if(actions){ actions.insertBefore(talk,actions.firstChild);
     /* Listening happens in the search bar itself: a soft color ring around it and the words as you say them. */
@@ -15757,7 +15773,7 @@ function place(){
   else { panel.classList.add('fv-bottom'); panel.style.top=''; panel.style.right=''; }
 }
 function netState(){ if(!talk) return; var off=!navigator.onLine; talk.classList.toggle('fv-off',off);
-  talk.title=off?'Voice needs internet. Typing commands in the search bar still works.':'Talk to Flow  ·  click, or hold Space'; talk.setAttribute('aria-disabled',off?'true':'false');
+  talk.title=off?'Voice needs internet. Typing commands in the search bar still works.':'Click, or hold Space, to talk'; talk.setAttribute('aria-disabled',off?'true':'false');
   if(off&&listening){ sessionId++; stop(); } }
 function armSilence(ms){ clearTimeout(silenceT); silenceT=setTimeout(function(){ if(listening&&tapMode) stop(); },ms); }
 function setOn(on){ talk.classList.toggle('on',on); talk.setAttribute('aria-pressed',on?'true':'false'); if(on&&wrap){ wrap.classList.remove('fv-thinking'); wrap.classList.add('fv-listening'); bar.classList.add('fv-listening'); placeLive(); liveText('',true); } }
@@ -20306,6 +20322,289 @@ svg .s:not(text){opacity:.45}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',all); else all();
   try{ new MutationObserver(soon).observe(document.body,{childList:true,subtree:true,characterData:true}); }catch(e){}
   window.pvxMeters={sync:all};
+})();
+</script>
+
+<style id="pvx-n192-css">
+/* PVX-N192 - drag and drop */
+.pvx-sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+</style>
+<script id="pvx-n192-js">
+/* PVX-N192 - drag and drop: Undo after a move, Escape cancels a Rounds drag, spoken refusals */
+(function(){
+  var live=null;
+  function say(t){ if(!live){ live=document.createElement('div'); live.id='pvxDndLive'; live.className='pvx-sr'; live.setAttribute('aria-live','assertive'); document.body.appendChild(live); }
+    live.textContent=''; setTimeout(function(){ live.textContent=t; },40); }
+  window.pvxSay=say;
+  function act(title,sub,fn,opts){ if(typeof window.fvNotifyAct==='function') window.fvNotifyAct(title,sub,'Undo',fn,Object.assign({dur:8000},opts||{})); else notify(title,sub,opts); }
+
+  /* ---- stage and room moves ---- */
+  var depth=0;
+  function snap(p){ var o=Object.assign({},p); o.timeline=(p.timeline||[]).slice(); if(p.ultrasound&&typeof p.ultrasound==='object') o.ultrasound=Object.assign({},p.ultrasound); return o; }
+  function restore(q,o){ Object.keys(q).forEach(function(k){ if(k.charAt(0)!=='_'&&!(k in o)) delete q[k]; }); Object.keys(o).forEach(function(k){ if(k.charAt(0)!=='_') q[k]=o[k]; }); }
+  function undo(id,o,after){
+    var q=PATIENTS.find(function(x){ return x.id===id; });
+    if(!q||q.completed||q.status!==after.status||q.room!==after.room){ notify('Can’t undo','This patient has moved since',{icon:'info',color:'var(--accent)'}); say('Can’t undo: this patient has moved since'); return; }
+    var sheet=q.tsSheet&&q.tsSheet.board, sheetWas=o.tsSheet&&o.tsSheet.board;
+    restore(q,o);
+    try{ if(typeof _usPid!=='undefined'&&_usPid===id&&typeof closeUltrasound==='function') closeUltrasound(); }catch(e){}   /* the request the move opened */
+    try{ var A=window.fvAdmitSheet; if(A&&sheet&&!sheetWas&&!q._demo){ if(sheet==='OP') A.closeOP(q,'Move undone'); else if(sheet==='IP') A.undo(q); } }catch(e){}   /* the sheet the move made */
+    scheduleRender(function(){ if(typeof activePatient!=='undefined'&&activePatient===q.id) fillDrawer(q); });
+    var where=(o.status===after.status)?o.room:o.status;
+    notify('Move undone',bcEsc(q.name||'')+' · back in '+bcEsc(where||''),{icon:'move',color:'var(--accent)'});
+  }
+  function undoable(name,when){
+    var f=window[name]; if(typeof f!=='function') return;
+    window[name]=function(p,to){
+      if(depth||!p||!when(p,to)) return f.apply(this,arguments);
+      var o=snap(p), real=window.notify, cap=null, r; depth++;
+      window.notify=function(t,sub,op){ if(!cap){ cap=[t,sub,op]; return; } return real.apply(this,arguments); };   /* the move's own message gets the Undo */
+      try{ r=f.apply(this,arguments); } finally { window.notify=real; depth--; }
+      var after={status:p.status,room:p.room};
+      if(after.status===o.status&&after.room===o.room){ if(cap) real.apply(null,cap); return r; }
+      act(cap?cap[0]:'Moved',cap?cap[1]:'',function(){ undo(p.id,o,after); },cap&&cap[2]);
+      return r; };
+  }
+  undoable('moveStatus',function(p,ns){ return ns!=='Discharged'&&ns!=='Admitted'&&p.status!==ns; });   /* completions keep their own Undo */
+  undoable('moveRoom',function(p,rm){ return !!rm&&p.room!==rm; });
+
+  /* ---- ultrasound queue ---- */
+  window.pvxQueueSnap=function(){ return PATIENTS.filter(function(x){ return x.ultrasound; }).map(function(x){ return [x.id,x.ultrasound.queuePosition]; }); };
+  window.pvxQueueUndo=function(q0){
+    act('Queue updated','Ultrasound order changed by Internal Medicine',function(){
+      q0.forEach(function(e){ var q=PATIENTS.find(function(x){ return x.id===e[0]; }); if(q&&q.ultrasound){ if(e[1]===undefined) delete q.ultrasound.queuePosition; else q.ultrasound.queuePosition=e[1]; } });
+      renderAll(); notify('Queue restored','Ultrasound order is back as it was',{icon:'move',color:'var(--s-ultrasound)'}); },{icon:'move',color:'var(--s-ultrasound)'});
+  };
+
+  /* ---- Rounds order: Undo after a drag (arrow keys undo with the opposite arrow) ---- */
+  var kbd=0, rdT=0;
+  if(typeof window.rdRankMove==='function'){ var rm=window.rdRankMove; window.rdRankMove=function(){ kbd++; try{ return rm.apply(this,arguments); } finally { kbd--; } }; }
+  if(typeof window.rdRankSave==='function'){ var rs=window.rdRankSave;
+    window.rdRankSave=function(sec,pids,pid,to){
+      var before=(pids||[]).map(function(id){ var q=rdFind(id); return q&&q.rounds?[id,q.rounds.rank,q.rounds.rankSec]:null; }).filter(Boolean);
+      var r=rs.apply(this,arguments); if(r&&!kbd) rdOffer(before,pid,to); return r; }; }
+  function rdOffer(before,pid,to){
+    var t=document.getElementById('rdUndo'); if(!t){ t=document.createElement('div'); t.id='rdUndo'; t.className='rd-undo'; t.setAttribute('role','status'); t.setAttribute('aria-live','polite'); document.body.appendChild(t); }
+    var p=rdFind(pid), nm=p?rdFullName(p):'';
+    t.innerHTML='<span class="ru-msg"></span><button type="button" class="ru-undo">Undo</button><span class="ru-bar" aria-hidden="true"></span>';
+    t.querySelector('.ru-msg').textContent=(nm?nm+' moved ':'Moved ')+(to===0?'to the top':'to #'+(to+1));
+    t.classList.remove('open'); void t.offsetWidth; t.classList.add('open');
+    clearTimeout(rdT); rdT=setTimeout(function(){ t.classList.remove('open'); },8000);
+    t.querySelector('.ru-undo').onclick=function(){ clearTimeout(rdT); t.classList.remove('open');
+      before.forEach(function(e){ var q=rdFind(e[0]); if(!q||!q.rounds) return; if(e[1]===undefined) delete q.rounds.rank; else q.rounds.rank=e[1]; if(e[2]===undefined) delete q.rounds.rankSec; else q.rounds.rankSec=e[2]; });
+      var q=rdFind(pid); rdTouch(q,'Rounds order — move undone',true); say('Rounds order restored'); };
+  }
+
+  /* ---- Escape cancels a Rounds drag ---- */
+  window.addEventListener('keydown',function(e){
+    if(e.key!=='Escape'||!window.rdRk||typeof rdRankEnd!=='function') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    var d=window.rdRk; try{ d.row.releasePointerCapture(d.pid0); }catch(x){}
+    rdRankEnd(false); say('Move cancelled');
+  },true);
+})();
+</script>
+<script id="pvx-n192-guard">
+/* PVX-N192 - a file or link dropped where nothing takes it does nothing (the page stays); text fields still take text */
+(function(){
+  function editable(t){ return t&&t.closest&&t.closest('input,textarea,[contenteditable]:not([contenteditable=false])'); }
+  document.addEventListener('dragover',function(e){ if(e.defaultPrevented||editable(e.target)) return; e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='none'; });
+  document.addEventListener('drop',function(e){ if(e.defaultPrevented||editable(e.target)) return; e.preventDefault(); });
+})();
+</script>
+
+<style id="pvx-n193-css">
+/* PVX-N193 - entering data */
+.pvx-req{color:#E4655C;font-weight:600;margin-left:1px}
+/* one message style: the same as Flow's name message (FLOW-14) */
+.ap-hint.show{height:auto;min-height:15px;margin-top:6px;font-size:0.8125rem;font-weight:600;opacity:1;color:var(--priority-p1,#E4342B)}
+.ap-input[aria-invalid=true]{border-color:rgba(228,101,92,.7)!important;box-shadow:0 0 0 3px rgba(228,101,92,.14)!important}
+.pvx-uwrap{position:relative}
+.pvx-uwrap .ap-input{padding-right:92px}
+.pvx-unit{position:absolute;top:50%;right:6px;transform:translateY(-50%);display:flex;gap:2px;padding:2px;border-radius:9px;background:var(--fill-soft,rgba(120,120,128,.16))}
+.pvx-unit button{min-width:36px;height:28px;padding:0 8px;border:0;border-radius:7px;background:transparent;color:inherit;font:inherit;font-size:0.8125rem;font-weight:600;opacity:.7;cursor:pointer}
+.pvx-unit button[aria-checked=true]{background:var(--accent,#38BDD2);color:#04222a;opacity:1}
+.pvx-unit button:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:1px}
+@media (pointer:coarse){ .pvx-unit button{min-width:44px;height:34px} .pvx-uwrap .ap-input{padding-right:106px} }
+.btn.pvx-notyet,.btn.pvx-notyet:hover{opacity:.45;transform:none!important;box-shadow:none!important;cursor:default}
+.pvx-hours{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0 4px}
+.pvx-hours input{width:96px;height:44px;text-align:center;font:inherit;font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;border-radius:10px;border:1px solid var(--glass-hairline,rgba(255,255,255,.14));background:var(--fill-soft,rgba(120,120,128,.12));color:inherit}
+.pvx-hours button{width:44px;height:44px;border-radius:22px;border:1px solid var(--glass-hairline,rgba(255,255,255,.14));background:var(--fill-soft,rgba(120,120,128,.12));color:inherit;font-size:1.25rem;cursor:pointer}
+.pvx-hours-u{font-weight:600;opacity:.75}
+.pvx-hours-err{min-height:16px;text-align:center;font-size:0.75rem;font-weight:600;color:#E4655C}
+</style>
+<script id="pvx-n193-js">
+/* PVX-N193 - entering data: labels tied to fields, required data before Create, checks as you leave a field, units as
+   choices, the signed-in user as the triager, an in-app hours sheet, full text of clipped fields on hover */
+(function(){
+  var $=function(id){ return document.getElementById(id); };
+  function hint(id,msg){ var el=$(id), h=$(id==='apName'?'apNameErr':id+'Hint');   /* the name keeps Flow's own message slot (FLOW-14) */ if(el){ if(msg) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid'); }
+    if(h){ h.textContent=msg||''; h.classList.toggle('show',!!msg); } return !msg; }
+
+  /* ---- 3. every label tied to its field ---- */
+  var n=0;
+  function tie(root){ (root||document).querySelectorAll('.ap-field > label:not([for]), .alert-field > label:not([for]), .ap-field > .lbl, .te-field > label:not([for])').forEach(function(l){
+    var f=l.parentElement.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]),select,textarea'); if(!f) return;
+    if(f.closest('label')===l) return; if(!f.id) f.id='pvxf'+(++n); if(l.tagName==='LABEL') l.htmlFor=f.id; else { if(!l.id) l.id='pvxl'+n; if(!f.getAttribute('aria-labelledby')&&!f.getAttribute('aria-label')) f.setAttribute('aria-labelledby',l.id); } }); }
+  var tt=0; function soon(){ if(tt) return; tt=setTimeout(function(){ tt=0; tie(); },60); }
+  tie(); try{ new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++) if(ms[i].addedNodes.length){ soon(); return; } }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+
+  /* ---- 1. Add New Patient ---- */
+  function unit(id){ var b=document.querySelector('[data-unit-for="'+id+'"] [aria-checked=true]'); return b?b.getAttribute('data-u'):''; }
+  function setUnit(id,u){ document.querySelectorAll('[data-unit-for="'+id+'"] [data-u]').forEach(function(b){ b.setAttribute('aria-checked',String(b.getAttribute('data-u')===u)); }); }
+  function bare(v){ return /^\d+(?:\.\d+)?$/.test(String(v||'').trim()); }
+  function withUnit(id){ var el=$(id); if(!el) return ''; var v=el.value.trim(); return bare(v)?v+' '+unit(id):v; }
+  var CHECK={
+    apName:function(){ return $('apName').value.trim()?'':'Enter a patient name.'; },
+    apSpecies:function(){ return (typeof apArrivalType!=='undefined'&&apArrivalType==='otw')||$('apSpecies').value?'':'Choose a species.'; },
+    apPhone:function(){ var d=$('apPhone').value.replace(/\D/g,'').replace(/^1(?=\d{10})/,''); return !d||d.length===10?'':'Enter a 10-digit phone number.'; },
+    apWeight:function(){ var v=withUnit('apWeight'); if(!v) return ''; var r=parseWeightInput(v); if(!r.valid) return 'Enter the weight as a number, in kg or lb.'; return r.kg>150?'Enter a weight from 0.01 to 150 kg.':''; },
+    apAge:function(){ var v=$('apAge').value.trim(); if(!v) return ''; if(/^\d+\.\d+$/.test(v)) return 'Use whole numbers — for example 18 mo instead of 1.5 y.';
+      if(bare(v)) return ''; return fmtAge(v)!==v||/^\d+\s*(years?|months?|weeks?|days?)(,\s*\d+\s*(years?|months?|weeks?|days?))*$/i.test(v)?'':'Enter the age as a number, in years or months.'; }
+  };
+  function need(){ return !$('apName').value.trim()||(!((typeof apArrivalType!=='undefined'&&apArrivalType==='otw'))&&!$('apSpecies').value&&!(typeof apReviewIntakeId!=='undefined'&&apReviewIntakeId)); }
+  function syncCreate(){ var b=$('apCreate'); if(!b) return; var no=need(); b.classList.toggle('pvx-notyet',no); b.setAttribute('aria-disabled',String(no)); }
+  function clearAll(){ Object.keys(CHECK).forEach(function(id){ hint(id,''); }); setUnit('apWeight','kg'); setUnit('apAge','y'); setTimeout(syncCreate,0); }
+  function wireAp(){
+    var M=$('apModal'); if(!M||M.__pvx193) return; M.__pvx193=1;
+    M.addEventListener('input',function(e){ var id=e.target&&e.target.id; if(CHECK[id]&&e.target.getAttribute('aria-invalid')) hint(id,CHECK[id]());   /* fixed as you type once flagged */
+      if(id==='apWeight'){ var v=e.target.value.toLowerCase(); if(/lb|#|pound/.test(v)) setUnit('apWeight','lb'); else if(/kg|kilo/.test(v)) setUnit('apWeight','kg'); }
+      if(id==='apAge'){ var a=e.target.value.toLowerCase(); if(/m/.test(a)) setUnit('apAge','mo'); else if(/y/.test(a)) setUnit('apAge','y'); }
+      syncCreate(); },true);
+    M.addEventListener('change',function(e){ var id=e.target&&e.target.id; if(id==='apSpecies') hint(id,''); syncCreate(); },true);
+    M.addEventListener('focusout',function(e){ var id=e.target&&e.target.id; if(id&&CHECK[id]&&id!=='apName'&&id!=='apSpecies') hint(id,CHECK[id]()); },true);
+    M.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.pvx-unit [data-u]'); if(b){ var id=b.parentElement.getAttribute('data-unit-for'); setUnit(id,b.getAttribute('data-u')); if($(id).getAttribute('aria-invalid')) hint(id,CHECK[id]()); }
+      setTimeout(syncCreate,0); },true);
+    M.addEventListener('keydown',function(e){ var b=e.target.closest&&e.target.closest('.pvx-unit [data-u]'); if(!b||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')) return; e.preventDefault(); var o=b.parentElement.querySelectorAll('[data-u]'), i=[].indexOf.call(o,b), j=(i+(e.key==='ArrowRight'?1:o.length-1))%o.length; o[j].click(); o[j].focus(); },true);
+    var cb=$('apCreate'), prev=cb.onclick;
+    cb.onclick=function(ev){
+      var order=['apName','apSpecies','apPhone','apWeight','apAge'], first=null;
+      order.forEach(function(id){ var m=CHECK[id](); if(id==='apSpecies'&&typeof apReviewIntakeId!=='undefined'&&apReviewIntakeId) m=''; if(!hint(id,m)&&!first) first=id; });
+      if(first){ var el=$(first); try{ el.focus(); }catch(e){} if(window.pvxSay) pvxSay(CHECK[first]()); return; }
+      ['apWeight','apAge'].forEach(function(id){ var el=$(id); if(el&&bare(el.value)) el.value=el.value.trim()+(id==='apAge'?(unit(id)==='mo'?' mo':' y'):' '+unit(id)); });   /* the unit choice goes with the number */
+      return prev.call(this,ev);
+    };
+  }
+  if(typeof window.openAddPatient==='function'){ var oap=window.openAddPatient; window.openAddPatient=function(){ var r=oap.apply(this,arguments); wireAp(); clearAll(); return r; }; }
+  document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('#apArrival .ap-seg-btn')) setTimeout(function(){ hint('apSpecies',''); syncCreate(); },0); },true);
+  wireAp();
+
+  /* ---- 2. Edit Triage: decimal keypad and Anesia's input limits ---- */
+  var LIM={temp:[77,113,'temperature','°F'],hr:[0,400,'heart rate','bpm'],rr:[0,150,'respiratory rate','breaths/min']};
+  function triMsg(el){ var k=el.getAttribute('data-vk'), v=el.value.trim(); if(!v) return '';
+    if(k==='weight'){ var r=parseWeightInput(v); if(!r.valid) return 'Enter the weight in kg (or type lb).'; return r.kg>150?'Enter a weight from 0.01 to 150 kg.':''; }
+    var L=LIM[k]; if(!L) return ''; var m=v.match(/^-?\d+(?:\.\d+)?/); var x=m?parseFloat(m[0]):NaN;
+    if(!m||v.replace(m[0],'').replace(/[°\s]|f$|bpm|rpm|br\/?min/gi,'')!==''||!isFinite(x)) return 'Enter the '+L[2]+' as a number.';
+    return x<L[0]||x>L[1]?'Enter '+L[2]+' from '+L[0]+' to '+L[1]+' '+L[3]+'.':''; }
+  function triShow(el,msg){ var h=el.__h; if(!h){ h=document.createElement('div'); h.className='ap-hint'; h.id='pvxth'+(++n); h.setAttribute('aria-live','polite'); el.insertAdjacentElement('afterend',h); el.setAttribute('aria-describedby',h.id); el.__h=h; }
+    h.textContent=msg||''; h.classList.toggle('show',!!msg); if(msg) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid'); return !msg; }
+  if(typeof window.openTriageEdit==='function'){ var ote=window.openTriageEdit; window.openTriageEdit=function(){ var r=ote.apply(this,arguments);
+    document.querySelectorAll('#triEditBody [data-vk]').forEach(function(el){ el.setAttribute('inputmode','decimal'); el.setAttribute('autocomplete','off');
+      el.addEventListener('blur',function(){ triShow(el,triMsg(el)); }); el.addEventListener('input',function(){ if(el.getAttribute('aria-invalid')) triShow(el,triMsg(el)); }); });
+    var by=$('triEditBy'); if(by&&!by.value&&typeof CURRENT_USER==='string') by.value=CURRENT_USER;
+    tie($('triEditModal')); return r; }; }
+  var ts=$('triEditSave'); if(ts){ var tsave=ts.onclick; ts.onclick=function(ev){ var bad=null;
+    document.querySelectorAll('#triEditBody [data-vk]').forEach(function(el){ if(!triShow(el,triMsg(el))&&!bad) bad=el; });
+    if(bad){ bad.focus(); if(window.pvxSay) pvxSay(bad.__h.textContent); return; } return tsave.call(this,ev); }; }
+
+  /* ---- 4. authorized hours: an in-app sheet ---- */
+  window.pvxHoursSheet=function(cur,done){
+    showConfirm('Authorized hours','Save',function(){},{});
+    var box=$('confirmBox'), ok=$('confirmOk'), sub=$('confirmSub'), old=box.querySelector('.pvx-hwrap'); if(old) old.remove();
+    var w=document.createElement('div'); w.className='pvx-hwrap';
+    w.innerHTML='<div class="pvx-hours"><button type="button" data-h="-1" aria-label="12 hours fewer">−</button><input id="pvxHours" inputmode="numeric" autocomplete="off" aria-label="Total authorized hours" aria-describedby="pvxHoursErr"><span class="pvx-hours-u">hours</span><button type="button" data-h="1" aria-label="12 hours more">+</button></div><div class="pvx-hours-err" id="pvxHoursErr" aria-live="polite"></div>';
+    sub.insertAdjacentElement('afterend',w); box.setAttribute('aria-labelledby','confirmTitle');
+    var inp=w.querySelector('input'), err=w.querySelector('.pvx-hours-err'); inp.value=String(Math.max(0,Math.round(+cur||0)));
+    function read(){ var v=inp.value.trim(); return /^\d{1,3}$/.test(v)?+v:null; }
+    w.querySelectorAll('[data-h]').forEach(function(b){ b.onclick=function(){ var v=read(); v=v===null?0:v; v=Math.max(0,Math.min(999,v+12*(+b.getAttribute('data-h')))); inp.value=String(v); err.textContent=''; inp.removeAttribute('aria-invalid'); }; });
+    function close(){ $('confirmScrim').classList.remove('open'); box.classList.remove('open'); setTimeout(function(){ if(!box.classList.contains('open')) w.remove(); },300); }
+    function save(){ var v=read(); if(v===null){ err.textContent='Enter whole hours from 0 to 999.'; inp.setAttribute('aria-invalid','true'); inp.focus(); return; } close(); done(v); }
+    ok.onclick=save; inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); save(); } if(e.key==='Escape'){ e.preventDefault(); close(); } });
+    $('confirmCancel').onclick=close; $('confirmScrim').onclick=close;
+    setTimeout(function(){ inp.focus(); inp.select(); },60);
+  };
+  if(typeof window.showConfirm==='function'){ var sc=window.showConfirm; window.showConfirm=function(){ var x=document.querySelector('#confirmBox .pvx-hwrap'); if(x) x.remove(); return sc.apply(this,arguments); }; }
+
+  /* ---- 5. Mac expansion tooltip: a clipped field shows its full text on hover ---- */
+  document.addEventListener('mouseover',function(e){ var el=e.target; if(!el||el.tagName!=='INPUT'||!/^(text|search|email|tel|url|)$/.test(el.type||'')) return;
+    if(el.title&&!el.__pvxTip) return; var clip=el.scrollWidth>el.clientWidth+1&&el.value;
+    if(clip){ el.title=el.value; el.__pvxTip=1; } else if(el.__pvxTip){ el.removeAttribute('title'); el.__pvxTip=0; } },true);
+})();
+</script>
+
+<script id="pvx-n194-js">
+/* PVX-N194 - full screen: Rounds Display stays in Rounds and follows full screen; the lobby TV's controls come back with a tap */
+(function(){
+  /* leaving full screen that Display entered ends Display (the top bar is never hidden in a normal window) */
+  document.addEventListener('fullscreenchange',function(){
+    if(!document.fullscreenElement&&window.__rdFs){ window.__rdFs=false; if(typeof rdToggleDisplay==='function') rdToggleDisplay(false); } });
+  /* Display belongs to Rounds: leaving Rounds puts the top bar back, coming back resumes Display */
+  if(typeof window.switchApp==='function'){ var sa=window.switchApp;
+    window.switchApp=function(app){ var r=sa.apply(this,arguments);
+      try{ if(app!=='rounds'&&document.body.classList.contains('rd-display')) rdDisplayState(false);
+        else if(app==='rounds'&&window.__rdDisplayWant&&!document.body.classList.contains('rd-display')) rdDisplayState(true); }catch(e){}
+      return r; }; }
+  /* lobby TV: a tap shows Exit Full Screen, like moving the mouse */
+  ['pointerdown','touchstart'].forEach(function(ev){ document.addEventListener(ev,function(){ if(document.body.classList.contains('fs-mode')&&typeof fsPokeExit==='function') fsPokeExit(); },{capture:true,passive:true}); });
+  /* lobby TV: if full screen ends, the tap-to-enter prompt comes back (entering is still a tap) */
+  var armed=false;
+  function arm(){ if(armed) return; armed=true;
+    var go=function(){ teardown(); try{ enterFullscreen(); }catch(e){} try{ removeFsHint(); }catch(e){} };
+    var teardown=function(){ armed=false; ['click','keydown','touchend'].forEach(function(ev){ document.removeEventListener(ev,go,true); }); };
+    ['click','keydown','touchend'].forEach(function(ev){ document.addEventListener(ev,go,true); }); }
+  ['fullscreenchange','webkitfullscreenchange'].forEach(function(ev){ document.addEventListener(ev,function(){
+    var fs=!!(document.fullscreenElement||document.webkitFullscreenElement);
+    if(!fs&&document.body.classList.contains('tv-mode')){ setTimeout(function(){ try{ showFsHint(); }catch(e){} arm(); },300); } }); });
+})();
+</script>
+
+<script id="pvx-n195-js">
+/* PVX-N195 - launching: theme transitions back on once the first screen is up; remember and restore where you were;
+   the status bar follows the theme */
+(function(){
+  var d=document.documentElement;
+  function up(){ d.classList.remove('pvx-pre-dark','pvx-pre-light'); requestAnimationFrame(function(){ requestAnimationFrame(function(){ setTimeout(function(){ d.classList.remove('pvx-boot'); },120); }); }); }
+  if(document.readyState==='complete') up(); else window.addEventListener('load',up);
+  /* status bar */
+  var meta=document.querySelector('meta[name="theme-color"]');
+  function tint(){ if(meta) meta.setAttribute('content',document.body.classList.contains('dark')?'#0A1222':'#F2F4F8'); }
+  tint(); try{ new MutationObserver(tint).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+  /* where you were */
+  var KEY='pvx:flow:where', R=window.__pvxRestore||null, ready=!R;
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null')||{}; }catch(e){ return {}; } }
+  function save(p){ if(!ready||document.body.classList.contains('tv-mode')) return; try{ var o=get(); for(var k in p) o[k]=p[k]; o.at=Date.now(); localStorage.setItem(KEY,JSON.stringify(o)); }catch(e){} }
+  function app(){ return typeof currentApp!=='undefined'?currentApp:'flow'; }
+  function view(){ return app()==='ultrasound'?'us:'+(typeof currentUsView!=='undefined'?currentUsView:''):app()==='rounds'?'rounds':(typeof currentView!=='undefined'?currentView:''); }
+  [['switchApp',function(a){ save({app:a}); }],['switchView',function(v){ save({app:'flow',view:v}); }],['switchUsView',function(v){ save({usView:v}); }]].forEach(function(x){
+    var f=window[x[0]]; if(typeof f!=='function') return; window[x[0]]=function(a){ var r=f.apply(this,arguments); try{ x[1](a); }catch(e){} return r; }; });
+  var st=document.getElementById('stage'), stT=0;
+  function keep(){ if(!ready||!st) return; var o=get(); o.scroll=o.scroll||{}; o.scroll[view()]=Math.round(st.scrollTop); o.at=Date.now(); try{ localStorage.setItem(KEY,JSON.stringify(o)); }catch(e){} }
+  if(st) st.addEventListener('scroll',function(){ if(!ready) return; clearTimeout(stT); stT=setTimeout(keep,200); },{passive:true});
+  window.addEventListener('pagehide',keep); document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') keep(); });   /* an app the iPad closes keeps its place */
+  function scrollBack(){ var o=get(), y=o.scroll&&o.scroll[view()]; if(!st||!y) return; var moved=false, mark=function(){ moved=true; };
+    st.addEventListener('wheel',mark,{once:true,passive:true}); st.addEventListener('touchstart',mark,{once:true,passive:true});
+    var go=function(){ if(!moved&&st.scrollHeight-st.clientHeight>=y-4) st.scrollTo({top:y,behavior:'instant'}); }; go(); setTimeout(go,500); setTimeout(go,1200); }
+  if(R){
+    /* the existing #app= boot switches the app at 250 ms and keeps Flow hidden until its two frames; the view goes first */
+    setTimeout(function(){
+      try{ if(R.app==='flow'&&R.view&&R.view!=='dashboard'&&typeof switchView==='function') switchView(R.view);
+        if(R.app==='ultrasound'&&R.usView&&typeof switchUsView==='function') switchUsView(R.usView); }catch(e){ console.warn('[restore]',e); }
+      ready=true; setTimeout(scrollBack,350);
+    },260);
+  } else setTimeout(scrollBack,600);
+  window.pvxWhere={get:get};
+})();
+</script>
+
+<script id="pvx-n196-js">
+/* PVX-N196 - offering help: Tap on touch, Click with a mouse; money fields edit with one click, tap or Return */
+(function(){
+  var coarse=false; try{ coarse=matchMedia('(pointer:coarse)').matches; }catch(e){}
+  function words(){ var w=coarse?'Tap':'Click'; document.querySelectorAll('.pvx-tapclick').forEach(function(x){ if(x.textContent!==w) x.textContent=w; }); }
+  words(); try{ new MutationObserver(function(){ words(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+  function edit(el){ el.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true})); }   /* the existing editor opens on dblclick */
+  document.addEventListener('click',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.rd-fin-edit[data-fin-key]'); if(!el||e.detail>1) return; edit(el); });
+  document.addEventListener('keydown',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.rd-fin-edit[data-fin-key]'); if(!el||(e.key!=='Enter'&&e.key!==' ')) return; e.preventDefault(); e.stopPropagation(); edit(el); },true);
 })();
 </script>
 </body>

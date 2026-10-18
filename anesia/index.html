@@ -167,12 +167,12 @@ body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){co
  html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
  html body .topnav img.logo{height:44px}}
 </style>
-<link rel="stylesheet" href="app.css?v=4961659ce5">
+<link rel="stylesheet" href="app.css?v=a1db8f50d0">
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script defer src="engine.js?v=67a3d99dfb"></script>
-<script defer src="app.js?v=4585b7a792"></script>
+<script defer src="app.js?v=646845fae0"></script>
 </head>
 <body class="dark">
 <a class="an-vh" href="#anApp" style="position:absolute" onfocus="this.classList.remove('an-vh')" onblur="this.classList.add('an-vh')">Skip to the record</a>
@@ -229,7 +229,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     </div>
     <div class="nav-right">
       <button class="logout-button" id="logoutBtn" type="button" onclick="pvxLogoutClick()" aria-label="Log out"><span class="logout-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="door-glyph"><path d="M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1"/></g><g class="exit-arrow"><path d="M12.6 8.7 16 12l-3.4 3.3"/><path d="M8.9 12H16"/></g></svg></span><span class="logout-label">Logout</span><span class="logout-chevron" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m7.5 5 5 5-5 5"/></svg></span></button>
-      <button class="theme-toggle" id="darkBtn" onclick="toggleDark()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
+      <button class="theme-toggle" id="darkBtn" onclick="toggleDark()" title="Switch light and dark" aria-label="Switch light and dark">
       <img class="img-light" src="/assets/img/theme-light.png" alt="Light mode">
       <img class="img-dark" src="/assets/img/theme-dark.png" alt="Dark mode">
     </button>
@@ -339,5 +339,14 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 }
 @media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
 </style>
+<script id="pvx-n192-guard">
+/* PVX-N192 - a file or link dropped where nothing takes it does nothing (the page stays); text fields still take text */
+(function(){
+  function editable(t){ return t&&t.closest&&t.closest('input,textarea,[contenteditable]:not([contenteditable=false])'); }
+  document.addEventListener('dragover',function(e){ if(e.defaultPrevented||editable(e.target)) return; e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='none'; });
+  document.addEventListener('drop',function(e){ if(e.defaultPrevented||editable(e.target)) return; e.preventDefault(); });
+})();
+</script>
+<!-- PVX-N196 theme button name -->
 </body>
 </html>

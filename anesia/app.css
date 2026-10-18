@@ -1630,3 +1630,8 @@ body:not(.dark) svg.an-sf .tick{stroke:#fff}
 /* ===== n191 — charts: one sparkline style shared with Flow (1.75 pt line, dot on the latest reading) ===== */
 .an-spark polyline{stroke-width:1.75}
 .an-spark circle{stroke:none}
+
+/* ===== n196 — tips: one feature, a small hint at the foot of the chart ===== */
+.an-tips.an-hint{margin:.75rem 0 0;padding:.5rem .5rem .5rem .75rem;gap:.625rem;font-size:.8125rem;background:var(--an-surface-2,var(--an-surface))}
+.an-tips.an-hint::before{flex:0 0 22px;height:22px;background-size:13px}
+.an-tips.an-hint kbd{font:600 .75rem/1 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;padding:.125rem .3125rem;border-radius:5px;border:1px solid var(--an-line,rgba(127,127,127,.3));background:var(--an-bg,transparent)}

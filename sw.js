@@ -7,11 +7,11 @@
    - Flow's images and data files are served from cache and refreshed in the background.
    - The pinned Firebase and QR libraries are cached so Flow can open with no connection.
    Emergency: replace this file with KILL-SWITCH-sw.js to remove it from every browser. */
-const SW_VERSION = 'flow-sw-1';
+const SW_VERSION = 'flow-sw-2';   /* n195 */
 const SHELL = 'flow-shell-v1';
 const ASSETS = 'flow-assets-v1';
 const SHELL_KEY = '/';
-const NET_TIMEOUT_MS = 6000;
+const NET_TIMEOUT_MS = 2000;   /* n195: launch within a couple of seconds when a saved copy exists */
 
 const LOCAL_ASSETS = [
   '/assets/data/breeds.js',
@@ -63,15 +63,13 @@ function timeout(ms) { return new Promise(function (_, rej) { setTimeout(functio
 async function flowPage(event) {
   const cache = await caches.open(SHELL);
   const url = new URL(event.request.url);
+  const saved = await cache.match(SHELL_KEY);
+  const net = fetch(new Request(url.href, { cache: 'no-cache', credentials: 'same-origin' }));
+  /* n195: a late network copy is still saved for next time */
+  event.waitUntil(net.then(function (r) { if (r && r.ok && !r.redirected) return cache.put(SHELL_KEY, r.clone()); }).catch(function () {}));
   try {
-    const res = await Promise.race([
-      fetch(new Request(url.href, { cache: 'no-cache', credentials: 'same-origin' })),
-      timeout(NET_TIMEOUT_MS)
-    ]);
-    if (res && res.ok && !res.redirected) {
-      event.waitUntil(cache.put(SHELL_KEY, res.clone()));
-      return res;
-    }
+    const res = saved ? await Promise.race([net, timeout(NET_TIMEOUT_MS)]) : await net;
+    if (res && res.ok && !res.redirected) return res;
     if (res && res.status >= 400) {
       const hit = await cache.match(SHELL_KEY);
       return hit || res;

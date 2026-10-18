@@ -303,15 +303,17 @@
   }
   /* Expand (n169): the record fills the window — no top bar, and inside Treatment Sheets no sheet around it */
   var XP = false;
-  function setExpanded(on, fromHost) {
-    on = !!on; if (on === XP) return;
+  /* n194: what the person chose, for this session (the list turns Expanded off without changing it) */
+  function wantXP(v) { try { if (v === undefined) return sessionStorage.getItem('anesia:xp') === '1'; sessionStorage.setItem('anesia:xp', v ? '1' : '0'); } catch (e) { } return false; }
+  function setExpanded(on, fromHost, auto) {
+    on = !!on; if (!auto && !fromHost) wantXP(on); if (on === XP) return;
     var apply = function () {
       XP = on; document.documentElement.classList.toggle('an-expanded', on);
       var b = document.getElementById('anExpand');
       if (b) { b.classList.remove('rep'); void b.offsetWidth; b.classList.add('rep'); setTimeout(function () { b.classList.remove('rep'); }, 450); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Exit expanded view' : 'Expand record'); b.title = on ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)'; }
     };
     if (EMBED) { if (!fromHost) try { parent.postMessage({ anesia: 'expand', on: on }, location.origin); } catch (e) { } apply(); return; }   /* the sheet animates the frame */
-    if (document.startViewTransition && !fromHost) { try { document.startViewTransition(apply); return; } catch (e) { } }
+    if (document.startViewTransition && !fromHost && !auto) { try { document.startViewTransition(apply); return; } catch (e) { } }
     apply();
   }
   window.addEventListener('message', function (e) { if (e.origin !== location.origin || !e.data || e.data.anesiaHost !== 'expanded') return; setExpanded(e.data.on, true); });
@@ -343,8 +345,43 @@
       flush(); route();
     });
   }
+  /* n196: tips - one simple feature each, only for people who would benefit, at most one a day */
+  function tipHTML(r, signed, conf) {
+    if (signed || !conf || lsGet('tips')) return '';   /* dismissed the old all-in-one banner: seen it all */
+    var c = [], coarse = matchMedia('(pointer:coarse)').matches;
+    var charted = (r.vitals || []).concat(r.doses || [], r.events || []).some(function (x) { return x && !x.void; });
+    if (!lsGet('tip:value') && charted) c.push('value');
+    if (!lsGet('tip:kb') && (lsGet('tip:kbclicks') || 0) >= 3 && !coarse && matchMedia('(hover:hover)').matches && window.innerWidth > 600) c.push('kb');
+    if (!c.length) return '';
+    var day = new Date().toDateString(), sh = lsGet('tip:shown'), id = sh && sh.day === day ? (c.indexOf(sh.id) > -1 ? sh.id : null) : c[0];
+    if (!id) return '';
+    if (!sh || sh.day !== day) lsSet('tip:shown', { id: id, day: day });
+    var txt = id === 'value' ? (coarse ? 'Tap' : 'Click') + ' any value on the chart to see who charted it, or to strike it through'
+      : 'Press <kbd>⌥V</kbd> for vitals — <kbd>⌥D</kbd> drug, <kbd>⌥E</kbd> event';
+    return '<div class="an-tips an-hint" role="note" aria-label="Tip"><span>' + txt + '</span><button type="button" class="an-btn plain strong" id="anTipsOk" data-tip="' + id + '">Got it</button></div>';
+  }
+  document.addEventListener('click', function (e) {   /* toolbar clicks with a mouse (a shortcut's own click has no pointer) */
+    var b = e.target && e.target.closest && e.target.closest('[data-act]'); if (!b || !e.detail || lsGet('tip:kb')) return;
+    if (!/^(vitals|dose|infusion|gas|event|output|airway)$/.test(b.getAttribute('data-act'))) return;
+    lsSet('tip:kbclicks', (lsGet('tip:kbclicks') || 0) + 1);
+  }, true);
+  /* n195: the case you had open comes back at launch (while it is still live) */
+  var LASTK = 'anesia:last', bootRoute = true, pendingLast = null;
+  function lastGet() { try { var o = JSON.parse(localStorage.getItem(LASTK) || 'null'); return o && o.id && Date.now() - o.at < 432e5 ? o : null; } catch (e) { return null; } }
+  function lastSet(id) { try { if (id) localStorage.setItem(LASTK, JSON.stringify({ id: id, at: Date.now() })); else localStorage.removeItem(LASTK); } catch (e) { } }
+  function tryLast() {
+    if (!pendingLast) return false; if (Date.now() > pendingLast.until || location.hash) { pendingLast = null; return false; }
+    var r = recOf(pendingLast.id); if (!r) return false;
+    var id = pendingLast.id, live = r.status === 'active' || A.inRecovery(r); pendingLast = null;
+    if (!live) { lastSet(null); return false; }
+    try { history.replaceState(null, '', location.pathname + location.search + '#r=' + id); } catch (e) { return false; }
+    route(); return true;
+  }
   function route() {
     var h = location.hash.replace(/^#/, ''), m = /(?:^|&)r=([\w-]+)/.exec(h);
+    if (bootRoute) { bootRoute = false; if (!m && !EMBED) { var l0 = lastGet(); if (l0) pendingLast = { id: l0.id, until: Date.now() + 8000 }; } }
+    else if (!m) lastSet(null);   /* back to Records on purpose */
+    if (m && !EMBED) lastSet(m[1]);
     if (S.skipHash !== undefined) { var sk = S.skipHash; S.skipHash = undefined; if (sk === h) return; }   /* a morph already rendered this route */
     S.cur = m ? m[1] : null; if (!S.cur || S.cur !== presRec) stopPresence(); render();
     if (S.cur) setTimeout(scrollToNow, 0);
@@ -484,6 +521,10 @@
     var timer = 0, sx = 0, sy = 0, peek = null, eat = false;
     var MK = '.an-chart .an-mk,.an-chart .an-mon,.an-chart .an-bar';
     function close() { clearTimeout(timer); timer = 0; if (!peek) return; var p0 = peek; peek = null; p0.mark.classList.remove('an-lifted'); p0.bg.classList.add('out'); p0.card.classList.add('out'); setTimeout(function () { p0.bg.remove(); p0.card.remove(); }, rmo() ? 0 : 160); }
+    /* n193: a clipped single-line field shows its full text on hover (Mac expansion tooltip) */
+    document.addEventListener('mouseover', function (e) { var el = e.target; if (!el || el.tagName !== 'INPUT' || !/^(text|search|email|tel|url|)$/.test(el.type || '')) return;
+      if (el.title && !el.__anTip) return; var clip = el.scrollWidth > el.clientWidth + 1 && el.value;
+      if (clip) { el.title = el.value; el.__anTip = 1; } else if (el.__anTip) { el.removeAttribute('title'); el.__anTip = 0; } }, true);
     document.addEventListener('pointerdown', function (e) {
       var m = e.target.closest && e.target.closest(MK); if (!m || e.button > 0) return; sx = e.clientX; sy = e.clientY; clearTimeout(timer);
       timer = setTimeout(function () {
@@ -511,7 +552,9 @@
     var root = $('#anApp'); if (!root) return;
     if (!S.ready) { root.innerHTML = '<div class="an-loading an-skelrec" role="status"><span class="an-vh">Loading…</span><div class="sk-h"><i></i><i></i></div><div class="sk-chips"><i></i><i></i><i></i><i></i></div><div class="sk-tools"><i></i><i></i><i></i></div><div class="sk-body"><div class="sk-chart"><i></i><i></i><i></i><i></i><i></i></div><div class="sk-now"><i></i><i></i><i></i><i></i></div></div></div>'; return; }
     if (S.gate) { root.innerHTML = gateHTML(); bindGate(); if (EMBED) $$('.an-gate a').forEach(function (x) { x.target = '_top'; }); return; }
-    if (XP && !S.cur) setExpanded(false);   /* Expand belongs to a record; the list never stays expanded */
+    if (pendingLast && !S.cur && tryLast()) return;   /* n195 */
+    if (XP && !S.cur) setExpanded(false, false, true);   /* Expand belongs to a record; the list never stays expanded */
+    else if (!XP && S.cur && !EMBED && wantXP()) setExpanded(true, false, true);   /* n194: and comes back with the next record */
     var ch = $('.an-chart'); if (ch) lastScroll = ch.scrollLeft;
     snapSegs();
     var fk = root.contains(document.activeElement) ? keyOf(document.activeElement) : null;
@@ -572,6 +615,7 @@
     var vn = A.ventAt(r, now()) || {}, isV = tab === 'vent';
     openSheet({
       title: 'Airway & lines', primary: 'Add', quiet: true,
+      ready: function (w) { var vt = $('[data-atab=vent]', w); return vt && vt.getAttribute('aria-checked') === 'true' ? !!val(w, 'mode') : !!val(w, 'kind'); },
       body: '<div class="an-seg an-atabs" role="radiogroup" aria-label="Record" data-rove="radio"><button type="button" role="radio" data-atab="dev" aria-checked="' + !isV + '">Airway &amp; lines</button><button type="button" role="radio" data-atab="vent" aria-checked="' + isV + '">Ventilation</button></div>' +
         '<div data-pane="dev"' + (isV ? ' hidden' : '') + '><div class="an-f"><span class="lab">What</span>' + chips('kind', DK, '') + '</div>' +
         '<div class="an-two"><div class="an-f"><label for="dvS">Size</label><input class="an-in" id="dvS" name="size" maxlength="30" autocomplete="off"><span class="hint" data-shint>For example 7.5 mm, 20 G or 8 Fr.</span></div>' +
@@ -712,6 +756,7 @@
     var opts = Object.keys(A.OUTPUTS).map(function (k) { return [k, A.OUTPUTS[k]]; });
     openSheet({
       title: 'Output', primary: 'Add', quiet: true,
+      ready: function (w) { var m = num(val(w, 'mL')); return !!val(w, 'kind') && m !== null && m > 0; },
       body: '<div class="an-f"><span class="lab">What was measured</span>' + chips('kind', opts, '') + '</div>' +
         '<div class="an-f"><label for="oV">Volume</label><div class="an-unit"><input class="an-in an-tnum" id="oV" name="mL" inputmode="decimal" autocomplete="off" enterkeyhint="done"><span class="u">mL</span></div><span class="hint">For blood loss, include suction and weighed sponges.</span></div>' +
         '<div class="an-f"><label for="oN">Note</label><input class="an-in" id="oN" name="note" maxlength="200" autocomplete="off"></div>' + timeField(now()),
@@ -816,7 +861,7 @@
     if (!conf && !signed) banners += '<div class="an-confirm" role="alert"><span class="ic" aria-hidden="true">' + icon('idcheck') + '</span><span><b>Confirm the patient</b>Check the name, weight and procedure against the cage card before you chart.</span><button type="button" class="an-btn danger" id="anConfirmB">Confirm patient</button></div>';
     if (!w && !signed) banners += '<div class="an-banner"><span><b>No weight on file.</b> Per-kg doses can’t be calculated and per-kg infusions can’t start. Doses given now are typed in mg and confirmed.</span><button type="button" class="an-btn tinted" data-act="weight">Add weight</button></div>';
     if (S.pumpNotice && S.pumpNotice.id === r.id && S.pumpNotice.items.length) banners += '<div class="an-banner info" role="alert"><span><b>Weight changed — set the pumps.</b> ' + S.pumpNotice.items.map(function (x) { return esc(x.name) + ' ' + (x.from === null ? '—' : sig(x.from)) + ' → <b>' + (x.to === null ? '—' : sig(x.to)) + ' mL/h</b>'; }).join(' · ') + '</span><button type="button" class="an-btn tinted" id="anPumpsSet">Mark pumps set</button></div>';
-    if (!lsGet('tips') && !signed && conf) banners += '<div class="an-tips" role="note" aria-label="Tips"><span><b>Tips</b>' + (matchMedia('(pointer:coarse)').matches ? 'Tap' : 'Click') + ' any value on the chart to see who charted it, or to strike it through. Undo with the message at the bottom<span class="an-kb">, or ⌘Z. Keyboard: ⌥V vitals, ⌥D drug, ⌥I infusion, ⌥G gas, ⌥E event</span>.</span><button type="button" class="an-btn plain strong" id="anTipsOk">Got it</button></div>';
+    /* n196: the Tips banner became single-feature tips at the foot of the chart (tipHTML) */
     var ps = signed ? playing('sign:' + r.id, 1100) : null;
     if (signed) banners += '<div class="an-banner info an-signed' + (ps !== null ? ' just' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><span class="an-seal" aria-hidden="true">' + icon('lockd') + '</span><span><b>Signed ' + esc(fmtDate(r.signed.at) + ', ' + fmtTime(r.signed.at)) + ' by ' + esc(r.signed.by) + '.</b> The record is read-only. Corrections go in an addendum.</span></div>';
     var dis = signed ? ' disabled' : '';
@@ -834,7 +879,7 @@
       [5, 10, 15].map(function (m) { return '<button type="button" role="radio" data-zoom="' + m + '" aria-checked="' + (S.colMin === m) + '" tabindex="' + (S.colMin === m ? 0 : -1) + '" aria-label="' + m + ' minutes per column">' + m + ' min</button>'; }).join('') + '</div>' +
       '<button type="button" class="an-btn an-dc an-emb" id="anEmer" aria-haspopup="dialog" aria-label="Emergency drugs" title="Emergency drugs, calculated for this patient">' + icon('emer') + '<span class="t">Emergency</span></button>' +
       '<button type="button" class="an-btn an-dc" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" title="Totals and history">' + icon('sidebar') + '<span class="t">Totals</span></button></div>';
-    return head + banners + tools + '<div class="an-body' + (insp ? ' insp' : '') + (ps !== null ? ' settle' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + (conf ? (playing('conf:' + r.id, 900) !== null ? '<div class="an-wm gone" aria-hidden="true" style="animation-delay:-' + playing('conf:' + r.id, 900) + 'ms"><span>Confirm correct patient</span></div>' : '') : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
+    return head + banners + tools + '<div class="an-body' + (insp ? ' insp' : '') + (ps !== null ? ' settle' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + tipHTML(r, signed, conf) + (conf ? (playing('conf:' + r.id, 900) !== null ? '<div class="an-wm gone" aria-hidden="true" style="animation-delay:-' + playing('conf:' + r.id, 900) + 'ms"><span>Confirm correct patient</span></div>' : '') : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
       nowHTML(r) + (insp ? '<aside class="an-side' + (S.opening === 'side' ? ' opening' : '') + '" id="anInspector" aria-label="Totals and history">' + sideHTML(r) + '</aside>' : '<aside class="an-side an-print-only" aria-hidden="true">' + sideHTML(r).replace(/ id="an[A-Za-z]+"/g, '') + '</aside>') + '</div>';
   }
 
@@ -938,6 +983,8 @@
     tbtn.onclick = function () { var open = tbox.hidden; tbox.hidden = !open; tbtn.setAttribute('aria-expanded', String(open)); tbtn.textContent = open ? 'Use now' : 'Change time'; $('[data-when]', f).textContent = open ? 'At the time below' : 'At now'; if (open) tin.focus(); else tin.dataset.touched = ''; };
     if (!tbox.hidden) { tbtn.setAttribute('aria-expanded', 'true'); tbtn.textContent = 'Use now'; }
     /* check each value as you leave it (it is still only saved with Save) */
+    (function () { var vs = $('[type=submit]', f); if (!vs) return; var vr = function () { setTimeout(function () { vs.setAttribute('aria-disabled', String(!typed())); }, 0); };   /* n193 */
+      f.addEventListener('input', vr); f.addEventListener('change', vr); vr(); setTimeout(vr, 200); })();
     inputs.forEach(function (inp) {
       inp.addEventListener('blur', function () {
         var k = inp.name, fe = $('[data-ferr="' + k + '"]', f); if (!fe) return;
@@ -1151,7 +1198,7 @@
       else { var b = $('#anInsp'); if (b) b.focus(); }
     });
     on('#anHistAll', function () { S.histAll = !S.histAll; render(); var b = $('#anHistAll'); if (b) b.focus(); });
-    on('#anTipsOk', function () { lsSet('tips', 1); render(); var b = $('[data-act=vitals]'); if (b) b.focus(); });
+    on('#anTipsOk', function () { var id = this && this.getAttribute ? this.getAttribute('data-tip') : null; id = id || ($('#anTipsOk') || { getAttribute: function () { return 'value'; } }).getAttribute('data-tip'); lsSet('tip:' + id, 1); render(); var b = $('[data-act=vitals]'); if (b) b.focus(); });
     on('#anShare', function () { shareRecord(r); });
     var bk = $('.an-back'); if (bk && !SHEET) bk.addEventListener('click', function (e) { if (e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); var hd = $('.an-id'); morph(hd, function () { history.pushState(null, '', location.pathname + location.search); route(); }, function () { return $('[data-open="' + r.id + '"]'); }); });
     on('#anExpand', function () { setExpanded(!XP); var b = $('#anExpand'); if (b) b.focus(); });
@@ -1317,6 +1364,9 @@
     }
     form.onsubmit = function (e) { e.preventDefault(); if (o.primary) submit(); };
     var ok = $('[data-ok]', wrap); if (ok) ok.onclick = submit;
+    /* n193: the button looks unavailable until the required data is in (pressing it still says what's missing) */
+    if (ok && o.ready) { var rsync = function () { setTimeout(function () { var y = false; try { y = !!o.ready(wrap); } catch (x) { } ok.setAttribute('aria-disabled', String(!y)); }, 0); };
+      ['input', 'change', 'click'].forEach(function (ev) { form.addEventListener(ev, rsync); }); wrap.addEventListener('click', rsync); rsync(); }
     /* closing a sheet you have typed in asks first (Design principles, Modality, Action sheets) */
     form.addEventListener('input', function () { wrap.dirty = true; });
     form.addEventListener('change', function () { wrap.dirty = true; });
@@ -1568,6 +1618,7 @@
     var t = now();
     openSheet({
       title: 'Give drug', primary: 'Give drug',
+      ready: function (w) { var dv = val(w, 'drug'); return !!dv && (dv !== 'new' || !!val(w, 'dname').trim()) && !!(val(w, 'dose').trim() || val(w, 'mgGiven').trim()) && ($('[data-big]', w).hidden || !!val(w, 'confirmBig')); },
       body: drugFields(r, ['drug']) +
         '<div class="an-f"><label for="dDo">Dose</label><input class="an-in an-tnum" id="dDo" name="dose" inputmode="decimal" autocomplete="off"></div>' +
         '<div class="an-f"><span class="lab">Unit</span>' + chips('unit', A.BOLUS_UNITS.map(function (u) { return [u, u]; }), 'mg/kg') + '</div>' +
@@ -1810,6 +1861,7 @@
     var opts = Object.keys(A.EVENTS).filter(function (k) { return k !== 'anesthesia_start' && k !== 'anesthesia_end'; }).map(function (k) { return [k, A.EVENTS[k]]; });
     openSheet({
       title: 'Event', primary: 'Add', quiet: true,
+      ready: function (w) { var k = val(w, 'kind'); return !!k && (k !== 'note' || !!val(w, 'note').trim()); },
       body: (!(A.timeoutStatus(r) || {}).complete && r.status !== 'signed' ? '<div class="an-tline an-towarn"><span>Time-out ' + (A.timeoutStatus(r) ? 'not complete' : 'not done yet') + ' — do it before incision.</span><button type="button" class="an-btn plain sm" data-dotimeout>Start time-out</button></div>' : '') + '<div class="an-f"><span class="lab">What happened</span>' + chips('kind', opts, '') + '</div><div class="an-f"><label for="eN">Note</label><textarea class="an-ta" id="eN" name="note" maxlength="300"></textarea></div>' + timeField(now()),
       focus: '.an-chip', init: function (w) { bindTime(w); bindChips(w); var dt = $('[data-dotimeout]', w); if (dt) dt.onclick = function () { closeSheet(true); timeoutSheet(r); }; },
       submit: function (w) { if (!val(w, 'kind')) bad('Choose what happened.'); if (val(w, 'kind') === 'note' && !val(w, 'note').trim()) bad('Write the note.', 'note'); change(r.id, { type: 'event', kind: val(w, 'kind'), note: val(w, 'note'), at: readTime(w, r), eid: A.uid('e') }); }
@@ -1817,6 +1869,7 @@
   }
 
   function entrySheet(r, list, id, anchor) {
+    if (!lsGet('tip:value')) { lsSet('tip:value', 1); var th = $('#anTipsOk[data-tip=value]'); if (th && th.closest('.an-hint')) th.closest('.an-hint').remove(); }   /* n196: they found it - the chart-value tip retires */
     var L = { dose: r.doses, vitals: r.vitals, event: r.events, gas: r.gases, output: r.outputs || [], vent: r.vents || [] }[list] || [], x = L.filter(function (e) { return e.id === id; })[0]; if (!x) return;
     var rows = [], title = '';
     if (list === 'dose') { var d = A.drug(r, x.drugId) || {}; title = d.name; rows = [['Dose', amt(x.mg) + (x.mL !== null ? ' · ' + sig(x.mL) + ' mL' : '')], ['Ordered as', x.noWeight ? 'Typed in mg — no weight on file' : sig(x.dose) + ' ' + x.unit + (x.weightKg ? ' at ' + sig(x.weightKg) + ' kg' : '')], ['Route', x.route || '—']]; }
@@ -2046,7 +2099,7 @@
     /* shortcuts for the frequent actions (shown in each button's tooltip) */
     if (e.altKey && !e.metaKey && !e.ctrlKey) {
       var map = { KeyV: 'vitals', KeyD: 'dose', KeyI: 'infusion', KeyG: 'gas', KeyE: 'event', KeyO: 'output', KeyA: 'airway' }, act = map[e.code];
-      if (act) { var b = $('[data-act="' + act + '"]'); if (b && !b.disabled) { e.preventDefault(); b.click(); } }
+      if (act) { var b = $('[data-act="' + act + '"]'); if (b && !b.disabled) { e.preventDefault(); lsSet('tip:kb', 1); b.click(); } }   /* n196: the shortcut tip has done its job */
     }
   });
 

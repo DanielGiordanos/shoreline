@@ -59,7 +59,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     </div>
     <div class="nav-right">
       <button class="logout-button" id="logoutBtn" type="button" onclick="logout()" aria-label="Log out"><span class="logout-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="door-glyph"><path d="M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1"/></g><g class="exit-arrow"><path d="M12.6 8.7 16 12l-3.4 3.3"/><path d="M8.9 12H16"/></g></svg></span><span class="logout-label">Logout</span><span class="logout-chevron" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m7.5 5 5 5-5 5"/></svg></span></button>
-      <button class="theme-toggle" onclick="toggleDark()" title="Toggle theme" aria-label="Toggle theme">
+      <button class="theme-toggle" onclick="toggleDark()" title="Switch light and dark" aria-label="Switch light and dark">
         <img class="img-light" src="img/d79ecd691c.png" alt="Light">
         <img class="img-dark"  src="img/999f4318c2.png" alt="Dark">
       </button>
@@ -365,5 +365,14 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
 }
 @media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
 </style>
+<script id="pvx-n192-guard">
+/* PVX-N192 - a file or link dropped where nothing takes it does nothing (the page stays); text fields still take text */
+(function(){
+  function editable(t){ return t&&t.closest&&t.closest('input,textarea,[contenteditable]:not([contenteditable=false])'); }
+  document.addEventListener('dragover',function(e){ if(e.defaultPrevented||editable(e.target)) return; e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='none'; });
+  document.addEventListener('drop',function(e){ if(e.defaultPrevented||editable(e.target)) return; e.preventDefault(); });
+})();
+</script>
+<!-- PVX-N196 theme button name -->
 </body>
 </html>
