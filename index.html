@@ -5579,6 +5579,51 @@ body:not(.dark) #view-dashboard .command-kpi,body:not(.dark) #view-dashboard .pa
 html.pvx-app-boot .subnav,html.pvx-app-boot [id^="view-"],html.pvx-app-boot .alert-strip,html.pvx-app-boot #alertStrip{visibility:hidden!important}
 html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;border-color:transparent!important}
 </style>
+
+<style id="pvx-n198">
+/* PVX-N198 - action sheets */
+#confirmBox.pvx-as{top:auto;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;max-width:none;transform:translateY(24px);padding:18px 14px 12px;border-radius:20px}
+#confirmBox.pvx-as.open{transform:none}
+#confirmBox.pvx-as .confirm-title{font-size:0.9375rem}
+#confirmBox.pvx-as .confirm-sub{margin-bottom:6px}
+#confirmBox.pvx-as .confirm-actions{display:flex!important;flex-direction:column-reverse;align-items:stretch;gap:8px;width:auto!important;margin:12px 0 0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}
+#confirmBox.pvx-as .confirm-actions .btn{flex:none!important;width:100%!important;height:48px!important;border-radius:14px!important;font-size:1.0625rem!important;padding:0 14px!important}
+#confirmBox.pvx-as #confirmCancel{margin-top:6px}
+#confirmBox #confirmOk.danger{background:var(--priority-p1,#E4342B)!important;border-color:transparent!important;color:#fff!important;box-shadow:none!important}
+#confirmBox #confirmOk.danger:hover{background:#C42920!important}
+.rd-menu{max-width:calc(100vw - 24px);overflow-y:auto;overscroll-behavior:contain}
+.rd-menu.rd-touch button{min-height:44px}
+.rd-menu button.danger{color:var(--priority-p1,#E5484D)}
+.rd-menu button:focus-visible{outline:2px solid var(--rc-2,#47C6DC);outline-offset:-2px}
+.rd-msep{height:1px;margin:4px 6px;background:var(--glass-border)}
+.rd-menu.rd-as{left:0!important;top:0!important;right:0;bottom:0;min-width:0;max-width:none;max-height:none!important;padding:0;border:0;border-radius:0;box-shadow:none;background:rgba(6,10,22,.42);display:flex;align-items:flex-end;overflow:hidden;animation:none}
+.rd-assheet{width:100%;max-height:82vh;display:flex;flex-direction:column;gap:8px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));animation:pvxSheetUp .28s var(--ease,ease) both}
+.rd-asgroup{overflow-y:auto;overscroll-behavior:contain;padding:4px;border-radius:14px;background:var(--glass-strong);border:1px solid var(--glass-border)}
+.rd-as .rd-asgroup button{min-height:48px;text-align:center;font-size:1.0625rem}
+.rd-menu .rd-ascancel{flex:none;min-height:52px;text-align:center;border-radius:14px;background:var(--glass-strong);border:1px solid var(--glass-border);font-size:1.0625rem;font-weight:700;color:var(--ink-900)}
+@keyframes pvxSheetUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.rd-assheet{animation:none}#confirmBox.pvx-as{transform:none}}
+</style>
+
+<style id="pvx-n199">
+/* PVX-N199 - buttons (HIG Buttons) */
+/* 2. a press state for every button (the top bar keeps its own) */
+button:not(:disabled):not([aria-disabled="true"]):not(.topnav *):active,[role=button]:not([aria-disabled="true"]):not(.topnav *):active{filter:brightness(.88)}
+button:not(:disabled):not([aria-disabled="true"]):not(.topnav *):not(.card):active{scale:.97}
+@media (prefers-reduced-motion:reduce){button:active{scale:none}}
+/* 3. a centred confirmation's buttons are the same width */
+#confirmBox:not(.confirm-fancy):not(.pvx-as) .confirm-actions .btn{flex:1 1 0;min-width:0}
+/* 4. buttons that open a menu look like it; statuses are plain text */
+button.rd-fact[aria-haspopup]::after{content:"";display:inline-block;width:5px;height:5px;margin:0 1px 2px 7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);opacity:.7;vertical-align:middle}
+.rd-fact.plain.day{background:transparent}
+/* 1. 44 pt targets on touch screens */
+@media (pointer:coarse){
+  body:not(.tv-mode) button:not(.topnav *):not(.pvx-open):not(.pvx-move):not(.ct-link){min-height:44px;min-width:44px}
+  body .rd-finrow[role=button]{min-height:44px}
+  body .pvx-open,body .pvx-move,body .ct-link,body .rd-fin-edit,body .resus-set{position:relative}
+  body .pvx-open::after,body .pvx-move::after,body .ct-link::after,body .rd-fin-edit::after,body .resus-set::after{content:"";position:absolute;left:calc(min(0px,(100% - 44px)/2));right:calc(min(0px,(100% - 44px)/2));top:calc(50% - 22px);height:44px}
+}
+</style>
 </head>
 <body>
 <script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#F2F4F8';}catch(e){}}window.__pvxPaintCanvas=paint;try{var W=JSON.parse(localStorage.getItem('pvx:flow:where')||'null');if(W&&W.app&&Date.now()-W.at<432e5&&!location.hash&&!/[?&](tv|visit|patient)=/.test(location.search)&&(W.app!=='flow'||(W.view&&W.view!=='dashboard'))){history.replaceState(null,'',location.pathname+location.search+'#app='+W.app);window.__pvxRestore=W;document.documentElement.classList.add('pvx-app-boot');}}catch(e){}try{if(/[#&]app=(rounds|ultrasound)\b/.test(location.hash))document.documentElement.classList.add('pvx-app-boot');}catch(e){}try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
@@ -5649,7 +5694,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
       </button>
     </nav>
     <div class="spacer"></div>
-    <button class="fs-btn" id="fsBtn" title="Display on lobby TV" aria-label="Full Screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>Full Screen</button>
+    <button class="fs-btn" id="fsBtn" title="Display on lobby TV" aria-label="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>Full screen</button>
     <button class="fab-add" id="fabAdd" aria-label="Operations: new patient, shift setup, hospital alert" title="Operations" aria-haspopup="true" aria-expanded="false">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 </button>
@@ -5685,7 +5730,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
     </nav>
     <div class="spacer"></div>
     <div class="usx-role" id="usxRole" title="Choose your view: Internal Medicine controls, or view only">
-      <button data-role="im" class="on">IM Controls</button>
+      <button data-role="im" class="on">IM controls</button>
       <button data-role="view">View Only</button>
     </div>
   </div>
@@ -5739,7 +5784,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
         <div class="panel attn-panel">
           <div class="panel-head">
             <h3>Attention Center</h3>
-            <div class="ph-right"><div class="notification-badge" id="attnCount"><span class="badge-text">—</span></div><button class="attn-clearall" id="attnClearAll">Clear All</button></div>
+            <div class="ph-right"><div class="notification-badge" id="attnCount"><span class="badge-text">—</span></div><button class="attn-clearall" id="attnClearAll">Clear all</button></div>
           </div>
           <div id="attnList"></div>
         </div>
@@ -5925,7 +5970,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
             <span class="start-content">
               <span class="start-icon" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M3 2.2 9.2 6 3 9.8V2.2Z"></path></svg></span>
               <span class="start-copy">
-                <span class="start-title">Start Rounds</span>
+                <span class="start-title">Start rounds</span>
                 <span class="start-running-label">Rounds In Progress</span>
               </span>
             </span>
@@ -6106,7 +6151,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
 </aside>
 
 <div class="toast" id="toast"><span class="dot"></span><span id="toastMsg">Saved</span></div>
-<div class="notes" id="notes"></div>
+<div class="notes" id="notes" aria-live="polite" aria-relevant="additions"></div>
 <!-- Patient hover synopsis (floating, non-blocking) -->
 <div class="patient-preview" id="patientPreview"></div>
 
@@ -6117,7 +6162,7 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
   <div class="confirm-sub" id="confirmSub" style="display:none"></div>
   <div class="confirm-actions">
     <button class="btn ghost" id="confirmCancel">Cancel</button>
-    <button class="btn primary" id="confirmOk">Move Patient</button>
+    <button class="btn primary" id="confirmOk">Move patient</button>
   </div>
 </div>
 
@@ -6167,6 +6212,10 @@ html.pvx-app-boot .nav-center .nav-item.active{background:transparent!important;
   <button class="ops-item" data-op="alert" role="menuitem">
     <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
     <span class="ops-txt"><span class="ops-t">Hospital Alert</span><span class="ops-s">Send announcement</span></span>
+  </button>
+  <button class="ops-item" data-op="chime" role="menuitemcheckbox" aria-checked="true" id="opsChime">
+    <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+    <span class="ops-txt"><span class="ops-t">Reminder Chime</span><span class="ops-s" id="opsChimeS">On · this screen</span></span>
   </button>
 </div>
 
@@ -6859,14 +6908,14 @@ requestStatus:u.requestStatus||null, queuePosition:(typeof u.queuePosition==='nu
 acceptedAt:_toISO(u.acceptedAt), acceptedBy:u.acceptedBy||null, acceptedById:u.acceptedById||null,
 startedAt:_toISO(u.startedAt), performingDoctor:u.performingDoctor||null, performingDoctorId:u.performingDoctorId||null,
 completedAt:_toISO(u.completedAt), preliminaryFindings:u.preliminaryFindings||'',
-criticalFinding:!!u.criticalFinding, doctorDiscussionNeeded:!!u.doctorDiscussionNeeded,
+criticalFinding:!!u.criticalFinding, critSeenAt:_toISO(u.critSeenAt), critSeenBy:u.critSeenBy||null, doctorDiscussionNeeded:!!u.doctorDiscussionNeeded,
 internalMedicineNotes:u.internalMedicineNotes||''}; }
 function usToApp(u){ if(!u) return null; return { study:u.study||'Abdominal Ultrasound', clinicalQuestion:u.clinicalQuestion||'', diagnosticsNotes:u.diagnosticsNotes||'', status:u.status||'incomplete', requestedAt:u.requestedAt?new Date(u.requestedAt):null, createdAt:u.createdAt?new Date(u.createdAt):null,
 requestStatus:u.requestStatus||null, queuePosition:(typeof u.queuePosition==='number')?u.queuePosition:null,
 acceptedAt:u.acceptedAt?new Date(u.acceptedAt):null, acceptedBy:u.acceptedBy||null, acceptedById:u.acceptedById||null,
 startedAt:u.startedAt?new Date(u.startedAt):null, performingDoctor:u.performingDoctor||null, performingDoctorId:u.performingDoctorId||null,
 completedAt:u.completedAt?new Date(u.completedAt):null, preliminaryFindings:u.preliminaryFindings||'',
-criticalFinding:!!u.criticalFinding, doctorDiscussionNeeded:!!u.doctorDiscussionNeeded,
+criticalFinding:!!u.criticalFinding, critSeenAt:u.critSeenAt?new Date(u.critSeenAt):null, critSeenBy:u.critSeenBy||null, doctorDiscussionNeeded:!!u.doctorDiscussionNeeded,
 internalMedicineNotes:u.internalMedicineNotes||''}; }
 function mapToDb(p){
 return {
@@ -7378,8 +7427,10 @@ el.innerHTML=`<div class="n-ic" style="background:${opts.color||'var(--accent)'}
     <div class="n-time">now</div>`;
 wrap.appendChild(el);
 RAF ? RAF(()=>el.classList.add('show')) : el.classList.add('show');
-setTimeout(()=>{ el.classList.add('hide'); setTimeout(()=>el.remove(),480); }, opts.dur||4200);
-while(wrap.children.length>4) wrap.firstChild.remove();
+if(opts.sticky){ el.setAttribute('role','alert'); el.classList.add('sticky'); const x=document.createElement('button'); x.type='button'; x.className='n-x'; x.setAttribute('aria-label','Dismiss'); x.innerHTML=(window.PVX_GI?PVX_GI.xmark:'×');
+  x.onclick=()=>{ el.classList.add('hide'); setTimeout(()=>el.remove(),480); }; el.appendChild(x); }   /* PVX-N197: a failure waits to be read */
+else setTimeout(()=>{ el.classList.add('hide'); setTimeout(()=>el.remove(),480); }, opts.dur||4200);
+while(wrap.children.length>4){ const old=[...wrap.children].find(n=>!n.classList.contains('sticky'))||wrap.firstChild; old.remove(); }   /* PVX-N197: the oldest routine message goes first */
 }
 
 
@@ -8428,7 +8479,7 @@ const u=p.ultrasound; if(!u) return'';
 const st=usEff(p);
 if(st==='completed'){
 if(p.status!=='Ultrasound'&& !(u.completedAt && isTodayHosp(u.completedAt))) return'';
-const extra = u.doctorDiscussionNeeded ?'<span class="us-flag disc">'+US_ICON_WAVE+'Discussion requested</span>':'';
+const extra = (u.criticalFinding&&!u.critSeenAt?'<span class="us-flag crit" role="img" aria-label="Critical ultrasound finding, not yet seen">'+(window.PVX_GI?PVX_GI.warn:'')+'Critical ultrasound finding</span>':'')+(u.doctorDiscussionNeeded ?'<span class="us-flag disc">'+US_ICON_WAVE+'Discussion requested</span>':'');   /* PVX-N197 */
 return'<span class="us-flag done">'+US_ICON_REQ+'Ultrasound · Completed '+(u.completedAt?fmtTime(u.completedAt):'')+'</span>'+extra;
 }
 if(p.status!=='Ultrasound') return'';
@@ -8717,8 +8768,8 @@ if(u.doctorDiscussionNeeded){
 usTimeline(p,'Doctor discussion requested', drName(u.performingDoctor)+' → '+docShort(p.doctor));
 notify('Discussion requested', drName(u.performingDoctor)+' requests discussion regarding '+bcEsc(p.name)+"’s ultrasound", {icon:'info', color:'var(--s-ultrasound)'});
 }
-if(u.criticalFinding) notify('Critical finding', p.name+' · flagged by '+drName(u.performingDoctor), {icon:'info', color:'var(--priority-p1)'});
-notify('Ultrasound completed', p.name+' · '+fmtTime(stamp)+' · '+drName(u.performingDoctor), {icon:'check', color:'var(--s-admitted)'});
+
+notify('Ultrasound completed', p.name+' · '+fmtTime(stamp)+' · '+drName(u.performingDoctor)+(u.criticalFinding?' · critical finding flagged':''), {icon:'check', color:u.criticalFinding?'var(--priority-p1)':'var(--s-admitted)'});
 renderAll();
 if(_usxCase===pid) fillUsxCase();
 }
@@ -9256,7 +9307,7 @@ return`<div class="umt-card ${canEdit?'pick':''} ${away?'off':''} ${acting?'acti
           <span class="umt-ci mail">${bcEsc(c.email||'—')}</span>
         </div>
         ${canEdit?`<div class="umt-actions">
-          <button class="umt-qa umt-btn" data-imid="${d.id}">${away?'Set Available':'Set Unavailable'}</button>
+          <button class="umt-qa umt-btn" data-imid="${d.id}">${away?'Set available':'Set unavailable'}</button>
         </div>`:''}
       </div>`;}).join('')}</div>`;
   if(canEdit){
@@ -9278,7 +9329,7 @@ function renderUstControl(){
 <p class="umc-t">${canEdit
 ?'Internal Medicine only. Drag rows in the Ultrasound Queue to reorder, or open the full Queue board.'
 :'Internal Medicine only. You have view-only access to the ultrasound queue.'}</p>
-${canEdit?'<button class="umc-btn" id="umCtrlBtn">Edit Order</button>':''}`;
+${canEdit?'<button class="umc-btn" id="umCtrlBtn">Edit order</button>':''}`;
   const b=el.querySelector('#umCtrlBtn');
   if(b) b.addEventListener('click',()=>switchUsView('queue'));
 }
@@ -9494,7 +9545,7 @@ function renderUsxPresence(mountId){
       <span class="dav">${d.initials}</span>
       <div class="b"><b>Dr. ${bcEsc(d.name)}</b><span class="usx-imst ${st.c}">${bcEsc(st.t)}</span></div>
       ${usActingId===d.id&&usCanEdit()?'<span class="usx-acting">Acting</span>':''}
-      ${usCanEdit()&&!scanning?`<button class="usx-imtoggle" data-imid="${d.id}" title="${away?'Mark available':'Mark unavailable'}">${away?'Set Available':'Set Unavailable'}</button>`:''}
+      ${usCanEdit()&&!scanning?`<button class="usx-imtoggle" data-imid="${d.id}" title="${away?'Mark available':'Mark unavailable'}">${away?'Set available':'Set unavailable'}</button>`:''}
     </div>`;
   }).join('');
   el.innerHTML=rows+(usCanEdit()?'<div class="usx-imhint">Tap a doctor to act as them — Take Case &amp; findings are recorded under the acting doctor.</div>':'');
@@ -9997,7 +10048,7 @@ room.classList.remove('room-drop','room-nodrop'); room._pvxN=0;
 const p=PATIENTS.find(x=>x.id===roomDragId);
 if(!p || p.room===target) return;
 if(!canDropRoom(p,target)){ toast('Room already occupied'); return; }
-if(target==='Comfort Room'){ showConfirm('Move patient to Comfort Room?','Move Patient',()=>moveRoom(p,target)); }
+if(target==='Comfort Room'){ showConfirm('Move patient to Comfort Room?','Move patient',()=>moveRoom(p,target)); }
 else moveRoom(p,target);
 });
 });
@@ -10245,7 +10296,7 @@ const r=getRecords(p), st=r.status;
 const chip=`<span class="rec-chip rec-${st}">${RECORDS_STATUS[st].label}</span>`;
 const head=`<div class="rec-ic">${REC_ICON}</div><div class="rec-title">pDVM Records</div>${chip}`;
 if(st==='not_requested'){
-mount.innerHTML=`<div class="rec-card"><div class="rec-head">${head}<button class="rec-req" id="recRequest" type="button">Request Records</button></div></div>`;
+mount.innerHTML=`<div class="rec-card"><div class="rec-head">${head}<button class="rec-req" id="recRequest" type="button">Request records</button></div></div>`;
 document.getElementById('recRequest').onclick=()=>requestRecords(p);
 return;
 }
@@ -12387,7 +12438,7 @@ document.body.classList.remove('fs-mode');
 function ensureFsExit(){
 if(document.getElementById('fsExit')) return;
 const b=document.createElement('button'); b.id='fsExit'; b.type='button';
-b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>Exit Full Screen';
+b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>Exit Full screen';
 b.onclick=exitFullscreen; document.body.appendChild(b);
 }
 let _fsHideTimer=null;
@@ -12747,7 +12798,7 @@ document.addEventListener('mousedown',e=>{ if(sxOpen && !e.target.closest('.bc-w
 document.getElementById('drawerClose').onclick=closeDrawer;
 document.getElementById('scrim').onclick=closeDrawer;
 document.getElementById('locClose').onclick=closeLocDrawer;
-document.getElementById('attnClearAll').onclick=()=>showConfirm('Clear all attention items?','Clear All',clearAllAlerts,
+document.getElementById('attnClearAll').onclick=()=>showConfirm('Clear all attention items?','Clear all',clearAllAlerts,
 {sub:'This will dismiss the current alerts. Patient records will not be changed.', danger:true});
 document.getElementById('intakeClose').onclick=closeIntake;
 document.getElementById('intakeScrim').onclick=closeIntake;
@@ -13065,7 +13116,7 @@ const RD_ACUITY={
 critical: {label:'Critical',        color:'var(--priority-p1)'},
 attention:{label:'Attention',       color:'var(--amber)'},
 stable:   {label:'Stable',          color:'#4F9AD6'},
-discharge:{label:'Discharge Ready', color:'var(--s-admitted)'}
+discharge:{label:'Discharge ready', color:'var(--s-admitted)'}
 };
 const RD_OUTCOMES=['Discharged','Transferred','Euthanized','Deceased'];
 const RD_CHECKLIST_DEFAULT=['Eating','IV medications discontinued','Transitioned to oral medications','Owner update','Discharge medications','Discharge instructions'];
@@ -13483,14 +13534,14 @@ rdAudit(p,'Admission closed from Flow · '+type);
 }
 }
 function rdSetOutcome(p,type){
-showConfirm('Mark '+rdFullName(p)+' as '+type.toLowerCase()+'?','Confirm', ()=>{
+showConfirm('Mark '+rdFullName(p)+' as '+type.toLowerCase()+'?','Mark '+type, ()=>{
 p.rounds.outcome={type:type,at:rdIso(new Date()),by:rdActorName()};
 p.timeline.push({label:type, at:new Date(), meta:'Rounds · '+rdActorName()});
 rdSnapshotToday(p);
 rdExpanded=null;
 rdTouch(p,'Admission ended · '+type);
 if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p, (type==='Euthanized'||type==='Deceased')?type:'Discharged'); }catch(e){} }   /* a direct admit leaves Flow too */
-}, {sub:'The admission closes and moves to the Rounds archive. The full record is preserved.', fancyConfirm:type==='Discharged'});
+}, {sub:'The admission closes and moves to the Rounds archive. The full record is preserved.'});
 }
 function rdSetLocation(p,loc){
 const old=p.rounds.location;
@@ -14059,8 +14110,8 @@ return`<div class="rd-auth-stack">
         ${st?`<div class="rd-caremetrics"><div><b>${total}h</b><span>Total Authorized</span></div><div><b>${Math.floor(Math.round(used*60)/60)}h ${Math.round(used*60)%60}m</b><span>Used</span></div><div><b>${remain>=0?fmtWait(Math.round(remain*60)):'Expired'}</b><span>Remaining</span></div></div>`:''}
         <div class="rd-extend-label">Extend care authorization</div>
         <div class="rd-extend-group">
-          <button class="rd-btn slim" data-act="auth-add" data-key="24" data-pid="${pid}">+24 Hours</button>
-          <button class="rd-btn slim" data-act="auth-add" data-key="48" data-pid="${pid}">+48 Hours</button>
+          <button class="rd-btn slim" data-act="auth-add" data-key="24" data-pid="${pid}">+24 hours</button>
+          <button class="rd-btn slim" data-act="auth-add" data-key="48" data-pid="${pid}">+48 hours</button>
           <button class="rd-btn slim" data-act="auth-custom" data-pid="${pid}">Custom</button>
           <button class="rd-btn slim ghost rd-more" data-act="auth-more" data-pid="${pid}" title="More options">•••</button>
         </div>
@@ -14161,11 +14212,11 @@ return`<div class="rd-work" data-pid="${pid}">
           </div>
           <div class="rd-case-strip">
             <div class="rd-ov-facts">
-              <button class="rd-fact resus ${p.resusPref==='CPR'?'cpr':p.resusPref==='DNR'?'dnr':'unset'}" data-act="resus-menu" data-pid="${pid}" title="Change CPR / DNR">${p.resusPref||'Set CPR / DNR'}${p.resusRequest&&p.resusRequest.pref&&p.resusRequest.pref!==p.resusPref?` <i>· family chose ${rdEsc(p.resusRequest.pref)}</i>`:''}</button>
-              <button class="rd-fact" data-act="svc-menu" data-pid="${pid}" title="Change service">${rdEsc(rdSvc(r.service).label)}</button>
-              <button class="rd-fact" data-act="loc-menu" data-pid="${pid}" title="Change location">${rdEsc(rdNormLoc(r.location)||'Set location')}</button>
+              <button class="rd-fact resus ${p.resusPref==='CPR'?'cpr':p.resusPref==='DNR'?'dnr':'unset'}" data-act="resus-menu" data-pid="${pid}" aria-haspopup="menu" title="Change CPR / DNR">${p.resusPref||'Set CPR / DNR'}${p.resusRequest&&p.resusRequest.pref&&p.resusRequest.pref!==p.resusPref?` <i>· family chose ${rdEsc(p.resusRequest.pref)}</i>`:''}</button>
+              <button class="rd-fact" data-act="svc-menu" data-pid="${pid}" aria-haspopup="menu" title="Change service">${rdEsc(rdSvc(r.service).label)}</button>
+              <button class="rd-fact" data-act="loc-menu" data-pid="${pid}" aria-haspopup="menu" title="Change location">${rdEsc(rdNormLoc(r.location)||'Set location')}</button>
               <span class="rd-fact plain day">Hospital Day ${rdDayNum(p)}</span>
-              <button class="rd-fact ${r.admitType!=='clinical'?'hold':''}" data-act="type-menu" data-pid="${pid}" title="Admission type">${RD_ADMIT_TYPES[r.admitType]||'Clinical'}</button>
+              <button class="rd-fact ${r.admitType!=='clinical'?'hold':''}" data-act="type-menu" data-pid="${pid}" aria-haspopup="menu" title="Admission type">${RD_ADMIT_TYPES[r.admitType]||'Clinical'}</button>
               <span class="rd-fact plain">Admitted ${admitted?rdWhenFull(admitted):''}${r.admittedBy?(' · '+rdEsc(r.admittedBy)):''}</span>
             </div>
           </div>
@@ -14436,10 +14487,10 @@ const nrCount=rdCensus().filter(p=>!rdReviewed(p)).length;
 const chips=document.getElementById('rdSvcChips');
 if(chips){
 const c=rdCensus();
-const items=[{key:'all',l:'All Patients',n:c.length},{key:'new',l:'New Admits',n:c.filter(p=>p.rounds.newAdmit).length}]
+const items=[{key:'all',l:'All patients',n:c.length},{key:'new',l:'New admits',n:c.filter(p=>p.rounds.newAdmit).length}]
 .concat(RD_SERVICES.map(s=>({key:s.key,l:s.label,n:c.filter(p=>p.rounds.service===s.key).length})));
 chips.innerHTML=items.map(x=>`<button class="rd-svcbtn ${rdSvcFilter===x.key?'on':''}" data-act="svc-filter" data-key="${x.key}">${x.l}${x.n?` <span>${x.n}</span>`:''}</button>`).join('')
-+`<span class="rd-toolgap"></span><button class="rd-svcbtn warn ${rdKpiFilter==='review'?'on':''}" data-act="kpi" data-key="review">Not Reviewed${nrCount?` <span>${nrCount}</span>`:''}</button>`;
++`<span class="rd-toolgap"></span><button class="rd-svcbtn warn ${rdKpiFilter==='review'?'on':''}" data-act="kpi" data-key="review">Not reviewed${nrCount?` <span>${nrCount}</span>`:''}</button>`;
 }
 const side=document.getElementById('rdSide'); if(side) side.innerHTML=rdOnServiceHTML()+rdTomorrowHTML();
 const nr=rdCensus().filter(p=>!rdReviewed(p)).length;
@@ -15344,6 +15395,7 @@ function chime(){
 }
 
 function softChime(){
+  try{ if(localStorage.getItem('pvx:sound:reminder')==='off') return; }catch(e){}   /* PVX-N197: Operations > Reminder chime */
   if(!soundOn()&&wasActive()) unlock();
   if(!soundOn()) return;
   try{ var t0=audioCtx.currentTime+.03;
@@ -15504,7 +15556,7 @@ window.renderCritAlert=function(){
   if(pickFor&&ids.indexOf(pickFor)<0){ pickFor=null; showAll=false; }
   var fresh=L.filter(function(p){return !announced.has(p.id);});
   fresh.forEach(function(p){announced.add(p.id);});
-  if(fresh.length && Date.now()-BOOT>8000) chime();
+  if(fresh.length && Date.now()-BOOT>8000){ chime(); try{ if(window.pvxSay) pvxSay('Critical case waiting: '+fresh.map(function(p){ return p.name; }).join(', ')); }catch(e){} }   /* PVX-N197 */
   var nowT=Date.now();
   L.forEach(function(p){ if(!firstSeen.has(p.id)) firstSeen.set(p.id,nowT); });
   var due=L.filter(function(p){ return !reminded.has(p.id) && nowT-firstSeen.get(p.id)>=120000; });
@@ -16409,7 +16461,7 @@ function sectionHTML(p){ var a=S(p), pulse=PULSE===p.id; PULSE=null;
     return '<div class="fg-row" data-id="'+E(f.id)+'"><button type="button" class="fg-min" data-fg="arm" aria-label="Remove '+E(f.t)+'">'+MINUS+'</button>'
      +tile(f.k,'l'+(pulse&&f.k==='safe'?' fg-pulse':''))+'<div class="fg-tx"><b'+(f.k==='safe'?' style="color:var(--fg-red)"':'')+'>'+E(f.t)+'</b><small>'+E(FK[f.k])+' · '+meta+'</small></div>'
      +'<button type="button" class="fg-del" data-fg="del">Remove</button></div>'; }).join('');
-  h+='<button type="button" class="fg-add" data-fg="add" aria-expanded="'+ST.sheet+'">'+PLUS+'<span>Add Flag</span></button></div>';
+  h+='<button type="button" class="fg-add" data-fg="add" aria-expanded="'+ST.sheet+'">'+PLUS+'<span>Add flag</span></button></div>';
   if(ST.sheet) h+=sheetHTML(p);
   return h+'</div>'; }
 function sheetHTML(p){ var have={}; L(p).forEach(function(f){ have[f.t.toLowerCase()]=1; }); var q=ST.q.trim().toLowerCase(), any=false;
@@ -19429,8 +19481,8 @@ body.dark .fv-or-chip.rec{color:#8FE3EF;background:rgba(56,189,210,.14);border-c
       DB.collection('sheets').doc(id).get().then(function(s){ var d=s.exists&&s.data();
         if(!d||d.status!=='active') return origOutcome.apply(self,args);
         var nm=((p.name||'')+' '+(p.last||'')).trim();
-        showConfirm('Discharge '+nm+' on the treatment sheet','Open sheet',function(){ window.open(sheetLink(id,true),'_blank','noopener'); },
-          {sub:nm+' has an open treatment sheet. Discharging there runs the charge check and records how the stay ended — Rounds, the board and the family tracker update by themselves.'});
+        showConfirm('Discharge '+nm+' on the treatment sheet?','Open sheet',function(){ window.open(sheetLink(id,true),'_blank','noopener'); },
+          {sub:'The sheet runs the charge check; Rounds and the board update by themselves.'});   /* PVX-N198 */
       }).catch(function(){ origOutcome.apply(self,args); });
     };
   }
@@ -19672,7 +19724,7 @@ var PVX_MOVE_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14
   function openMenu(btn){ closeMenu(); var pid=btn.getAttribute('data-pid'), kind=btn.getAttribute('data-kind'); var p=(typeof PATIENTS!=='undefined'?PATIENTS:[]).find(function(x){ return x.id===pid; }); if(!p) return;
     var items=[], title='';
     if(kind==='stage'){ title='Move '+p.name+' to'; (typeof STAGE_ORDER!=='undefined'?STAGE_ORDER:[]).forEach(function(st){ if(st===p.status) return; items.push({label:st,act:function(){ moveStatus(p,st); }}); }); }
-    else { title='Move '+p.name+' to'; var rooms=(typeof ROOMS!=='undefined'?ROOMS:[]).concat(['Treatment']); rooms.forEach(function(rm){ if(rm===p.room) return; var ok=canDropRoom(p,rm); items.push({label:rm+(ok?'':' · occupied'),disabled:!ok,act:function(){ if(rm==='Comfort Room') showConfirm('Move patient to Comfort Room?','Move Patient',function(){ moveRoom(p,rm); }); else moveRoom(p,rm); }}); }); }
+    else { title='Move '+p.name+' to'; var rooms=(typeof ROOMS!=='undefined'?ROOMS:[]).concat(['Treatment']); rooms.forEach(function(rm){ if(rm===p.room) return; var ok=canDropRoom(p,rm); items.push({label:rm+(ok?'':' · occupied'),disabled:!ok,act:function(){ if(rm==='Comfort Room') showConfirm('Move patient to Comfort Room?','Move patient',function(){ moveRoom(p,rm); }); else moveRoom(p,rm); }}); }); }
     menu=document.createElement('div'); menu.className='pvx-menu'; menu.setAttribute('role','menu'); menu.setAttribute('aria-label',title);
     menu.innerHTML='<div class="pvx-mt">'+title.replace(/[&<>]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; })+'</div>';
     items.forEach(function(it){ var b=document.createElement('button'); b.type='button'; b.setAttribute('role','menuitem'); b.textContent=it.label; if(it.disabled) b.disabled=true; b.addEventListener('click',function(ev){ ev.stopPropagation(); var o=opener; closeMenu(); it.act(); }); menu.appendChild(b); });
@@ -20544,7 +20596,7 @@ svg .s:not(text){opacity:.45}
       try{ if(app!=='rounds'&&document.body.classList.contains('rd-display')) rdDisplayState(false);
         else if(app==='rounds'&&window.__rdDisplayWant&&!document.body.classList.contains('rd-display')) rdDisplayState(true); }catch(e){}
       return r; }; }
-  /* lobby TV: a tap shows Exit Full Screen, like moving the mouse */
+  /* lobby TV: a tap shows Exit Full screen, like moving the mouse */
   ['pointerdown','touchstart'].forEach(function(ev){ document.addEventListener(ev,function(){ if(document.body.classList.contains('fs-mode')&&typeof fsPokeExit==='function') fsPokeExit(); },{capture:true,passive:true}); });
   /* lobby TV: if full screen ends, the tap-to-enter prompt comes back (entering is still a tap) */
   var armed=false;
@@ -20605,6 +20657,156 @@ svg .s:not(text){opacity:.45}
   function edit(el){ el.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true})); }   /* the existing editor opens on dblclick */
   document.addEventListener('click',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.rd-fin-edit[data-fin-key]'); if(!el||e.detail>1) return; edit(el); });
   document.addEventListener('keydown',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.rd-fin-edit[data-fin-key]'); if(!el||(e.key!=='Enter'&&e.key!==' ')) return; e.preventDefault(); e.stopPropagation(); edit(el); },true);
+})();
+</script>
+
+<style id="pvx-n197-css">
+/* PVX-N197 - notifications */
+.us-flag.crit{color:#fff;background:var(--priority-p1,#E4342B);border-color:transparent;font-weight:650}
+.us-flag.crit .pvx-gi{margin-right:4px}
+.note.sticky{padding-right:40px;box-shadow:0 0 0 1.5px rgba(228,52,43,.45),0 10px 30px rgba(0,0,0,.28)}
+.note .n-x{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:14px;border:0;background:transparent;color:inherit;opacity:.7;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.875rem}
+.note .n-x:hover,.note .n-x:focus-visible{opacity:1;background:rgba(127,127,127,.18)}
+.note{position:relative}
+@media (pointer:coarse){ .note .n-x{width:44px;height:44px;top:2px;right:2px} }
+</style>
+<script id="pvx-n197-js">
+/* PVX-N197 - notifications: failures stay; critical ultrasound findings reach the board; Reminder chime setting */
+(function(){
+  /* failures stay until dismissed (and are read at once) */
+  var FAIL=/^(Not saved|Couldn[’']t |Could not |Prices not saved)/;
+  if(typeof window.notify==='function'){ var nf=window.notify; window.notify=function(t,sub,o){ o=o||{}; if(FAIL.test(String(t||''))&&o.sticky===undefined) o=Object.assign({},o,{sticky:true}); return nf.call(this,t,sub,o); }; }
+
+  /* critical ultrasound findings: card flag (usFlag), Attention Center until seen, a message when one arrives */
+  function crit(p){ var u=p&&p.ultrasound; return !!(u&&u.criticalFinding&&!u.critSeenAt&&isActive(p)); }
+  function nm(p){ return ((p.name||'')+' '+(p.last||'')).trim(); }
+  function safe(f){ try{ return f()||''; }catch(e){ return ''; } }
+  function by(p){ var u=p.ultrasound; return (u.performingDoctor&&safe(function(){ return drName(u.performingDoctor); }))||'Internal Medicine'; }
+  if(typeof window.attentionItems==='function'){ var ai=window.attentionItems;
+    window.attentionItems=function(){ var a=ai.apply(this,arguments);
+      try{ PATIENTS.filter(crit).forEach(function(p){ a.unshift({key:'uscrit:'+p.id,sev:'red',icon:'flask',t:p.name+' — critical ultrasound finding',s:'Flagged by '+by(p)+' · '+safe(function(){ return docShort(p.doctor); }),p:p}); }); }catch(e){ console.warn('[uscrit]',e); }
+      return a; }; }
+  function markSeen(pid){ var p=PATIENTS.find(function(x){ return x.id===pid; }); if(!p||!p.ultrasound) return;
+    var by=(typeof CURRENT_USER==='string'&&CURRENT_USER)||'Staff'; p.ultrasound.critSeenAt=new Date(); p.ultrasound.critSeenBy=by;
+    try{ usTimeline(p,'Critical ultrasound finding seen',by); }catch(e){ (p.timeline=p.timeline||[]).push({label:'Critical ultrasound finding seen',at:new Date(),meta:by}); }
+    try{ renderAll(); }catch(e){} notify('Marked seen',bcEsc(nm(p))+' · critical ultrasound finding',{icon:'check',color:'var(--s-admitted)'}); }
+  window.pvxCritSeen=markSeen;
+  if(typeof window.dismissAlert==='function'){ var da=window.dismissAlert; window.dismissAlert=function(key){ if(String(key||'').indexOf('uscrit:')===0){ markSeen(String(key).slice(7)); return; } return da.apply(this,arguments); }; }
+  function label(){ document.querySelectorAll('#attnList .attn-item[data-key^="uscrit:"]').forEach(function(it){
+    var b=it.querySelector('.attn-clear'); if(b){ b.setAttribute('aria-label','Mark seen'); b.title='Mark seen'; }
+    var g=it.querySelector('.overdue-badge'); if(g){ g.setAttribute('aria-label','Critical'); var tx=g.querySelector('.overdue-text'); if(tx&&tx.textContent!=='CRITICAL') tx.textContent='CRITICAL'; } }); }   /* a finding, not a wait */
+  if(typeof window.renderAttention==='function'){ var rat=window.renderAttention; window.renderAttention=function(){ var r=rat.apply(this,arguments); label(); return r; }; }
+  var announced=null, BOOT=Date.now();
+  function sweep(){
+    try{ label();
+      var now=PATIENTS.filter(crit).map(function(p){ return p.id; });
+      if(announced===null||Date.now()-BOOT<8000){ announced=new Set(now); return; }   /* at start-up the board and Attention Center show them */
+      var tv=document.body.classList.contains('tv-mode'), us=(typeof currentApp!=='undefined'&&currentApp==='ultrasound');
+      now.forEach(function(id){ if(announced.has(id)) return; announced.add(id); if(tv||us) return;
+        var p=PATIENTS.find(function(x){ return x.id===id; }), fb=by(p);
+        var o={icon:'info',color:'var(--priority-p1)',sticky:true};
+        if(typeof window.fvNotifyAct==='function') fvNotifyAct('Critical ultrasound finding',bcEsc(nm(p))+' · flagged by '+bcEsc(fb),'Open',function(){ openDrawer(id); },o);
+        else notify('Critical ultrasound finding',bcEsc(nm(p))+' · flagged by '+bcEsc(fb),o);
+        if(window.pvxSay) pvxSay('Critical ultrasound finding: '+nm(p)+', flagged by '+fb); });
+    }catch(e){}
+  }
+  if(typeof window.renderAll==='function'){ var ra=window.renderAll; window.renderAll=function(){ var r=ra.apply(this,arguments); setTimeout(sweep,0); return r; }; }
+  setInterval(sweep,3000);
+
+  /* Operations > Reminder chime, per screen */
+  var K='pvx:sound:reminder';
+  function on(){ try{ return localStorage.getItem(K)!=='off'; }catch(e){ return true; } }
+  function paint(){ var b=document.getElementById('opsChime'), s2=document.getElementById('opsChimeS'); if(!b) return; var v=on(); b.setAttribute('aria-checked',String(v)); if(s2) s2.textContent=(v?'On':'Off')+' · this screen'; }
+  document.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('#opsChime'); if(!b) return; e.preventDefault(); e.stopPropagation();
+    try{ localStorage.setItem(K,on()?'off':'on'); }catch(x){} paint(); if(window.pvxSay) pvxSay('Reminder chime '+(on()?'on':'off')+' on this screen. A new critical case always chimes.'); },true);
+  paint();
+})();
+</script>
+
+<script>
+/* PVX-N198 - action sheets: confirmations and Rounds menus */
+(function(){
+  function phone(){ return window.innerWidth<600; }
+  function coarse(){ try{ return matchMedia('(pointer:coarse)').matches; }catch(e){ return false; } }
+  var box=document.getElementById('confirmBox'), cancel=document.getElementById('confirmCancel');
+
+  /* 1-2. confirmations */
+  var opener=null;
+  if(box&&typeof window.showConfirm==='function'){
+    var sc=window.showConfirm;
+    window.showConfirm=function(title,okLabel,onOk,opts){
+      var a=document.activeElement; opener=(a&&a!==document.body&&!box.contains(a))?a:opener;
+      var r=sc.apply(this,arguments);
+      box.classList.toggle('pvx-as',phone());
+      var danger=!!(opts&&opts.danger);
+      setTimeout(function(){
+        if(!box.classList.contains('open')||box.querySelector('.pvx-hwrap')) return;   /* the hours sheet focuses its field */
+        var f=danger?cancel:document.getElementById('confirmOk'); if(f) try{ f.focus({preventScroll:true}); }catch(e){ f.focus(); }
+      },40);
+      return r;
+    };
+    new MutationObserver(function(){
+      if(box.classList.contains('open')) return;
+      var a=document.activeElement, o=opener; opener=null;
+      if(o&&o.isConnected&&(!a||a===document.body||box.contains(a))) try{ o.focus({preventScroll:true}); }catch(e){}
+    }).observe(box,{attributes:true,attributeFilter:['class']});
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape'||!box.classList.contains('open')) return;
+      e.preventDefault(); e.stopPropagation(); if(cancel) cancel.click();
+    },true);
+    window.addEventListener('resize',function(){ if(box.classList.contains('open')) box.classList.toggle('pvx-as',phone()); });
+  }
+
+  /* 3. Rounds menus */
+  if(typeof window.rdMenu!=='function') return;
+  var DANGER=/^(Clear |Undo |Remove )/;
+  function esc(t){ return (typeof rdEsc==='function')?rdEsc(t):String(t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  window.rdMenu=function(anchor,items,onPick){
+    rdCloseMenus();
+    var plain=[], bad=[];
+    items.forEach(function(i){ (i.danger||DANGER.test(i.label||'')?bad:plain).push(i); });
+    var radio=items.some(function(i){ return i.on; });
+    function row(i,d){ return '<button type="button" tabindex="-1" role="'+(radio?'menuitemradio':'menuitem')+'"'+(radio?' aria-checked="'+(!!i.on)+'"':'')+' data-v="'+esc(i.value)+'" class="'+(i.on?'on ':'')+(d?'danger':'')+'">'+esc(i.label)+'</button>'; }
+    var html=plain.map(function(i){ return row(i,false); }).join('')+(bad.length&&plain.length?'<div class="rd-msep" role="separator"></div>':'')+bad.map(function(i){ return row(i,true); }).join('');
+    var label=(anchor&&(anchor.getAttribute('aria-label')||anchor.getAttribute('title')||(anchor.textContent||'').trim().slice(0,40)))||'Options';
+    var as=phone(), m=document.createElement('div');
+    m.className='rd-menu'+(as?' rd-as':'')+(coarse()?' rd-touch':'');
+    if(as) m.innerHTML='<div class="rd-assheet" role="menu" aria-label="'+esc(label)+'"><div class="rd-asgroup">'+html+'</div><button type="button" class="rd-ascancel">Cancel</button></div>';
+    else { m.setAttribute('role','menu'); m.setAttribute('aria-label',label); m.innerHTML=html; }
+    document.body.appendChild(m);
+    if(!as){
+      var r=anchor.getBoundingClientRect(), vh=window.innerHeight, h=m.scrollHeight, below=vh-r.bottom-18, above=r.top-18, top, maxH;
+      if(h<=below||below>=above){ maxH=Math.max(120,below); top=r.bottom+6; }
+      else { maxH=Math.max(120,above); top=Math.max(12,r.top-6-Math.min(h,maxH)); }
+      m.style.maxHeight=maxH+'px';
+      m.style.left=Math.max(12,Math.min(r.left,window.innerWidth-m.offsetWidth-12))+'px';
+      m.style.top=top+'px';
+    }
+    var opts=[].slice.call(m.querySelectorAll('button'));   /* the items, then Cancel on phones */
+    function close(back){
+      m.remove(); document.removeEventListener('click',outside,true);
+      if(back&&anchor&&anchor.isConnected) try{ anchor.focus({preventScroll:true}); }catch(e){}
+    }
+    function outside(ev){ if(!m.isConnected){ document.removeEventListener('click',outside,true); return; } if(!m.contains(ev.target)) close(false); }
+    m.addEventListener('click',function(e){
+      if(e.target===m||e.target.closest('.rd-ascancel')){ e.stopPropagation(); close(true); return; }
+      var b=e.target.closest('button[data-v]'); if(!b) return;
+      var v=b.dataset.v; close(false); onPick(v);
+    });
+    m.addEventListener('keydown',function(e){
+      var i=opts.indexOf(document.activeElement);
+      if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(true); return; }
+      if(e.key==='Tab'){ close(false); return; }
+      var n=null;
+      if(e.key==='ArrowDown') n=(i+1)%opts.length; else if(e.key==='ArrowUp') n=(i-1+opts.length)%opts.length;
+      else if(e.key==='Home') n=0; else if(e.key==='End') n=opts.length-1;
+      if(n!==null){ e.preventDefault(); opts[n].focus(); }
+    });
+    setTimeout(function(){ if(m.isConnected) document.addEventListener('click',outside,true); },0);
+    var first=m.querySelector('button.on')||opts[0]; if(first) try{ first.focus({preventScroll:true}); }catch(e){ first.focus(); }
+  };
+  /* Esc also closes a menu that lost focus */
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.querySelector('.rd-menu')){ e.preventDefault(); rdCloseMenus(); } });
 })();
 </script>
 </body>

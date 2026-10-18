@@ -345,6 +345,10 @@
       flush(); route();
     });
   }
+  /* n197: a polite announcement (VoiceOver), once */
+  function srSay(t) { var el = document.getElementById('anSr'); if (!el) { el = document.createElement('div'); el.id = 'anSr'; el.className = 'an-vh'; el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
+    el.textContent = ''; setTimeout(function () { el.textContent = t; }, 60); }
+  window.anesiaSay = srSay;
   /* n196: tips - one simple feature each, only for people who would benefit, at most one a day */
   function tipHTML(r, signed, conf) {
     if (signed || !conf || lsGet('tips')) return '';   /* dismissed the old all-in-one banner: seen it all */
@@ -933,7 +937,7 @@
     }).join('');
     var abx = A.abxStatus(r, r.end && r.end < t ? r.end : t), abxRows = abx.map(function (a) {
       var st = abxState(a, t, live);
-      var nk = 'abx:' + r.id + ':' + a.drugId + ':' + a.dueAt; if ((st.cls === 'due' || st.cls === 'late') && live && !fired(nk)) fire(nk); var np = playing(nk, 700);
+      var nk = 'abx:' + r.id + ':' + a.drugId + ':' + a.dueAt; if ((st.cls === 'due' || st.cls === 'late') && live && !fired(nk)) { fire(nk); srSay(a.name + ' redose ' + (st.cls === 'late' ? 'is late' : 'is due')); }   /* n197 */ var np = playing(nk, 700);
       return '<button type="button" class="an-nrow an-abx ' + st.cls + '" data-abx="' + a.drugId + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(a.name + ', last dose ' + fmtTime(a.last) + '. ' + st.aria) + '"><span><em class="an-dn"><span class="an-abxic' + (np !== null ? ' nudge' : '') + '"' + (np !== null ? ' style="animation-delay:-' + np + 'ms"' : '') + ' aria-hidden="true">' + icon('timer', { scale: 's' }) + '</span>' + esc(a.name) + '</em><small>Last ' + esc(fmtTime(a.last)) + (a.redoseMin ? ' · every ' + sig(a.redoseMin) + ' min' : '') + '</small></span><b' + (a.dueAt && live ? ' data-abxdue="' + a.dueAt + '"' : '') + '>' + esc(st.txt) + '</b></button>';
     }).join('');
     var devNow = (r.devices || []).filter(function (d) { return !d.void && !d.end; }), vnow = A.ventAt(r, t);
@@ -1362,7 +1366,7 @@
         if (e.field) { var f2 = $('[name="' + e.field + '"]', wrap); if (f2) { f2.setAttribute('aria-invalid', 'true'); f2.setAttribute('aria-describedby', ((f2.getAttribute('aria-describedby') || '').replace('anShErr', '') + ' anShErr').trim()); f2.focus(); } }
       }
     }
-    form.onsubmit = function (e) { e.preventDefault(); if (o.primary) submit(); };
+    form.onsubmit = function (e) { e.preventDefault(); if (o.primary && !o.danger) submit(); };   /* n199: a destructive primary never answers Return (HIG Buttons) */
     var ok = $('[data-ok]', wrap); if (ok) ok.onclick = submit;
     /* n193: the button looks unavailable until the required data is in (pressing it still says what's missing) */
     if (ok && o.ready) { var rsync = function () { setTimeout(function () { var y = false; try { y = !!o.ready(wrap); } catch (x) { } ok.setAttribute('aria-disabled', String(!y)); }, 0); };
