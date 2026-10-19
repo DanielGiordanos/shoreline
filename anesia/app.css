@@ -1643,3 +1643,62 @@ body:not(.dark) svg.an-sf .tick{stroke:#fff}
 .an-vdiscard [data-vdrop]{order:1;flex:1 1 100%;min-height:44px;justify-content:center}
 .an-vdiscard [data-vkeep]{order:2;flex:1 1 100%;min-height:44px;justify-content:center}
 }
+
+/* ===== n204 — iPhone: the charting toolbar stays on screen, docked above the Home indicator ===== */
+.an-tools>.an-pmore{display:none}
+@media (max-width:600px){
+html body .an-tools{position:fixed!important;left:8px;right:8px;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:30;
+  display:flex;flex-wrap:nowrap!important;justify-content:space-between;align-items:center;gap:4px!important;margin:0!important;padding:6px!important;
+  border-radius:24px!important;background:var(--an-surface)!important;border:1px solid var(--an-line)!important;box-shadow:0 12px 32px rgba(0,0,0,.28)!important}
+html body .an-tools>.an-group{display:flex;gap:2px;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+html body .an-tools [data-act=infusion],html body .an-tools [data-act=gas],html body .an-tools [data-act=output],html body .an-tools [data-act=airway],
+html body .an-tools>.sp,html body .an-tools>.an-zoomseg,html body .an-tools>#anInsp{display:none!important}
+html body .an-tools>.an-pmore{display:inline-flex;align-items:center;justify-content:center;width:44px;min-height:44px;padding:0;background:transparent}
+html body .an-tools>#anEmer{width:44px;padding:0!important}
+#anApp:has(.an-tools){padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+body:has(.an-tools) .an-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+}
+@media (max-width:600px) and (prefers-reduced-transparency:reduce){html body .an-tools{box-shadow:none!important}}
+
+/* ===== n208 — toolbars (HIG Toolbars; claude/hig-audit-toolbars.md) ===== */
+/* Emergency sits apart at the far trailing edge and keeps its label on iPad and Mac (undoes n177's icon-only rules) */
+@media (min-width:601px){
+  .an-tools>#anEmer{margin-left:.5rem}
+  .an-tools>#anEmer .t,html.an-titled .an-tools>#anEmer .t,html.an-compact .an-tools>#anEmer .t{display:inline!important}
+  html.an-titled .an-tools>#anEmer,html.an-compact .an-tools>#anEmer,.an-tools>#anEmer{padding:0 1rem 0 .875rem}
+}
+/* the zoom pop-up: shown instead of 5 / 10 / 15 when the bar is pinned, labels are dropped, or the window is narrow */
+.an-tools>.an-zoompop{display:none;gap:.375rem;padding:0 .875rem 0 1rem!important;font-weight:600}
+.an .an-btn.an-dc.an-zoompop::after{display:none}
+.an-zoompop .an-chev{display:inline-block;width:5px;height:5px;margin:0 1px 2px 2px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);opacity:.7}
+html.an-titled .an-tools>.an-zoomseg,html.an-compact .an-tools>.an-zoomseg,html.an-bigtext .an-tools>.an-zoomseg{display:none}
+html.an-titled .an-tools>.an-zoompop,html.an-compact .an-tools>.an-zoompop,html.an-bigtext .an-tools>.an-zoompop{display:inline-flex}
+@media (max-width:1100px) and (min-width:601px){.an-tools>.an-zoomseg{display:none}.an-tools>.an-zoompop{display:inline-flex}.an-tools>#anInsp .t{display:none}.an-tools>#anInsp{padding:0 .75rem}}
+/* the pinned title: name and time; it taps back to the top */
+html.an-titled .an-tbt{pointer-events:auto;cursor:pointer}
+.an-tbt{min-width:0}.an-tbt b{font-weight:700}.an-tbt .an-tbt-s{font-weight:400;color:var(--an-ink-2);font-variant-numeric:tabular-nums}
+@media (max-width:900px){.an-tbt .an-tbt-s{display:none}}
+@media (max-width:900px) and (min-width:601px){html.an-titled .an-tools>.an-zoompop,html.an-titled .an-tools>#anInsp{display:none!important}}   /* the name needs the room; zoom is back when you scroll up */
+/* iPhone: a slim title bar at the top once the record header has scrolled away */
+.an-ptitle{display:none}
+@media (max-width:600px){
+  .an-ptitle{display:block;position:fixed;z-index:60;top:calc(8px + env(safe-area-inset-top,0px));left:50%;max-width:calc(100vw - 32px);padding:.4375rem 1rem;border-radius:999px;
+    background:var(--an-glass);-webkit-backdrop-filter:blur(12px) saturate(160%);backdrop-filter:blur(12px) saturate(160%);box-shadow:var(--an-glass-shadow),inset 0 0 0 .5px var(--an-glass-edge,rgba(255,255,255,.12));
+    font-size:var(--t-subhead,.9375rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transform:translate(-50%,-8px);transition:opacity .2s ease,transform .35s var(--an-spring,ease);pointer-events:none;cursor:pointer}
+  html.an-ptitled .an-ptitle{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .an-ptitle b{font-weight:700}.an-ptitle .an-tbt-s{font-weight:400;color:var(--an-ink-2);font-variant-numeric:tabular-nums}
+  .an-tools>.an-zoompop{display:none!important}
+}
+html.an-noblur .an-ptitle{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--an-surface)}
+@media (prefers-reduced-transparency:reduce){.an-ptitle{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--an-surface)!important}}
+@media (prefers-contrast:more){.an-ptitle{background:var(--an-surface);box-shadow:0 0 0 1px var(--an-ink)}}
+@media (prefers-reduced-motion:reduce){.an-ptitle{transition:opacity .15s ease;transform:translate(-50%,0)!important}}
+@media print{.an-ptitle{display:none!important}}
+/* the standard Close symbol on view-only sheets */
+.an-sh [data-x].an-x{width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border-radius:999px;display:inline-grid;place-items:center;background:var(--an-fill)}
+.an-sh [data-x].an-x svg{width:18px;height:18px}
+@media (pointer:coarse){.an-sh [data-x].an-x{width:44px;min-width:44px;height:44px;min-height:44px}}
+
+/* n211: record cards are links (open in a new window with Command-click or the context menu) */
+a.an-card{text-decoration:none;color:inherit;-webkit-user-drag:element}
+a.an-card:visited{color:inherit}
