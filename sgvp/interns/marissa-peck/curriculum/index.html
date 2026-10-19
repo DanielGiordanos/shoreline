@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>var pvxF={svc:"all",prog:"all"};   /* PVX-N216: the curriculum filters */</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Curriculum — VCA Shoreline Graduate Veterinarian Program</title>
@@ -768,6 +769,22 @@ body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!imp
 /* a flat canvas, as Treatment Sheets: the older pages' coloured background glows step aside in light mode */
 body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
 </style>
+
+<style id="pvx-n216-css">
+/* PVX-N216 - two curriculum filters; equal-width toggle */
+.pvx-cfilt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.pvx-cfsep{width:1px;height:20px;background:var(--border)}
+.pvx-svcpop{display:none}
+button.chip{font-family:inherit;line-height:normal}
+.view-toggle{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr}
+.view-toggle .vt-btn{text-align:center}
+@media (max-width:700px){
+  #currSvcChips,.pvx-cfsep{display:none}
+  .pvx-svcpop{display:inline-block;height:32px;padding:0 28px 0 12px;border-radius:20px;border:1px solid var(--border);font:600 11.5px/1 inherit;font-family:inherit;color:var(--text-secondary);
+    background:var(--glass-bg) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238A97AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='3 4.5 6 7.5 9 4.5'/></svg>") no-repeat right 10px center;
+    -webkit-appearance:none;appearance:none}
+}
+</style>
 </head>
 <body>
 <script id="pvx-theme-js">
@@ -889,8 +906,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <!-- VIEW TOGGLE -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
     <div class="view-toggle">
-      <button class="vt-btn active" id="btnMyCurr" onclick="setView('my')">My Curriculum</button>
-      <button class="vt-btn" id="btnAllCurr" onclick="setView('all')">Entire Class</button>
+      <button class="vt-btn active" id="btnMyCurr" onclick="setView('my')">My curriculum</button>
+      <button class="vt-btn" id="btnAllCurr" onclick="setView('all')">Entire class</button>
     </div>
     <div style="font-size:12px;color:var(--text-muted);">Viewing: <strong style="color:var(--text-primary);" id="viewLabel">Marissa Peck</strong></div>
   </div>
@@ -901,16 +918,11 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <input class="search-input" id="currSearch" type="text" placeholder="Search..." oninput="onCurrSearch(this.value)">
       <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 3a7.5 7.5 0 006.15 13.65z"/></svg>
     </div>
-    <div class="filter-chips" id="currFilterChips">
-      <div class="chip active" data-f="all" onclick="setCurrFilter('all',this)">All</div>
-      <div class="chip" data-f="em" onclick="setCurrFilter('em',this)">Emergency</div>
-      <div class="chip" data-f="im" onclick="setCurrFilter('im',this)">Internal Med</div>
-      <div class="chip" data-f="surg" onclick="setCurrFilter('surg',this)">Surgery</div>
-      <div class="chip" data-f="neuro" onclick="setCurrFilter('neuro',this)">Neurology</div>
-      <div class="chip" data-f="onco" onclick="setCurrFilter('onco',this)">Oncology</div>
-      <div class="chip" data-f="completed" onclick="setCurrFilter('completed',this)">✓ Completed</div>
-      <div class="chip" data-f="current" onclick="setCurrFilter('current',this)">● Current</div>
-      <div class="chip" data-f="upcoming" onclick="setCurrFilter('upcoming',this)">Upcoming</div>
+    <div class="pvx-cfilt" id="currFilterChips">
+      <select class="pvx-svcpop" id="currSvcPop" aria-label="Service" onchange="setCurrFilter(this.value==='all'?'svcall':this.value)"><option value="all">All services</option><option value="em">Emergency</option><option value="im">Internal medicine</option><option value="surg">Surgery</option><option value="neuro">Neurology</option><option value="onco">Oncology</option></select>
+      <div class="filter-chips" id="currSvcChips"><button type="button" class="chip active" data-f="svcall" onclick="setCurrFilter('svcall',this)">All</button><button type="button" class="chip" data-f="em" onclick="setCurrFilter('em',this)">Emergency</button><button type="button" class="chip" data-f="im" onclick="setCurrFilter('im',this)">Internal medicine</button><button type="button" class="chip" data-f="surg" onclick="setCurrFilter('surg',this)">Surgery</button><button type="button" class="chip" data-f="neuro" onclick="setCurrFilter('neuro',this)">Neurology</button><button type="button" class="chip" data-f="onco" onclick="setCurrFilter('onco',this)">Oncology</button></div>
+      <span class="pvx-cfsep" aria-hidden="true"></span>
+      <div class="filter-chips" id="currProgChips"><button type="button" class="chip active" data-f="progall" onclick="setCurrFilter('progall',this)">All</button><button type="button" class="chip" data-f="completed" onclick="setCurrFilter('completed',this)">Completed</button><button type="button" class="chip" data-f="current" onclick="setCurrFilter('current',this)">Current</button><button type="button" class="chip" data-f="upcoming" onclick="setCurrFilter('upcoming',this)">Upcoming</button></div>
     </div>
   </div>
 
@@ -1080,15 +1092,20 @@ function setView(mode) {
   viewMode = mode;
   document.getElementById('btnMyCurr').classList.toggle('active', mode==='my');
   document.getElementById('btnAllCurr').classList.toggle('active', mode==='all');
-  document.getElementById('viewLabel').textContent = mode==='my' ? (INTERN_MAP[ME] || 'My Curriculum') : 'Entire Class';
+  document.getElementById('viewLabel').textContent = mode==='my' ? (INTERN_MAP[ME] || 'My curriculum') : 'Entire class';
   renderTable();
 }
 
 // ── FILTERS + SEARCH ──
-function setCurrFilter(f, el) {
-  currFilter = f;
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
+function setCurrFilter(f, el) {   /* PVX-N216: Service and Progress are two filters that combine */
+  var SV=['em','im','surg','neuro','onco'], PR=['completed','current','upcoming'];
+  if(f==='all'){ pvxF.svc='all'; pvxF.prog='all'; }
+  else if(f==='svcall') pvxF.svc='all'; else if(f==='progall') pvxF.prog='all';
+  else if(SV.indexOf(f)>=0) pvxF.svc=f; else if(PR.indexOf(f)>=0) pvxF.prog=f;
+  currFilter = (pvxF.svc==='all'&&pvxF.prog==='all')?'all':(pvxF.svc+'|'+pvxF.prog);
+  document.querySelectorAll('#currSvcChips .chip').forEach(function(c){ c.classList.toggle('active',(c.dataset.f==='svcall'?'all':c.dataset.f)===pvxF.svc); });
+  document.querySelectorAll('#currProgChips .chip').forEach(function(c){ c.classList.toggle('active',(c.dataset.f==='progall'?'all':c.dataset.f)===pvxF.prog); });
+  var sp=document.getElementById('currSvcPop'); if(sp) sp.value=pvxF.svc;
   renderTable();
 }
 function onCurrSearch(val) {
@@ -1097,13 +1114,13 @@ function onCurrSearch(val) {
 }
 
 function svcMatchesFilter(svc) {
-  if(currFilter === 'all') return true;
-  if(currFilter === 'em') return svc.id === 'em1' || svc.id === 'em2';
-  if(currFilter === 'im') return svc.id === 'im';
-  if(currFilter === 'surg') return svc.id === 'surg';
-  if(currFilter === 'neuro') return svc.id === 'neuro';
-  if(currFilter === 'onco') return svc.id === 'onco';
-  if(currFilter === 'completed' || currFilter === 'current' || currFilter === 'upcoming') {
+  if(pvxF.svc === 'all') return true;
+  if(pvxF.svc === 'em') return svc.id === 'em1' || svc.id === 'em2';
+  if(pvxF.svc === 'im') return svc.id === 'im';
+  if(pvxF.svc === 'surg') return svc.id === 'surg';
+  if(pvxF.svc === 'neuro') return svc.id === 'neuro';
+  if(pvxF.svc === 'onco') return svc.id === 'onco';
+  if(pvxF.svc === 'completed' || pvxF.svc === 'current' || pvxF.svc === 'upcoming') {
     // show all services but filter cells
     return true;
   }
@@ -1162,9 +1179,9 @@ function renderTable() {
       }
 
       // Filter by status
-      if(currFilter === 'completed' && status !== 'completed') display = '';
-      if(currFilter === 'current' && status !== 'current') display = '';
-      if(currFilter === 'upcoming' && status !== 'upcoming') display = '';
+      if(pvxF.prog === 'completed' && status !== 'completed') display = '';
+      if(pvxF.prog === 'current' && status !== 'current') display = '';
+      if(pvxF.prog === 'upcoming' && status !== 'upcoming') display = '';
 
       // Filter by search — highlight matching initials
       if(currSearch && !svc.name.toLowerCase().includes(currSearch)) {
@@ -1336,7 +1353,7 @@ function toggleDark(){
   var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   if(t === 'dark' || (!t && prefersDark)) document.body.classList.add('dark');
 })();
-(function(){var vl=document.getElementById('viewLabel');if(vl)vl.textContent=(INTERN_MAP[ME]||'My Curriculum');})();
+(function(){var vl=document.getElementById('viewLabel');if(vl)vl.textContent=(INTERN_MAP[ME]||'My curriculum');})();
 document.body.classList.add('is-loading');
 initCurrentBlock();
 renderLegends();
@@ -1686,5 +1703,66 @@ window.__pvxFB=(function(){
   try{ fix(); }catch(x){}
 })();
 </script>
+
+<script>
+/* PVX-SEG (n215, shared) - single-choice segmented controls (HIG Segmented controls).
+   pvxSeg(selector, {label, item, mode, isOn})
+     mode 'radio' (default): a named radiogroup, the choice aria-checked, one Tab stop, arrows / Home / End move it
+     mode 'tabs'           : the same as a tablist (the control switches a panel), aria-selected
+     mode 'current'        : an app's section switcher: the open section is aria-current, nothing else changes
+   The app keeps drawing the highlight with its own class (active, on, ...). The state is read from that class every time
+   it changes, so what VoiceOver hears is always what is on screen. A group that is drawn again later is picked up too.
+   Moving with the keyboard clicks the next segment, so the app's own handler does the work. */
+(function(){
+  if(window.pvxSeg) return;
+  var REG=[], ON=/(^|\s)(active|on|is-on|is-active|sel|selected|current)(\s|$)/;
+  function isOn(b,o){ return o.isOn?!!o.isOn(b):ON.test(typeof b.className==='string'?b.className:''); }
+  function shown(b){ if(b.hidden) return false; var s=getComputedStyle(b); return s.display!=='none'&&s.visibility!=='hidden'; }
+  function items(g,o){ return [].filter.call(g.querySelectorAll(o.item||'button'),function(b){ return b.closest(o.sel)===g&&shown(b); }); }
+  function set(e,k,v){ if(e.getAttribute(k)!==v) e.setAttribute(k,v); }
+  function sync(g,o){
+    var it=items(g,o); if(!it.length) return;
+    if(g.__pvxSegO!==o){ g.__pvxSegO=o;
+      if(o.mode!=='current'){ g.setAttribute('role',o.mode==='tabs'?'tablist':'radiogroup'); g.addEventListener('keydown',key); }
+      if(o.label&&!g.hasAttribute('aria-labelledby')) set(g,'aria-label',typeof o.label==='function'?o.label(g):o.label);
+    }
+    var cur=-1; for(var i=0;i<it.length;i++){ if(isOn(it[i],o)){ cur=i; break; } }
+    it.forEach(function(b,i){ var s=i===cur;
+      if(o.mode==='current'){ if(s) set(b,'aria-current','true'); else if(b.hasAttribute('aria-current')) b.removeAttribute('aria-current'); return; }
+      set(b,'role',o.mode==='tabs'?'tab':'radio'); set(b,o.mode==='tabs'?'aria-selected':'aria-checked',String(s));
+      if(b.hasAttribute('aria-pressed')) b.removeAttribute('aria-pressed');
+      set(b,'tabindex',(s||(cur<0&&i===0))?'0':'-1');
+    });
+  }
+  function ident(b){ return b.getAttribute('data-v')||b.getAttribute('data-s')||b.getAttribute('data-shift')||b.getAttribute('data-ctab')||b.getAttribute('data-tab')||b.getAttribute('data-mode')||b.id||b.textContent.trim(); }
+  function key(e){
+    var g=e.currentTarget, o=g.__pvxSegO; if(!o||e.altKey||e.metaKey||e.ctrlKey) return;
+    var k=e.key, rtl=getComputedStyle(g).direction==='rtl', it=items(g,o).filter(function(b){ return !b.disabled&&b.getAttribute('aria-disabled')!=='true'; });
+    var i=it.indexOf(document.activeElement); if(i<0) return;
+    var fwd=rtl?'ArrowLeft':'ArrowRight', back=rtl?'ArrowRight':'ArrowLeft';
+    var n=(k===fwd||k==='ArrowDown')?i+1:(k===back||k==='ArrowUp')?i-1:k==='Home'?0:k==='End'?it.length-1:null;
+    if(n===null) return;
+    e.preventDefault(); e.stopPropagation();
+    var b=it[(n+it.length)%it.length], id=ident(b); b.focus(); b.click();
+    /* the app may draw the group again: keep the keyboard on the same choice */
+    requestAnimationFrame(function(){ scan(); if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest(o.sel)) return;
+      var gs=document.querySelectorAll(o.sel); for(var j=0;j<gs.length;j++){ var m=items(gs[j],o).filter(function(x){ return ident(x)===id; })[0]; if(m){ m.focus(); return; } } });
+  }
+  var raf=0; function scan(){ raf=0; REG.forEach(function(o){ [].forEach.call(document.querySelectorAll(o.sel),function(g){ sync(g,o); }); }); }
+  function later(){ if(!raf) raf=requestAnimationFrame(scan); }
+  var obs=null;
+  window.pvxSeg=function(sel,opts){ var o=Object.assign({sel:sel,mode:'radio'},opts||{}); REG.push(o);
+    if(!obs&&document.body){ obs=new MutationObserver(later); obs.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden']}); }
+    [].forEach.call(document.querySelectorAll(sel),function(g){ sync(g,o); }); return o; };
+  window.pvxSeg.sync=scan;
+})();
+</script>
+<script>
+/* PVX-N216 - the curriculum's toggle and filters are named radiogroups */
+pvxSeg('.view-toggle',{item:'.vt-btn',label:'Whose curriculum'});
+pvxSeg('#currSvcChips',{item:'.chip',label:'Service'});
+pvxSeg('#currProgChips',{item:'.chip',label:'Progress'});
+</script>
+<!-- PVX-N216: segmented controls -->
 </body>
 </html>

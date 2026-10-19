@@ -435,6 +435,12 @@ body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!imp
 body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
 </style>
 <!-- DTA-A04 n134 -->
+
+<style id="pvx-n216-css">
+/* PVX-N216 - Logo size sliders: the shared 24 / 44 pt touch area instead of 4 pt */
+input[type=range].pvx-range.sz-slider{height:24px}
+@media (pointer:coarse){input[type=range].pvx-range.sz-slider{height:44px}}
+</style>
 </head>
 <body>
 <script>
@@ -637,7 +643,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 </div>
 
 <!-- ADMIN BTN -->
-<button class="admin-btn" onclick="toggleAdmin()" title="Customize Assets" aria-label="Customize Assets">⚙</button>
+<button class="admin-btn" onclick="toggleAdmin()" title="Customize assets" aria-label="Customize assets">⚙</button>
 <div class="admin-overlay" id="adminOverlay" onclick="closeAdmin()"></div>
 
 <!-- ADMIN PANEL -->
@@ -645,7 +651,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <div class="admin-handle"></div>
   <div class="admin-title">⚙ Customize Assets<button class="admin-close" onclick="closeAdmin()">✕</button></div>
 
-  <div class="a-label">App Logos</div>
+  <div class="a-label">App logos</div>
   <div class="logo-grid">
     <div class="logo-card">
       <div class="logo-prev" id="prev-outlook"><span>📧</span></div>
@@ -720,7 +726,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <button class="reset-btn" onclick="resetLogo('wellness')">✕ Reset</button>
     </div></div>
 
-  <div class="a-label">Logo Size</div>
+  <div class="a-label">Logo size</div>
   <div class="slider-grid">
     <div class="slider-card">
       <div class="slider-top"><span class="slider-name">Outlook</span><span class="slider-val" id="szv-outlook">100%</span></div>
@@ -771,7 +777,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <input type="range" min="40" max="160" value="100" class="sz-slider" id="sz-wellness" oninput="resizeLogo('wellness',this.value)">
     </div></div>
 
-  <div class="a-label">App Links</div>
+  <div class="a-label">App links</div>
   <div class="url-row"><span class="url-label">Outlook</span><input class="url-input" id="url-outlook" placeholder="https://outlook.office.com"><button class="save-btn" onclick="saveUrl('outlook')">Save</button></div>
   <div class="url-row"><span class="url-label">QTrac</span><input class="url-input" id="url-qtrac" placeholder="https://"><button class="save-btn" onclick="saveUrl('qtrac')">Save</button></div>
   <div class="url-row"><span class="url-label">Antech</span><input class="url-input" id="url-antech" placeholder="https://"><button class="save-btn" onclick="saveUrl('antech')">Save</button></div>
@@ -780,7 +786,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <div class="url-row"><span class="url-label">Dayforce</span><input class="url-input" id="url-dayforce" placeholder="https://"><button class="save-btn" onclick="saveUrl('dayforce')">Save</button></div>
   <div class="url-row"><span class="url-label">SharePoint</span><input class="url-input" id="url-sharepoint" placeholder="https://"><button class="save-btn" onclick="saveUrl('sharepoint')">Save</button></div>
 
-  <div class="a-label">Coming Soon — Backgrounds</div>
+  <div class="a-label">Coming soon — backgrounds</div>
   <div class="soon-grid">
     <div class="soon-admin-card">
       <div class="soon-prev" id="sprev-scribe"><span>🤖</span></div>
@@ -813,7 +819,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <button class="reset-btn" onclick="resetSoon('treatment')">✕ Reset</button>
     </div></div>
 
-  <div class="a-label">Page Wallpaper</div>
+  <div class="a-label">Page wallpaper</div>
   <div class="wall-wrap">
     <div class="wall-row">
       <div class="wall-prev" id="wprev"><span>🖼</span></div>
@@ -825,14 +831,14 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     <button class="wall-remove" onclick="removeWallpaper()">✕ Remove wallpaper</button>
   </div>
 
-  <div class="a-label">Title Color</div>
+  <div class="a-label">Title color</div>
   <div class="color-wrap">
     <div class="color-mode-row">
       <div class="seg">
         <button class="seg-btn active" id="ml" onclick="switchMode('light')">☀ Light</button>
         <button class="seg-btn" id="md" onclick="switchMode('dark')">☾ Dark</button>
       </div>
-      <span class="color-mode-hint" id="mh">Editing Light Mode</span>
+      <span class="color-mode-hint" id="mh">Editing light mode</span>
     </div>
     <div class="seg" style="margin-bottom:14px;">
       <button class="seg-btn active" id="seg-presets" onclick="switchColorTab('presets')">Presets</button>
@@ -851,7 +857,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     </div>
     <div class="color-actions">
       <button class="color-cancel" onclick="cancelColor()">Cancel</button>
-      <button class="color-save" onclick="saveColor()">Save Changes</button>
+      <button class="color-save" onclick="saveColor()">Save changes</button>
     </div>
   </div>
 
@@ -1142,7 +1148,7 @@ function switchMode(mode){
   var ml=document.getElementById('ml'),md=document.getElementById('md'),mh=document.getElementById('mh');
   if(ml)ml.classList.toggle('active',mode==='light');
   if(md)md.classList.toggle('active',mode==='dark');
-  if(mh)mh.textContent=mode==='light'?'Editing Light Mode':'Editing Dark Mode';
+  if(mh)mh.textContent=mode==='light'?'Editing light mode':'Editing dark mode';
   var s=localStorage.getItem(mode==='dark'?KCD:KCL);
   if(s){try{var cd=JSON.parse(s);_pg=cd.g;_pn=cd.n;var pt=document.getElementById('cpt');if(pt)pt.style.backgroundImage=cd.g;var ps=document.getElementById('cps');if(ps)ps.textContent=cd.n||'';document.querySelectorAll('.preset-card').forEach(function(c,i){c.classList.toggle('selected',PRESETS[i]&&PRESETS[i][2]===cd.g);});}catch(e){}}
 }
@@ -1518,6 +1524,95 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   if(mq.addEventListener) mq.addEventListener('change',sync); window.addEventListener('resize',sync); window.addEventListener('load',sync); sync();
 })();
 </script>
+
+<script>
+/* PVX-SEG (n215, shared) - single-choice segmented controls (HIG Segmented controls).
+   pvxSeg(selector, {label, item, mode, isOn})
+     mode 'radio' (default): a named radiogroup, the choice aria-checked, one Tab stop, arrows / Home / End move it
+     mode 'tabs'           : the same as a tablist (the control switches a panel), aria-selected
+     mode 'current'        : an app's section switcher: the open section is aria-current, nothing else changes
+   The app keeps drawing the highlight with its own class (active, on, ...). The state is read from that class every time
+   it changes, so what VoiceOver hears is always what is on screen. A group that is drawn again later is picked up too.
+   Moving with the keyboard clicks the next segment, so the app's own handler does the work. */
+(function(){
+  if(window.pvxSeg) return;
+  var REG=[], ON=/(^|\s)(active|on|is-on|is-active|sel|selected|current)(\s|$)/;
+  function isOn(b,o){ return o.isOn?!!o.isOn(b):ON.test(typeof b.className==='string'?b.className:''); }
+  function shown(b){ if(b.hidden) return false; var s=getComputedStyle(b); return s.display!=='none'&&s.visibility!=='hidden'; }
+  function items(g,o){ return [].filter.call(g.querySelectorAll(o.item||'button'),function(b){ return b.closest(o.sel)===g&&shown(b); }); }
+  function set(e,k,v){ if(e.getAttribute(k)!==v) e.setAttribute(k,v); }
+  function sync(g,o){
+    var it=items(g,o); if(!it.length) return;
+    if(g.__pvxSegO!==o){ g.__pvxSegO=o;
+      if(o.mode!=='current'){ g.setAttribute('role',o.mode==='tabs'?'tablist':'radiogroup'); g.addEventListener('keydown',key); }
+      if(o.label&&!g.hasAttribute('aria-labelledby')) set(g,'aria-label',typeof o.label==='function'?o.label(g):o.label);
+    }
+    var cur=-1; for(var i=0;i<it.length;i++){ if(isOn(it[i],o)){ cur=i; break; } }
+    it.forEach(function(b,i){ var s=i===cur;
+      if(o.mode==='current'){ if(s) set(b,'aria-current','true'); else if(b.hasAttribute('aria-current')) b.removeAttribute('aria-current'); return; }
+      set(b,'role',o.mode==='tabs'?'tab':'radio'); set(b,o.mode==='tabs'?'aria-selected':'aria-checked',String(s));
+      if(b.hasAttribute('aria-pressed')) b.removeAttribute('aria-pressed');
+      set(b,'tabindex',(s||(cur<0&&i===0))?'0':'-1');
+    });
+  }
+  function ident(b){ return b.getAttribute('data-v')||b.getAttribute('data-s')||b.getAttribute('data-shift')||b.getAttribute('data-ctab')||b.getAttribute('data-tab')||b.getAttribute('data-mode')||b.id||b.textContent.trim(); }
+  function key(e){
+    var g=e.currentTarget, o=g.__pvxSegO; if(!o||e.altKey||e.metaKey||e.ctrlKey) return;
+    var k=e.key, rtl=getComputedStyle(g).direction==='rtl', it=items(g,o).filter(function(b){ return !b.disabled&&b.getAttribute('aria-disabled')!=='true'; });
+    var i=it.indexOf(document.activeElement); if(i<0) return;
+    var fwd=rtl?'ArrowLeft':'ArrowRight', back=rtl?'ArrowRight':'ArrowLeft';
+    var n=(k===fwd||k==='ArrowDown')?i+1:(k===back||k==='ArrowUp')?i-1:k==='Home'?0:k==='End'?it.length-1:null;
+    if(n===null) return;
+    e.preventDefault(); e.stopPropagation();
+    var b=it[(n+it.length)%it.length], id=ident(b); b.focus(); b.click();
+    /* the app may draw the group again: keep the keyboard on the same choice */
+    requestAnimationFrame(function(){ scan(); if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest(o.sel)) return;
+      var gs=document.querySelectorAll(o.sel); for(var j=0;j<gs.length;j++){ var m=items(gs[j],o).filter(function(x){ return ident(x)===id; })[0]; if(m){ m.focus(); return; } } });
+  }
+  var raf=0; function scan(){ raf=0; REG.forEach(function(o){ [].forEach.call(document.querySelectorAll(o.sel),function(g){ sync(g,o); }); }); }
+  function later(){ if(!raf) raf=requestAnimationFrame(scan); }
+  var obs=null;
+  window.pvxSeg=function(sel,opts){ var o=Object.assign({sel:sel,mode:'radio'},opts||{}); REG.push(o);
+    if(!obs&&document.body){ obs=new MutationObserver(later); obs.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden']}); }
+    [].forEach.call(document.querySelectorAll(sel),function(g){ sync(g,o); }); return o; };
+  window.pvxSeg.sync=scan;
+})();
+</script>
+<script>
+/* PVX-SLIDER (n216, shared) - the Pravix slider standard (HIG Sliders; L.U.N.A.'s studio is the reference).
+   pvxSlider(input, {label, fmt, def, out})
+     label : the spoken name when no <label> is tied to the slider ("Outlook logo size")
+     fmt   : value -> text, shown and spoken with its unit (v => v + '%')
+     def   : the default value: a mark sits there on the track
+     out   : an element that shows the live value
+   The value is spoken as it reads on screen ("100%"), also after a reset that sets .value from code. The touch area is
+   44 pt tall on touch screens (24 pt with a pointer) while the track stays thin. */
+(function(){
+  if(window.pvxSlider) return;
+  var css=document.createElement('style'); css.id='pvx-slider-css';
+  css.textContent='input[type=range].pvx-range{height:24px;min-height:24px;margin-top:0;margin-bottom:0;background:transparent;cursor:pointer;touch-action:pan-y}'
+    +'@media (pointer:coarse){input[type=range].pvx-range{height:44px;min-height:44px}}'
+    +'input[type=range].pvx-range:disabled{opacity:.4;cursor:default}'
+    +'input[type=range].pvx-range:focus-visible{outline:2px solid #38BDD2;outline-offset:2px;border-radius:6px}';
+  (document.head||document.documentElement).appendChild(css);
+  var D=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value'), n=0;
+  window.pvxSlider=function(inp,o){ if(!inp||inp.__pvxSl) return inp; o=o||{}; inp.__pvxSl=1; inp.classList.add('pvx-range');
+    if(o.label&&!(inp.labels&&inp.labels.length)&&!inp.hasAttribute('aria-labelledby')) inp.setAttribute('aria-label',o.label);
+    if(o.def!=null&&!inp.getAttribute('list')){ var dl=document.createElement('datalist'); dl.id='pvxDl'+(++n); dl.innerHTML='<option value="'+o.def+'"></option>'; inp.insertAdjacentElement('afterend',dl); inp.setAttribute('list',dl.id); }
+    function upd(){ var v=+D.get.call(inp), t=o.fmt?o.fmt(v):String(v); inp.setAttribute('aria-valuetext',t); if(o.out) o.out.textContent=t; }
+    inp.addEventListener('input',upd); inp.addEventListener('change',upd);
+    Object.defineProperty(inp,'value',{configurable:true,get:function(){ return D.get.call(inp); },set:function(v){ D.set.call(inp,v); upd(); }});
+    upd(); inp.pvxUpdate=upd; return inp; };
+})();
+</script>
+<script>
+/* PVX-N216 - Title color's choices are radiogroups; each Logo size slider is named and speaks its percent */
+pvxSeg('.color-mode-row > .seg',{item:'.seg-btn',label:'Theme'});
+pvxSeg('.color-wrap > .seg',{item:'.seg-btn',label:'Title color'});
+[].forEach.call(document.querySelectorAll('.slider-card'),function(c){ var i=c.querySelector('input[type=range]'), n=c.querySelector('.slider-name'), v=c.querySelector('.slider-val');
+  if(i) pvxSlider(i,{label:(n?n.textContent.trim():'App')+' logo size',fmt:function(x){ return x+'%'; },def:100,out:v}); });
+</script>
+<!-- PVX-N216: segmented controls and sliders -->
 </body>
 
 

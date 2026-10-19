@@ -15,6 +15,46 @@
 <!-- n135 PVX-TYPE -->
 <!-- n136 CL-T09 copy -->
 <link rel="stylesheet" href="anes.css?v=327d377538">
+
+<style id="pvx-n216-css">
+/* PVX-N216 - equal-width boards; iPhone: a bottom tab bar for the sections, and the boards as a pop-up */
+#sbBoards{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr}
+#sbBoards .sb-segb{justify-content:center}
+.pvx-sbpop{display:none}
+.pvx-tmore{display:none}
+.pvx-tmenu{position:fixed;z-index:60;right:8px;bottom:calc(66px + env(safe-area-inset-bottom,0px));min-width:13rem;padding:6px;border-radius:14px;
+  background:var(--surface-0,#fff);box-shadow:0 12px 32px rgba(0,0,0,.22),0 0 0 .5px rgba(0,0,0,.08)}
+body.dark .pvx-tmenu{background:#1d2840;box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.08)}
+.pvx-tmenu[hidden]{display:none}
+.pvx-tmenu button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 12px;border-radius:9px;font-size:.9375rem;font-weight:500;color:var(--ink-900);cursor:pointer}
+.pvx-tmenu button svg{width:20px;height:20px;flex:none}
+.pvx-tmenu button[aria-current]{color:var(--accent,#38BDD2);font-weight:600}
+.pvx-tmenu button:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:-2px}
+@media (max-width:700px){
+  html.pvx-ttab body{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
+  html.pvx-ttab #clinSwitcher{position:fixed!important;left:0;right:0;bottom:0;z-index:40;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;
+    max-width:none!important;width:100%;margin:0;padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));overflow:visible!important;
+    background:var(--surface-0,#fff);box-shadow:0 -1px 0 rgba(0,0,0,.08),0 -8px 24px rgba(0,0,0,.08);border:0;border-radius:0}
+  html.pvx-ttab body.dark #clinSwitcher{background:#172440;box-shadow:0 -1px 0 rgba(255,255,255,.08),0 -8px 24px rgba(0,0,0,.3)}
+  html.pvx-ttab #clinSwitcher .seg,html.pvx-ttab #clinSwitcher .pvx-tmore{display:flex!important;cursor:pointer;font-family:inherit;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;width:auto!important;min-height:50px!important;padding:4px 2px!important;
+    border:0!important;border-radius:12px;font-size:0!important;font-weight:600;line-height:1.1;white-space:nowrap;background:transparent!important;box-shadow:none!important;color:var(--ink-500)}
+  html.pvx-ttab #clinSwitcher .seg::after{content:attr(data-tab);font-size:.6875rem;display:block;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  html.pvx-ttab #clinSwitcher .pvx-tmore::after{content:"More";font-size:.6875rem;display:block}
+  html.pvx-ttab #clinSwitcher .seg > :not(svg){display:none!important}
+  html.pvx-ttab #clinSwitcher .seg svg,html.pvx-ttab #clinSwitcher .pvx-tmore svg{width:24px;height:24px;flex:0 0 auto}
+  html.pvx-ttab #clinSwitcher .seg.active,html.pvx-ttab #clinSwitcher .pvx-tmore.on{color:var(--accent,#38BDD2)!important}
+  html.pvx-ttab body:not(.dark) #clinSwitcher .seg.active,html.pvx-ttab body:not(.dark) #clinSwitcher .pvx-tmore.on{color:#1F8FA8!important}
+  html.pvx-ttab #clinSwitcher .seg[data-ctab=anes],html.pvx-ttab #clinSwitcher .seg[data-ctab=timeline],html.pvx-ttab #clinSwitcher .seg[data-ctab=charges],html.pvx-ttab #clinSwitcher .seg[data-ctab=notes]{display:none!important}
+  html.pvx-ttab #clinSwitcher .pvx-tmore{display:flex!important}
+  html.pvx-ttab .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  #sbBoards{display:none!important}
+  .pvx-sbpop{display:inline-block;max-width:100%;height:36px;padding:0 30px 0 12px;border-radius:10px;border:0;font:inherit;font-size:13px;font-weight:600;color:var(--ink-900);
+    background:var(--surface-0,#fff) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238A97AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='3 4.5 6 7.5 9 4.5'/></svg>") no-repeat right 10px center;
+    -webkit-appearance:none;appearance:none;box-shadow:0 0 0 .5px rgba(0,0,0,.1)}
+  body.dark .pvx-sbpop{background-color:#26314a;color:#EEF1F6}
+}
+@media (forced-colors:active){html.pvx-ttab #clinSwitcher{border-top:1px solid CanvasText}}
+</style>
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie (light unless the user chose dark). -->
@@ -69,11 +109,11 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <!-- ═══ CLINICAL SUB-NAV (replaces the old Patient Flow subnav) ═══ -->
   <div class="subnav">
     <div class="subnav-title">Treatment Sheets</div>
-    <nav class="switcher" id="clinSwitcher">
-      <button class="seg active" data-ctab="dash" title="Dashboard" aria-label="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
-      <button class="seg" data-ctab="tasks" title="Tasks" aria-label="Tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/></svg>Tasks<span class="seg-badge" id="tsTaskBadge"></span></button>
-      <button class="seg" data-ctab="sheet" title="Treatment Sheet" aria-label="Treatment Sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Treatment Sheet</button>
-      <button class="seg" data-ctab="vitals" title="Vitals" aria-label="Vitals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Vitals</button>
+    <nav class="switcher" id="clinSwitcher" aria-label="Treatment sections">
+      <button class="seg active" data-ctab="dash" data-tab="Dashboard" title="Dashboard" aria-label="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
+      <button class="seg" data-ctab="tasks" data-tab="Tasks" title="Tasks" aria-label="Tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/></svg>Tasks<span class="seg-badge" id="tsTaskBadge"></span></button>
+      <button class="seg" data-ctab="sheet" data-tab="Sheet" title="Treatment sheet" aria-label="Treatment sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Treatment sheet</button>
+      <button class="seg" data-ctab="vitals" data-tab="Vitals" title="Vitals" aria-label="Vitals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>Vitals</button>
       <button class="seg" data-ctab="anes" title="Anesthesia" aria-label="Anesthesia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M10 2.5h4M12 2.5v3"/></svg>Anesthesia</button>
       
       <button class="seg" data-ctab="timeline" title="Timeline" aria-label="Timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Timeline</button>
@@ -135,8 +175,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <div class="ctoast-wrap" id="toastWrap"></div>
 
-<script defer src="core.js?v=434ebffb80"></script>
-<script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "flowDoctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Larry Berkwitt", "Dianne Kittrell"], "interns": ["Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristen Wenger", "Sarah Herron"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="d8c5024f";</script>
+<script defer src="core.js?v=3ce037b559"></script>
+<script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristi Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "flowDoctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Larry Berkwitt", "Dianne Kittrell"], "interns": ["Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristi Wenger", "Sarah Herron"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="d8c5024f";</script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
@@ -374,5 +414,106 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
 })();
 </script>
 <!-- PVX-N196 theme button name -->
+
+<script>
+/* PVX-SEG (n215, shared) - single-choice segmented controls (HIG Segmented controls).
+   pvxSeg(selector, {label, item, mode, isOn})
+     mode 'radio' (default): a named radiogroup, the choice aria-checked, one Tab stop, arrows / Home / End move it
+     mode 'tabs'           : the same as a tablist (the control switches a panel), aria-selected
+     mode 'current'        : an app's section switcher: the open section is aria-current, nothing else changes
+   The app keeps drawing the highlight with its own class (active, on, ...). The state is read from that class every time
+   it changes, so what VoiceOver hears is always what is on screen. A group that is drawn again later is picked up too.
+   Moving with the keyboard clicks the next segment, so the app's own handler does the work. */
+(function(){
+  if(window.pvxSeg) return;
+  var REG=[], ON=/(^|\s)(active|on|is-on|is-active|sel|selected|current)(\s|$)/;
+  function isOn(b,o){ return o.isOn?!!o.isOn(b):ON.test(typeof b.className==='string'?b.className:''); }
+  function shown(b){ if(b.hidden) return false; var s=getComputedStyle(b); return s.display!=='none'&&s.visibility!=='hidden'; }
+  function items(g,o){ return [].filter.call(g.querySelectorAll(o.item||'button'),function(b){ return b.closest(o.sel)===g&&shown(b); }); }
+  function set(e,k,v){ if(e.getAttribute(k)!==v) e.setAttribute(k,v); }
+  function sync(g,o){
+    var it=items(g,o); if(!it.length) return;
+    if(g.__pvxSegO!==o){ g.__pvxSegO=o;
+      if(o.mode!=='current'){ g.setAttribute('role',o.mode==='tabs'?'tablist':'radiogroup'); g.addEventListener('keydown',key); }
+      if(o.label&&!g.hasAttribute('aria-labelledby')) set(g,'aria-label',typeof o.label==='function'?o.label(g):o.label);
+    }
+    var cur=-1; for(var i=0;i<it.length;i++){ if(isOn(it[i],o)){ cur=i; break; } }
+    it.forEach(function(b,i){ var s=i===cur;
+      if(o.mode==='current'){ if(s) set(b,'aria-current','true'); else if(b.hasAttribute('aria-current')) b.removeAttribute('aria-current'); return; }
+      set(b,'role',o.mode==='tabs'?'tab':'radio'); set(b,o.mode==='tabs'?'aria-selected':'aria-checked',String(s));
+      if(b.hasAttribute('aria-pressed')) b.removeAttribute('aria-pressed');
+      set(b,'tabindex',(s||(cur<0&&i===0))?'0':'-1');
+    });
+  }
+  function ident(b){ return b.getAttribute('data-v')||b.getAttribute('data-s')||b.getAttribute('data-shift')||b.getAttribute('data-ctab')||b.getAttribute('data-tab')||b.getAttribute('data-mode')||b.id||b.textContent.trim(); }
+  function key(e){
+    var g=e.currentTarget, o=g.__pvxSegO; if(!o||e.altKey||e.metaKey||e.ctrlKey) return;
+    var k=e.key, rtl=getComputedStyle(g).direction==='rtl', it=items(g,o).filter(function(b){ return !b.disabled&&b.getAttribute('aria-disabled')!=='true'; });
+    var i=it.indexOf(document.activeElement); if(i<0) return;
+    var fwd=rtl?'ArrowLeft':'ArrowRight', back=rtl?'ArrowRight':'ArrowLeft';
+    var n=(k===fwd||k==='ArrowDown')?i+1:(k===back||k==='ArrowUp')?i-1:k==='Home'?0:k==='End'?it.length-1:null;
+    if(n===null) return;
+    e.preventDefault(); e.stopPropagation();
+    var b=it[(n+it.length)%it.length], id=ident(b); b.focus(); b.click();
+    /* the app may draw the group again: keep the keyboard on the same choice */
+    requestAnimationFrame(function(){ scan(); if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest(o.sel)) return;
+      var gs=document.querySelectorAll(o.sel); for(var j=0;j<gs.length;j++){ var m=items(gs[j],o).filter(function(x){ return ident(x)===id; })[0]; if(m){ m.focus(); return; } } });
+  }
+  var raf=0; function scan(){ raf=0; REG.forEach(function(o){ [].forEach.call(document.querySelectorAll(o.sel),function(g){ sync(g,o); }); }); }
+  function later(){ if(!raf) raf=requestAnimationFrame(scan); }
+  var obs=null;
+  window.pvxSeg=function(sel,opts){ var o=Object.assign({sel:sel,mode:'radio'},opts||{}); REG.push(o);
+    if(!obs&&document.body){ obs=new MutationObserver(later); obs.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden']}); }
+    [].forEach.call(document.querySelectorAll(sel),function(g){ sync(g,o); }); return o; };
+  window.pvxSeg.sync=scan;
+})();
+</script>
+<script>
+/* PVX-N216 - Treatment's segmented controls, section switcher and iPhone tab bar */
+(function(){
+  pvxSeg('#clinSwitcher',{mode:'current',item:'.seg'});
+  pvxSeg('#sbBoards',{mode:'tabs',item:'.sb-segb',label:'Boards'});
+  pvxSeg('#sbView',{item:'.sb-segb',label:'Show as'});
+  pvxSeg('.wl-seg',{label:'Whose patients'});
+  pvxSeg('.wl-chips',{label:'Area'});
+  /* iPhone: the boards as a pop-up, kept beside the (hidden) boards and in step with them */
+  function boardsPop(){ var g=document.getElementById('sbBoards'); if(!g) return;
+    var sel=g.previousElementSibling&&g.previousElementSibling.classList.contains('pvx-sbpop')?g.previousElementSibling:null;
+    var bs=[].slice.call(g.querySelectorAll('.sb-segb'));
+    if(!sel){ sel=document.createElement('select'); sel.className='pvx-sbpop'; sel.setAttribute('aria-label','Board'); g.parentNode.insertBefore(sel,g);
+      sel.addEventListener('change',function(){ var b=document.querySelector('#sbBoards .sb-segb[data-board="'+sel.value+'"]'); if(b) b.click(); }); }
+    var html=bs.map(function(b){ var n=b.querySelector('.sb-cnt'), name=(b.getAttribute('data-tip')||b.textContent).trim(), cnt=n?n.getAttribute('data-n'):'';
+      return '<option value="'+b.getAttribute('data-board')+'"'+(b.classList.contains('on')?' selected':'')+'>'+name+(cnt!==''&&cnt!=null?' · '+cnt:'')+'</option>'; }).join('');
+    if(sel.__h!==html){ sel.__h=html; sel.innerHTML=html; } }
+  var raf=0; new MutationObserver(function(){ if(!raf) raf=requestAnimationFrame(function(){ raf=0; boardsPop(); }); }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  boardsPop();
+  /* iPhone: the sections as a bottom tab bar with More */
+  var sw=document.getElementById('clinSwitcher'); if(!sw) return;
+  var MORE=['anes','timeline','charges','notes'], CW=window.matchMedia?matchMedia('(max-width:700px)'):{matches:false};
+  var more=document.createElement('button'); more.type='button'; more.className='pvx-tmore'; more.title='More'; more.setAttribute('aria-haspopup','menu'); more.setAttribute('aria-expanded','false');
+  more.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>';
+  sw.appendChild(more);
+  var menu=document.createElement('div'); menu.className='pvx-tmenu'; menu.setAttribute('role','menu'); menu.setAttribute('aria-label','More sections'); menu.hidden=true; document.body.appendChild(menu);
+  function label(){ var cur=sw.querySelector('.seg.active'), m=cur&&MORE.indexOf(cur.dataset.ctab)>=0;
+    more.classList.toggle('on',!!m); more.setAttribute('aria-label',m?'More, '+cur.title+' open':'More');
+    if(m) more.setAttribute('aria-current','true'); else more.removeAttribute('aria-current'); }
+  function close(focus){ if(menu.hidden) return; menu.hidden=true; more.setAttribute('aria-expanded','false'); if(focus) more.focus(); }
+  function open(){ menu.innerHTML=MORE.map(function(k){ var b=sw.querySelector('.seg[data-ctab="'+k+'"]'); if(!b) return '';
+      return '<button type="button" role="menuitem" data-ctab="'+k+'"'+(b.classList.contains('active')?' aria-current="true"':'')+'>'+(b.querySelector('svg')||{}).outerHTML+'<span>'+b.title+'</span></button>'; }).join('');
+    menu.hidden=false; more.setAttribute('aria-expanded','true'); var f=menu.querySelector('[aria-current]')||menu.querySelector('button'); if(f) f.focus(); }
+  more.addEventListener('click',function(e){ e.stopPropagation(); if(menu.hidden) open(); else close(true); });
+  menu.addEventListener('click',function(e){ var b=e.target.closest('[data-ctab]'); if(!b) return; close(false); var t=sw.querySelector('.seg[data-ctab="'+b.dataset.ctab+'"]'); if(t) t.click(); more.focus(); });
+  menu.addEventListener('keydown',function(e){ var it=[].slice.call(menu.querySelectorAll('button')), i=it.indexOf(document.activeElement);
+    if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(true); }
+    else if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); it[(i+(e.key==='ArrowDown'?1:-1)+it.length)%it.length].focus(); }
+    else if(e.key==='Tab') close(false); });
+  document.addEventListener('pointerdown',function(e){ if(!menu.hidden&&!menu.contains(e.target)&&!more.contains(e.target)) close(false); },true);
+  function sync(){ document.documentElement.classList.toggle('pvx-ttab',!!CW.matches); if(!CW.matches) close(false); label(); }
+  if(CW.addEventListener) CW.addEventListener('change',sync);
+  new MutationObserver(label).observe(sw,{subtree:true,attributes:true,attributeFilter:['class']});
+  sync();
+})();
+</script>
+<!-- PVX-N216: segmented controls -->
 </body>
 </html>

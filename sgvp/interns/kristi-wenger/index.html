@@ -1684,6 +1684,21 @@ body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!imp
 /* a flat canvas, as Treatment Sheets: the older pages' coloured background glows step aside in light mode */
 body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
 </style>
+
+<style id="pvx-n216-css">
+/* PVX-N216 - the photo controls: labels tied to their sliders, aligned tracks, values; the icon size row */
+.cutout-controls .cc-row{display:grid;grid-template-columns:4.25rem minmax(0,1fr) 2.9rem;align-items:center;gap:6px}
+.cutout-controls .cc-track input[type=range]{flex:1 1 auto;min-width:0;width:100%}
+.cutout-controls .cc-row label{font-size:11.5px;color:var(--text-secondary)}
+.cutout-controls .cc-track{display:flex;align-items:center;gap:6px;min-width:0}
+.cutout-controls .cc-end{flex:0 0 10px;font-size:9px;line-height:1;text-align:center;color:var(--text-muted)}
+.cutout-controls .cc-row.dim label,.cutout-controls .cc-row.dim .cc-end,.cutout-controls .cc-row.dim .cc-val{opacity:.45}
+.cc-val{font-size:11px;font-variant-numeric:tabular-nums;color:var(--text-secondary);text-align:right;white-space:nowrap}
+.cutout-controls .cc-reset{align-self:flex-start}
+.pvx-iconsize{display:none;align-items:center;gap:10px;margin:0 0 10px;font-size:11.5px;color:var(--text-secondary)}
+body.edit-mode .pvx-iconsize{display:flex}
+.pvx-iconsize .icon-size-slider{display:inline-block;flex:1;width:auto;max-width:220px}
+</style>
 </head>
 <body class="">
 <script id="pvx-theme-js">
@@ -2054,7 +2069,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   <div class="hero-cutout" id="heroCutout" style="width: 170px; left: 20px; bottom: 45px;"><img id="heroCutoutImg" src="" alt="Intern cutout" style="filter: none;"></div>
   <div class="cutout-controls">
     <button class="cc-header" type="button" onclick="this.closest('.cutout-controls').classList.toggle('open')">
-      <span class="cc-chevron">▸</span><span>Intern Photo</span>
+      <span class="cc-chevron">▸</span><span>Intern photo</span>
     </button>
     <div class="cc-body"><div class="cc-inner">
       <div class="cc-divider"></div>
@@ -2062,12 +2077,13 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
         <button class="cc-btn" onclick="document.getElementById('cutoutInput').click()">⬆ Change / Upload</button>
         <button class="cc-btn alt" onclick="clearCutout()">✕ Remove</button>
       </div>
-      <div class="cc-row"><span>Resize</span><input type="range" id="cutoutSize" min="120" max="420" value="150" oninput="applyCutout()"></div>
-      <div class="cc-row"><span>Move ◀ ▶</span><input type="range" id="cutoutX" min="-60" max="220" value="20" oninput="applyCutout()"></div>
-      <div class="cc-row"><span>Move ▲ ▼</span><input type="range" id="cutoutRise" min="-40" max="200" value="14" oninput="applyCutout()"></div>
+      <div class="cc-row" id="cutoutSizeRow"><label for="cutoutSize">Size</label><span class="cc-track"><span class="cc-end" aria-hidden="true">−</span><input type="range" id="cutoutSize" min="120" max="420" value="150" oninput="applyCutout()"><span class="cc-end" aria-hidden="true">+</span></span><output class="cc-val" id="cutoutSizeV" for="cutoutSize"></output></div>
+      <div class="cc-row" id="cutoutXRow"><label for="cutoutX">Left–right</label><span class="cc-track"><span class="cc-end" aria-hidden="true">◀</span><input type="range" id="cutoutX" min="-60" max="220" value="20" oninput="applyCutout()"><span class="cc-end" aria-hidden="true">▶</span></span><output class="cc-val" id="cutoutXV" for="cutoutX"></output></div>
+      <div class="cc-row" id="cutoutRiseRow"><label for="cutoutRise">Height</label><span class="cc-track"><span class="cc-end" aria-hidden="true">▼</span><input type="range" id="cutoutRise" min="-40" max="200" value="14" oninput="applyCutout()"><span class="cc-end" aria-hidden="true">▲</span></span><output class="cc-val" id="cutoutRiseV" for="cutoutRise"></output></div>
+      <button class="cc-btn alt cc-reset" type="button" onclick="pvxCutoutReset()">Reset position</button>
       <div class="cc-divider"></div>
-      <label><input type="checkbox" id="cutoutKnock" onchange="applyCutout()"> Remove background</label>
-      <div class="cc-row"><span>Threshold</span><input type="range" id="cutoutThresh" min="1" max="30" value="7" oninput="applyCutout()"></div>
+      <label class="cc-check"><input type="checkbox" id="cutoutKnock" onchange="applyCutout()"> Remove background</label>
+      <div class="cc-row" id="cutoutThreshRow"><label for="cutoutThresh">Threshold</label><span class="cc-track"><span class="cc-end" aria-hidden="true">−</span><input type="range" id="cutoutThresh" min="1" max="30" value="7" oninput="applyCutout()"><span class="cc-end" aria-hidden="true">+</span></span><output class="cc-val" id="cutoutThreshV" for="cutoutThresh"></output></div>
     </div></div>
   </div>
 </div>
@@ -2457,9 +2473,9 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <div class="glass-card-body">
         <div class="card-header">
           <span class="card-title auto-editable" data-editable="" data-key="auto-29" data-placeholder="Text" contenteditable="false">Your Mentor</span>
-          <input type="range" class="icon-size-slider" id="mentorIconSize" min="18" max="60" value="26" title="Resize icons" oninput="setMentorIconSize(this.value)">
           <a href="/sgvp/mentors" class="card-action auto-editable" data-editable="" data-key="auto-30" data-placeholder="Text" contenteditable="false">All Mentors →</a>
         </div>
+        <div class="pvx-iconsize"><label for="mentorIconSize">Icon size</label><input type="range" class="icon-size-slider" id="mentorIconSize" min="18" max="60" value="26" oninput="setMentorIconSize(this.value)"><output class="cc-val" id="mentorIconSizeV" for="mentorIconSize"></output></div>
         <div class="mn-hero">
           <div class="mn-portrait" id="mentorAvatar" onclick="if(document.body.classList.contains('edit-mode')) document.getElementById('mentorPhotoInput').click()">
             <span id="mentorInitials" data-editable="" data-key="auto-31" data-placeholder="Text" class="auto-editable" contenteditable="false">JG</span>
@@ -5183,4 +5199,50 @@ window.addEventListener('load', () => {
   lb.addEventListener('pointerleave',function(){ lb.style.setProperty('--mx','50%'); lb.style.setProperty('--my','50%'); });
 })();
 </script>
+
+<script>
+/* PVX-SLIDER (n216, shared) - the Pravix slider standard (HIG Sliders; L.U.N.A.'s studio is the reference).
+   pvxSlider(input, {label, fmt, def, out})
+     label : the spoken name when no <label> is tied to the slider ("Outlook logo size")
+     fmt   : value -> text, shown and spoken with its unit (v => v + '%')
+     def   : the default value: a mark sits there on the track
+     out   : an element that shows the live value
+   The value is spoken as it reads on screen ("100%"), also after a reset that sets .value from code. The touch area is
+   44 pt tall on touch screens (24 pt with a pointer) while the track stays thin. */
+(function(){
+  if(window.pvxSlider) return;
+  var css=document.createElement('style'); css.id='pvx-slider-css';
+  css.textContent='input[type=range].pvx-range{height:24px;min-height:24px;margin-top:0;margin-bottom:0;background:transparent;cursor:pointer;touch-action:pan-y}'
+    +'@media (pointer:coarse){input[type=range].pvx-range{height:44px;min-height:44px}}'
+    +'input[type=range].pvx-range:disabled{opacity:.4;cursor:default}'
+    +'input[type=range].pvx-range:focus-visible{outline:2px solid #38BDD2;outline-offset:2px;border-radius:6px}';
+  (document.head||document.documentElement).appendChild(css);
+  var D=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value'), n=0;
+  window.pvxSlider=function(inp,o){ if(!inp||inp.__pvxSl) return inp; o=o||{}; inp.__pvxSl=1; inp.classList.add('pvx-range');
+    if(o.label&&!(inp.labels&&inp.labels.length)&&!inp.hasAttribute('aria-labelledby')) inp.setAttribute('aria-label',o.label);
+    if(o.def!=null&&!inp.getAttribute('list')){ var dl=document.createElement('datalist'); dl.id='pvxDl'+(++n); dl.innerHTML='<option value="'+o.def+'"></option>'; inp.insertAdjacentElement('afterend',dl); inp.setAttribute('list',dl.id); }
+    function upd(){ var v=+D.get.call(inp), t=o.fmt?o.fmt(v):String(v); inp.setAttribute('aria-valuetext',t); if(o.out) o.out.textContent=t; }
+    inp.addEventListener('input',upd); inp.addEventListener('change',upd);
+    Object.defineProperty(inp,'value',{configurable:true,get:function(){ return D.get.call(inp); },set:function(v){ D.set.call(inp,v); upd(); }});
+    upd(); inp.pvxUpdate=upd; return inp; };
+})();
+</script>
+<script>
+/* PVX-N216 - the photo and icon size sliders follow the Pravix standard */
+(function(){
+  var $=function(id){ return document.getElementById(id); };
+  var px=function(v){ return v+' px'; };
+  [['cutoutSize',px],['cutoutX',px],['cutoutRise',px],['cutoutThresh',String]].forEach(function(x){ var i=$(x[0]); if(i) pvxSlider(i,{fmt:x[1],out:$(x[0]+'V')}); });
+  var ic=$('mentorIconSize'); if(ic) pvxSlider(ic,{fmt:px,def:26,out:$('mentorIconSizeV')});
+  /* Threshold only works with Remove background */
+  function dim(){ var k=$('cutoutKnock'), t=$('cutoutThresh'), r=$('cutoutThreshRow'); if(!k||!t) return; t.disabled=!k.checked; if(r) r.classList.toggle('dim',!k.checked); }
+  if(typeof applyCutoutStyles==='function'){ var acs=applyCutoutStyles; window.applyCutoutStyles=applyCutoutStyles=function(){ var r=acs.apply(this,arguments); dim(); return r; }; }
+  var k=$('cutoutKnock'); if(k) k.addEventListener('change',dim); dim(); setTimeout(dim,600);
+  window.pvxCutoutReset=function(){ ['cutoutSize','cutoutX','cutoutRise'].forEach(function(id){ var i=$(id); if(i) i.value=i.defaultValue; }); if(typeof applyCutout==='function') applyCutout(); };
+  /* the icon size slider called a function that was never defined */
+  if(typeof window.setMentorIconSize!=='function') window.setMentorIconSize=function(v){ document.documentElement.style.setProperty('--mentor-icon-size',v+'px');
+    try{ var d=loadData(); d.mentorIconSize=v; saveStore(d); }catch(e){} };
+})();
+</script>
+<!-- PVX-N216: sliders -->
 </body></html>

@@ -1702,3 +1702,6 @@ html.an-noblur .an-ptitle{-webkit-backdrop-filter:none;backdrop-filter:none;back
 /* n211: record cards are links (open in a new window with Command-click or the context menu) */
 a.an-card{text-decoration:none;color:inherit;-webkit-user-drag:element}
 a.an-card:visited{color:inherit}
+
+/* n215: equal-width segments (HIG Segmented controls) */
+.an-seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr}
