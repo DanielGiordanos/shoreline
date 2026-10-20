@@ -1,0 +1,313 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Pravix//SGVP Curriculum//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Shoreline Graduate Veterinarian Program
+X-WR-CALDESC:Every block\, both start groups\, and the VCA holidays.
+X-WR-TIMEZONE:America/New_York
+REFRESH-INTERVAL;VALUE=DURATION:PT12H
+X-PUBLISHED-TTL:PT12H
+BEGIN:VEVENT
+UID:g-mar-orientation@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260223
+DTEND;VALUE=DATE:20260302
+SUMMARY:March group: Orientation
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:g-mar-shadow@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260302
+DTEND;VALUE=DATE:20260316
+SUMMARY:March group: Shadow rotations
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:g-mar-tail@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270208
+DTEND;VALUE=DATE:20270224
+SUMMARY:March group: Not assigned yet
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:g-mar-end@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270223
+DTEND;VALUE=DATE:20270224
+SUMMARY:March group: program ends
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:g-jul-orientation@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260615
+DTEND;VALUE=DATE:20260622
+SUMMARY:July group: Orientation
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:g-jul-shadow@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260622
+DTEND;VALUE=DATE:20260706
+SUMMARY:July group: Shadow rotations
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:g-jul-end@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270705
+DTEND;VALUE=DATE:20270706
+SUMMARY:July group: program ends
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2026-03-16@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260316
+DTEND;VALUE=DATE:20260420
+SUMMARY:March group Block 01 (Mar 16 – Apr 19)
+DESCRIPTION:Internal Medicine: Jordan Hanson\nSurgery: Alexa Vander Ploeg\n
+ General Practice: Rachel Eberle
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2026-04-20@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260420
+DTEND;VALUE=DATE:20260525
+SUMMARY:March group Block 02 (Apr 20 – May 24)
+DESCRIPTION:Internal Medicine: Alexa Vander Ploeg\nGeneral Practice: Jordan
+  Hanson\nElective: Rachel Eberle
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2026-05-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260706
+SUMMARY:March group Block 03 (May 25 – Jul 5)
+DESCRIPTION:Emergency Medicine I: Jordan Hanson\nSurgery: Rachel Eberle\nGe
+ neral Practice: Alexa Vander Ploeg
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2026-07-06@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260706
+DTEND;VALUE=DATE:20260810
+SUMMARY:Block 01 · March group 04 (Jul 6 – Aug 9)
+DESCRIPTION:Emergency Medicine I: Benjamin Kerns\nEmergency Medicine II: Jo
+ rdan Hanson\nInternal Medicine: Rachel Eberle\nSurgery: Kristi Wenger\nNeu
+ rology: Sarah Herron\, Resident coverage\nOncology: Alexa Vander Ploeg\nEl
+ ective: Marissa Peck
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2026-08-10@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260810
+DTEND;VALUE=DATE:20260914
+SUMMARY:Block 02 · March group 05 (Aug 10 – Sep 13)
+DESCRIPTION:Emergency Medicine I: Rachel Eberle\nEmergency Medicine II: Ben
+ jamin Kerns\nInternal Medicine: Kristi Wenger\nSurgery: Jordan Hanson\nNeu
+ rology: Marissa Peck\nOncology: Sarah Herron\nElective: Alexa Vander Ploeg
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2026-09-14@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20261019
+SUMMARY:Block 03 · March group 06 (Sep 14 – Oct 18)
+DESCRIPTION:Emergency Medicine I: Sarah Herron\nEmergency Medicine II: Jord
+ an Hanson\nInternal Medicine: Marissa Peck\nSurgery: Alexa Vander Ploeg\nN
+ eurology: Kristi Wenger\nOncology: Rachel Eberle\nGeneral Practice: Benjam
+ in Kerns
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2026-10-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261123
+SUMMARY:Block 04 · March group 07 (Oct 19 – Nov 22)
+DESCRIPTION:Emergency Medicine I: Kristi Wenger\nEmergency Medicine II: Ale
+ xa Vander Ploeg\, Sarah Herron\nInternal Medicine: LIU student\nSurgery: R
+ achel Eberle\nNeurology: Benjamin Kerns\nOncology: Jordan Hanson\nGeneral 
+ Practice: Marissa Peck
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2026-11-23@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261123
+DTEND;VALUE=DATE:20270104
+SUMMARY:Block 05 · March group 08 (Nov 23 – Jan 3)
+DESCRIPTION:Emergency Medicine I: Marissa Peck\nEmergency Medicine II: Jord
+ an Hanson\, Rachel Eberle\nInternal Medicine: Sarah Herron\nSurgery: Benja
+ min Kerns\nNeurology: Alexa Vander Ploeg\nOncology: Kristi Wenger
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2027-01-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270104
+DTEND;VALUE=DATE:20270208
+SUMMARY:Block 06 · March group 09 (Jan 4 – Feb 7)
+DESCRIPTION:Emergency Medicine I: LIU student\, Marissa Peck\nEmergency Med
+ icine II: Jordan Hanson\nInternal Medicine: Alexa Vander Ploeg\nSurgery: S
+ arah Herron\nNeurology: Rachel Eberle\nOncology: Benjamin Kerns\nGeneral P
+ ractice: Kristi Wenger
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2027-02-08@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270208
+DTEND;VALUE=DATE:20270315
+SUMMARY:Block 07 (Feb 8 – Mar 14)
+DESCRIPTION:Emergency Medicine I: Kristi Wenger\nInternal Medicine: Benjami
+ n Kerns\nNeurology: Sarah Herron\nOncology: Marissa Peck
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2027-03-15@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270315
+DTEND;VALUE=DATE:20270419
+SUMMARY:Block 08 (Mar 15 – Apr 18)
+DESCRIPTION:Emergency Medicine I: Benjamin Kerns\nEmergency Medicine II: Kr
+ isti Wenger\nInternal Medicine: LIU student\nSurgery: Marissa Peck\nNeurol
+ ogy: Resident coverage\nOncology: Sarah Herron
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2027-04-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270419
+DTEND;VALUE=DATE:20270524
+SUMMARY:Block 09 (Apr 19 – May 23)
+DESCRIPTION:Emergency Medicine II: Sarah Herron\nInternal Medicine: LIU stu
+ dent\nSurgery: Kristi Wenger\nNeurology: Resident coverage\nOncology: Mari
+ ssa Peck\nElective: Benjamin Kerns
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:blk-2027-05-24@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270524
+DTEND;VALUE=DATE:20270706
+SUMMARY:Block 10 (May 24 – Jul 5)
+DESCRIPTION:Emergency Medicine II: Kristi Wenger\nInternal Medicine: Mariss
+ a Peck\nNeurology: Benjamin Kerns\nOncology: Sarah Herron
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:hol-2026-05-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260526
+SUMMARY:Memorial Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:hol-2026-07-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260704
+DTEND;VALUE=DATE:20260705
+SUMMARY:Independence Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:hol-2026-09-07@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260907
+DTEND;VALUE=DATE:20260908
+SUMMARY:Labor Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:hol-2026-11-26@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261126
+DTEND;VALUE=DATE:20261127
+SUMMARY:Thanksgiving (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:hol-2026-12-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261225
+DTEND;VALUE=DATE:20261226
+SUMMARY:Christmas (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:hol-2027-01-01@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270101
+DTEND;VALUE=DATE:20270102
+SUMMARY:New Year’s Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:hol-2027-05-31@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270531
+DTEND;VALUE=DATE:20270601
+SUMMARY:Memorial Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:hol-2027-07-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270704
+DTEND;VALUE=DATE:20270705
+SUMMARY:Independence Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR

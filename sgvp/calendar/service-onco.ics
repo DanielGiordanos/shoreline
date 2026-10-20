@@ -1,0 +1,131 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Pravix//SGVP Curriculum//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Oncology · Shoreline interns
+X-WR-CALDESC:Who is on Oncology\, block by block (Monday to Sunday).
+X-WR-TIMEZONE:America/New_York
+REFRESH-INTERVAL;VALUE=DURATION:PT12H
+X-PUBLISHED-TTL:PT12H
+BEGIN:VEVENT
+UID:s-onco-2026-07-06@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260706
+DTEND;VALUE=DATE:20260810
+SUMMARY:Oncology: Alexa Vander Ploeg
+DESCRIPTION:Block 01 · March group 04\, Jul 6 – Aug 9\nDirector: Kate Ta
+ ikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2026-08-10@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260810
+DTEND;VALUE=DATE:20260914
+SUMMARY:Oncology: Sarah Herron
+DESCRIPTION:Block 02 · March group 05\, Aug 10 – Sep 13\nDirector: Kate 
+ Taikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2026-09-14@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20261019
+SUMMARY:Oncology: Rachel Eberle
+DESCRIPTION:Block 03 · March group 06\, Sep 14 – Oct 18\nDirector: Kate 
+ Taikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2026-10-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261123
+SUMMARY:Oncology: Jordan Hanson
+DESCRIPTION:Block 04 · March group 07\, Oct 19 – Nov 22\nDirector: Kate 
+ Taikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2026-11-23@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261123
+DTEND;VALUE=DATE:20270104
+SUMMARY:Oncology: Kristi Wenger
+DESCRIPTION:Block 05 · March group 08\, Nov 23 – Jan 3\nDirector: Kate T
+ aikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2027-01-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270104
+DTEND;VALUE=DATE:20270208
+SUMMARY:Oncology: Benjamin Kerns
+DESCRIPTION:Block 06 · March group 09\, Jan 4 – Feb 7\nDirector: Kate Ta
+ ikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2027-02-08@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270208
+DTEND;VALUE=DATE:20270315
+SUMMARY:Oncology: Marissa Peck
+DESCRIPTION:Block 07\, Feb 8 – Mar 14\nDirector: Kate Taikowski\nPhone: E
+ xt. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2027-03-15@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270315
+DTEND;VALUE=DATE:20270419
+SUMMARY:Oncology: Sarah Herron
+DESCRIPTION:Block 08\, Mar 15 – Apr 18\nDirector: Kate Taikowski\nPhone: 
+ Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2027-04-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270419
+DTEND;VALUE=DATE:20270524
+SUMMARY:Oncology: Marissa Peck
+DESCRIPTION:Block 09\, Apr 19 – May 23\nDirector: Kate Taikowski\nPhone: 
+ Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-onco-2027-05-24@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270524
+DTEND;VALUE=DATE:20270706
+SUMMARY:Oncology: Sarah Herron
+DESCRIPTION:Block 10\, May 24 – Jul 5\nDirector: Kate Taikowski\nPhone: E
+ xt. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR

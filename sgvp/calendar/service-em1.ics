@@ -1,0 +1,121 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Pravix//SGVP Curriculum//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Emergency Medicine I · Shoreline interns
+X-WR-CALDESC:Who is on Emergency Medicine I\, block by block (Monday to Sun
+ day).
+X-WR-TIMEZONE:America/New_York
+REFRESH-INTERVAL;VALUE=DURATION:PT12H
+X-PUBLISHED-TTL:PT12H
+BEGIN:VEVENT
+UID:s-em1-2026-05-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260706
+SUMMARY:Emergency Medicine I: Jordan Hanson
+DESCRIPTION:March group Block 03\, May 25 – Jul 5\nDirector: Mara Kraenzl
+ in\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-em1-2026-07-06@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260706
+DTEND;VALUE=DATE:20260810
+SUMMARY:Emergency Medicine I: Benjamin Kerns
+DESCRIPTION:Block 01 · March group 04\, Jul 6 – Aug 9\nDirector: Mara Kr
+ aenzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-em1-2026-08-10@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260810
+DTEND;VALUE=DATE:20260914
+SUMMARY:Emergency Medicine I: Rachel Eberle
+DESCRIPTION:Block 02 · March group 05\, Aug 10 – Sep 13\nDirector: Mara 
+ Kraenzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-em1-2026-09-14@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20261019
+SUMMARY:Emergency Medicine I: Sarah Herron
+DESCRIPTION:Block 03 · March group 06\, Sep 14 – Oct 18\nDirector: Mara 
+ Kraenzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-em1-2026-10-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261123
+SUMMARY:Emergency Medicine I: Kristi Wenger
+DESCRIPTION:Block 04 · March group 07\, Oct 19 – Nov 22\nDirector: Mara 
+ Kraenzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-em1-2026-11-23@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261123
+DTEND;VALUE=DATE:20270104
+SUMMARY:Emergency Medicine I: Marissa Peck
+DESCRIPTION:Block 05 · March group 08\, Nov 23 – Jan 3\nDirector: Mara K
+ raenzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-em1-2027-01-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270104
+DTEND;VALUE=DATE:20270208
+SUMMARY:Emergency Medicine I: LIU student Madison Graham (Jan 4 – Jan 17)
+ \, Marissa Peck
+DESCRIPTION:Block 06 · March group 09\, Jan 4 – Feb 7\nDirector: Mara Kr
+ aenzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-em1-2027-02-08@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270208
+DTEND;VALUE=DATE:20270315
+SUMMARY:Emergency Medicine I: Kristi Wenger
+DESCRIPTION:Block 07\, Feb 8 – Mar 14\nDirector: Mara Kraenzlin\nPhone: E
+ xt. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-em1-2027-03-15@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270315
+DTEND;VALUE=DATE:20270419
+SUMMARY:Emergency Medicine I: Benjamin Kerns
+DESCRIPTION:Block 08\, Mar 15 – Apr 18\nDirector: Mara Kraenzlin\nPhone: 
+ Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR

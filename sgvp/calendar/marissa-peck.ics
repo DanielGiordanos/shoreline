@@ -1,0 +1,223 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Pravix//SGVP Curriculum//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Marissa Peck · Shoreline rotations
+X-WR-CALDESC:Graduate Veterinarian Program\, VCA Shoreline. Blocks run Mond
+ ay to Sunday.
+X-WR-TIMEZONE:America/New_York
+REFRESH-INTERVAL;VALUE=DURATION:PT12H
+X-PUBLISHED-TTL:PT12H
+BEGIN:VEVENT
+UID:p-MP-orientation@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260615
+DTEND;VALUE=DATE:20260622
+SUMMARY:Orientation
+DESCRIPTION:Marissa Peck · July group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:p-MP-shadow@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260622
+DTEND;VALUE=DATE:20260706
+SUMMARY:Shadow rotations
+DESCRIPTION:Marissa Peck · July group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2026-07-06@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260706
+DTEND;VALUE=DATE:20260810
+SUMMARY:Cardiology (Newtown Veterinary Specialists) · Block 01
+DESCRIPTION:Marissa Peck · Block 01\, Jul 6 – Aug 9\nAway rotation: Card
+ iology at Newtown Veterinary Specialists\nContact: Dr. Dana Rucinski (Card
+ iology)\, dana.rucinski@medvet.com\nHospital phone: 203-270-8387\nSchedule
+ : Monday–Thursday\, 8 a.m. arrival\nBring: Veterinary license and PLIT c
+ overage documentation
+LOCATION:Newtown Veterinary Specialists\, 52 Church Hill Road\, Newtown\, C
+ T 06470
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2026-08-10@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260810
+DTEND;VALUE=DATE:20260914
+SUMMARY:Neurology · Block 02
+DESCRIPTION:Marissa Peck · Block 02\, Aug 10 – Sep 13\nDirector: Heather
+  Galano\nPhone: Ext. 306
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2026-09-14@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20261019
+SUMMARY:Internal Medicine · Block 03
+DESCRIPTION:Marissa Peck · Block 03\, Sep 14 – Oct 18\nDirector: Larry B
+ erkwitt\nPhone: Ext. 528
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2026-10-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261123
+SUMMARY:General Practice · Block 04
+DESCRIPTION:Marissa Peck · Block 04\, Oct 19 – Nov 22\nMedical Director:
+  Dr. Lee Lipsitz\, DVM\, PhD\nPhone: 203-882-8600
+LOCATION:VCA Baybrook Animal Hospital\, 56 Quirk Road\, Milford\, CT 06460
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2026-11-23@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261123
+DTEND;VALUE=DATE:20270104
+SUMMARY:Emergency Medicine I · Block 05
+DESCRIPTION:Marissa Peck · Block 05\, Nov 23 – Jan 3\nDirector: Mara Kra
+ enzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2027-01-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270104
+DTEND;VALUE=DATE:20270208
+SUMMARY:Emergency Medicine I · Block 06
+DESCRIPTION:Marissa Peck · Block 06\, Jan 4 – Feb 7\nDirector: Mara Krae
+ nzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2027-02-08@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270208
+DTEND;VALUE=DATE:20270315
+SUMMARY:Oncology · Block 07
+DESCRIPTION:Marissa Peck · Block 07\, Feb 8 – Mar 14\nDirector: Kate Tai
+ kowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2027-03-15@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270315
+DTEND;VALUE=DATE:20270419
+SUMMARY:Surgery · Block 08
+DESCRIPTION:Marissa Peck · Block 08\, Mar 15 – Apr 18\nDirector: Dawn No
+ lte\nPhone: Ext. 523
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2027-04-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270419
+DTEND;VALUE=DATE:20270524
+SUMMARY:Oncology · Block 09
+DESCRIPTION:Marissa Peck · Block 09\, Apr 19 – May 23\nDirector: Kate Ta
+ ikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-MP-2027-05-24@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270524
+DTEND;VALUE=DATE:20270706
+SUMMARY:Internal Medicine · Block 10
+DESCRIPTION:Marissa Peck · Block 10\, May 24 – Jul 5\nDirector: Larry Be
+ rkwitt\nPhone: Ext. 528
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-MP-2026-07-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260704
+DTEND;VALUE=DATE:20260705
+SUMMARY:Independence Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-MP-2026-09-07@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260907
+DTEND;VALUE=DATE:20260908
+SUMMARY:Labor Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-MP-2026-11-26@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261126
+DTEND;VALUE=DATE:20261127
+SUMMARY:Thanksgiving (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-MP-2026-12-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261225
+DTEND;VALUE=DATE:20261226
+SUMMARY:Christmas (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-MP-2027-01-01@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270101
+DTEND;VALUE=DATE:20270102
+SUMMARY:New Year’s Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-MP-2027-05-31@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270531
+DTEND;VALUE=DATE:20270601
+SUMMARY:Memorial Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-MP-2027-07-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270704
+DTEND;VALUE=DATE:20270705
+SUMMARY:Independence Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:end-MP@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270705
+DTEND;VALUE=DATE:20270706
+SUMMARY:Program ends
+DESCRIPTION:Marissa Peck · July group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,211 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Pravix//SGVP Curriculum//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Jordan Hanson · Shoreline rotations
+X-WR-CALDESC:Graduate Veterinarian Program\, VCA Shoreline. Blocks run Mond
+ ay to Sunday.
+X-WR-TIMEZONE:America/New_York
+REFRESH-INTERVAL;VALUE=DURATION:PT12H
+X-PUBLISHED-TTL:PT12H
+BEGIN:VEVENT
+UID:p-JH-orientation@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260223
+DTEND;VALUE=DATE:20260302
+SUMMARY:Orientation
+DESCRIPTION:Jordan Hanson · March group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:p-JH-shadow@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260302
+DTEND;VALUE=DATE:20260316
+SUMMARY:Shadow rotations
+DESCRIPTION:Jordan Hanson · March group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2026-03-16@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260316
+DTEND;VALUE=DATE:20260420
+SUMMARY:Internal Medicine · Block 01
+DESCRIPTION:Jordan Hanson · Block 01\, Mar 16 – Apr 19\nDirector: Larry 
+ Berkwitt\nPhone: Ext. 528
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2026-04-20@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260420
+DTEND;VALUE=DATE:20260525
+SUMMARY:General Practice · Block 02
+DESCRIPTION:Jordan Hanson · Block 02\, Apr 20 – May 24\nMedical Director
+ : Dr. Lee Lipsitz\, DVM\, PhD\nPhone: 203-882-8600
+LOCATION:VCA Baybrook Animal Hospital\, 56 Quirk Road\, Milford\, CT 06460
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2026-05-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260706
+SUMMARY:Emergency Medicine I · Block 03
+DESCRIPTION:Jordan Hanson · Block 03\, May 25 – Jul 5\nDirector: Mara Kr
+ aenzlin\nPhone: Ext. 302
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2026-07-06@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260706
+DTEND;VALUE=DATE:20260810
+SUMMARY:Emergency Medicine II · Block 04
+DESCRIPTION:Jordan Hanson · Block 04\, Jul 6 – Aug 9\nDirector: Sarah Sc
+ hiff\nPhone: Ext. 303
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2026-08-10@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260810
+DTEND;VALUE=DATE:20260914
+SUMMARY:Surgery · Block 05
+DESCRIPTION:Jordan Hanson · Block 05\, Aug 10 – Sep 13\nDirector: Dawn N
+ olte\nPhone: Ext. 523
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2026-09-14@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20261019
+SUMMARY:Emergency Medicine II · Block 06
+DESCRIPTION:Jordan Hanson · Block 06\, Sep 14 – Oct 18\nDirector: Sarah 
+ Schiff\nPhone: Ext. 303
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2026-10-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261123
+SUMMARY:Oncology · Block 07
+DESCRIPTION:Jordan Hanson · Block 07\, Oct 19 – Nov 22\nDirector: Kate T
+ aikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2026-11-23@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261123
+DTEND;VALUE=DATE:20270104
+SUMMARY:Emergency Medicine II · Block 08
+DESCRIPTION:Jordan Hanson · Block 08\, Nov 23 – Jan 3\nDirector: Sarah S
+ chiff\nPhone: Ext. 303
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-JH-2027-01-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270104
+DTEND;VALUE=DATE:20270208
+SUMMARY:Emergency Medicine II · Block 09
+DESCRIPTION:Jordan Hanson · Block 09\, Jan 4 – Feb 7\nDirector: Sarah Sc
+ hiff\nPhone: Ext. 303
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:tail-JH@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270208
+DTEND;VALUE=DATE:20270224
+SUMMARY:Not assigned yet · final weeks
+DESCRIPTION:Jordan Hanson
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-JH-2026-05-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260526
+SUMMARY:Memorial Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-JH-2026-07-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260704
+DTEND;VALUE=DATE:20260705
+SUMMARY:Independence Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-JH-2026-09-07@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260907
+DTEND;VALUE=DATE:20260908
+SUMMARY:Labor Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-JH-2026-11-26@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261126
+DTEND;VALUE=DATE:20261127
+SUMMARY:Thanksgiving (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-JH-2026-12-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261225
+DTEND;VALUE=DATE:20261226
+SUMMARY:Christmas (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-JH-2027-01-01@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270101
+DTEND;VALUE=DATE:20270102
+SUMMARY:New Year’s Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:end-JH@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270223
+DTEND;VALUE=DATE:20270224
+SUMMARY:Program ends
+DESCRIPTION:Jordan Hanson · March group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR

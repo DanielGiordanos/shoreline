@@ -1,0 +1,211 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Pravix//SGVP Curriculum//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Alexa Vander Ploeg · Shoreline rotations
+X-WR-CALDESC:Graduate Veterinarian Program\, VCA Shoreline. Blocks run Mond
+ ay to Sunday.
+X-WR-TIMEZONE:America/New_York
+REFRESH-INTERVAL;VALUE=DURATION:PT12H
+X-PUBLISHED-TTL:PT12H
+BEGIN:VEVENT
+UID:p-AV-orientation@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260223
+DTEND;VALUE=DATE:20260302
+SUMMARY:Orientation
+DESCRIPTION:Alexa Vander Ploeg · March group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:p-AV-shadow@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260302
+DTEND;VALUE=DATE:20260316
+SUMMARY:Shadow rotations
+DESCRIPTION:Alexa Vander Ploeg · March group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2026-03-16@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260316
+DTEND;VALUE=DATE:20260420
+SUMMARY:Surgery · Block 01
+DESCRIPTION:Alexa Vander Ploeg · Block 01\, Mar 16 – Apr 19\nDirector: D
+ awn Nolte\nPhone: Ext. 523
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2026-04-20@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260420
+DTEND;VALUE=DATE:20260525
+SUMMARY:Internal Medicine · Block 02
+DESCRIPTION:Alexa Vander Ploeg · Block 02\, Apr 20 – May 24\nDirector: L
+ arry Berkwitt\nPhone: Ext. 528
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2026-05-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260706
+SUMMARY:General Practice · Block 03
+DESCRIPTION:Alexa Vander Ploeg · Block 03\, May 25 – Jul 5\nMedical Dire
+ ctor: Dr. Lee Lipsitz\, DVM\, PhD\nPhone: 203-882-8600
+LOCATION:VCA Baybrook Animal Hospital\, 56 Quirk Road\, Milford\, CT 06460
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2026-07-06@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260706
+DTEND;VALUE=DATE:20260810
+SUMMARY:Oncology · Block 04
+DESCRIPTION:Alexa Vander Ploeg · Block 04\, Jul 6 – Aug 9\nDirector: Kat
+ e Taikowski\nPhone: Ext. 530
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2026-08-10@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260810
+DTEND;VALUE=DATE:20260914
+SUMMARY:Elective · Block 05
+DESCRIPTION:Alexa Vander Ploeg · Block 05\, Aug 10 – Sep 13\nDirector: D
+ aniel Giordano\nPhone: Ext. 510
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2026-09-14@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20261019
+SUMMARY:Surgery · Block 06
+DESCRIPTION:Alexa Vander Ploeg · Block 06\, Sep 14 – Oct 18\nDirector: D
+ awn Nolte\nPhone: Ext. 523
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2026-10-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261123
+SUMMARY:Emergency Medicine II · Block 07
+DESCRIPTION:Alexa Vander Ploeg · Block 07\, Oct 19 – Nov 22\nDirector: S
+ arah Schiff\nPhone: Ext. 303
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2026-11-23@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261123
+DTEND;VALUE=DATE:20270104
+SUMMARY:Neurology · Block 08
+DESCRIPTION:Alexa Vander Ploeg · Block 08\, Nov 23 – Jan 3\nDirector: He
+ ather Galano\nPhone: Ext. 306
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:b-AV-2027-01-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270104
+DTEND;VALUE=DATE:20270208
+SUMMARY:Internal Medicine · Block 09
+DESCRIPTION:Alexa Vander Ploeg · Block 09\, Jan 4 – Feb 7\nDirector: Lar
+ ry Berkwitt\nPhone: Ext. 528
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:tail-AV@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270208
+DTEND;VALUE=DATE:20270224
+SUMMARY:Not assigned yet · final weeks
+DESCRIPTION:Alexa Vander Ploeg
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-AV-2026-05-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260525
+DTEND;VALUE=DATE:20260526
+SUMMARY:Memorial Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-AV-2026-07-04@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260704
+DTEND;VALUE=DATE:20260705
+SUMMARY:Independence Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-AV-2026-09-07@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260907
+DTEND;VALUE=DATE:20260908
+SUMMARY:Labor Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-AV-2026-11-26@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261126
+DTEND;VALUE=DATE:20261127
+SUMMARY:Thanksgiving (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-AV-2026-12-25@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20261225
+DTEND;VALUE=DATE:20261226
+SUMMARY:Christmas (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:h-AV-2027-01-01@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270101
+DTEND;VALUE=DATE:20270102
+SUMMARY:New Year’s Day (VCA holiday)
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:end-AV@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270223
+DTEND;VALUE=DATE:20270224
+SUMMARY:Program ends
+DESCRIPTION:Alexa Vander Ploeg · March group
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR

@@ -16,6 +16,7 @@ rules_version = '2';
 //   · staff can read family messages across visits (Flow's new-message alert), which was always denied.
 //   · rules for paths the apps already use that had none (they fell to the final deny): voice_stats,
 //     tenants/{tenant}/directory, ts_prefs, ts_usage, ts_stats, and staff saves of ts_settings house_doses / snippets.
+// n221: curriculum_requests (change requests with history).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -29,6 +30,22 @@ service cloud.firestore {
     match /curriculum/{docId} {
       allow read:  if staff();
       allow write: if sgvpAdmin();
+    }
+    // n221: change requests (an intern asks; a director decides). Staff read; you can only ask as yourself, only
+    // as pending; a director approves or declines; the person who asked can withdraw a waiting request.
+    match /curriculum_requests/{reqId} {
+      allow read:   if staff();
+      allow create: if staff()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.by == request.auth.token.email.lower()
+        && request.resource.data.kind in ['swap', 'change', 'timeoff'];
+      allow update: if sgvpAdmin()
+        || (staff()
+            && resource.data.by == request.auth.token.email.lower()
+            && resource.data.status == 'pending'
+            && request.resource.data.status == 'withdrawn'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow delete: if sgvpAdmin();
     }
     match /sgvp_profiles/{docId} {
       allow read:  if staff();

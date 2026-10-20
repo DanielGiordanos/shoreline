@@ -1,0 +1,63 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Pravix//SGVP Curriculum//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Elective · Shoreline interns
+X-WR-CALDESC:Who is on Elective\, block by block (Monday to Sunday).
+X-WR-TIMEZONE:America/New_York
+REFRESH-INTERVAL;VALUE=DURATION:PT12H
+X-PUBLISHED-TTL:PT12H
+BEGIN:VEVENT
+UID:s-elec-2026-04-20@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260420
+DTEND;VALUE=DATE:20260525
+SUMMARY:Elective: Rachel Eberle
+DESCRIPTION:March group Block 02\, Apr 20 – May 24\nDirector: Daniel Gior
+ dano\nPhone: Ext. 510
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-elec-2026-07-06@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260706
+DTEND;VALUE=DATE:20260810
+SUMMARY:Elective: Marissa Peck (Cardiology\, Newtown Veterinary Specialists
+ )
+DESCRIPTION:Block 01 · March group 04\, Jul 6 – Aug 9\nAway rotation: Ca
+ rdiology at Newtown Veterinary Specialists\nContact: Dr. Dana Rucinski (Ca
+ rdiology)\, dana.rucinski@medvet.com\nHospital phone: 203-270-8387\nSchedu
+ le: Monday–Thursday\, 8 a.m. arrival\nBring: Veterinary license and PLIT
+  coverage documentation
+LOCATION:Newtown Veterinary Specialists\, 52 Church Hill Road\, Newtown\, C
+ T 06470
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-elec-2026-08-10@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20260810
+DTEND;VALUE=DATE:20260914
+SUMMARY:Elective: Alexa Vander Ploeg
+DESCRIPTION:Block 02 · March group 05\, Aug 10 – Sep 13\nDirector: Danie
+ l Giordano\nPhone: Ext. 510
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:s-elec-2027-04-19@shoreline.pravix.app
+DTSTAMP:20261019T120000Z
+DTSTART;VALUE=DATE:20270419
+DTEND;VALUE=DATE:20270524
+SUMMARY:Elective: Benjamin Kerns
+DESCRIPTION:Block 09\, Apr 19 – May 23\nDirector: Daniel Giordano\nPhone:
+  Ext. 510
+LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
+ ort Avenue\, Shelton\, CT 06484
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR
