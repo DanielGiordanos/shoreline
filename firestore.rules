@@ -17,6 +17,8 @@ rules_version = '2';
 //   · rules for paths the apps already use that had none (they fell to the final deny): voice_stats,
 //     tenants/{tenant}/directory, ts_prefs, ts_usage, ts_stats, and staff saves of ts_settings house_doses / snippets.
 // n221: curriculum_requests (change requests with history).
+// n223 (Oct 20 2026): au733@vca.com is the managers' read-only curriculum account: it reads curriculum/grid, timeoff and
+//   holidays and nothing else (the lobby TV's read is gone; staff() still excludes it everywhere else).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -27,8 +29,10 @@ service cloud.firestore {
       return request.auth != null
         && ( request.auth.token.email.lower() == 'daniel.giordano@pravix.app' || roleAdmin() );    }
 
+    // n223: the managers' shared account (au733@vca.com) reads the curriculum Overview, read only: the plan (grid),
+    // time off and holidays off. Not the change history, not change requests, nothing else in Pravix.
     match /curriculum/{docId} {
-      allow read:  if staff();
+      allow read:  if staff() || (lobbyAccount() && docId in ['grid', 'timeoff', 'holidays']);
       allow write: if sgvpAdmin();
     }
     // n221: change requests (an intern asks; a director decides). Staff read; you can only ask as yourself, only
@@ -87,7 +91,7 @@ match /client_intakes/{docId} {
     // Oct 7 — waiting-room screen (index.html?display). Display-only copy per visit, keyed by the visit id: no tracker
     // token, owner, phone, room or CPR/DNR. Staff Flow adds it, keeps it current and removes it when the visit ends.
     match /lobby/{id} {
-      allow read: if request.auth != null;   // n149: the lobby screen signs in (lobby account or staff)
+      allow read: if staff();   // n223: the lobby TV is off; au733@vca.com is the managers' curriculum account now
       allow create, update: if staff()
         && request.resource.data.keys().hasOnly(['tenant_id','patient_name','species','breed','age','age_estimated',
                                                  'status','prio','doctor_id','arrival_time','timeline','is_active']);

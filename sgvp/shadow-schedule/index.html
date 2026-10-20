@@ -1,8 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-pvx-glass data-pvx-copy>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script id="pvx-n223-guard-js">
+/* PVX-N223: the managers' shared account (au733@vca.com) can open https://shoreline.pravix.app/sgvp/ only.
+   On every other Pravix page it sees the shared top bar and "Unauthorized" - nothing else, nothing to use.
+   Runs first in <head>. It reads who is signed in from Firebase's own storage (works on pages without Firebase)
+   and follows sign-in changes where Firebase is loaded. */
+(function () {
+  'use strict';
+  var AU = 'au733@vca.com', KEY = 'pvx_acct', d = document.documentElement, on = false, box = null, mo = null;
+  var css = document.createElement('style'); css.id = 'pvx-n223-guard';
+  css.textContent = 'html.pvx-ua-wait body{visibility:hidden!important}'
+    + 'html.pvx-ua body{overflow:hidden!important}html.pvx-ua [data-pvx-ua]{visibility:hidden!important}'
+    + '.pvx-ua-box{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;'
+    + 'background:#0A1222;color:#E6EEF6;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif}'
+    + 'html.pvx-ua-light .pvx-ua-box{background:#F2F4F8;color:#0E1A2B}'
+    + '.pvx-ua-box h1{margin:0;font-size:1.75rem;font-weight:700;letter-spacing:0}'
+    + '.pvx-ua-box p{margin:0;font-size:.9375rem;line-height:1.45;color:#A7C2D8}html.pvx-ua-light .pvx-ua-box p{color:#52698A}'
+    + '.pvx-ua-box a{margin-top:6px;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;background:linear-gradient(150deg,#38BDD2,#2C7FB8);color:#fff;font-weight:600;font-size:.9375rem;text-decoration:none}'
+    + '.pvx-ua-box a:focus-visible{outline:2px solid #38BDD2;outline-offset:3px}';
+  (document.head || d).appendChild(css);
+  try { if (localStorage.getItem(KEY) === 'au733') d.classList.add('pvx-ua-wait'); } catch (e) {}
+  var waitT = setTimeout(function () { d.classList.remove('pvx-ua-wait'); }, 4000);   /* never leave anyone with a blank page */
+  function ready(f) { if (document.body && document.readyState !== 'loading') f(); else document.addEventListener('DOMContentLoaded', f); }
+  function top() { return document.querySelector('#pvxTopnav') || document.querySelector('nav.topnav') || document.querySelector('.topnav'); }
+  function freeTop() {   /* some apps lock their own page for this account (inert on the wrapper that holds the top bar) */
+    var t = top(); if (!t) return;
+    for (var x = t; x && x !== document.body; x = x.parentElement) if (x.hasAttribute('inert')) { x.removeAttribute('inert'); x.setAttribute('data-pvx-ua-freed', ''); }
+  }
+  function setInert(v) {
+    if (v) freeTop();
+    var keep = [box, top()].filter(Boolean);
+    function walk(parent) {
+      [].forEach.call(parent.children, function (c) {
+        if (keep.indexOf(c) >= 0 || c.tagName === 'SCRIPT' || c.tagName === 'STYLE') return;
+        if (keep.some(function (k) { return c.contains(k); })) { walk(c); return; }
+        if (v) { if (!c.hasAttribute('data-pvx-ua')) { c.setAttribute('data-pvx-ua', c.hasAttribute('inert') ? '1' : '0'); c.setAttribute('inert', ''); } }
+        else if (c.hasAttribute('data-pvx-ua')) { if (c.getAttribute('data-pvx-ua') === '0') c.removeAttribute('inert'); c.removeAttribute('data-pvx-ua'); }
+      });
+    }
+    walk(document.body);
+  }
+  function place() { if (!box) return; var t = top(), b = t ? Math.max(0, Math.round(t.getBoundingClientRect().bottom)) : 0; box.style.top = b + 'px'; }
+  function show() {
+    ready(function () {
+      if (!on) return;
+      d.classList.add('pvx-ua');
+      var light = /(?:^|;\s*)pvx_theme=light/.test(document.cookie);
+      if (!/(?:^|;\s*)pvx_theme=/.test(document.cookie)) { try { var m = getComputedStyle(document.body).backgroundColor.match(/\d+/g); if (m && (+m[0] + +m[1] + +m[2]) / 3 > 140) light = true; } catch (e) {} }
+      if (light) d.classList.add('pvx-ua-light');
+      if (!box) {
+        box = document.createElement('main'); box.className = 'pvx-ua-box'; box.setAttribute('aria-labelledby', 'pvxUaT');
+        box.innerHTML = '<h1 id="pvxUaT">Unauthorized</h1><p>This account can only open the intern curriculum.</p><a href="https://shoreline.pravix.app/sgvp/">Open the curriculum</a>';
+        document.body.appendChild(box);
+      }
+      place(); setInert(true);
+      d.classList.remove('pvx-ua-wait'); clearTimeout(waitT);
+      if (!mo) {   /* the page keeps adding things (its own sign-in cards, banners): keep them out of reach */
+        var busy = false;
+        mo = new MutationObserver(function () { if (!on || busy) return; busy = true; setTimeout(function () { busy = false; if (on) { setInert(true); place(); } }, 60); });
+        mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['inert'] });
+      }
+      window.addEventListener('resize', place);
+      setTimeout(place, 300); setTimeout(place, 1500);
+    });
+  }
+  function hide() {
+    if (mo) { mo.disconnect(); mo = null; }
+    if (box) { box.remove(); box = null; }
+    d.classList.remove('pvx-ua', 'pvx-ua-wait'); clearTimeout(waitT);
+    if (document.body) setInert(false);
+  }
+  function decide(email) {
+    var au = String(email || '').toLowerCase() === AU;
+    try { if (au) localStorage.setItem(KEY, 'au733'); else localStorage.removeItem(KEY); } catch (e) {}
+    if (au) { if (!on) { on = true; show(); } }
+    else { on = false; hide(); }
+  }
+  window.pvxGuardDecide = decide;
+  /* 1. who is signed in, from Firebase's own storage (any page) */
+  try {
+    var req = indexedDB.open('firebaseLocalStorageDb');
+    req.onupgradeneeded = function () { try { req.transaction.abort(); } catch (e) {} };   /* no database: nobody signed in */
+    req.onerror = function () { decide(null); };
+    req.onsuccess = function () {
+      var db = req.result;
+      if (!db.objectStoreNames.contains('firebaseLocalStorage')) { db.close(); decide(null); return; }
+      var g = db.transaction('firebaseLocalStorage', 'readonly').objectStore('firebaseLocalStorage').getAll();
+      g.onsuccess = function () {
+        var em = null;
+        (g.result || []).forEach(function (x) { var v = x && x.value; if (v && v.email && String(x.fbase_key || '').indexOf('firebase:authUser:') === 0 && String(v.email).toLowerCase() === AU) em = AU; });
+        db.close(); if (!fbSeen) decide(em);
+      };
+      g.onerror = function () { db.close(); };
+    };
+  } catch (e) {}
+  /* 2. sign-in changes on pages that load Firebase */
+  var fbSeen = false, tries = 0;
+  (function poll() {
+    try {
+      if (window.firebase && firebase.apps && firebase.apps.length && firebase.auth) {
+        firebase.auth().onAuthStateChanged(function (u) { fbSeen = true; decide(u && u.email); });
+        return;
+      }
+    } catch (e) {}
+    if (++tries < 60) setTimeout(poll, 250);
+  })();
+})();
+</script>
+<meta name="theme-color" content="#0A1222">
+<script>(function(){try{if(/(?:^|;\s*)pvx_theme=light/.test(document.cookie))document.querySelector('meta[name="theme-color"]').content="#F2F4F8";}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Shadow Schedule — VCA Shoreline Graduate Veterinarian Program</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -24,7 +133,7 @@ body.dark{
   --brand-cyan:#38BDD2; --brand-purple:#A888E0; --brand-coral:#E07060; --brand-green:#48B888;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh;transition:background .4s,color .4s;overflow-x:hidden;}
+body{font-family:var(--font,-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif);background:var(--bg);color:var(--text-primary);min-height:100vh;transition:background .4s,color .4s;overflow-x:hidden;}
 body:not(.dark){background:linear-gradient(135deg,#EAF3FB 0%,#E9ECF8 48%,#F4ECF6 100%);background-attachment:fixed;}
 .bg-orb-1{position:fixed;z-index:0;pointer-events:none;width:680px;height:680px;border-radius:50%;background:radial-gradient(circle,rgba(77,200,224,0.16) 0%,transparent 70%);top:-120px;right:-120px;}
 .bg-orb-2{position:fixed;z-index:0;pointer-events:none;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(139,75,181,0.13) 0%,transparent 70%);bottom:-60px;left:-120px;}
@@ -36,7 +145,7 @@ body.dark .bg-orb-3{display:none;}
 body.dark .topnav{background:rgba(10,18,34,0.96);border-bottom:1px solid rgba(255,255,255,0.04);}
 .topnav img.logo{height:72px;width:auto;}
 .nav-center{display:flex;gap:3px;align-items:center;}
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 13px;border-radius:8px;cursor:pointer;transition:all .2s;color:rgba(255,255,255,0.55);font-size:10px;font-weight:600;letter-spacing:.3px;border:1px solid transparent;text-decoration:none;background:transparent;font-family:'Inter',Arial,sans-serif;white-space:nowrap;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 13px;border-radius:8px;cursor:pointer;transition:all .2s;color:rgba(255,255,255,0.55);font-size:10px;font-weight:600;letter-spacing:.3px;border:1px solid transparent;text-decoration:none;background:transparent;font-family:var(--font,-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif);white-space:nowrap;}
 .nav-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);}
 .nav-item.active{background:rgba(77,200,224,0.15);color:var(--brand-cyan);border-color:rgba(77,200,224,0.25);}
 .nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
@@ -53,19 +162,19 @@ body.dark .theme-toggle .img-light{opacity:0;}body.dark .theme-toggle .img-dark{
 /* ═══ PAGE ═══ */
 .page{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:34px 32px 80px;}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:36px;}
-.page-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(77,200,224,0.12);border:1px solid rgba(77,200,224,0.25);color:var(--brand-cyan);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 13px;border-radius:20px;margin-bottom:14px;}
+.page-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(77,200,224,0.12);border:1px solid rgba(77,200,224,0.25);color:var(--brand-cyan);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 13px;border-radius:20px;margin-bottom:14px;}
 body:not(.dark) .page-tag{background:rgba(12,41,82,0.07);border-color:rgba(12,41,82,0.14);color:var(--brand-navy);}
 .page-title{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.1;}
-.page-sub{font-size:13.5px;color:var(--text-secondary);margin-top:8px;}
+.page-sub{font-size:14px;color:var(--text-secondary);margin-top:8px;}
 .block-card{position:relative;overflow:hidden;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);box-shadow:var(--glass-shadow);backdrop-filter:blur(40px) saturate(1.9);-webkit-backdrop-filter:blur(40px) saturate(1.9);padding:18px 26px;text-align:right;min-width:240px;}
 .block-card>*{position:relative;z-index:1;}
 .bl-glow{position:absolute;inset:-50% -25%;border-radius:50%;z-index:0;pointer-events:none;filter:blur(16px);opacity:.7;
   background:radial-gradient(ellipse at 62% 42%,rgba(77,200,224,0.20),rgba(139,75,181,0.13) 40%,rgba(70,120,235,0.09) 64%,transparent 78%);
   animation:blGlow 7s ease-in-out infinite;}
 @keyframes blGlow{0%,100%{opacity:.5;transform:scale(.95);}50%{opacity:.85;transform:scale(1.07);}}
-.block-card .bl-lab{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);}
-.block-card .bl-name{font-size:21px;font-weight:800;color:var(--text-primary);margin:4px 0;letter-spacing:-.3px;}
-.block-card .bl-dates{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--brand-cyan);text-transform:uppercase;}
+.block-card .bl-lab{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);}
+.block-card .bl-name{font-size:22px;font-weight:800;color:var(--text-primary);margin:4px 0;letter-spacing:-.3px;}
+.block-card .bl-dates{font-size:12px;font-weight:700;letter-spacing:0;color:var(--brand-cyan);text-transform:none;}
 
 /* ═══ CARD ═══ */
 .card{position:relative;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow);backdrop-filter:blur(42px) saturate(1.9);-webkit-backdrop-filter:blur(42px) saturate(1.9);padding:22px 24px;}
@@ -84,19 +193,19 @@ body.dark .week-card:hover{box-shadow:0 16px 52px rgba(0,0,0,0.62),0 0 0 1px rgb
 .tbl-wrap{overflow-x:auto;}
 table.sched{width:100%;border-collapse:separate;border-spacing:5px;min-width:760px;}
 table.sched th,table.sched td{padding:0;}
-table.sched thead th{text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);padding:6px 4px;}
-table.sched thead th .dt{display:block;font-size:10px;font-weight:600;color:var(--text-muted);margin-top:2px;letter-spacing:0;}
+table.sched thead th{text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);padding:6px 4px;}
+table.sched thead th .dt{display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-top:2px;letter-spacing:0;}
 table.sched thead th.doch{text-align:left;}
-.doc{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:16px;background:var(--surface-2);font-size:12.5px;font-weight:700;color:var(--text-primary);white-space:nowrap;}
-.dept{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:12px 14px;border-radius:16px;font-size:12.5px;font-weight:700;white-space:nowrap;border:1px solid transparent;min-height:52px;background:var(--surface-2);}
+.doc{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:16px;background:var(--surface-2);font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;}
+.dept{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:12px 14px;border-radius:16px;font-size:13px;font-weight:700;white-space:nowrap;border:1px solid transparent;min-height:52px;background:var(--surface-2);}
 .dept .dept-name{display:inline-block;}
 table.sched td:first-child{width:1%;}
-.doc .ini{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
-.cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;border-radius:19px;font-size:11.5px;font-weight:600;padding:6px;border:1px solid transparent;line-height:1.25;transition:transform .15s ease;}
+.doc .ini{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
+.cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;border-radius:19px;font-size:12px;font-weight:600;padding:6px;border:1px solid transparent;line-height:1.25;transition:transform .15s ease;}
 .cell:hover{transform:translateY(-1px);}
 .r-off{background:var(--surface-1);color:var(--text-muted);border-color:var(--border-subtle);font-weight:700;}
 body.dark .r-off{background:rgba(255,255,255,0.03);}
-.cell sup{font-size:8px;font-weight:800;color:var(--brand-coral);margin-left:1px;}
+.cell sup{font-size:11px;font-weight:800;color:var(--brand-coral);margin-left:1px;}
 
 /* ═══ CURRICULUM-STYLE TABLE ═══ */
 .table-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow);backdrop-filter:blur(42px) saturate(1.9);-webkit-backdrop-filter:blur(42px) saturate(1.9);overflow:hidden;position:relative;transition:transform .22s cubic-bezier(.2,.7,.2,1),box-shadow .22s ease;}
@@ -109,7 +218,7 @@ body.dark .table-card:hover{box-shadow:0 16px 52px rgba(0,0,0,0.62),0 0 0 1px rg
 .tc-head .ttl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);}
 .tc-head .rng{font-size:11px;font-weight:600;color:var(--text-secondary);}
 .curr-table{width:100%;border-collapse:collapse;min-width:820px;}
-.curr-table th{padding:12px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--surface-1);border-bottom:1px solid var(--border-subtle);white-space:nowrap;position:relative;color:var(--text-secondary);}
+.curr-table th{padding:12px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--surface-1);border-bottom:1px solid var(--border-subtle);white-space:nowrap;position:relative;color:var(--text-secondary);}
 body.dark .curr-table th{background:rgba(255,255,255,0.03);}
 .curr-table th:first-child{text-align:left;}
 .curr-table td{padding:0;border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);vertical-align:middle;min-width:90px;}
@@ -121,14 +230,14 @@ body.dark .curr-table td.svc-col{background:rgba(255,255,255,0.02);}
 .svc-dot{background:var(--brand-cyan);}
 .svc-cell{display:flex;align-items:center;gap:10px;padding:14px 16px;border-left:4px solid transparent;min-height:56px;}
 .svc-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;background:var(--text-muted);}
-.svc-name{font-size:12.5px;font-weight:700;color:var(--text-primary);line-height:1.3;}
+.svc-name{font-size:13px;font-weight:700;color:var(--text-primary);line-height:1.3;}
 .block-th{padding:10px 6px;text-align:center;}
-.block-num{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--text-secondary);margin-bottom:2px;text-transform:uppercase;}
-.block-dates{font-size:9.5px;color:var(--text-muted);font-weight:600;letter-spacing:.2px;}
-.block-cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:8px 7px;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--text-primary);transition:background .15s;}
+.block-num{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--text-secondary);margin-bottom:2px;text-transform:uppercase;}
+.block-dates{font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:.2px;}
+.block-cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:8px 7px;font-size:12px;font-weight:600;line-height:1.3;color:var(--text-primary);transition:background .15s;}
 .block-cell:hover{background:rgba(77,200,224,0.06);}
 .block-cell.empty{color:var(--text-muted);font-weight:500;}
-.block-cell sup{font-size:8px;font-weight:800;color:var(--brand-coral);margin-left:1px;}
+.block-cell sup{font-size:11px;font-weight:800;color:var(--brand-coral);margin-left:1px;}
 .foot{padding:12px 20px;}
 
 /* ═══ BOTTOM ═══ */
@@ -140,7 +249,7 @@ body.dark .curr-table td.svc-col{background:rgba(255,255,255,0.02);}
 .key-list{display:flex;flex-wrap:wrap;gap:9px;}
 .key{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-1);}
 .key .key-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
-.foot{font-size:11.5px;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;gap:6px;}
+.foot{font-size:12px;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;gap:6px;}
 .foot sup{color:var(--brand-coral);font-weight:800;}
 
 /* ═══ LIQUID-GLASS REFINEMENTS (header left untouched) ═══ */
@@ -183,7 +292,7 @@ body.edit-mode .edit-orb{opacity:1;box-shadow:0 0 0 3px rgba(232,100,74,0.32),0 
 .editgate-overlay{position:fixed;inset:0;z-index:96000;display:none;align-items:center;justify-content:center;padding:20px;}
 .editgate-dim{position:absolute;inset:0;background:rgba(5,10,20,0.35);backdrop-filter:blur(10px);}
 .editgate-card{position:relative;z-index:2;width:min(92vw,360px);text-align:center;padding:34px 30px 24px;border-radius:26px;color:#fff;background:linear-gradient(160deg,rgba(34,40,58,0.82),rgba(15,19,30,0.86));border:1px solid rgba(255,255,255,0.12);box-shadow:0 30px 80px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,255,255,0.2);backdrop-filter:blur(30px);}
-.editgate-title{font-size:18px;font-weight:800;margin-bottom:4px;}
+.editgate-title{font-size:17px;font-weight:800;margin-bottom:4px;}
 .editgate-sub{font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:20px;}
 .editgate-card input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:24px;padding:12px 18px;color:#fff;font-size:14px;outline:none;font-family:inherit;text-align:center;letter-spacing:3px;}
 .editgate-btn{width:100%;margin-top:14px;background:#fff;color:#15151c;border:none;border-radius:24px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;}
@@ -375,6 +484,85 @@ body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!imp
 /* a flat canvas, as Treatment Sheets: the older pages' coloured background glows step aside in light mode */
 body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
 </style>
+<style id="pvx-n222-shadow">.edit-banner{text-transform:none!important;letter-spacing:0!important;font-size:13px!important;font-weight:600!important}.edit-banner.show{display:flex!important;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center}.edit-banner button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:4px 10px;font:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center}</style>
+<style id="pvx-n222-css">
+/* PVX-N222 - SGVP catch-up (HIG): text size, figures, motion, touch, focus, search, alerts. Never the shared top bar. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* numbers that change or line up */
+:where([class*="num"],[class*="stat"],[class*="pct"],[class*="count"],[class*="days"],.pvx-tl-key,.block-dates,.hbc-label,.pvx-ho-d):not(:where(#pvxTopnav *)){font-variant-numeric:tabular-nums}
+/* nothing loops at rest except one live dot (and anything that means "working") */
+body *:not(#pvxTopnav):not(#pvxTopnav *):not(.badge-dot):not(.live-dot):not([class*="spin"]):not([class*="loading"]),body *:not(#pvxTopnav):not(#pvxTopnav *)::before,body *:not(#pvxTopnav):not(#pvxTopnav *)::after{animation-iteration-count:1!important}
+@media (prefers-reduced-motion:reduce){
+  body *:not(#pvxTopnav):not(#pvxTopnav *):not([class*="spin"]),body *::before,body *::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  html{scroll-behavior:auto!important}
+}
+@media (prefers-reduced-transparency:reduce){body *:not(#pvxTopnav *){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
+@media (prefers-contrast:more){body :is(.card,.legend-card,.mentor-card,.intern-card,.table-card,.block-card,.app-card,.res-card):not(#pvxTopnav *){border-color:currentColor!important}}
+@media (forced-colors:active){body :is(button,[role=button],a,.chip):not(#pvxTopnav *){border:1px solid ButtonText}}
+/* focus is always visible, editable fields included */
+body :is(a,button,[role=button],[role=radio],[role=tab],[tabindex],input,select,textarea,[contenteditable="true"]):not(#pvxTopnav *):focus-visible{outline:2px solid #38BDD2!important;outline-offset:2px}
+/* 44 pt to touch (the drawing keeps its size where padding can grow instead) */
+@media (pointer:coarse){
+  :where(button,.seg,.chip,.vt-btn,.fa-btn,.cc-btn,.nav-btn,.qa-btn,.qh-act,.card-action,.action-link,.to-manage,.pvx-ck-b,.pvx-ck-more,[role=button],[role=radio],[role=tab],select,input[type=search],input[type=text],input[type=date],input[type=number]):not(:where(#pvxTopnav *,.cell-initials,.block-cell,.pvx-clear,.avatar-wrap)){min-height:44px}
+  :where(button,[role=button],[role=radio]):not(:where(#pvxTopnav *,.cell-initials,.block-cell,.avatar-wrap)){min-width:44px}
+  :where(.card-action,.qh-act,.qa-btn,a.fa-btn,.to-manage):not(:where(#pvxTopnav *)){display:inline-flex;align-items:center}
+  :where(.action-link):not(:where(#pvxTopnav *)){display:flex;align-items:center}
+  :where(.pvx-tl a){display:inline-flex;align-items:center;min-height:44px;margin:-14px 0}
+}
+/* search: Clear button */
+input.pvx-has-clear:not(:placeholder-shown){padding-right:40px!important}
+input.pvx-has-clear::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.pvx-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;background:none;color:var(--text-muted,#7A98B8);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:2}
+.pvx-clear[hidden]{display:none}
+.pvx-clear svg{width:16px;height:16px}
+@media (pointer:coarse){.pvx-clear{width:44px;height:44px;right:0}}
+/* line icons in buttons */
+.pvx-ico{width:1.15em;height:1.15em;flex:none;vertical-align:-0.2em}
+:is(button,a,.cc-title,[role=button]) > .pvx-ico:first-child{margin-right:.4em}
+:is(button,a) > .pvx-ico:last-child:not(:first-child){margin-left:.35em}
+/* alerts (destructive: no default) and sheets */
+.pvx-al-ov{position:fixed;inset:0;background:rgba(8,14,28,.42);z-index:10000;opacity:0;transition:opacity .18s}
+.pvx-al-ov.open{opacity:1}
+.pvx-al{box-sizing:border-box;position:fixed;left:50%;top:50%;z-index:10001;width:min(380px,calc(100vw - 32px));background:#FFFFFF;color:#0E1A2B;border-radius:16px;box-shadow:0 24px 60px rgba(8,20,40,.3);padding:22px 20px 16px;opacity:0;transform:translate(-50%,-48%) scale(.98);transition:opacity .18s,transform .22s;font-family:var(--font,-apple-system,BlinkMacSystemFont,system-ui,sans-serif);outline:none}
+body.dark .pvx-al{background:#131E34;color:#E6EEF6;border:1px solid rgba(150,185,220,.16)}
+.pvx-al.open{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.pvx-al-t{margin:0 0 6px;font-size:17px;font-weight:700;line-height:1.3}
+.pvx-al-m{margin:0 0 16px;font-size:14px;line-height:1.45;color:#52698A}
+body.dark .pvx-al-m{color:#A7C2D8}
+.pvx-al-b{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pvx-al-b button{min-height:44px;border-radius:12px;border:1px solid rgba(120,140,170,.3);background:transparent;color:inherit;font:600 15px/1 var(--font,-apple-system,system-ui,sans-serif);cursor:pointer}
+.pvx-al-a{background:linear-gradient(150deg,#38BDD2,#2C7FB8)!important;color:#fff!important;border-color:transparent!important}
+.pvx-al-a.is-danger{background:#C9372C!important}
+.pvx-al-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:-8px -6px 12px}
+.pvx-al-bar .pvx-al-t{margin:0;text-align:center;font-size:15px}
+.pvx-al-bar button{border:0;background:none;color:#0F6B82;font:600 15px/1 var(--font,-apple-system,system-ui,sans-serif);min-height:44px;padding:0 8px;cursor:pointer}
+body.dark .pvx-al-bar button{color:#4DC8E0}
+.pvx-al-bar .pvx-al-c{justify-self:start}.pvx-al-bar .pvx-al-a{justify-self:end;font-weight:700;background:none!important;color:#0F6B82!important}
+body.dark .pvx-al-bar .pvx-al-a{color:#4DC8E0!important}
+.pvx-al-bar .pvx-al-a[aria-disabled=true]{opacity:.4}
+.pvx-al-f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#52698A}
+body.dark .pvx-al-f{color:#A7C2D8}
+.pvx-al-f input{min-height:44px;border-radius:10px;border:1px solid rgba(120,140,170,.35);padding:0 12px;font:500 15px var(--font,-apple-system,system-ui,sans-serif);background:transparent;color:inherit}
+.pvx-al-sheet .pvx-al-m{margin:8px 0 0;font-size:12px}
+.pvx-al button:focus-visible,.pvx-al:focus-visible{outline:2px solid #38BDD2;outline-offset:2px}
+@media (max-width:700px){
+  .pvx-al{left:0;right:0;top:auto;bottom:0;width:100%;border-radius:16px 16px 0 0;transform:translateY(24px);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .pvx-al.open{transform:translateY(0)}
+  .pvx-al-b{grid-template-columns:1fr}
+  .pvx-al-b .pvx-al-a{order:-1}
+}
+@media (prefers-reduced-motion:reduce){.pvx-al,.pvx-al-ov{transition:none}}
+/* controls use the page font (not the browser's default for buttons and fields) */
+:where(button,input,select,textarea):not(:where(#pvxTopnav *)){font-family:inherit}
+/* the program sub-nav on phones: a size on the scale */
+@media (max-width:760px){#pvxSubnav .seg{font-size:12px}}
+#pvxSubnav .subnav-title{font-size:11px}
+/* the initials in a dense plan keep their drawing; the touch area grows invisibly */
+@media (pointer:coarse){.cell-initials[role=button]{position:relative}.cell-initials[role=button]::before{content:'';position:absolute;inset:-9px -4px}}
+html{overflow-x:clip}
+@media (pointer:coarse){#pvxSubnav .seg{min-height:44px}}
+@media (prefers-reduced-motion:reduce){.week-card:hover,.cell:hover,.table-card:hover{transform:none!important;translate:none!important}}
+</style>
 </head>
 <body>
 <script>/* Pravix shared theme — carries across every pravix.app page via a domain cookie (default dark). Reads the cookie (mirrors it into localStorage so this page's own theme init agrees), applies before first paint, and persists ANY dark-class change back to the cookie via an observer, covering every toggle path. */
@@ -444,22 +632,22 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     </div>
   </div>
 
-<div class="edit-banner" id="editBanner">✏ EDIT MODE — Click any highlighted field to edit &nbsp;|&nbsp; <span onclick="saveAll()">💾 Save</span> &nbsp;|&nbsp; <span onclick="cancelEdit()">Cancel</span> &nbsp;|&nbsp; <span onclick="resetAll()">⟲ Reset</span> &nbsp;|&nbsp; <span onclick="exportSchedule()">⬇ Extract Copy</span></div>
+<div class="edit-banner" id="editBanner"><span>Editing: <span class="pvx-tapword">Click</span> a highlighted field to change it.</span> <button type="button" onclick="saveAll()">Save</button> <button type="button" onclick="cancelEdit()">Cancel</button> <button type="button" onclick="resetAll()"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4"/></svg>Reset…</button> <button type="button" onclick="exportSchedule()"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg>Save a copy…</button></div>
 
 <div class="page">
 <div id="editArea">
 
   <div class="page-head">
     <div>
-      <span class="page-tag" data-editable>⬢ Shadow Rotation</span>
-      <div class="page-title" data-editable>2026 – 2027 Intern Shadow Rotation</div>
-      <div class="page-sub" data-editable>Orientation · Clinical Exposure · Service Introductions</div>
+      <span class="page-tag" data-editable>Shadow rotations</span>
+      <div class="page-title" data-editable>2026 – 2027 intern shadow rotations</div>
+      <div class="page-sub" data-editable>Orientation · clinical exposure · service introductions</div>
     </div>
     <div class="block-card">
       <div class="bl-glow"></div>
       <div class="bl-lab">Current Block</div>
-      <div class="bl-name" data-editable>Shadow Rotation</div>
-      <div class="bl-dates" data-editable>June 22 – July 05</div>
+      <div class="bl-name" data-editable>Shadow rotations</div>
+      <div class="bl-dates" data-editable>Jun 22 – Jul 5</div>
     </div>
   </div>
 
@@ -469,8 +657,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <div class="tc-head"><span class="ttl" data-editable>Week 1</span><span class="rng" data-editable>Jun 22 – Jun 28, 2026</span></div>
       <div class="tbl-wrap"><table class="curr-table">
         <thead><tr><th class="svc-col">Intern</th>
-          <th class="block-th"><div class="block-num">Mon</div><div class="block-dates" data-editable>6/22</div></th><th class="block-th"><div class="block-num">Tue</div><div class="block-dates" data-editable>6/23</div></th><th class="block-th"><div class="block-num">Wed</div><div class="block-dates" data-editable>6/24</div></th>
-          <th class="block-th"><div class="block-num">Thu</div><div class="block-dates" data-editable>6/25</div></th><th class="block-th"><div class="block-num">Fri</div><div class="block-dates" data-editable>6/26</div></th><th class="block-th"><div class="block-num">Sat</div><div class="block-dates" data-editable>6/27</div></th><th class="block-th"><div class="block-num">Sun</div><div class="block-dates" data-editable>6/28</div></th>
+          <th class="block-th"><div class="block-num">Mon</div><div class="block-dates" data-editable>Jun 22</div></th><th class="block-th"><div class="block-num">Tue</div><div class="block-dates" data-editable>Jun 23</div></th><th class="block-th"><div class="block-num">Wed</div><div class="block-dates" data-editable>Jun 24</div></th>
+          <th class="block-th"><div class="block-num">Thu</div><div class="block-dates" data-editable>Jun 25</div></th><th class="block-th"><div class="block-num">Fri</div><div class="block-dates" data-editable>Jun 26</div></th><th class="block-th"><div class="block-num">Sat</div><div class="block-dates" data-editable>Jun 27</div></th><th class="block-th"><div class="block-num">Sun</div><div class="block-dates" data-editable>Jun 28</div></th>
         </tr></thead>
         <tbody>
           <tr>
@@ -508,8 +696,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <div class="tc-head"><span class="ttl" data-editable>Week 2</span><span class="rng" data-editable>Jun 29 – Jul 05, 2026</span></div>
       <div class="tbl-wrap"><table class="curr-table">
         <thead><tr><th class="svc-col">Intern</th>
-          <th class="block-th"><div class="block-num">Mon</div><div class="block-dates" data-editable>6/29</div></th><th class="block-th"><div class="block-num">Tue</div><div class="block-dates" data-editable>6/30</div></th><th class="block-th"><div class="block-num">Wed</div><div class="block-dates" data-editable>7/1</div></th>
-          <th class="block-th"><div class="block-num">Thu</div><div class="block-dates" data-editable>7/2</div></th><th class="block-th"><div class="block-num">Fri</div><div class="block-dates" data-editable>7/3</div></th><th class="block-th"><div class="block-num">Sat</div><div class="block-dates" data-editable>7/4</div></th><th class="block-th"><div class="block-num">Sun</div><div class="block-dates" data-editable>7/5</div></th>
+          <th class="block-th"><div class="block-num">Mon</div><div class="block-dates" data-editable>Jun 29</div></th><th class="block-th"><div class="block-num">Tue</div><div class="block-dates" data-editable>Jun 30</div></th><th class="block-th"><div class="block-num">Wed</div><div class="block-dates" data-editable>Jul 1</div></th>
+          <th class="block-th"><div class="block-num">Thu</div><div class="block-dates" data-editable>Jul 2</div></th><th class="block-th"><div class="block-num">Fri</div><div class="block-dates" data-editable>Jul 3</div></th><th class="block-th"><div class="block-num">Sat</div><div class="block-dates" data-editable>Jul 4</div></th><th class="block-th"><div class="block-num">Sun</div><div class="block-dates" data-editable>Jul 5</div></th>
         </tr></thead>
         <tbody>
           <tr>
@@ -546,7 +734,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
   <div class="grid2">
     <div class="card">
-      <div class="card-h"><span class="ttl">Intern Legend</span></div>
+      <div class="card-h"><span class="ttl">Intern legend</span></div>
       <div class="legend-list" id="legendList">
         <div class="leg"><b data-editable>Benjamin Kerns</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
         <div class="leg"><b data-editable>Marissa Peck</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
@@ -556,7 +744,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       <button class="add-btn eo-block" style="margin-top:14px;" onclick="addIntern()">+ Add Intern</button>
     </div>
     <div class="card">
-      <div class="card-h"><span class="ttl">Rotation Key</span></div>
+      <div class="card-h"><span class="ttl">Rotation key</span></div>
       <div class="key-list" id="keyList">
         <span class="key" data-color="#8B4DB5"><span class="key-dot" style="background:#8B4DB5"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Neurology</span><input type="color" class="swatch eo" value="#8B4DB5" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
         <span class="key" data-color="#E8644A"><span class="key-dot" style="background:#E8644A"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Oncology</span><input type="color" class="swatch eo" value="#E8644A" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
@@ -686,7 +874,7 @@ function saveAll(){
   let ok=true;
   try{localStorage.setItem(SH_KEY,document.getElementById('editArea').innerHTML);}catch(e){ok=false;toast('⚠ Could not save — too large');}
   exitEdit();
-  if(ok)toast('✓ Schedule saved');
+  if(ok){ /* n222: saving is silent */ }
 }
 function cancelEdit(){location.reload();}
 
@@ -695,7 +883,7 @@ function exportSchedule(){
   const wasEdit=editMode;
   document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='false');
 
-  let label=prompt('Name this copy (e.g. "Block 3" or "Spring 2026"):','');
+  pvxPrompt({title:'Save a copy', label:'Name', placeholder:'For example, Block 3 or Spring 2026', hint:'The copy keeps its own saved edits.', action:'Save'}).then(function(label){
   if(label===null){ if(wasEdit)document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='true'); return; }
   label=(label||'Shadow Schedule').trim()||'Shadow Schedule';
   const slug=label.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'schedule';
@@ -718,9 +906,10 @@ function exportSchedule(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=label+'.html';
   document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
-  toast('✓ Extracted "'+label+'" with its own save key');
+  toast('Saved a copy: “'+label+'”');
+  });
 }
-function resetAll(){if(confirm('Reset the schedule to defaults? All saved edits will be cleared.')){try{localStorage.removeItem(SH_KEY);}catch(e){}location.reload();}}
+function resetAll(){pvxConfirm({title:'Reset the shadow schedule?',message:'This clears the saved edits on this device and reloads the original schedule.',action:'Reset',danger:true}).then(function(ok){if(!ok)return;try{localStorage.removeItem(SH_KEY);}catch(e){}location.reload();});}
 
 /* ── restore on load ── */
 (function(){
@@ -948,5 +1137,230 @@ body.dark #pvxTopnav,body.dark #pvxSubnav{--ink-400:#8FA6BE}
 .subnav .subnav-title,#pvxSubnav .subnav-title{font-size:11px!important;color:var(--ink-400)!important}
 body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.active){color:var(--ink-400)}
 </style>
+<!-- PVX-N222: SGVP catch-up (HIG) -->
+<script>
+/* PVX-N222 - the SGVP pages follow the HIG rules the rest of Pravix follows (catch-up audit, Oct 20 2026).
+   Shared by the Overview, the 7 intern curricula, the 7 intern profiles, Mentors, the shadow schedule and Assets.
+   It never touches the shared top bar (#pvxTopnav). */
+(function () {
+  'use strict';
+  var TOP = '#pvxTopnav,.topnav';
+  function inTop(el) { return !!(el.closest && el.closest(TOP)); }
+  function coarse() { return window.matchMedia && matchMedia('(pointer:coarse)').matches; }
+  var SVG = {
+    print: '<path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v6H7z"/>',
+    download: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/>',
+    upload: '<path d="M12 16V5M7.5 9.5 12 5l4.5 4.5M5 19h14"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    save: '<path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6"/>',
+    edit: '<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>',
+    done: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    reset: '<path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4"/>',
+    photo: '<path d="M4 7h3l2-2h6l2 2h3v12H4zM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
+    external: '<path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"/>',
+    chevron: '<path d="M9 6l6 6-6 6"/>',
+    image: '<path d="M4 5h16v14H4zM4 16l5-5 4 4 2-2 5 5M15.5 9.5h.01"/>'
+  };
+  function icon(n) { return '<svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + SVG[n] + '</svg>'; }
+  window.pvxIcon = icon;
+
+  /* ---------- 1. a dropped file never replaces the page ---------- */
+  ['dragover', 'drop'].forEach(function (type) {
+    window.addEventListener(type, function (e) {
+      if (e.defaultPrevented) return;                                   /* a real drop target took it */
+      var t = e.target; if (t && t.closest && t.closest('input,textarea,[contenteditable="true"],[data-drop-ok]')) return;
+      e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+    }, false);
+  });
+
+  /* ---------- 2. the browser bar follows the theme ---------- */
+  function themeColor() {
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+    m.content = document.body && !document.body.classList.contains('dark') ? '#F2F4F8' : '#0A1222';
+  }
+
+  /* ---------- 3. anything clickable is a real button ---------- */
+  function names(el) {
+    if (el.getAttribute('aria-label')) return;
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (t && t.length <= 60) return;
+    var h = el.querySelector('h1,h2,h3,h4,.mentor-name,.intern-name,.name,strong,b');
+    var n = (h && h.textContent.trim()) || el.getAttribute('title') || el.dataset.name || '';
+    if (n) el.setAttribute('aria-label', n);
+  }
+  function buttons(root) {
+    (root || document).querySelectorAll('[onclick]:not(button):not(a):not(input):not(select):not(textarea):not(label):not([role])').forEach(function (el) {
+      if (inTop(el)) return;
+      var code = el.getAttribute('onclick') || '';
+      if (/^\s*event\.stopPropagation\(\);?\s*$/.test(code) || /event\.target\s*===?\s*this/.test(code)) return;
+      if (/overlay|scrim|backdrop/i.test(el.className || '') || /overlay|scrim/i.test(el.id || '')) return;   /* a dimmed backdrop closes on click; it isn't a button */
+      el.setAttribute('role', 'button'); if (!el.hasAttribute('tabindex')) el.tabIndex = 0; names(el);
+      if (!el.dataset.pvxKey) { el.dataset.pvxKey = '1'; el.addEventListener('keydown', function (e) { if (e.target !== el) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } }); }
+    });
+    /* toggles say whether they're on */
+    (root || document).querySelectorAll('.legend-item[data-svc],.intern-chip-item[data-init]').forEach(function (el) {
+      el.setAttribute('aria-pressed', String(el.classList.contains('active') || el.classList.contains('hl') || el.classList.contains('is-on')));
+      var who = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      el.title = 'Highlight ' + who + ' in the plan';
+    });
+  }
+
+  /* ---------- 4. a tooltip that only repeats the label goes ---------- */
+  function tips(root) {
+    (root || document).querySelectorAll('[title]').forEach(function (el) {
+      if (inTop(el)) return;
+      var t = el.getAttribute('title').trim(), x = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (t && t === x && el.scrollWidth <= el.clientWidth + 1) el.removeAttribute('title');
+    });
+  }
+
+  /* ---------- 5. search fields: type=search, Clear, Esc ---------- */
+  function search() {
+    ['currSearch', 'searchInput', 'assetSearch'].forEach(function (id) {
+      var i = document.getElementById(id); if (!i || i.dataset.pvxSearch) return; i.dataset.pvxSearch = '1';
+      try { i.type = 'search'; } catch (e) {}
+      i.setAttribute('enterkeyhint', 'search'); i.setAttribute('autocomplete', 'off'); i.setAttribute('spellcheck', 'false');
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'pvx-clear'; b.hidden = true; b.setAttribute('aria-label', 'Clear search'); b.innerHTML = icon('close');
+      var p = i.parentNode; if (getComputedStyle(p).position === 'static') p.style.position = 'relative';
+      i.insertAdjacentElement('afterend', b); i.classList.add('pvx-has-clear');
+      function fire() { ['input', 'keyup', 'change'].forEach(function (t) { i.dispatchEvent(new Event(t, { bubbles: true })); }); }
+      function sync() { b.hidden = !i.value; }
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('click', function () { i.value = ''; fire(); sync(); i.focus(); });
+      i.addEventListener('input', sync); i.addEventListener('keydown', function (e) { if (e.key === 'Escape' && i.value) { e.preventDefault(); e.stopPropagation(); i.value = ''; fire(); sync(); } });
+      sync();
+    });
+  }
+
+  /* ---------- 6. content is flat: glass only on floating controls ---------- */
+  function parse(c) { var m = String(c).match(/rgba?\(([^)]+)\)/); if (!m) return null; var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; }
+  function flat() {
+    if (!document.documentElement.hasAttribute('data-pvx-glass')) return;
+    var dark = document.body.classList.contains('dark'), base = dark ? { r: 10, g: 18, b: 34 } : { r: 242, g: 244, b: 248 };
+    document.querySelectorAll('[data-pvx-flat]').forEach(function (el) { el.style.removeProperty('backdrop-filter'); el.style.removeProperty('-webkit-backdrop-filter'); el.style.removeProperty('background-color'); });
+    var all = document.body.querySelectorAll('*');
+    for (var k = 0; k < all.length; k++) {
+      var el = all[k]; if (inTop(el)) continue;
+      var cs = getComputedStyle(el), bf = cs.backdropFilter || cs.webkitBackdropFilter;
+      if (!bf || bf === 'none') continue;
+      if (el.closest('[role=menu],.toast,#toast,.edit-orb,#editOrb,.admin-btn,.pvx-cx-list,.pvx-cx-panel')) continue;   /* floating controls keep their material */
+      el.dataset.pvxFlat = '1';
+      el.style.setProperty('backdrop-filter', 'none', 'important'); el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+      if (/overlay|scrim/i.test((el.className || '') + ' ' + (el.id || ''))) continue;   /* a modal backdrop dims and never blurs */
+      var c = parse(cs.backgroundColor);
+      if (c && c.a < 1) {
+        var r = Math.round(c.r * c.a + base.r * (1 - c.a)), g = Math.round(c.g * c.a + base.g * (1 - c.a)), b = Math.round(c.b * c.a + base.b * (1 - c.a));
+        el.style.setProperty('background-color', 'rgb(' + r + ',' + g + ',' + b + ')', 'important');
+      }
+    }
+  }
+
+  /* ---------- 7. labels: sentence case, verbs, no arrows or emoji (also for labels saved before n222) ---------- */
+  var LABELS = { 'View All →': 'View all', 'Request →': 'Request', 'Full Dashboard →': 'Full dashboard', 'Full Schedule →': 'Full schedule', 'All Mentors →': 'All mentors',
+    'Case Log': 'Case log', 'Time Off Tracker': 'Time off tracker', 'Quick Help': 'Quick help', 'Core Skills — Current Rotation': 'Core skills · current rotation', 'Rotation Timeline': 'Rotation timeline',
+    'Your Mentor': 'Your mentor', 'Internship Progress': 'Internship progress', 'Next Mentor Check-in': 'Next mentor check-in' };
+  function labels(root) {
+    (root || document).querySelectorAll('.card-action,.card-title,.hero-prog-label,[data-key]').forEach(function (el) {
+      if (el.children.length) return;
+      if (el.isContentEditable && document.activeElement === el) return;
+      var t = el.textContent.trim(); if (LABELS[t]) el.textContent = LABELS[t];
+    });
+    var w = coarse() ? 'Tap' : 'Click';
+    document.querySelectorAll('.pvx-tapword').forEach(function (s) { s.textContent = w; });
+    document.querySelectorAll('.pvx-tapword-l').forEach(function (s) { s.textContent = w.toLowerCase(); });
+  }
+
+  /* text written before n222 (saved edits, data): sentence case, no arrows */
+  var COPY = { 'Weekly Availability': 'Weekly availability', 'Time-Off Requests': 'Time-off requests', 'Cases Logged': 'Cases logged', 'Interview Days': 'Interview days', 'Sick Days': 'Sick days',
+    'Continuing Education': 'Continuing education', 'Read Bio': 'Read bio', 'Intern Legend': 'Intern legend', 'Rotation Key': 'Rotation key', 'Background Image': 'Background image', 'Program Year': 'Program year' };
+  var COPY_RE = [[/^(\S+) Remaining$/, '$1 remaining'], [/^In Office(\b.*)$/, 'In office$1'], [/^(.*\S) →$/, '$1']];
+  function copy() {
+    if (!document.documentElement.hasAttribute('data-pvx-copy')) return;
+    var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n, todo = [];
+    while ((n = w.nextNode())) {
+      var p = n.parentNode; if (!p || p.closest('#pvxTopnav,script,style,[contenteditable="true"]')) continue;
+      var t = n.nodeValue, k = t.trim(); if (!k || k.length > 60) continue;
+      var v = COPY[k]; if (!v) for (var i = 0; i < COPY_RE.length; i++) if (COPY_RE[i][0].test(k)) { v = k.replace(COPY_RE[i][0], COPY_RE[i][1]); break; }
+      if (v && v !== k) todo.push([n, t.replace(k, v)]);
+    }
+    todo.forEach(function (x) { x[0].nodeValue = x[1]; });
+  }
+
+  /* ---------- 8. alerts and sheets instead of confirm() and prompt() ---------- */
+  var active = null;
+  function trap(box, onCancel, primary, danger) {
+    var opener = document.activeElement;
+    function keys(e) {
+      if (e.key === 'Escape' || (e.key === '.' && (e.metaKey || e.ctrlKey))) { e.preventDefault(); e.stopPropagation(); onCancel(); return; }
+      if (e.key === 'Enter' && danger && e.target === box) { e.preventDefault(); return; }
+      if (e.key !== 'Tab') return;
+      var f = [].slice.call(box.querySelectorAll('button:not([disabled]),input,textarea'));
+      if (!f.length) return; var i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); }
+    }
+    document.addEventListener('keydown', keys, true);
+    return function () { document.removeEventListener('keydown', keys, true); try { opener && opener.focus && opener.focus(); } catch (e) {} };
+  }
+  function shell(cls) {
+    var ov = document.createElement('div'); ov.className = 'pvx-al-ov'; var box = document.createElement('div'); box.className = cls;
+    document.body.appendChild(ov); document.body.appendChild(box);
+    requestAnimationFrame(function () { ov.classList.add('open'); box.classList.add('open'); });
+    return { ov: ov, box: box, remove: function () { ov.remove(); box.remove(); } };
+  }
+  window.pvxConfirm = function (o) {
+    return new Promise(function (res) {
+      var s = shell('pvx-al'), id = 'pvxAl' + Date.now();
+      s.box.setAttribute('role', 'alertdialog'); s.box.setAttribute('aria-modal', 'true'); s.box.setAttribute('aria-labelledby', id + 't'); if (o.message) s.box.setAttribute('aria-describedby', id + 'm'); s.box.tabIndex = -1;
+      s.box.innerHTML = '<h2 class="pvx-al-t" id="' + id + 't"></h2>' + (o.message ? '<p class="pvx-al-m" id="' + id + 'm"></p>' : '') + '<div class="pvx-al-b"><button type="button" class="pvx-al-c">Cancel</button><button type="button" class="pvx-al-a' + (o.danger ? ' is-danger' : '') + '"></button></div>';
+      s.box.querySelector('.pvx-al-t').textContent = o.title; if (o.message) s.box.querySelector('.pvx-al-m').textContent = o.message; s.box.querySelector('.pvx-al-a').textContent = o.action;
+      var done = false, release;
+      function end(v) { if (done) return; done = true; release(); s.remove(); res(v); }
+      release = trap(s.box, function () { end(false); }, null, o.danger);
+      s.ov.onclick = function () { end(false); };
+      s.box.querySelector('.pvx-al-c').onclick = function () { end(false); };
+      s.box.querySelector('.pvx-al-a').onclick = function () { end(true); };
+      setTimeout(function () { (o.danger ? s.box : s.box.querySelector('.pvx-al-a')).focus(); }, 30);   /* a destructive choice has no default */
+    });
+  };
+  window.pvxPrompt = function (o) {
+    return new Promise(function (res) {
+      var s = shell('pvx-al pvx-al-sheet'), id = 'pvxPr' + Date.now();
+      s.box.setAttribute('role', 'dialog'); s.box.setAttribute('aria-modal', 'true'); s.box.setAttribute('aria-labelledby', id + 't');
+      s.box.innerHTML = '<div class="pvx-al-bar"><button type="button" class="pvx-al-c">Cancel</button><h2 class="pvx-al-t" id="' + id + 't"></h2><button type="button" class="pvx-al-a" aria-disabled="true"></button></div>'
+        + '<label class="pvx-al-f"><span></span><input type="text" autocomplete="off"></label>' + (o.hint ? '<p class="pvx-al-m"></p>' : '');
+      s.box.querySelector('.pvx-al-t').textContent = o.title; s.box.querySelector('.pvx-al-a').textContent = o.action; s.box.querySelector('.pvx-al-f span').textContent = o.label;
+      if (o.hint) s.box.querySelector('.pvx-al-m').textContent = o.hint;
+      var inp = s.box.querySelector('input'), act = s.box.querySelector('.pvx-al-a'); inp.placeholder = o.placeholder || ''; inp.value = o.value || '';
+      function ok() { return !!inp.value.trim(); } function sync() { act.setAttribute('aria-disabled', ok() ? 'false' : 'true'); }
+      var done = false, release;
+      function end(v) { if (done) return; done = true; release(); s.remove(); res(v); }
+      release = trap(s.box, function () { end(null); });
+      inp.addEventListener('input', sync); inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (ok()) end(inp.value.trim()); } });
+      s.ov.onclick = function () { end(null); };
+      s.box.querySelector('.pvx-al-c').onclick = function () { end(null); };
+      act.onclick = function () { if (ok()) end(inp.value.trim()); else inp.focus(); };
+      sync(); setTimeout(function () { inp.focus(); }, 30);
+    });
+  };
+
+  /* ---------- run, and keep up with pages that re-render ---------- */
+  var queued = false;
+  function all(root) { try { buttons(root); tips(root); labels(root); search(); copy(); } catch (e) { console.warn('[n222]', e); } }
+  function run() { queued = false; all(); try { flat(); } catch (e) {} themeColor(); }
+  function boot() {
+    run();
+    new MutationObserver(function (ms) {
+      var theme = ms.some(function (m) { return m.type === 'attributes' && m.target === document.body; });
+      if (theme) { themeColor(); try { flat(); } catch (e) {} }
+      if (!queued) { queued = true; setTimeout(run, 120); }
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('load', function () { setTimeout(run, 300); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  window.pvxN222 = { run: run, flat: flat };
+})();
+</script>
 </body>
 </html>
