@@ -1,6 +1,31 @@
 <!DOCTYPE html>
 <html lang="en" data-pvx-glass data-pvx-copy>
 <head>
+<script id="pvx-n225-text">
+/* PVX-N225 - Dynamic Type: on iPhone and iPad the page's text follows the system text size (-apple-system-body is 17 pt
+   at the default size), re-read when the app comes back. Elsewhere the browser's own text size applies. The shared top bar
+   keeps its size in points, like an iOS tab bar. */
+(function(){
+  var de=document.documentElement;
+  function ios(){ return /iPhone|iPad|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1); }
+  function probe(){
+    try{
+      if(!ios()||!(window.CSS&&CSS.supports&&CSS.supports('font','-apple-system-body'))) return;
+      var d=document.createElement('div'); d.style.cssText='position:absolute;visibility:hidden;pointer-events:none;font:-apple-system-body';
+      de.appendChild(d); var f=parseFloat(getComputedStyle(d).fontSize); d.remove();
+      if(!f) return; var pct=Math.max(82,Math.min(235,f/17*100));
+      de.style.fontSize=Math.abs(pct-100)<1?'':pct.toFixed(1)+'%';
+    }catch(e){}
+  }
+  function mark(){ var sc=parseFloat(getComputedStyle(de).fontSize)/16; de.classList.toggle('pvx-text-l',sc>=1.25); }
+  probe(); mark();
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden){ probe(); mark(); } });
+  window.addEventListener('resize',mark);
+  try{ new MutationObserver(mark).observe(de,{attributes:true,attributeFilter:['style']}); }catch(e){}
+  window.pvxTextScale=function(){ return parseFloat(getComputedStyle(de).fontSize)/16; };
+})();
+</script>
+
 <meta charset="UTF-8">
 <script id="pvx-n223-guard-js">
 /* PVX-N223: the managers' shared account (au733@vca.com) can open https://shoreline.pravix.app/sgvp/ only.
@@ -150,7 +175,7 @@ body.dark .topnav{background:rgba(10,18,34,0.96);border-bottom:1px solid rgba(25
 .nav-item.active{background:rgba(77,200,224,0.15);color:var(--brand-cyan);border-color:rgba(77,200,224,0.25);}
 .nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
 .nav-right{display:flex;gap:10px;align-items:center;}
-.live{display:flex;align-items:center;gap:6px;background:rgba(26,158,110,0.15);border:1px solid rgba(26,158,110,0.3);color:#48c88c;font-size:11px;font-weight:700;padding:5px 12px;border-radius:50px;}
+.live{display:flex;align-items:center;gap:6px;background:rgba(26,158,110,0.15);border:1px solid rgba(26,158,110,0.3);color:#48c88c;font-size:0.6875rem;font-weight:700;padding:5px 12px;border-radius:50px;}
 .live i{width:7px;height:7px;border-radius:50%;background:#48c88c;display:inline-block;animation:pulse 3s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(1.3);}}
 .theme-toggle{cursor:pointer;background:none;border:none;border-radius:50px;overflow:hidden;width:72px;height:34px;flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,0.15);position:relative;transition:box-shadow .2s;}
@@ -162,19 +187,19 @@ body.dark .theme-toggle .img-light{opacity:0;}body.dark .theme-toggle .img-dark{
 /* ═══ PAGE ═══ */
 .page{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:34px 32px 80px;}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:36px;}
-.page-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(77,200,224,0.12);border:1px solid rgba(77,200,224,0.25);color:var(--brand-cyan);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 13px;border-radius:20px;margin-bottom:14px;}
+.page-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(77,200,224,0.12);border:1px solid rgba(77,200,224,0.25);color:var(--brand-cyan);font-size:0.6875rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 13px;border-radius:20px;margin-bottom:14px;}
 body:not(.dark) .page-tag{background:rgba(12,41,82,0.07);border-color:rgba(12,41,82,0.14);color:var(--brand-navy);}
-.page-title{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.1;}
-.page-sub{font-size:14px;color:var(--text-secondary);margin-top:8px;}
+.page-title{font-size:2.125rem;font-weight:800;letter-spacing:-1px;line-height:1.1;}
+.page-sub{font-size:0.875rem;color:var(--text-secondary);margin-top:8px;}
 .block-card{position:relative;overflow:hidden;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-lg);box-shadow:var(--glass-shadow);backdrop-filter:blur(40px) saturate(1.9);-webkit-backdrop-filter:blur(40px) saturate(1.9);padding:18px 26px;text-align:right;min-width:240px;}
 .block-card>*{position:relative;z-index:1;}
 .bl-glow{position:absolute;inset:-50% -25%;border-radius:50%;z-index:0;pointer-events:none;filter:blur(16px);opacity:.7;
   background:radial-gradient(ellipse at 62% 42%,rgba(77,200,224,0.20),rgba(139,75,181,0.13) 40%,rgba(70,120,235,0.09) 64%,transparent 78%);
   animation:blGlow 7s ease-in-out infinite;}
 @keyframes blGlow{0%,100%{opacity:.5;transform:scale(.95);}50%{opacity:.85;transform:scale(1.07);}}
-.block-card .bl-lab{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);}
-.block-card .bl-name{font-size:22px;font-weight:800;color:var(--text-primary);margin:4px 0;letter-spacing:-.3px;}
-.block-card .bl-dates{font-size:12px;font-weight:700;letter-spacing:0;color:var(--brand-cyan);text-transform:none;}
+.block-card .bl-lab{font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);}
+.block-card .bl-name{font-size:1.375rem;font-weight:800;color:var(--text-primary);margin:4px 0;letter-spacing:-.3px;}
+.block-card .bl-dates{font-size:0.75rem;font-weight:700;letter-spacing:0;color:var(--brand-cyan);text-transform:none;}
 
 /* ═══ CARD ═══ */
 .card{position:relative;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow);backdrop-filter:blur(42px) saturate(1.9);-webkit-backdrop-filter:blur(42px) saturate(1.9);padding:22px 24px;}
@@ -182,8 +207,8 @@ body:not(.dark) .page-tag{background:rgba(12,41,82,0.07);border-color:rgba(12,41
 .week-card:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(10,40,80,0.15),0 0 0 1px rgba(77,200,224,0.12),0 0 28px rgba(77,200,224,0.10);}
 body.dark .week-card:hover{box-shadow:0 16px 52px rgba(0,0,0,0.62),0 0 0 1px rgba(77,200,224,0.18),0 0 32px rgba(77,200,224,0.13);}
 .card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.card-h .ttl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);}
-.card-h .rng{font-size:11px;font-weight:600;color:var(--text-secondary);}
+.card-h .ttl{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);}
+.card-h .rng{font-size:0.6875rem;font-weight:600;color:var(--text-secondary);}
 
 /* Section separators between weeks */
 .week-divider{height:1px;margin:50px auto;max-width:88%;position:relative;background:linear-gradient(90deg,transparent,rgba(77,200,224,0.30),transparent);}
@@ -193,19 +218,19 @@ body.dark .week-card:hover{box-shadow:0 16px 52px rgba(0,0,0,0.62),0 0 0 1px rgb
 .tbl-wrap{overflow-x:auto;}
 table.sched{width:100%;border-collapse:separate;border-spacing:5px;min-width:760px;}
 table.sched th,table.sched td{padding:0;}
-table.sched thead th{text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);padding:6px 4px;}
-table.sched thead th .dt{display:block;font-size:11px;font-weight:600;color:var(--text-muted);margin-top:2px;letter-spacing:0;}
+table.sched thead th{text-align:center;font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-secondary);padding:6px 4px;}
+table.sched thead th .dt{display:block;font-size:0.6875rem;font-weight:600;color:var(--text-muted);margin-top:2px;letter-spacing:0;}
 table.sched thead th.doch{text-align:left;}
-.doc{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:16px;background:var(--surface-2);font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;}
-.dept{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:12px 14px;border-radius:16px;font-size:13px;font-weight:700;white-space:nowrap;border:1px solid transparent;min-height:52px;background:var(--surface-2);}
+.doc{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:16px;background:var(--surface-2);font-size:0.8125rem;font-weight:700;color:var(--text-primary);white-space:nowrap;}
+.dept{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:12px 14px;border-radius:16px;font-size:0.8125rem;font-weight:700;white-space:nowrap;border:1px solid transparent;min-height:52px;background:var(--surface-2);}
 .dept .dept-name{display:inline-block;}
 table.sched td:first-child{width:1%;}
-.doc .ini{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
-.cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;border-radius:19px;font-size:12px;font-weight:600;padding:6px;border:1px solid transparent;line-height:1.25;transition:transform .15s ease;}
+.doc .ini{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6875rem;font-weight:800;flex-shrink:0;}
+.cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;border-radius:19px;font-size:0.75rem;font-weight:600;padding:6px;border:1px solid transparent;line-height:1.25;transition:transform .15s ease;}
 .cell:hover{transform:translateY(-1px);}
 .r-off{background:var(--surface-1);color:var(--text-muted);border-color:var(--border-subtle);font-weight:700;}
 body.dark .r-off{background:rgba(255,255,255,0.03);}
-.cell sup{font-size:11px;font-weight:800;color:var(--brand-coral);margin-left:1px;}
+.cell sup{font-size:0.6875rem;font-weight:800;color:var(--brand-coral);margin-left:1px;}
 
 /* ═══ CURRICULUM-STYLE TABLE ═══ */
 .table-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:var(--radius-xl);box-shadow:var(--glass-shadow);backdrop-filter:blur(42px) saturate(1.9);-webkit-backdrop-filter:blur(42px) saturate(1.9);overflow:hidden;position:relative;transition:transform .22s cubic-bezier(.2,.7,.2,1),box-shadow .22s ease;}
@@ -215,10 +240,10 @@ body.dark .table-card::after{background:linear-gradient(90deg,transparent,rgba(7
 .table-card:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(10,40,80,0.15),0 0 0 1px rgba(77,200,224,0.12),0 0 28px rgba(77,200,224,0.10);}
 body.dark .table-card:hover{box-shadow:0 16px 52px rgba(0,0,0,0.62),0 0 0 1px rgba(77,200,224,0.18),0 0 32px rgba(77,200,224,0.13);}
 .tc-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-subtle);}
-.tc-head .ttl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);}
-.tc-head .rng{font-size:11px;font-weight:600;color:var(--text-secondary);}
+.tc-head .ttl{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--text-muted);}
+.tc-head .rng{font-size:0.6875rem;font-weight:600;color:var(--text-secondary);}
 .curr-table{width:100%;border-collapse:collapse;min-width:820px;}
-.curr-table th{padding:12px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--surface-1);border-bottom:1px solid var(--border-subtle);white-space:nowrap;position:relative;color:var(--text-secondary);}
+.curr-table th{padding:12px 14px;font-size:0.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--surface-1);border-bottom:1px solid var(--border-subtle);white-space:nowrap;position:relative;color:var(--text-secondary);}
 body.dark .curr-table th{background:rgba(255,255,255,0.03);}
 .curr-table th:first-child{text-align:left;}
 .curr-table td{padding:0;border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);vertical-align:middle;min-width:90px;}
@@ -230,26 +255,26 @@ body.dark .curr-table td.svc-col{background:rgba(255,255,255,0.02);}
 .svc-dot{background:var(--brand-cyan);}
 .svc-cell{display:flex;align-items:center;gap:10px;padding:14px 16px;border-left:4px solid transparent;min-height:56px;}
 .svc-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;background:var(--text-muted);}
-.svc-name{font-size:13px;font-weight:700;color:var(--text-primary);line-height:1.3;}
+.svc-name{font-size:0.8125rem;font-weight:700;color:var(--text-primary);line-height:1.3;}
 .block-th{padding:10px 6px;text-align:center;}
-.block-num{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--text-secondary);margin-bottom:2px;text-transform:uppercase;}
-.block-dates{font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:.2px;}
-.block-cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:8px 7px;font-size:12px;font-weight:600;line-height:1.3;color:var(--text-primary);transition:background .15s;}
+.block-num{font-size:0.6875rem;font-weight:800;letter-spacing:1px;color:var(--text-secondary);margin-bottom:2px;text-transform:uppercase;}
+.block-dates{font-size:0.6875rem;color:var(--text-muted);font-weight:600;letter-spacing:.2px;}
+.block-cell{display:flex;align-items:center;justify-content:center;text-align:center;min-height:56px;padding:8px 7px;font-size:0.75rem;font-weight:600;line-height:1.3;color:var(--text-primary);transition:background .15s;}
 .block-cell:hover{background:rgba(77,200,224,0.06);}
 .block-cell.empty{color:var(--text-muted);font-weight:500;}
-.block-cell sup{font-size:11px;font-weight:800;color:var(--brand-coral);margin-left:1px;}
+.block-cell sup{font-size:0.6875rem;font-weight:800;color:var(--brand-coral);margin-left:1px;}
 .foot{padding:12px 20px;}
 
 /* ═══ BOTTOM ═══ */
 .grid2{display:grid;grid-template-columns:1fr 1.4fr;gap:24px;margin-top:36px;}
 .legend-list{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;}
-.leg{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);}
-.leg .ini{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
+.leg{display:flex;align-items:center;gap:10px;font-size:0.8125rem;color:var(--text-secondary);}
+.leg .ini{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--brand-cyan),var(--brand-purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6875rem;font-weight:800;flex-shrink:0;}
 .leg b{color:var(--text-primary);font-weight:700;}
 .key-list{display:flex;flex-wrap:wrap;gap:9px;}
-.key{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-1);}
+.key{display:inline-flex;align-items:center;gap:8px;font-size:0.75rem;font-weight:600;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-1);}
 .key .key-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
-.foot{font-size:12px;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;gap:6px;}
+.foot{font-size:0.75rem;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;gap:6px;}
 .foot sup{color:var(--brand-coral);font-weight:800;}
 
 /* ═══ LIQUID-GLASS REFINEMENTS (header left untouched) ═══ */
@@ -274,13 +299,13 @@ body.edit-mode .eo-block{display:block!important;}
 input[type=color].swatch{-webkit-appearance:none;appearance:none;width:20px;height:20px;border:1px solid var(--border-strong);border-radius:6px;padding:0;cursor:pointer;background:none;flex-shrink:0;}
 input[type=color].swatch::-webkit-color-swatch-wrapper{padding:0;}
 input[type=color].swatch::-webkit-color-swatch{border:none;border-radius:5px;}
-.mini-x{background:transparent;border:none;color:var(--brand-coral);cursor:pointer;font-size:12px;line-height:1;padding:0 2px;flex-shrink:0;}
-.add-btn{background:rgba(77,200,224,0.10);border:1px dashed var(--brand-cyan);color:var(--brand-cyan);border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.mini-x{background:transparent;border:none;color:var(--brand-coral);cursor:pointer;font-size:0.75rem;line-height:1;padding:0 2px;flex-shrink:0;}
+.add-btn{background:rgba(77,200,224,0.10);border:1px dashed var(--brand-cyan);color:var(--brand-cyan);border-radius:10px;padding:9px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;}
 .add-btn:hover{background:rgba(77,200,224,0.18);}
 .add-week{width:100%;margin:8px 0 6px;}
 
 /* edit banner */
-.edit-banner{display:none;background:var(--brand-coral);color:#fff;text-align:center;padding:9px;font-size:12px;font-weight:700;letter-spacing:.5px;position:sticky;top:76px;z-index:200;}
+.edit-banner{display:none;background:var(--brand-coral);color:#fff;text-align:center;padding:9px;font-size:0.75rem;font-weight:700;letter-spacing:.5px;position:sticky;top:76px;z-index:200;}
 .edit-banner.show{display:block;}
 .edit-banner span{cursor:pointer;text-decoration:underline;}
 
@@ -292,16 +317,17 @@ body.edit-mode .edit-orb{opacity:1;box-shadow:0 0 0 3px rgba(232,100,74,0.32),0 
 .editgate-overlay{position:fixed;inset:0;z-index:96000;display:none;align-items:center;justify-content:center;padding:20px;}
 .editgate-dim{position:absolute;inset:0;background:rgba(5,10,20,0.35);backdrop-filter:blur(10px);}
 .editgate-card{position:relative;z-index:2;width:min(92vw,360px);text-align:center;padding:34px 30px 24px;border-radius:26px;color:#fff;background:linear-gradient(160deg,rgba(34,40,58,0.82),rgba(15,19,30,0.86));border:1px solid rgba(255,255,255,0.12);box-shadow:0 30px 80px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,255,255,0.2);backdrop-filter:blur(30px);}
-.editgate-title{font-size:17px;font-weight:800;margin-bottom:4px;}
-.editgate-sub{font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:20px;}
-.editgate-card input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:24px;padding:12px 18px;color:#fff;font-size:14px;outline:none;font-family:inherit;text-align:center;letter-spacing:3px;}
-.editgate-btn{width:100%;margin-top:14px;background:#fff;color:#15151c;border:none;border-radius:24px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;}
-.editgate-err{color:#ff8a8a;font-size:12px;min-height:14px;margin-top:10px;font-weight:600;}
-.editgate-cancel{background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-top:8px;font-family:inherit;text-decoration:underline;}
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--brand-green);color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;}
+.editgate-title{font-size:1.0625rem;font-weight:800;margin-bottom:4px;}
+.editgate-sub{font-size:0.75rem;color:rgba(255,255,255,0.6);margin-bottom:20px;}
+.editgate-card input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:24px;padding:12px 18px;color:#fff;font-size:0.875rem;outline:none;font-family:inherit;text-align:center;letter-spacing:3px;}
+.editgate-btn{width:100%;margin-top:14px;background:#fff;color:#15151c;border:none;border-radius:24px;padding:12px;font-size:0.875rem;font-weight:800;cursor:pointer;font-family:inherit;}
+.editgate-err{color:#ff8a8a;font-size:0.75rem;min-height:14px;margin-top:10px;font-weight:600;}
+.editgate-cancel{background:none;border:none;color:rgba(255,255,255,0.5);font-size:0.75rem;cursor:pointer;margin-top:8px;font-family:inherit;text-decoration:underline;}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--brand-green);color:#fff;padding:12px 22px;border-radius:12px;font-size:0.8125rem;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 @media(max-width:900px){.nav-center{display:none;}.grid2{grid-template-columns:1fr;}.page-head{flex-direction:column;align-items:flex-start;}.block-card{text-align:left;width:100%;}.topnav img.logo{height:56px;}}
+.mini-x .pvx-ico{width:12px;height:12px;margin:0;vertical-align:middle}
 </style>
 <style id="pvx-logout-css">
 /* Flow's Logout button, verbatim */
@@ -391,12 +417,12 @@ body:not(.dark) #pvxTopnav .theme-toggle:hover{box-shadow:0 0 0 2px rgba(44,184,
   background:var(--nav-bg);opacity:.97;border-bottom:1px solid var(--glass-hairline);box-shadow:0 6px 20px rgba(0,0,0,0.12);}
 body.dark #pvxSubnav.subnav{background:#101a32;}
 body:not(.dark) #pvxSubnav.subnav{background:#FFFFFF;border-bottom:1px solid rgba(29,29,31,.08);box-shadow:0 1px 0 rgba(29,29,31,.03);}
-#pvxSubnav .subnav-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(77,200,224,0.65);white-space:nowrap;}
+#pvxSubnav .subnav-title{font-size:0.6875rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(77,200,224,0.65);white-space:nowrap;}
 body:not(.dark) #pvxSubnav .subnav-title{color:#86868B;}
 #pvxSubnav .switcher{display:flex;gap:3px;align-items:center;padding:0;background:transparent;border:none;min-width:0;overflow-x:auto;scrollbar-width:none;}
 #pvxSubnav .switcher::-webkit-scrollbar{display:none}
 #pvxSubnav .seg{display:flex;flex-direction:row;align-items:center;gap:7px;border:1px solid transparent;background:transparent;cursor:pointer;min-height:40px;
-  font-family:var(--font);font-size:13px;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.01em;text-decoration:none;white-space:nowrap;
+  font-family:var(--font);font-size:0.8125rem;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.01em;text-decoration:none;white-space:nowrap;
   padding:8px 14px;border-radius:var(--r-sm);transition:all .2s var(--ease);box-shadow:none;}
 #pvxSubnav .seg svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
 #pvxSubnav .seg:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9);}
@@ -408,7 +434,7 @@ body:not(.dark) #pvxSubnav .seg.active{background:#EBEBEB;color:#636365;border-c
 #pvxSubnav .pvx-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
 #pvxSubnav .pvx-actions:empty{display:none}
 /* the page's own buttons (Edit, Save, Print…): Flow's header button — the Logout button's surface */
-#pvxSubnav .pvx-actions>button{height:40px;border-radius:13px;padding:0 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;
+#pvxSubnav .pvx-actions>button{height:40px;border-radius:13px;padding:0 14px;font-family:var(--font);font-size:0.8125rem;font-weight:600;cursor:pointer;
   border:1px solid rgba(20,28,40,.08);color:#1D1D1F;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,252,.90));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:border-color .18s ease,background .18s ease;margin:0}
 #pvxSubnav .pvx-actions>button:hover{border-color:rgba(20,28,40,.13);background:linear-gradient(180deg,#FFFFFF,rgba(247,249,252,.96))}
@@ -421,8 +447,8 @@ body.dark #pvxSubnav .pvx-actions>button:hover{border-color:rgba(77,200,224,.30)
 @media(max-width:1100px){#pvxSubnav .subnav-title{display:none}}
 @media(max-width:760px){
   #pvxSubnav.subnav{padding:8px 16px;gap:10px}
-  #pvxSubnav .seg{padding:7px 11px;font-size:12.5px}
-  #pvxSubnav .pvx-actions>button{height:36px;padding:0 11px;font-size:12px}}
+  #pvxSubnav .seg{padding:7px 11px;font-size:0.8125rem}
+  #pvxSubnav .pvx-actions>button{height:36px;padding:0 11px;font-size:0.75rem}}
 @media print{#pvxTopnav,#pvxSubnav{display:none!important}}
 /* a page's own button left in the top bar (Directory's Edit): Flow's header button; its inline colours were for the old navy bar */
 #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){height:40px!important;border-radius:13px!important;padding:0 14px!important;font-family:var(--font)!important;font-size:13px!important;font-weight:600!important;letter-spacing:normal!important;
@@ -484,7 +510,7 @@ body:not(.dark) .panel{background:#FFFFFF!important;border-color:transparent!imp
 /* a flat canvas, as Treatment Sheets: the older pages' coloured background glows step aside in light mode */
 body:not(.dark) .bg-orb-1,body:not(.dark) .bg-orb-2,body:not(.dark) .bg-orb-3,body:not(.dark) .bg-bloom{opacity:0!important}
 </style>
-<style id="pvx-n222-shadow">.edit-banner{text-transform:none!important;letter-spacing:0!important;font-size:13px!important;font-weight:600!important}.edit-banner.show{display:flex!important;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center}.edit-banner button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:4px 10px;font:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center}</style>
+<style id="pvx-n222-shadow">.edit-banner{text-transform:none!important;letter-spacing:0!important;font-size:0.8125rem!important;font-weight:600!important}.edit-banner.show{display:flex!important;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center}.edit-banner button{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:4px 10px;font:inherit;font-weight:700;cursor:pointer;display:inline-flex;align-items:center}</style>
 <style id="pvx-n222-css">
 /* PVX-N222 - SGVP catch-up (HIG): text size, figures, motion, touch, focus, search, alerts. Never the shared top bar. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -526,24 +552,24 @@ input.pvx-has-clear::-webkit-search-cancel-button{-webkit-appearance:none;displa
 .pvx-al{box-sizing:border-box;position:fixed;left:50%;top:50%;z-index:10001;width:min(380px,calc(100vw - 32px));background:#FFFFFF;color:#0E1A2B;border-radius:16px;box-shadow:0 24px 60px rgba(8,20,40,.3);padding:22px 20px 16px;opacity:0;transform:translate(-50%,-48%) scale(.98);transition:opacity .18s,transform .22s;font-family:var(--font,-apple-system,BlinkMacSystemFont,system-ui,sans-serif);outline:none}
 body.dark .pvx-al{background:#131E34;color:#E6EEF6;border:1px solid rgba(150,185,220,.16)}
 .pvx-al.open{opacity:1;transform:translate(-50%,-50%) scale(1)}
-.pvx-al-t{margin:0 0 6px;font-size:17px;font-weight:700;line-height:1.3}
-.pvx-al-m{margin:0 0 16px;font-size:14px;line-height:1.45;color:#52698A}
+.pvx-al-t{margin:0 0 6px;font-size:1.0625rem;font-weight:700;line-height:1.3}
+.pvx-al-m{margin:0 0 16px;font-size:0.875rem;line-height:1.45;color:#52698A}
 body.dark .pvx-al-m{color:#A7C2D8}
 .pvx-al-b{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.pvx-al-b button{min-height:44px;border-radius:12px;border:1px solid rgba(120,140,170,.3);background:transparent;color:inherit;font:600 15px/1 var(--font,-apple-system,system-ui,sans-serif);cursor:pointer}
+.pvx-al-b button{min-height:44px;border-radius:12px;border:1px solid rgba(120,140,170,.3);background:transparent;color:inherit;font:600 0.9375rem/1 var(--font,-apple-system,system-ui,sans-serif);cursor:pointer}
 .pvx-al-a{background:linear-gradient(150deg,#38BDD2,#2C7FB8)!important;color:#fff!important;border-color:transparent!important}
 .pvx-al-a.is-danger{background:#C9372C!important}
 .pvx-al-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:-8px -6px 12px}
-.pvx-al-bar .pvx-al-t{margin:0;text-align:center;font-size:15px}
-.pvx-al-bar button{border:0;background:none;color:#0F6B82;font:600 15px/1 var(--font,-apple-system,system-ui,sans-serif);min-height:44px;padding:0 8px;cursor:pointer}
+.pvx-al-bar .pvx-al-t{margin:0;text-align:center;font-size:0.9375rem}
+.pvx-al-bar button{border:0;background:none;color:#0F6B82;font:600 0.9375rem/1 var(--font,-apple-system,system-ui,sans-serif);min-height:44px;padding:0 8px;cursor:pointer}
 body.dark .pvx-al-bar button{color:#4DC8E0}
 .pvx-al-bar .pvx-al-c{justify-self:start}.pvx-al-bar .pvx-al-a{justify-self:end;font-weight:700;background:none!important;color:#0F6B82!important}
 body.dark .pvx-al-bar .pvx-al-a{color:#4DC8E0!important}
 .pvx-al-bar .pvx-al-a[aria-disabled=true]{opacity:.4}
-.pvx-al-f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#52698A}
+.pvx-al-f{display:flex;flex-direction:column;gap:6px;font-size:0.8125rem;font-weight:600;color:#52698A}
 body.dark .pvx-al-f{color:#A7C2D8}
-.pvx-al-f input{min-height:44px;border-radius:10px;border:1px solid rgba(120,140,170,.35);padding:0 12px;font:500 15px var(--font,-apple-system,system-ui,sans-serif);background:transparent;color:inherit}
-.pvx-al-sheet .pvx-al-m{margin:8px 0 0;font-size:12px}
+.pvx-al-f input{min-height:44px;border-radius:10px;border:1px solid rgba(120,140,170,.35);padding:0 12px;font:500 0.9375rem var(--font,-apple-system,system-ui,sans-serif);background:transparent;color:inherit}
+.pvx-al-sheet .pvx-al-m{margin:8px 0 0;font-size:0.75rem}
 .pvx-al button:focus-visible,.pvx-al:focus-visible{outline:2px solid #38BDD2;outline-offset:2px}
 @media (max-width:700px){
   .pvx-al{left:0;right:0;top:auto;bottom:0;width:100%;border-radius:16px 16px 0 0;transform:translateY(24px);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
@@ -555,14 +581,69 @@ body.dark .pvx-al-f{color:#A7C2D8}
 /* controls use the page font (not the browser's default for buttons and fields) */
 :where(button,input,select,textarea):not(:where(#pvxTopnav *)){font-family:inherit}
 /* the program sub-nav on phones: a size on the scale */
-@media (max-width:760px){#pvxSubnav .seg{font-size:12px}}
-#pvxSubnav .subnav-title{font-size:11px}
+@media (max-width:760px){#pvxSubnav .seg{font-size:0.75rem}}
+#pvxSubnav .subnav-title{font-size:0.6875rem}
 /* the initials in a dense plan keep their drawing; the touch area grows invisibly */
 @media (pointer:coarse){.cell-initials[role=button]{position:relative}.cell-initials[role=button]::before{content:'';position:absolute;inset:-9px -4px}}
 html{overflow-x:clip}
 @media (pointer:coarse){#pvxSubnav .seg{min-height:44px}}
 @media (prefers-reduced-motion:reduce){.week-card:hover,.cell:hover,.table-card:hover{transform:none!important;translate:none!important}}
 </style>
+<style id="pvx-n225-layout">
+/* PVX-N225 - 2. no floating edit orb: Edit is in the page toolbar */
+#editOrb{display:none!important}
+#pvxEditBtn[hidden]{display:none!important}
+</style>
+<style id="pvx-n225-toolbtn">
+#pvxSubnav .pvx-actions .pvx-tbtn{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:9px;border:1px solid rgba(150,185,220,.22);background:transparent;color:inherit;font:600 0.8125rem/1 var(--font,-apple-system,BlinkMacSystemFont,system-ui,sans-serif);cursor:pointer}
+#pvxSubnav .pvx-actions .pvx-tbtn .pvx-ico{margin:0}
+@media (pointer:coarse){#pvxSubnav .pvx-actions .pvx-tbtn{min-height:44px}}
+</style>
+<style id="pvx-n225-text-css">
+/* PVX-N225 - larger text: rows wrap, nothing is cut off */
+html.pvx-text-l :where(.pvx-actions,.filter-chips,.chips,.btn-row,.cc-btnrow2,.toolbar,.tb,.actions,.hdr-actions){flex-wrap:wrap;row-gap:8px}
+html.pvx-text-l :where(.version-bar,.vbar,.vb-right,.vbar-right){flex-wrap:wrap;row-gap:4px}
+html.pvx-text-l :where(.vb-div,.vbar-div){display:none}
+html.pvx-text-l .soon-card{height:auto;min-height:180px}
+:where(.hero-left,.hero-right,.hero-stat,.hero-inner>*){min-width:0}
+html.pvx-text-l :where(button,.btn,.cc-val,.emp-none,.emp-contact-item,.emp-contact-item *){white-space:normal;overflow-wrap:anywhere}
+html.pvx-text-l :where(.emp-contact-item){min-width:0;flex-wrap:wrap}
+html.pvx-text-l :where(.sb-tvb,.wd-balance){height:auto;min-height:2.25rem;white-space:normal}
+html.pvx-text-l :where(.vb-copy,.current-badge){white-space:normal}
+/* labels inside fixed tiles and avatars stay their size, as on the iPhone Home Screen */
+html.pvx-text-l .app-name{font-size:min(0.8125rem,13px)}
+html.pvx-text-l .qh-avatar .auto-editable{font-size:min(0.875rem,16px)}
+html.pvx-text-l .hero-stats{flex-wrap:wrap;row-gap:12px}
+html.pvx-text-l :where(h1,h2,h3,.page-title,.hero-title,.card-title,.cc-title,.tc-head,.sec-title){overflow-wrap:anywhere}
+</style>
+<style id="pvx-n226-glass">
+/* PVX-N226 - SGVP: one floating material (Anesia's n158 glass, as in Flow since n185). Content flat; drawers,
+   modals and sheets solid; scrims dim, never blur. Solid with Reduce Transparency, Increase Contrast, forced colours. */
+body{--pvx-glass:rgba(255,255,255,.72);--pvx-glass-strong:rgba(255,255,255,.86);--pvx-glass-edge:rgba(0,0,0,.06);--pvx-glass-hi:rgba(255,255,255,.7);--pvx-glass-shadow:0 8px 32px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.06);--pvx-glass-ink:#1D1D1F;--pvx-glass-solid:#FFFFFF;--pvx-glass-blur:blur(12px) saturate(160%);}
+body.dark{--pvx-glass:rgba(23,35,56,.70);--pvx-glass-strong:rgba(23,35,56,.86);--pvx-glass-edge:rgba(255,255,255,.08);--pvx-glass-hi:rgba(255,255,255,.08);--pvx-glass-shadow:0 8px 32px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.3);--pvx-glass-ink:#EEF1F6;--pvx-glass-solid:#172440;--pvx-glass-blur:blur(12px) saturate(160%);}
+html :is(.pvx-msg,.to-pop,.ap-pop){background:var(--pvx-glass-strong)!important;-webkit-backdrop-filter:var(--pvx-glass-blur)!important;backdrop-filter:var(--pvx-glass-blur)!important;box-shadow:var(--pvx-glass-shadow),inset 0 0 0 .5px var(--pvx-glass-edge),inset 0 1px 0 var(--pvx-glass-hi)!important;border-color:var(--pvx-glass-edge)!important}
+html :is(.svc-drawer-overlay,.drawer-overlay,.sm-scrim,.info-dim,.info-overlay.show .info-dim,.fx-scrim,.editgate-dim,.auth-overlay,.admin-overlay){-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+html.pvx-noblur :is(.pvx-msg,.to-pop,.ap-pop){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){html :is(.pvx-msg,.to-pop,.ap-pop){background:var(--pvx-glass-solid)!important}}
+@media (prefers-reduced-transparency:reduce){html :is(.pvx-msg,.to-pop,.ap-pop){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}}
+@media (prefers-contrast:more){html :is(.pvx-msg,.to-pop,.ap-pop){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 0 0 1px var(--pvx-glass-ink),var(--pvx-glass-shadow)!important}}
+@media (forced-colors:active){html :is(.pvx-msg,.to-pop,.ap-pop){background:Canvas!important;color:CanvasText!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:1px solid CanvasText!important}}
+</style>
+<style id="pvx-n228-motion">
+/* PVX-N228 - HIG Motion: hover lifts stay still with Reduce Motion */
+@media (prefers-reduced-motion:reduce){
+  .week-card:hover{transform:none!important}
+  .cell:hover{transform:none!important}
+  .table-card:hover{transform:none!important}
+  .edit-orb:hover{transform:none!important}
+}
+/* decoration doesn't move: the sweeps, glows, breathing and the auto-scrolling carousel show their end state at once (n228) */
+.hero-block-card::before,.table-card::before,.legends-row::before,.toolbar::before,.block-th.is-current::after,.curr-table td.is-current,.app-card,.bl-glow,body.ap-anim .tl-dot.current,.carousel-track,.soon-bg{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important}
+/* the "Current" badge is a label, not live data: its dot is still (the page keeps one live dot) */
+.badge-dot{animation:none!important}
+</style>
+<style id="pvx-n229-sup">/* PVX-N229 - superscripts stay at the 11 pt minimum */
+sup,sub{font-size:max(.6875rem,11px)}</style>
 </head>
 <body>
 <script>/* Pravix shared theme — carries across every pravix.app page via a domain cookie (default dark). Reads the cookie (mirrors it into localStorage so this page's own theme init agrees), applies before first paint, and persists ANY dark-class change back to the cookie via an observer, covering every toggle path. */
@@ -628,6 +709,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     </nav>
     <span class="pvx-spacer"></span>
     <div class="pvx-actions">
+      <button type="button" class="pvx-tbtn" id="pvxEditBtn" onclick="if(window.__pvxIsAdmin){if(editMode)exitEdit();else enterEdit();}else orbClick();" hidden><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg><span>Edit</span></button>
       <span class="live"><i></i>Live</span>
     </div>
   </div>
@@ -736,21 +818,21 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     <div class="card">
       <div class="card-h"><span class="ttl">Intern legend</span></div>
       <div class="legend-list" id="legendList">
-        <div class="leg"><b data-editable>Benjamin Kerns</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
-        <div class="leg"><b data-editable>Marissa Peck</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
-        <div class="leg"><b data-editable>Kristi Wenger</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
-        <div class="leg"><b data-editable>Sarah Herron</b><button class="mini-x eo" onclick="removeRow(this,'.leg')">✕</button></div>
+        <div class="leg"><b data-editable>Benjamin Kerns</b><button class="mini-x eo" onclick="removeRow(this,'.leg')" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+        <div class="leg"><b data-editable>Marissa Peck</b><button class="mini-x eo" onclick="removeRow(this,'.leg')" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+        <div class="leg"><b data-editable>Kristi Wenger</b><button class="mini-x eo" onclick="removeRow(this,'.leg')" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+        <div class="leg"><b data-editable>Sarah Herron</b><button class="mini-x eo" onclick="removeRow(this,'.leg')" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
       </div>
       <button class="add-btn eo-block" style="margin-top:14px;" onclick="addIntern()">+ Add Intern</button>
     </div>
     <div class="card">
       <div class="card-h"><span class="ttl">Rotation key</span></div>
       <div class="key-list" id="keyList">
-        <span class="key" data-color="#8B4DB5"><span class="key-dot" style="background:#8B4DB5"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Neurology</span><input type="color" class="swatch eo" value="#8B4DB5" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
-        <span class="key" data-color="#E8644A"><span class="key-dot" style="background:#E8644A"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Oncology</span><input type="color" class="swatch eo" value="#E8644A" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
-        <span class="key" data-color="#2E9BC0"><span class="key-dot" style="background:#2E9BC0"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Internal Medicine</span><input type="color" class="swatch eo" value="#2E9BC0" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
-        <span class="key" data-color="#1a9e6e"><span class="key-dot" style="background:#1a9e6e"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Surgery</span><input type="color" class="swatch eo" value="#1a9e6e" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
-        <span class="key" data-color="#E8A830"><span class="key-dot" style="background:#E8A830"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Emergency</span><input type="color" class="swatch eo" value="#E8A830" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button></span>
+        <span class="key" data-color="#8B4DB5"><span class="key-dot" style="background:#8B4DB5"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Neurology</span><input type="color" class="swatch eo" value="#8B4DB5" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>
+        <span class="key" data-color="#E8644A"><span class="key-dot" style="background:#E8644A"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Oncology</span><input type="color" class="swatch eo" value="#E8644A" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>
+        <span class="key" data-color="#2E9BC0"><span class="key-dot" style="background:#2E9BC0"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Internal Medicine</span><input type="color" class="swatch eo" value="#2E9BC0" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>
+        <span class="key" data-color="#1a9e6e"><span class="key-dot" style="background:#1a9e6e"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Surgery</span><input type="color" class="swatch eo" value="#1a9e6e" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>
+        <span class="key" data-color="#E8A830"><span class="key-dot" style="background:#E8A830"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">Emergency</span><input type="color" class="swatch eo" value="#E8A830" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>
       </div>
       <button class="add-btn eo-block" style="margin-top:14px;" onclick="addSpecialty()">+ Add Specialty</button>
     </div>
@@ -825,7 +907,7 @@ function addSpecialty(){
   const list=document.getElementById('keyList');
   const hex='#5a78f0';
   const span=document.createElement('span');span.className='key';span.setAttribute('data-color',hex);
-  span.innerHTML='<span class="key-dot" style="background:'+hex+'"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">New Specialty</span><input type="color" class="swatch eo" value="'+hex+'" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)">✕</button>';
+  span.innerHTML='<span class="key-dot" style="background:'+hex+'"></span><span class="key-name" data-editable onfocus="dataset.prev=this.textContent" onblur="renameSpec(this)">New Specialty</span><input type="color" class="swatch eo" value="'+hex+'" oninput="keyColor(this)"><button class="mini-x eo" onclick="removeKey(this)" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
   const off=Array.from(list.children).find(k=>{const n=k.querySelector('.key-name');return n&&n.textContent.trim().toUpperCase()==='OFF';});
   list.insertBefore(span, off||null);
   if(editMode)span.querySelectorAll('[data-editable]').forEach(e=>e.contentEditable='true');
@@ -838,7 +920,7 @@ function removeRow(btn,sel){btn.closest(sel).remove();}
 function addIntern(){
   const list=document.getElementById('legendList');
   const d=document.createElement('div');d.className='leg';
-  d.innerHTML='<b data-editable>New Intern</b><button class="mini-x eo" onclick="removeRow(this,\'.leg\')">✕</button>';
+  d.innerHTML='<b data-editable>New Intern</b><button class="mini-x eo" onclick="removeRow(this,\'.leg\')" aria-label="Remove"><svg class="pvx-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
   list.appendChild(d);
   if(editMode)d.querySelectorAll('[data-editable]').forEach(e=>e.contentEditable='true');
 }
@@ -865,14 +947,14 @@ function orbClick(){if(editMode)exitEdit();else openGate();}
 function openGate(){document.getElementById('editGate').style.display='flex';document.getElementById('gateErr').textContent='';const i=document.getElementById('gatePass');i.value='';setTimeout(()=>i.focus(),60);}
 function closeGate(){document.getElementById('editGate').style.display='none';}
 function submitGate(){if(window.__pvxIsAdmin){closeGate();enterEdit();}else{document.getElementById('gateErr').textContent='Sign in as an administrator to edit';}}
-function enterEdit(){editMode=true;document.body.classList.add('edit-mode');document.getElementById('editBanner').classList.add('show');document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='true');}
-function exitEdit(){editMode=false;document.body.classList.remove('edit-mode');document.getElementById('editBanner').classList.remove('show');document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='false');}
+function enterEdit(){editMode=true;(function(){var b=document.querySelector('#pvxEditBtn span');if(b)b.textContent='Done editing';})();document.body.classList.add('edit-mode');document.getElementById('editBanner').classList.add('show');document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='true');}
+function exitEdit(){editMode=false;(function(){var b=document.querySelector('#pvxEditBtn span');if(b)b.textContent='Edit';})();document.body.classList.remove('edit-mode');document.getElementById('editBanner').classList.remove('show');document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='false');}
 
 /* ── save / cancel / reset ── */
 function saveAll(){
   document.querySelectorAll('#editArea [data-editable]').forEach(e=>e.contentEditable='false');
   let ok=true;
-  try{localStorage.setItem(SH_KEY,document.getElementById('editArea').innerHTML);}catch(e){ok=false;toast('⚠ Could not save — too large');}
+  try{localStorage.setItem(SH_KEY,document.getElementById('editArea').innerHTML);}catch(e){ok=false;toast('Could not save — too large');}
   exitEdit();
   if(ok){ /* n222: saving is silent */ }
 }
@@ -1134,7 +1216,7 @@ body.dark #pvxTopnav,body.dark #pvxSubnav{--ink-400:#8FA6BE}
 .topnav .pvx-powered,#pvxTopnav .pvx-powered{font-size:9px;letter-spacing:.14em}
 .topnav .pvx-powered,.topnav .nav-item:not(.active){color:var(--ink-400)}
 /* the portal sub-nav: title (10 px, 3.2:1) and the section links (#6E6E73, 4.35:1 on #F2F4F8) */
-.subnav .subnav-title,#pvxSubnav .subnav-title{font-size:11px!important;color:var(--ink-400)!important}
+.subnav .subnav-title,#pvxSubnav .subnav-title{font-size:0.6875rem!important;color:var(--ink-400)!important}
 body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.active){color:var(--ink-400)}
 </style>
 <!-- PVX-N222: SGVP catch-up (HIG) -->
@@ -1245,7 +1327,7 @@ body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.a
       var el = all[k]; if (inTop(el)) continue;
       var cs = getComputedStyle(el), bf = cs.backdropFilter || cs.webkitBackdropFilter;
       if (!bf || bf === 'none') continue;
-      if (el.closest('[role=menu],.toast,#toast,.edit-orb,#editOrb,.admin-btn,.pvx-cx-list,.pvx-cx-panel')) continue;   /* floating controls keep their material */
+      if (el.closest('[role=menu],.toast,#toast,.edit-orb,#editOrb,.admin-btn,.pvx-cx-list,.pvx-cx-panel,.pvx-msg,.to-pop,.ap-pop')) continue;   /* floating controls keep their material */
       el.dataset.pvxFlat = '1';
       el.style.setProperty('backdrop-filter', 'none', 'important'); el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
       if (/overlay|scrim/i.test((el.className || '') + ' ' + (el.id || ''))) continue;   /* a modal backdrop dims and never blurs */
@@ -1360,6 +1442,107 @@ body:not(.dark) #pvxSubnav .seg:not(.active),body:not(.dark) .subnav .seg:not(.a
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   window.pvxN222 = { run: run, flat: flat };
+})();
+</script>
+<script>
+/* PVX-N224 (HIG Icons) + N227 (HIG SF Symbols): a small line icon matches the weight of the text beside it.
+   Icons drawn on a 24-unit grid get thinner as they get smaller (1.7 units is 0.85 pt at 12 pt). SF pairs a Regular label
+   with a Regular symbol and a Semibold label with a Semibold one, so a stroked icon (up to 32 pt) is brought up to its label's
+   weight (Anesia's table: Regular 1.6 · Medium 1.8 · Semibold 2.0 · Bold 2.25 on the 24-unit grid), and never under 1 pt.
+   It only raises a line that's too thin; icons over 32 pt, filled shapes, charts and the shared top bar are left alone. */
+(function () {
+  'use strict';
+  var T = { 100: 1.2, 200: 1.3, 300: 1.45, 400: 1.6, 500: 1.8, 600: 2.0, 700: 2.25, 800: 2.5, 900: 2.7 };
+  var FLOOR = 1.0, MAXW = 32, SHAPES = 'path,circle,rect,line,polyline,polygon,ellipse';
+  function labelWeight(svg) {
+    var host = svg.closest('button,a,[role=button],label,li,.chip,.seg') || svg.parentElement;
+    var list = host ? [host].concat([].slice.call(host.querySelectorAll('*'))) : [];
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i];
+      if ([].some.call(e.childNodes, function (c) { return c.nodeType === 3 && c.textContent.trim().length > 1; }))
+        return Math.round(parseInt(getComputedStyle(e).fontWeight, 10) / 100) * 100 || 400;
+    }
+    return 400;
+  }
+  function fix(svg) {
+    if (svg.__pvxW) return;
+    if (svg.closest('#pvxTopnav')) { svg.__pvxW = 1; return; }
+    var r = svg.getBoundingClientRect();
+    if (!r.width) return;                       /* not shown yet: try again when it is */
+    svg.__pvxW = 1;
+    if (r.width > MAXW) return;
+    var vb = svg.viewBox && svg.viewBox.baseVal;
+    if (!vb || !vb.width) return;
+    var sc = r.width / vb.width;
+    var target = Math.max(FLOOR, (T[labelWeight(svg)] || 1.6) * r.width / 24);
+    [].forEach.call(svg.querySelectorAll(SHAPES), function (p) {
+      var cs = getComputedStyle(p);
+      if (cs.stroke === 'none') return;
+      var w = parseFloat(cs.strokeWidth);
+      if (!w || w * sc >= target - 0.04) return;
+      p.style.strokeWidth = (target / sc).toFixed(2);
+    });
+  }
+  function all() { [].forEach.call(document.querySelectorAll('svg'), fix); }
+  var t = 0;
+  function soon() { if (t) return; t = setTimeout(function () { t = 0; all(); }, 120); }
+  function boot() {
+    all();
+    new MutationObserver(soon).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'style', 'open'] });
+    window.addEventListener('resize', soon);
+    setTimeout(all, 1500);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>
+<script id="pvx-n225-admin">
+/* PVX-N225 - the toolbar button is shown only to administrators (the page resolves that after sign-in) */
+(function(){var b=document.getElementById('pvxEditBtn');if(!b)return;var n=0;(function w(){var a=!!window.__pvxIsAdmin;b.hidden=!a;if(++n<80)setTimeout(w,a?2000:250);})();})();
+</script>
+<script id="pvx-n226-guard">
+/* PVX-N226 - Anesia's glass guard, shared on this device (same key): blur stays on only while the device keeps up. */
+(function(){
+  var KEY='anesia:v1:blur', root=document.documentElement;
+  function get(){ try{ return localStorage.getItem(KEY); }catch(e){ return null; } }
+  function set(v){ try{ localStorage.setItem(KEY,v); }catch(e){} }
+  if(get()==='0'){ root.classList.add('pvx-noblur'); return; }
+  var busy=false, rounds=0;
+  function sample(){
+    if(busy||root.classList.contains('pvx-noblur')||rounds>=6) return;
+    busy=true; rounds++;
+    var d=[], last=0, t0=0;
+    requestAnimationFrame(function f(t){
+      if(!t0){ t0=last=t; return requestAnimationFrame(f); }
+      d.push(t-last); last=t;
+      if(t-t0<1000) return requestAnimationFrame(f);
+      busy=false;
+      if(d.length>10 && d.filter(function(x){ return x>25; }).length/d.length>0.1){ root.classList.add('pvx-noblur'); set('0'); window.__pvxBlurOff={frames:d.length,at:Date.now()}; }
+      else if(rounds>=3) set('1');
+    });
+  }
+  window.addEventListener('scroll',sample,{passive:true,capture:true});
+  document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('button,[role=button],summary,input')) sample(); },true);
+  window.pvxGlass={sample:sample};
+})();
+</script>
+<script id="pvx-n227-a11y">
+/* PVX-N227 - an icon beside its label is decorative: VoiceOver reads the label, not "image". Icons that stand alone keep
+   whatever name they have (their button's name). Runs on icons drawn later too. The shared top bar is left as it is. */
+(function(){
+  function fix(){
+    var top=document.getElementById('pvxTopnav')||document.querySelector('nav.topnav');
+    var l=document.querySelectorAll('svg:not([aria-hidden]):not([role]):not([aria-label]):not([aria-labelledby])');
+    for(var i=0;i<l.length;i++){
+      var s=l[i]; if(top&&top.contains(s)) continue; if(s.querySelector('title')) continue;
+      var host=s.closest('button,a,[role=button],[role=tab],[role=menuitem],[role=option],label,li,td,th,summary,.chip,.seg')||s.parentElement;
+      if(!host) continue;
+      var name=(host.getAttribute('aria-label')||host.getAttribute('title')||host.textContent||'').trim();
+      if(name||s.getBoundingClientRect().width<=32) s.setAttribute('aria-hidden','true');
+    }
+  }
+  var q=0; function soon(){ if(q) return; q=setTimeout(function(){ q=0; fix(); },150); }
+  function boot(){ fix(); new MutationObserver(soon).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
 </body>

@@ -5850,6 +5850,30 @@ html.pvx-noblur.pvx-tabbar #subnavFlow #switcher{background:var(--pvx-glass-soli
 .pvx-review{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px}
 .pvx-review select:disabled{opacity:.45;cursor:default}
 </style>
+<style id="pvx-n225-text-css">
+/* PVX-N225 - larger text: rows wrap, nothing is cut off */
+html.pvx-text-l :where(.pvx-actions,.filter-chips,.chips,.btn-row,.cc-btnrow2,.toolbar,.tb,.actions,.hdr-actions){flex-wrap:wrap;row-gap:8px}
+html.pvx-text-l :where(.version-bar,.vbar,.vb-right,.vbar-right){flex-wrap:wrap;row-gap:4px}
+html.pvx-text-l :where(.vb-div,.vbar-div){display:none}
+html.pvx-text-l .soon-card{height:auto;min-height:180px}
+:where(.hero-left,.hero-right,.hero-stat,.hero-inner>*){min-width:0}
+html.pvx-text-l :where(button,.btn,.cc-val,.emp-none,.emp-contact-item,.emp-contact-item *){white-space:normal;overflow-wrap:anywhere}
+html.pvx-text-l :where(.emp-contact-item){min-width:0;flex-wrap:wrap}
+html.pvx-text-l :where(.sb-tvb,.wd-balance){height:auto;min-height:2.25rem;white-space:normal}
+html.pvx-text-l :where(.vb-copy,.current-badge){white-space:normal}
+/* labels inside fixed tiles and avatars stay their size, as on the iPhone Home Screen */
+html.pvx-text-l .app-name{font-size:min(0.8125rem,13px)}
+html.pvx-text-l .qh-avatar .auto-editable{font-size:min(0.875rem,16px)}
+html.pvx-text-l .hero-stats{flex-wrap:wrap;row-gap:12px}
+html.pvx-text-l :where(h1,h2,h3,.page-title,.hero-title,.card-title,.cc-title,.tc-head,.sec-title){overflow-wrap:anywhere}
+</style>
+<style id="pvx-n227-tabfill">
+/* PVX-N227 - the selected tab in the iPhone tab bar uses the fill variant (iOS tab bar), like the shared top bar (n189) */
+@media (hover:none) and (pointer:coarse){
+  html.pvx-tabbar #switcher .seg.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ html.pvx-tabbar #switcher .seg.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
+</style>
 </head>
 <body>
 <script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#F2F4F8';}catch(e){}}window.__pvxPaintCanvas=paint;try{var W=JSON.parse(localStorage.getItem('pvx:flow:where')||'null');if(W&&W.app&&Date.now()-W.at<432e5&&!location.hash&&!/[?&](tv|visit|patient)=/.test(location.search)&&(W.app!=='flow'||(W.view&&W.view!=='dashboard'))){history.replaceState(null,'',location.pathname+location.search+'#app='+W.app);window.__pvxRestore=W;document.documentElement.classList.add('pvx-app-boot');}}catch(e){}try{if(/[#&]app=(rounds|ultrasound)\b/.test(location.hash))document.documentElement.classList.add('pvx-app-boot');}catch(e){}try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
@@ -21906,5 +21930,25 @@ body:not(.dark) .search-bar .pvx-skey{border-color:rgba(15,23,42,.14);background
 })();
 </script>
 <!-- PVX-N215: pickers and segmented controls -->
+<script id="pvx-n227-a11y">
+/* PVX-N227 - an icon beside its label is decorative: VoiceOver reads the label, not "image". Icons that stand alone keep
+   whatever name they have (their button's name). Runs on icons drawn later too. The shared top bar is left as it is. */
+(function(){
+  function fix(){
+    var top=document.getElementById('pvxTopnav')||document.querySelector('nav.topnav');
+    var l=document.querySelectorAll('svg:not([aria-hidden]):not([role]):not([aria-label]):not([aria-labelledby])');
+    for(var i=0;i<l.length;i++){
+      var s=l[i]; if(top&&top.contains(s)) continue; if(s.querySelector('title')) continue;
+      var host=s.closest('button,a,[role=button],[role=tab],[role=menuitem],[role=option],label,li,td,th,summary,.chip,.seg')||s.parentElement;
+      if(!host) continue;
+      var name=(host.getAttribute('aria-label')||host.getAttribute('title')||host.textContent||'').trim();
+      if(name||s.getBoundingClientRect().width<=32) s.setAttribute('aria-hidden','true');
+    }
+  }
+  var q=0; function soon(){ if(q) return; q=setTimeout(function(){ q=0; fix(); },150); }
+  function boot(){ fix(); new MutationObserver(soon).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,19 @@
+{
+  "name": "Treatment · Pravix",
+  "short_name": "Treatment",
+  "description": "Treatment sheets for VCA Shoreline inpatients",
+  "start_url": "/treatment/",
+  "scope": "/treatment/",
+  "id": "/treatment/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A1222",
+  "theme_color": "#0A1222",
+  "icons": [
+    {"src": "treatment-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "treatment-512.png", "sizes": "512x512", "type": "image/png"}
+  ],
+  "shortcuts": [
+    {"name": "ICU display", "short_name": "ICU display", "description": "The read-only ward board for the ICU", "url": "/treatment/#display=ICU"}
+  ]
+}
