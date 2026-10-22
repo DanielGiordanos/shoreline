@@ -729,6 +729,470 @@ body:not(.dark) .ctoast .pvx-tx:hover{background:rgba(0,0,0,.12)}
 #stgImpBtn.busy{opacity:.6;pointer-events:none}
 #stgImpBtn:focus-visible{outline:2px solid #6FD3E4;outline-offset:2px}
 </style>
+<style id="pvx-n235-ts">
+/* n235: placeholders while loading, the opening sheet, progress, the sign-in card */
+.pvx-skel{padding:14px 18px 18px}
+.pvx-sk-row{display:flex;align-items:center;gap:16px;height:44px;border-bottom:1px solid rgba(127,127,127,.12)}
+.pvx-sk-row i,.pvx-sk-bar{display:block;height:10px;border-radius:5px;background:rgba(127,127,127,.16)}
+.pvx-skel-slow{display:none;margin-top:14px;font-size:.8125rem;color:var(--ink-500,#6e6e73)}
+html.ts-load-slow .pvx-skel-slow{display:block}
+html.ts-loading .sb-cnt,html.ts-loading .sb-gn,html.ts-loading .ts-load,html.ts-loading .pt-empty,html.ts-loading .sb-legend{visibility:hidden}
+.pvx-sksheet{padding:18px 24px}
+.pvx-sk-name{font-size:1.75rem;font-weight:650;letter-spacing:-.025em;line-height:1.1;color:var(--ink-900,#1d1d1f)}
+body.dark .pvx-sk-name{color:#fff}
+.pvx-sk-sig{margin-top:6px;font-size:.875rem;color:var(--ink-500,#6e6e73)}
+.pvx-sk-facts{display:flex;flex-wrap:wrap;gap:22px;margin-top:14px;font-size:.8125rem}
+.pvx-sk-facts small{display:block;font-size:.6875rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-500,#6e6e73)}
+.pvx-sk-facts b{font-weight:600}
+.pvx-sk-grid{margin-top:22px;border-radius:16px;border:1px solid rgba(127,127,127,.16);overflow:hidden}
+.pvx-sk-sec{padding:10px 16px;font-size:.8125rem;font-weight:700;color:var(--accent-ink,#1F8FA8);background:rgba(127,127,127,.06)}
+.pvx-sk-or{display:grid;grid-template-columns:minmax(140px,22%) 1fr;align-items:center;gap:16px;height:39px;padding:0 16px;border-top:1px solid rgba(127,127,127,.1);font-size:.875rem}
+.pvx-sk-or .pvx-sk-bar{height:12px;background:rgba(127,127,127,.12)}
+.pvx-busy{display:flex;align-items:center;gap:9px}
+.pvx-spin{flex:0 0 14px;width:14px;height:14px;border-radius:50%;border:2px solid rgba(127,127,127,.3);border-top-color:currentColor;animation:pvxSpin .9s linear infinite}
+@keyframes pvxSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.pvx-spin{animation:pvxSpinFade 1.6s ease-in-out infinite;border-top-color:rgba(127,127,127,.3)}@keyframes pvxSpinFade{50%{opacity:.35}}}
+/* the sign-in card is Flow's own (#sbLogin, its styles copied from Flow at build time) */
+#tsGate.pvx-flow-login{background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+/* Treatment's own field focus ring and accent mustn't leak into Flow's card */
+#sbLogin .field input,#sbLogin .field input:focus,#sbLogin .field input:focus-visible{box-shadow:none!important;outline:none!important;border:0!important}
+#sbLogin #sbForgot{color:#38BDD2!important}
+#sbLogin .field{margin:0!important}
+</style>
+<style id="sbLoginStyles">/* n235: Flow's sign-in styles, copied from Flow at build time so the two stay the same */
+#sbLogin{
+--bg:#050a13;
+--navy:#091326;
+--navy-2:#0d1930;
+--glass:rgba(13,24,43,.72);
+--glass-hi:rgba(255,255,255,.055);
+--line:rgba(158,206,231,.16);
+--text:#f4f8fc;
+--muted:#93a6bd;
+--muted-2:#647990;
+--cyan:#4dc8e0;
+--cyan-2:#38bdd2;
+--violet:#8d72d8;
+--coral:#e8646a;
+--danger:#ff6b6b;
+--radius:34px;
+}#sbLogin *{box-sizing:border-box}#sbLogin button,#sbLogin input{font:inherit}#sbLogin{
+position:fixed;inset:0;z-index:100000;display:grid;place-items:center;
+background:
+radial-gradient(ellipse 620px 500px at 50% 48%,rgba(49,164,203,.15),transparent 70%),
+radial-gradient(ellipse 900px 620px at 50% 48%,rgba(12,41,82,.11),transparent 74%),
+linear-gradient(90deg,rgba(0,4,10,.14),transparent 28%,transparent 72%,rgba(0,4,10,.14)),
+linear-gradient(rgba(2,7,16,.70),rgba(2,7,16,.84));
+
+}#sbLogin:before{
+content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
+background-image:
+radial-gradient(circle at 24% 30%,rgba(255,255,255,.4) 0 1px,transparent 1.2px),
+radial-gradient(circle at 72% 58%,rgba(255,255,255,.25) 0 1px,transparent 1.2px),
+radial-gradient(circle at 56% 20%,rgba(77,200,224,.28) 0 1px,transparent 1.2px),
+radial-gradient(circle at 84% 31%,rgba(141,114,216,.28) 0 1px,transparent 1.2px);
+background-size:230px 230px,310px 310px,270px 270px,350px 350px;
+animation:sb_drift 38s linear infinite;
+}@keyframes sb_drift{to{transform:translate3d(24px,-18px,0)}}#sbLogin .login-wrap{width:min(92vw,438px);position:relative}#sbLogin .card{
+position:relative;overflow:hidden;
+border:1px solid rgba(255,255,255,.42);
+border-radius:var(--radius);
+background:
+radial-gradient(120% 80% at 8% 0%,rgba(255,255,255,.98) 0%,rgba(255,255,255,.36) 38%,transparent 68%),
+linear-gradient(145deg,rgba(252,254,255,.95) 0%,rgba(244,249,253,.88) 48%,rgba(228,238,246,.84) 100%),
+rgba(245,249,253,.88);
+box-shadow:
+0 42px 110px rgba(0,0,0,.36),
+0 14px 42px rgba(0,0,0,.16),
+0 0 70px rgba(56,189,210,.045),
+inset 0 1px 0 rgba(255,255,255,.98);
+
+padding:28px 34px 18px;
+}#sbLogin .card:after{
+content:"";position:absolute;left:9%;right:9%;top:-1px;height:1px;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);
+opacity:.9;
+}#sbLogin .brand{text-align:center;position:relative;z-index:1}#sbLogin .pravix-logo-img{
+display:block;
+width:178px;
+max-width:66%;
+height:auto;
+margin:0 auto 9px;
+object-fit:contain;
+filter:drop-shadow(0 10px 26px rgba(16,122,255,.12));
+}#sbLogin .pravix{font-size:1.25rem;font-weight:800;letter-spacing:.18em;margin-left:.18em}#sbLogin .product{margin-top:5px;color:#71859a;font-size:0.6875rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase}#sbLogin .secure-line{
+display:inline-flex;
+align-items:center;
+gap:6px;
+margin-top:9px;
+color:rgba(102,128,150,.78);
+font-size:0.6875rem;
+font-weight:600;
+letter-spacing:.01em;
+}#sbLogin .secure-line svg{
+width:min(0.6875rem,16.5px);
+height:min(0.6875rem,16.5px);
+stroke:rgba(111,141,161,.78);
+}#sbLogin .heading{text-align:center;margin:20px 0 16px}#sbLogin .heading h1{font-size:1.5rem;letter-spacing:-.035em;margin:0 0 8px;font-weight:600;color:#0b1b30}#sbLogin .heading p{margin:0;color:#63778d;font-size:0.8125rem;line-height:1.45}#sbLogin .field-label{display:block;color:#44596f;font-size:0.6875rem;font-weight:600;margin:0 0 7px 3px;letter-spacing:0}#sbLogin .field{
+position:relative;display:flex;align-items:center;
+height:54px;border-radius:19px;
+border:1px solid rgba(17,49,80,.085);
+background:rgba(247,250,253,.90);
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.96),
+inset 0 6px 16px rgba(20,50,80,.025),
+0 1px 2px rgba(20,50,80,.03);
+transition:.22s ease;
+}#sbLogin .field:focus-within{
+border-color:rgba(56,189,210,.34);
+background:rgba(253,254,255,.99);
+box-shadow:
+0 0 0 2px rgba(56,189,210,.040),
+0 7px 20px rgba(19,131,160,.035),
+inset 0 1px 0 rgba(255,255,255,.98);
+}#sbLogin .lock-icon{width:17px;height:17px;margin-left:17px;opacity:.68}#sbLogin .lock-icon svg{width:100%;height:100%;stroke:#61788e}#sbLogin .field input{
+flex:1;height:100%;border:0;outline:0;background:transparent;color:#0b1f33;padding:0 12px;
+font-size:0.9375rem;letter-spacing:.03em;min-width:0;
+}#sbLogin .field input::placeholder{color:#8294a6}#sbLogin .reveal{
+width:43px;height:43px;margin-right:5px;border:0;border-radius:13px;background:transparent;color:rgba(74,98,120,.52);cursor:pointer;
+display:grid;place-items:center;transition:.2s ease;
+}#sbLogin .reveal:hover{background:rgba(12,41,82,.045);color:#18334d}#sbLogin .reveal svg{width:min(1.0625rem,25.5px);height:min(1.0625rem,25.5px);stroke:currentColor}#sbLogin .error{height:23px;padding:7px 3px 0;color:var(--danger);font-size:0.75rem;letter-spacing:0}#sbLogin .continue{
+position:relative;
+margin-top:2px;
+width:100%;
+height:54px;
+border:1px solid rgba(255,255,255,.96);
+border-radius:999px;
+cursor:pointer;
+overflow:hidden;
+
+color:#16324b;
+font-weight:700;
+font-size:0.9375rem;
+letter-spacing:-.015em;
+
+background:
+linear-gradient(180deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.52) 46%,rgba(229,236,242,.52) 100%);
+
+box-shadow:
+0 12px 24px rgba(24,50,75,.10),
+0 2px 6px rgba(24,50,75,.06),
+inset 0 1px 0 rgba(255,255,255,1),
+inset 0 -1px 0 rgba(121,145,166,.13);
+
+transition:
+transform .18s ease,
+box-shadow .18s ease,
+background .18s ease,
+color .18s ease;
+}#sbLogin .continue::before{
+content:"";
+position:absolute;
+inset:1px 8% auto;
+height:34%;
+border-radius:999px;
+background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));
+opacity:.78;
+pointer-events:none;
+}#sbLogin .continue::after{
+content:"";
+position:absolute;
+left:13%;
+right:13%;
+bottom:-13px;
+height:20px;
+border-radius:50%;
+background:rgba(56,189,210,.12);
+filter:blur(12px);
+pointer-events:none;
+}#sbLogin .continue:hover{
+color:#0e2941;
+background:
+linear-gradient(180deg,rgba(255,255,255,.86) 0%,rgba(255,255,255,.48) 48%,rgba(226,235,242,.60) 100%);
+box-shadow:
+0 16px 32px rgba(24,50,75,.16),
+0 4px 10px rgba(24,50,75,.09),
+inset 0 1px 0 rgba(255,255,255,1),
+inset 0 -1px 0 rgba(121,145,166,.12);
+}#sbLogin .continue:active{
+transform:scale(.989) translateY(1px);
+box-shadow:
+0 8px 18px rgba(24,50,75,.12),
+inset 0 1px 0 rgba(255,255,255,.96),
+inset 0 2px 5px rgba(51,78,101,.08);
+}#sbLogin .continue:disabled{opacity:.62;cursor:default}#sbLogin .page-foot{
+text-align:center;margin-top:6px;color:rgba(118,143,165,.72);font-size:0.6875rem;line-height:1.45;letter-spacing:.01em;
+}#sbLogin .page-foot b{color:rgba(131,154,174,.78);font-weight:600}@keyframes sb_cardIn{
+from{opacity:0;transform:translateY(7px) scale(.992)}
+to{opacity:1;transform:translateY(0) scale(1)}
+}@keyframes sb_brandIn{
+from{opacity:0;transform:translateY(4px)}
+to{opacity:1;transform:translateY(0)}
+}#sbLogin .card{
+animation:sb_cardIn .42s cubic-bezier(.2,.8,.2,1) both;
+}#sbLogin .brand{
+animation:sb_brandIn .38s .08s cubic-bezier(.2,.8,.2,1) both;
+}#sbLogin .card::before{
+content:"";
+position:absolute;
+inset:0;
+pointer-events:none;
+border-radius:inherit;
+background:
+radial-gradient(
+220px circle at var(--mx,50%) var(--my,18%),
+rgba(255,255,255,.20),
+rgba(255,255,255,0) 72%
+);
+opacity:.62;
+transition:opacity .2s ease;
+}#sbLogin .field input:-webkit-autofill,#sbLogin .field input:-webkit-autofill:hover,#sbLogin .field input:-webkit-autofill:focus{
+-webkit-text-fill-color:#0b1f33;
+-webkit-box-shadow:0 0 0 1000px rgba(255,255,255,.92) inset;
+transition:background-color 9999s ease-out 0s;
+caret-color:#0b1f33;
+}#sbLogin .continue.is-inactive{
+opacity:1;
+color:#6f8192;
+background:
+linear-gradient(180deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.54) 46%,rgba(229,236,242,.54) 100%);
+box-shadow:
+0 7px 16px rgba(24,50,75,.055),
+inset 0 1px 0 rgba(255,255,255,.99),
+inset 0 -1px 0 rgba(121,145,166,.08);
+}#sbLogin .continue:not(.is-inactive){
+opacity:1;
+}#sbLogin .caps-hint{
+min-height:18px;
+margin:-4px 3px 0;
+padding-top:4px;
+color:#708399;
+font-size:0.6875rem;
+opacity:0;
+transform:translateY(-1px);
+transition:opacity .16s ease;letter-spacing:0}#sbLogin .caps-hint.show{opacity:.9}#sbLogin .continue.signed{
+color:#103149;
+}#sbLogin .continue .checkmark{
+display:inline-block;
+width:14px;
+height:8px;
+margin-left:8px;
+border-left:2px solid currentColor;
+border-bottom:2px solid currentColor;
+transform:rotate(-45deg) translateY(-1px);
+}#sbLogin .form-stack{transform:translateY(-4px);}#sbLogin .field.error-shake{
+border-color:rgba(222,88,88,.38)!important;
+animation:sb_fieldShake .24s ease;
+}@keyframes sb_fieldShake{
+0%,100%{transform:translateX(0)}
+25%{transform:translateX(-2px)}
+50%{transform:translateX(2px)}
+75%{transform:translateX(-1px)}
+}#sbLogin .signin-progress{
+display:inline-block;
+width:12px;height:12px;margin-left:8px;vertical-align:-1px;
+border:1.5px solid rgba(22,50,75,.24);
+border-top-color:rgba(22,50,75,.78);
+border-radius:50%;
+animation:sb_signinSpin .7s linear infinite;
+}@keyframes sb_signinSpin{to{transform:rotate(360deg)}}@media(max-width:700px){#sbLogin .card{padding:31px 24px 27px;border-radius:26px}#sbLogin .login-wrap{width:min(91vw,468px)}}#sbLogin .login-wrap.success .card{
+opacity:0;
+transform:translateY(-4px) scale(.992);
+filter:blur(8px);
+transition:opacity .38s ease,transform .38s ease,filter .38s ease;
+}#sbLogin .login-wrap.success .page-foot{
+opacity:0;
+transition:opacity .28s ease;
+}#sbLogin .login-wrap.success + *{}@media(prefers-reduced-motion:reduce){#sbLogin:before{animation:none}#sbLogin *{scroll-behavior:auto}}
+body.dark #sbLogin{
+--dark-page:#080E1A;
+--dark-surface-0:#0E1628;
+--dark-surface-1:#131E34;
+--dark-surface-2:#192540;
+--dark-ink:#D8E8F4;
+--dark-secondary:#A7C2D8;
+--dark-muted:#7A98B8;
+--dark-subtle:#5E7C9C;
+--dark-border:rgba(77,200,224,.10);
+--dark-border-strong:rgba(77,200,224,.20);
+--dark-glass:rgba(14,22,40,.58);
+--dark-glass-strong:rgba(18,28,48,.76);
+--dark-cyan:#38BDD2;
+--dark-cyan-2:#4DC8E0;
+}body.dark #sbLogin{
+background:
+radial-gradient(ellipse 650px 520px at 50% 47%,rgba(56,189,210,.12),transparent 68%),
+radial-gradient(ellipse 980px 720px at 50% 50%,rgba(12,41,82,.20),transparent 74%),
+linear-gradient(180deg,rgba(8,14,26,.58),rgba(5,10,20,.82));
+
+}body.dark #sbLogin:before{opacity:.24;}body.dark #sbLogin .card{
+border:1px solid rgba(77,200,224,.16);
+background:
+radial-gradient(130% 90% at 5% 0%,rgba(255,255,255,.075) 0%,rgba(255,255,255,.018) 38%,transparent 66%),
+linear-gradient(145deg,rgba(20,32,55,.88) 0%,rgba(14,24,43,.84) 52%,rgba(10,18,34,.90) 100%),
+var(--dark-glass-strong);
+box-shadow:
+0 42px 110px rgba(0,0,0,.64),
+0 14px 42px rgba(0,0,0,.38),
+0 0 90px rgba(56,189,210,.065),
+inset 0 1px 0 rgba(255,255,255,.085),
+inset 0 -1px 0 rgba(0,0,0,.22);
+
+}body.dark #sbLogin .card:after{
+background:linear-gradient(90deg,transparent,rgba(126,222,241,.34),transparent);
+opacity:.72;
+}body.dark #sbLogin .card::before{
+background:radial-gradient(230px circle at var(--mx,50%) var(--my,18%),rgba(77,200,224,.065),rgba(255,255,255,0) 72%);
+opacity:.72;
+}body.dark #sbLogin .pravix-logo-img{
+filter:drop-shadow(0 12px 30px rgba(16,122,255,.18));
+}body.dark #sbLogin .product{color:var(--dark-muted);}body.dark #sbLogin .secure-line{color:rgba(167,194,216,.72);}body.dark #sbLogin .secure-line svg{stroke:rgba(122,152,184,.82);}body.dark #sbLogin .heading h1{color:var(--dark-ink);}body.dark #sbLogin .heading p{color:var(--dark-secondary);}body.dark #sbLogin .field-label{color:rgba(167,194,216,.88);}body.dark #sbLogin .field{
+border:1px solid rgba(150,185,220,.18);
+background:rgba(19,30,52,.78);
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.038),
+inset 0 8px 20px rgba(0,0,0,.10),
+0 1px 0 rgba(255,255,255,.012);
+}body.dark #sbLogin .field:focus-within{
+border-color:rgba(77,200,224,.48);
+background:rgba(25,37,64,.94);
+box-shadow:
+0 0 0 3px rgba(56,189,210,.085),
+0 10px 24px rgba(0,0,0,.16),
+0 0 28px rgba(56,189,210,.06),
+inset 0 1px 0 rgba(255,255,255,.045);
+}body.dark #sbLogin .lock-icon svg{stroke:#7A98B8;}body.dark #sbLogin .field input{color:var(--dark-ink);caret-color:var(--dark-cyan-2);}body.dark #sbLogin .field input::placeholder{color:#5E7C9C;}body.dark #sbLogin .reveal{color:rgba(122,152,184,.62);}body.dark #sbLogin .reveal:hover{background:rgba(150,185,220,.08);color:#A7C2D8;}body.dark #sbLogin .field input:-webkit-autofill,body.dark #sbLogin .field input:-webkit-autofill:hover,body.dark #sbLogin .field input:-webkit-autofill:focus{
+-webkit-text-fill-color:var(--dark-ink);
+-webkit-box-shadow:0 0 0 1000px #182640 inset;
+caret-color:var(--dark-cyan-2);
+}body.dark #sbLogin .continue{
+color:#D8E8F4;
+border:1px solid rgba(150,185,220,.20);
+background:
+linear-gradient(180deg,rgba(39,55,86,.92) 0%,rgba(27,41,67,.94) 100%);
+box-shadow:
+0 10px 24px rgba(0,0,0,.24),
+inset 0 1px 0 rgba(255,255,255,.07),
+inset 0 -1px 0 rgba(0,0,0,.20);
+
+}body.dark #sbLogin .continue::before{
+background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0));
+opacity:.28;
+inset:1px 14% auto;
+height:24%;
+}body.dark #sbLogin .continue::after{
+background:rgba(56,189,210,.08);
+left:18%;
+right:18%;
+bottom:-15px;
+height:16px;
+filter:blur(14px);
+}body.dark #sbLogin .continue:hover{
+color:#F2FAFF;
+border-color:rgba(77,200,224,.34);
+background:
+linear-gradient(180deg,rgba(46,64,99,.96) 0%,rgba(31,47,77,.98) 100%);
+box-shadow:
+0 12px 28px rgba(0,0,0,.28),
+0 0 18px rgba(56,189,210,.045),
+inset 0 1px 0 rgba(255,255,255,.09);
+}body.dark #sbLogin .continue:active{
+box-shadow:
+0 9px 20px rgba(0,0,0,.26),
+inset 0 1px 0 rgba(255,255,255,.10),
+inset 0 2px 6px rgba(0,0,0,.16);
+}body.dark #sbLogin .continue.is-inactive{
+opacity:1;
+color:#7A98B8;
+background:
+linear-gradient(180deg,rgba(30,44,70,.82),rgba(22,34,57,.88));
+border-color:rgba(150,185,220,.11);
+box-shadow:
+0 6px 16px rgba(0,0,0,.14),
+inset 0 1px 0 rgba(255,255,255,.045);
+}body.dark #sbLogin .continue:not(.is-inactive){
+border-color:rgba(77,200,224,.25);
+box-shadow:
+0 10px 24px rgba(0,0,0,.24),
+0 0 14px rgba(56,189,210,.035),
+inset 0 1px 0 rgba(255,255,255,.08);
+}body.dark #sbLogin .signin-progress{border-color:rgba(216,232,244,.22);border-top-color:#D8E8F4;}body.dark #sbLogin .continue .checkmark{border-color:currentColor;}body.dark #sbLogin .caps-hint{color:#7A98B8;}body.dark #sbLogin .error{color:#E07060;}body.dark #sbLogin .field.error-shake{border-color:rgba(224,112,96,.52)!important;}body.dark #sbLogin .page-foot{color:rgba(94,124,156,.72);}body.dark #sbLogin .page-foot b{color:rgba(122,152,184,.82);}
+#sbLogin{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,sans-serif;}
+#sbLogin .logo-drk{display:none;}
+body.dark #sbLogin .logo-lite{display:none;}
+body.dark #sbLogin .logo-drk{display:block;width:139px;}
+body.sb-locked{overflow:hidden!important;}
+
+</style>
+<style id="pvx-n236-ts">
+/* n236: the doctor's alert by urgency, discard prompts, sticky modal buttons, close, back to Settings, drafts */
+.ts-doc-alert.crit{border:1px solid rgba(228,52,43,.55);box-shadow:0 0 0 1px rgba(228,52,43,.18),0 18px 48px rgba(0,0,0,.22)}
+.ts-doc-alert.crit>svg{color:#E4342B}
+.ts-doc-alert.warn{border:1px solid rgba(255,159,10,.5)}
+.ts-doc-alert.warn>svg{color:#C77700}
+body.dark .ts-doc-alert.warn>svg{color:#FFB340}
+.ts-doc-alert .x{display:grid;place-items:center}
+.ts-doc-alert .x svg{width:13px;height:13px}
+#tsModal .tm-card{scroll-padding-bottom:84px}
+#tsModal .tm-card .tm-foot{position:sticky;bottom:-22px;margin:18px -22px -22px;padding:14px 22px 20px;background:#fff;border-top:1px solid rgba(60,72,90,.12);z-index:3}
+body.dark #tsModal .tm-card .tm-foot{background:#121824;border-top-color:rgba(255,255,255,.08)}
+.pvx-discard{position:sticky;bottom:-22px;margin:14px -22px -22px;padding:14px 22px 18px;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#FFF6E8;border-top:1px solid rgba(199,119,0,.35)}
+body.dark .pvx-discard{background:#2A2112;border-top-color:rgba(255,179,64,.35)}
+.pvx-discard b{flex:1 1 200px;font-size:.875rem}
+.pvx-discard button{height:34px;padding:0 14px;border-radius:999px;border:0;font:inherit;font-size:.8125rem;font-weight:700;cursor:pointer;background:rgba(60,72,90,.1);color:inherit}
+.pvx-discard button.danger{background:#E4342B;color:#fff}
+.drawer .pvx-discard{position:static;margin:12px 0 0;border-radius:14px;border:1px solid rgba(199,119,0,.35)}
+.op-back{display:inline-flex;align-items:center;gap:4px;margin:0 0 6px -6px;padding:4px 8px;border:0;border-radius:8px;background:none;color:var(--accent-ink,#1F8FA8);font:inherit;font-size:.8125rem;font-weight:600;cursor:pointer}
+.op-back svg{width:14px;height:14px}
+.ts-am-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 4px 0;padding:10px 6px 4px;border-top:1px solid var(--border,rgba(0,0,0,.1));font-size:.8125rem;color:var(--ink-400)}
+.ts-am-foot b{font-weight:600;color:inherit}
+.op-back:hover{background:rgba(31,143,168,.1)}
+</style>
+<style id="pvx-n237-ts">
+/* n237: printing, the finder, Settings groups and switches, the Reports menu */
+.dp-band.live{letter-spacing:.04em}
+@media print{html.dt-printing #tsDtPrint thead th{background:#fff!important;color:#000!important}html.dt-printing #tsDtPrint thead tr.pt th{background:#ececec!important}}
+#tsDtPrint .dp-none{font-size:.75rem;margin:12px 0}
+.ts-cm-sep{height:1px;margin:4px 8px;background:var(--border,rgba(0,0,0,.1))}
+#tsCopyMenu [data-c][disabled]{opacity:.45;cursor:default}
+/* the finder */
+#globalSearch{-webkit-appearance:none;appearance:none}
+#globalSearch::-webkit-search-cancel-button,#globalSearch::-webkit-search-decoration{-webkit-appearance:none;display:none}
+.subnav .search .ts-sclear{display:none;flex:none;width:22px;height:22px;margin:0 2px 0 4px;border:0;border-radius:50%;place-items:center;background:rgba(60,72,90,.14);color:inherit;cursor:pointer;padding:0}
+body.dark .subnav .search .ts-sclear{background:rgba(255,255,255,.14)}
+.subnav .search .ts-sclear svg{position:static!important;inset:auto!important;transform:none!important;margin:0!important;width:12px!important;height:12px!important;color:inherit!important;stroke:currentColor!important;opacity:.85}
+.subnav .search.has-q .ts-sclear{display:grid}
+/* the sub-nav's tabs never scroll sideways: icons only up to 1179 pt (was 1100), tighter tabs to 1439, and the patient chip gives way first */
+@media (min-width:1101px) and (max-width:1179px){#clinSwitcher .seg{font-size:0!important;gap:0!important;padding-inline:11px!important}.subnav .seg svg{width:19px;height:19px}.subnav .seg .seg-badge{font-size:.6875rem}}
+@media (min-width:1180px) and (max-width:1439px){#clinSwitcher .seg{padding-inline:6px!important;gap:4px!important}}
+@media (min-width:701px){.subnav .switcher{flex-shrink:1!important}.subnav .ts-chip{flex-shrink:1000!important;min-width:72px!important;overflow:hidden}}
+.subnav .search .ts-skey{flex:none;margin:0 4px;padding:2px 6px;border-radius:6px;border:1px solid var(--border,rgba(0,0,0,.12));font:600 .6875rem/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;color:var(--ink-400);letter-spacing:.02em}
+.subnav .search.is-focus .ts-skey,.subnav .search.has-q .ts-skey,.subnav .search:not(.is-open):not(.is-focus) .ts-skey{display:none}
+@media (hover:none),(pointer:coarse){.subnav .search .ts-skey{display:none}}
+@media (max-width:1680px){
+  .subnav .search.is-open,.subnav .search.is-focus{width:46px!important;min-width:46px!important;flex:0 0 46px!important;position:relative;z-index:30}
+  .subnav .search.is-open .search-bar,.subnav .search.is-focus .search-bar{position:absolute;right:0;top:50%;transform:translateY(-50%);width:min(340px,calc(100vw - 24px))!important;background:#fff!important}
+  body.dark .subnav .search.is-open .search-bar,body.dark .subnav .search.is-focus .search-bar{background:#121824!important}
+}
+#tsFind .mi.ord .tx small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tsFind .mi .ts-fo-ic{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:rgba(31,143,168,.12);color:var(--accent-ink,#1F8FA8)}
+#tsFind .mi .ts-fo-ic svg{width:16px;height:16px}
+#tsFind .mh + .mh{margin-top:0}
+.ts-order-hl{animation:tsOrdHl 1.6s ease-out 1}
+@keyframes tsOrdHl{0%,40%{background:rgba(31,143,168,.22)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.ts-order-hl{animation:none;outline:2px solid var(--accent-ink,#1F8FA8);outline-offset:-2px}}
+/* Settings */
+#tsOrderSheet .stg-grp{margin:0 0 14px}
+#tsOrderSheet .stg-grp > h4{margin:12px 2px 6px;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400)}
+#tsOrderSheet .stg-grp > h4 small{text-transform:none;letter-spacing:0;font-weight:500;margin-left:6px}
+#tsOrderSheet .stg-ctl .v-sw{margin-left:auto}
+#tsOrderSheet .stg-state{font-size:.8125rem;color:var(--ink-400)}
+.ts-am-foot .v-sw{flex:none}
+/* the board's Print and Reports */
+.sb-tvb.ts-sbprint{padding-left:10px;padding-right:10px}
+#tsReportsMenu{width:min(360px,calc(100vw - 16px))}
+.sb-tvb .ts-rep-chev{width:11px;height:11px;margin-left:1px;opacity:.7}
+</style>
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie; until someone chooses, the system's light or dark (n230). -->
@@ -849,17 +1313,17 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <div class="ctoast-wrap" id="toastWrap"></div>
 
-<script defer src="core.js?v=4b325dd940"></script>
+<script defer src="core.js?v=2a6f24ba9c"></script>
 <script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristi Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "flowDoctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Larry Berkwitt", "Dianne Kittrell"], "interns": ["Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristi Wenger", "Sarah Herron"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="d8c5024f";</script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script defer src="store.js?v=7ca9ad4389"></script>
+<script defer src="store.js?v=d3e39ccaf3"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
-<script defer src="voice.js?v=7a919ece66"></script>
+<script defer src="voice.js?v=057c4cfe83"></script>
 
 <script>/* CL-T02 n132: compact search — the visible Search button is the Tab stop while collapsed; the field opens on focus/click and closes when left empty */(function(){var s=document.querySelector(".subnav .search"),i=document.getElementById("globalSearch"),b=s&&s.querySelector(".ts-search-open"),mq=window.matchMedia("(max-width:1680px)");if(!s||!i||!b)return;function collapsed(){return mq.matches&&!s.classList.contains("is-open")&&!s.classList.contains("is-focus");}function sync(){var c=collapsed();i.tabIndex=c?-1:0;b.tabIndex=c?0:-1;b.setAttribute("aria-hidden",c?"false":"true");}b.addEventListener("click",function(){s.classList.add("is-open");i.focus();sync();});s.addEventListener("click",function(e){if(!s.contains(document.activeElement)){i.focus();sync();}});i.addEventListener("focus",function(){s.classList.add("is-focus");sync();});i.addEventListener("input",function(){s.classList.toggle("is-open",!!i.value);sync();});i.addEventListener("blur",function(){s.classList.remove("is-focus");if(!i.value)s.classList.remove("is-open");setTimeout(sync,0);});mq.addEventListener?mq.addEventListener("change",sync):mq.addListener(sync);sync();})();</script>
 
@@ -1457,6 +1921,338 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   document.addEventListener('keydown',function(e){ var b=e.target&&e.target.id==='stgImpBtn'?e.target:null; if(b&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); var i=b.querySelector('input'); i&&!i.disabled&&i.click(); } });
   var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ paint(); fsSync(); }catch(e){} },80); }
   function boot(){ upd(); new MutationObserver(tick).observe(document.body,{childList:true,subtree:true}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<script id="pvx-n235-ts">
+(function(){
+  var de=document.documentElement;
+  function h(x){ return String(x==null?'':x).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  /* 1. placeholders until the patient list's first real answer */
+  if(!window.tsListReady){ de.classList.add('ts-loading'); setTimeout(function(){ if(!window.tsListReady) de.classList.add('ts-load-slow'); },10000); }
+  window.pvxSkelRows=function(n,kind){ var w=[[38,22,30],[30,26,24],[42,18,28],[34,24,20]], r='';
+    for(var i=0;i<n;i++){ var x=w[i%w.length]; r+='<div class="pvx-sk-row" aria-hidden="true"><i style="width:'+x[0]+'%"></i><i style="width:'+x[1]+'%"></i><i style="width:'+x[2]+'%"></i></div>'; }
+    return '<div class="pvx-skel" role="status" aria-busy="true"><span class="pvx-sr">Loading the patient list…</span>'+r+'<div class="pvx-skel-slow">Still loading the patient list — check the connection.</div></div>'; };
+  window.pvxListReady=function(){ de.classList.remove('ts-loading','ts-load-slow');
+    try{ if(currentCTab==='dash'&&window.renderDash) renderDash(); }catch(e){}
+    try{ if(currentCTab==='tasks'&&window.tsRenderTasks) tsRenderTasks(); }catch(e){} };
+  /* the database's own word that its answer is current (an empty hospital never sends a second snapshot otherwise) */
+  var w0=window.pvxNetWatch;
+  window.pvxNetWatch=function(q){ if(w0) w0(q); if(window.__pvxReadyQ) return; window.__pvxReadyQ=1;
+    try{ q.onSnapshot({includeMetadataChanges:true},function(sn){ if(sn&&!(sn.metadata&&sn.metadata.fromCache)&&!window.tsListReady){ window.tsListReady=true; pvxListReady(); } },function(){}); }catch(e){} };
+  /* 2. the status bar follows the theme */
+  function tc(){ var m=document.querySelector('meta[name=theme-color]'); if(!m||!document.body) return; var v=document.body.classList.contains('dark')?'#0A1222':'#F2F4F8'; if(m.content!==v) m.content=v; }
+  function tcBoot(){ tc(); try{ new MutationObserver(tc).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){} }
+  if(document.body) tcBoot(); else document.addEventListener('DOMContentLoaded',tcBoot);
+  /* 3. the app's own files on every device, so it opens with a slow or no connection */
+  function sw(){ if(!('serviceWorker' in navigator)) return; if(navigator.webdriver&&!window.__pvxSwTest) return;
+    navigator.serviceWorker.register('downtime-sw.js',{scope:'./'}).then(function(){ return navigator.serviceWorker.ready; }).then(function(r){
+      var u=[location.href.split('#')[0]].concat(performance.getEntriesByType('resource').map(function(e){ return e.name; }).filter(function(e){ return e.indexOf(location.origin+'/treatment/')===0||/^https:\/\/www\.gstatic\.com\/firebasejs\//.test(e); }));
+      var a=r.active||r.waiting||r.installing; a&&a.postMessage({type:'dt-cache',urls:u}); }).catch(function(){}); }
+  window.addEventListener('load',function(){ setTimeout(sw,3000); });
+  /* 4. opening a sheet: its header and grid at once, from the list's copy */
+  window.pvxSheetSkel=function(id){ var L=(window.__tsStore&&__tsStore.sheets)||[], e=null; for(var i=0;i<L.length;i++) if(L[i]._id===id){ e=L[i]; break; }
+    if(!e) return ''; var P=e.patient||{}, nm=((P.name||'')+' '+(P.last||'')).trim()||'Patient';
+    try{ var ch=document.querySelector('#tsPatientChip .nm'); if(ch) ch.textContent=nm; }catch(x){}
+    var O=e.orders||{}, secs={}, order=[];
+    Object.keys(O).forEach(function(k){ var o=O[k]; if(!o||o.dc) return; var sc=o.section||'Other'; if(!secs[sc]){ secs[sc]=[]; order.push(sc); } secs[sc].push(o.name||''); });
+    var rows='', n=0;
+    order.forEach(function(sc){ if(n>=16) return; rows+='<div class="pvx-sk-sec">'+h(window.tsSecLabel?tsSecLabel(sc):sc)+'</div>';
+      secs[sc].forEach(function(on){ if(n>=16) return; n++; rows+='<div class="pvx-sk-or"><span>'+h(on)+'</span><span class="pvx-sk-bar" aria-hidden="true"></span></div>'; }); });
+    var sig=[P.species,P.breed,P.sex,P.age].filter(Boolean).join(' · ');
+    var facts=[['Weight',P.weight?P.weight+' kg':'—'],['Doctor',P.doctor||'—'],['Location',P.location||'—'],['Code',P.code||'—'],['Allergies',P.allergies||'Not recorded']];
+    return '<div class="pvx-sksheet" role="status" aria-busy="true"><span class="pvx-sr">Opening '+h(nm)+'’s sheet…</span>'+
+      '<div class="pvx-sk-name">'+h(nm)+'</div><div class="pvx-sk-sig">'+h(sig)+'</div>'+
+      '<div class="pvx-sk-facts">'+facts.map(function(f){ return '<span><small>'+h(f[0])+'</small><b>'+h(f[1])+'</b></span>'; }).join('')+'</div>'+
+      '<div class="pvx-sk-grid" aria-hidden="true">'+rows+'</div></div>'; };
+  /* 6. sign in here, on Flow's own sign-in card (same markup, same styles, same behaviour), then the sheet you asked for */
+  var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>';
+  var MAIL='<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="3"></rect><path d="m5.5 8 6.5 5 6.5-5"></path></svg>';
+  var EYE='<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>';
+  window.pvxSignInHTML=function(){ return '<div id="sbLogin" role="dialog" aria-modal="true" aria-label="Sign in to Pravix"><div class="login-wrap"><form class="card" id="sbLoginForm" novalidate>'+
+      '<div class="brand"><img class="pravix-logo-img logo-lite" src="/assets/img/pravix-logo-lite.png" alt="Pravix"><img class="pravix-logo-img logo-drk" src="/assets/img/pravix-logo-drk.png" alt="Pravix"><div class="product">Shoreline Treatment Sheets</div><div class="secure-line">'+LOCK+'Secure sign in</div></div>'+
+      '<div class="heading"><h1>Sign in to Pravix</h1><p id="sbLead">Hospital staff only. Sign in with your own account.</p></div>'+
+      '<div class="form-stack"><label class="field-label" for="sbEmail">Email</label><div class="field"><div class="lock-icon" aria-hidden="true">'+MAIL+'</div><input id="sbEmail" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="name@vca.com" /></div>'+
+      '<label class="field-label" for="sbPass" style="margin-top:10px">Password</label><div class="field"><div class="lock-icon" aria-hidden="true">'+LOCK+'</div><input id="sbPass" type="password" autocomplete="current-password" placeholder="Enter password" /><button class="reveal" id="sbReveal" type="button" aria-label="Show password">'+EYE+'</button></div>'+
+      '<div class="caps-hint" id="sbCaps">Caps Lock is on</div><div class="error" id="sbErr" role="alert"></div>'+
+      '<button type="button" id="sbForgot" style="display:block;margin:2px auto 12px;background:none;border:none;color:var(--accent);font:inherit;font-size:0.75rem;font-weight:600;cursor:pointer;">Forgot password?</button>'+
+      '<button class="continue is-inactive" id="sbBtn" type="submit">Sign in</button></div></form>'+
+      '<div class="page-foot"><b>VCA Shoreline</b> · Protected Pravix Workspace</div></div></div>'; };
+  function why(c){ return c==='auth/wrong-password'||c==='auth/invalid-credential'||c==='auth/user-not-found'||c==='auth/invalid-login-credentials'||c==='auth/invalid-email'?'Incorrect email or password. Please try again.':
+      c==='auth/too-many-requests'?'Too many tries. Wait a minute and try again.':c==='auth/user-disabled'?'This account is turned off.':'Connection problem. Try again.'; }
+  function lock(on){ document.body.classList.toggle('sb-locked',on); [].forEach.call(document.body.children,function(el){ if(el.id==='tsGate'||el.id==='toastWrap'||el.tagName==='SCRIPT') return; try{ on?el.setAttribute('inert',''):el.removeAttribute('inert'); }catch(x){} }); }
+  window.pvxSignInWire=function(root){ var ov=root&&root.querySelector('#sbLogin'); if(!ov||ov._w) return; ov._w=1; root.classList.add('pvx-flow-login'); lock(true);
+    var form=ov.querySelector('#sbLoginForm'), email=ov.querySelector('#sbEmail'), password=ov.querySelector('#sbPass'), reveal=ov.querySelector('#sbReveal'), btn=ov.querySelector('#sbBtn'),
+        error=ov.querySelector('#sbErr'), card=ov.querySelector('.card'), capsHint=ov.querySelector('#sbCaps'), emailField=email.closest('.field'), passwordField=password.closest('.field');
+    function updateButtonState(){ var ready=email.value.trim()&&password.value.trim(); btn.classList.toggle('is-inactive',!ready); }
+    function shake(f){ f.classList.remove('error-shake'); void f.offsetWidth; f.classList.add('error-shake'); }
+    reveal.addEventListener('click',function(){ var showing=password.type==='text'; password.type=showing?'password':'text'; reveal.setAttribute('aria-label',showing?'Show password':'Hide password'); password.focus(); });
+    [email,password].forEach(function(el){ el.addEventListener('input',function(){ if(error.textContent) error.textContent=''; updateButtonState(); }); });
+    ov.querySelector('#sbForgot').addEventListener('click',function(){ var f=this, em=email.value.trim();
+      if(!em){ error.textContent='Enter your email above, then choose Forgot password.'; shake(emailField); email.focus(); return; }
+      if(!(window.firebase&&firebase.auth)) return; f.disabled=true;
+      firebase.auth().sendPasswordResetEmail(em).then(function(){ error.textContent='Reset link sent to '+em+'. Check your inbox and spam.'; },function(){ error.textContent='Could not send a reset email — check the address and try again.'; }).then(function(){ f.disabled=false; }); });
+    function capsCheck(e){ if(typeof e.getModifierState==='function') capsHint.classList.toggle('show',e.getModifierState('CapsLock')); }
+    password.addEventListener('keydown',capsCheck); password.addEventListener('keyup',capsCheck); password.addEventListener('blur',function(){ capsHint.classList.remove('show'); });
+    email.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); password.focus(); } });
+    password.addEventListener('keydown',function(e){ if(e.key==='Enter'&&email.value.trim()&&password.value.trim()){ e.preventDefault(); form.requestSubmit(); } });
+    [emailField,passwordField].forEach(function(f){ f.addEventListener('animationend',function(){ f.classList.remove('error-shake'); }); });
+    card.addEventListener('pointermove',function(e){ var r=card.getBoundingClientRect(); card.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%'); card.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%'); });
+    card.addEventListener('pointerleave',function(){ card.style.setProperty('--mx','50%'); card.style.setProperty('--my','18%'); });
+    form.addEventListener('submit',function(e){ e.preventDefault();
+      if(!email.value.trim()){ error.textContent='Enter your email address.'; shake(emailField); email.focus(); return; }
+      if(!password.value.trim()){ error.textContent='Enter your password.'; shake(passwordField); password.focus(); return; }
+      if(!(window.firebase&&firebase.auth)){ error.textContent='Connection problem. Try again.'; return; }
+      error.textContent=''; btn.disabled=true; btn.classList.remove('signed'); btn.innerHTML='Signing in <span class="signin-progress" aria-hidden="true"></span>';
+      firebase.auth().signInWithEmailAndPassword(email.value.trim(),password.value).catch(function(err){
+        error.textContent=why(err&&err.code); shake(passwordField); btn.disabled=false; btn.classList.remove('signed'); btn.textContent='Sign in';
+        try{ password.select(); }catch(x){} updateButtonState(); }); });
+    updateButtonState(); setTimeout(function(){ try{ email.focus(); }catch(x){} },250); };
+  /* Flow's finish: "Signed in ✓", the card fades, then the sheet */
+  window.pvxSignInDone=function(se){ var ov=se&&se.querySelector('#sbLogin');
+    if(!ov||!se.classList.contains('show')){ se&&se.classList.remove('show'); if(document.body.classList.contains('sb-locked')) lock(false); return; }
+    var btn=ov.querySelector('#sbBtn'), wrap=ov.querySelector('.login-wrap');
+    if(btn){ btn.disabled=true; btn.classList.add('signed'); btn.innerHTML='Signed in <span class="checkmark" aria-hidden="true"></span>'; }
+    if(wrap) wrap.classList.add('success');
+    setTimeout(function(){ se.classList.remove('show','pvx-flow-login'); se.innerHTML=''; lock(false); },480); };
+})();
+</script>
+<script id="pvx-n236-ts">
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  var XS='<svg class="pvx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  function esc(x){ return String(x==null?'':x).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } }
+  /* 1.–2. the doctor's alert: by urgency, and the sound setting */
+  window.pvxAlertSound=function(on){ if(on===undefined) return ls('pvxAlertSound')!=='0'; ls('pvxAlertSound',on?'1':'0'); return on; };
+  function tone(f,g,d){ if(!pvxAlertSound()) return; try{ var A=window.AudioContext||window.webkitAudioContext, a=new A(), o=a.createOscillator(), n=a.createGain();
+    o.frequency.value=f; n.gain.value=g; o.connect(n); n.connect(a.destination); o.start(); o.stop(a.currentTime+d); setTimeout(function(){ try{ a.close(); }catch(e){} },(d+.3)*1000); }catch(e){} }
+  window.pvxDocAlertLife=function(n,crit){
+    if(crit){ tone(880,.04,.18); var rt=setTimeout(function(){ if(n.isConnected) tone(660,.02,.14); },120000); return; }
+    var left=15000, last=Date.now();
+    var iv=setInterval(function(){ if(!n.isConnected){ clearInterval(iv); return; } var now=Date.now();
+      if(document.visibilityState==='visible'&&!n.matches(':hover')&&!n.contains(document.activeElement)) left-=now-last; last=now;
+      if(left<=0){ clearInterval(iv); n.classList.add('fade'); setTimeout(function(){ n.remove(); },400); } },250); };
+  /* the Alert sound row in Settings */
+  function stgSound(){ var L=$('#tsOrderSheet .op-card.stg .stg-list'); if(!L||$('#pvxStgSound',L)) return; var on=pvxAlertSound();
+    var r=document.createElement('div'); r.className='stg-row'; r.id='pvxStgSound';
+    r.innerHTML='<div class="stg-tx"><b>Alert sound</b><small>A tone when a critical alert on your patients arrives, and a softer reminder after 2 minutes if it’s still open.</small></div><div class="stg-ctl"><button type="button" class="v-sw" role="switch" aria-label="Alert sound" aria-checked="'+on+'"><i></i></button></div>';
+    r.querySelector('button').onclick=function(){ pvxAlertSound(!pvxAlertSound()); r.remove(); stgSound(); try{ toast(pvxAlertSound()?'Alert sound on':'Alert sound off'); }catch(e){} };
+    L.insertBefore(r,L.children[1]||null); }
+  /* the same setting where the alerts are: the alert pill's menu (Settings is for admins only) */
+  function amSound(){ var m=$('#tsAlertMenu'); if(!m||$('#pvxAmSound',m)) return; var on=pvxAlertSound();
+    var r=document.createElement('div'); r.className='ts-am-foot'; r.id='pvxAmSound';
+    r.innerHTML='<span><b>Alert sound</b> · on this computer</span><button type="button" class="v-sw" role="switch" aria-label="Alert sound on this computer" aria-checked="'+on+'"><i></i></button>';
+    r.querySelector('button').onclick=function(e){ e.stopPropagation(); pvxAlertSound(!pvxAlertSound()); r.remove(); amSound(); try{ toast(pvxAlertSound()?'Alert sound on':'Alert sound off'); }catch(x){} };
+    m.appendChild(r); }
+  /* 5. a report opened from Settings can go back to Settings */
+  var fromStg=false;
+  document.addEventListener('click',function(e){ var t=e.target.closest&&e.target.closest('#tsOrderSheet .op-card.stg [data-stg]'); if(t) fromStg=true; },true);
+  function stgBack(){ var sh=$('#tsOrderSheet'); if(!sh||!sh.classList.contains('show')){ fromStg=false; return; }
+    var c=$('.op-card',sh); if(!c||c.classList.contains('stg')||!fromStg) return; var hd=$('.op-head',c); if(!hd||$('.op-back',hd)) return;
+    var b=document.createElement('button'); b.type='button'; b.className='op-back'; b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Settings';
+    b.setAttribute('aria-label','Back to Settings'); b.onclick=function(){ try{ tsSettingsOpen(); }catch(x){} };
+    var first=hd.firstElementChild; (first&&first.tagName==='DIV'?first:hd).insertBefore(b,(first&&first.tagName==='DIV'?first.firstChild:first)); }
+  /* 3.–4. & 7. forms: what's typed, discard prompts, drafts */
+  function fields(c){ return $$('input[id],select[id],textarea[id]',c).filter(function(f){ return f.type!=='hidden'&&f.type!=='file'&&f.type!=='checkbox'&&f.type!=='radio'; }); }
+  function vals(c){ var o={}; fields(c).forEach(function(f){ o[f.id]=f.value; }); return o; }
+  var SNAP=new WeakMap();
+  function dirty(c){ var a=SNAP.get(c); if(!a) return false; var b=vals(c); return Object.keys(b).some(function(k){ return a[k]!==undefined&&a[k]!==b[k]; }); }
+  function sheetId(){ try{ return (window.__tsStore&&__tsStore.cur)||'none'; }catch(e){ return 'none'; } }
+  function formKey(c){ if(c.id==='noteDrawer') return 'note:'+sheetId();
+    if(c.id==='completionDrawer') return 'cd:'+sheetId()+':'+(typeof activeTaskId!=='undefined'?activeTaskId:'');
+    var h=$('h3',c); var t=h?h.textContent.replace(/\s+/g,' ').replace(/Changing$/,'').trim():''; if(!t) return null;
+    return /^New treatment sheet/.test(t)?'ns':'tm:'+sheetId()+':'+t; }
+  var DAY=12*3600*1000;
+  function draftGet(k){ try{ var d=JSON.parse(ls('pvxDraft:'+k)||'null'); if(!d||Date.now()-d.at>DAY){ ls('pvxDraft:'+k,null); return null; } return d; }catch(e){ return null; } }
+  function draftPut(k,v){ ls('pvxDraft:'+k,JSON.stringify({at:Date.now(),v:v})); }
+  function draftDrop(k){ if(k) ls('pvxDraft:'+k,null); }
+  window.pvxDraftsClear=function(){ try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('pvxDraft:')===0) localStorage.removeItem(k); }); }catch(e){} };
+  function card(){ var m=$('#tsModal.show .tm-card'); return m; }
+  function openC(){ var m=card(); if(m&&fields(m).length) return m; var d=$('#completionDrawer.open'); if(d) return d; var n=$('#noteDrawer.open'); return n||null; }
+  function sess(c){ return c.classList.contains('drawer')?(c.id+':'+(typeof activeTaskId!=='undefined'?activeTaskId:'')+':'+sheetId()):'m'; }
+  function arm(c){ if(!c) return; var k=sess(c); if(c._pvxSess===k) return; c._pvxSess=k; SNAP.delete(c); c._pvxKey=null;
+    setTimeout(function(){ if(!c.isConnected||c._pvxSess!==k) return; SNAP.set(c,vals(c)); c._pvxKey=formKey(c);
+      var d=c._pvxKey&&draftGet(c._pvxKey);
+      if(d){ var n=0; Object.keys(d.v).forEach(function(id){ var f=document.getElementById(id); if(f&&c.contains(f)&&f.value!==d.v[id]){ f.value=d.v[id]; f.dispatchEvent(new Event('input',{bubbles:true})); f.dispatchEvent(new Event('change',{bubbles:true})); n++; } });
+        if(n){ try{ toast('Draft restored'); }catch(e){} } }
+      if(c._pvxL) return; c._pvxL=1;
+      var T=0; c.addEventListener('input',function(){ clearTimeout(T); T=setTimeout(function(){ if(!c._pvxKey) return; if(dirty(c)){ var a=SNAP.get(c), b=vals(c), o={}; Object.keys(b).forEach(function(k){ if(a[k]!==b[k]) o[k]=b[k]; }); draftPut(c._pvxKey,o); } else draftDrop(c._pvxKey); },400); },true);
+      c.addEventListener('change',function(){ c.dispatchEvent(new Event('input',{bubbles:true})); },true);
+    },600); }
+  /* saving clears the draft */
+  document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#tsModal [data-ok], #completionDrawer .btn.primary, #noteDrawer .btn.primary'); if(!b) return;
+    var c=b.closest('.tm-card')||b.closest('.drawer'); if(!c) return; var k=c._pvxKey;
+    setTimeout(function(){ var gone=c.closest('#tsModal')?!c.closest('#tsModal').classList.contains('show')||!c.isConnected:!c.classList.contains('open'); if(gone) draftDrop(k); },700); },true);
+  function wording(c){ if(c.id==='completionDrawer') return 'Discard what you typed?'; var h=($('h3',c)||{}).textContent||'';
+    if(/New treatment sheet/.test(h)) return 'Discard this new sheet?'; if(/estimate/i.test(h)) return 'Discard this estimate?'; if($('#rxDose,#flV,#crV',c)) return 'Discard this order?'; return 'Discard your changes?'; }
+  var justAsked=false;
+  function ask(c,closeFn){ justAsked=true; setTimeout(function(){ justAsked=false; },0); if($('.pvx-discard',c)){ $('.pvx-discard [data-keep]',c).focus(); return; }
+    var d=document.createElement('div'); d.className='pvx-discard'; d.setAttribute('role','alertdialog'); d.setAttribute('aria-label',wording(c));
+    d.innerHTML='<b>'+esc(wording(c))+'</b><button type="button" data-keep>Keep editing</button><button type="button" class="danger" data-discard>Discard</button>';
+    var foot=$('.tm-foot',c); if(foot) foot.parentNode.insertBefore(d,foot); else ($('#cd-body',c)||c).appendChild(d);
+    d.querySelector('[data-keep]').onclick=function(){ d.remove(); var f=fields(c)[0]; f&&f.focus(); };
+    d.querySelector('[data-discard]').onclick=function(){ draftDrop(c._pvxKey); SNAP.delete(c); d.remove(); closeFn(); };
+    try{ d.scrollIntoView({block:'nearest'}); }catch(e){} d.querySelector('[data-keep]').focus(); }
+  function closeModal_(){ var m=$('#tsModal'); m&&m.classList.remove('show'); }
+  function closeDrawer_(){ try{ closeDrawers(); }catch(e){ var d=$('#completionDrawer'); d&&d.classList.remove('open'); } }
+  function guard(e){ var c=openC(); if(!c||c.id==='noteDrawer'||!dirty(c)) return false;
+    e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); ask(c, c.id==='completionDrawer'?closeDrawer_:closeModal_); return true; }
+  var lastEsc=-1;
+  window.addEventListener('keydown',function(e){ if(e.key!=='Escape') return; if(!e.isTrusted||e.timeStamp===lastEsc){ if(openC()&&$('.pvx-discard',openC())){ e.preventDefault(); e.stopImmediatePropagation(); } return; } lastEsc=e.timeStamp; var c=openC(); if(!c) return;
+    var d=$('.pvx-discard',c); if(d&&justAsked){ e.preventDefault(); e.stopImmediatePropagation(); return; } if(d){ e.preventDefault(); e.stopImmediatePropagation(); d.remove(); var f=fields(c)[0]; f&&f.focus(); return; }
+    guard(e); },true);
+  document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) return;
+    var hit=t.closest('#tsModal .tm-scrim, #tsModal [data-x], #completionDrawer .drawer-head .close, #scrim, .scrim.show, .scrim.open');
+    if(!hit) return; if(hit.matches('#scrim, .scrim.show, .scrim.open')&&!$('#completionDrawer.open')) return;
+    guard(e); },true);
+  /* 6. Treatment's own "say them all" microphone stops when the page is hidden; what was heard is applied */
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){ var m=$('#btMic.on'); if(m&&window.tsBtMic) try{ tsBtMic(); }catch(e){} } });
+  /* sign-out clears drafts (the sign-in card appears) */
+  var w0=window.pvxSignInWire; window.pvxSignInWire=function(root){ pvxDraftsClear(); return w0&&w0(root); };
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ $$('.drawer').forEach(function(d){ if(!d.classList.contains('open')){ d._pvxSess=null; var x=$('.pvx-discard',d); x&&x.remove(); } }); var c=openC(); if(c) arm(c); stgSound(); amSound(); stgBack(); }catch(e){} },60); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<script id="pvx-n237-ts">
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  var XS='<svg class="pvx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var MAC=/Mac|iPhone|iPad|iPod/.test(navigator.platform||navigator.userAgent);
+  function esc(x){ return String(x==null?'':x).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function fold(x){ return (window.tsFold||function(v){ return String(v).toLowerCase(); })(String(x||'')); }
+  function F(){ return window.__tsFind; }
+
+  /* ---------- printing ---------- */
+  var SHEET_TABS={sheet:1,vitals:1,timeline:1,charges:1,notes:1,anes:1,anesthesia:1};
+  function kind(){ var t=(typeof currentCTab!=='undefined')?currentCTab:''; var f=F(); var cur=f&&f.cur();
+    return cur&&SHEET_TABS[t]?'sheet':(cur&&t!=='dash'&&t!=='tasks'?'sheet':'board'); }
+  window.tsPrintSheet=function(){ if(window.__tsPrintLive&&!__tsPrintLive('sheet')) try{ toast('Open a sheet to print it'); }catch(e){} };
+  window.tsPrintBoard=function(){ window.__tsPrintLive&&__tsPrintLive('board'); };
+  window.tsPrintItem=function(){ var ok=window.tsPrintReady&&tsPrintReady(), key=matchMedia('(hover:hover)').matches?(MAC?' · ⌘P':' · Ctrl+P'):'';
+    return '<div class="ts-cm-sep" role="separator"></div><button type="button" role="menuitem" data-c="print"'+(ok?'':' aria-disabled="true" disabled')+'><b>Print…</b><small>'+(ok?'This sheet, today'+key:'Available once the sheet has loaded')+'</small></button>'; };
+  /* ⌘P stays the browser's: when printing starts, a paper version of what's open is put in place */
+  window.addEventListener('beforeprint',function(){ if(document.documentElement.classList.contains('dt-printing')||!window.__tsPrintLive) return;
+    var k=kind(); if(k==='sheet'&&!(window.tsPrintReady&&tsPrintReady())) k='board'; try{ __tsPrintLive(k,true); }catch(e){ console.warn('[print]',e); } });
+
+  /* ---------- the finder ---------- */
+  var recent=[], lastCur=null, rows=[], idx=0, shown=false;
+  function trackRecent(){ var f=F(); if(!f) return; var c=f.cur(); if(c&&c!==lastCur){ lastCur=c; recent=recent.filter(function(x){ return x!==c; }); recent.unshift(c); recent.length=Math.min(recent.length,5); } if(!c) lastCur=null; }
+  function sheetById(id){ return (F().all()||[]).filter(function(e){ return e._id===id; })[0]; }
+  function nm(e){ var t=e.patient||{}; return ((t.name||'')+' '+(t.last||'')).trim()||'Unnamed'; }
+  function sub(e){ var t=e.patient||{}, b=F().bo(e); return [/OP/.test(b)?'OP':'IP',t.location,t.reason||t.problem].filter(Boolean).join(' · '); }
+  function med(e){ var t=e.patient||{}; try{ return window.pvxMed?pvxMed(t.name,t.species,{code:1}):''; }catch(x){ return ''; } }
+  function norm(x){ return String(x||'').toLowerCase().replace(/^dr\.?\s+/,'').replace(/\s+/g,' ').trim(); }
+  function mine(){ var me=F().me()||{}, n=norm(me.name); if(!n) return [];
+    return (F().all()||[]).filter(function(e){ var t=e.patient||{}; return norm(t.doctor)===n||norm(t.tech)===n; }); }
+  function oLine(o){ var bits=[]; if(o.dose!=null&&o.dose!=='') bits.push(o.dose+(o.unit?' '+o.unit:'')); else if(o.unit&&o.type!=='obs') bits.push(o.unit);
+    if(o.route) bits.push(o.route); if(o.rate) bits.push(o.rate); if(o.freq) bits.push(o.freq); return bits.join(' '); }
+  function orderHits(q){ var w=fold(q).split(/\s+/).filter(Boolean), out=[]; if(!w.length) return out;
+    (F().all()||[]).forEach(function(e){ var os=e.orders||{}; Object.keys(os).forEach(function(k){ var o=os[k]; if(!o||o.dc||o.draft||!o.name) return;
+      var h=fold(o.name); if(w.every(function(x){ return h.indexOf(x)>-1; })) out.push({s:e,o:o}); }); });
+    out.sort(function(a,b){ var x=fold(a.o.name).indexOf(w[0])===0?0:1, y=fold(b.o.name).indexOf(w[0])===0?0:1; return x-y||nm(a.s).localeCompare(nm(b.s)); });
+    return out; }
+  var OIC='<span class="ts-fo-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7Z"/><path d="m8.5 8.5 7 7"/></svg></span>';
+  function pRow(e,i){ var cur=F().cur(); return '<button type="button" class="mi'+(i===idx?' cur':'')+(e._id===cur?' open':'')+'" role="option" id="tsFindO'+i+'" aria-selected="'+(i===idx)+'" data-open="'+esc(e._id)+'">'+med(e)+'<span class="tx"><b>'+esc(nm(e))+'</b><small>'+esc(sub(e))+'</small></span></button>'; }
+  function oRow(h,i){ return '<button type="button" class="mi ord'+(i===idx?' cur':'')+'" role="option" id="tsFindO'+i+'" aria-selected="'+(i===idx)+'" data-open="'+esc(h.s._id)+'" data-order="'+esc(h.o.id)+'">'+OIC+'<span class="tx"><b>'+esc(h.o.name)+'</b><small>'+esc(nm(h.s)+' · '+oLine(h.o))+'</small></span></button>'; }
+  function draw(q){ var f=F(), el=f.el(), html='', i=0; rows=[];
+    if(!q){ var my=mine().slice(0,5), seen={}; my.forEach(function(e){ seen[e._id]=1; });
+      var rc=recent.map(sheetById).filter(function(e){ return e&&!seen[e._id]; }).slice(0,5);
+      if(!my.length&&!rc.length) return false;
+      if(my.length){ html+='<div class="mh">My patients</div>'+my.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join(''); }
+      if(rc.length){ html+='<div class="mh">Recently opened</div>'+rc.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join(''); }
+    } else {
+      var pl=f.list(q), oh=orderHits(q), ids={}; oh.forEach(function(h){ ids[h.s._id]=1; });
+      /* a patient found only by an order shows under Orders, not twice */
+      var pOnly=pl.filter(function(e){ var w=fold(q).split(/\s+/).filter(Boolean); var t=e.patient||{}; var hay=fold([t.name,t.last,t.owner,t.reason,t.location,t.doctor,t.breed,t.species,t.problem,(t.problems||[]).map(function(x){ return x&&(x.name||x.text||x); }).join(' ')].filter(Boolean).join(' '));
+        return w.every(function(x){ return hay.indexOf(x)>-1; })||!ids[e._id]; }).slice(0,6);
+      if(pOnly.length) html+='<div class="mh">Patients</div>'+pOnly.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join('');
+      else if(!oh.length) html+='<div class="mh">Patients and orders</div><div class="me">No patient or order matches “'+esc(q)+'”.</div>';
+      if(oh.length){ html+='<div class="mh">Orders</div>'+oh.slice(0,6).map(function(h){ rows.push({id:h.s._id,order:h.o.id}); return oRow(h,i++); }).join(''); }
+    }
+    if(idx>=rows.length) idx=Math.max(0,rows.length-1);
+    el.innerHTML=html; f.place(); el.classList.add('show'); shown=true; aria(); return true; }
+  var lastQ=null;
+  window.pvxFindShow=function(q){ var f=F(); if(!f) return false; if(f.cmd()) return false; var box=$('#globalSearch'); if(q!==lastQ){ idx=0; lastQ=q; }
+    if(!q){ if(!box||document.activeElement!==box){ f.hide(); return true; } if(!draw('')){ f.hide(); } return true; }
+    if(f.board()) { shown=false; return false; }
+    draw(q); return true; };
+  window.pvxFindKey=function(e,q){ var f=F(); if(!f||!shown||!f.el().classList.contains('show')) return false; if(q&&f.board()) return false;
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){ if(!rows.length) return true; e.preventDefault(); idx=(idx+(e.key==='ArrowDown'?1:rows.length-1))%rows.length; draw(q); return true; }
+    if(e.key==='Enter'){ var r=rows[idx]; if(!r) return false; e.preventDefault(); go(r); return true; }
+    return false; };
+  function go(r){ var f=F(); if(r.order){ openAtOrder(r.id,r.order); } else f.open(r.id); }
+  function openAtOrder(id,oid){ var f=F(); f.open(id); var tries=0;
+    (function look(){ tries++; try{ if(typeof selectCTab==='function'&&currentCTab!=='sheet') selectCTab('sheet'); }catch(e){}
+      var row=$('#ctab-sheet .grow[data-o="'+oid+'"]');
+      if(row&&f.cur()===id){ try{ row.scrollIntoView({block:'center'}); }catch(e){} row.classList.remove('ts-order-hl'); void row.offsetWidth; row.classList.add('ts-order-hl'); setTimeout(function(){ row.classList.remove('ts-order-hl'); },1800); return; }
+      if(tries<30) setTimeout(look,100); })(); }
+  document.addEventListener('mousedown',function(e){ var t=e.target.closest&&e.target.closest('#tsFind [data-order]'); if(!t) return; e.preventDefault(); e.stopPropagation(); openAtOrder(t.getAttribute('data-open'),t.getAttribute('data-order')); },true);
+  function aria(){ var i=$('#globalSearch'), el=$('#tsFind'); if(!i) return; var open=!!(el&&el.classList.contains('show'));
+    i.setAttribute('aria-expanded',open?'true':'false'); var c=el&&$('.mi.cur',el); if(open&&c&&c.id) i.setAttribute('aria-activedescendant',c.id); else i.removeAttribute('aria-activedescendant'); }
+  function wireSearch(){ var i=$('#globalSearch'); if(!i||i._pvx237) return; i._pvx237=1;
+    try{ i.type='search'; }catch(e){} i.setAttribute('role','combobox'); i.setAttribute('aria-autocomplete','list'); i.setAttribute('aria-controls','tsFind'); i.setAttribute('aria-expanded','false');
+    i.setAttribute('enterkeyhint','search'); i.setAttribute('aria-keyshortcuts','Meta+K Control+K'); i.setAttribute('spellcheck','false');
+    var bar=i.closest('.search-bar'), s=i.closest('.search'), act=bar&&$('.actions',bar);
+    if(bar&&!$('.ts-sclear',bar)){ var c=document.createElement('button'); c.type='button'; c.className='ts-sclear'; c.setAttribute('aria-label','Clear search'); c.innerHTML=XS;
+      c.addEventListener('mousedown',function(e){ e.preventDefault(); }); c.addEventListener('click',function(){ try{ tsFindClear(true); }catch(e){ i.value=''; } i.dispatchEvent(new Event('input',{bubbles:true})); i.focus(); sync(); });
+      act?bar.insertBefore(c,act):bar.appendChild(c);
+      var k=document.createElement('kbd'); k.className='ts-skey'; k.setAttribute('aria-hidden','true'); k.textContent=MAC?'⌘K':'Ctrl K'; act?bar.insertBefore(k,act):bar.appendChild(k); }
+    function sync(){ s&&s.classList.toggle('has-q',!!i.value); }
+    /* the open search lies over the chip and the gear: as wide as the space after the tabs allows */
+    function fit(){ if(!bar||!s) return; bar.style.width=''; if(!matchMedia('(max-width:1680px)').matches) return; var sw=$('.subnav .switcher'); if(!sw) return;
+      var right=s.getBoundingClientRect().right, room=right-sw.getBoundingClientRect().right-12; bar.style.setProperty('width',Math.max(220,Math.min(340,room))+'px','important'); }
+    i.addEventListener('focus',fit); addEventListener('resize',function(){ if(document.activeElement===i) fit(); });
+    i.addEventListener('input',sync); i.addEventListener('blur',function(){ setTimeout(function(){ sync(); if(!i.value&&bar) bar.style.width=''; },0); }); sync(); }
+  window.addEventListener('keydown',function(e){ if(!(e.metaKey||e.ctrlKey)||e.altKey||e.shiftKey||e.isComposing) return; if((e.key||'').toLowerCase()!=='k') return;
+    var i=$('#globalSearch'); if(!i) return; e.preventDefault(); var s=i.closest('.search'), b=s&&$('.ts-search-open',s);
+    if(b&&getComputedStyle(b).display!=='none'&&b.getAttribute('aria-hidden')==='false') b.click(); else i.focus(); try{ i.select(); }catch(x){} },true);
+
+  /* ---------- Settings: two groups ---------- */
+  var HERE={'Downtime copy':1,'Alert sound':1}, ORDER=['Downtime copy','Alert sound','Kura stock link','Intern drafts','Spanish wording','Code list'];
+  function stgGroup(){ var L=$('#tsOrderSheet .op-card.stg .stg-list'); if(!L) return; var rs=$$('.stg-row',L).filter(function(r){ return r.parentNode===L; }); if(!rs.length) return;
+    var g1=$('.stg-grp[data-g="here"]',L), g2=$('.stg-grp[data-g="all"]',L);
+    if(!g1){ g1=document.createElement('div'); g1.className='stg-grp'; g1.setAttribute('data-g','here'); g1.setAttribute('role','group'); g1.setAttribute('aria-labelledby','stgGh'); g1.innerHTML='<h4 id="stgGh">On this computer</h4>'; L.insertBefore(g1,L.firstChild); }
+    if(!g2){ g2=document.createElement('div'); g2.className='stg-grp'; g2.setAttribute('data-g','all'); g2.setAttribute('role','group'); g2.setAttribute('aria-labelledby','stgGa'); g2.innerHTML='<h4 id="stgGa">For everyone <small>Changes Treatment for the whole hospital</small></h4>'; L.insertBefore(g2,g1.nextSibling); }
+    rs.sort(function(a,b){ var x=ORDER.indexOf(($('b',a)||{}).textContent), y=ORDER.indexOf(($('b',b)||{}).textContent); return (x<0?99:x)-(y<0?99:y); })
+      .forEach(function(r){ (HERE[($('b',r)||{}).textContent]?g1:g2).appendChild(r); });
+    [g1,g2].forEach(function(g){ g.hidden=!$('.stg-row',g); }); }
+  /* the switch rows: the whole row's switch is the control */
+  document.addEventListener('click',function(e){ var sw=e.target.closest&&e.target.closest('#pvxStgSound .v-sw, #pvxAmSound .v-sw'); if(!sw) return; e.stopPropagation();
+    pvxAlertSound(!pvxAlertSound()); var on=pvxAlertSound(); $$('#pvxStgSound .v-sw, #pvxAmSound .v-sw').forEach(function(x){ x.setAttribute('aria-checked',on?'true':'false'); });
+    try{ toast(on?'Alert sound on':'Alert sound off'); }catch(x){} },true);
+
+  /* ---------- the Status board: Print… and Reports ---------- */
+  var PIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>';
+  var RIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
+  var CHEV='<svg class="ts-rep-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function reports(){ var r=[]; try{ if(window.tsLevelsOwner&&tsLevelsOwner()) r.push(['levels','Lowered levels','Hospitalization billed below the level the sheet worked out, by who lowered it. Only you see this.',function(){ tsLevelsReport(); }]); }catch(e){}
+    if(window.tsOnTime) r.push(['ontime','On-time report','Treatments on time, late and missed — by shift, ward and hour; antibiotics from order to first dose; how stays ended. Never by person.',function(){ tsOnTime(1); }]);
+    if(window.tsUsageReport) r.push(['usage','Usage','Which parts of the app were used in the last 7 days, and presses per treatment. Never by person.',function(){ tsUsageReport(); }]);
+    var admin=false; try{ admin=!!(window.tsChAdmin&&tsChAdmin()); }catch(e){} return admin?r:r.filter(function(x){ return x[0]==='levels'; }); }
+  function closeMenu(){ var m=$('#tsReportsMenu'); if(m){ m.remove(); var b=$('#tsReportsBtn'); b&&b.setAttribute('aria-expanded','false'); } }
+  function openMenu(btn){ if($('#tsReportsMenu')){ closeMenu(); return; } var r=reports(); if(!r.length) return;
+    var m=document.createElement('div'); m.id='tsReportsMenu'; m.className='ts-copymenu'; m.setAttribute('role','menu'); m.setAttribute('aria-label','Reports');
+    m.innerHTML=r.map(function(x){ return '<button type="button" role="menuitem" data-rep="'+x[0]+'"><b>'+esc(x[1])+'</b><small>'+esc(x[2])+'</small></button>'; }).join('');
+    document.body.appendChild(m); var b=btn.getBoundingClientRect(); m.style.position='fixed'; m.style.top=(b.bottom+6)+'px'; m.style.left=Math.max(8,Math.min(b.right-m.offsetWidth,innerWidth-m.offsetWidth-8))+'px'; m.style.zIndex=9000;
+    btn.setAttribute('aria-expanded','true');
+    m.addEventListener('click',function(e){ var t=e.target.closest('[data-rep]'); if(!t) return; var x=r.filter(function(y){ return y[0]===t.getAttribute('data-rep'); })[0]; closeMenu(); x&&x[3](); });
+    m.addEventListener('keydown',function(e){ var its=$$('[role=menuitem]',m), k=its.indexOf(document.activeElement);
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); its[(k+(e.key==='ArrowDown'?1:its.length-1))%its.length].focus(); }
+      else if(e.key==='Escape'){ e.preventDefault(); closeMenu(); btn.focus(); } });
+    setTimeout(function(){ document.addEventListener('mousedown',function h(e){ if(!m.contains(e.target)&&!btn.contains(e.target)){ closeMenu(); document.removeEventListener('mousedown',h); } }); },0);
+    var f=$('[role=menuitem]',m); f&&f.focus(); }
+  function boardBtns(){ var tv=$('#ctab-dash .sb-tvb'); if(!tv) return; var bar=tv.parentNode;
+    if(!$('#tsBoardPrint',bar)){ var p=document.createElement('button'); p.type='button'; p.id='tsBoardPrint'; p.className='sb-tvb ts-sbprint'; p.setAttribute('aria-label','Print the board…'); p.setAttribute('data-tip','Print the board…'+(matchMedia('(hover:hover)').matches?(MAC?' ⌘P':' Ctrl+P'):'')); p.innerHTML=PIC;
+      p.onclick=function(e){ e.stopPropagation(); tsPrintBoard(); }; bar.insertBefore(p,tv); }
+    var has=reports().length, rb=$('#tsReportsBtn',bar);
+    if(has&&!rb){ rb=document.createElement('button'); rb.type='button'; rb.id='tsReportsBtn'; rb.className='sb-tvb'; rb.setAttribute('aria-haspopup','menu'); rb.setAttribute('aria-expanded','false'); rb.innerHTML=RIC+'Reports'+CHEV;
+      rb.onclick=function(e){ e.stopPropagation(); openMenu(rb); }; bar.insertBefore(rb,$('#tsBoardPrint',bar)); }
+    else if(!has&&rb) rb.remove(); }
+
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ trackRecent(); wireSearch(); aria(); stgGroup(); boardBtns(); }catch(e){ console.warn('[n237]',e); } },60); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); tick(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>

@@ -7521,7 +7521,7 @@ var existing=document.getElementById('sbLogin');
 if(existing){ if(msg){ var e0=existing.querySelector('#sbErr'); if(e0) e0.textContent=msg; } return; }
 var ov=document.createElement('div'); ov.id='sbLogin';
 ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label','Sign in to Pravix');
-ov.innerHTML=`<div class="login-wrap"><form class="card" id="sbLoginForm" novalidate><div class="brand"><img class="pravix-logo-img logo-lite" src="assets/img/pravix-logo-lite.png" alt="Pravix"><img class="pravix-logo-img logo-drk" src="assets/img/pravix-logo-drk.png" alt="Pravix"><div class="product">Shoreline Patient Flow</div><div class="secure-line"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>Secure sign in</div></div><div class="heading"><h1>${Backend.mode==='lobby'?'Lobby screen':'Welcome back'}</h1><p id="sbLead">${Backend.mode==='lobby'?'Sign in with the lobby screen account to show the waiting-room display.':'Sign in with your own account.'}</p></div><div class="form-stack"><label class="field-label" for="sbEmail">Email</label><div class="field"><div class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="3"></rect><path d="m5.5 8 6.5 5 6.5-5"></path></svg></div><input id="sbEmail" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="name@vca.com" /></div><label class="field-label" for="sbPass" style="margin-top:10px">Password</label><div class="field"><div class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></div><input id="sbPass" type="password" autocomplete="current-password" placeholder="Enter password" /><button class="reveal" id="sbReveal" type="button" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></div><div class="caps-hint" id="sbCaps">Caps Lock is on</div><div class="error" id="sbErr"></div><button type="button" id="sbForgot" style="display:block;margin:2px auto 12px;background:none;border:none;color:var(--accent);font:inherit;font-size:0.75rem;font-weight:600;cursor:pointer;">Forgot password?</button><button class="continue is-inactive" id="sbBtn" type="submit">Sign In</button></div></form><div class="page-foot"><b>VCA Shoreline</b> · Protected Pravix Workspace</div></div>`;
+ov.innerHTML=`<div class="login-wrap"><form class="card" id="sbLoginForm" novalidate><div class="brand"><img class="pravix-logo-img logo-lite" src="assets/img/pravix-logo-lite.png" alt="Pravix"><img class="pravix-logo-img logo-drk" src="assets/img/pravix-logo-drk.png" alt="Pravix"><div class="product">Shoreline Patient Flow</div><div class="secure-line"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>Secure sign in</div></div><div class="heading"><h1>${Backend.mode==='lobby'?'Lobby screen':'Sign in to Pravix'}</h1><p id="sbLead">${Backend.mode==='lobby'?'Sign in with the lobby screen account to show the waiting-room display.':'Sign in with your own account.'}</p></div><div class="form-stack"><label class="field-label" for="sbEmail">Email</label><div class="field"><div class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="3"></rect><path d="m5.5 8 6.5 5 6.5-5"></path></svg></div><input id="sbEmail" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="name@vca.com" /></div><label class="field-label" for="sbPass" style="margin-top:10px">Password</label><div class="field"><div class="lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="3"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg></div><input id="sbPass" type="password" autocomplete="current-password" placeholder="Enter password" /><button class="reveal" id="sbReveal" type="button" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button></div><div class="caps-hint" id="sbCaps">Caps Lock is on</div><div class="error" id="sbErr"></div><button type="button" id="sbForgot" style="display:block;margin:2px auto 12px;background:none;border:none;color:var(--accent);font:inherit;font-size:0.75rem;font-weight:600;cursor:pointer;">Forgot password?</button><button class="continue is-inactive" id="sbBtn" type="submit">Sign in</button></div></form><div class="page-foot"><b>VCA Shoreline</b> · Protected Pravix Workspace</div></div>`;
 document.body.appendChild(ov);
 document.body.classList.add('sb-locked');
 document.querySelectorAll('.app, #mesh').forEach(function(el){ try{ el.setAttribute('inert',''); }catch(e){} });
@@ -7536,7 +7536,7 @@ reveal.addEventListener('click', function(){ var showing=password.type==='text';
 var forgot=ov.querySelector('#sbForgot');
 if(forgot){ forgot.addEventListener('click', async function(){
 var em=email.value.trim();
-if(!em){ error.textContent='Enter your email above, then tap Forgot password.'; shake(emailField); email.focus(); return; }
+if(!em){ error.textContent='Enter your email above, then choose Forgot password.'; shake(emailField); email.focus(); return; }
 forgot.disabled=true;
 try{ await AUTH.sendPasswordResetEmail(em); error.textContent='Reset link sent to '+em+'. Check your inbox and spam.'; }
 catch(e2){ error.textContent='Could not send a reset email — check the address and try again.'; }
@@ -7555,7 +7555,7 @@ form.addEventListener('submit', async function(e){
 e.preventDefault();
 if(!email.value.trim()){ error.textContent='Enter your email address.'; shake(emailField); email.focus(); return; }
 if(!password.value.trim()){ error.textContent='Enter your password.'; shake(passwordField); password.focus(); return; }
-error.textContent=''; btn.disabled=true; btn.classList.remove('signed'); btn.innerHTML='Signing In <span class="signin-progress" aria-hidden="true"></span>';
+error.textContent=''; btn.disabled=true; btn.classList.remove('signed'); btn.innerHTML='Signing in <span class="signin-progress" aria-hidden="true"></span>';
 try{
 
 
@@ -7564,7 +7564,7 @@ await AUTH.signInWithEmailAndPassword(email.value.trim(), password.value);
 }catch(err){
 var wrong = err && (err.code==='auth/wrong-password'||err.code==='auth/invalid-credential'||err.code==='auth/user-not-found'||err.code==='auth/invalid-login-credentials'||err.code==='auth/invalid-email');
 error.textContent = wrong ?'Incorrect email or password. Please try again.':'Connection problem. Try again.';
-shake(passwordField); btn.disabled=false; btn.classList.remove('signed'); btn.textContent='Sign In';
+shake(passwordField); btn.disabled=false; btn.classList.remove('signed'); btn.textContent='Sign in';
 try{ password.select(); }catch(e2){} updateButtonState();
 }
 });
@@ -7574,7 +7574,7 @@ setTimeout(function(){ try{ email.focus(); }catch(e){} }, 250);
 
 function sbFinishLogin(ov){
 try{ var btn=ov.querySelector('#sbBtn'), wrap=ov.querySelector('.login-wrap');
-if(btn){ btn.disabled=true; btn.classList.add('signed'); btn.innerHTML='Signed In <span class="checkmark" aria-hidden="true"></span>'; }
+if(btn){ btn.disabled=true; btn.classList.add('signed'); btn.innerHTML='Signed in <span class="checkmark" aria-hidden="true"></span>'; }
 if(wrap) wrap.classList.add('success'); }catch(e){}
 setTimeout(function(){ try{ ov.remove(); }catch(e){}
 document.body.classList.remove('sb-locked');
