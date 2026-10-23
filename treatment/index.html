@@ -1193,6 +1193,73 @@ body.dark .subnav .search .ts-sclear{background:rgba(255,255,255,.14)}
 #tsReportsMenu{width:min(360px,calc(100vw - 16px))}
 .sb-tvb .ts-rep-chev{width:11px;height:11px;margin-left:1px;opacity:.7}
 </style>
+<style id="pvx-n238-ts">
+/* n238: the alert range label and legend, the choice lane, notes keep their lines, note boxes grow, the live announcer */
+.vx-lane{fill:var(--vx-grid)}
+.vx-now small.vx-alr{color:var(--ink-400);opacity:.85}
+.vx-key{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;color:var(--ink-400);white-space:nowrap}
+.vx-key i{width:18px;height:10px;border-radius:3px;background:var(--vx-band);box-shadow:inset 0 0 0 1px rgba(76,195,138,.35)}
+.cnote .nbody{white-space:pre-line}
+#note-body{min-height:132px}
+#note-body,#cd-notes,#hoNotes,#hoHow,#ccAnyWhy{overflow-y:auto}
+.ts-hl-row{animation:tsOrdHl 1.6s ease-out 1}
+@media (prefers-reduced-motion:reduce){.ts-hl-row{animation:none;outline:2px solid var(--accent-ink,#1F8FA8);outline-offset:-2px}}
+.pvx-sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+</style>
+<style id="pvx-n239-ts">
+/* n239: one box for Vitals; a lighter order box (only warnings keep a tint) */
+#tsVitalsCard .wc{background:none!important;border-radius:0!important;margin:2px 15px 0!important;padding:4px 1px 12px!important;border-bottom:1px solid var(--glass-hairline,rgba(120,120,128,.18))}
+#tsVitalsCard .vit-grid{gap:0 18px!important;padding-top:4px!important}
+#tsVitalsCard .vit-grid .vit{background:none!important;border-radius:0!important;padding:8px 1px!important}
+#tsVitalsCard .vit-grid .vit:nth-child(n+3){border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18))}
+#tsModal .rx-refs{gap:0!important;padding:0!important;border:1px solid var(--border,rgba(0,0,0,.1));border-radius:14px;background:var(--surface-0,#fff)}
+body.dark #tsModal .rx-refs{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.03)}
+#tsModal .rx-ref{border:0!important;border-radius:0!important;background:none!important;padding:10px 12px 10px 38px!important}
+#tsModal .rx-ref:not(.rx-house){box-shadow:none!important}
+#tsModal .rx-ref+.rx-ref{border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18))!important}
+#tsModal .rx-ref:first-child{border-radius:14px 14px 0 0!important}
+#tsModal .rx-ref:last-child{border-radius:0 0 14px 14px!important}
+#tsModal .rx-ref:only-child{border-radius:14px!important}
+#tsModal .rx-ref:hover{background:rgba(120,120,128,.07)!important}
+#tsModal .rx-ref::before{content:"";position:absolute;left:13px;top:13px;width:14px;height:14px}
+#tsModal .rx-ref.on::before{background:var(--accent-ink,#1F8FA8);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+body.dark #tsModal .rx-ref.on::before{background:#38BDD2}
+#tsModal .rx-ref.on b{color:var(--accent-ink,#1F8FA8)}
+body.dark #tsModal .rx-ref.on b{color:#7FD8E6}
+body.dark #tsModal .rx-ref span{color:#B4C2D3}
+#tsModal .rx-ref:focus-visible{outline:2px solid var(--accent-ink,#1F8FA8);outline-offset:-2px}
+#tsModal .rx-other{margin:0!important;border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18))}
+#tsModal .rx-refs>.rx-other:first-child{border-top:0}
+#tsModal .rx-other summary{padding:10px 12px!important}
+#tsModal .rx-other .rx-ref{margin-top:0!important;width:100%;box-sizing:border-box;border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18))!important;border-radius:0!important}
+#tsModal .of-more{background:none!important;border-radius:0!important;padding-left:2px!important;padding-right:2px!important;border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18));border-bottom:1px solid var(--glass-hairline,rgba(120,120,128,.18))}
+#tsModal .oc-price.none{background:none!important;padding-left:2px!important;padding-right:2px!important;border-radius:0!important}
+#tsModal .ms-bar:not(.warn):not(.crit){background:none!important;padding-left:2px!important;padding-right:2px!important}
+#tsModal .ms-line:not(.warn):not(.crit){background:none!important;padding-left:2px!important;padding-right:2px!important}
+</style>
+<style id="pvx-n240-ts">
+/* n240: the section's disclosure chevron leads, like Charges' days and Finder */
+.gband .gsection .sec-chev{order:-1;margin-left:-3px;margin-right:-1px}
+/* n240: label colours, every one at least 4.5:1 (Increase Contrast keeps its own, stronger values) */
+@media not (prefers-contrast:more){
+  body.dark{--accent-ink:#38BDD2}
+  body:not(.dark) .vx-alr{color:#4B5468}
+}
+/* fixed colours that Increase Contrast doesn't strengthen: darker in both */
+body:not(.dark) .tsh-age.old{color:#9A5B00}
+body:not(.dark) .tsh .tsh-age{opacity:1}
+body:not(.dark) .ts-dup .td-h{color:#9A5000}
+body:not(.dark) .wl-dnr{color:#B3141A}
+body:not(.dark) .wl-more{color:#0062CC}
+body:not(.dark) .ms-bar.ok .ms-say b{color:#0F7A55}
+body.dark .wl-sec.due h3 span{color:#7FD8E6}
+/* white text sits on the deeper teal and red, never on the bright ones */
+body.dark .est-marklabel{background:#38BDD2!important;color:#03242C!important}
+body.dark .al-type button{background:#38BDD2;color:#03242C}
+body.dark #tsModal .ts-btn.primary.danger{background:#D12E26;border-color:#D12E26}
+#tsOrderSheet .op-btn.danger.solid{background:#D12E26}
+#tsOrderSheet .op-btn.danger.solid:hover{background:#B8241D}
+</style>
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie; until someone chooses, the system's light or dark (n230). -->
@@ -1319,7 +1386,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script defer src="store.js?v=d3e39ccaf3"></script>
+<script defer src="store.js?v=d3ec412903"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -2254,6 +2321,149 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ trackRecent(); wireSearch(); aria(); stgGroup(); boardBtns(); }catch(e){ console.warn('[n237]',e); } },60); }
   function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); tick(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<script id="pvx-n238-ts">
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  var MAC=/Mac|iPhone|iPad|iPod/.test(navigator.platform||navigator.userAgent);
+  function plain(h){ var d=document.createElement('div'); d.innerHTML=String(h||''); return (d.textContent||'').trim(); }
+  function F(){ return window.__tsFind; }
+  function cur(){ var f=F(); return f?f.cur():null; }
+  function sheetName(id){ var f=F(); var s=f&&(f.all()||[]).filter(function(e){ return e._id===id; })[0]; var t=s&&s.patient||{}; return ((t.name||'')+' '+(t.last||'')).trim()||'the patient'; }
+
+  /* ---------- one history: the Undo buttons, ⌘Z and ⇧⌘Z ---------- */
+  var ST=[], RD=[];
+  function quietly(fn){ var n=0, ot=window.toast; window.toast=function(){ n++; return ot.apply(this,arguments); }; var r; try{ r=fn(); }finally{ window.toast=ot; } return {n:n,r:r}; }
+  window.pvxTsHist={
+    add:function(label,undo,redo,sheet){ var e={label:label,undo:undo,redo:redo||null,sheet:sheet||null}; ST.push(e); if(ST.length>50) ST.shift(); RD.length=0; return e; },
+    run:function(e,fromKey){ var i=ST.indexOf(e); if(i<0) return false; var q=quietly(function(){ return e.undo(); });
+      if(q.r===false) return false;   /* the step said it couldn't be undone (someone changed it since) */
+      ST.splice(ST.indexOf(e),1); e.kill&&e.kill(); if(e.redo) RD.push(e);
+      if(fromKey&&!q.n) window.toast('Undone — '+plain(e.label)+(e.redo?(MAC?' · ⇧⌘Z to redo':' · Ctrl+Y to redo'):''));
+      return true; },
+    redo:function(e){ var i=RD.indexOf(e); if(i<0) return false; RD.splice(i,1); var q=quietly(function(){ return e.redo(); }); ST.push(e); if(!q.n) window.toast('Redone — '+plain(e.label)); return true; },
+    size:function(){ return [ST.length,RD.length]; }
+  };
+  function busy(){ return !!$('#tsModal.show, #tsOrderSheet.show, .drawer.open, #tsCopyMenu, #tsReportsMenu, #tsAlertMenu, #tsFind.show, #tsDowntime.show, #tsTake.show, .ts-menu.show'); }
+  function typing(t){ return t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable); }
+  function needSheet(e,verb){ if(!e.sheet||e.sheet===cur()) return false; var nm=sheetName(e.sheet);
+    try{ tsOpenSheet(e.sheet,true); }catch(x){} window.toast('Opened '+nm+' — press '+(verb==='redo'?(MAC?'⇧⌘Z':'Ctrl+Y'):(MAC?'⌘Z':'Ctrl+Z'))+' again to '+verb+' “'+plain(e.label)+'”'); return true; }
+  window.addEventListener('keydown',function(ev){ if(ev.altKey||ev.isComposing) return; var k=(ev.key||'').toLowerCase(); var mod=MAC?ev.metaKey:ev.ctrlKey; if(!mod) return;
+    var isUndo=k==='z'&&!ev.shiftKey, isRedo=(k==='z'&&ev.shiftKey)||(!MAC&&k==='y'); if(!isUndo&&!isRedo) return;
+    if(typing(ev.target)||typing(document.activeElement)||busy()) return;   /* the field's own undo, or a dialog's */
+    ev.preventDefault();
+    if(isUndo){ var e=ST[ST.length-1]; if(!e){ window.toast('Nothing to undo'); return; } if(needSheet(e,'undo')) return; pvxTsHist.run(e,true); }
+    else { var r=RD[RD.length-1]; if(!r){ window.toast('Nothing to redo'); return; } if(needSheet(r,'redo')) return; pvxTsHist.redo(r); } },true);
+
+  /* show where a change landed: the order's row on the sheet or in Vitals */
+  window.pvxHlOrder=function(oid){ if(!oid) return; setTimeout(function(){
+      var row=$('#ctab-sheet .grow[data-o="'+oid+'"]')||(($('#vin-'+oid)||{}).closest&&$('#vin-'+oid).closest('.v-row'));
+      if(!row||!row.getBoundingClientRect().width) return; try{ row.scrollIntoView({block:'nearest'}); }catch(x){}
+      row.classList.remove('ts-hl-row'); void row.offsetWidth; row.classList.add('ts-hl-row'); setTimeout(function(){ row.classList.remove('ts-hl-row'); },1800); },80); };
+
+  /* ---------- someone else's reading, announced ---------- */
+  var live, alertR;
+  function regions(){ if(!live){ live=document.createElement('div'); live.className='pvx-sr'; live.id='pvxLiveRemote'; live.setAttribute('aria-live','polite'); live.setAttribute('aria-atomic','true'); document.body.appendChild(live);
+      alertR=document.createElement('div'); alertR.className='pvx-sr'; alertR.id='pvxLiveRemoteCrit'; alertR.setAttribute('role','alert'); document.body.appendChild(alertR); } }
+  function clock(min){ var h=Math.floor(min/60)%24, m=Math.round(min%60); return (h%12||12)+':'+(m<10?'0':'')+m+' '+(h<12?'AM':'PM'); }
+  var said={};
+  window.pvxRemoteMarks=function(oldM,newM,find,sev,me){ try{ regions(); var out=[], crit=[];
+    Object.keys(newM||{}).forEach(function(k){ var n=newM[k], o=oldM&&oldM[k]; if(!n||n.status!=='completed') return; if(o&&o.status===n.status&&String(o.value)===String(n.value)&&o.at===n.at) return;
+      if(me&&n.uid&&n.uid===me.uid) return; if(me&&!n.uid&&n.by&&n.by===me.initials&&o) return; var id=k+'|'+(n.at||n.value); if(said[id]) return; said[id]=1;
+      var ord=find(n.orderId)||{}; var nm=ord.name||'A treatment', u=ord.unit&&n.value!=null&&/\d/.test(String(n.value))?' '+ord.unit:'';
+      var txt=nm+(n.value!=null&&n.value!==''?' '+n.value+u:'')+', '+(ord.type==='med'?'given':'charted')+(n.by?' by '+n.by:'')+(n.min!=null?' at '+clock(n.min):'');
+      var s=ord.name&&n.value!=null?sev(ord,n.value):0; (s>=2?crit:out).push((s>=2?'Critical: ':s?'Abnormal: ':'')+txt); });
+    if(out.length){ live.textContent=''; setTimeout(function(){ live.textContent=out.join('. ')+'.'; },60); }
+    if(crit.length){ alertR.textContent=''; setTimeout(function(){ alertR.textContent=crit.join('. ')+'.'; },60); }
+  }catch(e){ console.warn('[n238 remote]',e); } };
+
+  /* ---------- the alert range ---------- */
+  function nf(x){ return (Math.round(x*10)/10).toString(); }
+  window.pvxBandShort=function(t){ if(!t||!t.num) return ''; var lo=t.lo, hi=t.hi, u=(t.o&&t.o.unit)||'';
+    if(lo==null&&hi==null) return ''; var r=lo!=null&&hi!=null?nf(lo)+'–'+nf(hi):lo!=null?'at least '+nf(lo):'up to '+nf(hi); return 'Alert range '+r+(u?' '+u:''); };
+  window.pvxBandTxt=function(t){ var s=pvxBandShort(t); return s?' Shaded: '+s.charAt(0).toLowerCase()+s.slice(1)+'.':''; };
+  function alertLines(){ $$('#ctab-vitals .v-chart[role=img]').forEach(function(c){ var m=/Shaded: alert range (.+)\.$/.exec(c.getAttribute('aria-label')||''); var row=c.closest('.v-row'), now=row&&$('.vx-now',row); if(!now) return;
+      var x=$('.vx-alr',now); if(!m){ x&&x.remove(); return; } var txt='Alert range '+m[1]; if(x&&x.textContent===txt) return; if(!x){ x=document.createElement('small'); x.className='vx-alr'; x.setAttribute('aria-hidden','true'); now.appendChild(x); } x.textContent=txt; }); }
+  function legend(){ var ax=$('#ctab-vitals .v-row.vx-ax .v-name'); if(!ax||$('.vx-key',ax)) return; if(!$('#ctab-vitals .vx-band')) return;
+    var k=document.createElement('span'); k.className='vx-key'; k.innerHTML='<i aria-hidden="true"></i>Shaded: alert range'; ax.appendChild(k); }
+
+  /* ---------- note boxes grow with the text ---------- */
+  var GROW='#note-body, #cd-notes, #hoNotes, #hoHow, #ccAnyWhy';
+  function grow(t){ if(!t||!t.isConnected||!t.offsetParent) return; var cs=getComputedStyle(t), lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.4,
+      pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom)+parseFloat(cs.borderTopWidth)+parseFloat(cs.borderBottomWidth);
+    var max=t.id==='note-body'?Math.max(160,Math.round(innerHeight*0.6)):Math.round(lh*8+pad);
+    if(!t._pvxMin) t._pvxMin=t.getBoundingClientRect().height||t.offsetHeight;
+    t.style.height='auto'; var want=Math.min(max,Math.max(t._pvxMin,t.scrollHeight+(cs.boxSizing==='border-box'?parseFloat(cs.borderTopWidth)+parseFloat(cs.borderBottomWidth):0))); t.style.height=want+'px'; }
+  document.addEventListener('input',function(e){ if(e.target&&e.target.matches&&e.target.matches(GROW)) grow(e.target); },true);
+  document.addEventListener('focusin',function(e){ if(e.target&&e.target.matches&&e.target.matches(GROW)) grow(e.target); },true);
+
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ legend(); alertLines(); $$(GROW).forEach(function(t){ if(t.offsetParent&&!t._pvxG){ t._pvxG=1; grow(t); } if(!t.offsetParent) t._pvxG=0; }); }catch(e){ console.warn('[n238]',e); } },80); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<script id="pvx-n239-ts">
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  /* ---------- Back and Forward: one history entry per patient and per section ---------- */
+  var SHEETISH={sheet:1,vitals:1,anes:1,anesthesia:1,timeline:1,charges:1,notes:1};
+  function area(t){ return SHEETISH[t]?'sheet':(t==='tasks'?'tasks':'dash'); }
+  function cur(){ try{ return window.__tsFind?__tsFind.cur():null; }catch(e){ return null; } }
+  function tab(){ return (typeof currentCTab!=='undefined'&&currentCTab)||'dash'; }
+  function urlFor(st){ return location.pathname+location.search+(st.area==='sheet'&&st.sheet?'#sheet='+encodeURIComponent(st.sheet):''); }
+  function here(){ var t=tab(); return {pvx:1,area:area(t),tab:t,sheet:cur()}; }
+  function same(a,b){ return a&&b&&a.area===b.area&&(a.area!=='sheet'||a.sheet===b.sheet); }
+  var lastOpened=!/[#&]sheet=/.test(location.hash||''), popping=false, R=history.replaceState.bind(history), P=history.pushState.bind(history);
+  function note(){ /* record the place we're at: a new entry when the patient or section changed, else update this one */
+    if(popping) return; var now=here(), was=history.state&&history.state.pvx?history.state:null;
+    if(!was){ /* first record: a #sheet= link that hasn't opened yet (signing in, still loading) is kept, not stripped */
+      var m=/[#&]sheet=([^&]+)/.exec(location.hash||'');
+      if(m&&now.area!=='sheet'){ R({pvx:1,area:'sheet',tab:'sheet',sheet:decodeURIComponent(m[1])},'',location.href); return; }
+      R(now,'',urlFor(now)); return; }
+    if(!lastOpened) return;   /* a linked sheet hasn't opened yet: leave the entry and its address alone */
+    if(same(was,now)){ if(was.tab!==now.tab||was.sheet!==now.sheet) R(now,'',urlFor(now)); return; }
+    P(now,'',urlFor(now)); }
+  /* the app's own address updates keep our entry's place, and never add or drop entries */
+  history.replaceState=function(st,t,u){ try{ if(!lastOpened&&u!=null&&!/[#&]sheet=/.test(String(u))) lastOpened=true; var s=history.state&&history.state.pvx?history.state:null; return R(st||s,t,u); }catch(e){ return R(st,t,u); } };
+  /* the app's scripts load after this one, so wrap their navigation once they exist (and again if something re-wraps it) */
+  var sel=null, os=null;
+  function wrap(){ var f=window.selectCTab; if(typeof f==='function'&&!f.__pvx239){ sel=f; var w=function(){ var r=f.apply(this,arguments); try{ setTimeout(note,0); }catch(e){} return r; }; w.__pvx239=1; w.__orig=f; window.selectCTab=w; }
+    var g=window.tsOpenSheet; if(typeof g==='function'&&!g.__pvx239){ os=g; var v=function(){ var r=g.apply(this,arguments); try{ setTimeout(note,0); }catch(e){} return r; }; v.__pvx239=1; window.tsOpenSheet=v; } }
+  wrap(); setInterval(wrap,1000);
+  /* sheets opened from search, links and the patient tabs go through openSheet; catch them by watching the current sheet */
+  var lastCur=null; setInterval(function(){ var c=cur(); if(c) lastOpened=true; if(c!==lastCur){ lastCur=c; note(); } },250);
+  window.addEventListener('popstate',function(e){ var st=e.state&&e.state.pvx?e.state:null;
+    if(!st){ var m=/[#&]sheet=([^&]+)/.exec(location.hash||''); st={pvx:1,area:m?'sheet':'dash',tab:m?'sheet':'dash',sheet:m?decodeURIComponent(m[1]):null}; }
+    popping=true;
+    try{
+      if(st.area==='sheet'&&st.sheet){ if(cur()!==st.sheet) os(st.sheet,false); sel(st.tab&&SHEETISH[st.tab]?st.tab:'sheet'); }
+      else sel(st.area==='tasks'?'tasks':'dash');
+    }catch(x){ console.warn('[n239 back]',x); }
+    setTimeout(function(){ lastCur=cur(); popping=false; try{ R(Object.assign({},st,{tab:tab()}),'',urlFor(st)); }catch(x){} },0); });
+  function boot(){ wrap(); note(); lastCur=cur(); }
+  if(document.readyState==='complete') setTimeout(boot,0); else addEventListener('load',function(){ setTimeout(boot,300); });
+
+  /* ---------- the chosen reference dose is announced as chosen ---------- */
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; $$('#tsModal .rx-ref').forEach(function(b){ var on=b.classList.contains('on'); if(b.getAttribute('aria-pressed')!==String(on)) b.setAttribute('aria-pressed',String(on)); }); },60); }
+  new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+})();
+</script>
+<script id="pvx-n240-ts">
+(function(){
+  var $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  /* More options goes last in the order form, just above the buttons: the dose, its result and its checks stay together */
+  function place(){ $$('#tsModal .tm-card').forEach(function(card){
+    var more=card.querySelector(':scope>.of-more'), foot=card.querySelector(':scope>.tm-foot'); if(!more||!foot) return;
+    var box=more.nextElementSibling&&more.nextElementSibling.classList.contains('of-box')?more.nextElementSibling:null;
+    if(box){ if(box.nextElementSibling!==foot){ foot.parentNode.insertBefore(more,foot); foot.parentNode.insertBefore(box,foot); } }
+    else if(more.nextElementSibling!==foot) foot.parentNode.insertBefore(more,foot);
+    if(box){ if(!box.id) box.id='pvxOfBox'+Math.random().toString(36).slice(2,7); more.setAttribute('aria-controls',box.id); } }); }
+  new MutationObserver(function(){ if(document.querySelector('#tsModal .of-more')) place(); }).observe(document.body,{childList:true,subtree:true});
+  /* opening it shows what opened */
+  document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#tsModal .of-more'); if(!b) return;
+    setTimeout(function(){ var box=b.nextElementSibling; if(b.getAttribute('aria-expanded')==='true'&&box){ var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+      try{ box.scrollIntoView({block:'nearest',behavior:rm?'auto':'smooth'}); }catch(x){} } },60); });
 })();
 </script>
 </body>
