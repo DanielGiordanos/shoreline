@@ -1,0 +1,28 @@
+/* Yakuri hosted — the sign-in / loading card and the owner's publish sheet. Flat Pravix surfaces (no glass), Yakuri's tokens. */
+html.yh-gated body{overflow:hidden}
+.yh-gate{position:fixed;left:0;right:0;bottom:0;top:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--bg);color:var(--ink)}
+.yh-card{max-width:440px;width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.yh-icon{width:64px;height:64px;border-radius:14px}
+.yh-card h1{margin:4px 0 0;font-size:1.375rem;line-height:1.25;font-weight:700;letter-spacing:0}
+.yh-card p{margin:0;font-size:.9375rem;line-height:1.45;color:var(--muted)}
+.yh-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;margin-top:6px;border:0;border-radius:999px;background:var(--accent);color:#fff;font:inherit;font-size:.9375rem;font-weight:600;text-decoration:none;cursor:pointer}
+body.dark .yh-btn{color:#06101E}
+.yh-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.yh-btn[aria-disabled=true]{opacity:.45;cursor:default}
+.yh-btn.yh-secondary{background:var(--y-fill-2);color:var(--ink)}
+.yh-bar{width:220px;height:4px;border-radius:2px;background:var(--y-fill-2);overflow:hidden;margin-top:6px}
+.yh-bar span{display:block;height:100%;background:var(--accent);transition:width .2s}
+@media(prefers-reduced-motion:reduce){.yh-bar span{transition:none}}
+.yh-publish-btn{min-height:32px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--y-fill);color:var(--ink);font:inherit;font-size:.8125rem;font-weight:600;cursor:pointer}
+@media(pointer:coarse){.yh-publish-btn{min-height:44px}}
+.yh-publish{max-width:560px}
+.yh-publish p{font-size:.875rem;line-height:1.5}
+.yh-publish code{font-size:.8125rem}
+.yh-cur{color:var(--muted)}
+.yh-file{display:flex;flex-direction:column;gap:6px;font-size:.875rem;font-weight:600;margin:12px 0}
+.yh-file input{font:inherit;font-size:.875rem;font-weight:400}
+.yh-msg{min-height:1.5em;color:var(--muted)}
+.yh-msg.yh-err{color:var(--y-danger)}
+.yh-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.yh-x{font-size:1.5rem;min-width:44px;min-height:44px;border:0;background:none;color:var(--muted);cursor:pointer}
+@media(forced-colors:active){.yh-btn{border:1px solid ButtonText}.yh-bar span{background:Highlight}}

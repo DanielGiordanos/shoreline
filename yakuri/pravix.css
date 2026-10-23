@@ -1,0 +1,790 @@
+/* ═══ Yakuri in the Pravix family — the Pravix layer (Oct 23 2026) ═══
+   Loaded last on every Yakuri page, after pvx-shell.css (the suite's shared top bar, copied unchanged).
+   Rules come from Pravix Brand Identity (§3 colour, §4 type, §5 layout, §6 materials, §7 icons, §9 components):
+   · light and dark from the shared pvx_theme choice (body.dark), each with an Increase Contrast value;
+   · Flow / Anesia tokens; cyan marks only what you can press, the selected item and focus (cobalt in light);
+   · content is flat; glass only on floating controls (toast, calculator, clinical island); dialogs are solid;
+   · the system font, the 13-step scale in rem (nothing under 11 pt), five weights;
+   · SF-style line icons instead of text characters.
+   Plain hex and rgba values only (no colour mixing functions). Clinical text, labels, holds and Unverified states are untouched. */
+
+/* ── Tokens: Yakuri's names, Pravix values ── */
+body{
+  --bg:#F5F5F7;--panel:#FFFFFF;--soft:#F2F2F4;--ink:#1D1D1F;--muted:#5C5E62;--line:rgba(29,29,31,.10);
+  --navy:#0A1222;--cyan:#23439C;--accent:#23439C;--selected:rgba(35,67,156,.08);--warn:#9A5B00;--warn-bg:#FFF4E0;
+  --y-fill:rgba(29,29,31,.05);--y-fill-2:rgba(29,29,31,.09);--y-raised:#FFFFFF;--y-ctl:rgba(29,29,31,.16);
+  --y-on-accent:#FFFFFF;--y-sel-edge:rgba(35,67,156,.22);--y-ring:0 0 0 3px rgba(35,67,156,.16);
+  --y-danger:#B3141A;--y-danger-bg:#FFEBEA;--y-purple:#7A3FA6;--y-amber:#9A5B00;--y-amber-mark:#E08A00;
+  --y-shadow:0 1px 2px rgba(20,28,40,.06),0 8px 24px rgba(20,28,40,.06);--y-dialog-shadow:0 24px 64px rgba(20,28,40,.20);
+  --y-glass:rgba(255,255,255,.86);--y-glass-edge:rgba(29,29,31,.10);--y-glass-top:rgba(255,255,255,.9);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  -webkit-text-size-adjust:100%;text-size-adjust:100%;background:var(--bg);color:var(--ink);color-scheme:light}
+body.dark{
+  --bg:#080E1A;--panel:#0E1628;--soft:#131E34;--ink:#D8E8F4;--muted:#A7C2D8;--line:rgba(150,185,220,.16);
+  --navy:#D8E8F4;--cyan:#38BDD2;--accent:#38BDD2;--selected:rgba(56,189,210,.14);--warn:#F2C744;--warn-bg:rgba(242,199,68,.12);
+  --y-fill:rgba(150,185,220,.10);--y-fill-2:rgba(150,185,220,.18);--y-raised:#192540;--y-ctl:rgba(150,185,220,.32);
+  --y-on-accent:#03242C;--y-sel-edge:rgba(77,200,224,.25);--y-ring:0 0 0 3px rgba(56,189,210,.18);
+  --y-danger:#FF8A7A;--y-danger-bg:rgba(255,107,87,.14);--y-purple:#B48BD6;--y-amber:#F2C744;--y-amber-mark:#E8A830;
+  --y-shadow:0 12px 36px rgba(0,0,0,.30);--y-dialog-shadow:0 24px 64px rgba(0,0,0,.55);
+  --y-glass:rgba(23,35,56,.86);--y-glass-edge:rgba(150,185,220,.18);--y-glass-top:rgba(255,255,255,.06);
+  color-scheme:dark}
+@media(prefers-contrast:more){
+  body{--muted:#3A3C40;--line:rgba(29,29,31,.34);--y-ctl:rgba(29,29,31,.5);--accent:#1A3380;--cyan:#1A3380;--warn:#7A4800;--y-sel-edge:#1A3380}
+  body.dark{--muted:#D8E8F4;--line:rgba(150,185,220,.45);--y-ctl:rgba(150,185,220,.6);--accent:#6FD3E4;--cyan:#6FD3E4;--warn:#FFD866;--y-sel-edge:#6FD3E4}}
+/* Yakuri's own High contrast reading mode keeps its meaning in both themes */
+body[data-reading=contrast]{--bg:#FFFFFF;--panel:#FFFFFF;--soft:#F2F2F2;--ink:#000000;--muted:#222222;--line:#666666;--accent:#1A3380;--selected:#E4E9F6}
+body.dark[data-reading=contrast]{--bg:#000000;--panel:#05080F;--soft:#0E1628;--ink:#FFFFFF;--muted:#E6EEF6;--line:rgba(230,238,246,.55);--accent:#6FD3E4;--selected:rgba(111,211,228,.20)}
+/* the head's height: a default here, the measured value set on <html> by pravix.js (it was on <body>, which overrode the measurement) */
+:root{--pvx-head:139px}
+html{background:var(--bg)}
+body.dark{background:#080E1A}
+:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif}
+button,input,select,textarea{font-family:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::selection{background:var(--selected)}
+
+/* ── The shared head: top bar + Yakuri's sub-nav stay while content scrolls ── */
+.pvx-head{position:sticky;top:0;z-index:300}
+#pvxSubnav .subnav-title{font-size:.6875rem;color:#86868B}          /* the 11 pt floor (n229) */
+body.dark #pvxSubnav .subnav-title{color:#7A98B8}
+@media(max-width:1599px){#pvxSubnav .subnav-title{display:none}}       /* the top bar already names the app (n230) */
+#pvxSubnav .seg{font-size:.8125rem}
+#pvxSubnav .seg .y-seg-label{white-space:nowrap}
+.y-private{margin:0;font-size:.75rem;font-weight:600;color:var(--warn);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.y-private::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--y-amber-mark);flex:0 0 auto}
+#pvxSubnav .pvx-actions .tools{display:flex;align-items:center;gap:10px;margin:0}
+/* Yakuri's sub-nav buttons wear Flow's header button (the same rule as .pvx-actions>button) */
+#pvxSubnav .pvx-actions .tools>button{display:inline-flex;align-items:center;gap:7px;height:40px;min-height:40px;border-radius:13px;padding:0 14px;font-size:.8125rem;font-weight:600;cursor:pointer;
+  border:1px solid rgba(20,28,40,.08);color:#1D1D1F;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,252,.90));box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:border-color .18s ease,background .18s ease;margin:0;min-width:0}
+#pvxSubnav .pvx-actions .tools>button:hover{border-color:rgba(20,28,40,.13);background:linear-gradient(180deg,#FFFFFF,rgba(247,249,252,.96))}
+body.dark #pvxSubnav .pvx-actions .tools>button{color:#D8E8F4;border-color:rgba(77,200,224,.16);background:linear-gradient(180deg,rgba(25,37,64,.92),rgba(17,27,48,.94))}
+body.dark #pvxSubnav .pvx-actions .tools>button:hover{border-color:rgba(77,200,224,.30)}
+#pvxSubnav .pvx-actions .tools>button[aria-expanded=true]{border-color:var(--accent);box-shadow:var(--y-ring)}
+#pvxSubnav .pvx-actions .tools>button:disabled{opacity:.55}
+#pvxSubnav .y-btn-ico svg,#pvxSubnav #x-spotlight-open svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+/* Spotlight sits where Pravix apps keep their search, and reads as one */
+#pvxSubnav #x-spotlight-open{width:clamp(220px,22vw,300px);justify-content:flex-start;color:#6E6E73;font-weight:500}
+body.dark #pvxSubnav #x-spotlight-open{color:#A7C2D8}
+#pvxSubnav #x-spotlight-open .y-spot-label{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pvxSubnav #x-spotlight-open kbd{font:600 .6875rem/1 inherit;border:1px solid var(--y-ctl);border-radius:6px;padding:3px 6px;color:inherit;background:transparent}
+@media(hover:none),(pointer:coarse){#pvxSubnav #x-spotlight-open kbd{display:none}}
+@media(max-width:1180px){#pvxSubnav #x-spotlight-open{width:200px}.y-private{display:none}}
+@media(max-width:1023px){#pvxSubnav .y-btn-label{display:none}#pvxSubnav .pvx-actions .tools>button{padding:0 11px}#pvxSubnav #x-spotlight-open{width:44px;padding:0;justify-content:center}#pvxSubnav #x-spotlight-open .y-spot-label,#pvxSubnav #x-spotlight-open kbd{display:none}}
+@media(max-width:760px){
+  #pvxSubnav .switcher{flex:1 1 auto}
+  #pvxSubnav .seg:not(.active) .y-seg-label{display:none}             /* icons only, the open view keeps its name */
+  #pvxSubnav .seg{font-size:.75rem}
+  #pvxSubnav #text-size{display:none}
+  #pvxSubnav .pvx-actions .tools>button{height:36px;min-height:36px}}
+@media(pointer:coarse){#pvxSubnav .seg,#pvxSubnav .pvx-actions .tools>button{min-height:44px}}
+
+/* ── Sticky parts sit under the head ── */
+.yakuri-rail,.library{top:var(--pvx-head);height:calc(100dvh - var(--pvx-head))}
+.y-section-nav{top:var(--pvx-head)}
+.reader section,.references li{scroll-margin-top:calc(var(--pvx-head) + 64px)}
+#utility-calculator-panel{top:calc(var(--pvx-head) + 12px);max-height:calc(100dvh - var(--pvx-head) - 24px)}
+.medical-layout{min-height:calc(100dvh - var(--pvx-head))}
+@media(max-width:760px){
+  .yakuri-rail{top:auto;height:auto}
+  .library{top:0;height:calc(100dvh - var(--pvx-head) - var(--y-rail-h,56px))}
+  .y-section-nav{top:var(--pvx-head)}}
+
+/* ── Type: headings and labels on the Pravix scale ── */
+.eyebrow,.rail-label,.y-kicker,.finding .label,.scope-grid dt,.x-results-label,.toc .eyebrow{font-size:.6875rem!important;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1,.library h1,#medical-content h1,#interaction-main h1{font-weight:700;letter-spacing:-.01em}
+.library h1{font-size:1.75rem}
+.hero-line h2{font-size:2.125rem;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.reader h3{font-size:1.375rem;font-weight:700;letter-spacing:-.01em}
+.y-dialog-head h2{font-size:1.25rem;font-weight:700;letter-spacing:-.01em}
+.intro,.y-review,.y-search-hint,.integration-counts,.library-footer{color:var(--muted)}
+.context,.evidence-label,.reader .evidence-label{color:var(--muted)}
+.y-collection-message{color:var(--ink)}
+.drug-item small,.x-search-result small{font-variant-numeric:tabular-nums}
+.integration-counts,#result-count,#saved-count{font-variant-numeric:tabular-nums}
+
+/* ── The workspace rail (Yakuri's sidebar) ── */
+@media(min-width:1151px){.workspace{grid-template-columns:196px 285px minmax(0,1fr)}}
+@media(min-width:1600px){.workspace{grid-template-columns:210px 310px minmax(0,1fr)}}
+.yakuri-rail{background:var(--panel);border-right:1px solid var(--line);padding:16px 10px;gap:2px}
+.yakuri-rail button,.yakuri-rail a{font-size:.8125rem;font-weight:600;color:var(--ink);border-radius:8px;min-height:38px;padding:7px 10px;gap:9px;line-height:1.25;border:1px solid transparent;background:transparent;box-shadow:none}
+.yakuri-rail a:hover,.yakuri-rail button:hover{background:var(--y-fill)}
+.yakuri-rail [aria-current=page]{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge);box-shadow:none;font-weight:600}
+.yakuri-rail span.y-ico{width:18px;height:18px;display:inline-flex;flex:0 0 18px;color:var(--muted)}
+.yakuri-rail [aria-current=page] span.y-ico{color:var(--accent)}
+.yakuri-rail span.y-ico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.yakuri-rail .rail-label{padding:12px 10px 4px;margin:6px 0 2px}
+.rail-bottom button{font-size:.75rem;border:0;background:var(--y-fill);border-radius:8px;justify-content:center}
+.rail-bottom kbd{font:600 .6875rem/1 inherit;border:1px solid var(--y-ctl);border-radius:6px;padding:2px 5px;margin-left:6px}
+.rail-bottom p{font-size:.6875rem}
+@media(pointer:coarse){.yakuri-rail button,.yakuri-rail a{min-height:44px}}
+
+/* ── Library column ── */
+.library{background:var(--panel);border-right:1px solid var(--line)}
+.search{background:var(--y-fill);border:1px solid transparent;border-radius:8px;height:40px;padding:0 10px;gap:8px}
+.search:focus-within{border-color:var(--accent);box-shadow:var(--y-ring);background:var(--panel)}
+.search>span{display:inline-flex;font-size:0;color:var(--muted)}
+.search>span svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+.search input{font-size:.8125rem;color:var(--ink)}
+.search input::placeholder{color:var(--muted);opacity:1}
+.search kbd{font:600 .6875rem/1 inherit;border:1px solid var(--y-ctl);border-radius:6px;padding:3px 6px}
+.search:focus-within kbd,.search:has(input:not(:placeholder-shown)) kbd{display:none}
+@media(hover:none),(pointer:coarse){.search kbd{display:none}}
+/* species filter: a segmented control */
+.scopes{background:var(--y-fill);border-radius:8px;padding:2px;gap:2px}
+.scopes button{min-height:32px;border-radius:6px;font-size:.8125rem;font-weight:600;color:var(--muted)}
+.scopes button:hover{background:transparent;color:var(--ink)}
+.scopes button[aria-pressed=true]{background:var(--y-raised);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.18),0 0 0 .5px var(--line)}
+@media(pointer:coarse){.scopes button{min-height:44px}}
+.y-library-filters summary,.list-heading{color:var(--muted)}
+.list-heading{font-size:.75rem}
+/* rows: flat, hairline separation, a 2 pt accent edge on the open one */
+.drug-list{padding:0 8px 16px}
+.drug-card{border-radius:8px;border-bottom:0;margin:0 0 1px;position:relative}
+.drug-card+.drug-card::before{content:"";position:absolute;left:10px;right:10px;top:-1px;height:1px;background:var(--line)}
+.drug-item{border-radius:8px;min-height:56px;padding:10px}
+.drug-item:hover{background:var(--y-fill)}
+.drug-item strong{font-size:.875rem;font-weight:600;color:var(--ink)}
+.drug-item small{font-size:.75rem;color:var(--muted)}
+.drug-card:has(.drug-item[aria-current=true]){background:var(--selected);box-shadow:inset 2px 0 0 var(--accent)}
+.drug-card:has(.drug-item[aria-current=true])::before,.drug-card:has(.drug-item[aria-current=true])+.drug-card::before{display:none}
+.drug-item[aria-current=true]{background:transparent;color:var(--ink)}
+.drug-item[aria-current=true] strong{color:var(--accent);font-weight:700}
+.drug-item .chevron{font-size:0;width:14px;height:14px;flex:0 0 14px;background:currentColor;color:var(--muted);
+  -webkit-mask:var(--y-i-chevron) center/contain no-repeat;mask:var(--y-i-chevron) center/contain no-repeat}
+.drug-item .chevron[data-fav]{-webkit-mask-image:var(--y-i-star-fill);mask-image:var(--y-i-star-fill);color:var(--accent)}
+.x-quick-trigger{font-size:.75rem;font-weight:600;color:var(--accent);border-radius:6px;white-space:nowrap}
+.x-quick-trigger:hover{background:var(--y-fill)}
+.library-footer{font-size:.6875rem;border-top:1px solid var(--line)}
+.status-dot{background:var(--y-amber-mark)}
+
+/* ── Monograph ── */
+#article{background:transparent}
+.article-top{color:var(--muted)}
+.article-top button,.article-top a{color:var(--accent)}
+.article-top .back{display:none;align-items:center;gap:4px;font-weight:600}
+@media(max-width:760px){.article-top .back{display:inline-flex}}
+.article-top .back .y-back-ico{width:16px;height:16px;background:currentColor;-webkit-mask:var(--y-i-chevron-left) center/contain no-repeat;mask:var(--y-i-chevron-left) center/contain no-repeat}
+.subtitle,.article-hero .subtitle{color:var(--muted)}
+/* status tags are plain, never button-looking chips (§9.1) */
+.chip,.chip.research{background:var(--y-fill);border:0;border-radius:6px;color:var(--ink);font-size:.75rem;font-weight:600;padding:4px 8px}
+.save-button,#favorite{font-size:0!important;width:40px;height:40px;min-width:40px;min-height:40px;padding:0;border:0;border-radius:8px;background:var(--y-fill);position:relative;color:var(--ink)}
+.save-button::after,#favorite::after{content:"";position:absolute;inset:11px;background:currentColor;-webkit-mask:var(--y-i-star) center/contain no-repeat;mask:var(--y-i-star) center/contain no-repeat}
+.save-button[aria-pressed=true],#favorite[aria-pressed=true]{color:var(--accent);background:var(--selected)}
+.save-button[aria-pressed=true]::after,#favorite[aria-pressed=true]::after{-webkit-mask-image:var(--y-i-star-fill);mask-image:var(--y-i-star-fill)}
+@media(pointer:coarse){.save-button,#favorite{width:44px;height:44px}}
+
+/* Secondary buttons: a soft fill, no outline (§9.1). The pressed one is the selected state. */
+:is(.y-article-actions,.x-reference-tools,.r-tools,.x-quick-actions,.x-source-links,.h-links,.hold-buttons,.clinical-actions,.interaction-view-controls,.graph-pairs,.cpr-title-row,.p-drug-card nav,.p-context-actions) button,
+.x-inspect-section,.test-gate,.rail-bottom button,.load-more,.medical-actions button:not([type=submit]),.cpr-info-dialog button,
+.o-dialog button,.o-editor button,.o-section-pin,.p-dialog button,.p-context-dialog button,.interaction-row button,.calc-keypad button{
+  border:1px solid transparent;background:var(--y-fill);color:var(--ink);border-radius:8px;font-weight:600;box-shadow:none}
+:is(.y-article-actions,.x-reference-tools,.r-tools,.x-quick-actions,.x-source-links,.h-links,.hold-buttons,.interaction-view-controls,.graph-pairs,.cpr-title-row,.p-drug-card nav,.p-context-actions) button:hover,
+.x-inspect-section:hover,.test-gate:hover,.rail-bottom button:hover,.load-more:hover,.medical-actions button:not([type=submit]):hover,.o-dialog button:hover,.o-editor button:hover,.p-dialog button:hover,.p-context-dialog button:hover,.interaction-row button:hover,.calc-keypad button:hover{background:var(--y-fill-2)}
+:is(.y-article-actions,.x-reference-tools,.r-tools,.interaction-view-controls,.o-dialog,.p-dialog) button[aria-pressed=true]{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge);box-shadow:var(--y-ring)}
+.clinical-actions button{color:var(--muted)}
+/* toolbar rows above the monograph stay compact on a Mac: style, not size, shows the preferred choice */
+@media(pointer:fine){:is(.y-article-actions,.x-reference-tools,.r-tools) button{min-height:32px;padding:6px 11px;font-size:.75rem}.x-focus-modes button{min-height:32px;padding:6px 12px}.y-article-actions select{min-height:32px}}
+body.dark :is(.y-article-actions,.x-reference-tools,.r-tools) button:not([aria-pressed=true]){background:rgba(150,185,220,.08)}
+.y-article-actions label,.y-article-actions select{color:var(--muted)}
+/* Clinical focus: a segmented control (Standard · Clinical · Research) */
+.x-focus-modes{border-bottom:1px solid var(--line)}
+.x-focus-modes>span{color:var(--muted)}
+.x-focus-modes button{border:1px solid transparent;border-radius:6px;font-weight:600;color:var(--muted);background:var(--y-fill)}
+.x-focus-modes button:hover{color:var(--ink)}
+.x-focus-modes [aria-pressed=true]{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge);font-weight:600}
+/* evidence state */
+.y-state{border-color:var(--line)}
+.y-state button{color:var(--accent)}
+.clinical-badge{background:var(--y-fill);color:var(--ink);border-radius:6px;font-weight:700}
+.clinical-badge.held{color:var(--warn);background:var(--warn-bg)}
+.clinical-badge.approved{color:var(--accent);background:var(--selected)}
+.y-state #y-active-holds:not(:empty),.hold-reasons{border-radius:8px;box-shadow:inset 2px 0 0 var(--y-amber-mark)}
+/* clinical context fields */
+:where(#article,.y-dialog,.medical-page,.p-controls,.governance-panel) :is(select,textarea,input:not([type=radio]):not([type=checkbox]):not([type=range])){border:1px solid var(--y-ctl);border-radius:8px;background:var(--panel);color:var(--ink)}
+:where(#article,.y-dialog,.medical-page,.governance-panel) :is(select,textarea,input):focus-visible{outline:none;border-color:var(--accent);box-shadow:var(--y-ring)}
+.y-context-heading span,#y-context-result,.y-context-fields label{color:var(--muted)}
+.h-highlights{border-radius:14px}
+/* section tabs */
+.y-section-nav{background:var(--bg);border-color:var(--line)}
+.y-section-nav button{font-size:.8125rem;font-weight:600;color:var(--muted)}
+.y-section-nav button:hover{background:transparent;color:var(--ink)}
+.y-section-nav button[aria-pressed=true]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+/* reading */
+.reader .notice,.notice{background:var(--soft);border-left:2px solid var(--accent);border-radius:0 8px 8px 0;color:var(--muted)}
+.reader .citation-link{background:var(--selected);color:var(--accent);border-radius:6px;font-size:.6875rem;font-weight:700}
+.governance-panel{border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:14px;background:var(--panel)}
+.finding,.p-drug-card,.section-index,.medical-result,.unassessed,.calculation{border-radius:14px}
+.finding.high{border-left:2px solid var(--y-amber-mark)}
+.finding.high .label{color:var(--warn)}
+summary{color:var(--accent)}
+a{color:var(--accent)}
+
+/* ── Dialogs and sheets: solid, scrims dim and never blur (§6) ── */
+.y-dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:20px;box-shadow:var(--y-dialog-shadow)}
+.y-dialog::backdrop,dialog::backdrop{background:rgba(8,14,26,.42);backdrop-filter:none;-webkit-backdrop-filter:none}
+.y-dialog-head{border-bottom:1px solid var(--line)}
+.y-dialog-head button,#calc-close,#p-island-hide{font-size:0!important;width:32px;height:32px;min-width:32px;min-height:32px;padding:0;border-radius:50%;background:var(--y-fill);color:var(--muted);position:relative;flex:0 0 auto}
+.y-dialog-head button::after,#calc-close::after,#p-island-hide::after{content:"";position:absolute;inset:9px;background:currentColor;-webkit-mask:var(--y-i-xmark) center/contain no-repeat;mask:var(--y-i-xmark) center/contain no-repeat}
+.y-dialog-head button:hover,#calc-close:hover,#p-island-hide:hover{background:var(--y-fill-2);color:var(--ink)}
+@media(pointer:coarse){.y-dialog-head button,#calc-close,#p-island-hide{width:44px;height:44px;min-width:44px;min-height:44px}.y-dialog-head button::after,#calc-close::after,#p-island-hide::after{inset:15px}}
+.y-command-label input,.x-spotlight .y-command-label input{background:var(--y-fill);border:1px solid transparent;border-radius:8px}
+.y-command-label input:focus-visible{border-color:var(--accent);box-shadow:var(--y-ring);outline:none}
+.x-search-result nav button{background:var(--y-fill);border-radius:8px;font-weight:600}
+.x-result-name{color:var(--ink);font-weight:700}
+
+/* ── Floating controls: the one Pravix glass (§6) ── */
+.toast,#utility-calculator-panel{color:var(--ink)}   /* the glass itself: one rule, under "HIG Materials, Typography and Design principles" */
+.toast{top:calc(var(--pvx-head) + 12px);bottom:auto;right:16px;left:auto;transform:none;border-radius:14px;font-size:.8125rem;font-weight:500;max-width:min(420px,calc(100% - 32px))}
+html[data-theme=dark] .toast{background:var(--y-glass);color:var(--ink)}
+#utility-calculator-panel{border-radius:20px}
+#p-island{border-radius:14px;border-left:2px solid var(--accent)}
+
+/* ── Buttons press like every Pravix button (§9.1) ── */
+button{transition:background .15s,color .15s,scale .1s}
+button:active:not(:disabled){scale:.97}
+@media(prefers-reduced-motion:reduce){button:active:not(:disabled){scale:none}}
+button:active{background:var(--y-fill-2)}
+
+/* ── Medical calculators and the interaction checker ── */
+.medical-page{background:var(--bg)}
+.medical-nav{background:var(--panel);border-right:1px solid var(--line);padding:16px 10px}
+.medical-nav button{border:1px solid transparent;background:transparent;border-radius:8px;min-height:60px;padding:10px 12px;margin-bottom:2px;font-size:.875rem;font-weight:600;color:var(--ink);box-shadow:none}
+.medical-nav button:hover{background:var(--y-fill)}
+.medical-nav button[aria-current=page]{background:var(--selected);border-color:var(--y-sel-edge);color:var(--accent);box-shadow:inset 2px 0 0 var(--accent)}
+.medical-nav small{color:var(--muted);font-size:.75rem}
+.medical-nav p{color:var(--muted)}
+.medical-actions button[type=submit]{background:var(--accent);color:var(--y-on-accent);border:1px solid transparent;border-radius:8px;font-weight:600}
+.medical-actions button[type=submit]:hover{filter:brightness(1.06)}
+.medical-actions button{border-radius:8px}
+.medical-species label{border:1px solid var(--y-ctl);border-radius:8px}
+.medical-species label:has(:checked){border-color:var(--accent);background:var(--selected);box-shadow:var(--y-ring)}
+.medical-species input{accent-color:var(--accent)}
+.medical-result{background:var(--soft);border:1px solid var(--line)}
+.medical-result.empty{background:var(--soft)}
+.medical-result strong{font-variant-numeric:tabular-nums}
+#medical-content h1,#interaction-main h1{font-size:1.75rem}
+.medical-intro,.medical-footnote{color:var(--muted)}
+.medical-tag{color:var(--warn)}
+.medical-notice{border-radius:14px}
+#interaction-main{padding-top:32px}
+.interaction-badge{border-radius:6px;font-weight:700}
+.interaction-badge.major{color:var(--y-amber);background:var(--warn-bg)}
+.interaction-badge.contraindicated{color:var(--y-danger);background:var(--y-danger-bg)}
+.graph-legend .mapped{color:var(--y-amber)}
+.graph-legend .species{color:var(--y-purple)}
+.edge-visible{stroke:var(--muted)}
+.mapped .edge-visible{stroke:var(--y-amber-mark)}
+.species .edge-visible{stroke:var(--y-purple)}
+
+/* ── Icons drawn as SF-style symbols (masks; the text characters they replace stay out of view) ── */
+body{
+  --y-i-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.5 5.5 16 12l-6.5 6.5'/%3E%3C/svg%3E");
+  --y-i-chevron-left:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 5.5 8 12l6.5 6.5'/%3E%3C/svg%3E");
+  --y-i-xmark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
+  --y-i-star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linejoin='round'%3E%3Cpath d='M12 3.4l2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 16.92l-5.3 2.79 1.01-5.9-4.29-4.18 5.93-.86z'/%3E%3C/svg%3E");
+  --y-i-star-fill:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='1.9' stroke-linejoin='round'%3E%3Cpath d='M12 3.4l2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 16.92l-5.3 2.79 1.01-5.9-4.29-4.18 5.93-.86z'/%3E%3C/svg%3E")}
+@media(forced-colors:active){.drug-item .chevron,.save-button::after,#favorite::after,.y-dialog-head button::after,#calc-close::after,#p-island-hide::after,.article-top .back .y-back-ico{background:CanvasText}}
+
+@media print{.pvx-head{display:none!important}}
+
+/* ── Selected tabs and toggles: the tinted selection, never a solid cyan block with white text (§3, n240) ── */
+.calc-tabs [aria-selected=true],.calc-tabs [aria-selected=true]:hover,.cpr-unit-toggle input:checked+span{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge);box-shadow:inset 0 0 0 1px var(--y-sel-edge);font-weight:700}
+
+/* ── Tool sheets (Research, Workspace review, Local tools, Label & voice, Transfer) ── */
+.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.r-edge button){border:1px solid transparent;background:var(--y-fill);color:var(--ink);border-radius:8px;font-size:.8125rem;font-weight:600;padding:8px 12px;box-shadow:none}
+.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.r-edge button):hover{background:var(--y-fill-2)}
+.r-dialog button[aria-pressed=true]:not(.r-tabs button){background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge)}
+@media(pointer:fine){.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.r-edge button){min-height:34px}}
+/* their sections: tabs like the sub-nav's (tinted when open), never a sideways-scrolling row */
+.r-tabs{gap:2px;margin:14px 0 16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.r-tabs button{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;font-size:.8125rem;font-weight:600;padding:7px 12px;min-height:36px}
+.r-tabs button:hover{background:var(--y-fill);color:var(--ink)}
+.r-tabs button[aria-pressed=true]{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge)}
+@media(pointer:coarse){.r-tabs button{min-height:44px}}
+.r-actions{gap:8px}
+.r-edge button{background:transparent;border-radius:8px}
+.r-edge button:hover{background:var(--y-fill)}
+.r-status,.l-event-meta strong{color:var(--ink)}
+.r-notice{border-left:2px solid var(--accent);border-radius:0 8px 8px 0;color:var(--ink)}
+.r-review-stage{border-radius:6px;background:var(--y-fill);border-color:transparent}
+.r-table th{color:var(--muted);font-weight:600}
+.v-findings .r-saved h3{font-size:1rem;font-weight:700}
+/* Drug Cards: the save star is drawn, not typed */
+.p-drug-card header button{font-size:0!important;width:40px;height:40px;min-width:40px;padding:0;border-radius:8px;background:var(--y-fill);color:var(--ink);position:relative}
+.p-drug-card header button::after{content:"";position:absolute;inset:11px;background:currentColor;-webkit-mask:var(--y-i-star) center/contain no-repeat;mask:var(--y-i-star) center/contain no-repeat}
+.p-drug-card header button[data-fav]{color:var(--accent);background:var(--selected)}
+.p-drug-card header button[data-fav]::after{-webkit-mask-image:var(--y-i-star-fill);mask-image:var(--y-i-star-fill)}
+.p-evidence{border-radius:6px}
+
+/* ── Results are content: a flat card with the accent edge, not a tinted wash ── */
+.medical-result:not(.empty){background:var(--panel);border:1px solid var(--line);box-shadow:inset 2px 0 0 var(--accent)}
+.interaction-row button,.interaction-view-controls button,.interaction-heading button,.graph-pairs button{font-size:.875rem}
+.interaction-heading button{color:var(--accent);font-weight:600}
+#cpr-info{font-size:0!important;width:40px;height:40px;min-width:40px;padding:0;position:relative;color:var(--ink)}
+#cpr-info::after{content:"";position:absolute;inset:9px;background:currentColor;-webkit-mask:var(--y-i-info) center/contain no-repeat;mask:var(--y-i-info) center/contain no-repeat}
+body{--y-i-info:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8.75'/%3E%3Cpath d='M12 11v5.5'/%3E%3Cpath d='M12 7.6v.01' stroke-width='2.4'/%3E%3C/svg%3E")}
+@media(forced-colors:active){#cpr-info::after,.p-drug-card header button::after{background:CanvasText}}
+
+/* ═══ HIG Accessibility, Color and Layout fixes (Oct 23 2026; claude/hig-audit-yakuri-accessibility-color-layout.md) ═══ */
+body{--y-field-edge:rgba(29,29,31,.5)}
+body.dark{--y-field-edge:rgba(150,185,220,.52)}
+@media(prefers-contrast:more){body{--y-field-edge:rgba(29,29,31,.72)}body.dark{--y-field-edge:rgba(150,185,220,.78)}}
+.y-vh{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;padding:0!important;margin:-1px!important;border:0!important}
+
+/* ── 5 · The monograph's tools in one toolbar row ── */
+.y-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 12px}
+.y-menu{position:relative}
+.y-menu-btn,.y-toolbar .y-tool-btn{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:6px 10px 6px 12px;border:1px solid transparent;border-radius:8px;background:var(--y-fill);color:var(--ink);font-size:.8125rem;font-weight:600;line-height:1.2;white-space:nowrap;box-shadow:none}
+.y-toolbar .y-tool-btn{padding:6px 12px}
+.y-menu-btn:hover,.y-toolbar .y-tool-btn:hover{background:var(--y-fill-2)}
+.y-menu-btn[aria-expanded=true]{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge)}
+.y-toolbar .y-tool-btn[aria-pressed=true]{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge)}
+body.dark :is(.y-menu-btn,.y-toolbar .y-tool-btn):not([aria-expanded=true]):not([aria-pressed=true]){background:rgba(150,185,220,.08)}
+.y-chev{width:14px;height:14px;flex:0 0 14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:var(--muted)}
+.y-menu-btn[aria-expanded=true] .y-chev{color:currentColor}
+.y-menu-list{position:absolute;top:calc(100% + 6px);left:0;z-index:60;min-width:240px;max-width:min(340px,calc(100vw - 32px));padding:6px;border-radius:14px;}
+.y-menu-list[hidden]{display:none}
+.y-menu-list .y-menu-item{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%;min-height:36px;margin:0;padding:7px 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);font-size:.8125rem;font-weight:500;text-align:left;white-space:normal;box-shadow:none;flex:none}
+.y-menu-list .y-menu-item[hidden]{display:none}
+.y-menu-list .y-menu-item:disabled{color:var(--muted);opacity:.7}
+.y-menu-list .y-menu-item:not(:disabled):hover,.y-menu-list .y-menu-item:focus-visible{background:var(--accent);color:var(--y-on-accent);outline:none}
+.y-menu-list .y-menu-item[aria-pressed=true]{font-weight:700}
+.y-check{width:16px;height:16px;flex:0 0 16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;visibility:hidden}
+.y-menu-item[aria-checked=true] .y-check{visibility:visible}
+.y-menu-sep{height:1px;background:var(--line);margin:5px 8px}
+.y-menu-group{font-size:.75rem;font-weight:600;color:var(--muted);padding:6px 10px 4px}
+@media(forced-colors:active){.y-menu-list .y-menu-item:focus-visible{outline:2px solid Highlight}}
+/* emptied tool rows take no room */
+#article :is(.y-article-actions,.x-reference-tools,.r-tools)[hidden]{display:none!important}
+/* Clinical Focus stays a segmented control, at the row's trailing end */
+.y-toolbar .y-modes{border:0;padding:0;margin:0 0 0 auto;gap:2px;flex-wrap:nowrap}
+.y-toolbar .y-modes>span{font-size:.75rem;margin-right:6px}
+@media(pointer:fine){.y-toolbar .y-modes button{min-height:32px;padding:6px 12px}}
+@media(max-width:1150px){.y-toolbar .y-modes{margin-left:0}}
+@media(max-width:760px){.y-toolbar .y-modes{width:100%;flex-wrap:wrap}.y-toolbar .y-modes>span{width:auto}.y-toolbar .y-modes button{flex:1}}
+
+/* ── 9 + 13 · The clinical island docks into the sticky section tabs (a mirror button; the floating island steps aside) ── */
+body.y-island-docked #p-island{display:none!important}
+.p-island-visible.y-island-docked #article{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+.y-section-nav{align-items:stretch}
+.y-section-nav .y-island-dock{position:sticky;right:0;z-index:1;flex:0 1 auto;min-width:min(140px,40%);display:flex;align-items:center;gap:8px;max-width:min(340px,48%);min-height:48px;margin-left:auto;padding:6px 10px 6px 12px;
+  border:0;border-left:1px solid var(--line);border-bottom:2px solid transparent;border-radius:0;background:var(--bg);color:var(--muted);font-size:.75rem;font-weight:600;white-space:nowrap}
+.y-section-nav .y-island-dock[hidden]{display:none}
+.y-section-nav .y-island-dock:hover{background:var(--bg);color:var(--ink)}
+.y-island-text{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.y-island-ico{display:inline-flex;width:16px;height:16px;flex:0 0 16px;color:var(--accent)}
+.y-island-ico svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+@media(max-width:1150px){.y-section-nav .y-island-dock{max-width:none;width:48px;min-width:48px;justify-content:center;padding:0}.y-section-nav .y-island-dock .y-island-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%)}}
+/* at large text sizes the docked context goes icon-only too, so its words are never cut short (its name keeps them) */
+body.y-large-text .y-section-nav .y-island-dock{max-width:none;width:52px;min-width:52px;justify-content:center;padding:0}
+body.y-large-text .y-section-nav .y-island-dock .y-island-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%)}
+
+/* ── 4 · Drug names wrap only between words ── */
+.hero-line h2.y-drug-title{overflow-wrap:break-word;word-break:normal;hyphens:manual;font-size:min(2.125rem,8.5vw)}
+
+/* ── 1 · The rail scrolls instead of squeezing; names wrap ── */
+.yakuri-rail{overflow-y:auto;overscroll-behavior:contain}
+.yakuri-rail>*{flex-shrink:0}
+.yakuri-rail button,.yakuri-rail a{white-space:normal}
+
+/* ── 2 · The drug list always gets room ── */
+.library{overflow-y:auto;overscroll-behavior:contain}
+.library .drug-list{flex:1 0 auto;min-height:max(50%,12rem)}
+body.y-large-text .library :is(.intro,.y-search-hint,.eyebrow){display:none}
+body.y-large-text .library h1{margin-top:0}
+.drug-item strong{overflow-wrap:anywhere}  /* a long name wraps inside the list instead of being cut off */
+.drug-item>*:not(.chevron){min-width:0}
+body.y-large-text .drug-card{grid-template-columns:minmax(0,1fr)}
+body.y-large-text .drug-card .x-quick-trigger{justify-self:start;margin:0 0 8px 6px;padding:6px 8px}
+
+/* ── 3 · The sub-nav never cuts a view off: labels give way, the open view's last ── */
+#pvxSubnav .seg.active{flex-shrink:0}
+#pvxSubnav.y-fit-1 :is(.y-private,.subnav-title){display:none}
+#pvxSubnav.y-fit-2 #x-spotlight-open{width:44px;padding:0;justify-content:center}
+#pvxSubnav.y-fit-2 #x-spotlight-open :is(.y-spot-label,kbd){display:none}
+#pvxSubnav.y-fit-3 .y-btn-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+#pvxSubnav.y-fit-3 .pvx-actions .tools>button{padding:0 11px}
+#pvxSubnav.y-fit-4 .seg:not(.active) .y-seg-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+#pvxSubnav.y-fit-5 .seg .y-seg-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+/* ── 6 · A comfortable reading measure (scales with the text) ── */
+.reader{max-width:68ch}                       /* ≈ 80 characters of body text */
+.reader .notice>*,.reader .footnote{max-width:62ch}  /* small notes keep the same measure */
+
+/* ── 7 · iPad portrait keeps the rail, as an icon column ── */
+@media(min-width:761px) and (max-width:900px){
+  .workspace{grid-template-columns:64px 250px minmax(0,1fr)}
+  .yakuri-rail{display:flex;align-items:center;padding:12px 8px;gap:2px}
+  .yakuri-rail :is(.rail-label,.rail-bottom){display:none}
+  .yakuri-rail>button,.yakuri-rail>a{width:44px;height:44px;min-height:44px;padding:0;justify-content:center;font-size:0;gap:0;flex:0 0 44px}
+  .yakuri-rail span.y-ico{width:20px;height:20px;flex-basis:20px}
+  .yakuri-rail span.y-ico svg{width:20px;height:20px}}
+
+/* ── 8 · iPhone: the rail becomes one Workspace sheet; nothing scrolls sideways ── */
+#pvxSubnav .pvx-actions .tools>#y-workspace-open{display:none}
+@media(max-width:760px){
+  .yakuri-rail{display:none}
+  #pvxSubnav .pvx-actions .tools>#y-workspace-open{display:inline-flex}
+  #pvxSubnav .pvx-actions .tools>#utility-calculator{display:none}   /* one tap away in Workspace, so the open view keeps its name */
+  #pvxSubnav .pvx-actions .tools{gap:6px}}
+.y-ws-dialog{max-width:520px}
+.y-ws-intro{color:var(--muted);margin:0 0 12px}
+.y-ws-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
+.y-ws-item{display:flex;align-items:center;gap:12px;min-height:48px;padding:10px 12px;border-radius:10px;background:var(--y-fill);color:var(--ink);font-size:.875rem;font-weight:600;text-align:left;border:1px solid transparent}
+.y-ws-item:hover{background:var(--y-fill-2)}
+.y-ws-item[aria-current=page]{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge)}
+.y-ws-item .y-ico{display:inline-flex;width:20px;height:20px;flex:0 0 20px;color:var(--muted)}
+.y-ws-item[aria-current=page] .y-ico{color:var(--accent)}
+.y-ws-item .y-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── 10 · Safe areas ── */
+.pvx-head{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);background:var(--bg)}
+.workspace,.medical-layout{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.library .drug-list{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+#article{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+.toast{right:calc(16px + env(safe-area-inset-right))}
+dialog.y-dialog,.y-dialog{max-height:calc(88dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+
+/* ── 11 · Messages: failures stay with a close button ── */
+.toast{display:flex;align-items:center;gap:10px}
+.toast.visible{pointer-events:auto}
+.toast.y-failure{border-left:3px solid var(--y-amber-mark)}
+.y-toast-text{flex:1;min-width:0}
+.y-toast-close{font-size:0;width:28px;height:28px;min-width:28px;min-height:28px;padding:0;border-radius:50%;background:var(--y-fill);color:var(--muted);position:relative;flex:0 0 auto}
+.y-toast-close::after{content:"";position:absolute;inset:8px;background:currentColor;-webkit-mask:var(--y-i-xmark) center/contain no-repeat;mask:var(--y-i-xmark) center/contain no-repeat}
+.y-toast-close:hover{background:var(--y-fill-2);color:var(--ink)}
+@media(forced-colors:active){.y-toast-close::after{background:CanvasText}}
+
+/* ── 12 · 44 pt targets on touch (the look stays; the hit area grows) ── */
+@media(pointer:coarse){
+  .y-menu-btn,.y-toolbar .y-tool-btn,.y-toolbar .y-modes button,.y-menu-list .y-menu-item,#back,#print,#y-evidence,.y-context-fields select,.library select,.y-library-filters summary{min-height:44px}
+  .search{height:44px}
+  #pvxSubnav .pvx-actions .tools>button{min-width:44px}
+  #pvxSubnav .seg{min-width:44px}
+  #pvxSubnav #utility-calculator,#pvxSubnav #y-workspace-open{min-width:44px;min-height:44px}
+  .y-toast-close{width:44px;height:44px;min-width:44px;min-height:44px}.y-toast-close::after{inset:15px}}
+
+/* standalone links (source lists, notes, the coverage link) are targets too: 28 pt with a mouse, 44 pt on touch */
+#article .notice>a,.medical-source>a,.library-footer a{display:inline-flex;align-items:center;min-height:28px}
+.medical-source>a{display:flex}
+@media(pointer:coarse){#article .notice>a,.medical-source>a,.library-footer a,:root body .library :is(#clinical-filter,#evidence-filter){min-height:44px}}
+
+/* ── 13 · Visible focus: the skip link shows above the head ── */
+.skip{z-index:400}
+.skip:focus{top:calc(10px + env(safe-area-inset-top))}
+
+/* ── 15 · The calculator's selected tab: brighter accent text in dark (5.3:1) ── */
+body.dark .calc-tabs [aria-selected=true],body.dark .calc-tabs [aria-selected=true]:hover{color:#6FD3E4}
+
+/* ── 16 · Field edges at 3:1 (Increase Contrast goes further) ── */
+:root body :is(input:not([type=radio]):not([type=checkbox]):not([type=range]):not([type=hidden]),select,textarea):not(.search input):not(.calc-display *):not(.pvx-head *){border-color:var(--y-field-edge)}
+:root body :is(input,select,textarea):not(.search input):not(.pvx-head *):focus-visible{border-color:var(--accent)}
+.search{border-color:var(--y-field-edge)}
+:root body .library :is(#clinical-filter,#evidence-filter){border:1px solid var(--y-field-edge);border-radius:8px;padding-left:8px;padding-right:8px}
+:root body .library :is(#clinical-filter,#evidence-filter):focus-visible{border-color:var(--accent)}
+.search:focus-within{border-color:var(--accent)}
+
+/* ── 17 · Unverified is neutral everywhere; amber stays for Held ── */
+.p-evidence{background:var(--y-fill);color:var(--ink)}
+.p-evidence.held{background:var(--warn-bg);color:var(--warn)}
+
+/* ═══ HIG Materials, Typography and Design principles (Oct 23 2026; claude/hig-audit-yakuri-materials-typography-principles.md) ═══ */
+body{--y-glass-solid:#FDFDFD}
+body.dark{--y-glass-solid:#152034}
+
+/* ── M1 · M2 · one glass for every floating surface: the menus, the toast, the calculator and the sticky section tabs (§6) ── */
+.toast,#utility-calculator-panel,.y-menu-list,.y-section-nav{background:var(--y-glass);-webkit-backdrop-filter:blur(12px) saturate(160%);backdrop-filter:blur(12px) saturate(160%)}
+.toast,#utility-calculator-panel,.y-menu-list{border:1px solid var(--y-glass-edge);box-shadow:inset 0 1px 0 var(--y-glass-top),0 18px 44px rgba(0,0,0,.28)}
+body:not(.dark) :is(.toast,#utility-calculator-panel,.y-menu-list){box-shadow:inset 0 1px 0 var(--y-glass-top),0 18px 44px rgba(20,28,40,.16)}
+.y-section-nav{border-top-color:var(--y-glass-edge);border-bottom-color:var(--y-glass-edge)}
+.y-section-nav .y-island-dock,.y-section-nav .y-island-dock:hover{background:var(--y-glass-solid)}
+/* solid instead: Reduce Transparency, Increase Contrast (with a visible edge), forced colours, no blur, a slow device */
+@media(prefers-reduced-transparency:reduce),(forced-colors:active){
+  :is(.toast,#utility-calculator-panel,.y-menu-list,.y-section-nav){-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel)}
+  .y-section-nav .y-island-dock,.y-section-nav .y-island-dock:hover{background:var(--panel)}}
+@media(prefers-contrast:more){
+  :is(.toast,#utility-calculator-panel,.y-menu-list,.y-section-nav){-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel);border-color:var(--line)}
+  .y-section-nav .y-island-dock,.y-section-nav .y-island-dock:hover{background:var(--panel)}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  :is(.toast,#utility-calculator-panel,.y-menu-list,.y-section-nav){background:var(--panel)}
+  .y-section-nav .y-island-dock,.y-section-nav .y-island-dock:hover{background:var(--panel)}}
+html.y-noblur :is(.toast,#utility-calculator-panel,.y-menu-list,.y-section-nav){-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--panel)}
+html.y-noblur .y-section-nav .y-island-dock{background:var(--panel)}
+@media print{.y-section-nav{-webkit-backdrop-filter:none;backdrop-filter:none;background:none}}
+
+/* ── T4 · Dynamic Type on iPhone and iPad: the root follows Settings › Larger Text (Flow n184, Anesia, Treatment n225) ── */
+@supports (font:-apple-system-body){@media(pointer:coarse){
+  html{font:-apple-system-body}
+  body,button,input,select,textarea{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif}}}
+
+/* ── T6 · safety text leads: the Held line, open holds, safety notices and "Still unverified" at 15 pt (Subhead) ── */
+.y-state{font-size:.9375rem;line-height:1.5}
+.y-state>span{font-weight:600}
+.y-state .clinical-badge{font-size:.8125rem;font-weight:700}
+.y-state button{font-size:.8125rem}
+.y-state #y-active-holds,.y-state #y-active-holds li{font-size:.9375rem;line-height:1.55}
+.reader .notice,.reader .notice p,.reader .notice .footnote{font-size:.9375rem;line-height:1.6}
+.reader .notice .footnote strong{font-weight:600}
+
+/* ── T5 · touch screens read a step larger (§4, n231): primary lines 16 pt, secondary 13 pt or more ── */
+@media(pointer:coarse){
+  .drug-item strong{font-size:1rem}
+  .drug-item small,.x-quick-trigger,.y-review,.article-top,.article-top button,.y-context-heading,.y-context-heading span,.y-context-fields label,.y-context-fields select,#y-context-result,
+  .chip,.list-heading,.library .intro,.y-search-hint,.library-footer,.integration-counts,.select-label,.y-library-filters summary,.library select,
+  .footnote,.source-meta,.reader .evidence-label,.reader .citation-link,.h-links small,.o-tabs button,.y-ws-intro,.chip.research,.drug-card .x-quick-trigger{font-size:.8125rem}
+  .y-section-nav .y-island-dock{font-size:min(.8125rem,20px)}
+  .y-state,.y-state #y-active-holds,.y-state #y-active-holds li,.reader .notice,.reader .notice p,.reader .notice .footnote{font-size:1rem}}
+
+/* the rest of the secondary text on touch, sheets included (uppercase eyebrows keep their 11 pt, §4) */
+@media(pointer:coarse){:root body :is(#p-card-status,.x-focus-modes>span,.clinical-badge,.h-links button,.y-review-notes>summary,.x-inspect-section,.o-section-pin,.reader dt,li small,button small,.clinical-actions button,
+  .y-command-label,.x-caption,.x-search-result small,.x-search-result nav button,.x-spotlight-actions button,.p-controls label,.p-facts dt,.p-facts dd,.p-drug-card nav button,#p-card-more,
+  .y-compare-selectors label,.y-compare-heading,.y-collection-create label,.r-actions button,.o-heading button,.p-context-actions button,.calc-help,#utility-calculator-panel footer,
+  .medical-nav p,.medical-footnote,#h-highlights button,#article dt){font-size:.8125rem}
+  :root body .x-caption{font-size:.8125rem!important}}
+
+/* ── T9 · content grows first: bar labels grow to about 1.5× and then hold (HIG: prioritize important content) ── */
+#pvxSubnav .seg,#pvxSubnav .pvx-actions .tools>button,.y-section-nav button,.y-menu-btn,.y-toolbar .y-tool-btn{font-size:min(.8125rem,20px)}
+.y-section-nav .y-island-dock,.y-toolbar .y-modes>span,.y-toolbar .y-modes button{font-size:min(.75rem,18px)}
+@media(pointer:coarse){.y-section-nav .y-island-dock,.y-toolbar .y-modes>span,.y-toolbar .y-modes button{font-size:min(.8125rem,20px)}}
+
+/* ── T7 · symbols grow with their text (§7: 0.8–1.3× the label), sized in rem; bar symbols hold with their labels ── */
+#pvxSubnav .seg svg,#pvxSubnav .y-btn-ico svg,#pvxSubnav #x-spotlight-open svg{width:min(1rem,24px);height:min(1rem,24px)}
+.yakuri-rail span.y-ico,.yakuri-rail span.y-ico svg{width:1rem;height:1rem;flex-basis:1rem}
+.search>span svg{width:1rem;height:1rem}
+.drug-item .chevron{width:.875rem;height:.875rem;flex-basis:.875rem}
+.article-top .back .y-back-ico{width:.875rem;height:.875rem}
+.y-chev{width:min(.875rem,21px);height:min(.875rem,21px);flex-basis:min(.875rem,21px)}
+.y-check{width:1rem;height:1rem;flex-basis:1rem}
+.y-island-ico,.y-island-ico svg{width:min(1rem,24px);height:min(1rem,24px);flex-basis:min(1rem,24px)}
+.y-ws-item .y-ico,.y-ws-item .y-ico svg{width:1.125rem;height:1.125rem;flex-basis:1.125rem}
+@media(min-width:761px) and (max-width:900px){.yakuri-rail span.y-ico,.yakuri-rail span.y-ico svg{width:1.25rem;height:1.25rem;flex-basis:1.25rem}}
+
+/* ── T8 · fewer columns at large text: fields and facts stack, the library column widens ── */
+body.y-large-text .y-context-fields{grid-template-columns:minmax(0,1fr)}
+body.y-large-text .y-context-fields label:nth-child(2){grid-column:auto;grid-row:auto}
+/* pop-ups are controls: their value holds at 24 pt (about 1.85×) so it never needs cutting off on a phone */
+body.y-large-text :is(.y-context-fields,.y-compare-selectors,.p-controls,.y-library-filters,.library) select{font-size:min(.8125rem,24px)}
+body.y-large-text :is(.p-facts,.y-source-facts,.record dl){grid-template-columns:minmax(0,1fr);gap:2px 0}
+body.y-large-text :is(.p-facts,.y-source-facts,.record dl) dd{margin-bottom:10px}
+body.y-large-text :is(.y-compare-selectors,.p-controls,.scope-grid){grid-template-columns:minmax(0,1fr)}
+body.y-large-text .y-compare-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-width:0}
+body.y-large-text .y-compare-grid>.y-compare-heading{grid-column:1/-1}
+body.y-large-text .y-compare-grid>*{border-left:0!important;border-right:0!important}
+body.y-large-text .y-compare-grid>:nth-child(3n){border-left:1px solid var(--line)!important}
+@media(min-width:1151px){body.y-large-text .workspace{grid-template-columns:max(196px,min(16rem,20vw)) minmax(0,max(285px,min(28rem,30vw))) minmax(0,1fr)}}
+@media(min-width:1600px){body.y-large-text .workspace{grid-template-columns:max(210px,min(16rem,20vw)) minmax(0,max(310px,min(28rem,30vw))) minmax(0,1fr)}}
+@media(min-width:901px) and (max-width:1150px){body.y-large-text .workspace{grid-template-columns:max(140px,min(14rem,18vw)) minmax(0,max(250px,min(28rem,30vw))) minmax(0,1fr)}}
+@media(min-width:761px) and (max-width:900px){body.y-large-text .workspace{grid-template-columns:64px minmax(0,max(250px,min(28rem,36vw))) minmax(0,1fr)}}
+
+/* rail names never run past their row: they wrap, hyphenating a word only when it can't fit */
+.yakuri-rail>button,.yakuri-rail>a{min-width:0;overflow-wrap:anywhere;hyphens:auto}
+
+/* ── T10 · body leading for small text that runs three lines or more ── */
+.library-footer,.h-links p,.y-search-hint,.library .intro,#y-context-result,.y-context-heading span,.integration-counts{line-height:1.45}
+
+/* ── T11 · one monospace ── */
+.cpr-formula{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+
+/* ── P13 · one Spotlight: the rail's duplicate goes (the sub-nav's search field and ⌘K stay) ── */
+.rail-bottom #y-command{display:none}
+
+/* ── P14 · Quick view on demand: on hover, focus and the open row (Space opens it on a Mac; touch and hold on touch) ── */
+@media(hover:hover) and (pointer:fine){
+  .drug-card .x-quick-trigger{opacity:0}
+  .drug-card:hover .x-quick-trigger,.drug-card:focus-within .x-quick-trigger,.drug-card:has(.drug-item[aria-current=true]) .x-quick-trigger{opacity:1}}
+@media(pointer:coarse){
+  .drug-card{grid-template-columns:minmax(0,1fr) auto}
+  .drug-card:not(:has(.drug-item[aria-current=true])) .x-quick-trigger{display:none}}
+body.y-large-text .drug-card:not(:has(.drug-item[aria-current=true])):not(:focus-within) .x-quick-trigger{display:none}
+@media print{.drug-card .x-quick-trigger{display:none}}
+
+/* ── P16 · My workspace's tabs wrap instead of pushing the sheet sideways ── */
+.o-tabs{flex-wrap:wrap}
+.o-tabs button{flex:1 1 auto;min-width:0;white-space:normal}
+@media(pointer:coarse){.drug-item{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}
+
+/* ═══ HIG Branding, Icons and Images (Oct 23 2026; claude/hig-audit-yakuri-branding-icons-images.md) ═══ */
+/* ── B2 · brand names give way to content: the eyebrow takes the reference kind; the rail's brand block goes ── */
+.article-hero .chips .chip[hidden]{display:none}
+.yakuri-rail .rail-bottom{display:none}
+
+/* ── I3 · symbols for "opens elsewhere" (arrow.up.right) and "go to" (chevron.right), sized and coloured with their text ── */
+body{--y-i-ext:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7'/%3E%3Cpath d='M8.5 7H17v8.5'/%3E%3C/svg%3E");
+  --y-i-go:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5.5 15.5 12 9 18.5'/%3E%3C/svg%3E")}
+.y-sym{display:inline-block;width:.85em;height:.85em;margin-left:.3em;vertical-align:-.08em;background:currentColor;flex:0 0 auto}
+.y-sym-ext{-webkit-mask:var(--y-i-ext) center/contain no-repeat;mask:var(--y-i-ext) center/contain no-repeat}
+.y-sym-go{-webkit-mask:var(--y-i-go) center/contain no-repeat;mask:var(--y-i-go) center/contain no-repeat}
+@media(forced-colors:active){.y-sym{background:LinkText}}
+@media print{.y-sym{display:none}}
+
+/* ── I4 · a symbol's stroke follows its label's weight (§7): Semibold 2.0, Medium 1.8, Regular 1.6 ── */
+.yakuri-rail span.y-ico svg,#pvxSubnav .seg svg,#pvxSubnav .y-btn-ico svg,.y-ws-item .y-ico svg,.y-island-ico svg{stroke-width:2}
+#pvxSubnav #x-spotlight-open svg{stroke-width:1.8}
+.search>span svg{stroke-width:1.6}
+
+/* ═══ HIG Layout, Motion and SF Symbols (Oct 23 2026; claude/hig-audit-yakuri-layout-motion-symbols.md) ═══ */
+/* ── L1 · anything that scrolls a view's tabs into place lands under the real head ── */
+.y-section-nav{scroll-margin-top:var(--pvx-head)}
+
+/* ── L3 · scroll edge: once the tabs are stuck, content dims as it passes under them (a layer of the page colour between the
+   blurred backdrop and the labels) and fades for about 16 pt below. The glass recipe itself is unchanged. ── */
+body{--y-edge:rgba(245,245,247,.72);--y-edge-strong:rgba(245,245,247,.92)}
+body.dark{--y-edge:rgba(8,14,26,.72);--y-edge-strong:rgba(8,14,26,.92)}
+.y-section-nav.y-stuck{background-image:linear-gradient(var(--y-edge),var(--y-edge));box-shadow:0 8px 12px 0 var(--y-edge-strong)}
+@media(prefers-reduced-transparency:reduce),(prefers-contrast:more),(forced-colors:active){.y-section-nav.y-stuck{background-image:none}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.y-section-nav.y-stuck{background-image:none}}
+html.y-noblur .y-section-nav.y-stuck{background-image:none}
+
+/* ── L4 · compact height (500 pt tall or less): Yakuri's own rows tighten (targets stay 44 pt); while a monograph is open
+   the drug list steps aside, as in iPhone portrait; Back and Library bring it back ── */
+@media(max-height:500px){
+  #pvxSubnav.subnav{padding-top:4px;padding-bottom:4px}
+  .y-section-nav button{min-height:44px;padding-top:6px;padding-bottom:6px}
+  .y-section-nav .y-island-dock{min-height:44px}
+}
+@media(max-height:500px) and (min-width:761px){
+  body.reading-mobile .library{display:none}
+  body.reading-mobile .article-top .back{display:inline-flex}
+}
+
+/* ── L5 · the section tabs show that they scroll: a fade on the edge that has more ── */
+.y-section-nav{column-gap:8px}
+.y-section-nav::before{content:'';position:sticky;left:0;flex:0 0 24px;margin-right:-32px;z-index:2;pointer-events:none;opacity:0;
+  background:linear-gradient(to right,var(--y-glass-solid),transparent)}
+.y-section-nav.y-more-start::before{opacity:1}
+.y-section-nav .y-island-dock::before{content:'';position:absolute;right:100%;top:0;bottom:0;width:24px;pointer-events:none;opacity:0;
+  background:linear-gradient(to left,var(--y-glass-solid),transparent)}
+.y-section-nav.y-more-end .y-island-dock::before{opacity:1}
+.y-section-nav::after{content:'';position:sticky;right:0;flex:0 0 24px;margin-left:-32px;z-index:2;pointer-events:none;opacity:0;
+  background:linear-gradient(to left,var(--y-glass-solid),transparent)}
+.y-section-nav.y-more-end:not(:has(.y-island-dock:not([hidden])))::after{opacity:1}
+@media(prefers-contrast:more),(forced-colors:active),(prefers-reduced-transparency:reduce){.y-section-nav::before,.y-section-nav::after,.y-section-nav .y-island-dock::before{background:linear-gradient(to right,var(--panel),transparent)}
+  .y-section-nav::after,.y-section-nav .y-island-dock::before{background:linear-gradient(to left,var(--panel),transparent)}}
+html.y-noblur .y-section-nav::before{background:linear-gradient(to right,var(--panel),transparent)}
+html.y-noblur .y-section-nav::after,html.y-noblur .y-section-nav .y-island-dock::before{background:linear-gradient(to left,var(--panel),transparent)}
+
+/* the tab bar is padded 14 pt on iPhone; sticky edges sit at the bar's real edge, so nothing shows past the docked context or the fades */
+@media(max-width:760px){.y-section-nav{--y-nav-pad:14px}}
+.y-section-nav::before{left:calc(0px - var(--y-nav-pad,0px))}
+.y-section-nav::after,.y-section-nav .y-island-dock{right:calc(0px - var(--y-nav-pad,0px))}
+
+/* ── L6 · one inset, one indent: text in every box starts 16 pt in (border included); lists indent 24 pt, nested lists 24 more ── */
+#article .h-highlights{padding-left:15px;padding-right:15px}
+#article .notice{padding-left:14px;padding-right:14px}
+#article .governance-panel{padding-left:14px;padding-right:14px}
+#article .hold-reasons,#article #y-active-holds{padding-left:16px;padding-right:16px}
+#article .hold-reasons ul,#article .y-state ul{margin-left:0;padding-left:24px}
+#article .references ol,#article .references ul{margin-left:0;padding-left:24px}
+#article .references li{padding-left:0;margin-left:0}
+
+/* ── M7 · sheets, menus and the calculator show where they come from (Brand §8). Nothing waits: they can be used as they
+   appear, and an interrupted transition reverses from where it is. Browsers without @starting-style show them at once. ── */
+@media(prefers-reduced-motion:no-preference){
+  dialog{transition:opacity .15s ease,transform .15s ease,overlay .15s allow-discrete,display .15s allow-discrete}
+  dialog[open]{opacity:1;transform:none;transition-duration:.2s;transition-timing-function:cubic-bezier(.2,.8,.2,1)}
+  dialog:not([open]){opacity:0;transform:scale(.98)}
+  @starting-style{dialog[open]{opacity:0;transform:scale(.98)}}
+  dialog::backdrop{transition:background-color .2s,overlay .2s allow-discrete,display .2s allow-discrete}
+  @starting-style{dialog[open]::backdrop{background-color:transparent}}
+  .y-menu-list,#utility-calculator-panel{transition:opacity .1s ease,transform .1s ease,display .1s allow-discrete}
+  .y-menu-list:not([hidden]),#utility-calculator-panel:not([hidden]){opacity:1;transform:none;transition-duration:.16s;transition-timing-function:cubic-bezier(.2,.8,.2,1)}
+  .y-menu-list[hidden],#utility-calculator-panel[hidden]{opacity:0;transform:scale(.96)}
+  @starting-style{.y-menu-list:not([hidden]),#utility-calculator-panel:not([hidden]){opacity:0;transform:scale(.96)}}
+  .y-menu-list{transform-origin:top left}
+  #utility-calculator-panel{transform-origin:top right}
+}
+@media(prefers-reduced-motion:no-preference) and (max-width:600px){
+  dialog[open]{transition-duration:.3s}
+  dialog:not([open]){transform:translateY(24px)}
+  @starting-style{dialog[open]{opacity:0;transform:translateY(32px)}}
+}
+/* Reduce Motion: only the fades remain (yakuri.css removes every other transition) */
+@media(prefers-reduced-motion:reduce){
+  dialog{transition:opacity .15s ease,overlay .15s allow-discrete,display .15s allow-discrete!important}
+  dialog:not([open]){opacity:0}
+  @starting-style{dialog[open]{opacity:0}}
+  .y-menu-list,#utility-calculator-panel{transition:opacity .12s ease,display .12s allow-discrete!important}
+  .y-menu-list[hidden],#utility-calculator-panel[hidden]{opacity:0}
+  @starting-style{.y-menu-list:not([hidden]),#utility-calculator-panel:not([hidden]){opacity:0}}
+  .toast{transition:opacity .15s!important}
+}
+
+/* ── M8 · press feedback by kind: standalone buttons press to 97 %; rows, rail items, tabs, segments and menu items only highlight ── */
+:is(.drug-item,.yakuri-rail>button,.y-section-nav button,#pvxSubnav .seg,.y-menu-item,[role=menuitem],[role=menuitemradio],[role=tab],.y-ws-item,.medical-nav button,.o-tabs button):active:not(:disabled){scale:none}
+
+/* ── S10 · a link's symbol stays with its last word (pravix.js wraps the two in one span) ── */
+.y-nowrap{white-space:nowrap}
+
+/* ── S12 · on touch screens the selected view uses the fill variant, as the shared top bar does ── */
+@media(hover:none) and (pointer:coarse){#pvxSubnav .seg[aria-current=page] svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}}
+@media(hover:none) and (pointer:coarse) and (prefers-contrast:more){#pvxSubnav .seg[aria-current=page] svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7}}
+
+/* ── S13 · the star bounces once when you save (Bounce: an action occurred); never when unsaving, never with Reduce Motion ── */
+@keyframes y-bounce{0%{scale:1}35%{scale:1.22}70%{scale:.94}100%{scale:1}}
+@media(prefers-reduced-motion:no-preference){#favorite.y-bounce::after{animation:y-bounce .25s cubic-bezier(.2,.8,.2,1)}}
+@media(max-height:500px) and (min-width:761px){body.reading-mobile .workspace{grid-template-columns:auto minmax(0,1fr)}}
+
+/* ═══ HIG Typography, Writing and Charting data (Oct 23 2026; claude/hig-audit-yakuri-typography-writing-charts.md) ═══ */
+/* ── T1 · numbers that change keep their width ── */
+#integration-counts,.integration-counts,#result-count,#saved-count,.r-table td,.r-table td button,#calc-readout,#utility-calculator-panel output,.graph-summary,.y-pair-summary{font-variant-numeric:tabular-nums}
+
+/* ── W8 · a field that can't be used says what to enter, right under it ── */
+.y-field-error{margin:6px 0 0;color:var(--y-danger);font-size:.8125rem;line-height:1.4;font-weight:500}
+input[aria-invalid=true],select[aria-invalid=true]{border-color:var(--y-danger)!important}
+
+/* ── C11 · the legend is drawn with the graph's own lines ── */
+.graph-legend span{display:inline-flex;align-items:center;gap:6px}
+.y-legend-line{width:28px;height:8px;flex:0 0 28px;overflow:visible}
+.y-legend-line line{stroke-linecap:butt;fill:none}
+.graph-legend .mapped .y-legend-line line{stroke:var(--y-amber-mark);stroke-width:3}
+.graph-legend .species .y-legend-line line{stroke:var(--y-purple);stroke-width:3;stroke-dasharray:8 4 2 4}
+.graph-legend .unknown .y-legend-line line{stroke:var(--muted);stroke-width:2;stroke-dasharray:5 6}
+@media(forced-colors:active){.y-legend-line line{stroke:CanvasText!important}}
+
+/* ── C12 · one summary in the Graph view; the connections list on demand ── */
+body.y-graph-mode .y-pair-summary{display:none}
+.graph-connections{margin-top:16px}
+.graph-connections>summary{cursor:pointer;font-size:1rem;font-weight:600;min-height:44px;display:flex;align-items:center;gap:8px;list-style:none}
+.graph-connections>summary::-webkit-details-marker{display:none}
+.graph-connections>summary::before{content:'';width:12px;height:12px;flex:0 0 12px;background:currentColor;-webkit-mask:var(--y-i-chevron) center/contain no-repeat;mask:var(--y-i-chevron) center/contain no-repeat;transition:rotate .16s}
+.graph-connections[open]>summary::before{rotate:90deg}
+
+/* ── C13 · the coverage table: a caption, sortable headings, sentence case ── */
+.y-coverage caption{caption-side:top;text-align:left;color:var(--muted);font-size:.8125rem;padding:0 0 8px}
+.y-coverage th{white-space:nowrap}
+.y-coverage th button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:4px;min-height:32px;cursor:pointer;font:inherit;font-weight:600;color:inherit;border-radius:6px}
+.y-coverage th button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.y-coverage th[aria-sort=ascending] button::after,.y-coverage th[aria-sort=descending] button::after{content:'';width:10px;height:10px;background:currentColor;-webkit-mask:var(--y-i-chevron) center/contain no-repeat;mask:var(--y-i-chevron) center/contain no-repeat;rotate:-90deg}
+.y-coverage th[aria-sort=descending] button::after{rotate:90deg}
+@media(pointer:coarse){.y-coverage th button{min-height:44px}}
+
+/* ── A14 · the interaction checker shows on iPhone (style.css hides main below 760 pt for the library's list-or-reader switch) ── */
+@media(max-width:760px){#interaction-main{display:block}}
+/* the graph is drawn at 80 % on iPhone, so its words are set a step larger there: names and status 13 pt or more, nothing under 11 pt */
+@media(max-width:760px){.graph-node text,.graph-node .node-status{font-size:1.0625rem}}
+
+/* ═══ HIG Collaboration and sharing, Drag and drop, Entering data (Oct 23 2026; claude/hig-audit-yakuri-sharing-dnd-entry.md) ═══ */
+/* ── D3 · D4 · a drop target highlights only while something it takes is over it ── */
+.y-dialog.y-drop-ok,dialog.y-drop-ok{outline:2px dashed var(--accent);outline-offset:-8px}
+.yakuri-rail>button.y-drop-target{transition:background-color .12s,box-shadow .12s}
+.yakuri-rail>button.y-drop-ok{background:var(--selected);box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent)}
+body.y-dragging-drug .yakuri-rail>button:not(.y-drop-ok){cursor:no-drop}
+[draggable=true].drug-item,#article .y-drug-title[draggable=true]{-webkit-user-drag:element}
+@media(prefers-reduced-motion:reduce){.yakuri-rail>button.y-drop-target{transition:none}}
+@media(forced-colors:active){.y-drop-ok{outline:2px dashed Highlight!important;box-shadow:none!important}}
+/* ── E7 · the main button waits (dimmed, still focusable, still names what's missing when pressed) ── */
+button[aria-disabled=true]{opacity:.45;cursor:default}
+button[aria-disabled=true]:hover{background:inherit}
+@media(forced-colors:active){button[aria-disabled=true]{opacity:1;color:GrayText;border-color:GrayText}}
+/* ── E8 · what Yakuri carried over says where it came from ── */
+.y-carried{margin:6px 0 0;color:var(--muted);font-size:.8125rem;line-height:1.4}
+/* ── E9 · a search field with suggestions in place of a 1,000-item menu ── */
+input.y-picker{display:block;box-sizing:border-box;width:100%;max-width:none;min-height:44px;padding:10px 12px;margin-top:6px;font:inherit;font-size:.875rem}
+@media(pointer:fine){input.y-picker{min-height:36px;padding:8px 10px}}
+input.y-picker[aria-invalid=true]{border-color:var(--y-danger)}
+/* ── S1 · the toolbar's Share is the share glyph alone ── */
+.y-menu-btn.y-icon-menu{padding:6px 9px;gap:0}
+.y-share-glyph{width:min(1.0625rem,24px);height:min(1.0625rem,24px);flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}  /* a 600-weight label takes a 2 px stroke */
+@media(pointer:coarse){.y-menu-btn.y-icon-menu{min-width:44px;justify-content:center}}
+select[data-y-picker][hidden]{display:none!important}  /* the menu it replaces stays in the page for the sheet's own logic */
+.y-toolbar.y-tight .y-modes>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;margin:0}

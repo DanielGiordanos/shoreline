@@ -1,0 +1,18 @@
+/* Historical local test records. Every recalculation passes through the server. */
+(function(root){'use strict';
+const key='yakuri-calculations-v1';
+const fields={bsa:['tool','species','weight','weight_unit'],lean:['tool','species','weight','weight_unit','bcs','body_fat_percent'],arithmetic_test:['tool','kind','weight','weight_unit','dose','dose_unit','stock_mg_ml','hours'],cpr_weight_table:['tool','weight','weight_unit']};
+function input(raw){if(!raw||!Object.hasOwn(fields,raw.tool))throw Error('Unsupported saved calculator.');const out={};for(const k of fields[raw.tool])if(Object.hasOwn(raw,k)){const v=raw[k];if(typeof v==='number'&&Number.isFinite(v)||typeof v==='string'&&v.length<=100)out[k]=v;else throw Error('Invalid calculation input.');}return out;}
+function clean(x){if(!x||typeof x.id!=='string'||typeof x.name!=='string'||typeof x.summary!=='string')throw Error('Invalid calculation record.');return {id:x.id.slice(0,100),name:x.name.slice(0,100),time:String(x.time||'').slice(0,40),input:input(x.input),version:String(x.version||'').slice(0,200),summary:x.summary.slice(0,30000),clinicalApproval:false,...(x.result&&typeof x.result==='object'&&!Array.isArray(x.result)&&JSON.stringify(x.result).length<=100000?{result:JSON.parse(JSON.stringify(x.result))}:{})};}
+const labels={species:'Species',weight:'Weight',weight_unit:'Weight unit',bcs:'Body condition score (out of 9)',body_fat_percent:'Assessed body fat (%)',kind:'Arithmetic type',dose:'Manually entered test dose',dose_unit:'Dose unit',stock_mg_ml:'Stock concentration (mg/mL)',hours:'Duration (hours)'};
+const label=k=>labels[k]||k.replaceAll('_',' ');
+function describeInput(raw){return Object.entries(input(raw)).filter(([k])=>k!=='tool').map(([k,v])=>label(k)+': '+v).join('\n');}
+function stored(){const raw=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(raw))throw Error('Saved calculations are damaged; they have not been overwritten.');return raw;}
+// Unreadable entries are skipped for display but always kept in storage untouched.
+function inspect(){const records=[];let invalid=0;for(const x of stored().slice(0,100)){try{records.push(clean(x));}catch{invalid++;}}return {records,invalid};}
+function read(){return inspect().records;}
+function save(x){const list=stored();if(list.length>=100)throw Error('Saved calculation limit reached (100). Remove an old record first.');const item=clean(x);if(list.some(r=>r&&r.id===item.id))throw Error('Calculation already saved.');localStorage.setItem(key,JSON.stringify([item,...list]));return item;}
+function remove(id){localStorage.setItem(key,JSON.stringify(stored().filter(x=>!(x&&x.id===id))));}
+function offer(container,payload,result,summary){if(!container||!result.allowed)return;const button=document.createElement('button'),status=document.createElement('p');button.type='button';button.textContent='Save calculation';status.setAttribute('role','status');container.append(button,status);button.onclick=()=>{try{save({id:crypto.randomUUID(),name:payload.tool==='cpr_weight_table'?'CPR reference':payload.tool==='lean'?'Body composition estimate':payload.tool==='bsa'?'Body surface area':'Infusion arithmetic test',time:new Date().toISOString(),input:payload,version:result.version||'',summary,result});status.textContent='Saved locally with inputs, source version and limitations. Open Research → Calculations in the drug library.';button.disabled=true;}catch(e){status.textContent=e.message||'Local storage unavailable. Nothing saved.';}};}
+const api={input,label,describeInput,clean,inspect,read,save,remove,offer};if(typeof module==='object'&&module.exports)module.exports=api;else root.YakuriCalculationRecords=api;
+})(globalThis);

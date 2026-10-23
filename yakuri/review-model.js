@@ -1,0 +1,27 @@
+/* Read-only diagnostics and literal comparisons; no clinical inference. */
+(function(root){'use strict';
+const version=d=>d?.governance?.recommendations?.[0]?.content_version||'';
+const json=v=>v===undefined?'Not recorded':JSON.stringify(v,null,2);
+// Display only: numbers to 12 significant digits, like the calculators. Stored values are never rounded.
+const shown=v=>v===undefined?'Not recorded':JSON.stringify(v,(k,x)=>typeof x==='number'&&Number.isFinite(x)?Number(x.toPrecision(12)):x,2);
+function pair(a,b){const x=shown(a),y=shown(b);return x===y&&JSON.stringify(a)!==JSON.stringify(b)?{before:json(a),after:json(b),beyondDisplay:true}:{before:x,after:y,beyondDisplay:false};}
+function diff(a,b,path=''){if(JSON.stringify(a)===JSON.stringify(b))return [];if(a&&b&&typeof a==='object'&&typeof b==='object'&&Array.isArray(a)===Array.isArray(b)){return [...new Set([...Object.keys(a),...Object.keys(b)])].flatMap(k=>diff(a[k],b[k],path+'/'+k.replace(/~/g,'~0').replace(/\//g,'~1')));}return [{path:path||'/',before:a,after:b,status:a===undefined?'Added':b===undefined?'Removed':'Changed'}];}
+function textChange(a,b){a=String(a??'');b=String(b??'');let start=0,end=0;while(start<Math.min(a.length,b.length)&&a[start]===b[start])start++;while(end<Math.min(a.length,b.length)-start&&a[a.length-1-end]===b[b.length-1-end])end++;return {prefix:a.slice(0,start),removed:a.slice(start,a.length-end),added:b.slice(start,b.length-end),suffix:end?a.slice(-end):''};}
+function audit(drugs,values={},errors=[]){const findings=errors.map(message=>({kind:'Storage',name:'Local workspace',message}));const byId=new Map(drugs.map(d=>[d.id,d]));const add=(kind,d,message)=>findings.push({kind,drug:d?.id,name:d?.name||'Local workspace',message});
+for(const d of drugs){const refs=d.editorial?.references||[],sections=d.editorial?.sections||[];
+if(d.governance?.state==='Held')add('Safety hold',d,'Current safety hold. Review the full reference and hold controls.');
+for(const f of d.findings||[])if(f.potential_high_consequence||/review|discrepancy|unresolved/i.test(f.label||''))add('Review finding',d,(f.matching_context||f.finding_id||'Recorded finding')+': '+(f.interpretation||f.label));
+if(!sections.length)add('Missing evidence',d,'No editorial sections recorded.');
+if(!refs.length)add('Missing citation',d,'No references recorded.');
+for(const s of sections){if(/discrepancy|requiring review|unresolved/i.test(s.label||''))add('Review finding',d,s.title+': '+s.label);if(!s.refs?.length){if(/^not assessed$/i.test(s.label||''))add('Evidence gap',d,s.title+': recorded as not assessed; no citation recorded. The gap remains open.');else add('Missing citation',d,s.title+': no citation recorded'+(s.label?' (labelled “'+s.label+'”)':'')+'.');}else for(const n of s.refs)if(!Number.isInteger(n)||n<1||!refs[n-1])add('Broken citation',d,s.title+': invalid reference index '+n);}
+refs.forEach((r,i)=>{if(!r.url){add('Source link',d,'Reference '+(i+1)+': URL not recorded.');return;}try{const u=new URL(r.url);if(!['http:','https:'].includes(u.protocol))throw Error();}catch{add('Source link',d,'Reference '+(i+1)+': invalid or unsupported URL.');}});
+}
+function pointer(id,v,label,section){const d=byId.get(id);if(!d){findings.push({kind:'Saved reference',name:label,message:'Reference unavailable: '+id});return;}if(v!==undefined&&(!v||!version(d)||v!==version(d)))add('Saved reference',d,label+': '+(!v||!version(d)?'source version unverified.':'source changed since saving.'));if(section&&!['all','audit', 'overview','dosing','safety','interactions','references','formulations'].includes(section)&&!(/^section-\d+$/.test(section)&&d.editorial?.sections?.[Number(section.slice(8))])&&!d.editorial?.sections?.some(s=>s.title===section))add('Saved reference',d,label+': saved section unavailable.');}
+function walk(x,label){if(!x||typeof x!=='object')return;if(typeof x.drug==='string')pointer(x.drug,x.version??x.sourceVersion,label,x.section||x.leftTitle);if(typeof x.other==='string')pointer(x.other,x.otherVersion,label+' comparison',x.rightTitle);if(Array.isArray(x.drugs))x.drugs.forEach(id=>pointer(id,undefined,label));if(x.stage&&x.stage!=='Sources checked'&&!x.archived)add('Review finding',byId.get(x.drug),(x.name||label)+' · '+x.stage+': '+(x.body||'No details'));for(const [k,v]of Object.entries(x))if(v&&typeof v==='object')walk(v,x.name||label);}
+for(const [key,value]of Object.entries(values)){if(key==='favorites'||key==='recent')value.forEach(id=>pointer(id,undefined,key==='recent'?'Recent history':'Favorite'));else walk(value,key);}
+return findings;
+}
+// Worklist export for an offline reviewer. Cells that a spreadsheet could run as a formula are prefixed with an apostrophe.
+function csv(items,drugs=[]){const byId=new Map(drugs.map(d=>[d.id,d]));const cell=v=>{let t=String(v??'');if(/^[=+\-@\t\r]/.test(t))t="'"+t;return /[",\n\r]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};const rows=[['Reference','Category','Finding','Reference ID','Current state','Source version','Status']];for(const x of items){const d=byId.get(x.drug);rows.push([x.name,x.kind,x.message,x.drug||'',d?.governance?.state==='Draft'?'Unverified':d?.governance?.state||'',version(d),'Unverified local finding · not clinical sign-off']);}return rows.map(r=>r.map(cell).join(',')).join('\r\n')+'\r\n';}
+const api={version,json,shown,pair,diff,textChange,audit,csv};if(typeof module==='object'&&module.exports)module.exports=api;else root.YakuriReview=api;
+})(globalThis);

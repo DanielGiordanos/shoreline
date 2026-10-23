@@ -1,0 +1,182 @@
+/* Pravix shared top bar for Yakuri — copied byte-for-byte from the suite (anesia/index.html, live build n243).
+   Do not edit here: change the suite and copy again. Source blocks: pvx-logout-css, pvx-header-css, pvx-portal-nav, PVX-TOPBAR n132, pvx-n189-topbar. */
+/* ── pvx-logout-css ── */
+/* Flow's Logout button, verbatim */
+.logout-button{--mx:50%;--my:50%;--surface-top:rgba(255,255,255,0.96);--surface-bottom:rgba(247,249,252,0.90);--border:rgba(20,28,40,0.08);--border-hover:rgba(20,28,40,0.13);--text:#1d1d1f;--icon:#59616d;--icon-bg-top:rgba(65,72,82,0.055);--icon-bg-bottom:rgba(65,72,82,0.025);--icon-bg-hover-top:rgba(65,72,82,0.075);--icon-bg-hover-bottom:rgba(65,72,82,0.035);--icon-border:rgba(65,72,82,0.10);--icon-border-hover:rgba(65,72,82,0.14);--chevron:rgba(95,104,116,0.46);--chevron-hover:rgba(72,78,88,0.72);--shadow-main:rgba(29,29,31,0.10);--shadow-secondary:rgba(29,29,31,0.06);--shadow-hover-main:rgba(29,29,31,0.115);--shadow-hover-secondary:rgba(29,29,31,0.065);--highlight:rgba(255,255,255,0.72);position:relative;width:auto;height:40px;padding:0 12px 0 8px;border:1px solid var(--border);border-radius:13px;display:grid;grid-template-columns:28px auto 16px;align-items:center;gap:8px;cursor:pointer;color:var(--text);font-family:var(--font);background:linear-gradient(180deg,var(--surface-top),var(--surface-bottom));box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);overflow:hidden;isolation:isolate;transform:translateY(0) scale(1);transition:transform 180ms cubic-bezier(.2,.8,.2,1),border-color 180ms ease,background 180ms ease,box-shadow 180ms ease;}
+body.dark .logout-button{--surface-top:rgba(25,37,64,0.92);--surface-bottom:rgba(17,27,48,0.94);--border:rgba(77,200,224,0.16);--border-hover:rgba(77,200,224,0.30);--text:#D8E8F4;--icon:#A7C2D8;--icon-bg-top:rgba(77,200,224,0.10);--icon-bg-bottom:rgba(77,200,224,0.04);--icon-bg-hover-top:rgba(77,200,224,0.16);--icon-bg-hover-bottom:rgba(77,200,224,0.06);--icon-border:rgba(77,200,224,0.18);--icon-border-hover:rgba(77,200,224,0.30);--chevron:rgba(167,194,216,0.50);--chevron-hover:rgba(216,232,244,0.80);--shadow-main:rgba(0,0,0,0.40);--shadow-secondary:rgba(0,0,0,0.24);--shadow-hover-main:rgba(0,0,0,0.46);--shadow-hover-secondary:rgba(0,0,0,0.26);--highlight:rgba(77,200,224,0.12);}
+.logout-button::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(170px 100px at var(--mx) var(--my),var(--highlight),transparent 68%);opacity:0;transition:opacity 160ms ease;pointer-events:none;z-index:0;}
+.logout-button:hover{border-color:var(--border-hover);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);}
+.logout-button:hover::before{opacity:1;}
+.logout-button:active{transform:scale(0.985);box-shadow:inset 0 2px 5px rgba(0,0,0,0.08);}
+.logout-icon{position:relative;z-index:1;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;color:var(--icon);background:linear-gradient(180deg,var(--icon-bg-top),var(--icon-bg-bottom));border:1px solid var(--icon-border);transition:transform 190ms cubic-bezier(.2,.8,.2,1),background 180ms ease,border-color 180ms ease;}
+.logout-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;}
+.door-glyph,.exit-arrow{transform-box:fill-box;transform-origin:center;transition:transform 260ms cubic-bezier(.22,1,.36,1),opacity 180ms ease;}
+.logout-button:hover .logout-icon{transform:translateX(-0.5px);background:linear-gradient(180deg,var(--icon-bg-hover-top),var(--icon-bg-hover-bottom));border-color:var(--icon-border-hover);}
+.logout-button:hover .door-glyph{transform:translateX(-0.45px);}
+.logout-button:hover .exit-arrow{transform:translateX(2.2px);}
+.logout-button:active .logout-icon{transform:scale(0.96);}
+.logout-button:active .door-glyph{transform:translateX(-0.2px) scale(.98);}
+.logout-button:active .exit-arrow{transform:translateX(3px) scale(.96);}
+.logout-label{position:relative;z-index:1;text-align:left;font-size:14px;font-weight:600;line-height:1;letter-spacing:-0.015em;color:var(--text);transition:transform 180ms cubic-bezier(.2,.8,.2,1),opacity 180ms ease;}
+.logout-button:hover .logout-label{transform:translateX(1px);}
+.logout-chevron{position:relative;z-index:1;width:16px;height:16px;display:grid;place-items:center;color:var(--chevron);transition:transform 190ms cubic-bezier(.2,.8,.2,1),color 180ms ease;}
+.logout-chevron svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.logout-button:hover .logout-chevron{transform:translateX(1.25px);color:var(--chevron-hover);}
+.logout-button:focus-visible{outline:3px solid rgba(88,166,255,0.55);outline-offset:4px;}
+
+.nav-right{display:flex;align-items:center;gap:10px}
+@media(max-width:1100px){.logout-button{width:40px;padding:0 5px;grid-template-columns:28px;gap:0}.logout-label,.logout-chevron{display:none}}
+
+/* ── pvx-header-css ── */
+/* ═══ Pravix portal header — Flow's top bar and sub-nav on the portal pages (Oct 2026; source: VCA/nav/portal-header.css) ═══
+   Flow's rules verbatim (values from Flow's stylesheet), scoped to #pvxTopnav / #pvxSubnav so a page's older nav CSS can't override them.
+   Goes with portal-nav.css (smaller screens) and the Logout CSS (flow_logout.css). */
+#pvxTopnav,#pvxSubnav{--nav-bg:#0A1222;--r-sm:8px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --brand-cyan:#4DC8E0;--ink-400:#8E8E93;--glass-hairline:rgba(0,0,0,0.06);--ease:cubic-bezier(.2,.8,.2,1);--brand-green:#1a9e6e;font-family:var(--font)}
+body.dark #pvxTopnav,body.dark #pvxSubnav{--brand-cyan:#38BDD2;--ink-400:#5E7C9C;--glass-hairline:rgba(77,200,224,0.10);--brand-green:#48B888}
+
+/* top bar (the light-mode lines are !important: some intern pages carry an older !important light header) */
+#pvxTopnav.topnav{z-index:300;background:var(--nav-bg);height:76px;min-height:76px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;justify-content:normal;
+  padding:0 32px;margin:0;box-shadow:0 2px 24px rgba(0,0,0,0.25);backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0;transition:background .4s;}
+#pvxTopnav.topnav::before,#pvxTopnav.topnav::after{content:none;display:none}
+body.dark #pvxTopnav.topnav{background:#0D1730;border-bottom:1px solid rgba(255,255,255,0.04);}
+body:not(.dark) #pvxTopnav.topnav{background:rgba(255,255,255,.96)!important;border-bottom:1px solid rgba(29,29,31,.08)!important;box-shadow:0 1px 0 rgba(29,29,31,.03)!important;}
+#pvxTopnav img.logo{height:58.14px;width:auto;max-height:none;}
+#pvxTopnav img.logo-dark{display:none;}
+#pvxTopnav img.logo-light{display:block;}
+body.dark #pvxTopnav img.logo-dark{display:block;}
+body.dark #pvxTopnav img.logo-light{display:none;}
+#pvxTopnav .brandwrap{display:flex;align-items:center;gap:20px;justify-self:start;min-width:0;}
+#pvxTopnav .cobrand-div{width:1px;height:34px;background:#8098ae;opacity:.28;border-radius:1px;flex:0 0 auto;}
+#pvxTopnav .pvx-lockup{display:flex;align-items:center;gap:8px;}
+#pvxTopnav img.pvx-icon{height:34px;width:auto;}
+#pvxTopnav .pvx-word{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;}
+#pvxTopnav .pvx-powered{font-size:7px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);line-height:1;white-space:nowrap;}
+#pvxTopnav img.pvx-mark{height:22px;width:auto;}
+#pvxTopnav img.plogo-dark{display:none;}
+#pvxTopnav img.plogo-light{display:block;}
+body.dark #pvxTopnav img.plogo-dark{display:block;}
+body.dark #pvxTopnav img.plogo-light{display:none;}
+#pvxTopnav .nav-center{justify-self:center;display:flex;gap:3px;align-items:center;position:static;transform:none;margin:0;}
+#pvxTopnav .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 13px;border-radius:var(--r-sm);
+  cursor:pointer;transition:all .2s;color:rgba(255,255,255,0.55);font-size:10px;font-weight:600;letter-spacing:.3px;
+  border:1px solid transparent;text-decoration:none;background:transparent;font-family:var(--font);white-space:nowrap;box-shadow:none;}
+#pvxTopnav .nav-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);}
+#pvxTopnav .nav-item.active{background:rgba(77,200,224,0.15);color:var(--brand-cyan);border-color:rgba(77,200,224,0.25);}
+#pvxTopnav .nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+body:not(.dark) #pvxTopnav .nav-item{color:#333333!important;}
+body:not(.dark) #pvxTopnav .nav-item:hover{background:#EBEBEB!important;color:#636365!important;}
+body:not(.dark) #pvxTopnav .nav-item.active{background:#EBEBEB!important;color:#636365!important;border-color:transparent!important;}
+#pvxTopnav .nav-right{justify-self:end;display:flex;gap:10px;align-items:center;}
+#pvxTopnav .theme-toggle{cursor:pointer;background:none;border:none;border-radius:50px;overflow:hidden;width:72px;height:34px;padding:0;
+  flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,0.15);position:relative;transition:box-shadow .2s;}
+#pvxTopnav .theme-toggle:hover{box-shadow:0 0 0 2px rgba(77,200,224,0.5);}
+#pvxTopnav .theme-toggle img{width:72px;height:34px;object-fit:cover;display:block;border-radius:50px;pointer-events:none;transition:opacity .3s;position:absolute;top:0;left:0;}
+#pvxTopnav .theme-toggle .img-light{opacity:1;} #pvxTopnav .theme-toggle .img-dark{opacity:0;}
+body.dark #pvxTopnav .theme-toggle .img-light{opacity:0;} body.dark #pvxTopnav .theme-toggle .img-dark{opacity:1;}
+body:not(.dark) #pvxTopnav .theme-toggle{box-shadow:0 0 0 1.5px rgba(29,29,31,.12)!important;}
+body:not(.dark) #pvxTopnav .theme-toggle:hover{box-shadow:0 0 0 2px rgba(44,184,210,.5)!important;}
+
+/* smaller screens — portal-nav.css's steps, again at this scope */
+@media(max-width:1280px){#pvxTopnav .nav-item{padding:8px 10px}}
+@media(max-width:1100px) and (min-width:761px){#pvxTopnav .nav-item{font-size:0;gap:0;padding:10px 11px;letter-spacing:0}#pvxTopnav .nav-item svg{width:19px;height:19px}}
+@media(max-width:1024px){#pvxTopnav.topnav{column-gap:10px}}
+@media(max-width:760px){#pvxTopnav.topnav{height:auto;min-height:0;padding:8px 16px 6px}#pvxTopnav .nav-item{flex:0 0 auto;padding:6px 10px}#pvxTopnav img.logo{height:44px}}
+
+/* sub-nav — Flow's: the program's own pages on the left, this page's actions on the right */
+#pvxSubnav.subnav{display:flex;align-items:center;gap:16px;padding:11px 32px;margin:0;position:relative;z-index:200;
+  background:var(--nav-bg);opacity:.97;border-bottom:1px solid var(--glass-hairline);box-shadow:0 6px 20px rgba(0,0,0,0.12);}
+body.dark #pvxSubnav.subnav{background:#101a32;}
+body:not(.dark) #pvxSubnav.subnav{background:#FFFFFF;border-bottom:1px solid rgba(29,29,31,.08);box-shadow:0 1px 0 rgba(29,29,31,.03);}
+#pvxSubnav .subnav-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(77,200,224,0.65);white-space:nowrap;}
+body:not(.dark) #pvxSubnav .subnav-title{color:#86868B;}
+#pvxSubnav .switcher{display:flex;gap:3px;align-items:center;padding:0;background:transparent;border:none;min-width:0;overflow-x:auto;scrollbar-width:none;}
+#pvxSubnav .switcher::-webkit-scrollbar{display:none}
+#pvxSubnav .seg{display:flex;flex-direction:row;align-items:center;gap:7px;border:1px solid transparent;background:transparent;cursor:pointer;min-height:40px;
+  font-family:var(--font);font-size:13px;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.01em;text-decoration:none;white-space:nowrap;
+  padding:8px 14px;border-radius:var(--r-sm);transition:all .2s var(--ease);box-shadow:none;}
+#pvxSubnav .seg svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+#pvxSubnav .seg:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9);}
+#pvxSubnav .seg.active{background:rgba(77,200,224,.15);color:var(--brand-cyan);border-color:rgba(77,200,224,.25);}
+body:not(.dark) #pvxSubnav .seg{color:#6E6E73;}
+body:not(.dark) #pvxSubnav .seg:hover{background:rgba(29,29,31,.05);color:#1D1D1F;}
+body:not(.dark) #pvxSubnav .seg.active{background:#EBEBEB;color:#636365;border-color:transparent;}
+#pvxSubnav .pvx-spacer{flex:1 1 auto}
+#pvxSubnav .pvx-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+#pvxSubnav .pvx-actions:empty{display:none}
+/* the page's own buttons (Edit, Save, Print…): Flow's header button — the Logout button's surface */
+#pvxSubnav .pvx-actions>button{height:40px;border-radius:13px;padding:0 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;
+  border:1px solid rgba(20,28,40,.08);color:#1D1D1F;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,252,.90));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:border-color .18s ease,background .18s ease;margin:0}
+#pvxSubnav .pvx-actions>button:hover{border-color:rgba(20,28,40,.13);background:linear-gradient(180deg,#FFFFFF,rgba(247,249,252,.96))}
+body.dark #pvxSubnav .pvx-actions>button{color:#D8E8F4;border-color:rgba(77,200,224,.16);background:linear-gradient(180deg,rgba(25,37,64,.92),rgba(17,27,48,.94))}
+body.dark #pvxSubnav .pvx-actions>button:hover{border-color:rgba(77,200,224,.30)}
+#pvxSubnav .live-dot{width:7px;height:7px;border-radius:50%;background:var(--brand-green);display:inline-block;
+  animation:live-breathe 3s ease-in-out infinite;box-shadow:0 0 6px rgba(26,158,110,0.6);margin-right:6px;flex-shrink:0;}
+@keyframes live-breathe{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 5px rgba(26,158,110,0.5),0 0 0px rgba(26,158,110,0);}
+  50%{opacity:.7;transform:scale(1.25);box-shadow:0 0 8px rgba(26,158,110,0.7),0 0 12px rgba(26,158,110,0.3);}}
+@media(max-width:1100px){#pvxSubnav .subnav-title{display:none}}
+@media(max-width:760px){
+  #pvxSubnav.subnav{padding:8px 16px;gap:10px}
+  #pvxSubnav .seg{padding:7px 11px;font-size:12.5px}
+  #pvxSubnav .pvx-actions>button{height:36px;padding:0 11px;font-size:12px}}
+@media print{#pvxTopnav,#pvxSubnav{display:none!important}}
+/* a page's own button left in the top bar (Directory's Edit): Flow's header button; its inline colours were for the old navy bar */
+#pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){height:40px!important;border-radius:13px!important;padding:0 14px!important;font-family:var(--font)!important;font-size:13px!important;font-weight:600!important;letter-spacing:normal!important;
+  border:1px solid rgba(20,28,40,.08)!important;color:#1D1D1F!important;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,249,252,.90))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important}
+body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){color:#D8E8F4!important;border-color:rgba(77,200,224,.16)!important;background:linear-gradient(180deg,rgba(25,37,64,.92),rgba(17,27,48,.94))!important}
+
+/* ── pvx-portal-nav ── */
+/* ═══ Pravix portal nav — one file for Flow, Treatment Sheets and OR (Oct 2026; source: VCA/nav/portal-nav.css) ═══
+   Nine apps across the top. Wide: icon + name. Up to 1120 px the Pravix wordmark steps aside; up to 1100 px the apps show icons only
+   (the name is the tooltip). Tablet (≤1024 px) keeps Flow's header layout. Phones (≤760 px): the apps get their own scrolling row,
+   with names, under the logo, Logout and the theme switch. */
+@media(max-width:1120px){.cobrand-div,.topnav img.plogo,.topnav .pvx-lockup{display:none!important}}
+@media(max-width:1280px){.nav-center .nav-item{padding:8px 10px}}
+@media(max-width:1100px) and (min-width:761px){
+  .nav-center .nav-item{font-size:0;gap:0;padding:10px 11px;letter-spacing:0}
+  .nav-center .nav-item svg{width:19px;height:19px}}
+/* tablet header — as Flow has it */
+@media (max-width:1024px){
+ .topnav{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-areas:none!important;column-gap:10px}
+ .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ .topnav .nav-center{grid-column:2!important;grid-row:1!important;justify-self:stretch!important;position:static!important;transform:none!important;left:auto!important;min-width:0;overflow-x:auto;scrollbar-width:none;justify-content:flex-start;-webkit-overflow-scrolling:touch}
+ .topnav .nav-center::-webkit-scrollbar{display:none}
+ .topnav .nav-right{grid-column:3!important;grid-row:1!important}
+ .topnav .cobrand-div,.topnav .pvx-lockup{display:none!important}}
+/* phones */
+@media(max-width:760px){
+ html body .topnav{grid-template-columns:auto minmax(0,1fr)!important;height:auto!important;min-height:0;row-gap:4px;padding:8px 16px 6px}
+ html body .topnav .brandwrap{grid-column:1!important;grid-row:1!important}
+ html body .topnav .nav-right{grid-column:2!important;grid-row:1!important;justify-self:end!important}
+ html body .topnav .nav-center{grid-column:1/-1!important;grid-row:2!important;justify-self:stretch!important;justify-content:flex-start;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:0 -16px;padding:0 12px 2px}
+ html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
+ html body .topnav img.logo{height:44px}}
+
+/* ── PVX-TOPBAR n132 ── */
+/* PVX-TOPBAR n132 — the brand and the right-hand controls keep their width; the apps get what is left, overflowing into More */
+html body nav.topnav{grid-template-columns:max-content minmax(0,1fr) max-content!important;column-gap:12px}
+html body nav.topnav .brandwrap{flex:0 0 auto;min-width:0}
+html body nav.topnav .nav-center{min-width:0;max-width:100%;justify-self:center!important;overflow:visible!important;flex-wrap:nowrap;position:relative}
+html body nav.topnav .nav-right{flex:0 0 auto}
+@media(max-width:760px){ html body nav.topnav{grid-template-columns:max-content minmax(0,1fr)!important} html body nav.topnav .nav-center{margin:0!important;padding:0!important;justify-content:flex-start} }
+.pvx-more{position:relative;display:flex;flex:0 0 auto}
+.pvx-more[hidden]{display:none!important}
+.pvx-more-btn{font-family:inherit;cursor:pointer}
+.pvx-more-btn[aria-expanded=true]{background:rgba(255,255,255,0.10);color:rgba(255,255,255,.95)}
+body:not(.dark) .pvx-more-btn[aria-expanded=true]{background:#EBEBEB;color:#333}
+.pvx-more-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;min-width:200px;padding:6px;border-radius:14px;display:flex;flex-direction:column;gap:2px;
+  background:#101A32;border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+body:not(.dark) .pvx-more-menu{background:#fff;border-color:rgba(29,29,31,.1);box-shadow:0 18px 44px rgba(20,28,40,.18)}
+.pvx-more-menu[hidden]{display:none!important}
+html body nav.topnav .pvx-more-menu .nav-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:13px!important;letter-spacing:0;white-space:nowrap;width:100%}
+html body nav.topnav .pvx-more-menu .nav-item svg{width:18px;height:18px}
+.nav-item:focus-visible,.pvx-more-btn:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+@media(forced-colors:active){.pvx-more-menu{border:1px solid CanvasText}}
+
+/* ── pvx-n189-topbar ── */
+/* PVX-N189 - the selected app in the shared top bar: fill variant on touch (iOS tab bar), outline with a mouse (Mac toolbar) */
+@media (hover:none) and (pointer:coarse){
+  .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
