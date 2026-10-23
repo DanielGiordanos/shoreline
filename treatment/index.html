@@ -1260,6 +1260,17 @@ body.dark #tsModal .ts-btn.primary.danger{background:#D12E26;border-color:#D12E2
 #tsOrderSheet .op-btn.danger.solid{background:#D12E26}
 #tsOrderSheet .op-btn.danger.solid:hover{background:#B8241D}
 </style>
+<style id="pvx-n241-ts">
+/* n241: a board row is one keyboard stop; its ring follows the highlight */
+#ctab-dash .sb-row[role=row]:focus{outline:none}
+#ctab-dash .sb-row[role=row]:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:-2px;border-radius:12px}
+/* the sticky patient column sits over the row's ring: it draws its own part */
+#ctab-dash .sb-row[role=row]:focus-visible>.sb-left{box-shadow:inset 2px 0 0 var(--accent,#38BDD2),inset 0 2px 0 var(--accent,#38BDD2),inset 0 -2px 0 var(--accent,#38BDD2);border-radius:12px 0 0 12px}
+#ctab-dash .c-alerts .pvx-alb{display:inline-flex;align-items:center;gap:inherit;max-width:100%;border-radius:8px}
+#ctab-dash .c-alerts .pvx-alb:focus{outline:none}
+#ctab-dash .c-alerts .pvx-alb:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:3px}
+.pvx-sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+</style>
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie; until someone chooses, the system's light or dark (n230). -->
@@ -2464,6 +2475,89 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#tsModal .of-more'); if(!b) return;
     setTimeout(function(){ var box=b.nextElementSibling; if(b.getAttribute('aria-expanded')==='true'&&box){ var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
       try{ box.scrollIntoView({block:'nearest',behavior:rm?'auto':'smooth'}); }catch(x){} } },60); });
+})();
+</script>
+<script id="pvx-n241-ts">
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  function set(e,a,v){ if(!e) return; if(v==null){ if(e.hasAttribute(a)) e.removeAttribute(a); } else if(e.getAttribute(a)!==String(v)) e.setAttribute(a,String(v)); }
+  var uid=0; function idOf(e,p){ if(!e.id) e.id=(p||'pvx241')+'-'+(++uid); return e.id; }
+  function txt(e){ return e?(e.textContent||'').replace(/\s+/g,' ').trim():''; }
+  function tab(){ return (typeof currentCTab!=='undefined'&&currentCTab)||''; }
+
+  /* ---------- 1. the Status board as a table ---------- */
+  function overdueOf(id){ var t=$('.pt-tab[data-id="'+id+'"] .pt-main'); var m=t&&/(\d+)\s*$/.exec(txt(t)); return m?+m[1]:null; }
+  function rowName(r){ var id=r.getAttribute('data-id'), pt=$('.c-pt',r);
+    var nm=txt($('.pt-nm',pt)), sel=$('.c-ward select',r), ward=sel?(sel.options[sel.selectedIndex]||{}).text:txt($('.c-ward',r));
+    var day=txt($('.sb-stay .io-day',r)), code=$('.ts-resus',r), od=id?overdueOf(id):null, team=$$('.c-team .tm-p',r).map(txt).filter(Boolean);
+    var parts=[nm]; if(ward&&ward!=='—') parts.push(ward); if(day) parts.push(day.replace(/^Day/,'day')); if(od!=null) parts.push(od+' overdue');
+    if(code&&code.getAttribute('aria-label')) parts.push(code.getAttribute('aria-label').replace(/^Code status /,'')); if(team.length) parts.push(team.join(', '));
+    return parts.join(', '); }
+  function board(){ var root=$('#ctab-dash'); if(!root) return;
+    $$('.sb-card',root).forEach(function(card){ var inner=$('.sb-inner',card); if(!inner) return; var h=$('.sb-group h3',card), n=$('.sb-group .sb-gn',card);
+      set(inner,'role','table'); if(h){ set(inner,'aria-labelledby',idOf(h,'pvxSbH')+(n?' '+idOf(n,'pvxSbN'):'')); }
+      $$(':scope>.sb-nowline',inner).forEach(function(x){ set(x,'aria-hidden','true'); });
+      var rows=$$(':scope>.sb-row',inner), body=rows.filter(function(r){ return !r.classList.contains('sb-head'); }), cur=body.filter(function(r){ return r.classList.contains('sel'); })[0]||body[0];
+      rows.forEach(function(r){ var head=r.classList.contains('sb-head'); set(r,'role','row');
+        var left=$(':scope>.sb-left',r); set(left,'role','none');
+        $$(':scope>.sb-nowdot',r).forEach(function(x){ set(x,'aria-hidden','true'); });
+        $$(':scope>.sbc',left||r).forEach(function(c){
+          if(head){ set(c,'role','columnheader'); var b=$('.sb-sorth',c); if(b){ var so=b.getAttribute('aria-sort'); if(so){ b.setAttribute('data-pvx-sort',so); b.removeAttribute('aria-sort'); } so=b.getAttribute('data-pvx-sort')||'none'; set(c,'aria-sort',so); } }
+          else if(c.classList.contains('c-pt')) set(c,'role','rowheader');
+          else if(c.classList.contains('al-cell')&&c.getAttribute('role')==='button'){ /* a cell holding the Alerts button (a row can only hold cells) */
+            var w=document.createElement('span'); w.className='pvx-alb'; w.setAttribute('role','button'); w.tabIndex=c.tabIndex>-1?-1:-1;
+            w.setAttribute('aria-label',c.getAttribute('aria-label')||'Alerts'); if(c.title) w.title=c.title;
+            while(c.firstChild) w.appendChild(c.firstChild); c.appendChild(w); c.removeAttribute('aria-label'); c.removeAttribute('tabindex'); c.removeAttribute('title'); set(c,'role','cell'); w.tabIndex=0; }
+          else if(!c.getAttribute('role')||c.getAttribute('role')!=='cell') set(c,'role','cell'); });
+        var hrs=$(':scope>.sb-hours',r);
+        if(hrs){ if(head){ var hc=$$('.sb-hcell',hrs); set(hrs,'role','columnheader'); set(hrs,'aria-label','Hours'+(hc.length?', '+hour(txt(hc[0]))+' to '+hour(txt(hc[hc.length-1])):'')); hc.forEach(function(x){ set(x,'aria-hidden','true'); }); }
+          else { set(hrs,'role','cell'); set(hrs,'aria-label',null); } }
+        if(!head){ set(r,'aria-label',rowName(r)); set(r,'tabindex',r===cur?'0':'-1'); set(r,'aria-selected',null); } }); }); }
+  function hour(h){ var m=/^(\d+)([AP])$/.exec(h||''); return m?m[1]+' '+m[2]+'M':h; }
+  /* the highlight moved with ↑ ↓: focus follows it, so VoiceOver reads the row */
+  var mo=new MutationObserver(function(ms){ var hit=null; ms.forEach(function(m){ if(m.type==='attributes'&&m.target.classList&&m.target.classList.contains('sb-row')&&m.target.classList.contains('sel')&&(m.oldValue||'').indexOf('sel')<0) hit=m.target; });
+    sched(); if(hit&&tab()==='dash'){ var a=document.activeElement; if(!a||a===document.body||(a.classList&&a.classList.contains('sb-row'))){ setTimeout(function(){ board(); if(hit.isConnected){ try{ hit.focus({preventScroll:true}); hit.scrollIntoView({block:'nearest'}); }catch(x){} } },0); } } });
+  /* Return opens the row that has focus (even if VoiceOver moved focus there) */
+  document.addEventListener('keydown',function(e){ var r=e.target; if(e.key!=='Enter'||e.altKey||e.metaKey||e.ctrlKey||!r||!r.matches||!r.matches('#ctab-dash .sb-row[role=row]')) return;
+    e.preventDefault(); e.stopImmediatePropagation(); r.click(); },true);
+  /* coming back to the board puts focus on the row you left */
+  var last=tab();
+  setInterval(function(){ var t=tab(); if(t===last) return; var was=last; last=t;
+    if(t==='dash'&&was&&was!=='dash'){ [150,450].forEach(function(ms){ setTimeout(function(){ var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement&&a.isConnected&&a.getClientRects().length) return; board();
+      var r=$('#ctab-dash .sb-row.sel[role=row]')||$('#ctab-dash .sb-row[role=row][tabindex="0"]'); if(r){ try{ r.focus({preventScroll:true}); r.scrollIntoView({block:'nearest'}); }catch(x){} } },ms); }); } },120);
+
+  /* ---------- 2. Charges: each tick names its charge and day ---------- */
+  function charges(){ $$('.ch-row .ch-ck').forEach(function(b){ var row=b.closest('.ch-row'), nm=txt($('.ch-what b',row)), d=b.closest('details'), day=d?txt($('summary b',d)):'';
+      var cur=b.getAttribute('aria-label')||'', mine=b.getAttribute('data-pvx-lbl'); var base=(mine&&cur===mine)?b.getAttribute('data-pvx-base'):cur; if(!base||!nm) return;
+      var who=nm+(day?', '+day.replace(/^Day/,'day'):''), m=/^Mark as (.+)$/.exec(base), lbl=m?'Mark '+who+', as '+m[1]:base+' — '+who;
+      b.setAttribute('data-pvx-base',base); b.setAttribute('data-pvx-lbl',lbl); set(b,'aria-label',lbl); }); }
+
+  /* ---------- 3. Tasks: each patient's tasks are a list ---------- */
+  function tasks(){ $$('#ctab-tasks .wl-sec').forEach(function(sec){ var h=$(':scope>h3',sec), grp=txt(h).replace(/\s*\d+$/,'');
+      $$(':scope>.wl-pt',sec).forEach(function(pt){ var rows=$$(':scope>.wl-row',pt), who=txt($('.wl-pth b',pt));
+        set(pt,'role','list'); set(pt,'aria-label',(who?who+', ':'')+(grp?grp.charAt(0)+grp.slice(1).toLowerCase():'')+': '+rows.length+(rows.length===1?' task':' tasks'));
+        rows.forEach(function(r){ set(r,'role','listitem'); }); }); }); }
+
+  /* ---------- 4. Option-click folds or unfolds every section ---------- */
+  var live=null; function say(m){ if(!live){ live=document.createElement('div'); live.id='pvxLive241'; live.className='pvx-sr'; live.setAttribute('aria-live','polite'); document.body.appendChild(live); } live.textContent=''; setTimeout(function(){ live.textContent=m; },30); }
+  function nameOf(g){ var m=/tsSecToggle\('((?:[^'\\]|\\.)*)'\)/.exec(g.getAttribute('onclick')||''); return m?m[1].replace(/\\'/g,"'"):null; }
+  function secByName(n){ return $$('.gband .gsection[role=button]').filter(function(g){ return nameOf(g)===n; })[0]; }
+  function foldAll(g){ if(typeof window.tsSecToggle!=='function') return; var me=nameOf(g); if(!me) return;
+    var open=g.getAttribute('aria-expanded')!=='true';   /* the clicked section decides: closed → open them all, open → fold them all */
+    var names=$$('.gband .gsection[role=button]').map(nameOf).filter(Boolean);
+    names.forEach(function(n){ var x=secByName(n); if(x&&(x.getAttribute('aria-expanded')==='true')!==open) tsSecToggle(n); });
+    setTimeout(function(){ var x=secByName(me); x&&x.focus({preventScroll:true}); },30); say(open?'All sections shown':'All sections folded'); }
+  document.addEventListener('click',function(e){ if(!e.altKey) return; var g=e.target.closest&&e.target.closest('.gband .gsection[role=button]'); if(!g||e.target.closest('.sec-add')) return;
+    e.preventDefault(); e.stopImmediatePropagation(); foldAll(g); },true);
+  document.addEventListener('keydown',function(e){ if(!e.altKey||(e.key!=='Enter'&&e.key!==' ')) return; var g=e.target.closest&&e.target.closest('.gband .gsection[role=button]'); if(!g||g!==e.target) return;
+    e.preventDefault(); e.stopImmediatePropagation(); foldAll(g); },true);
+  /* the band's tooltip says so */
+  var MOD=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent||'')?'Option':'Alt';
+  function tips(){ $$('.gband .gsection[role=button]').forEach(function(g){ var t=g.getAttribute('title')||''; if(t&&t.indexOf('-click: all sections')<0) g.setAttribute('title',t+' · '+MOD+'-click: all sections'); }); }
+
+  var q=0; function sched(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ board(); charges(); tasks(); tips(); }catch(x){ console.warn('[n241]',x); } }); }
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeOldValue:true,attributeFilter:['class','role','tabindex','aria-label','aria-sort','title']}); sched(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
 </body>
