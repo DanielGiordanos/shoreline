@@ -25,7 +25,10 @@
   };
   var clone = function (v) { return JSON.parse(JSON.stringify(v)); };
 
-  function calculate(payload) {
+  /* opts.floatKeys: keys whose JSON literal was written as a float (5.0, 5e0). Python's json gives those a float, and
+     medical.py's BCS check accepts only an int, so the hosted layer passes them in from the raw request text. */
+  function calculate(payload, opts) {
+    var floatKeys = (opts && opts.floatKeys) || [];
     if (!isObj(payload)) throw new Blocked('invalid_request', 'Enter the calculator inputs.', 400);
     var tool = payload.tool;
     if (tool === 'cpr_weight_table') return cprWeightTable(payload);
@@ -49,7 +52,7 @@
       result.note = 'Traditional weight-based estimate. Body shape and size affect accuracy. This does not select or authorize a drug dose.';
     } else if ('bcs' in payload) {
       var bcs = payload.bcs;
-      if (!isInt(bcs) || !(1 <= bcs && bcs <= 9)) throw new Blocked('invalid_bcs', 'Choose a whole-number BCS on the 1–9 scale.', 400);
+      if (!isInt(bcs) || floatKeys.indexOf('bcs') >= 0 || !(1 <= bcs && bcs <= 9)) throw new Blocked('invalid_bcs', 'Choose a whole-number BCS on the 1–9 scale.', 400);
       if ([4, 5, 6, 7, 8].indexOf(bcs) < 0) throw new Blocked('bcs_unverified', 'No bounded body-fat estimate is implemented for this BCS. Scores 1–3 need individual assessment; 9 has an open-ended fat range. Use an assessed body-fat percentage instead. Do not assume a dosing weight.', 422);
       var r = { 4: [15, 19], 5: [20, 24], 6: [25, 29], 7: [30, 34], 8: [35, 39] }[bcs], lo = kg * (1 - r[1] / 100), hi = kg * (1 - r[0] / 100);
       result.value = lo; result.value_max = hi; result.value_lb = lo / LB; result.value_lb_max = hi / LB;
@@ -275,6 +278,12 @@
     throw new Blocked('hosted_read_only', 'Clinical actions run only in Yakuri on Daniel’s Mac. This hosted copy is read-only.');
   }
 
-  root.YakuriRules = { Blocked: Blocked, calculate: calculate, cprCatalog: cprCatalog, coverage: coverage, check: check, clinical: clinical, fold: fold };
+  /* top-level keys of a flat JSON object whose number literal is a float (has . e or E) */
+  function floatKeysOf(text) {
+    var out = [], re = /"((?:[^"\\]|\\.)*)"\s*:\s*(-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)(?=\s*[,}])/g, m;
+    while ((m = re.exec(String(text)))) if (/[.eE]/.test(m[2])) out.push(JSON.parse('"' + m[1] + '"'));
+    return out;
+  }
+  root.YakuriRules = { Blocked: Blocked, calculate: calculate, floatKeysOf: floatKeysOf, cprCatalog: cprCatalog, coverage: coverage, check: check, clinical: clinical, fold: fold };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.YakuriRules;
 })(typeof window !== 'undefined' ? window : globalThis);

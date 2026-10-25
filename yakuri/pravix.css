@@ -291,10 +291,10 @@ body{
 .calc-tabs [aria-selected=true],.calc-tabs [aria-selected=true]:hover,.cpr-unit-toggle input:checked+span{background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge);box-shadow:inset 0 0 0 1px var(--y-sel-edge);font-weight:700}
 
 /* ── Tool sheets (Research, Workspace review, Local tools, Label & voice, Transfer) ── */
-.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.r-edge button){border:1px solid transparent;background:var(--y-fill);color:var(--ink);border-radius:8px;font-size:.8125rem;font-weight:600;padding:8px 12px;box-shadow:none}
-.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.r-edge button):hover{background:var(--y-fill-2)}
+.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.y-tabs button):not(.r-edge button){border:1px solid transparent;background:var(--y-fill);color:var(--ink);border-radius:8px;font-size:.8125rem;font-weight:600;padding:8px 12px;box-shadow:none}
+.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.y-tabs button):not(.r-edge button):hover{background:var(--y-fill-2)}
 .r-dialog button[aria-pressed=true]:not(.r-tabs button){background:var(--selected);color:var(--accent);border-color:var(--y-sel-edge)}
-@media(pointer:fine){.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.r-edge button){min-height:34px}}
+@media(pointer:fine){.r-dialog button:not(.y-dialog-head button):not(.r-tabs button):not(.y-tabs button):not(.r-edge button){min-height:34px}}
 /* their sections: tabs like the sub-nav's (tinted when open), never a sideways-scrolling row */
 .r-tabs{gap:2px;margin:14px 0 16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .r-tabs button{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;font-size:.8125rem;font-weight:600;padding:7px 12px;min-height:36px}
@@ -310,10 +310,10 @@ body{
 .r-table th{color:var(--muted);font-weight:600}
 .v-findings .r-saved h3{font-size:1rem;font-weight:700}
 /* Drug Cards: the save star is drawn, not typed */
-.p-drug-card header button{font-size:0!important;width:40px;height:40px;min-width:40px;padding:0;border-radius:8px;background:var(--y-fill);color:var(--ink);position:relative}
-.p-drug-card header button::after{content:"";position:absolute;inset:11px;background:currentColor;-webkit-mask:var(--y-i-star) center/contain no-repeat;mask:var(--y-i-star) center/contain no-repeat}
-.p-drug-card header button[data-fav]{color:var(--accent);background:var(--selected)}
-.p-drug-card header button[data-fav]::after{-webkit-mask-image:var(--y-i-star-fill);mask-image:var(--y-i-star-fill)}
+.p-drug-card header>button{font-size:0!important;width:40px;height:40px;min-width:40px;padding:0;border-radius:8px;background:var(--y-fill);color:var(--ink);position:relative}
+.p-drug-card header>button::after{content:"";position:absolute;inset:11px;background:currentColor;-webkit-mask:var(--y-i-star) center/contain no-repeat;mask:var(--y-i-star) center/contain no-repeat}
+.p-drug-card header>button[data-fav]{color:var(--accent);background:var(--selected)}
+.p-drug-card header>button[data-fav]::after{-webkit-mask-image:var(--y-i-star-fill);mask-image:var(--y-i-star-fill)}
 .p-evidence{border-radius:6px}
 
 /* ── Results are content: a flat card with the accent edge, not a tinted wash ── */
@@ -323,7 +323,7 @@ body{
 #cpr-info{font-size:0!important;width:40px;height:40px;min-width:40px;padding:0;position:relative;color:var(--ink)}
 #cpr-info::after{content:"";position:absolute;inset:9px;background:currentColor;-webkit-mask:var(--y-i-info) center/contain no-repeat;mask:var(--y-i-info) center/contain no-repeat}
 body{--y-i-info:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8.75'/%3E%3Cpath d='M12 11v5.5'/%3E%3Cpath d='M12 7.6v.01' stroke-width='2.4'/%3E%3C/svg%3E")}
-@media(forced-colors:active){#cpr-info::after,.p-drug-card header button::after{background:CanvasText}}
+@media(forced-colors:active){#cpr-info::after,.p-drug-card header>button::after{background:CanvasText}}
 
 /* ═══ HIG Accessibility, Color and Layout fixes (Oct 23 2026; claude/hig-audit-yakuri-accessibility-color-layout.md) ═══ */
 body{--y-field-edge:rgba(29,29,31,.5)}
@@ -788,3 +788,576 @@ input.y-picker[aria-invalid=true]{border-color:var(--y-danger)}
 @media(pointer:coarse){.y-menu-btn.y-icon-menu{min-width:44px;justify-content:center}}
 select[data-y-picker][hidden]{display:none!important}  /* the menu it replaces stays in the page for the sheet's own logic */
 .y-toolbar.y-tight .y-modes>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;margin:0}
+
+/* ═══ HIG Feedback, Going full screen and Launching (Oct 24 2026) ═══ */
+/* launch: a plain failure with Try again; a slow load says it's still working */
+.y-unavailable{max-width:560px;padding:60px 0}
+.y-unavailable h1{font-size:1.5rem;margin:0 0 8px}
+.y-unavailable p{color:var(--muted);margin:0 0 16px}
+.y-retry,.y-undo{font:inherit;font-weight:600;border-radius:10px;padding:6px 14px;border:1px solid var(--y-edge-strong,var(--line));background:var(--y-fill,transparent);color:var(--accent);cursor:pointer}
+.y-undo{padding:2px 10px;margin-left:4px}
+.y-link-button{font:inherit;font-weight:600;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.y-restored{margin:6px 0 0}
+/* CPR full screen */
+.y-cpr-tools{display:flex;align-items:center;gap:10px}
+.y-awake{font-size:.8125rem;color:var(--muted)}
+.y-awake:empty{display:none}
+.cpr-title-row .y-cpr-fs{display:inline-flex;align-items:center;gap:6px;width:auto;height:auto;min-height:40px;padding:0 14px;border-radius:20px;font:inherit;font-size:.875rem;font-weight:600;color:var(--ink);background:var(--panel);border:1px solid var(--line);white-space:nowrap}
+.y-fs-ico{width:18px;height:18px;flex:none}
+.y-cpr-on{position:fixed;inset:0;z-index:2000;margin:0;max-width:none;overflow:auto;overscroll-behavior:contain;background:var(--bg);color:var(--ink);box-sizing:border-box;
+  padding:max(12px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));
+  display:flex;flex-wrap:wrap;align-items:flex-end;align-content:flex-start;gap:8px 16px}
+.y-cpr-on:fullscreen{width:100%;height:100%}
+body.y-cpr-fullscreen{overflow:hidden}
+.y-cpr-on>*{flex:1 1 100%;margin:0}
+.y-cpr-on>dialog{flex:none}
+.y-cpr-on .cpr-title-row{display:contents}
+.y-cpr-on .cpr-title-row h1{order:1;flex:0 0 auto;font-size:1.375rem;margin:0 8px 10px 0;align-self:flex-end}
+.y-cpr-on .medical-form{order:2;flex:1 1 440px;display:flex;flex-wrap:nowrap;align-items:flex-end;gap:10px;margin:0}
+.y-cpr-on .medical-form>*{margin:0}
+.y-cpr-on .medical-row{flex:1 1 auto}
+.y-cpr-on .medical-actions{flex:0 0 auto}
+.y-cpr-on .y-cpr-tools{order:3;flex:0 0 auto;margin-bottom:4px}
+.y-cpr-on>#cpr-error{order:4}
+.y-cpr-on>#cpr-result{order:5}
+.y-cpr-on>.medical-footnote{order:6}
+.y-cpr-on>.medical-intro,.y-cpr-on>p:has(> a[href*="doi.org"]){display:none}
+.y-cpr-on>#cpr-error:empty{display:none}
+.y-cpr-on .cpr-sheet{margin:4px 0 0;padding:12px 16px;font-size:1rem}
+.y-cpr-on .cpr-sheet-heading{align-items:center}
+.y-cpr-on .cpr-sheet-heading h2{font-size:1.25rem;margin:0}
+.y-cpr-on .cpr-sheet>.medical-help,.y-cpr-on .cpr-sheet-notice{margin:2px 0;padding-bottom:6px}
+.y-cpr-on .cpr-full-table thead,.y-cpr-on .cpr-energy-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.y-cpr-on .cpr-full-table{margin:8px 0}
+.y-cpr-on .cpr-full-table tbody,.y-cpr-on .cpr-energy-table tbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px}
+.y-cpr-on .cpr-full-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"drug vol";align-content:start;gap:0 10px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.y-cpr-on .cpr-full-table th{display:block;grid-area:drug;width:auto;border:0;padding:0;font-size:1.0625rem;line-height:1.3;text-align:left}
+.y-cpr-on .cpr-full-table th>span{font-size:.8125rem;font-weight:500;color:var(--muted);white-space:nowrap}
+.y-cpr-on .cpr-full-table th>small{display:block;margin-top:1px;font-size:.8125rem;font-weight:400;color:var(--muted)}
+.y-cpr-on .cpr-full-table td{display:contents}
+.y-cpr-on .cpr-full-table td strong{grid-area:vol;align-self:start;font-size:1.75rem;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--accent);text-align:right;white-space:nowrap}
+.y-cpr-on .cpr-full-table td small{grid-column:1/-1;font-size:.75rem;line-height:1.35;color:var(--muted);margin-top:3px}
+.y-cpr-on .cpr-full-table td small.cpr-warning{color:var(--warn)}
+.y-cpr-on .cpr-energy-table{margin:6px 0}
+.y-cpr-on .cpr-energy-table tr{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.y-cpr-on .cpr-energy-table th,.y-cpr-on .cpr-energy-table td{display:block;width:auto;border:0;padding:0}
+.y-cpr-on .cpr-energy-table td br{display:none}
+.y-cpr-on .cpr-energy-table td b+br+*{margin-left:8px}
+.y-cpr-on>.medical-footnote{position:sticky;bottom:0;background:var(--bg);padding:8px 0 max(8px,env(safe-area-inset-bottom));font-weight:600;color:var(--warn)}
+@media (max-width:760px){.y-cpr-on .medical-form{flex:1 1 100%;flex-wrap:wrap}.y-cpr-on .cpr-title-row h1{flex:1 1 auto}.y-cpr-on .y-cpr-tools{order:1}.y-cpr-on .cpr-full-table tbody,.y-cpr-on .cpr-energy-table tbody{grid-template-columns:1fr}}
+@media print{.y-cpr-fs,.y-awake{display:none}}
+
+/* ═══ HIG Loading, Managing notifications and Modality (Oct 24 2026) ═══ */
+/* placeholders while the library loads: the shape of what's coming, no shimmer */
+.y-skel{display:block;border-radius:6px;background:var(--soft)}
+.y-skel-list{padding:4px 0}
+.y-skel-row{display:grid;gap:6px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.y-skel-name{height:14px;width:62%}
+.y-skel-meta{height:10px;width:38%}
+.y-skel-row:nth-child(3n) .y-skel-name{width:48%}
+.y-skel-row:nth-child(3n+1) .y-skel-name{width:70%}
+.y-skel-article{display:grid;gap:12px;max-width:760px;padding:44px 0 0}
+.y-skel-eyebrow{height:10px;width:110px}
+.y-skel-title{height:34px;width:46%}
+.y-skel-line{height:12px;width:92%}
+.y-skel-short{width:64%}
+.y-skel-article+.loading{padding:16px 0}
+.y-wait-note{color:var(--muted)}
+.yakuri-rail [aria-disabled=true]{opacity:.55}
+/* "Calculating…" while a calculation takes more than a moment */
+.y-calculating{color:var(--muted);font-size:.875rem;margin:12px 0 0}
+[aria-busy=true]>.medical-result.empty,[aria-busy=true].medical-result{opacity:.45}
+/* Research and Library checks are pages in the window, not sheets over it */
+body.y-has-page .workspace>.library,body.y-has-page .workspace>#article{display:none}
+.workspace>dialog.y-dialog.y-page{position:static;inset:auto;grid-column:2/-1;grid-row:1;display:block;width:auto;max-width:none;max-height:none;height:auto;margin:0;
+  padding:20px clamp(16px,3vw,40px) 48px;border:0;border-radius:0;box-shadow:none;background:var(--bg);overflow:visible;min-width:0}
+body.y-focus .workspace>dialog.y-page{grid-column:auto}
+.y-page>.y-dialog-head.y-page-head{position:sticky;top:0;z-index:3;background:var(--bg);justify-content:flex-start;flex-wrap:wrap;gap:12px;margin:0 0 12px;padding:8px 0 12px}
+.y-page-head>.y-discard{flex-basis:100%;margin:4px 0 0;position:static}
+.y-page-head h2{font-size:1.5rem;margin:0}
+.y-dialog-head .y-page-back{display:inline-flex;align-items:center;gap:4px;width:auto;height:auto;min-width:0;min-height:36px;padding:0 10px 0 4px;border:0;border-radius:10px;background:none;color:var(--accent);font:inherit;font-size:.9375rem!important;font-weight:500;cursor:pointer;max-width:40%}
+.y-dialog-head .y-page-back::after{content:none}
+.y-page-back span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.y-page-back svg{width:20px;height:20px;flex:none}
+.y-dialog-head .y-page-back:hover{background:var(--soft);color:var(--accent)}
+.y-page-back:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.y-page-side{z-index:2;background:var(--bg)}
+.y-page-side .y-page-tools{flex-direction:row;flex-wrap:wrap}
+@media(min-width:1100px){.y-page-side .y-page-tools{flex-direction:column}}
+@media(min-width:1100px){
+  .y-page.r-dialog{display:grid!important;grid-template-columns:200px minmax(0,1fr);column-gap:32px;align-items:start}
+  .y-page.r-dialog>*{grid-column:2;min-width:0}
+  .y-page.r-dialog>.y-dialog-head{grid-column:1/-1;grid-row:1}
+  .y-page.r-dialog>.y-discard{grid-column:1/-1}
+  .y-page.r-dialog>.y-page-side{grid-column:1;grid-row:2/span 40;position:sticky;top:68px}
+  .y-page-side>.r-tabs{display:flex;flex-direction:column;align-items:stretch;border-bottom:0;margin:0;padding:0}
+  .y-page-side>.r-tabs button{text-align:left;justify-content:flex-start}
+}
+.y-page-side .y-page-tools{display:flex;flex-direction:column;gap:2px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.y-page-side .y-page-tools-label{font-size:.6875rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 10px 4px}
+.yakuri-rail>[hidden]{display:none!important}
+@media(max-width:760px){.workspace>dialog.y-dialog.y-page{grid-column:1/-1;padding:12px 16px 40px}}
+/* no lost text: the sheet asks before it closes */
+.y-discard{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:0 0 14px;padding:12px 14px;border:1px solid var(--warn);border-radius:12px;background:var(--panel)}
+.y-discard p{margin:0;font-size:.875rem}
+.y-discard-actions{display:flex;gap:8px}
+.y-discard button{font:inherit;font-size:.875rem;font-weight:600;min-height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer}
+.y-discard .y-discard-keep{background:var(--accent);border-color:var(--accent);color:var(--y-on-accent,#fff)}
+/* the library changed elsewhere: a quiet capsule, never in the way */
+.y-changed{position:fixed;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom));z-index:1500;display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);
+  padding:8px 8px 8px 16px;border:1px solid var(--line);border-radius:22px;background:var(--y-glass-solid,var(--panel));color:var(--ink);box-shadow:var(--y-shadow,0 8px 24px rgba(0,0,0,.18));font-size:.875rem}
+.y-changed button{font:inherit;font-weight:600;min-height:32px;padding:0 12px;border-radius:16px;border:0;cursor:pointer}
+.y-changed-reload{background:var(--accent);color:var(--y-on-accent,#fff)}
+.y-changed-later{background:none;color:var(--muted);font-size:1.0625rem!important;padding:0 8px!important}
+@media print{.y-changed,.y-discard{display:none}}
+@media(max-width:1099px){.y-page-side .y-page-tools{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px}.y-page-side .y-page-tools-label{flex-basis:100%;padding:0 0 2px}.y-page-side .y-page-tools button{flex:0 1 auto}}
+.y-dialog-head .y-discard button{font-size:.875rem!important;width:auto;height:auto;min-width:0;min-height:36px;padding:0 14px;border-radius:10px;position:static}
+.y-dialog-head .y-discard button::after{content:none}
+.y-dialog-head .y-discard .y-discard-keep{background:var(--accent);color:var(--y-on-accent,#fff)}
+.y-dialog-head .y-discard .y-discard-go{background:var(--soft);color:var(--ink)}
+
+/* ═══ HIG Offering help, Onboarding and Printing (Oct 24 2026) ═══ */
+/* tips: beside what they explain, quiet, closed with × */
+.y-tip{display:flex;align-items:flex-start;gap:10px;margin:10px 0;padding:10px 10px 10px 12px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;background:var(--panel);max-width:760px}
+.y-tip p{margin:0;flex:1;font-size:.875rem;line-height:1.45}
+.y-tip-ico{width:18px;height:18px;flex:none;color:var(--accent);margin-top:1px}
+.y-tip-more{font:inherit;font-size:.875rem;font-weight:600;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;white-space:nowrap;align-self:center}
+.y-tip-close{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer}
+.y-tip-close svg{width:14px;height:14px}
+.y-tip-close:hover{background:var(--soft);color:var(--ink)}
+@media(pointer:coarse){.y-tip-close{width:44px;height:44px}}
+.y-tip-anchor{position:relative}
+.y-tip.y-tip-pop{position:absolute;z-index:40;top:calc(100% + 8px);left:0;width:min(440px,calc(100vw - 48px));margin:0;box-shadow:var(--y-shadow,0 8px 24px rgba(0,0,0,.16));background:var(--y-glass-solid,var(--panel))}
+.x-focus-modes>.y-tip.y-tip-pop{left:auto;right:0}
+.y-tip.y-tip-pop::before{content:"";position:absolute;top:-6px;left:22px;width:10px;height:10px;background:inherit;border-left:1px solid var(--line);border-top:1px solid var(--line);transform:rotate(45deg)}
+.x-focus-modes>.y-tip.y-tip-pop::before{left:auto;right:26px}
+.library .y-tip{margin:8px 0 0;font-size:.8125rem}
+.library .y-tip p{font-size:.8125rem}
+/* keyboard shortcuts */
+.y-keys{border-collapse:collapse;width:100%}
+.y-keys th,.y-keys td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);font-size:.875rem}
+.y-keys th{width:96px;font-weight:400}
+.y-keys kbd{display:inline-block;min-width:24px;padding:2px 8px;border:1px solid var(--line);border-radius:6px;background:var(--soft);font:inherit;font-size:.8125rem;font-weight:600;text-align:center}
+/* Print… beside Copy */
+.y-sheet-actions{display:flex;align-items:center;gap:8px}
+.y-print-btn{font:inherit;font-size:.875rem;font-weight:600;min-height:32px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--accent);cursor:pointer}
+#y-interaction-print{margin-left:8px}
+.y-print-line{display:none}
+@media print{
+  @page{margin:14mm 14mm 20mm}
+  .y-print-line{display:block;position:static;order:-1;margin:0 0 4mm;padding-bottom:2mm;font-size:.6875rem;line-height:1.3;color:#333;border-bottom:1px solid #999}
+  .y-tip,.y-print-btn,.y-sheet-actions .y-print-btn,.y-changed,.y-discard{display:none!important}
+  /* a monograph is a reference sheet: no toolbar, menus, tools or blocked actions */
+  #article button,#article select,#article .y-toolbar,#article .article-top,#article .article-shortcuts,#article .x-reference-tools,#article .r-tools,#article .y-context,
+  #article .h-highlights,#article .y-section-nav,#article .toc,#article .clinical-actions,#article .governance-panel>label,#article .governance-panel details,
+  #article .governance-panel>.footnote,#article .governance-panel .footnote,#y-island-dock,.p-island{display:none!important}
+  #article a[href^="http"]::after{content:" — " attr(href);font-size:.6875rem;font-weight:400;color:#444;word-break:break-all}
+  #article .reader section{break-inside:auto}
+  #article .reader h2,#article .reader h3{break-after:avoid}
+  /* the CPR table on one page, with the weight; none of the controls */
+  .y-cpr-tools,#cpr-form,.y-restored,.y-calculating,#cpr-copy-status,#cpr-copy,.cpr-title-row #cpr-info,.medical-page .medical-intro{display:none!important}
+  .cpr-sheet{border:1px solid #999;padding:8px 10px;margin:4px 0;font-size:.75rem;line-height:1.3}
+  .medical-page button,#interaction-main button{display:none!important}
+  .medical-page main>section>p:has(>a[href*="doi.org"]){margin:0 0 4px;font-size:.6875rem}
+  .cpr-title-row h1{font-size:1.0625rem;margin:0}
+  #medical-main:has(.cpr-sheet){zoom:.88}
+  .cpr-sheet-heading h2{font-size:1.0625rem;margin:0}
+  .cpr-sheet .cpr-table{margin:4px 0;font-size:.75rem;line-height:1.25}
+  .cpr-sheet .cpr-table th,.cpr-sheet .cpr-table td{padding:3px 6px}
+  .cpr-sheet .cpr-table small{margin-top:1px;font-size:.6875rem}
+  .cpr-sheet .cpr-table td strong{font-size:.875rem}
+  .medical-page details.medical-source{display:none!important}
+  /* interaction results: the drugs, species, results and coverage; no search, switches or Remove */
+  #interaction-main .interaction-search,#interaction-matches,#interaction-clear,#interaction-selected [data-remove],#interaction-main .interaction-view-controls,#interaction-graph,#y-interaction-print,#interaction-main details.medical-source{display:none!important}
+  #interaction-main a[href]::after{content:none}
+}
+
+/* ═══ HIG Searching, Settings and Undo and redo (Oct 24 2026) ═══ */
+/* S5 · a section hidden until found takes no room (content-visibility keeps its box, so its spacing goes too) */
+@media screen{.reader>section[hidden="until-found"]{padding:0!important;margin:0!important;border:0!important;min-height:0!important;box-shadow:none!important}}
+@media print{.reader>section[hidden="until-found"]{content-visibility:visible!important}}   /* print is still the whole monograph */
+/* S6 · the foot of Recent */
+.y-list-foot{padding:12px 4px 4px;text-align:center}
+.y-list-foot[hidden]{display:none}
+.y-clear-recent{font:inherit;font-size:.875rem;font-weight:600;color:var(--accent);background:none;border:0;padding:10px 12px;min-height:44px;border-radius:10px;cursor:pointer}
+.y-clear-recent:hover{background:var(--y-fill)}
+.y-clear-recent:focus-visible{outline:none;box-shadow:var(--y-ring)}
+/* S7 · Settings: a small sheet with three sections */
+.y-settings-dialog{max-width:520px}
+.y-set-tabs{display:flex;gap:2px;padding:2px;border-radius:10px;background:var(--y-fill);margin:4px 0 18px}
+.y-set-tabs [role=tab]{flex:1;font:inherit;font-size:.875rem;font-weight:500;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:none;color:inherit;cursor:pointer}
+.y-set-tabs [role=tab][aria-selected=true]{background:var(--y-raised,var(--panel,#fff));font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.y-set-tabs [role=tab]:focus-visible{outline:none;box-shadow:var(--y-ring)}
+.y-set-panel[hidden]{display:none}
+.y-set-group{border:0;margin:0 0 20px;padding:0}
+.y-set-group legend,.y-set-group h3{font-size:.9375rem;font-weight:600;margin:0 0 8px;padding:0}
+.y-set-seg{display:flex;gap:8px;flex-wrap:wrap}
+.y-set-seg label{position:relative;display:inline-flex}
+.y-set-seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.y-set-seg span{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--y-edge-strong,var(--line));font-size:.9375rem}
+.y-set-seg input:checked+span{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
+.y-set-seg input:focus-visible+span{box-shadow:var(--y-ring)}
+.y-set-note{color:var(--muted);font-size:.875rem;line-height:1.5;margin:8px 0}
+.y-set-sample{margin:12px 0 4px;line-height:1.6}
+.y-set-btn{font:inherit;font-size:.9375rem;font-weight:600;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--y-edge-strong,var(--line));background:var(--y-fill);color:var(--accent);cursor:pointer}
+.y-set-btn:disabled{color:var(--muted);cursor:default;opacity:.6}
+.y-set-btn:focus-visible{outline:none;box-shadow:var(--y-ring)}
+.y-set-done{color:var(--muted);font-size:.875rem;margin:8px 0 0;min-height:1.2em}
+/* U1 · what ⌘Z brought back is highlighted for a moment */
+@keyframes y-undo-flash{0%,35%{background-color:var(--y-sel-edge);outline-color:var(--accent)}100%{background-color:transparent;outline-color:transparent}}
+.y-undo-flash{outline:2px solid transparent;outline-offset:2px;border-radius:12px;animation:y-undo-flash 1.6s ease-out both}
+@media (prefers-reduced-motion:reduce){.y-undo-flash{animation:none;background-color:var(--y-sel-edge);outline-color:var(--accent)}}
+/* where there's no message bar (Interactions keeps its own status line; this is the fallback) */
+.y-undo-live{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;margin:0;padding:10px 16px;border-radius:14px;background:var(--y-glass-solid,var(--soft));border:1px solid var(--line);font-size:.875rem;opacity:0;pointer-events:none}
+.y-undo-live.visible{opacity:1}
+@media print{.y-list-foot,.y-undo-live{display:none!important}}
+
+/* ═══ HIG Charts and Image views (Oct 24 2026; claude/hig-audit-yakuri-charts-image-views.md) ═══ */
+body{--y-chart-sourced:#A86400}   /* C7 · the sourced-evidence line: 4.7:1 on white (it was 2.69:1) */
+body.dark{--y-chart-sourced:#E8A830}
+.y-sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+/* C1 · the graph is drawn in the frame's own points: it fills the width, starts at the leading edge, keeps its text size */
+#interaction-graph .graph-canvas{overflow:visible;margin-top:8px}
+#interaction-graph .graph-canvas svg{width:100%;height:auto;max-height:none;min-width:0;display:block;overflow:visible}
+#interaction-graph .graph-line .edge-hit{stroke:transparent;stroke-width:24;pointer-events:stroke;cursor:pointer}
+#interaction-graph .edge-visible{stroke:var(--muted);stroke-width:2;stroke-dasharray:5 6;pointer-events:none}
+#interaction-graph .mapped .edge-visible{stroke:var(--y-chart-sourced);stroke-width:3;stroke-dasharray:none}
+#interaction-graph .species .edge-visible{stroke:var(--y-purple);stroke-width:3;stroke-dasharray:8 4 2 4}
+.graph-legend .mapped .y-legend-line line{stroke:var(--y-chart-sourced)}
+/* C2 · 44-pt targets: markers carry an invisible 44-pt circle, drug boxes are 48 pt tall */
+#interaction-graph .graph-edge,#interaction-graph .graph-node{cursor:pointer;outline:none}
+#interaction-graph .marker-hit{fill:transparent;stroke:none;pointer-events:all}
+#interaction-graph .marker{fill:var(--panel);stroke:var(--y-ctl);stroke-width:1.5}
+#interaction-graph .graph-edge.mapped .marker{stroke:var(--y-chart-sourced)}
+#interaction-graph .graph-edge text{fill:var(--ink);font-size:.8125rem;font-weight:600;font-variant-numeric:tabular-nums;pointer-events:none}
+#interaction-graph .graph-edge:hover .marker,#interaction-graph .graph-edge:focus-visible .marker{stroke:var(--accent);stroke-width:3}
+#interaction-graph .graph-node rect{fill:var(--soft);stroke:var(--y-ctl);stroke-width:1.5}
+#interaction-graph .graph-node:hover rect,#interaction-graph .graph-node:focus-visible rect,#interaction-graph .graph-node[aria-pressed=true] rect,#interaction-graph .graph-node.centred rect{stroke:var(--accent);stroke-width:2.5}
+#interaction-graph .graph-node.centred rect{fill:var(--selected)}
+#interaction-graph .graph-node .n-name{fill:var(--ink);font-size:1rem;font-weight:600;pointer-events:none}
+#interaction-graph .graph-fan .graph-node:not(.centred) .n-name{font-size:.9375rem}
+#interaction-graph .graph-node .node-status{fill:var(--y-amber);font-size:.8125rem;font-weight:600;pointer-events:none}
+/* C6 · a line whose evidence changed is marked for a moment; steady under Reduce Motion */
+@keyframes y-line-changed{0%,40%{stroke-width:7}100%{stroke-width:3}}
+#interaction-graph .y-line-changed .edge-visible{animation:y-line-changed 1.6s ease-out both}
+#interaction-graph .graph-edge.y-line-changed .marker{stroke:var(--accent);stroke-width:3}
+@media (prefers-reduced-motion:reduce){#interaction-graph .y-line-changed .edge-visible{animation:none;stroke-width:6}}
+@media(forced-colors:active){#interaction-graph .edge-visible{stroke:CanvasText!important}#interaction-graph .graph-node rect,#interaction-graph .marker{stroke:CanvasText!important}}
+
+/* I9 · the label photo beside the text it checks, readable; I10 · it opens larger; I11 · Remove photo */
+.c-compare{display:grid;gap:16px;margin:12px 0}
+.c-photo{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.c-photo:has(#c-image[hidden]){display:none}
+.c-photo-btn{all:unset;box-sizing:border-box;display:block;cursor:zoom-in;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--soft)}
+.c-photo-btn:focus-visible{box-shadow:var(--y-ring);border-color:var(--accent)}
+.c-photo #c-image{display:block;width:100%;height:auto;max-height:420px;object-fit:contain;margin:0;border:0}
+.c-photo-actions{display:flex;flex-wrap:wrap;gap:8px}
+.c-photo-actions button[hidden]{display:none}
+.c-text-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.c-text-col textarea{min-height:180px}
+@media(min-width:760px){.c-compare:has(#c-image:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .c-compare:has(#c-image:not([hidden])) .c-text-col textarea{min-height:300px}}
+@media(max-width:759px){.c-photo #c-image{max-height:60vh}}
+.c-viewer-dialog{max-width:min(1200px,calc(100vw - 32px))}
+.c-viewer{max-height:min(72vh,900px);overflow:auto;border-radius:12px;background:var(--soft);border:1px solid var(--line);touch-action:pan-x pan-y pinch-zoom}
+.c-viewer:focus-visible{outline:none;box-shadow:var(--y-ring)}
+.c-viewer img{display:block;max-width:100%;height:auto;margin:0 auto}
+.c-viewer-tools{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px}
+.c-viewer-tools button{min-width:44px;min-height:44px;font:inherit;font-size:1.0625rem;font-weight:600;border-radius:10px;border:1px solid var(--y-edge-strong,var(--line));background:var(--y-fill);color:inherit;cursor:pointer}
+.c-viewer-tools button:disabled{opacity:.45;cursor:default}
+.c-viewer-level{min-width:56px;text-align:center;font-variant-numeric:tabular-nums;font-size:.875rem;color:var(--muted)}
+@media print{.c-viewer-tools,.c-photo-actions{display:none!important}}
+#c-zoom.c-photo-btn{padding:0;min-height:0;width:100%;background:var(--soft);border:1px solid var(--line);border-radius:12px;box-shadow:none}
+#c-zoom.c-photo-btn:focus-visible{box-shadow:var(--y-ring);border-color:var(--accent)}
+.c-text-col #c-match{align-self:flex-start}
+.c-viewer-tools button{display:inline-flex;align-items:center;justify-content:center;padding:0 12px}
+
+/* ═══ HIG Text views, Web views and Boxes (Oct 24 2026; claude/hig-audit-yakuri-text-web-boxes.md) ═══ */
+/* T1 · every text area reads at the reading size (Text size, Dynamic Type), never under 16 pt, so iPhone doesn't zoom in */
+:root body textarea{font:inherit;font-size:max(16px,var(--reading,1.0625rem));line-height:1.5}
+/* T3 · Copy beside a barcode value */
+.c-code code{user-select:all;-webkit-user-select:all}
+.c-copy{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;min-height:32px;padding:4px 10px;margin-left:6px;font:inherit;font-size:.8125rem;font-weight:600;border-radius:8px;border:1px solid var(--y-edge-strong,var(--line));background:var(--y-fill);color:var(--accent);cursor:pointer}
+@media(pointer:coarse){.c-copy{min-height:44px}}
+/* W4 · Back and Forward before the path (Mac and iPad; iPhone keeps Back to the list) */
+.y-hist{display:inline-flex;gap:2px;margin-right:8px;flex:none}
+.y-hist button{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:8px;background:none;color:var(--ink);cursor:pointer}
+.y-hist button svg{width:16px;height:16px}
+.y-hist button:hover:not(:disabled){background:var(--y-fill)}
+.y-hist button:focus-visible{outline:none;box-shadow:var(--y-ring)}
+.y-hist button:disabled{color:var(--muted);opacity:.4;cursor:default}
+@media(pointer:coarse){.y-hist button{width:44px;height:44px}}
+.article-top:has(.y-hist){justify-content:flex-start}
+.article-top:has(.y-hist) #print,.article-top:has(.y-hist)>button:last-child:not(.back){margin-left:auto}
+@media(max-width:760px){.y-hist{display:none}}
+@media print{.y-hist{display:none!important}}
+/* B5 · no page-sized boxes: Evidence and approval is a section like the others; Open holds stays the one tinted box */
+#article .governance-panel{border:0;border-radius:0;background:none;box-shadow:none;padding:0}
+#article .governance-heading h3{margin:0 0 14px}
+/* the CPR result sits on the page; only its caveat is a small neutral box */
+#medical-main .cpr-sheet{background:none;border:0;border-radius:0;box-shadow:none;padding-left:0;padding-right:0}
+#medical-main .cpr-sheet-notice{background:var(--y-fill);border:0;border-radius:10px;padding:10px 14px;margin:8px 0 16px}
+/* A7 · the library's search and filters are 16 pt on iPhone, so Safari doesn't zoom in */
+@media(max-width:760px),(pointer:coarse){#search,#clinical-filter,#evidence-filter{font-size:max(16px,1rem)}}
+
+/* ═══ HIG Collections, Column views and Disclosure controls (Oct 24 2026; claude/hig-audit-yakuri-collections-columns-disclosure.md) ═══ */
+/* D5 · one disclosure style: a leading chevron (right when closed, down when open), primary text, 44-pt rows; accent stays for actions */
+:root body summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-size:.9375rem;font-weight:600;color:var(--ink);line-height:1.35}
+:root body summary::-webkit-details-marker{display:none}
+:root body summary::marker{content:''}
+:root body summary::before{content:'';flex:0 0 12px;width:12px;height:12px;background:var(--muted);-webkit-mask:var(--y-i-chevron) center/contain no-repeat;mask:var(--y-i-chevron) center/contain no-repeat;transition:rotate .16s ease-out}
+:root body details[open]>summary::before{rotate:90deg}
+:root body summary:focus-visible{outline:none;box-shadow:var(--y-ring);border-radius:8px}
+:root body .library summary{font-size:.8125rem}
+@media(prefers-reduced-motion:reduce){:root body summary::before{transition:none}}
+@media(forced-colors:active){:root body summary::before{background:CanvasText}}
+/* D6 · a closed filter says what it holds, with Clear beside it */
+.y-library-filters-row{display:flex;align-items:center;gap:8px}
+.y-library-filters-row>.y-library-filters{flex:1 1 auto;min-width:0}
+.y-filter-clear{flex:none;font:inherit;font-size:.8125rem;font-weight:600;color:var(--accent);background:none;border:0;border-radius:8px;min-height:44px;padding:0 10px;cursor:pointer}
+.y-filter-clear[hidden]{display:none}
+.y-filter-clear:hover{background:var(--y-fill)}
+.y-filter-clear:focus-visible{outline:none;box-shadow:var(--y-ring)}
+/* C1 · Drug cards as a list: one row per drug */
+.p-dialog .p-card-grid{display:block;border-top:1px solid var(--line)}
+.p-dialog .p-drug-card.p-row{padding:0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none}
+.p-dialog .p-row header{display:flex;align-items:flex-start;gap:10px}
+.p-dialog .p-row .p-row-more{flex:1 1 auto;min-width:0}
+.p-dialog .p-row summary{align-items:flex-start;padding:6px 0;gap:10px;font-weight:400}
+.p-dialog .p-row summary::before{margin-top:7px}
+.p-row-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.p-row summary>.p-row-line{flex:none}
+.p-row summary{flex-wrap:wrap}
+.p-row-name{font-size:1.0625rem;font-weight:600}
+.p-row .p-evidence{margin:0;padding:2px 8px;font-size:.75rem;font-weight:600}
+.p-row-scope{flex:1 1 100%;margin-left:22px;color:var(--muted);font-size:.875rem;line-height:1.45;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}
+.p-row details[open] .p-row-scope{-webkit-line-clamp:unset;display:block}
+.p-row-body{padding:0 0 16px 22px}
+.p-row-body .p-classification{margin:0 0 10px;color:var(--muted);font-size:.875rem}
+.p-row-body nav{margin-top:12px}
+.p-dialog .p-row header>button[data-p-save]{margin-top:6px}
+/* C2 · items arrive and leave visibly (none under Reduce Motion) */
+@keyframes y-row-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.y-row-in{animation:y-row-in .2s ease-out both}
+.y-row-out{overflow:hidden;pointer-events:none;transition:height .2s ease-in,opacity .2s ease-in,margin .2s ease-in,padding .2s ease-in}
+@media(prefers-reduced-motion:reduce){.y-row-in{animation:none}.y-row-out{display:none}}
+/* C4 · the library column resizes on Mac and iPad */
+.y-col-resize{position:fixed;z-index:30;width:9px;margin-left:-5px;cursor:col-resize;touch-action:none;background:none;border:0;padding:0}
+.y-col-resize::after{content:'';position:absolute;top:0;bottom:0;left:4px;width:1px;background:transparent;transition:background .12s}
+.y-col-resize:hover::after,.y-col-resize.dragging::after,.y-col-resize:focus-visible::after{background:var(--accent);width:2px;left:3.5px}
+.y-col-resize:focus-visible{outline:none}
+.y-col-resize[hidden]{display:none}
+body.y-col-dragging{cursor:col-resize;user-select:none;-webkit-user-select:none}
+@media print{.y-col-resize,.y-filter-clear{display:none!important}}
+
+/* ═══ HIG Labels, Lists and tables, Lockups (Oct 24 2026; claude/hig-audit-yakuri-labels-lists-lockups.md) ═══ */
+/* L1 · a tertiary label for unavailable items and placeholders (secondary stays for real supplementary text) */
+body{--y-label-3:#86868B}
+body.dark{--y-label-3:#6F8599}
+:root body ::placeholder{color:var(--y-label-3);opacity:1}
+:root body :is(button,input,select,textarea):disabled,:root body :is(button,a,[role=button])[aria-disabled="true"]{color:var(--y-label-3)!important;opacity:1!important}
+:root body :is(button,input,select,textarea):disabled svg,:root body [aria-disabled="true"] svg{opacity:1}
+/* L3 · the reorder handle */
+.y-move{display:inline-flex;align-items:center;justify-content:center;flex:none;width:36px;min-width:36px;height:36px;min-height:36px;padding:0!important;border:0!important;border-radius:8px;background:none!important;color:var(--muted)!important;cursor:grab;touch-action:none}
+.y-move svg{width:18px;height:18px}
+.y-move:hover{background:var(--y-fill)!important}
+.y-move:focus-visible{outline:none;box-shadow:var(--y-ring)}
+@media(pointer:coarse){.y-move{width:44px;min-width:44px;height:44px;min-height:44px}}
+.y-dragging{position:relative;z-index:2;background:var(--y-raised,var(--panel));box-shadow:var(--y-shadow);border-radius:10px}
+body.y-reordering,body.y-reordering *{cursor:grabbing!important;user-select:none;-webkit-user-select:none}
+/* L4 · the Coverage table reads across: frozen header and first column, alternating rows, plain headings, aligned numbers */
+#r-coverage-table .y-coverage th button{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;min-height:32px;font:inherit;font-weight:600;color:var(--muted)!important;border-radius:6px}
+#r-coverage-table .y-coverage th button:focus-visible{box-shadow:var(--y-ring)!important}
+#r-coverage-table .y-coverage .num{text-align:right;font-variant-numeric:tabular-nums}
+#r-coverage-table .y-coverage th.num button{justify-content:flex-end}
+#r-coverage-table .y-coverage tbody th{font-weight:600;color:var(--ink);text-align:left}
+#r-coverage-table .y-coverage .r-first{position:sticky;left:0;z-index:1;background:var(--panel);min-width:180px}
+#r-coverage-table .y-coverage thead th{z-index:2}
+#r-coverage-table .y-coverage thead th.r-first{z-index:3}
+#r-coverage-table .y-coverage tbody tr:nth-child(even)>*{background:var(--soft)}
+#r-coverage-table .y-coverage td.num button{min-width:44px}
+.y-member>div:first-child{margin-right:auto;min-width:0}
+.y-member>.y-move{margin-left:-4px}
+/* a board's pins are text, so they're a list (one column), which is also what reordering moves through */
+.o-dialog .o-pins{grid-template-columns:minmax(0,1fr)}
+.o-pins article>div .y-move{margin-left:auto}
+
+/* ═══ HIG Outline views, Split views and Tab views (Oct 24 2026; claude/hig-audit-yakuri-outline-split-tabs.md) ═══ */
+/* S2 · the sidebar button folds the rail's column away; the list and the reader keep their places */
+.workspace[data-no-rail]>.yakuri-rail{display:none}
+.workspace[data-no-rail]>.library{grid-column:2;grid-row:1}
+.workspace[data-no-rail]>#article{grid-column:3;grid-row:1}
+#pvxSubnav .y-sidebar-btn{display:inline-flex;align-items:center;justify-content:center;flex:none;font-weight:500;width:44px;height:44px;min-width:44px;min-height:44px;margin:0;padding:0;border:0;border-radius:10px;background:none;color:var(--muted);box-shadow:none;cursor:pointer}
+#pvxSubnav .y-sidebar-btn svg{width:22px;height:22px}
+#pvxSubnav .y-sidebar-btn:hover{background:var(--soft);color:var(--ink)}
+#pvxSubnav .y-sidebar-btn:focus-visible{outline:none;box-shadow:var(--y-ring)}
+@media(max-width:760px){#pvxSubnav .y-sidebar-btn{display:none}}
+.y-menu-item .y-menu-key{margin-left:auto;padding-left:20px;font:inherit;font-size:.8125rem;font-weight:400;color:var(--y-label-3,var(--muted));letter-spacing:.04em;white-space:nowrap}
+
+/* T5 · six section tabs, then Full Monograph on its own after a divider */
+.y-section-nav .y-view-tabs{display:flex;gap:inherit;flex:none;align-items:stretch}
+.y-section-nav .y-view-sep{flex:none;align-self:center;width:1px;height:20px;margin:0 2px;background:var(--line)}
+.y-section-nav [role=tab][aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* T6 · one tab control: Settings' segmented track, directly under the sheet title */
+.y-tabs{display:flex;gap:2px;margin:4px 0 18px;padding:2px;border:0;border-radius:10px;background:var(--y-fill)}
+.y-tabs [role=tab]{flex:1 1 0;min-width:0;min-height:40px;margin:0;padding:6px 10px;border:0;border-radius:8px;background:none;color:inherit;box-shadow:none;font:inherit;font-size:.875rem;font-weight:500;line-height:1.25;text-align:center;white-space:normal;cursor:pointer}
+.y-tabs [role=tab]:not([aria-selected=true]):hover{background:var(--soft)}
+.y-tabs [role=tab][aria-selected=true]{background:var(--y-raised,var(--panel,#fff));color:inherit;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.y-tabs [role=tab]:focus-visible{outline:none;box-shadow:var(--y-ring)}
+
+/* T8 · Organizer: what belongs to no tab sits at the foot of the sheet */
+.o-dialog .o-elsewhere{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:24px 0 0;padding-top:16px;border-top:1px solid var(--line)}
+.o-dialog .o-elsewhere p{flex-basis:100%;margin:0;color:var(--muted);font-size:.875rem}
+
+/* S4 · iPhone: Research and Library checks open as a list; a tool opens full width with Back to the list */
+@media(max-width:760px){
+  .y-page.y-page-list>:not(.y-dialog-head):not(.y-page-side):not(.r-storage){display:none!important}
+  .y-page.y-page-list .y-page-side{display:block}
+  .y-page.y-page-list .r-tabs{display:flex!important;flex-direction:column;align-items:stretch;gap:0;margin:0 -16px;padding:0;border:0;border-top:1px solid var(--line)}
+  .y-page.y-page-list .y-page-side :is(.r-tabs,.y-page-tools) button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;margin:0;padding:10px 16px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;color:var(--ink);box-shadow:none;font-size:1.0625rem;font-weight:500;text-align:left}
+  .y-page.y-page-list :is(.r-tabs,.y-page-tools) button::after{content:"";flex:none;width:8px;height:8px;margin-right:4px;border-top:2px solid var(--y-label-3,var(--muted));border-right:2px solid var(--y-label-3,var(--muted));transform:rotate(45deg)}
+  .y-page.y-page-list .y-page-tools{display:flex;flex-direction:column;gap:0;margin:20px -16px 0;padding:0;border:0}
+  .y-page.y-page-list .y-page-side .y-page-tools-label{display:block;padding:0 16px 6px;text-align:left}
+  .y-page.y-page-list .y-page-tools button{border-top:0}
+  .y-page.y-page-list .y-page-tools .y-page-tools-label+button{border-top:1px solid var(--line)}
+  .y-page.y-page-tool .y-page-side{display:none!important}
+}
+
+/* ═══ HIG Activity views, Buttons and Context menus (Oct 24 2026; claude/hig-audit-yakuri-activity-buttons-context-menus.md) ═══ */
+/* B1 · every control answers a press: one step darker fill, nothing moves */
+:root body :is(#drug-list .drug-item,.yakuri-rail>button,#pvxSubnav .seg,.y-section-nav button,.y-island-dock,.medical-nav button,.y-tabs [role=tab],.y-set-tabs [role=tab]):active:not(:disabled){background-color:var(--y-fill-2)!important}
+:root body :is(#drug-list .drug-item,.yakuri-rail>button,#pvxSubnav .seg,.y-section-nav button,.medical-nav button,.y-tabs [role=tab],.y-set-tabs [role=tab]):is([aria-current=true],[aria-current=page],[aria-selected=true],[aria-pressed=true],.active):active:not(:disabled){background-color:var(--y-fill-2)!important;filter:brightness(.92)}
+:root body summary:active{background-color:var(--y-fill-2)}
+
+/* B2 · the action people come for: one prominent button per sheet (the accent fill Calculate uses) */
+:root body button.y-primary{background:var(--accent)!important;color:var(--y-on-accent)!important;border:1px solid transparent!important;font-weight:600}
+:root body button.y-primary:hover:not(:disabled):not([aria-disabled=true]){filter:brightness(1.06)}
+:root body button.y-primary:active:not(:disabled):not([aria-disabled=true]){filter:brightness(.92)}
+:root body button.y-primary:is(:disabled,[aria-disabled=true]){background:var(--y-fill)!important;color:var(--y-label-3)!important;filter:none}
+
+/* B3 · destructive actions read red; Archive (restorable) doesn't */
+body{--y-destructive:#D70015}
+body.dark{--y-destructive:#FF6961}
+:root body button.y-destructive:not(:disabled):not([aria-disabled=true]),:root body .y-menu-item.y-destructive{color:var(--y-destructive)!important}
+
+/* B4 · each section's two actions: one row, one size */
+.reader section[data-y-section]>:is(.x-inspect-section,.o-section-pin){display:inline-flex;align-items:center;vertical-align:top;min-height:44px;margin:16px 8px 0 0;padding:8px 12px;border:1px solid transparent;border-radius:8px;background:var(--y-fill);color:var(--ink);font-size:.75rem;font-weight:600;line-height:1.2}
+.reader section[data-y-section]>:is(.x-inspect-section,.o-section-pin):hover{background:var(--y-fill-2)}
+
+/* B5 · 44 pt on touch */
+@media(pointer:coarse){
+  :root body :is(.y-set-tabs,.y-tabs) [role=tab]{min-height:44px}
+  :root body .y-dialog-head .y-page-back{min-height:44px}
+  :root body .p-drug-card header>button{min-width:44px;min-height:44px}
+  :root body #r-coverage-table thead th button{min-height:44px;min-width:44px}   /* found while testing: the coverage table's sort headings were 32 pt */
+}
+
+/* B6 · progress in the button */
+button.y-busy{cursor:progress}
+:root body button.y-busy:disabled{color:var(--ink)!important;opacity:1}   /* busy isn't unavailable: the label stays readable */
+:root body :is(.medical-actions button[type=submit],button.y-primary).y-busy:disabled{color:var(--y-on-accent)!important}
+.y-spin{display:inline-block;flex:none;width:.95em;height:.95em;margin-right:.45em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.15em;animation:y-spin .8s linear infinite}
+@keyframes y-spin{to{rotate:360deg}}
+@media(prefers-reduced-motion:reduce){.y-spin{animation:none;border-right-color:currentColor;opacity:.6}}
+
+/* C8 · context menus look like the toolbar's menus */
+.y-context-menu{position:fixed;min-width:220px}
+.y-context-menu .y-menu-item{min-height:32px}
+@media(pointer:coarse){.y-context-menu .y-menu-item{min-height:44px}}
+
+/* ═══ HIG Dock menus, Edit menus and Home Screen quick actions (Oct 24 2026; claude/hig-audit-yakuri-dock-edit-quick-actions.md) ═══ */
+/* found while testing: an unavailable Calculate kept its accent fill with dimmed text; it now dims like every other main button (busy keeps the fill) */
+:root body .medical-actions button[type=submit]:disabled:not(.y-busy){background:var(--y-fill)!important;color:var(--y-label-3)!important;filter:none}
+
+/* ═══ HIG Menus, Ornaments and Pop-up buttons (Oct 24 2026; claude/hig-audit-yakuri-menus-ornaments-popups.md) ═══ */
+/* P4 · Filter library's two pop-ups are a set: one height, one padding */
+:root body :is(#clinical-filter,#evidence-filter){min-height:44px;height:44px;padding:0 8px;box-sizing:border-box}
+/* M2 · a menu item's shortcut sits at its trailing edge (Print…, Hide sidebar) */
+.y-menu-item .y-menu-label{flex:1 1 auto;min-width:0}
+
+/* ═══ HIG Pull-down buttons, The menu bar and Toolbars (Oct 24 2026; claude/hig-audit-yakuri-pulldowns-menubar-toolbars.md) ═══ */
+/* T2 · one row of tools: More appears only when Research and View have folded into it */
+.y-toolbar:not(.y-folded)>.y-more{display:none}
+.y-toolbar.y-folded>.y-fold{display:none}
+.y-toolbar.y-folded2>.y-fold2{display:none}
+/* M1 · the drug's commands in ⌘K: the current choice is checked, shortcuts sit at the end */
+.x-spotlight-actions .x-drug-cmd{display:inline-flex;align-items:center;gap:8px}
+.x-spotlight-actions .x-drug-cmd[aria-current=true]::before{content:"";flex:none;width:9px;height:5px;margin:-3px 2px 0 0;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg)}
+.x-spotlight-actions .x-drug-cmd kbd{font:inherit;font-size:.8125rem;font-weight:400;color:var(--y-label-3,var(--muted))}
+
+/* ═══ HIG Path controls, Search fields and Sidebars (Oct 24 2026; claude/hig-audit-yakuri-path-search-sidebars.md) ═══ */
+/* P1 · Edit sidebar hides items. (Labels break inside a word only when one word is wider than the rail, at the largest text sizes.) */
+.yakuri-rail>.y-rail-off,.yakuri-rail>.rail-label[hidden]{display:none!important}
+.y-ws-group{margin:16px 0 6px;font-size:.6875rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.y-ws-dialog .y-ws-intro+.y-ws-group{margin-top:4px}
+.y-set-rail ul.y-rail-edit{list-style:none;margin:6px 0 0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.y-rail-row{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 6px 0 4px;background:var(--panel);border-top:1px solid var(--line)}
+.y-rail-row:first-child{border-top:0}
+.y-rail-row label{display:flex;align-items:center;gap:10px;flex:1 1 auto;min-width:0;min-height:44px;font-size:.9375rem;cursor:pointer}
+.y-rail-row label input{width:18px;height:18px;margin:0;accent-color:var(--accent)}
+.y-rail-row .y-ico{display:inline-flex;width:18px;height:18px;color:var(--muted)}
+.y-rail-row .y-ico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.y-rail-grip{display:inline-flex;width:18px;height:18px;color:var(--muted);cursor:grab;flex:none}
+.y-rail-grip svg{width:18px;height:18px}
+.y-rail-note{font-size:.8125rem;color:var(--muted);white-space:nowrap}
+.y-rail-move{display:inline-flex;gap:2px;flex:none}
+.y-rail-move button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--ink)}
+.y-rail-move button:hover:not(:disabled){background:var(--y-fill)}
+.y-rail-move button:disabled{opacity:.3}
+.y-rail-move svg{width:18px;height:18px}
+@media(pointer:coarse){.y-rail-move button{width:44px;height:44px}}
+.y-rail-row.y-rail-dragging{opacity:.5}
+.y-rail-row.y-drop-before{box-shadow:inset 0 2px 0 var(--accent)}
+.y-rail-row.y-drop-after{box-shadow:inset 0 -2px 0 var(--accent)}
+
+/* P2 · narrow windows: the rail hides; the sidebar button shows it over the content, with its labels */
+@media(min-width:761px) and (max-width:1150px) and (min-height:501px){
+  body:not(.y-focus) .workspace,body.y-large-text:not(.y-focus) .workspace{grid-template-columns:0 250px minmax(0,1fr)}
+  body:not(.y-focus) .workspace>.library{grid-column:2;grid-row:1}
+  body:not(.y-focus) .workspace>#article{grid-column:3;grid-row:1}
+  body:not(.y-rail-over) .workspace>.yakuri-rail{display:none!important}
+  body.y-rail-over .workspace>.yakuri-rail{display:flex!important;flex-direction:column;align-items:stretch;position:fixed;left:0;top:var(--pvx-head);bottom:0;height:auto;width:248px;z-index:70;
+    padding:16px 10px;gap:2px;overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);box-shadow:var(--y-dialog-shadow,0 24px 64px rgba(0,0,0,.3))}
+  body.y-rail-over .yakuri-rail>.rail-label:not([hidden]){display:block}
+  body.y-rail-over .yakuri-rail>.rail-bottom{display:none}
+  body.y-rail-over .yakuri-rail>button,body.y-rail-over .yakuri-rail>a{width:auto;height:auto;min-height:44px;padding:7px 10px;justify-content:flex-start;font-size:.875rem;gap:10px;flex:0 0 auto}
+  body.y-rail-over .yakuri-rail span.y-ico,body.y-rail-over .yakuri-rail span.y-ico svg{width:18px;height:18px;flex-basis:18px}
+  .y-rail-scrim{position:fixed;left:0;right:0;top:var(--pvx-head);bottom:0;z-index:69;background:rgba(0,0,0,.18)}
+  body.dark .y-rail-scrim{background:rgba(0,0,0,.35)}
+}
+@media(prefers-reduced-motion:no-preference) and (min-width:761px) and (max-width:1150px) and (min-height:501px){body.y-rail-over .workspace>.yakuri-rail{animation:y-rail-in .2s cubic-bezier(.2,.8,.2,1)}}
+@keyframes y-rail-in{from{transform:translateX(-24px);opacity:0}to{transform:none;opacity:1}}
+
+/* P3 · the breadcrumb's list is a button */
+.article-top .crumb{align-items:baseline}
+.article-top .crumb .y-crumb-link{display:inline;padding:0;margin:0;min-height:0;height:auto;border:0;background:none;box-shadow:none;font:inherit;line-height:inherit;color:var(--accent);cursor:pointer;border-radius:4px}
+.article-top .crumb .y-crumb-link:hover{text-decoration:underline}
+.article-top .crumb .y-crumb-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* P4 · the library's search field stays at the top of the list */
+.library>.library-top.y-lib-head{padding-bottom:0}
+.library>.y-lib-search{position:sticky;top:0;z-index:5;padding:8px 17px;background:var(--panel);transition:box-shadow .15s}
+.library>.y-lib-search.y-stuck{box-shadow:0 1px 0 var(--line)}
+.library>.y-lib-search>.search{margin:0}
+.library>.library-top.y-lib-rest{padding-top:0}
+.library>.y-lib-sentinel{height:0}
+
+/* ═══ HIG Tab bars and Token fields (Oct 24 2026; claude/hig-audit-yakuri-tab-bars-token-fields.md) ═══ */
+/* B2 · iPhone: every tab has its symbol above one word */
+#pvxSubnav .seg .y-seg-short{display:none}
+@media(max-width:760px){
+  #pvxSubnav .switcher .seg{flex-direction:column;justify-content:center;gap:2px;min-width:60px;padding:2px 4px;line-height:1}
+  #pvxSubnav .switcher .seg .y-seg-label{display:none!important}
+  #pvxSubnav .switcher .seg .y-seg-short{display:block;font-size:.8125rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap}   /* 13 pt: Yakuri's smallest text on touch */
+  #pvxSubnav .switcher .seg svg{width:18px;height:18px}
+}
+/* at the largest text sizes the words give way as the long labels do (Item 3): the other tabs' first, the open one's last */
+#pvxSubnav.y-fit-4 .switcher .seg:not(.active) .y-seg-short,#pvxSubnav.y-fit-5 .switcher .seg .y-seg-short{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+/* B3 · Interactions and Medical calculators are tabs, not rail items */
+.yakuri-rail>.y-rail-tab{display:none!important}
+/* B4 · where there's no sidebar, its place is kept, so the tabs don't move */
+#pvxSubnav .y-sidebar-slot{visibility:hidden;pointer-events:none}
+/* B5 · the picker's highlighted match, and the drug Backspace has selected */
+#interaction-matches .interaction-row.y-hl{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+#interaction-selected .interaction-row.y-token-armed{border-color:var(--y-destructive,#D70015);box-shadow:inset 0 0 0 1px var(--y-destructive,#D70015)}

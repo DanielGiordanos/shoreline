@@ -44,9 +44,9 @@
     if (has(map, m[2])) return map[m[2]];
     throw m[1] === 'recommendations' ? Blocked('unknown_recommendation', 'This recommendation is not in the current release.', 404) : Blocked('unknown_drug', 'Drug not found.', 404);
   }
-  function post(path, payload) {
+  function post(path, payload, raw) {
     if (path === '/api/label-scan') throw Blocked('scanner_unavailable', 'Image recognition runs only in ' + HOSTED_MSG + '. Paste label text instead.', 503);
-    if (path === '/api/medical/calculate') return R.calculate(payload);
+    if (path === '/api/medical/calculate') return R.calculate(payload, { floatKeys: R.floatKeysOf(raw) });
     if (path === '/api/interactions/check') return R.check(core.library, payload, core.interaction_evidence);
     if (path === '/api/hold' || path === '/api/release-hold') {
       var k = Object.keys(payload);
@@ -72,16 +72,17 @@
         }
         if (method !== 'POST') throw Blocked('not_found', 'Endpoint not found.', 404);
         var payload;
-        try { payload = JSON.parse(String((init && init.body) || '')); } catch (e) { throw Blocked('invalid_json', 'Invalid JSON.', 400); }
+        var raw = String((init && init.body) || '');
+        try { payload = JSON.parse(raw); } catch (e) { throw Blocked('invalid_json', 'Invalid JSON.', 400); }
         if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) throw Blocked('invalid_request', 'Request must be an object.', 400);
-        if (path.indexOf('/api/clinical/') === 0) return detailWait.promise.then(function () { try { return reply(200, post(path, payload)); } catch (e) { if (e && e.blocked) return refuse(e); throw e; } });
-        return reply(200, post(path, payload));
+        if (path.indexOf('/api/clinical/') === 0) return detailWait.promise.then(function () { try { return reply(200, post(path, payload, raw)); } catch (e) { if (e && e.blocked) return refuse(e); throw e; } });
+        return reply(200, post(path, payload, raw));
       } catch (e) { if (e && e.blocked) return refuse(e); throw e; }
     });
   };
 
   /* ───────── the copy this browser keeps (cleared on sign-out) ───────── */
-  function idb() { return new Promise(function (res, rej) { var r = indexedDB.open(IDB, 1); r.onupgradeneeded = function () { r.result.createObjectStore('snap'); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
+  function idb() { return new Promise(function (res, rej) { var r = indexedDB.open(IDB, 1); r.onupgradeneeded = function () { r.result.createObjectStore('snap'); }; r.onsuccess = function () { var d = r.result; if (!d.objectStoreNames.contains('snap')) { d.close(); idbClear(); rej(new Error('cache')); return; } res(d); }; r.onerror = function () { rej(r.error); }; }); }
   function idbGet(k) { return idb().then(function (db) { return new Promise(function (res) { var g = db.transaction('snap').objectStore('snap').get(k); g.onsuccess = function () { res(g.result || null); db.close(); }; g.onerror = function () { res(null); db.close(); }; }); }).catch(function () { return null; }); }
   function idbPut(k, v) { return idb().then(function (db) { return new Promise(function (res) { var t = db.transaction('snap', 'readwrite'); t.objectStore('snap').put(v, k); t.oncomplete = function () { db.close(); res(); }; t.onerror = function () { db.close(); res(); }; }); }).catch(function () {}); }
   function idbClear() { try { indexedDB.deleteDatabase(IDB); } catch (e) {} }
@@ -97,6 +98,7 @@
 
   /* ───────── Firestore ───────── */
   var fb = null, db = null, user = null;
+  /* a bundle arrives as its raw (gunzipped) bytes, checked against the release's SHA-256 before anything reads it */
   function readBundle(rel, name, n, expect, onPart) {
     var parts = [], done = 0;
     var ref = db.collection(COL).doc(rel.release).collection('parts');
@@ -105,7 +107,18 @@
       var id = name + '-' + ('0' + i).slice(-2);
       return ref.doc(id).get().then(function (d) { if (!d.exists) throw new Error('A part of the library is missing (' + id + ').'); parts[i] = d.data().data; onPart && onPart(++done); });
     })).then(function () { return gunzip(b64ToBytes(parts.join(''))); })
-      .then(function (raw) { return sha256(raw).then(function (h) { if (h !== expect) throw new Error('The library didn’t arrive intact. Reload to try again.'); return JSON.parse(new TextDecoder().decode(raw)); }); });
+      .then(function (raw) { return checked(raw, expect); });
+  }
+  function checked(raw, expect) {
+    return sha256(raw).then(function (h) { if (h !== expect) throw new Error('The library didn’t arrive intact. Reload to try again.'); return raw; });
+  }
+  function parse(raw) { return JSON.parse(new TextDecoder().decode(raw)); }
+  /* The copy this browser keeps: raw bytes, for this account only, re-hashed against the release every time it is used. */
+  function fromCache(cached, sha) {
+    if (!cached || !user || cached.uid !== user.uid || !cached.core || !cached.detail || !sha) return Promise.resolve(false);
+    return Promise.all([checked(cached.core, sha.core), checked(cached.detail, sha.detail)]).then(function (r) {
+      core = parse(r[0]); detail = parse(r[1]); return true;
+    }).catch(function () { idbClear(); return false; });
   }
   function load() {
     ui('loading', { text: 'Loading the drug library…' });
@@ -113,24 +126,64 @@
       if (!cur.exists) { ui('empty'); return; }
       release = cur.data();
       return idbGet('snap').then(function (cached) {
-        if (cached && cached.release === release.release && cached.core && cached.detail) { core = cached.core; detail = cached.detail; started(); return; }
-        var total = release.parts.core + release.parts.detail, got = 0;
-        var tick = function () { got++; if (!core) ui('loading', { text: 'Loading the drug library…', progress: got / total }); };  /* the detail loads behind the open library */
-        return readBundle(release, 'core', release.parts.core, release.sha256.core, tick).then(function (c) {
-          core = c; coreReady();
-          return readBundle(release, 'detail', release.parts.detail, release.sha256.detail, tick).then(function (d) {
-            detail = d; detailWait.resolve(); idbPut('snap', { release: release.release, core: core, detail: detail });
+        var same = cached && cached.release === release.release;
+        return fromCache(same ? cached : null, release.sha256).then(function (ok) {
+          if (ok) { started(); return; }
+          var total = release.parts.core + release.parts.detail, got = 0, rawCore;
+          var tick = function () { got++; if (!core) ui('loading', { text: 'Loading the drug library…', progress: got / total }); };  /* the detail loads behind the open library */
+          return readBundle(release, 'core', release.parts.core, release.sha256.core, tick).then(function (c) {
+            rawCore = c; core = parse(c); coreReady();
+            return readBundle(release, 'detail', release.parts.detail, release.sha256.detail, tick).then(function (d) {
+              detail = parse(d); detailWait.resolve();
+              idbPut('snap', { release: release.release, uid: user.uid, sha256: release.sha256, exported_at: release.exported_at, core: rawCore, detail: d });
+            });
           });
         });
       });
     }).catch(function (e) {
-      return idbGet('snap').then(function (cached) {
-        if (cached && cached.core && cached.detail) { core = cached.core; detail = cached.detail; release = { release: cached.release, offline: true }; started(); return; }
-        ui('error', { text: e && e.code === 'permission-denied' ? 'This account can’t open the drug library.' : (e && e.message && /library/.test(e.message) ? e.message : 'Couldn’t load the drug library. Check the connection, then reload.') });
+      var denied = e && e.code === 'permission-denied';
+      if (denied) { idbClear(); ui('error', { text: 'This account can’t open the drug library.' }); return; }   /* a denied account never sees a cached copy */
+      var network = e && (e.code === 'unavailable' || e.code === 'deadline-exceeded' || e.name === 'TypeError');
+      return (network ? idbGet('snap') : Promise.resolve(null)).then(function (cached) {
+        return fromCache(cached, cached && cached.sha256).then(function (ok) {
+          if (ok) { release = { release: cached.release, exported_at: cached.exported_at, offline: true }; started(); return; }
+          ui('error', { text: e && e.message && /library/.test(e.message) ? e.message : 'Couldn’t load the drug library. Check the connection, then reload.' });
+        });
       });
     });
   }
-  function coreReady() { window.YakuriHosted.ready = true; window.YakuriHosted.release = release; coreWait.resolve(); ui(null); }
+  function coreReady() { window.YakuriHosted.ready = true; window.YakuriHosted.release = release; coreWait.resolve(); ui(null); stamp(); watch(); }
+  /* HIG Managing notifications (Oct 24 2026): a newer published library is announced in the page, quietly, never reloaded by itself.
+     Checked when the tab comes back to the front and every 15 minutes; nothing is checked while the tab is hidden. */
+  var watching = false, told = false;
+  function watch() {
+    if (watching) return; watching = true;
+    var check = function () {
+      if (told || document.visibilityState !== 'visible' || !db || !user || !release || !release.release) return;
+      db.collection(COL).doc('current').get().then(function (cur) {
+        if (told || !cur || !cur.exists) return;
+        var next = cur.data();
+        if (next && next.release && next.release !== release.release) {
+          told = true;
+          window.dispatchEvent(new CustomEvent('yakuri:library-changed', { detail: { exported_at: next.exported_at || '' } }));
+        }
+      }).catch(function () {});
+    };
+    document.addEventListener('visibilitychange', check);
+    setInterval(check, 15 * 60 * 1000);
+    window.YakuriHosted.checkForUpdate = check;
+  }
+  /* staff see which library they're reading: holds placed on the Mac reach this copy only when it is published again */
+  function stamp() {
+    var when = release && release.exported_at ? fmtDay(release.exported_at) : '';
+    var text = 'Read-only copy' + (when ? ' · library of ' + when : '') + (release && release.offline ? ' · offline' : '') + ' · no clinical approval';
+    var go = function () {
+      var all = document.querySelectorAll('#pvxSubnav *, .medical-head *, .interaction-head *, header *');
+      for (var i = 0; i < all.length; i++) { var el = all[i]; if (el.children.length === 0 && /^Read-only copy\b/.test((el.textContent || '').trim())) { el.textContent = text; el.title = 'Exported from Yakuri on the Mac ' + (release.exported_at || '') + '. Holds and reviews change only there; this copy shows them as of that export.'; } }
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  }
+  function fmtDay(iso) { try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) { return ''; } }
   function started() { coreReady(); detailWait.resolve(); }
 
   function boot() {

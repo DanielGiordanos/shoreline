@@ -23,7 +23,7 @@ function showGovernance() {
   block.id='clinical-governance';
   block.className='governance-panel';
   block.setAttribute('aria-label','Clinical access and evidence');
-  block.innerHTML=`<div class="governance-heading"><div><div class="eyebrow">PRIVATE TEST · CLINICAL ACCESS</div><h3>Evidence and approval</h3></div>${statusBadge(drug.governance.state)}</div>
+  block.innerHTML=`<div class="governance-heading"><div><h3>Evidence and approval</h3></div>${statusBadge(drug.governance.state)}</div>
     <p>Reference reading is available. Clinical actions require an approved, explicitly mapped regimen. An editorial review date is not a clinical approval.</p>
     <label for="recommendation-select">Review scope</label><select id="recommendation-select">${drug.governance.recommendations.map(r=>`<option value="${esc(r.id)}">${r.kind==='reference'?'Monograph · reference only':`Imported regimen ${r.record_number}`} · ${esc(r.state==='Draft'?'Unverified':r.state)}</option>`).join('')}</select>
     <div id="recommendation-detail" aria-live="polite">Loading scope…</div>

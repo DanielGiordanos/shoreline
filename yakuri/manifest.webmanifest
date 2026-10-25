@@ -29,16 +29,24 @@
   ],
   "shortcuts": [
     {
-      "name": "Drug library",
-      "url": "/yakuri/"
+      "name": "Search drugs",
+      "url": "/yakuri/#search",
+      "description": "Open Yakuri ready to search"
+    },
+    {
+      "name": "CPR drug dosages",
+      "url": "/yakuri/medical.html#cpr",
+      "description": "The CPR drug and defibrillation table"
     },
     {
       "name": "Interactions",
-      "url": "/yakuri/interactions.html"
+      "url": "/yakuri/interactions.html",
+      "description": "Check pairs of drugs"
     },
     {
-      "name": "Medical calculators",
-      "url": "/yakuri/medical.html"
+      "name": "Saved drugs",
+      "url": "/yakuri/#saved",
+      "description": "The drugs you saved"
     }
   ]
 }
