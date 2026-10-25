@@ -514,6 +514,9 @@ document.addEventListener('DOMContentLoaded',function(){
   const json=(raw,fallback)=>{try{const v=JSON.parse(raw);return v&&typeof v==='object'?v:fallback;}catch{return fallback;}};
 
   /* ── L3 · reading state survives a relaunch: the drug's scroll position, the search, Reading focus ── */
+  /* Oct 24 2026: a restored scroll holds for a moment while late content draws (notices, the list's headings), unless the person scrolls or types */
+  window.yakuriHoldScroll=y=>{if(!(y>0))return;let moved=false;const mine=()=>{moved=true;};['wheel','touchstart','keydown','pointerdown'].forEach(t=>addEventListener(t,mine,{once:true,passive:true,capture:true}));
+    [300,600,1000,1500].forEach(ms=>setTimeout(()=>{const want=Math.min(y,document.documentElement.scrollHeight-innerHeight);if(!moved&&Math.abs(scrollY-want)>2)scrollTo({top:want,behavior:'instant'});},ms));};
   const PLACE='yakuri-place',place=json(ls.get(PLACE),{});   /* read before launch rewrites it */
   const savePlace=patch=>{const now=Object.assign(json(ls.get(PLACE),{}),patch);ls.set(PLACE,JSON.stringify(now));};
   if(ls.get('yakuri-reading-focus')==='1'&&$1('#drug-list'))body.classList.add('y-focus');
@@ -525,6 +528,7 @@ document.addEventListener('DOMContentLoaded',function(){
     const id=typeof active!=='undefined'&&active?active.id:null;
     const back=()=>{if(id&&place.drug===id&&place.y>0)window.scrollTo(0,Math.min(place.y,document.documentElement.scrollHeight));};
     requestAnimationFrame(()=>{back();setTimeout(()=>{back();launched=true;},120);});
+    if(id&&place.drug===id&&place.y>0)window.yakuriHoldScroll(place.y);
   });
   if($1('#drug-list')){
     window.addEventListener('scroll',()=>{if(!launched)return;clearTimeout(st);st=setTimeout(()=>{if(typeof active!=='undefined'&&active)savePlace({drug:active.id,y:Math.round(window.scrollY)});},200);},{passive:true});
@@ -1073,7 +1077,7 @@ document.addEventListener('DOMContentLoaded',function(){
       if(s.page&&!openPage()){const nav=$1(PAGE_NAV[s.page]);if(nav)nav.click();}
       else if(!s.page&&openPage())openPage().close();
       const y=s.page?0:(s.scroll||0),to=()=>window.scrollTo(0,Math.min(y,document.documentElement.scrollHeight));
-      requestAnimationFrame(()=>{to();setTimeout(()=>{if(drew&&s.open&&window.yakuriHistoryOpen)window.yakuriHistoryOpen(s.open);to();},150);});}   /* again once late content has drawn, as the launch restore does */
+      requestAnimationFrame(()=>{to();setTimeout(()=>{if(drew&&s.open&&window.yakuriHistoryOpen)window.yakuriHistoryOpen(s.open);to();if(window.yakuriHoldScroll)window.yakuriHoldScroll(y);},150);});}   /* again once late content has drawn, as the launch restore does */
     finally{setTimeout(()=>{H.restoring=false;buttons();},0);}});
   /* Back and Forward buttons before the path, on Mac and iPad; dimmed when there's nowhere to go */
   const CHEV=d=>'<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="'+d+'"/></svg>';
@@ -1176,7 +1180,7 @@ document.addEventListener('DOMContentLoaded',function(){
   'use strict';
   /* L2 · the list heading says how the list is ordered */
   const order=()=>{const el=document.getElementById('list-order');if(!el||typeof yakuriMode==='undefined')return;const q=typeof query==='string'&&query.trim();
-    const t=q?'Best match':yakuriMode==='recent'?'Latest first':'A–Z';if(el.textContent!==t)el.textContent=t;};
+    const t=yakuriMode==='recent'&&!q?'Latest first':'A–Z';if(el.textContent!==t)el.textContent=t;};
   const head=document.querySelector('.list-heading');if(head){const span=[...head.children].find(x=>x.id!=='result-count');if(span&&!span.id)span.id='list-order';}
   let q=0;const list=document.getElementById('drug-list');if(list)new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;order();});}).observe(list,{childList:true});
   order();
@@ -1546,4 +1550,61 @@ document.addEventListener('DOMContentLoaded',function(){
       b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20.5 20.5"/></svg><span class="y-spot-label">Drugs, topics and commands</span><kbd>\u2318K</kbd>';
       b.addEventListener('click',go);tools.prepend(b);}
     document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&!e.altKey&&!e.shiftKey&&e.key.toLowerCase()==='k'){if(document.querySelector('dialog[open]'))return;e.preventDefault();go();}});}
+},{once:true});
+
+/* ═══ A–Z sections (Oct 24 2026) · Daniel: "I want it to display alphabetized"
+   The library reads A–Z under letter headings that stay pinned as you scroll, with an index down the right edge to jump to a letter.
+   A search keeps A–Z inside three labelled groups: names, then drugs that mention it in the text, then possible spellings.
+   Recent stays latest first, without headings. renderList is untouched: the headings are added after each render. */
+document.addEventListener('DOMContentLoaded',function(){
+  const list=document.getElementById('drug-list'),lib=document.querySelector('.library');if(!list||!lib)return;
+  const GROUPS=[q=>'Starts with \u201c'+q+'\u201d',q=>'Contains \u201c'+q+'\u201d',()=>'Mentioned in the reference text',()=>'Possible spelling matches'];
+  const letterOf=n=>{const c=String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').trim().charAt(0).toUpperCase();return /[A-Z]/.test(c)?c:'#';};
+  const az=document.createElement('nav');az.className='y-az';az.setAttribute('aria-label','Jump to letter');az.hidden=true;
+  const strip=document.createElement('div');strip.className='y-az-strip';az.append(strip);list.before(az);
+  let letters=[],sig='';
+  const pinH=()=>{const p=lib.querySelector('.y-lib-search');return p?p.getBoundingClientRect().height:0;};
+  const head=(text,id,cls)=>{const h=document.createElement('h2');h.className='y-sec '+cls;h.textContent=text;if(id)h.id=id;return h;};
+  function fit(){if(az.hidden)return;lib.style.setProperty('--y-pin-h',pinH()+'px');
+    const fs=parseFloat(getComputedStyle(strip).fontSize)||13,row=Math.ceil(fs*1.38),room=lib.clientHeight-pinH()-28,max=Math.max(3,Math.floor(room/row));
+    let shown=letters;if(letters.length>max){const m=Math.max(2,Math.ceil(max/2)),pick=new Set();for(let i=0;i<m;i++)pick.add(Math.round(i*(letters.length-1)/(m-1)));shown=letters.filter((_,i)=>pick.has(i));}
+    const cur=strip.querySelector('[tabindex="0"]'),keep=cur&&cur.dataset.yAz;
+    const folded=shown.length<letters.length,btn=l=>'<button type="button" tabindex="-1" data-y-az="'+l+'" aria-label="'+(l==='#'?'Numbers and symbols':l)+'">'+l+'</button>';
+    strip.innerHTML=shown.map(btn).join(folded?'<span class="y-az-dot" aria-hidden="true"></span>':'');
+    const first=strip.querySelector('[data-y-az="'+keep+'"]')||strip.querySelector('button');if(first)first.tabIndex=0;
+    az.classList.toggle('y-az-folded',folded);}
+  function decorate(){
+    const cards=[...list.querySelectorAll(':scope>.drug-card:not(.y-row-out)')],ids=cards.map(c=>{const b=c.querySelector('[data-drug]');return b?b.dataset.drug:'';});
+    const q=typeof query==='string'?query.trim():'',mode=typeof yakuriMode==='string'?yakuriMode:'library';
+    const s=mode+'|'+q+'|'+ids.join(',');if(s===sig&&(!cards.length||list.querySelector(':scope>.y-sec')||mode==='recent'))return;sig=s;
+    const vis=cards.find(c=>c.getBoundingClientRect().bottom>lib.getBoundingClientRect().top+pinH()),y0=vis?vis.getBoundingClientRect().top:0;   /* keep the row you were looking at still */
+    list.querySelectorAll(':scope>.y-sec').forEach(h=>h.remove());letters=[];
+    if(cards.length&&mode!=='recent'){
+      if(!q){let last=null;cards.forEach(c=>{const n=c.querySelector('.drug-item strong'),l=letterOf(n&&n.textContent);if(l!==last){last=l;letters.push(l);c.before(head(l,'y-sec-'+(l==='#'?'num':l),'y-letter'));}});}
+      else if(typeof yakuriSearchRank==='function'&&typeof yakuriSearchTier==='function'&&typeof data!=='undefined'&&data){
+        const by=new Map(data.drugs.map(d=>[d.id,d])),tiers=ids.map(id=>{const d=by.get(id);return d?yakuriSearchTier(yakuriSearchRank(d,q)):0;}),count=[0,0,0,0];tiers.forEach(t=>count[t]++);
+        const n=typeof normalizeSearch==='function'?normalizeSearch(q):q.toLowerCase();let last=-1;
+        cards.forEach((c,i)=>{const t=tiers[i];if(t!==last){last=t;c.before(head(GROUPS[t](q)+' \u00b7 '+count[t],'','y-group'));}
+          if(t<2){const d=by.get(ids[i]),nm=normalizeSearch?normalizeSearch(d.name):'';if(!nm.includes(n)){const b=(d.editorial&&d.editorial.brand_aliases||[]).find(x=>normalizeSearch(x).includes(n)),sm=c.querySelector('.drug-item small');   /* matched on a brand: say which */
+            if(b&&sm&&!sm.querySelector('.y-brand-hit')){const e=document.createElement('span');e.className='y-brand-hit';e.textContent=' \u00b7 '+b;sm.append(e);}}}});}}
+    if(vis&&vis.isConnected&&lib.scrollTop>0){const d=vis.getBoundingClientRect().top-y0;if(Math.abs(d)>.5)lib.scrollTop+=d;}
+    lib.classList.toggle('y-sectioned',letters.length>0);
+    const want=!q&&mode!=='recent'&&cards.length>30&&letters.length>1;az.hidden=!want;lib.classList.toggle('y-has-az',want);if(want)fit();}
+  function jump(l,focus){const h=document.getElementById('y-sec-'+(l==='#'?'num':l));if(!h)return;
+    const c=h.nextElementSibling;   /* measure from the first row: a pinned heading reports where it is pinned, not where it sits */
+    lib.scrollBy({top:(c?c.getBoundingClientRect().top-h.offsetHeight-parseFloat(getComputedStyle(c).marginTop||0):h.getBoundingClientRect().top)-lib.getBoundingClientRect().top-pinH(),behavior:'instant'});
+    if(focus){const b=h.nextElementSibling&&h.nextElementSibling.querySelector('.drug-item');if(b)b.focus({preventScroll:true});}}
+  const at=y=>{const r=strip.getBoundingClientRect();if(!letters.length||!r.height)return null;const i=Math.min(letters.length-1,Math.max(0,Math.floor((y-r.top)/r.height*letters.length)));return letters[i];};
+  let scrub=false,lastL='';
+  strip.addEventListener('pointerdown',e=>{if(e.button)return;e.preventDefault();scrub=true;try{strip.setPointerCapture(e.pointerId);}catch(_){}
+    const b=e.target.closest&&e.target.closest('[data-y-az]'),l=b?b.dataset.yAz:at(e.clientY);if(l){lastL=l;jump(l,false);}az.classList.add('y-az-active');});
+  strip.addEventListener('pointermove',e=>{if(!scrub)return;const el=document.elementFromPoint(strip.getBoundingClientRect().left+strip.offsetWidth/2,e.clientY),b=el&&el.closest&&el.closest('[data-y-az]'),l=b?b.dataset.yAz:at(e.clientY);if(l&&l!==lastL){lastL=l;jump(l,false);}});
+  const end=()=>{scrub=false;az.classList.remove('y-az-active');};strip.addEventListener('pointerup',end);strip.addEventListener('pointercancel',end);
+  strip.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-y-az]');if(!b)return;if(e.detail===0)jump(b.dataset.yAz,true);});   /* the keyboard and VoiceOver land on the letter's first drug */
+  strip.addEventListener('keydown',e=>{const bs=[...strip.querySelectorAll('button')],i=bs.indexOf(document.activeElement);if(i<0)return;
+    const k={ArrowDown:1,ArrowRight:1,ArrowUp:-1,ArrowLeft:-1}[e.key];let n=k?Math.min(bs.length-1,Math.max(0,i+k)):e.key==='Home'?0:e.key==='End'?bs.length-1:-1;if(n<0)return;e.preventDefault();
+    bs.forEach(b=>b.tabIndex=-1);bs[n].tabIndex=0;bs[n].focus();jump(bs[n].dataset.yAz,false);});
+  let raf=0;const soon=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;decorate();});};
+  new MutationObserver(soon).observe(list,{childList:true});addEventListener('resize',()=>{if(!az.hidden)fit();});
+  window.yakuriSections={decorate,jump,letters:()=>letters.slice()};decorate();
 },{once:true});

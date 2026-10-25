@@ -1361,3 +1361,19 @@ button.y-busy{cursor:progress}
 /* B5 · the picker's highlighted match, and the drug Backspace has selected */
 #interaction-matches .interaction-row.y-hl{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 #interaction-selected .interaction-row.y-token-armed{border-color:var(--y-destructive,#D70015);box-shadow:inset 0 0 0 1px var(--y-destructive,#D70015)}
+/* ═══ A–Z sections (Oct 24 2026): letter headings pinned under the search field, an index to jump, and labelled groups in a search */
+#drug-list>.y-sec{position:sticky;top:var(--y-pin-h,56px);z-index:3;margin:0 -8px;padding:12px 18px 6px;background:var(--panel);box-shadow:0 1px 0 var(--line);color:var(--muted);font-size:.8125rem;font-weight:600;line-height:1.3;letter-spacing:0}
+#drug-list:has(>.y-sec){overflow:visible}
+.library{overflow-anchor:none}   /* a re-rendered list must never move the page beside it; the list keeps its own place (A–Z sections) */   /* the list grows with the .library scroller; its own overflow would hold the headings in place */
+#drug-list>.y-letter{color:var(--ink);font-size:.9375rem;font-weight:700}
+#drug-list>.y-sec+.drug-card{margin-top:2px}
+.library>.y-az{position:sticky;top:calc(var(--y-pin-h,56px) + 6px);height:0;flex:none;align-self:stretch;z-index:4}
+.library>.y-az[hidden]{display:none}
+.library.y-has-az .drug-list{padding-right:30px}
+.y-az-strip{position:absolute;right:2px;top:0;width:26px;font-size:.8125rem;display:flex;flex-direction:column;align-items:stretch;padding:2px 0;touch-action:none;-webkit-user-select:none;user-select:none;cursor:default}
+.library .y-az-strip button{appearance:none;display:block;min-height:0;min-width:0;width:100%;margin:0;padding:0;border:0;border-radius:6px;background:transparent;box-shadow:none;color:var(--accent);font-family:inherit;font-size:.8125rem;font-weight:600;line-height:1.38;text-align:center;cursor:pointer}
+.library .y-az-strip button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.y-az-dot{display:block;height:calc(.8125rem * 1.38);position:relative}
+.y-az-dot::before{content:"";position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--accent);opacity:.7}
+.y-az.y-az-active .y-az-strip{background:rgba(127,140,160,.16);border-radius:13px}
+@media(pointer:coarse){.y-az-strip{width:30px}.library.y-has-az .drug-list{padding-right:32px}}
