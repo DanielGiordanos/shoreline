@@ -26,3 +26,11 @@ body.dark .yh-btn{color:#06101E}
 .yh-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 .yh-x{font-size:1.5rem;min-width:44px;min-height:44px;border:0;background:none;color:var(--muted);cursor:pointer}
 @media(forced-colors:active){.yh-btn{border:1px solid ButtonText}.yh-bar span{background:Highlight}}
+/* HIG Progress indicators (Oct 25 2026): an indeterminate bar moves (a slow pulse with Reduce Motion); a determinate one eases as it fills */
+.yh-bar span{transition:width .35s ease-out}
+.yh-bar.yh-bar-ind span{width:32%;animation:yh-ind 1.3s ease-in-out infinite}
+@keyframes yh-ind{0%{transform:translateX(-110%)}100%{transform:translateX(320%)}}
+@keyframes yh-pulse{0%,100%{opacity:.35}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.yh-bar span{transition:none}.yh-bar.yh-bar-ind span{width:100%;transform:none;animation:yh-pulse 1.6s ease-in-out infinite}}
+.yh-pub-bar{width:100%;margin:2px 0 4px}
+.yh-pub-bar[hidden]{display:none}

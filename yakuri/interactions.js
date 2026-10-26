@@ -3,7 +3,12 @@
 const q=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let catalog=[],selected=[],revision=0,token='',graphData=null,graphMode=false,focusedNode=null;
 const monograph=d=>`<a href="/yakuri/#drug=${encodeURIComponent(d.id)}">View ${esc(d.name)} monograph</a>`;
-function matches(){const term=q('#interaction-search').value.trim().toLocaleLowerCase();const found=term?catalog.filter(d=>!selected.includes(d.id)&&d.name.toLocaleLowerCase().includes(term)):[];q('#interaction-matches').innerHTML=found.slice(0,20).map(d=>`<div class="interaction-row"><div><strong>${esc(d.name)}</strong>${d.state==='Held'?'<small>Held · unresolved source question</small>':''}</div><button type="button" data-add="${esc(d.id)}" aria-label="Add ${esc(d.name)}">Add</button></div>`).join('');q('#interaction-status').textContent=term?`${found.length} matching drug${found.length===1?'':'s'}${found.length>20?' · showing first 20; refine the search':''}`:'Search by formulary drug name. Select up to 10 drugs.';markHl();}
+/* A–Z everywhere (Oct 25 2026): matches group as the library's do, "Starts with “…” · n" then "Contains “…” · n", A–Z inside each */
+function matches(){const typedQ=q('#interaction-search').value.trim(),term=typedQ.toLocaleLowerCase(),AZ=window.yakuriAZ;let found=term?catalog.filter(d=>!selected.includes(d.id)&&d.name.toLocaleLowerCase().includes(term)):[];
+ const tierOf=d=>AZ?Math.max(0,AZ.tier({name:d.name},term)):0;if(AZ&&term)found=found.slice().sort((a,b)=>tierOf(a)-tierOf(b)||AZ.byName(a.name,b.name));
+ const counts={};found.forEach(d=>{const t=tierOf(d);counts[t]=(counts[t]||0)+1;});let lastT=null;
+ const head=d=>{if(!AZ)return '';const t=tierOf(d);if(t===lastT)return '';lastT=t;return `<h3 class="y-sec y-group interaction-group">${esc(AZ.label(t,typedQ,counts[t]))}</h3>`;};
+ q('#interaction-matches').innerHTML=found.slice(0,20).map(d=>`${head(d)}<div class="interaction-row"><div><strong>${esc(d.name)}</strong>${d.state==='Held'?'<small>Held · unresolved source question</small>':''}</div><button type="button" data-add="${esc(d.id)}" aria-label="Add ${esc(d.name)}">Add</button></div>`).join('');q('#interaction-status').textContent=term?`${found.length} matching drug${found.length===1?'':'s'}${found.length>20?' · showing first 20; refine the search':''}`:'Search by formulary drug name. Select up to 10 drugs.';markHl();}
 function keep(){try{sessionStorage.setItem('yakuri-visit-interactions',JSON.stringify({ids:selected,species:q('#interaction-species').value,at:Date.now()}));}catch{}}
 async function update(){keep();graphData=null;focusedNode=null;renderGraph();const current=++revision,drugs=selected.map(id=>catalog.find(d=>d.id===id));q('#interaction-clear').disabled=!selected.length;
  q('#interaction-selected').innerHTML=drugs.length?drugs.map(d=>`<div class="interaction-row"><div><strong>${esc(d.name)}</strong><small>${d.state==='Held'?'Held · clinical use blocked':'Unverified · clinical review not granted'}</small>${monograph(d)}</div><button type="button" class="y-destructive" data-remove="${esc(d.id)}" aria-label="Remove ${esc(d.name)}">Remove</button></div>`).join(''):'<p>No drugs selected.</p>';
@@ -25,7 +30,7 @@ function showPair(i){q('#interaction-results').hidden=false;const card=q('#inter
 let graphWidth=0,lastPairs=null,graphChanged=new Set(),graphRoving={node:null,edge:null};
 const graphKind=p=>p.source_checked?(p.scope_match?'mapped':'species'):'unknown';
 const pairKey=p=>[...p.drug_ids].sort().join('|');
-function renderGraph(){const host=q('#interaction-graph');host.hidden=!graphMode;q('#show-interaction-list').setAttribute('aria-pressed',!graphMode);q('#show-interaction-graph').setAttribute('aria-pressed',graphMode);document.body.classList.toggle('y-graph-mode',graphMode);
+function renderGraph(){const host=q('#interaction-graph');host.hidden=!graphMode;q('#show-interaction-list').setAttribute('aria-checked',!graphMode);q('#show-interaction-graph').setAttribute('aria-checked',graphMode);document.body.classList.toggle('y-graph-mode',graphMode);
  if(!graphData){host.innerHTML='';return;}  /* one prompt at a time: the results area says what to do, or that the pairs are being checked */
  const had=host.contains(document.activeElement)?document.activeElement:null,hadKey=had&&(had.dataset.graphNode?'n:'+had.dataset.graphNode:had.dataset.graphPair!==undefined?'e:'+had.dataset.graphPair:had.id?'#'+had.id:'');
  if(!host.querySelector('.graph-canvas'))host.innerHTML='<div class="graph-canvas"></div>';

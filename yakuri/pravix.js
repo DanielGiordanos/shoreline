@@ -1,3 +1,42 @@
+/* HIG Windows (Oct 25 2026): the installed app has windows, a browser has tabs */
+window.yakuriWinWord=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true?'window':'tab';}catch(_){return 'tab';}};
+/* A–Z everywhere (Oct 25 2026) · Daniel: "display them exactly the same" — every list of drugs reads like the library:
+   A–Z under letter headings with an index to jump, and in a search "Starts with “…” · n", "Contains “…” · n", then the text and spelling groups.
+   yakuriAZ holds the parts the lists share: the letter of a name, the group labels, a drug's tier for a query, and the A–Z index. */
+window.yakuriAZ=(function(){
+  const letterOf=n=>{const c=String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').trim().charAt(0).toUpperCase();return /[A-Z]/.test(c)?c:'#';};
+  const LABELS=[q=>'Starts with “'+q+'”',q=>'Contains “'+q+'”',()=>'Mentioned in the reference text',()=>'Possible spelling matches'];
+  const label=(tier,q,n)=>LABELS[Math.max(0,Math.min(3,tier))](q)+(n==null?'':' · '+n);
+  const fold=t=>typeof normalizeSearch==='function'?normalizeSearch(t):String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+  /* the library's own ranking where it's loaded; elsewhere (Interactions) the same rule on the name: a word starting with it, else containing it */
+  function tier(d,q){if(d&&d.governance&&typeof yakuriSearchRank==='function'&&typeof yakuriSearchTier==='function')return yakuriSearchTier(yakuriSearchRank(d,q));
+    const n=fold(d&&d.name!=null?d.name:d),t=fold(q);if(!t)return 0;return n.startsWith(t)||n.split(/[\s/,(-]+/).some(w=>w.startsWith(t))?0:n.includes(t)?1:-1;}
+  const byName=(a,b)=>String(a).localeCompare(String(b),'en',{sensitivity:'base'});
+  /* the A–Z index: a column of letters; press, scrub or use the arrow keys to jump. Too many letters for the room fold into dots, as in the library. */
+  function index(o){
+    const az=document.createElement('nav');az.className='y-az y-az-list';az.setAttribute('aria-label','Jump to letter');az.hidden=true;
+    const strip=document.createElement('div');strip.className='y-az-strip';az.append(strip);let letters=[];
+    function fit(){if(az.hidden)return;const fs=parseFloat(getComputedStyle(strip).fontSize)||13,row=Math.ceil(fs*1.38),room=Math.max(0,(o.room?o.room():300)),max=Math.max(3,Math.floor(room/row));
+      let shown=letters;if(letters.length>max){const m=Math.max(2,Math.ceil(max/2)),pick=new Set();for(let i=0;i<m;i++)pick.add(Math.round(i*(letters.length-1)/(m-1)));shown=letters.filter((_,i)=>pick.has(i));}
+      const keep=(strip.querySelector('[tabindex="0"]')||{}).dataset,folded=shown.length<letters.length;
+      const btn=l=>'<button type="button" tabindex="-1" data-y-az="'+l+'" aria-label="'+(l==='#'?'Numbers and symbols':l)+'">'+l+'</button>';
+      strip.innerHTML=shown.map(btn).join(folded?'<span class="y-az-dot" aria-hidden="true"></span>':'');
+      if(o.focusable!==false){const f=(keep&&keep.yAz&&strip.querySelector('[data-y-az="'+keep.yAz+'"]'))||strip.querySelector('button');if(f)f.tabIndex=0;}
+      az.classList.toggle('y-az-folded',folded);}
+    const at=y=>{const r=strip.getBoundingClientRect();if(!letters.length||!r.height)return null;return letters[Math.min(letters.length-1,Math.max(0,Math.floor((y-r.top)/r.height*letters.length)))];};
+    let scrub=false,last='';
+    strip.addEventListener('mousedown',e=>e.preventDefault());   /* a drug field keeps its focus while the index is used */
+    strip.addEventListener('pointerdown',e=>{if(e.button)return;e.preventDefault();scrub=true;try{strip.setPointerCapture(e.pointerId);}catch(_){}
+      const b=e.target.closest&&e.target.closest('[data-y-az]'),l=b?b.dataset.yAz:at(e.clientY);if(l){last=l;o.jump(l,false);}az.classList.add('y-az-active');});
+    strip.addEventListener('pointermove',e=>{if(!scrub)return;const el=document.elementFromPoint(strip.getBoundingClientRect().left+strip.offsetWidth/2,e.clientY),b=el&&el.closest&&el.closest('[data-y-az]'),l=b?b.dataset.yAz:at(e.clientY);if(l&&l!==last){last=l;o.jump(l,false);}});
+    const end=()=>{scrub=false;az.classList.remove('y-az-active');};strip.addEventListener('pointerup',end);strip.addEventListener('pointercancel',end);
+    strip.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-y-az]');if(b&&e.detail===0)o.jump(b.dataset.yAz,true);});   /* the keyboard and VoiceOver land on the letter's first drug */
+    strip.addEventListener('keydown',e=>{const bs=[...strip.querySelectorAll('button')],i=bs.indexOf(document.activeElement);if(i<0)return;
+      const k={ArrowDown:1,ArrowRight:1,ArrowUp:-1,ArrowLeft:-1}[e.key];const n=k?Math.min(bs.length-1,Math.max(0,i+k)):e.key==='Home'?0:e.key==='End'?bs.length-1:-1;if(n<0)return;e.preventDefault();
+      bs.forEach(b=>b.tabIndex=-1);bs[n].tabIndex=0;bs[n].focus();o.jump(bs[n].dataset.yAz,false);});
+    return {el:az,set(ls,show){letters=ls.slice();az.hidden=!show;if(show)fit();},fit,letters:()=>letters.slice()};}
+  return {letterOf,label,tier,index,byName,fold};
+})();
 /* Yakuri in the Pravix family — behaviour for the Pravix layer (Oct 23 2026).
    Runs after Yakuri's own scripts. It only changes presentation: theme sync, the head's height, and SF-style line icons
    in place of text characters. No clinical text, state or action is touched. */
@@ -5,7 +44,7 @@
 (function(){
   const root=document.documentElement,body=document.body;
   /* The shared light/dark choice (pvx-theme.js sets body.dark). Yakuri's older rules read html[data-theme]. */
-  function theme(){root.dataset.theme=body.classList.contains('dark')?'dark':'light';const m=document.querySelector('meta[name=theme-color]');if(m)m.content=body.classList.contains('dark')?'#0A1222':'#F2F4F8';}
+  function theme(){root.dataset.theme=body.classList.contains('dark')?'dark':'light';const c=body.classList.contains('dark')?'#0D1730':'#FFFFFF';document.querySelectorAll('meta[name=theme-color]').forEach(m=>{if(m.content!==c)m.content=c;});}   /* HIG Status bars (Oct 25 2026): the status bar takes the top bar's colour, whichever light/dark is chosen */
   theme();new MutationObserver(theme).observe(body,{attributes:true,attributeFilter:['class']});
 
   /* W9 · one date format in the interface: an ISO date reads "Oct 17, 2026"; a timestamp adds a 12-hour time (Brand §10) */
@@ -125,7 +164,8 @@ document.addEventListener('DOMContentLoaded',function(){
     const savedLabel=()=>{if(favItem)favItem.textContent=fav.getAttribute('aria-pressed')==='true'?'Remove from Saved':'Add to Saved';};
     /* HIG Menus (Oct 24 2026): inside Open, the menu supplies the verb */
     [[split,'Split view'],[compare,'Compare'],[forms,'Formulations']].forEach(([b,t])=>{if(b){b.textContent=t;}});
-    const open=menu('Open','open',[split,compare,card,timeline,forms]);
+    const newWin=proxy('New window',()=>{if(window.yakuriOpenInWindow&&typeof active!=='undefined'&&active)window.yakuriOpenInWindow(active.id);});   /* HIG Windows (Oct 25 2026) */
+    const open=menu('Open','open',[split,newWin,compare,card,timeline,forms]);
     const save=menu('Save','save',[favItem,coll,saveRef],savedLabel);
     const research=menu('Research','research',[rws,assistant,organ]);
     /* S1 · Share ▾ (HIG Collaboration and sharing; Brand §9.13a: Copy …, then Print…). Shared text is the reference card:
@@ -314,13 +354,17 @@ document.addEventListener('DOMContentLoaded',function(){
       if(ext&&host.getAttribute('target')==='_blank')newTab(host);}
     /* every link that opens a new tab shows the symbol and says so, arrow or not (reference lists, sources) */
     const links=[...(scope.matches&&scope.matches('a[target=_blank]')?[scope]:[]),...scope.querySelectorAll('a[target=_blank]')];
-    for(const a of links){if(a.closest('#pvxTopnav'))continue;if(!a.querySelector('.y-sym')){const sym=document.createElement('span');sym.className='y-sym y-sym-ext';sym.setAttribute('aria-hidden','true');a.append(sym);glue(sym);}newTab(a);}}
+    for(const a of links){if(a.closest('#pvxTopnav'))continue;
+      const href=(a.getAttribute('href')||'').trim();if(!href||href==='#'){const t=document.createElement('span');t.className='y-no-link';t.append(...a.childNodes);a.replaceWith(t);continue;}   /* a source with no address reads as its words, not a link to nowhere (Oct 26 2026) */
+      if(!a.querySelector('.y-sym')){const sym=document.createElement('span');sym.className='y-sym y-sym-ext';sym.setAttribute('aria-hidden','true');a.append(sym);glue(sym);}newTab(a);}}
   /* S10 · the symbol never wraps away from its last word: the word and the symbol share one no-wrap span */
   function glue(sym){const host=sym.parentElement;if(!host||host.classList.contains('y-nowrap'))return;const w=document.createTreeWalker(host,NodeFilter.SHOW_TEXT);let last=null,n;
     while(n=w.nextNode()){if(n.parentElement.closest('.y-vh'))continue;if(n.compareDocumentPosition(sym)&Node.DOCUMENT_POSITION_FOLLOWING)last=n;}
     if(!last)return;last.nodeValue=last.nodeValue.replace(/\s+$/,'');const m=last.nodeValue.match(/(\S+)$/);if(!m)return;
-    const word=m[1].length<last.nodeValue.length?last.splitText(last.nodeValue.length-m[1].length):last;const wrap=document.createElement('span');wrap.className='y-nowrap';word.before(wrap);wrap.append(word,sym);}
-  function newTab(a){if(a.querySelector(':scope > .y-newtab'))return;const v=document.createElement('span');v.className='y-vh y-newtab';v.textContent=' (opens in a new tab)';a.append(v);}
+    const word=m[1].length<last.nodeValue.length?last.splitText(last.nodeValue.length-m[1].length):last;
+    /* in a flex link the space before the kept-together word is dropped (Oct 26 2026: "safetyreview"), so it becomes a no-break space there */
+    if(word!==last&&/\s$/.test(last.nodeValue)&&/flex/.test(getComputedStyle(host).display))last.nodeValue=last.nodeValue.replace(/\s+$/,'\u00a0');const wrap=document.createElement('span');wrap.className='y-nowrap';word.before(wrap);wrap.append(word,sym);}
+  function newTab(a){if(a.querySelector(':scope > .y-newtab'))return;const v=document.createElement('span');v.className='y-vh y-newtab';v.textContent=' (opens in a new '+(window.yakuriWinWord?yakuriWinWord():'tab')+')';a.append(v);}
   symbolize(body);
   new MutationObserver(ms=>{for(const m of ms)for(const a of m.addedNodes){if(a.nodeType===1)symbolize(a);else if(a.nodeType===3&&a.parentElement)symbolize(a.parentElement.closest('a,button')||a.parentElement);}}).observe(body,{childList:true,subtree:true});
 
@@ -349,7 +393,7 @@ document.addEventListener('DOMContentLoaded',function(){
     n.classList.toggle('y-more-start',n.scrollLeft>1);n.classList.toggle('y-more-end',n.scrollLeft+n.clientWidth<n.scrollWidth-1);}
   /* L5 · the current tab is kept in view (instantly), clear of the fades and the docked context */
   function showCurrent(){const n=nav();if(!n||n.scrollWidth<=n.clientWidth+1)return;const b=n.querySelector('[data-view][aria-selected=true],[data-view][aria-pressed=true]');if(!b)return;
-    const dock=n.querySelector('.y-island-dock:not([hidden])');const right=n.clientWidth-(dock?dock.offsetWidth:0)-24,left=24;
+    const dock=n.querySelector('.y-island-dock:not([hidden])'),tools=n.querySelector('.y-nav-tools');const right=n.clientWidth-(dock?dock.offsetWidth:0)-(tools&&tools.offsetWidth?tools.offsetWidth:0)-24,left=24;   /* and clear of Find and Sections (Oct 25 2026) */
     const x=b.offsetLeft-n.scrollLeft;if(x<left)n.scrollLeft=Math.max(0,b.offsetLeft-left);else if(x+b.offsetWidth>right)n.scrollLeft=b.offsetLeft+b.offsetWidth-right;edges();}
   /* L2 · a section switch starts the new view at its top: if the tabs were stuck, the view's first line lands just under them */
   document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.y-section-nav [data-view]');if(!b)return;const was=isStuck(b.closest('.y-section-nav'));
@@ -474,6 +518,7 @@ document.addEventListener('DOMContentLoaded',function(){
   /* ── E9 · search instead of 1,000-item menus: a search field with suggestions; the select stays for the logic, hidden ── */
   let listN=0;
   function pickers(){document.querySelectorAll('select:not([data-y-picker])').forEach(sel=>{if(sel.options.length<200||sel.closest('#pvxTopnav')||sel.matches('[data-split-drug]'))return;  /* Split view already has its own Find drug field */sel.dataset.yPicker='1';
+      if(window.yakuriDrugCombo){window.yakuriDrugCombo(sel);return;}   /* HIG Combo boxes (Oct 25 2026): one drug field everywhere; the datalist below is only a fallback */
       const id='y-pick-'+(++listN),dl=document.createElement('datalist');dl.id=id+'-list';
       const opts=[...sel.options].filter(o=>o.value);dl.innerHTML=opts.map(o=>'<option value="'+o.text.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></option>').join('');
       const inp=document.createElement('input');inp.type='search';inp.id=id;inp.className='y-picker';inp.setAttribute('list',dl.id);inp.setAttribute('autocomplete','off');inp.placeholder='e.g. '+(opts[0]?opts[0].text:'a drug name');
@@ -621,19 +666,37 @@ document.addEventListener('DOMContentLoaded',function(){
   const typed=f=>f.matches('textarea,input:not([type]),input[type=text],input[type=number],input[type=url],input[type=email]')&&!f.matches('.y-picker,[readonly],[disabled]')&&f.value.trim()!==''&&f.value!==f.defaultValue;
   const dirty=d=>!!d&&[...d.querySelectorAll('textarea,input')].some(typed);
   const settle=d=>d.querySelectorAll('textarea,input').forEach(f=>{f.defaultValue=f.value;});
+  /* HIG Action sheets and Alerts (Oct 25 2026): the question is modal. iPhone gets an action sheet from the bottom (Discard at the top, the sheet's
+     own save action, Cancel set apart at the bottom); the Mac and iPad get a small alert over the sheet (Discard leading, Cancel, the save action trailing).
+     The save action is the default when there is one; Cancel never is. Esc and Command-period cancel. */
+  let asking=null;
+  const saveFor=d=>{const forms=new Set([...d.querySelectorAll('textarea,input')].filter(typed).map(f=>f.closest('form')));if(forms.size!==1)return null;const form=[...forms][0];if(!form||!d.contains(form))return null;
+    const b=[...form.querySelectorAll('button')].find(x=>(!x.type||x.type==='submit')&&!x.disabled&&x.offsetParent&&x.textContent.trim());return b?{form,b,label:b.textContent.trim()}:null;};
   function ask(d,go){
     if(!dirty(d)){go();return;}
-    if(d.querySelector('.y-discard'))return;
-    const box=document.createElement('div');box.className='y-discard';box.setAttribute('role','alertdialog');box.setAttribute('aria-labelledby','y-discard-t');box.setAttribute('aria-describedby','y-discard-p');
-    box.innerHTML='<p><strong id="y-discard-t">Discard your changes?</strong> <span id="y-discard-p">What you typed here hasn’t been saved.</span></p><div class="y-discard-actions"><button type="button" class="y-discard-keep">Keep editing</button><button type="button" class="y-discard-go y-destructive">Discard changes</button></div>';
-    const head=d.querySelector('.y-dialog-head');if(head&&d.classList.contains('y-page'))head.append(box);else (head||d.firstChild).after(box);   /* on a page it sits in the sticky header, in view */
-    const back=document.activeElement;
-    const keep=()=>{box.remove();if(back&&d.contains(back))back.focus();};
-    box.querySelector('.y-discard-keep').onclick=keep;
-    box.querySelector('.y-discard-go').onclick=()=>{box.remove();d.querySelectorAll('textarea,input').forEach(f=>{f.defaultValue=f.value;});go();};
-    box.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();keep();}});
-    box.querySelector('.y-discard-keep').focus();
+    if(asking)return;
+    const save=saveFor(d),sheet=matchMedia('(max-width:760px)').matches,back=document.activeElement;
+    const a=document.createElement('dialog');a.className='y-alert '+(sheet?'y-action-sheet':'y-alert-box');a.setAttribute('role','alertdialog');a.setAttribute('aria-labelledby','y-alert-t');a.tabIndex=-1;
+    const btn=(cls,text)=>'<button type="button" class="'+cls+'">'+esc1(text)+'</button>';
+    const discard=btn('y-alert-discard y-destructive','Discard changes'),keep=btn('y-alert-cancel','Cancel'),sv=save?btn('y-alert-save',save.label):'';
+    a.innerHTML=sheet?'<div class="y-alert-group"><p class="y-alert-title" id="y-alert-t">Discard your changes?</p>'+discard+sv+'</div><div class="y-alert-group y-alert-cancel-group">'+keep+'</div>'
+      :'<p class="y-alert-title" id="y-alert-t">Discard your changes?</p><div class="y-alert-actions">'+(save?sv+discard+keep:keep+discard)+'</div>';   /* two in a row, Cancel leading; three stack, the default on top and Cancel at the bottom */
+    document.body.append(a);asking=a;
+    const end=then=>{asking=null;try{a.close();}catch(_){}a.remove();if(then)then();};
+    const cancel=()=>end(()=>{if(back&&d.contains(back))back.focus();});
+    a.querySelector('.y-alert-cancel').onclick=cancel;
+    a.querySelector('.y-alert-discard').onclick=()=>end(()=>{settle(d);go();});
+    if(save)a.querySelector('.y-alert-save').onclick=()=>end(()=>{
+      if(!save.form.checkValidity()){save.form.reportValidity();return;}
+      save.form.requestSubmit(save.b);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!d.open||!dirty(d)){go();return;}const f=[...d.querySelectorAll('textarea,input')].find(typed);if(f)f.focus();}));});   /* saved: close, as Mail's Save Draft does; if the save didn't take (the text is still there), stay put to fix it */
+    a.addEventListener('cancel',e=>{e.preventDefault();cancel();});
+    a.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();cancel();}},false);
+    a.addEventListener('click',e=>{if(e.target===a)cancel();});   /* the dimmed area around an action sheet cancels it */
+    a.showModal();
+    if(save)a.querySelector('.y-alert-save').focus();else a.focus();   /* without a save action, no button is the default */
   }
+  const esc1=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.yakuriLeave=ask;
 
   /* ── M6 · Research and Library checks are pages, not sheets: long, in-depth work gets the window; sheets stay for short tasks ── */
@@ -776,7 +839,7 @@ document.addEventListener('DOMContentLoaded',function(){
   const tipState=()=>{try{const v=JSON.parse(ls.get(TIPKEY)||'{}');return v&&typeof v==='object'?v:{};}catch{return {};}};
   const saveTips=v=>ls.set(TIPKEY,JSON.stringify(v));
   const TIPS=[
-    {id:'state',where:()=>$1('#article .y-state'),place:'pop',text:()=>active&&active.governance&&active.governance.state==='Held'?'Held means a safety question is open. Clinical use stays blocked until a veterinarian resolves it.':'Unverified means no veterinarian has approved this text yet. Read it as a reference, not as an order.'},
+    {id:'state',where:()=>$1('#article .y-state'),place:'after',text:()=>active&&active.governance&&active.governance.state==='Held'?'Held means a safety question is open. Clinical use stays blocked until a veterinarian resolves it.':'Unverified means no veterinarian has approved this text yet. Read it as a reference, not as an order.'},
     {id:'focus',where:()=>$1('#article .x-focus-modes'),place:'pop',text:'Clinical focus shows only the overview, safety and interactions sections.'},
     {id:'search',where:()=>$1('.library .search'),place:'after',text:'Press / to search the library, or '+MOD+'K for any drug or action.'}];
   function done(id){const v=tipState();v.done=v.done||{};if(v.done[id])return;v.done[id]=Date.now();saveTips(v);document.querySelectorAll('.y-tip[data-tip="'+id+'"]').forEach(n=>n.remove());}
@@ -797,7 +860,12 @@ document.addEventListener('DOMContentLoaded',function(){
     n.querySelector('p').textContent=typeof tip.text==='function'?tip.text():tip.text;
     if(tip.more){const b=document.createElement('button');b.type='button';b.className='y-tip-more';b.textContent=tip.more[0];b.onclick=()=>{done(tip.id);tip.more[1]();};n.querySelector('p').after(b);}
     n.querySelector('.y-tip-close').onclick=()=>done(tip.id);
-    if(tip.place==='pop'){n.classList.add('y-tip-pop');at.classList.add('y-tip-anchor');at.append(n);}else at.after(n);}   /* a popover tip keeps the page where it is */
+    if(tip.place==='pop'&&!matchMedia('(max-width:760px)').matches){n.classList.add('y-tip-pop');at.classList.add('y-tip-anchor');at.append(n);   /* a popover tip keeps the page where it is; on iPhone every tip is inline (HIG Popovers, Oct 25 2026) */
+      const away=e=>{if(!n.isConnected){document.removeEventListener('pointerdown',away,true);return;}if(!n.contains(e.target)){document.removeEventListener('pointerdown',away,true);done(tip.id);}};   /* a click elsewhere closes it, as × does */
+      setTimeout(()=>document.addEventListener('pointerdown',away,true),0);
+      const covers=()=>{const r=n.getBoundingClientRect();return [...document.querySelectorAll('#article :is(a,button,select,input,summary,textarea)')].some(e=>e.offsetParent&&!n.contains(e)&&!at.contains(e)&&(q=>q.top<r.bottom&&q.bottom>r.top&&q.left<r.right&&q.right>r.left)(e.getBoundingClientRect()));};
+      if(covers()){n.classList.add('y-tip-above');if(covers()){n.classList.remove('y-tip-pop','y-tip-above');at.classList.remove('y-tip-anchor');(at.parentElement&&at.parentElement.closest('#article')?at.parentElement:at).after(n);}}}   /* never over a control: above, or else in the page */
+    else at.after(n);}
   /* using the feature is as good as reading the tip */
   document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
     if(t.closest('#y-evidence'))done('state');if(t.closest('[data-focus-mode]'))done('focus');},true);
@@ -1304,6 +1372,7 @@ document.addEventListener('DOMContentLoaded',function(){
     set(now);say('Removed '+d.name+' from Saved.');if(window.yakuriUndo)window.yakuriUndo.record({label:'Remove from Saved · '+d.name,undo:()=>set(was),redo:()=>set(now)});}
   function items(row,id){const d=data.drugs.find(x=>x.id===id);if(!d)return [];const list=[];const add=(label,fn,cls)=>list.push({label,fn,cls});const sep=()=>list.push('-');
     if(typeof openSplit==='function')add('Open in split view',()=>{sheets();if(typeof splitChoices!=='undefined'&&splitChoices[1])splitChoices[1].drug=id;openSplit(id);});
+    add('Open in new window',()=>{if(window.yakuriOpenInWindow)window.yakuriOpenInWindow(id);});   /* HIG Windows (Oct 25 2026) */
     if(typeof openCompare==='function')add('Compare',()=>{sheets();openCompare(id);});
     sep();
     if(typeof favorites!=='undefined')favorites.has(id)?add('Remove from Saved',()=>unsave(id)):add('Add to Saved',()=>window.yakuriDropSave&&window.yakuriDropSave(id));
@@ -1318,17 +1387,20 @@ document.addEventListener('DOMContentLoaded',function(){
   let menu=null,from=null;
   function close(back){if(!menu)return;menu.remove();menu=null;if(back&&from&&from.isConnected)from.focus({preventScroll:true});from=null;}
   function open(row,x,y,focusFirst){close(false);const id=drugOf(row);if(!id)return false;const list=items(row,id);if(!list.length)return false;
-    const d=data.drugs.find(z=>z.id===id);from=row.matches('button')?row:(row.querySelector('button')||row);
-    menu=document.createElement('div');menu.className='y-menu-list y-context-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label',d.name);
+    const d=data.drugs.find(z=>z.id===id);return show(row,x,y,list,d.name);}
+  /* the same menu for anything with its own items (HIG Image wells, Oct 25 2026: the label photo) */
+  window.yakuriItemsMenu=(anchor,x,y,list,label)=>{close(false);return show(anchor,x,y,list,label);};
+  function show(row,x,y,list,label){from=row.matches('button')?row:(row.querySelector('button')||row);
+    menu=document.createElement('div');menu.className='y-menu-list y-context-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label',label);
     for(const it of list){if(it==='-'){const s=document.createElement('div');s.className='y-menu-sep';s.setAttribute('role','separator');menu.append(s);continue;}
       const b=document.createElement('button');b.type='button';b.className='y-menu-item'+(it.cls?' '+it.cls:'');b.setAttribute('role','menuitem');b.tabIndex=-1;b.textContent=it.label;
-      b.addEventListener('click',()=>{close(false);it.fn();});menu.append(b);}
+      if(it.disabled)b.disabled=true;b.addEventListener('click',()=>{close(false);it.fn();});menu.append(b);}
     (row.closest('dialog[open]')||document.body).append(menu);
     menu.style.position='fixed';menu.style.top='0px';menu.style.left='0px';menu.style.zIndex='1000';
     const o=menu.getBoundingClientRect();const w=o.width,h=o.height;   /* a dialog with a filter becomes the menu's frame: correct for it */
     let L=Math.min(x,innerWidth-w-8),T=y+h>innerHeight-8?Math.max(8,y-h):y;L=Math.max(8,L);
     menu.style.left=(L-o.left)+'px';menu.style.top=(T-o.top)+'px';
-    const f=menu.querySelector('[role=menuitem]');if(f&&focusFirst!==false)f.focus({preventScroll:true});else if(f)f.focus({preventScroll:true});
+    const f=menu.querySelector('[role=menuitem]:not(:disabled)');if(f)f.focus({preventScroll:true});
     return true;}
   window.yakuriContextMenu=(row,x,y)=>open(row,x,y);
   let lastType='mouse',kbAt=0;
@@ -1565,6 +1637,18 @@ document.addEventListener('DOMContentLoaded',function(){
   let letters=[],sig='';
   const pinH=()=>{const p=lib.querySelector('.y-lib-search');return p?p.getBoundingClientRect().height:0;};
   const head=(text,id,cls)=>{const h=document.createElement('h2');h.className='y-sec '+cls;h.textContent=text;if(id)h.id=id;return h;};
+  /* A–Z as an accordion (Oct 25 2026) · Daniel: "all you see is the letters … they open". Browsing shows only the letters;
+     a letter opens to its drugs and closes again. Which letters are open is kept for the visit. A search still lists its groups, open. */
+  const OPEN_KEY='yakuri-az-open';let open=new Set();try{open=new Set(JSON.parse(sessionStorage.getItem(OPEN_KEY)||'[]'));}catch(_){}
+  const keepOpen=()=>{try{sessionStorage.setItem(OPEN_KEY,JSON.stringify([...open]));}catch(_){}};
+  const CHEV='<svg class="y-acc-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const accHead=(l,n)=>{const b=document.createElement('button');b.type='button';b.className='y-sec y-acc';b.id='y-sec-'+(l==='#'?'num':l);b.dataset.yLetter=l;
+    const on=open.has(l);b.setAttribute('aria-expanded',String(on));b.setAttribute('aria-label',(l==='#'?'Numbers and symbols':l)+', '+n+(n===1?' drug':' drugs'));
+    b.innerHTML='<span class="y-acc-letter">'+l+'</span>'+CHEV;return b;};
+  function shut(l,on){list.querySelectorAll(':scope>.drug-card').forEach(c=>{if(c.dataset.yLetter===l)c.hidden=!on;});
+    const h=list.querySelector(':scope>.y-acc[data-y-letter="'+(window.CSS&&CSS.escape?CSS.escape(l):l)+'"]');if(h)h.setAttribute('aria-expanded',String(on));}
+  function toggle(l,force){const on=force==null?!open.has(l):!!force;on?open.add(l):open.delete(l);keepOpen();shut(l,on);}
+  list.addEventListener('click',e=>{const h=e.target.closest&&e.target.closest('.y-acc');if(!h||h.parentElement!==list)return;toggle(h.dataset.yLetter);});
   function fit(){if(az.hidden)return;lib.style.setProperty('--y-pin-h',pinH()+'px');
     const fs=parseFloat(getComputedStyle(strip).fontSize)||13,row=Math.ceil(fs*1.38),room=lib.clientHeight-pinH()-28,max=Math.max(3,Math.floor(room/row));
     let shown=letters;if(letters.length>max){const m=Math.max(2,Math.ceil(max/2)),pick=new Set();for(let i=0;i<m;i++)pick.add(Math.round(i*(letters.length-1)/(m-1)));shown=letters.filter((_,i)=>pick.has(i));}
@@ -1580,17 +1664,21 @@ document.addEventListener('DOMContentLoaded',function(){
     const vis=cards.find(c=>c.getBoundingClientRect().bottom>lib.getBoundingClientRect().top+pinH()),y0=vis?vis.getBoundingClientRect().top:0;   /* keep the row you were looking at still */
     list.querySelectorAll(':scope>.y-sec').forEach(h=>h.remove());letters=[];
     if(cards.length&&mode!=='recent'){
-      if(!q){let last=null;cards.forEach(c=>{const n=c.querySelector('.drug-item strong'),l=letterOf(n&&n.textContent);if(l!==last){last=l;letters.push(l);c.before(head(l,'y-sec-'+(l==='#'?'num':l),'y-letter'));}});}
+      if(!q&&cards.length>30){const groups=new Map();cards.forEach(c=>{const n=c.querySelector('.drug-item strong'),l=letterOf(n&&n.textContent);c.dataset.yLetter=l;if(!groups.has(l)){groups.set(l,[]);letters.push(l);}groups.get(l).push(c);});
+        groups.forEach((cs,l)=>{cs[0].before(accHead(l,cs.length));const on=open.has(l);cs.forEach(c=>{c.hidden=!on;});});}
+      else if(!q){let last=null;cards.forEach(c=>{c.hidden=false;const n=c.querySelector('.drug-item strong'),l=letterOf(n&&n.textContent);if(l!==last){last=l;letters.push(l);c.before(head(l,'y-sec-'+(l==='#'?'num':l),'y-letter'));}});}
       else if(typeof yakuriSearchRank==='function'&&typeof yakuriSearchTier==='function'&&typeof data!=='undefined'&&data){
         const by=new Map(data.drugs.map(d=>[d.id,d])),tiers=ids.map(id=>{const d=by.get(id);return d?yakuriSearchTier(yakuriSearchRank(d,q)):0;}),count=[0,0,0,0];tiers.forEach(t=>count[t]++);
         const n=typeof normalizeSearch==='function'?normalizeSearch(q):q.toLowerCase();let last=-1;
         cards.forEach((c,i)=>{const t=tiers[i];if(t!==last){last=t;c.before(head(GROUPS[t](q)+' \u00b7 '+count[t],'','y-group'));}
           if(t<2){const d=by.get(ids[i]),nm=normalizeSearch?normalizeSearch(d.name):'';if(!nm.includes(n)){const b=(d.editorial&&d.editorial.brand_aliases||[]).find(x=>normalizeSearch(x).includes(n)),sm=c.querySelector('.drug-item small');   /* matched on a brand: say which */
             if(b&&sm&&!sm.querySelector('.y-brand-hit')){const e=document.createElement('span');e.className='y-brand-hit';e.textContent=' \u00b7 '+b;sm.append(e);}}}});}}
-    if(vis&&vis.isConnected&&lib.scrollTop>0){const d=vis.getBoundingClientRect().top-y0;if(Math.abs(d)>.5)lib.scrollTop+=d;}
+    if(vis&&vis.hidden)lib.scrollTop=0;   /* the row you were on folded away with its letter: start from the top, where the letters begin */
+    else if(vis&&vis.isConnected&&lib.scrollTop>0){const d=vis.getBoundingClientRect().top-y0;if(Math.abs(d)>.5)lib.scrollTop+=d;}
     lib.classList.toggle('y-sectioned',letters.length>0);
-    const want=!q&&mode!=='recent'&&cards.length>30&&letters.length>1;az.hidden=!want;lib.classList.toggle('y-has-az',want);if(want)fit();}
-  function jump(l,focus){const h=document.getElementById('y-sec-'+(l==='#'?'num':l));if(!h)return;
+    const acc=!!list.querySelector(':scope>.y-acc');lib.classList.toggle('y-az-accordion',acc);
+    const want=false;az.hidden=!want;lib.classList.toggle('y-has-az',want);}   /* the accordion shows every letter, so the side index is no longer needed */
+  function jump(l,focus){const h=document.getElementById('y-sec-'+(l==='#'?'num':l));if(!h)return;if(h.classList.contains('y-acc')&&!open.has(l))toggle(l,true);
     const c=h.nextElementSibling;   /* measure from the first row: a pinned heading reports where it is pinned, not where it sits */
     lib.scrollBy({top:(c?c.getBoundingClientRect().top-h.offsetHeight-parseFloat(getComputedStyle(c).marginTop||0):h.getBoundingClientRect().top)-lib.getBoundingClientRect().top-pinH(),behavior:'instant'});
     if(focus){const b=h.nextElementSibling&&h.nextElementSibling.querySelector('.drug-item');if(b)b.focus({preventScroll:true});}}
@@ -1606,5 +1694,249 @@ document.addEventListener('DOMContentLoaded',function(){
     bs.forEach(b=>b.tabIndex=-1);bs[n].tabIndex=0;bs[n].focus();jump(bs[n].dataset.yAz,false);});
   let raf=0;const soon=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;decorate();});};
   new MutationObserver(soon).observe(list,{childList:true});addEventListener('resize',()=>{if(!az.hidden)fit();});
-  window.yakuriSections={decorate,jump,letters:()=>letters.slice()};decorate();
+  window.yakuriSections={decorate,jump,letters:()=>letters.slice(),toggle,open:()=>[...open]};decorate();
+},{once:true});
+
+/* ═══ HIG Action sheets, Alerts and Page controls (Oct 25 2026; claude/hig-audit-yakuri-action-sheets-alerts-page-controls.md)
+   Command-period cancels, as Esc does: the open menu, alert or sheet closes as if Esc had been pressed. (The discard question itself is in the M5 part.) */
+document.addEventListener('DOMContentLoaded',function(){
+  const mac=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent||'');
+  document.addEventListener('keydown',e=>{
+    if(!(mac?e.metaKey&&!e.ctrlKey:e.ctrlKey&&!e.metaKey)||e.altKey||e.shiftKey||e.key!=='.')return;
+    e.preventDefault();e.stopPropagation();
+    const t=document.activeElement||document.body,esc=new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true,cancelable:true});
+    const handled=!t.dispatchEvent(esc);if(handled)return;   /* a menu, field or alert that handles Esc itself */
+    const top=[...document.querySelectorAll('dialog[open]')].pop();if(!top)return;
+    const c=new Event('cancel',{cancelable:true});if(top.dispatchEvent(c))top.close();},true);
+},{once:true});
+
+/* ═══ HIG Popovers and Scroll views (Oct 25 2026; claude/hig-audit-yakuri-panels-popovers-scroll-views.md)
+   S3 · whatever is brought into view lands below the pinned bars: the library pads its top by the pinned search and a letter heading;
+        the monograph's content keeps a margin the height of the stuck tabs.
+   S4 · on wide layouts the library's pinned search ends on the same line as the monograph's stuck tabs. */
+document.addEventListener('DOMContentLoaded',function(){
+  const lib=document.querySelector('.library'),root=document.documentElement;if(!lib)return;
+  let raf=0;
+  function measure(){raf=0;const pin=lib.querySelector('.y-lib-search'),nav=document.querySelector('#article .y-section-nav');
+    if(pin){pin.style.paddingTop=pin.style.paddingBottom='';
+      const side=lib.offsetParent&&nav&&nav.offsetParent&&lib.getBoundingClientRect().right<=nav.getBoundingClientRect().left+1;
+      if(side){const f=pin.firstElementChild,fh=f?f.getBoundingClientRect().height:0,pad=(nav.getBoundingClientRect().height-fh)/2;if(fh&&pad>=2){pin.style.paddingTop=pin.style.paddingBottom=pad+'px';}}
+      lib.style.setProperty('--y-pin-h',pin.getBoundingClientRect().height+'px');}
+    const sec=lib.querySelector('#drug-list>.y-sec');lib.style.setProperty('--y-sec-h',(sec?sec.getBoundingClientRect().height:0)+'px');
+    if(nav&&nav.offsetParent){const top=parseFloat(getComputedStyle(nav).top)||0;root.style.setProperty('--y-page-cover',Math.round(top+nav.getBoundingClientRect().height+8)+'px');}
+    else root.style.setProperty('--y-page-cover','0px');}
+  const soon=()=>{if(!raf)raf=requestAnimationFrame(measure);};
+  addEventListener('resize',soon);
+  ['#article','#drug-list'].forEach(s=>{const el=document.querySelector(s);if(el)new MutationObserver(soon).observe(el,{childList:true});});
+  if(window.ResizeObserver){const ro=new ResizeObserver(soon);const watch=()=>{ro.disconnect();[lib.querySelector('.y-lib-search'),document.querySelector('#article .y-section-nav')].forEach(e=>{if(e)ro.observe(e);});};watch();const art=document.querySelector('#article');if(art)new MutationObserver(watch).observe(art,{childList:true});}
+  measure();setTimeout(measure,400);
+},{once:true});
+
+/* ═══ HIG Sheets and Windows (Oct 25 2026; claude/hig-audit-yakuri-sheets-windows-color-wells.md)
+   W2 · on iPhone a sheet follows a downward drag on its grabber or title, and closes past a third of its height or on a quick flick;
+        closing goes through the sheet's own close button, so typed text still asks first.
+   W4 · Open in new window: the row's context menu, the Open menu, and a drug row chosen with Command held or with the middle button.
+   W5 · "window", not "tab", in the installed app. */
+document.addEventListener('DOMContentLoaded',function(){
+  const compact=()=>matchMedia('(max-width:760px)').matches;
+  let drag=null;
+  document.addEventListener('pointerdown',e=>{if(!compact()||e.button)return;const h=e.target.closest&&e.target.closest('dialog.y-dialog:not(.y-page)>.y-grabber,dialog.y-dialog:not(.y-page)>.y-dialog-head');if(!h||e.target.closest('.y-dialog-head button'))return;
+    const d=h.closest('dialog');drag={d,y:e.clientY,t:performance.now(),dy:0,id:e.pointerId,moved:false};try{h.setPointerCapture(e.pointerId);}catch(_){}},true);
+  document.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const dy=Math.max(0,e.clientY-drag.y);if(dy>4)drag.moved=true;drag.dy=dy;drag.d.classList.add('y-dragging');drag.d.style.transform='translateY('+dy+'px)';},true);
+  const end=e=>{if(!drag||(e&&e.pointerId!==drag.id))return;const {d,dy,t,moved}=drag;drag=null;d.classList.remove('y-dragging');
+    const v=dy/Math.max(1,performance.now()-t),h=d.getBoundingClientRect().height;
+    if(moved&&(dy>h/3||(v>0.6&&dy>60))){d.style.transform='';const x=d.querySelector('.y-dialog-head button');if(x)x.click();else d.close();}
+    else{d.classList.add('y-settling');d.style.transform='';setTimeout(()=>d.classList.remove('y-settling'),240);}
+    if(moved){const stop=ev=>{ev.stopPropagation();ev.preventDefault();};document.addEventListener('click',stop,{capture:true,once:true});setTimeout(()=>document.removeEventListener('click',stop,true),0);}};
+  document.addEventListener('pointerup',end,true);document.addEventListener('pointercancel',end,true);
+
+  /* W4 */
+  const winURL=id=>location.pathname+location.search+'#drug='+encodeURIComponent(id);
+  const openWin=id=>{if(id)window.open(winURL(id),'_blank','noopener');};
+  window.yakuriOpenInWindow=openWin;
+  const listRow=e=>{const b=e.target.closest&&e.target.closest('#drug-list .drug-item[data-drug]');return b&&b.dataset.drug;};
+  document.addEventListener('click',e=>{const mod=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent||'')?e.metaKey:e.ctrlKey;if(!mod)return;const id=listRow(e);if(!id)return;e.preventDefault();e.stopImmediatePropagation();openWin(id);},true);
+  document.addEventListener('auxclick',e=>{if(e.button!==1)return;const id=listRow(e);if(!id)return;e.preventDefault();openWin(id);},true);
+  document.addEventListener('mousedown',e=>{if(e.button===1&&listRow(e))e.preventDefault();},true);   /* no autoscroll from the middle button */
+
+  /* W5 · window.yakuriWinWord is defined at the top of this file, before any link is labelled */
+},{once:true});
+
+/* ═══ HIG Combo boxes and Image wells (Oct 25 2026; claude/hig-audit-yakuri-combo-boxes-digit-entry-image-wells.md)
+   K1 · a drug is chosen in one field: type, see matches A–Z (starts with, then contains), choose. It upgrades the tool's own drug <select>,
+        which stays the source of truth, so the tool's code is unchanged; its separate "Find drug" field goes away.
+   K2 · the label photo takes Copy, Paste and Delete, from the keyboard and its context menu. */
+document.addEventListener('DOMContentLoaded',function(){
+  const SEL='select[data-split-drug],#o-drug,#r-drug,#r-a,#r-b',FIND='[data-split-search],#o-drug-search';
+  const norm=t=>typeof normalizeSearch==='function'?normalizeSearch(t):String(t||'').toLowerCase().trim();
+  let uid=0;
+  function upgrade(sel){if(sel.dataset.yCombo)return;sel.dataset.yCombo='1';sel.dataset.yPicker='1';const n=++uid,label=sel.closest('label');
+    const lab=label?[...label.childNodes].filter(x=>x.nodeType===3).map(x=>x.textContent).join(' ').trim():'Drug';
+    const box=document.createElement('div');box.className='y-combo';
+    box.innerHTML='<input type="text" class="y-combo-input y-picker" role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" spellcheck="false" aria-controls="y-combo-list-'+n+'"><button type="button" class="y-combo-btn" tabindex="-1" aria-label="Show all drugs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="y-combo-list" role="listbox" id="y-combo-list-'+n+'" hidden></div><span class="y-combo-count y-vh" aria-live="polite"></span><p class="y-combo-note" aria-live="polite"></p>';
+    sel.before(box);sel.hidden=true;sel.style.display='none';sel.tabIndex=-1;sel.setAttribute('aria-hidden','true');
+    const input=box.querySelector('input'),list=box.querySelector('.y-combo-list'),note=box.querySelector('.y-combo-note'),count=box.querySelector('.y-combo-count');input.setAttribute('aria-label',lab||'Drug');
+    if(label){const f=label.parentElement&&label.parentElement.querySelector(FIND);const fl=f&&f.closest('label');if(f){f.value='';const gone=fl&&fl!==label?fl:f;gone.hidden=true;gone.style.display='none';gone.setAttribute('aria-hidden','true');}}
+    let items=[],hi=-1,typed=false;
+    const current=()=>{const o=sel.selectedOptions[0];return o?o.textContent.trim():'';};
+    const sync=()=>{if(document.activeElement!==input||!typed){input.value=current();}};
+    const drug=id=>typeof data!=='undefined'&&data?data.drugs.find(d=>d.id===id):null;
+    function matches(q){const opts=[...sel.options].filter(o=>o.value!=='').map(o=>({id:o.value,name:o.textContent.trim()}));const t=norm(q);   /* a "Choose a drug" placeholder isn't a drug: it never sorts in among the C's */
+      if(!t)return opts.sort((a,b)=>a.name.localeCompare(b.name)).map(o=>({...o,tier:-1}));
+      const out=[];for(const o of opts){const d=drug(o.id);let tier;if(d&&typeof yakuriSearchRank==='function'&&typeof yakuriSearchTier==='function'){tier=yakuriSearchTier(yakuriSearchRank(d,t));if(tier>1)continue;}else{const nm=norm(o.name);tier=nm.startsWith(t)||nm.split(' ').some(w=>w.startsWith(t))?0:nm.includes(t)?1:-9;if(tier<0)continue;}out.push({...o,tier});}
+      return out.sort((a,b)=>a.tier-b.tier||a.name.localeCompare(b.name));}
+    /* A–Z everywhere (Oct 25 2026): the whole list reads like the library, letter headings and an index; a search groups as the library does */
+    const AZ=window.yakuriAZ,escT=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const idx=AZ&&AZ.index({focusable:false,room:()=>list.clientHeight-8,jump:l=>{const h=list.querySelector('[data-y-letter="'+l+'"]');if(h)list.scrollTop=h.offsetTop-parseFloat(getComputedStyle(list).paddingTop||0);}});
+    if(idx){idx.el.setAttribute('aria-hidden','true');box.append(idx.el);}   /* for pointer and touch; the keyboard types a letter instead */
+    let lettered=[];
+    /* A–Z as an accordion (Oct 25 2026) · Daniel: "all you see is the letters … they open". The whole list shows the letters;
+       a letter opens to its drugs. It opens with the chosen drug's letter open, so the choice is in view. A letter row is chosen like a drug:
+       by pointer, or with the arrows and Return. Typing still lists the matches, open. */
+    let openL=new Set();
+    const CHEV='<svg class="y-acc-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    function render(q){const all=matches(q),whole=!norm(q),acc=whole&&!!AZ&&all.length>30;lettered=[];
+      if(acc){const by=new Map();all.forEach(x=>{const l=AZ.letterOf(x.name);if(!by.has(l)){by.set(l,[]);lettered.push(l);}by.get(l).push(x);});
+        items=[];by.forEach((xs,l)=>{items.push({letter:l,n:xs.length});if(openL.has(l))items.push(...xs);});}
+      else items=all;
+      hi=items.length?Math.max(0,items.findIndex(x=>!x.letter&&x.id===sel.value&&!typed)):-1;if(typed&&items.length)hi=0;
+      const counts={};items.forEach(x=>{if(!x.letter)counts[x.tier]=(counts[x.tier]||0)+1;});
+      let last=null;list.innerHTML=items.map((x,i)=>{let h='';
+        if(x.letter){const on=openL.has(x.letter);return '<div class="y-combo-acc" role="option" id="y-combo-'+n+'-'+i+'" data-i="'+i+'" data-y-letter="'+x.letter+'" aria-selected="'+(i===hi)+'" aria-expanded="'+on+'" aria-label="'+(x.letter==='#'?'Numbers and symbols':x.letter)+', '+x.n+(x.n===1?' drug':' drugs')+'"><span class="y-acc-letter">'+x.letter+'</span>'+CHEV+'</div>';}
+        if(whole&&AZ&&!acc){const l=AZ.letterOf(x.name);if(l!==last){last=l;lettered.push(l);h='<div class="y-combo-group y-combo-letter" role="presentation" data-y-letter="'+l+'">'+l+'</div>';}}
+        else if(!whole&&x.tier>=0&&x.tier!==last){last=x.tier;h='<div class="y-combo-group" role="presentation">'+escT(AZ?AZ.label(x.tier,String(q).trim(),counts[x.tier]):(x.tier?'Contains':'Starts with'))+'</div>';}
+        return h+'<div class="y-combo-opt" role="option" id="y-combo-'+n+'-'+i+'" data-i="'+i+'" aria-selected="'+(i===hi)+'">'+String(x.name).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</div>';}).join('')||'<div class="y-combo-empty" role="presentation">No drug named “'+String(q).replace(/[&<>]/g,'')+'”</div>';
+      box.classList.toggle('y-combo-lettered',acc);box.classList.toggle('y-combo-accordion',acc);
+      mark();note.textContent='';const drugs=items.filter(x=>!x.letter).length;count.textContent=acc?lettered.length+' letters':drugs?drugs+(drugs===1?' match':' matches'):'No matches';if(idx)idx.set(lettered,false);}
+    function letter(i){const x=items[i];if(!x||!x.letter)return false;const l=x.letter,top=list.scrollTop;openL.has(l)?openL.delete(l):openL.add(l);
+      render('');list.scrollTop=top;hi=items.findIndex(y=>y.letter===l);mark();return true;}
+    function mark(){list.querySelectorAll('[data-i]').forEach(o=>o.setAttribute('aria-selected',String(+o.dataset.i===hi)));const a=hi>=0&&list.querySelector('#y-combo-'+n+'-'+hi);
+      if(a){input.setAttribute('aria-activedescendant',a.id);a.scrollIntoView({block:'nearest'});}else input.removeAttribute('aria-activedescendant');}
+    function open(q){list.hidden=false;if(!norm(q)&&list.dataset.was!=='whole'){const o=sel.selectedOptions[0];openL=new Set(o&&o.value&&AZ?[AZ.letterOf(o.textContent.trim())]:[]);}list.dataset.was=norm(q)?'typed':'whole';
+      render(q);input.setAttribute('aria-expanded','true');box.classList.add('y-open');mark();}   /* the chosen drug is shown, highlighted, when the whole list opens */
+    function close(){list.hidden=true;list.dataset.was='';input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');box.classList.remove('y-open');if(idx)idx.el.hidden=true;}
+    function choose(i){if(letter(i))return;const x=items[i];if(!x)return;typed=false;close();if(sel.value!==x.id){sel.value=x.id;sel.dispatchEvent(new Event('change',{bubbles:true}));}input.value=current();note.textContent='';if(document.activeElement===input)input.select();}
+    function revert(){const t=input.value.trim();typed=false;close();if(t&&norm(t)!==norm(current())){const exact=[...sel.options].find(o=>norm(o.textContent)===norm(t));if(exact){sel.value=exact.value;sel.dispatchEvent(new Event('change',{bubbles:true}));input.value=current();return;}
+        note.textContent='No drug named “'+t+'”. '+current()+' is still chosen.';}input.value=current();}
+    input.addEventListener('input',()=>{typed=true;open(input.value);});
+    let pick=false;input.addEventListener('focus',()=>{sync();input.select();pick=true;});
+    input.addEventListener('mouseup',e=>{if(pick){e.preventDefault();pick=false;}});   /* a click into the field selects the name, ready to type over */
+    input.addEventListener('keydown',e=>{
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(list.hidden){open(typed?input.value:'');return;}if(!items.length)return;hi=(hi+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;mark();}
+      else if(e.key==='Enter'){if(!list.hidden&&hi>=0){e.preventDefault();choose(hi);}else if(typed){e.preventDefault();revert();}}
+      else if(e.key==='Escape'){if(!list.hidden||typed){e.preventDefault();e.stopPropagation();typed=false;close();input.value=current();input.select();}}
+      else if(e.key==='Tab'&&!list.hidden&&typed&&items.length===1&&!items[0].letter)choose(0);});
+    input.addEventListener('blur',()=>setTimeout(()=>{if(box.contains(document.activeElement))return;if(typed)revert();else close();},120));
+    list.addEventListener('mousedown',e=>e.preventDefault());   /* keep focus in the field while choosing */
+    list.addEventListener('click',e=>{const o=e.target.closest('[data-i]');if(o)choose(+o.dataset.i);});
+    box.querySelector('.y-combo-btn').addEventListener('mousedown',e=>e.preventDefault());
+    box.querySelector('.y-combo-btn').addEventListener('click',()=>{if(!list.hidden){close();return;}typed=false;input.focus();open('');});
+    new MutationObserver(sync).observe(sel,{childList:true,subtree:true,attributes:true});sel.addEventListener('change',sync);sync();}
+  const big=s=>!s.closest('#pvxTopnav')&&(s.matches(SEL)||s.options.length>=200);   /* every long drug list, wherever it is (Compare, Local tools…) */
+  const scan=()=>document.querySelectorAll('select:not([data-y-combo])').forEach(s=>{if(big(s))upgrade(s);});
+  new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
+  window.yakuriDrugCombo=upgrade;
+},{once:true});
+
+/* ═══ HIG Pickers, Segmented controls, Sliders (Oct 25 2026; claude/hig-audit-yakuri-pickers-segmented-controls-sliders.md)
+   One segmented control for a short single choice. A two-choice pop-up (Species, Weight unit) becomes a row of segments;
+   its select stays hidden as the source of truth, so every tool still reads and sets it the way it did.
+   Button segments are radios: one Tab stop, the arrow keys move and choose, VoiceOver hears "Dogs, radio button, 2 of 4". */
+document.addEventListener('DOMContentLoaded',function(){
+  const SEG='#med-unit,#test-weight-unit,#interaction-species,#y-species,.r-dialog select[name=species]';   /* Patient context joined Oct 25 (HIG Toggles build) */
+  const NATIVE=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value'),INDEX=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'selectedIndex');
+  let uid=0;
+  function labelFor(sel){
+    const l=sel.id&&document.querySelector('label[for="'+sel.id+'"]');if(l){if(!l.id)l.id='y-seg-l'+(++uid);return {by:l.id};}
+    const wrap=sel.closest('label');if(wrap){const t=[...wrap.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join(' ').trim();if(t)return {name:t};}
+    return {name:sel.getAttribute('aria-label')||''};}
+  function upgrade(sel){
+    if(!sel||sel.dataset.ySeg)return;sel.dataset.ySeg='1';
+    const track=document.createElement('div');track.className='y-segctl y-seg-fill';track.setAttribute('role','radiogroup');track.dataset.for=sel.id||'';
+    const l=labelFor(sel);if(l.by)track.setAttribute('aria-labelledby',l.by);else if(l.name)track.setAttribute('aria-label',l.name);
+    function build(){track.replaceChildren(...[...sel.options].filter(o=>o.value!=='').map(o=>{const b=document.createElement('button');b.type='button';b.setAttribute('role','radio');b.dataset.value=o.value;b.textContent=o.text;if(o.disabled)b.disabled=true;return b;}));paint();}
+    function paint(){const v=NATIVE.get.call(sel);const segs=[...track.children];segs.forEach(b=>{const on=b.dataset.value===v;if(b.getAttribute('aria-checked')!==String(on))b.setAttribute('aria-checked',String(on));});rove(track);}
+    /* the tools set .value in code (a carried species, a saved unit, a restored visit): keep the segments in step */
+    Object.defineProperty(sel,'value',{configurable:true,get(){return NATIVE.get.call(this);},set(v){NATIVE.set.call(this,v);paint();}});
+    Object.defineProperty(sel,'selectedIndex',{configurable:true,get(){return INDEX.get.call(this);},set(v){INDEX.set.call(this,v);paint();}});
+    track.addEventListener('click',e=>{const b=e.target.closest('button[role=radio]');if(!b||b.disabled)return;if(NATIVE.get.call(sel)===b.dataset.value)return;
+      NATIVE.set.call(sel,b.dataset.value);paint();sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}));});
+    sel.addEventListener('change',paint);sel.form&&sel.form.addEventListener('reset',()=>setTimeout(paint,0));
+    new MutationObserver(build).observe(sel,{childList:true});
+    sel.style.display='none';sel.after(track);build();}
+  /* roving Tab stop: the chosen segment, or the first when none is chosen yet */
+  function rove(g){const segs=[...g.querySelectorAll(':scope>button[role=radio]')];const on=segs.find(b=>b.getAttribute('aria-checked')==='true'),first=segs.find(b=>!b.disabled);segs.forEach(b=>{const t=(b===(on||first))?0:-1;if(b.tabIndex!==t)b.tabIndex=t;});}
+  document.addEventListener('keydown',e=>{
+    const b=e.target.closest&&e.target.closest('button[role=radio]'),g=b&&b.parentElement;if(!g||g.getAttribute('role')!=='radiogroup')return;
+    if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)||e.metaKey||e.ctrlKey||e.altKey)return;
+    const segs=[...g.querySelectorAll(':scope>button[role=radio]')].filter(x=>!x.disabled);let i=segs.indexOf(b);if(i<0)return;e.preventDefault();
+    const rtl=getComputedStyle(g).direction==='rtl',back=e.key==='ArrowUp'||(e.key==='ArrowLeft'&&!rtl)||(e.key==='ArrowRight'&&rtl);
+    i=e.key==='Home'?0:e.key==='End'?segs.length-1:(i+(back?-1:1)+segs.length)%segs.length;
+    segs[i].focus();if(segs[i].getAttribute('aria-checked')!=='true')segs[i].click();});
+  /* the app sets aria-checked on its own segment buttons (species filter, Clinical focus, List | Graph): follow it with the Tab stop */
+  new MutationObserver(ms=>{const gs=new Set();ms.forEach(m=>{const g=m.target.parentElement;if(g&&g.getAttribute('role')==='radiogroup')gs.add(g);});gs.forEach(rove);})
+    .observe(document.body,{subtree:true,attributes:true,attributeFilter:['aria-checked']});
+  const scan=()=>{document.querySelectorAll(SEG).forEach(s=>{if(s.tagName==='SELECT')upgrade(s);});document.querySelectorAll('[role=radiogroup]:not([data-y-roved])').forEach(g=>{if(g.querySelector(':scope>button[role=radio]')){g.dataset.yRoved='1';rove(g);}});};
+  new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
+  window.yakuriSegmented=upgrade;
+},{once:true});
+
+/* ═══ HIG Steppers, Text fields, Toggles, Virtual keyboards (Oct 25 2026; claude/hig-audit-yakuri-steppers-text-fields-toggles-keyboards.md)
+   Number fields don't step; each field asks for the right keyboard; the calculator's keypad is the keyboard on touch screens;
+   search fields get a Clear button on touch; on/off rows become switches on touch; sheets ride above the iPhone keyboard. */
+document.addEventListener('DOMContentLoaded',function(){
+  const touch=matchMedia('(pointer:coarse)'),root=document.documentElement;
+  const SEARCH='input[type=search]',DRUG='.y-combo-input',NAMES='#collection-name,input[name=name][maxlength]',CALC='#utility-calculator-panel input';
+  const SWITCH='input[type=checkbox][data-rail-show],.r-dialog input[type=checkbox],#l-show-all';
+  const set=(el,a,v)=>{if(el.getAttribute(a)!==v)el.setAttribute(a,v);};
+  /* S1 · ↑ ↓ never change a weight, dose or time: a stray arrow press turned 12.5 kg into 13.5 */
+  document.addEventListener('keydown',e=>{const t=e.target;if(t&&t.tagName==='INPUT'&&t.type==='number'&&(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='PageUp'||e.key==='PageDown'))e.preventDefault();},true);
+  /* T2 · a clipped drug name can be read in full: a tooltip on the Mac */
+  const tip=i=>{const full=i.value&&i.scrollWidth>i.clientWidth+1;set(i,'title',full?i.value:'');};
+  ['input','change','focusin','pointerover'].forEach(ev=>document.addEventListener(ev,e=>{const i=e.target.closest&&e.target.closest(DRUG);if(i)tip(i);},true));
+  /* T4 · a Clear button at the trailing end of search fields on iPhone and iPad (the Mac keeps the browser's own) */
+  const X='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".42"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="var(--panel,#fff)" stroke-width="2" stroke-linecap="round"/></svg>';
+  function clearFor(i){
+    let b=i.nextElementSibling&&i.nextElementSibling.classList.contains('y-clear')?i.nextElementSibling:null;
+    if(!b){b=document.createElement('button');b.type='button';b.className='y-clear';b.hidden=true;b.innerHTML=X;b.setAttribute('aria-label','Clear text');b.tabIndex=-1;
+      b.addEventListener('pointerdown',e=>e.preventDefault());   /* the field keeps focus, so the keyboard stays up */
+      b.addEventListener('click',()=>{i.value='';i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('search',{bubbles:true}));i.focus();place(i,b);});
+      i.after(b);const p=i.parentElement;if(p&&getComputedStyle(p).position==='static')p.style.position='relative';i.classList.add('y-has-clear');}
+    place(i,b);}
+  function place(i,b){const show=touch.matches&&!!i.value&&!i.disabled&&!!i.offsetParent;b.hidden=!show;if(!show)return;
+    const p=b.offsetParent||i.parentElement,ir=i.getBoundingClientRect(),pr=p.getBoundingClientRect();
+    b.style.top=(ir.top-pr.top+p.scrollTop+(ir.height-44)/2)+'px';b.style.right=(pr.right-ir.right+(p.clientLeft||0))+'px';}
+  document.addEventListener('input',e=>{const i=e.target;if(i&&i.matches&&i.matches(SEARCH)&&i.nextElementSibling?.classList.contains('y-clear'))place(i,i.nextElementSibling);},true);
+  /* T5 · on touch screens an on/off row is a switch at its trailing end; the Mac keeps checkboxes */
+  function switchify(c){const on=touch.matches;set(c,'role',on?'switch':'checkbox');if(!on)c.removeAttribute('role');const l=c.closest('label');if(l)l.classList.toggle('y-switch-row',on);}
+  /* V8 · each field asks for the keyboard it needs */
+  function tune(i){
+    if(i.matches(CALC)){set(i,'inputmode',touch.matches?'none':'decimal');return;}   /* V7 · the calculator's own keypad is the keyboard */
+    if(i.type==='number'){if(!i.getAttribute('inputmode'))i.setAttribute('inputmode','decimal');return;}
+    if(i.matches(SEARCH+','+DRUG)){set(i,'autocorrect','off');set(i,'autocapitalize','none');set(i,'spellcheck','false');set(i,'enterkeyhint',i.matches(DRUG)?'done':'search');if(i.matches(SEARCH))clearFor(i);return;}
+    if(i.matches(NAMES)&&i.type==='text')set(i,'enterkeyhint','done');}
+  let q=0;const scan=()=>{q=0;document.querySelectorAll('input').forEach(i=>{if(i.type==='checkbox'){if(i.matches(SWITCH))switchify(i);}else tune(i);});};
+  const soon=()=>{if(!q)q=requestAnimationFrame(scan);};
+  new MutationObserver(soon).observe(document.body,{childList:true,subtree:true});scan();
+  touch.addEventListener&&touch.addEventListener('change',scan);
+  /* V9 · sheets ride above the iPhone keyboard, and the field you're in scrolls into view */
+  const vv=()=>window.visualViewport;
+  function kb(){const v=vv();if(!v)return;const h=Math.max(0,Math.round(window.innerHeight-v.height-v.offsetTop)),up=h>80&&touch.matches;
+    root.style.setProperty('--y-kb',(up?h:0)+'px');root.classList.toggle('y-kb-up',up);
+    if(up){const a=document.activeElement;if(a&&a.matches&&a.matches('input,textarea,select')){requestAnimationFrame(()=>{a.scrollIntoView({block:'nearest'});lift();});}}else lift();}
+  /* the drug field's list opens above the field when the keyboard leaves no room below */
+  function lift(){document.querySelectorAll('.y-combo-list').forEach(l=>{const box=l.closest('.y-combo');if(!box)return;box.classList.remove('y-combo-above');
+    if(l.hidden||!root.classList.contains('y-kb-up'))return;const v=vv(),r=l.getBoundingClientRect();if(v&&r.bottom>v.offsetTop+v.height)box.classList.add('y-combo-above');});}
+  if(vv()){vv().addEventListener('resize',kb);vv().addEventListener('scroll',kb);}
+  document.addEventListener('focusin',()=>setTimeout(kb,250));document.addEventListener('focusout',()=>setTimeout(kb,250));
+  new MutationObserver(()=>{if(root.classList.contains('y-kb-up'))lift();}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['hidden']});
+  window.yakuriKeyboard=kb;
+},{once:true});
+
+/* ═══ HIG App Shortcuts (Oct 25 2026; claude/hig-audit-yakuri-app-shortcuts-notifications-snippets-status-bars.md)
+   The CPR drug dosages shortcut (Dock, taskbar, Home Screen) opens ready to type the patient's weight. Opening CPR any other way is unchanged. */
+document.addEventListener('DOMContentLoaded',function(){
+  const q=new URLSearchParams(location.search);if(q.get('from')!=='shortcut'||location.hash!=='#cpr')return;
+  history.replaceState(history.state,'',location.pathname+location.hash);   /* the address goes back to the plain CPR page */
+  let n=0;const ready=()=>{const w=document.getElementById('cpr-weight');if(w&&w.offsetParent){w.focus({preventScroll:false});return;}if(++n<100)setTimeout(ready,50);};ready();
 },{once:true});

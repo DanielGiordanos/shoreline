@@ -121,19 +121,23 @@
     }).catch(function () { idbClear(); return false; });
   }
   function load() {
-    ui('loading', { text: 'Loading the drug library…' });
+    /* HIG Progress indicators (Oct 25 2026): an indeterminate bar while the release record comes, then a bar that fills for what the
+       library actually waits for (the core parts) and ends full; each step says what it is, and the card is updated in place, never redrawn */
+    ui('loading', { text: 'Checking for a newer library…', progress: null });
     return db.collection(COL).doc('current').get().then(function (cur) {
       if (!cur.exists) { ui('empty'); return; }
       release = cur.data();
       return idbGet('snap').then(function (cached) {
         var same = cached && cached.release === release.release;
+        if (same) ui('loading', { text: 'Opening the copy this browser keeps…', progress: null });
         return fromCache(same ? cached : null, release.sha256).then(function (ok) {
           if (ok) { started(); return; }
-          var total = release.parts.core + release.parts.detail, got = 0, rawCore;
-          var tick = function () { got++; if (!core) ui('loading', { text: 'Loading the drug library…', progress: got / total }); };  /* the detail loads behind the open library */
+          var total = release.parts.core, rawCore;
+          ui('loading', { text: 'Downloading the drug library for this browser…', progress: 0 });
+          var tick = function (got) { if (!core) ui('loading', { text: 'Downloading the drug library for this browser…', progress: got / total }); };  /* only the core: the detail loads behind the open library */
           return readBundle(release, 'core', release.parts.core, release.sha256.core, tick).then(function (c) {
             rawCore = c; core = parse(c); coreReady();
-            return readBundle(release, 'detail', release.parts.detail, release.sha256.detail, tick).then(function (d) {
+            return readBundle(release, 'detail', release.parts.detail, release.sha256.detail).then(function (d) {
               detail = parse(d); detailWait.resolve();
               idbPut('snap', { release: release.release, uid: user.uid, sha256: release.sha256, exported_at: release.exported_at, core: rawCore, detail: d });
             });
@@ -207,6 +211,15 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function signInURL() { return 'https://shoreline.pravix.app/?next=' + encodeURIComponent(location.pathname + location.hash); }
   function place() { if (!box) return; var t = document.getElementById('pvxSubnav') || document.getElementById('pvxTopnav'); box.style.top = (t ? Math.max(0, Math.round(t.getBoundingClientRect().bottom)) : 0) + 'px'; }
+  /* one bar for loading and publishing: null is indeterminate (it moves), a number 0…1 fills it */
+  function bar(el, f) {
+    if (!el) return;
+    var ind = f === null || f === undefined;
+    el.classList.toggle('yh-bar-ind', ind);
+    if (ind) { el.removeAttribute('aria-valuenow'); el.removeAttribute('aria-valuemin'); el.removeAttribute('aria-valuemax'); el.firstChild.style.width = ''; return; }
+    var pct = Math.max(0, Math.min(100, Math.round(f * 100)));
+    el.setAttribute('aria-valuemin', '0'); el.setAttribute('aria-valuemax', '100'); el.setAttribute('aria-valuenow', String(pct)); el.firstChild.style.width = Math.max(pct, 2) + '%';
+  }
   function ui(state, o) {
     o = o || {};
     if (!state) { if (box) { box.remove(); box = null; document.documentElement.classList.remove('yh-gated'); } return; }
@@ -216,14 +229,17 @@
       window.addEventListener('resize', place); setTimeout(place, 300);
     }
     var h = '', p = '', act = '';
-    if (state === 'loading') { h = o.text; p = 'Signed in as ' + esc(user ? user.email : '') + '.';
-      act = '<div class="yh-bar" role="progressbar" aria-label="Loading the drug library" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round((o.progress || 0) * 100) + '"><span style="width:' + Math.round((o.progress || 0.04) * 100) + '%"></span></div>'; }
+    if (state === 'loading' && box.dataset.state === 'loading') { bar(box.querySelector('.yh-bar'), o.progress); var t = box.querySelector('h1'); if (t.textContent !== o.text) t.textContent = o.text; return; }
+    box.dataset.state = state;
+    if (state === 'loading') { h = esc(o.text); p = 'Signed in as ' + esc(user ? user.email : '') + '.';
+      act = '<div class="yh-bar" role="progressbar" aria-label="Drug library"><span></span></div>'; }
     else if (state === 'signin') { h = 'Sign in to use Yakuri'; p = 'Yakuri uses your Pravix account. Sign in on Flow and you’ll come straight back here.'; act = '<a class="yh-btn" href="' + esc(signInURL()) + '">Sign in on Flow</a>'; }
     else if (state === 'lobby') { h = 'Unauthorized'; p = 'This account can’t open the drug library.'; }
     else if (state === 'empty') { h = 'The drug library isn’t published yet'; p = 'Yakuri opens here once it has been published from the Mac.';
       if (user && String(user.email).toLowerCase() === OWNER) act = '<button class="yh-btn" type="button" id="yhPublishOpen">Publish the library…</button>'; }
     else if (state === 'error') { h = 'Yakuri couldn’t open'; p = esc(o.text); act = '<button class="yh-btn" type="button" id="yhReload">Reload</button>'; }
     box.innerHTML = '<div class="yh-card"><img class="yh-icon" src="icon-192.png" alt=""><h1>' + h + '</h1><p>' + p + '</p>' + act + '</div>';
+    if (state === 'loading') bar(box.querySelector('.yh-bar'), o.progress);
     var r = box.querySelector('#yhReload'); if (r) r.onclick = function () { location.reload(); };
     var pb = box.querySelector('#yhPublishOpen'); if (pb) pb.onclick = openPublish;
     place();
@@ -249,11 +265,16 @@
       + '<p>Choose the snapshot exported on the Mac (<code>hosted/out/snapshot.json.gz</code>). Everyone signed in to Pravix sees it next time Yakuri opens. Holds and review states come from the Mac exactly as they are.</p>'
       + '<p class="yh-cur">' + cur + '</p>'
       + '<label class="yh-file">Snapshot file<input type="file" id="yhPubFile" accept=".json,.gz,application/json,application/gzip"></label>'
-      + '<p class="yh-msg" id="yhPubMsg" role="status"></p>'
+      + '<p class="yh-msg" id="yhPubMsg" role="status"></p><div class="yh-bar yh-pub-bar" role="progressbar" aria-label="Publishing" hidden><span></span></div>'
       + '<div class="yh-actions"><button type="button" class="yh-btn yh-secondary" id="yhPubCancel">Cancel</button><button type="button" class="yh-btn" id="yhPubGo" aria-disabled="true">Publish</button></div>';
     document.body.appendChild(d); d.showModal();
     var close = function () { d.close(); d.remove(); if (/#publish/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search); };
-    d.querySelector('.yh-x').onclick = close; d.querySelector('#yhPubCancel').onclick = close; d.addEventListener('cancel', function (e) { e.preventDefault(); close(); });
+    /* HIG Progress indicators (Oct 25 2026): while it publishes, Cancel is Stop. It asks first, stops before the switch, and nothing changes for anyone.
+       Once everyone is being switched (one write), it can't be stopped, so Stop is dimmed and × and Escape wait. */
+    var ctl = null, cancelBtn = d.querySelector('#yhPubCancel'), pbar = d.querySelector('.yh-pub-bar');
+    var leave = function () { if (!busy) { close(); return; } if (ctl && ctl.canStop && !ctl.stopped) stopAlert(function () { ctl.stopped = true; msg.textContent = 'Stopping after this part…'; cancelBtn.setAttribute('aria-disabled', 'true'); }); };
+    d.querySelector('.yh-x').onclick = leave; cancelBtn.onclick = function () { if (cancelBtn.getAttribute('aria-disabled') === 'true') return; leave(); };
+    d.addEventListener('cancel', function (e) { e.preventDefault(); leave(); });
     var msg = d.querySelector('#yhPubMsg'), go = d.querySelector('#yhPubGo'), snap = null, busy = false;
     d.querySelector('#yhPubFile').onchange = function (e) {
       var f = e.target.files[0]; snap = null; go.setAttribute('aria-disabled', 'true'); msg.className = 'yh-msg'; if (!f) return;
@@ -270,19 +291,58 @@
     };
     go.onclick = function () {
       if (!snap || busy) { if (!snap) { msg.className = 'yh-msg yh-err'; msg.textContent = 'Choose the snapshot file first.'; } return; }
+      var liveAt = release && !release.offline && Date.parse(release.exported_at || ''), fileAt = Date.parse(snap.exported_at || '');
+      if (liveAt && fileAt && fileAt < liveAt) { olderAlert(fmtDate(release.exported_at), fmtDate(snap.exported_at), doPublish); return; }   /* HIG Alerts (Oct 25 2026) */
+      doPublish();
+    };
+    function doPublish() {
+      if (!snap || busy) return;
       busy = true; go.setAttribute('aria-disabled', 'true'); msg.className = 'yh-msg';
-      publish(snap, function (t) { msg.textContent = t; }).then(function (rel) {
+      ctl = { stopped: false, canStop: true, switching: function () { cancelBtn.setAttribute('aria-disabled', 'true'); } };
+      cancelBtn.textContent = 'Stop'; cancelBtn.removeAttribute('aria-disabled'); pbar.hidden = false; bar(pbar, null);
+      var done = function () { busy = false; ctl = null; cancelBtn.textContent = 'Cancel'; cancelBtn.removeAttribute('aria-disabled'); pbar.hidden = true; };
+      publish(snap, function (t, f) { if (!(ctl && ctl.stopped)) msg.textContent = t; bar(pbar, f); }, ctl).then(function (rel) {
+        bar(pbar, 1); cancelBtn.setAttribute('aria-disabled', 'true');
         msg.textContent = 'Published. Everyone signed in sees the library exported ' + fmtDate(rel.exported_at) + '.';
         idbClear(); setTimeout(function () { location.replace(location.pathname); }, 1600);
-      }).catch(function (err) { busy = false; go.removeAttribute('aria-disabled'); msg.className = 'yh-msg yh-err'; msg.textContent = 'Not published: ' + (err && err.message || err) + ' Nothing changed for anyone.'; });
-    };
+      }).catch(function (err) {
+        var stopped = err && err.stopped; done(); go.removeAttribute('aria-disabled');
+        msg.className = stopped ? 'yh-msg' : 'yh-msg yh-err';
+        msg.textContent = stopped ? 'Stopped. Nothing changed for anyone.' : 'Not published: ' + (err && err.message || err) + ' Nothing changed for anyone.';
+      });
+    }
+  }
+  /* Stopping loses the upload so far, so ask first. Keep publishing is the default, and Escape chooses it. */
+  function stopAlert(stop) {
+    var a = document.createElement('dialog'); a.className = 'y-alert y-alert-box yh-stop'; a.setAttribute('role', 'alertdialog'); a.setAttribute('aria-labelledby', 'yhStopT'); a.setAttribute('aria-describedby', 'yhStopP'); a.tabIndex = -1;
+    a.innerHTML = '<p class="y-alert-title" id="yhStopT">Stop publishing?</p><p class="y-alert-text" id="yhStopP">Nothing changes for anyone. Next time the upload starts over.</p>'
+      + '<div class="y-alert-actions"><button type="button" class="y-alert-discard y-destructive">Stop</button><button type="button" class="y-alert-cancel y-alert-save">Keep publishing</button></div>';
+    document.body.appendChild(a);
+    var end = function () { try { a.close(); } catch (_) {} a.remove(); };
+    a.querySelector('.y-alert-cancel').onclick = end;
+    a.querySelector('.y-alert-discard').onclick = function () { end(); stop(); };
+    a.addEventListener('cancel', function (e) { e.preventDefault(); end(); });
+    a.showModal(); a.querySelector('.y-alert-cancel').focus();
+  }
+  /* An older file would replace a newer library for everyone: that isn't what Publish usually means, so say so first. Cancel is never the default. */
+  function olderAlert(live, file, go) {
+    var a = document.createElement('dialog'); a.className = 'y-alert y-alert-box yh-older'; a.setAttribute('role', 'alertdialog'); a.setAttribute('aria-labelledby', 'yhOldT'); a.setAttribute('aria-describedby', 'yhOldP'); a.tabIndex = -1;
+    a.innerHTML = '<p class="y-alert-title" id="yhOldT">This snapshot is older than the live library.</p><p class="y-alert-text" id="yhOldP">Live: exported ' + esc(live) + '. This file: exported ' + esc(file) + '.</p>'
+      + '<div class="y-alert-actions"><button type="button" class="y-alert-cancel">Cancel</button><button type="button" class="y-alert-discard y-destructive">Publish older library</button></div>';
+    document.body.appendChild(a);
+    var end = function () { try { a.close(); } catch (_) {} a.remove(); };
+    a.querySelector('.y-alert-cancel').onclick = end;
+    a.querySelector('.y-alert-discard').onclick = function () { end(); go(); };
+    a.addEventListener('cancel', function (e) { e.preventDefault(); end(); });
+    a.showModal(); a.focus();
   }
   function encode(obj) { var raw = new TextEncoder().encode(JSON.stringify(obj)); return Promise.all([sha256(raw), gzip(raw)]).then(function (r) { var b = bytesToB64(r[1]), parts = []; for (var i = 0; i < b.length; i += PART_CHARS) parts.push(b.slice(i, i + PART_CHARS)); return { sha: r[0], parts: parts, bytes: raw.length }; }); }
-  function publish(s, say) {
+  function publish(s, say, ctl) {
+    ctl = ctl || {}; var check = function (v) { if (ctl.stopped) { var e = new Error('Stopped'); e.stopped = true; throw e; } return v; };
     var lib = s.library, c = lib.integration.counts, id = 'r_' + s.exported_at.replace(/[^0-9]/g, '').slice(0, 14) + '_' + Math.random().toString(36).slice(2, 6);
     var coreObj = { library: lib, health: s.health, exported_at: s.exported_at, interaction_evidence: s.interaction_evidence };
     var detailObj = { recommendations: s.recommendations, history: s.history, source_versions: s.source_versions };
-    say('Packing the library…');
+    say('Packing the library…', null);
     return Promise.all([encode(coreObj), encode(detailObj)]).then(function (enc) {
       var all = [];
       enc[0].parts.forEach(function (p, i) { all.push(['core-' + ('0' + i).slice(-2), p, i, enc[0].parts.length]); });
@@ -291,12 +351,13 @@
         counts: { drugs: lib.drugs.length, held: c.Held, approved: c.Approved, draft: c.Draft }, parts: { core: enc[0].parts.length, detail: enc[1].parts.length },
         sha256: { core: enc[0].sha, detail: enc[1].sha }, bytes: { core: enc[0].bytes, detail: enc[1].bytes },
         published_by: user.email, published_at: fb.firestore.FieldValue.serverTimestamp(), clinical_approval: false };
-      var ref = db.collection(COL).doc(id), n = 0;
-      var chain = all.reduce(function (pr, a) { return pr.then(function () { say('Uploading part ' + (++n) + ' of ' + all.length + '…'); return ref.collection('parts').doc(a[0]).set({ i: a[2], n: a[3], data: a[1] }); }); }, Promise.resolve());
-      return chain.then(function () { return ref.set(relDoc); })
-        .then(function () { say('Checking what was uploaded…'); return readBundle(relDoc, 'core', relDoc.parts.core, relDoc.sha256.core); })
-        .then(function () { return readBundle(relDoc, 'detail', relDoc.parts.detail, relDoc.sha256.detail); })
-        .then(function () { say('Switching everyone to the new library…'); return db.collection(COL).doc('current').set(relDoc); })
+      var ref = db.collection(COL).doc(id), n = 0, units = all.length * 3, read = 0;   /* an upload weighs about twice a check read */
+      var reading = function () { read++; say('Checking what was uploaded…', (all.length * 2 + read) / units); };
+      var chain = all.reduce(function (pr, a) { return pr.then(check).then(function () { say('Uploading part ' + (n + 1) + ' of ' + all.length + '…', (n * 2) / units); return ref.collection('parts').doc(a[0]).set({ i: a[2], n: a[3], data: a[1] }).then(function () { n++; say('Uploading part ' + Math.min(n + 1, all.length) + ' of ' + all.length + '…', (n * 2) / units); }); }); }, Promise.resolve());
+      return chain.then(check).then(function () { return ref.set(relDoc); })
+        .then(check).then(function () { say('Checking what was uploaded…', (all.length * 2) / units); return readBundle(relDoc, 'core', relDoc.parts.core, relDoc.sha256.core, reading); })
+        .then(check).then(function () { return readBundle(relDoc, 'detail', relDoc.parts.detail, relDoc.sha256.detail, reading); })
+        .then(check).then(function () { ctl.canStop = false; ctl.switching && ctl.switching(); say('Switching everyone to the new library…', null); return db.collection(COL).doc('current').set(relDoc); })
         .then(function () { return relDoc; });
     });
   }

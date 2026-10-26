@@ -6,8 +6,8 @@
   "start_url": "/yakuri/",
   "scope": "/yakuri/",
   "display": "standalone",
-  "background_color": "#0A1222",
-  "theme_color": "#0A1222",
+  "background_color": "#080E1A",
+  "theme_color": "#0D1730",
   "icons": [
     {
       "src": "icon-192.png",
@@ -31,22 +31,70 @@
     {
       "name": "Search drugs",
       "url": "/yakuri/#search",
-      "description": "Open Yakuri ready to search"
+      "description": "Open Yakuri ready to search",
+      "icons": [
+        {
+          "src": "shortcut-search-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "shortcut-search-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "CPR drug dosages",
-      "url": "/yakuri/medical.html#cpr",
-      "description": "The CPR drug and defibrillation table"
+      "url": "/yakuri/medical.html?from=shortcut#cpr",
+      "description": "The CPR drug and defibrillation table",
+      "icons": [
+        {
+          "src": "shortcut-cpr-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "shortcut-cpr-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Interactions",
       "url": "/yakuri/interactions.html",
-      "description": "Check pairs of drugs"
+      "description": "Check pairs of drugs",
+      "icons": [
+        {
+          "src": "shortcut-interactions-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "shortcut-interactions-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Saved drugs",
       "url": "/yakuri/#saved",
-      "description": "The drugs you saved"
+      "description": "The drugs you saved",
+      "icons": [
+        {
+          "src": "shortcut-saved-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "shortcut-saved-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
