@@ -1271,6 +1271,30 @@ body.dark #tsModal .ts-btn.primary.danger{background:#D12E26;border-color:#D12E2
 #ctab-dash .c-alerts .pvx-alb:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:3px}
 .pvx-sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 </style>
+<style id="pvx-n245-ts">
+/* n245 (Oct 26 2026): light mode never had the infusion greens — the rate was black, the running line, now dot and drip invisible,
+   the bars solid navy. Light gets the same greens in its deeper shades (rate text 5.3:1 on white). Dark is unchanged. */
+body:not(.dark) #sheetInner{--ib-run:#1A9E6E;--ib-ink:#0F7A55;--pvx-cm90:rgba(26,158,110,.28);--pvx-cm91:rgba(26,158,110,.06)}
+/* the order panel's text buttons (Pin to the top of …, Unpin, Which interns need approval…) are plain buttons in the accent ink,
+   never the browser's black; only Stop infusion is red, and only it gets the red hover */
+#tsOrderSheet .op-link:not(.danger){color:var(--accent-ink,#23439C)}
+body.dark #tsOrderSheet .op-link:not(.danger){color:#38BDD2}
+body:not(.dark) #tsOrderSheet .op-link.danger{color:#B3141A}
+#tsOrderSheet .op-link:not(.danger):hover{background:rgba(35,67,156,.08)}
+body.dark #tsOrderSheet .op-link:not(.danger):hover{background:rgba(56,189,210,.12)}
+/* the Chart microphone, the Vitals IV fluid rate chip and the board's Filters count: a white icon or number on cobalt (was #04252e, 1.8:1) */
+body:not(.dark) #tsOrderSheet .bt-mic:not(.on),body:not(.dark) .v-chip.cur.cyan,body:not(.dark) .sb-fb{color:#fff}
+</style>
+<style id="pvx-n246-ts">
+/* n246: one line per medication product — each dose on its own line under the drug, two doses in one hour side by side */
+#sheetInner .rl-line .rl-dose{cursor:pointer;border-radius:6px;margin-left:-4px;padding:1px 4px}
+#sheetInner .rl-line .rl-dose:hover{background:rgba(120,120,128,.12)}
+#sheetInner .rl-line .rl-dose:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#sheetInner .rl-str{font-weight:500;color:var(--ink-500,#8a8f98)}
+#sheetInner .cell .mk-pair{display:flex;gap:3px;align-items:center;justify-content:center;width:100%}
+#sheetInner .cell .mk-pair>.mark{flex:0 1 auto;min-width:0}
+#tsModal .ts-join{margin:8px 0 0;font-size:.8125rem;color:var(--ink-500,#5C5E62)}
+</style>
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie; until someone chooses, the system's light or dark (n230). -->
@@ -1392,13 +1416,28 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <div class="ctoast-wrap" id="toastWrap"></div>
 
-<script defer src="core.js?v=2a6f24ba9c"></script>
+<script defer src="core.js?v=30f4403216"></script>
 <script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristi Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "flowDoctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Larry Berkwitt", "Dianne Kittrell"], "interns": ["Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristi Wenger", "Sarah Herron"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="d8c5024f";</script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-<script defer src="store.js?v=58d44e0c50"></script>
+<script defer src="../assets/pvx-admit.js?v=def8bccfa5"></script>
+<script>/* n253: only doctors, liaisons and management admit (an outpatient sheet's Admit, New treatment sheet) */
+(function(){ var role=null, WHO='Doctors, liaisons and management admit';
+  window.tsCanAdmit=function(){ try{ var r=window.tsRole&&tsRole(); if(r==='admin'||r==='doctor'||r==='liaison') return true; }catch(e){} return !!(window.PvxRoles&&PvxRoles.canAdmit(role)); };
+  function apply(){ var ok=tsCanAdmit(); [].forEach.call(document.querySelectorAll('.tsh-admit'),function(b){ b.disabled=!ok; var it=b.closest('[title]'); if(it) it.title=ok?'Make this an inpatient sheet':WHO; }); }
+  function refresh(){ var u=null; try{ u=firebase.auth().currentUser; }catch(e){} if(!u||!window.PvxRoles){ role=null; apply(); return; }
+    var S=window.TS_STAFF||{}, nm=u.displayName||String(u.email||'').split('@')[0].replace(/[._]+/g,' ');
+    PvxRoles.resolve(u.email,nm,{doctors:S.doctors||[],liaisons:S.liaisons||[]}).then(function(r){ role=r; apply(); }); }
+  window.tsAdmitRefresh=refresh;
+  function wire(){ try{ firebase.auth().onAuthStateChanged(function(){ setTimeout(refresh,0); }); }catch(e){ return setTimeout(wire,300); }
+    var ns=window.tsNewSheet; if(typeof ns==='function'&&!ns._n253){ window.tsNewSheet=function(){ if(!tsCanAdmit()){ try{ toast(WHO); }catch(e){} return; } return ns.apply(this,arguments); }; window.tsNewSheet._n253=1; }
+    else if(typeof ns!=='function') setTimeout(wire,300); }
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(wire,0); });
+  new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
+})();</script>
+<script defer src="store.js?v=dea0812a97"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
