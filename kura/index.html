@@ -129,13 +129,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script type="module">
+  <script src="/assets/pvx-yakuri.js?v=77dffe7ef6"></script>
+<script>setTimeout(function(){ if(window.PvxYakuri) PvxYakuri.load().catch(function(){}); },4000);</script>
+<script type="module">
     // Kura on shoreline.pravix.app: the engine runs on this device; Firebase keeps the shared, ordered record.
     import { install } from './src/web/kura-web.js?v=14284a91d4';
     try {
       if (!window.firebase) throw new Error('Firebase did not load. Check your connection, then reload.');
       install({ firebase: window.firebase, workerUrl: new URL('src/web/engine-worker.js?v=14284a91d4', location.href).href });
-      await import('./src/app.js?v=14284a91d4');
+      await import('./src/app.js?v=3dceb87f7d');
     } catch (error) { document.querySelector('.boot').textContent = 'Kura could not start. ' + error.message; }
   </script>
 <style id="pvx-n229-type">
