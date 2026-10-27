@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="flow-build" content="20261026-1930-1e6384ee">
+<meta name="flow-build" content="20261026-2345-b8de13f7">
 <script id="pvx-n248-rounds">/* PVX-N248 - Rounds never blinks: rewrite only what changed, animate only what is new (patch_n248.py) */
 function rdN248Set(el,html){ if(!el) return false;
   /* skip only when nothing would change: the same HTML, and no content has been added or removed since (an inline editor, a
@@ -14418,7 +14418,7 @@ return`<div class="rd-row acu-${r.acuity} ${open?'open':''} ${r.newAdmit?'is-new
 function rdTxHTML(p,pid){ const r=p.rounds, T=r.treatments||[]; if(!T.length) return `<div class="rd-empty-line">No treatments entered.</div>`;
   const G={fl:[],med:[],care:[],feed:[]}, man=[];
   T.forEach(t=>{ if(t.oid) (G[t.g]||G.med).push(t); else man.push(t); });
-  const row=t=>`<div class="rd-txr" title="From the treatment sheet · change it there"><div class="n">${rdEsc(t.name)}${t.sub?`<small>${rdEsc(t.sub)}</small>`:''}</div><div class="d">${rdEsc(t.g?t.main:(t.detail||''))}</div><div class="k">${rdEsc(t.kg||'')}</div></div>`;
+  const row=t=>`<div class="rd-txr" title="From the treatment sheet · change it there"><div class="n">${window.pvxYkLink?pvxYkLink(t.name,rdEsc(t.name)):rdEsc(t.name)}${t.sub?`<small>${rdEsc(t.sub)}</small>`:''}</div><div class="d">${rdEsc(t.g?t.main:(t.detail||''))}</div><div class="k">${rdEsc(t.kg||'')}</div></div>`;
   const grp=(lab,html)=>`<div class="rd-txg"><div class="rd-txg-h">${lab}</div>${html}</div>`;
   const edit=t=>`<div class="rd-tx"><input data-input="tx-edit" data-pid="${pid}" data-id="${t.id}" value="${rdEsc(t.name+(t.detail?(' — '+t.detail):''))}" aria-label="${rdEsc('Treatment: '+t.name)}" autocomplete="off"><button class="x" data-act="tx-del" data-pid="${pid}" data-id="${t.id}" title="Discontinue" aria-label="${rdEsc('Discontinue '+t.name)}">${PVX_GI.xmark}</button></div>`;
   let h='';
@@ -22205,6 +22205,46 @@ body:not(.dark) .search-bar .pvx-skey{border-color:rgba(15,23,42,.14);background
     return rdp.apply(this,arguments); }; }
   if(typeof submitDisp==='function'){ var sd=submitDisp; window.submitDisp=submitDisp=function(kind){ if(kind==='admit'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ closeDispConfirm(); }catch(e){} return; } return sd.apply(this,arguments); }; }
   if(typeof moveStatus==='function'){ var ms=moveStatus; window.moveStatus=moveStatus=function(p,st){ if(st==='Admitted'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ renderAll(); }catch(e){} return; } return ms.apply(this,arguments); }; }
+})();</script>
+<style id="pvx-n254-css">.pvx-ykmeds{margin:-4px 0 14px;padding:12px 14px;border-radius:14px;background:var(--fill-soft,rgba(255,255,255,.04));font-size:0.8125rem;line-height:1.45}
+.pvx-ykmeds .t{font-size:0.6875rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-400);margin-bottom:4px}
+.pvx-ykmeds .l{color:var(--ink-900);font-weight:600}.pvx-ykmeds .u{display:block;margin-top:2px;color:var(--ink-500);font-weight:500}
+.pvx-ykmeds button{margin-top:8px;min-height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--glass-hairline,rgba(158,206,231,.2));background:transparent;color:var(--accent,#38BDD2);font:inherit;font-weight:600;cursor:pointer}
+body:not(.dark) .pvx-ykmeds button{color:#23439C}.pvx-ykmeds .r{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.pvx-ykmeds .pr{padding-top:8px;border-top:1px solid var(--glass-hairline,rgba(158,206,231,.14))}.pvx-ykmeds .pr b{color:var(--ink-900)}.pvx-ykmeds .pr i{font-style:normal;color:var(--ink-500)}
+.pvx-ykmeds .sc{color:var(--ink-500);font-size:0.75rem}</style>
+<script src="assets/pvx-yakuri.js?v=77dffe7ef6"></script>
+<script id="pvx-n254-yakuri">/* PVX-N254 - Flow and Rounds read Yakuri: Rounds medications link to it; the drawer lists the owner's medications from intake as
+   Yakuri drugs and runs Yakuri's own interaction check (see patch_n254.py) */
+(function(){ if(!window.PvxYakuri) return;
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  window.pvxYkLink=function(name,html){ return PvxYakuri.ready()?PvxYakuri.link(name,html):html; };
+  function tokens(text){ return String(text||'').split(/[,;\n\/+]|\band\b|\bwith\b/i).map(function(x){ return x.trim(); }).filter(Boolean); }
+  function panel(p){
+    var mount=document.getElementById('intakeCardMount'); if(!mount) return; var old=document.getElementById('pvxYkMeds');
+    var meds=p&&p.intake&&p.intake.medications&&String(p.intake.medications).trim();
+    if(!meds||!PvxYakuri.ready()){ if(old) old.remove(); return; }
+    var ds=PvxYakuri.matchAll(meds), miss=tokens(meds).filter(function(x){ return !PvxYakuri.match(x) && !/^(none|no|n\/a|na)$/i.test(x); });
+    if(!ds.length&&!miss.length){ if(old) old.remove(); return; }
+    var h='<div class="t">Owner’s medications · Yakuri</div><div class="l">'+(ds.length?ds.map(function(d){ return PvxYakuri.link(d); }).join(' · '):'')
+      +(miss.length?'<span class="u">Not found in Yakuri: '+esc(miss.join(', '))+'</span>':'')+'</div>'
+      +(ds.length>=2?'<button type="button" data-ykint>Check interactions</button><div class="r" hidden></div>':'');
+    var el=old||document.createElement('div'); el.id='pvxYkMeds'; el.className='pvx-ykmeds'; el.setAttribute('data-pid',String(p.id)); el.innerHTML=h;
+    if(!old) mount.parentNode.insertBefore(el,mount.nextSibling);
+    var b=el.querySelector('[data-ykint]'); if(b) b.onclick=function(){ check(p,ds,el); };
+  }
+  function check(p,ds,el){ var r=el.querySelector('.r'), sp=PvxYakuri.species(p.species);
+    r.hidden=false; if(!sp){ r.innerHTML='<div class="sc">Yakuri’s interaction check covers dogs and cats.</div>'; return; }
+    r.innerHTML='<div class="sc">Checking in Yakuri…</div>';
+    PvxYakuri.interactions(ds,sp).then(function(x){
+      r.innerHTML=(x.pairs||[]).map(function(q){ return '<div class="pr"><b>'+esc(q.names.join(' + '))+'</b> · '+esc(q.classification)+'<br><i>'+esc(q.summary)+'</i></div>'; }).join('')
+        +'<div class="sc">'+esc(x.scope||'')+' Yakuri has no clinical approval yet.</div>';
+    }).catch(function(e){ r.innerHTML='<div class="sc">'+esc((e&&e.message)||'Yakuri’s check didn’t run.')+'</div>'; });
+  }
+  if(typeof fillDrawer==='function'){ var fd=fillDrawer; window.fillDrawer=fillDrawer=function(p){ var r=fd.apply(this,arguments); try{ panel(p); }catch(e){ console.warn('[yakuri meds]',e); } return r; }; }
+  PvxYakuri.onReady(function(){ try{ renderAll(); }catch(e){} try{ if(activePatient){ var p=PATIENTS.find(function(x){ return x.id===activePatient; }); if(p) fillDrawer(p); } }catch(e){} });
+  function start(){ try{ if(typeof LOBBY!=='undefined'&&LOBBY) return; if(typeof Backend!=='undefined'&&Backend.mode&&Backend.mode!=='staff') return; }catch(e){} PvxYakuri.load().catch(function(){}); }
+  setTimeout(start,6000);
 })();</script>
 </body>
 </html>
