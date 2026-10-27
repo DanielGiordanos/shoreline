@@ -1,7 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="flow-build" content="20261023-1654-99d3b260">
+<meta name="flow-build" content="20261026-1930-1e6384ee">
+<script id="pvx-n248-rounds">/* PVX-N248 - Rounds never blinks: rewrite only what changed, animate only what is new (patch_n248.py) */
+function rdN248Set(el,html){ if(!el) return false;
+  /* skip only when nothing would change: the same HTML, and no content has been added or removed since (an inline editor, a
+     menu). Attribute-only changes (the symbol decorator, rd-in) don't count. */
+  if(!el._rd248mo&&typeof MutationObserver!=='undefined'){ el._rd248mo=new MutationObserver(function(){ el._rd248dirty=true; }); el._rd248mo.observe(el,{childList:true,subtree:true,characterData:true}); }
+  if(el._rd248===html&&!el._rd248dirty) return false;
+  el.innerHTML=html; el._rd248=html; if(el._rd248mo) el._rd248mo.takeRecords(); el._rd248dirty=false; return true; }
+function rdN248Paint(list,html){ var S=window.rdN248||(window.rdN248={seen:{},work:{}});
+  if(!rdN248Set(list,html)) return;   /* nothing changed: the rows stay exactly as they are */
+  var work={};
+  list.querySelectorAll('.rd-row[data-pid]').forEach(function(r){ var id=r.getAttribute('data-pid'); if(!S.seen[id]){ S.seen[id]=1; r.classList.add('rd-in'); } });
+  list.querySelectorAll('.rd-work[data-pid]').forEach(function(w){ var id=w.getAttribute('data-pid'); work[id]=1; if(!S.work[id]) w.classList.add('rd-in'); });
+  S.work=work; }
+</script>
+<style id="pvx-n248-css">#rdList .rd-row:not(.rd-in),#rdList .rd-work:not(.rd-in){animation:none}</style>
+<script id="pvx-n252-keep">/* PVX-N252 - unsaved changes survive a board refresh (see patch_n252.py) */
+(function(){
+  function J(x){ return JSON.stringify(x===undefined?null:x); }
+  window.fvUnsavedTake=function(){ try{
+    if(typeof Backend==='undefined'||Backend.mode!=='staff'||typeof PATIENTS==='undefined') return null;
+    var prev={}; (Backend._lastRows||[]).forEach(function(r){ if(r&&r.id!=null) prev[String(r.id)]=r; });
+    var out={}, n=0;
+    PATIENTS.forEach(function(p){ if(!p||p._demo||p.id==null) return; var id=String(p.id), o=prev[id], mine;
+      try{ mine=JSON.parse(J(mapToDb(p))); }catch(e){ return; }
+      if(!o){ out[id]={obj:p}; n++; return; }                         /* added on this screen, not saved yet */
+      var keys=Object.keys(mine).filter(function(k){ return J(mine[k])!==J(o[k]); });
+      if(keys.length){ out[id]={keys:keys,mine:mine,base:o}; n++; } });
+    return n?out:null; }catch(e){ console.warn('[flow-n252] keep',e); return null; } };
+  window.fvUnsavedPut=function(saved){ if(!saved) return 0; var n=0, seen={};
+    try{
+      PATIENTS=PATIENTS.map(function(p){ var id=p&&p.id!=null?String(p.id):null; if(id) seen[id]=1; var k=id&&saved[id]; if(!k||k.obj) return p;
+        var row; try{ row=JSON.parse(J(mapToDb(p))); }catch(e){ return p; }
+        k.keys.forEach(function(f){
+          if(f==='rounds'&&typeof window.rdmMerge==='function'&&k.base.rounds&&row.rounds&&k.mine.rounds) row.rounds=window.rdmMerge(k.base.rounds,k.mine.rounds,row.rounds);
+          else row[f]=k.mine[f]; });
+        try{ n++; return mapToApp(Object.assign({id:p.id},row)); }catch(e){ n--; return p; } });
+      Object.keys(saved).forEach(function(id){ var k=saved[id]; if(k.obj&&!seen[id]){ PATIENTS.push(k.obj); n++; } });
+      if(n) console.info('[flow-n252] kept this screen’s unsaved changes on '+n+' patient'+(n>1?'s':'')+' across a board refresh');
+    }catch(e){ console.warn('[flow-n252] keep',e); }
+    return n; };
+  window.fvCurPatient=function(p){ try{ if(!p||typeof PATIENTS==='undefined') return p; var c=PATIENTS.find(function(x){ return x&&String(x.id)===String(p.id); }); return c||p; }catch(e){ return p; } };
+})();</script>
+<script src="assets/pvx-admit.js?v=def8bccfa5"></script>
+<script id="pvx-n249-fs">/* PVX-N249 - Safari: the board recovers when Firestore's local database stops answering (see patch_n249.py) */
+(function(){ var MEM='pvx_fs_mem', TRIED='pvx_fs_recover';
+  function get(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+  function set(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+  window.pvxFsMem=function(){ return get(MEM)==='1'; };
+  window.pvxFsRecover=function(why){
+    if(window.pvxFsMem()&&get(TRIED)) { console.warn('[flow-n249] still no answer without the offline copy —',why); return false; }
+    if(get(TRIED)&&Date.now()-Number(get(TRIED))<60000) return false;   /* one recovery a minute at most */
+    console.warn('[flow-n249] recovering —',why,'— reloading once and running without the offline copy for this session');
+    set(MEM,'1'); set(TRIED,String(Date.now()));
+    try{ location.reload(); }catch(e){} return true; };
+  var BAD=/Indexed ?Database server lost|IndexedDB.*(lost|closed|aborted)|AsyncQueue is already failed|INTERNAL ASSERTION FAILED/i;
+  function look(args){ try{ var t=[].map.call(args,function(a){ return a&&(a.message||a.stack)?String(a.message||'')+' '+String(a.stack||''):String(a); }).join(' ');
+    if(BAD.test(t)) setTimeout(function(){ window.pvxFsRecover(t.slice(0,160)); },300); }catch(e){} }
+  ['error','warn'].forEach(function(k){ var f=console[k]; if(typeof f!=='function') return; console[k]=function(){ look(arguments); return f.apply(console,arguments); }; });
+  window.addEventListener('unhandledrejection',function(e){ look([e&&e.reason]); });
+  window.addEventListener('error',function(e){ look([e&&(e.error||e.message)]); });
+})();</script>
+
 <script id="pvx-n223-guard-js">
 /* PVX-N223: the managers' shared account (au733@vca.com) can open https://shoreline.pravix.app/sgvp/ only.
    On every other Pravix page it sees the shared top bar and "Unauthorized" - nothing else, nothing to use.
@@ -7108,7 +7170,7 @@ try{ if(window.firebase && !firebase.apps.length) firebase.initializeApp(FIREBAS
 const DB   = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
 /* Offline: keep a local copy of the board so Flow opens and keeps working without a connection. */
 try{ if(DB && DB.settings) DB.settings({experimentalAutoDetectLongPolling:true, merge:true}); }catch(e){}   /* n92: Safari and SSL-inspection proxies stall Firestore's stream; long-polling keeps it live */
-try{ if(DB && DB.enablePersistence) DB.enablePersistence({synchronizeTabs:true}).catch(function(){}); }catch(e){}
+try{ if(DB && DB.enablePersistence && !(window.pvxFsMem&&pvxFsMem())) DB.enablePersistence({synchronizeTabs:true}).catch(function(){}); else if(window.pvxFsMem&&pvxFsMem()) console.warn('[flow-n249] running without the offline copy for this session'); }catch(e){}   /* n249: not after Safari lost its local database */
 const AUTH = (window.firebase && firebase.auth)      ? firebase.auth()      : null;
 const SB   = DB;
 
@@ -7300,7 +7362,14 @@ currentAlert = (row && row.active && row.show_client!==false) ? row : null;
 }catch(e){}
 },
 loadAndSubscribe: async function(){
-await Promise.all([ Backend.refetch(), Backend.loadShifts(), Backend.loadAlert() ]);
+var pvxFirst=Promise.all([ Backend.refetch(), Backend.loadShifts(), Backend.loadAlert() ]);
+await Promise.race([ pvxFirst, new Promise(function(r){ setTimeout(r,4000); }) ]);   /* n249: a stalled first read never holds back the live feed */
+if(!Backend._n249Watch){ Backend._n249Watch=true; var pvxT0=Date.now(); setTimeout(function n249Check(){ try{
+  if(Backend.mode!=='staff'||!AUTH||!AUTH.currentUser) return;
+  if(Backend._liveAt&&Backend._liveAt>=pvxT0) return;   /* the server has answered */
+  if(!navigator.onLine){ setTimeout(n249Check,10000); return; }
+  if(window.pvxFsRecover) pvxFsRecover('no answer from the server 20 s after sign-in');
+}catch(e){} },20000); }
 try{ FlowIntakeStore._attach(DB); }catch(e){}
 try{ fxLobbySync(); }catch(e){}
 
@@ -7310,8 +7379,10 @@ Backend.unsubVisits = fvVisitsListen(function(docs,meta){
 if(fvKeepBoard(docs,meta)) return;   /* an empty answer from the local cache never wipes a board that has patients */
 Backend._liveAt=Date.now(); Backend._retry=0;
 _persistLock = true;
+var pvxKeep=window.fvUnsavedTake?fvUnsavedTake():null;   /* n252 */
 PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
 Backend._lastRows = fvRowsCopy(PATIENTS);
+if(window.fvUnsavedPut) fvUnsavedPut(pvxKeep);   /* n252: what this screen hasn't saved yet stays, and is saved */
 Backend._mergeResus();
 _persistLock = false;
 if(meta&&meta.fromCache) fvConfirmLive(); else Backend.setConn('live');   /* n92c: Firestore sends no second event when only the cache flag changes */
@@ -7378,13 +7449,15 @@ refetch: async function(){
 _persistLock = true;
 try{
 const docs = await fvVisitsGetServer();   /* n92: never rebuild the board from the local cache */
+var pvxKeep=window.fvUnsavedTake?fvUnsavedTake():null;   /* n252 */
 PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
+Backend._lastRows = fvRowsCopy(PATIENTS);   /* n252: the server's copy, taken now (edits during the next read are this screen's) */
+if(window.fvUnsavedPut) fvUnsavedPut(pvxKeep);
 Backend._liveAt=Date.now();
 
 const pub = await DB.collection('pub').where('tenant_id','==',TENANT_ID).get();
 Backend._pubResus = {};
 pub.docs.forEach(function(d){ const v=d.data(); if(v.resus_pref) Backend._pubResus[d.id]={ pref:v.resus_pref, status:v.resus_status||'client_selected', at:v.resus_recorded_at||null }; });
-Backend._lastRows = fvRowsCopy(PATIENTS);
 Backend._mergeResus();
 if(Backend.conn!=='live') Backend.setConn('live');
 }catch(e){ console.warn('[visits] refresh failed — keeping the board on screen',(e&&e.message)||e); Backend.setConn('reconnecting'); fvResubscribeSoon(); }
@@ -10088,7 +10161,7 @@ p[cfg.stampKey]=stamp;
 p.totalMin=Math.round((stamp - p.arrival)/60000);
 p.totalTimeInHospital=p.totalMin;
 p.timeline.push({label: cfg.tlLabel, at:stamp, meta:`From ${old}`});
-try{ rdOnFlowComplete(p, finalStatus); }catch(e){}
+try{ rdOnFlowComplete(p, finalStatus); }catch(e){ console.warn('[rounds] couldn’t update Rounds for',p&&p.name,e); }   /* n252: was silent */
 
 notify(cfg.title,`${bcEsc(p.name)} · ${p.hid}`, {icon: cfg.icon, color: cfg.color});
 if(oldRoom && oldRoom!=='Lobby') notify(`${oldRoom} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
@@ -10130,6 +10203,7 @@ const p=PATIENTS.find(x=>x.id===dragId); if(!p) return;
 const final=z.dataset.final;
 const verb={Discharged:'discharged',Admitted:'admitted',Euthanized:'euthanized'}[final]||'discharged';
 const okLabel={Discharged:'Discharge patient',Admitted:'Admit patient',Euthanized:'Mark euthanized'}[final]||'Discharge patient';
+if(final==='Admitted'&&window.pvxCanAdmit&&!pvxCanAdmit()){ pvxAdmitDenied(); return; }   /* n253 */
 showConfirm(`Mark ${p.name} ${p.last} as ${verb}?`, okLabel,
 ()=>completePatient(p, final),
 {sub:'This will remove the patient from active views and move them to Completed Today.'});
@@ -10698,7 +10772,8 @@ document.getElementById('triEditScrim').classList.remove('open');
 document.getElementById('triEditModal').classList.remove('open');
 }
 function saveTriageEdit(){
-const p=triEditPatient; if(!p) return;
+const p0=triEditPatient; if(!p0) return;
+const p=(typeof PATIENTS!=='undefined'&&PATIENTS.find(x=>x.id===p0.id))||p0;   /* n250: the board may have refreshed while the form was open */
 const t=getTriage(p);
 const body=document.getElementById('triEditBody');
 const vitals={}; body.querySelectorAll('[data-vk]').forEach(el=>{ const c=TRIAGE_VITALS.find(x=>x.key===el.dataset.vk); const val=el.value.trim();
@@ -10714,6 +10789,7 @@ t.status='complete';
 closeTriageEdit();
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 notify('Triage updated',`${bcEsc(p.name)} · ${p.hid}`, {icon:'info', color:'var(--accent)'});
+try{ if(typeof window.fvAfterTriage==='function') window.fvAfterTriage(p); }catch(e){ console.warn('[triage → sheet, Rounds]',e); }   /* n250 */
 }
 function fillDrawer(p){
 const _dePc=(typeof PRIO_CLR!=='undefined')?(PRIO_CLR[p.prio]||PRIO_CLR[3]):null;
@@ -11884,6 +11960,7 @@ const val=id=>{const el=document.getElementById(id); return el?el.value.trim():'
 const name=val('apName');
 if(!name){ toast('Enter a patient name'); const n=document.getElementById('apName'); if(n) n.focus(); return; }
 const parts=name.split(/\s+/); const first=parts.shift(); const last=parts.join(' ');
+if(apArrivalType==='hospitalized'&&window.pvxCanAdmit&&!pvxCanAdmit()){ pvxAdmitDenied(); return; }   /* n253: a direct admit is an admission */
 let room, status;
 if(apArrivalType==='hospitalized'){ room='Treatment'; status='Hospitalized'; }
 else { room = apLocation ||'Lobby'; status='Waiting'; }
@@ -13182,17 +13259,20 @@ if(acts) acts.querySelectorAll('.disposition-card').forEach(c=>c.classList.remov
 if(conf){ conf.className='disp-confirm'; conf.innerHTML=''; }
 }
 function submitDisp(kind){
-const p=PATIENTS.find(x=>x.id===activePatient);
+let p=PATIENTS.find(x=>x.id===activePatient);
 if(!p||_dispBusy) return;
 if(isCompleted(p)){ showDispConflict(p); return; }
+const pid=p.id;
 _dispBusy=true;
 const acts=document.getElementById('dispActions'), conf=document.getElementById('dispConfirm');
 acts.classList.add('mutation-locked');
 const card=acts.querySelector('.disposition-card.'+kind); if(card) card.classList.add('processing');
 conf.className='disp-confirm mounted';
 conf.innerHTML='<div class="disp-terminal" aria-live="polite"><span class="dc-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/></svg></span><span class="dc-body"><span class="dc-title">'+(kind==='admit'?'Admitting…':'Discharging…')+'</span><span class="dc-desc">Saving to record</span></span></div>';
-const snap=captureDispSnap(p);
 setTimeout(function(){
+p=PATIENTS.find(x=>x.id===pid)||p;   /* n252: the board may have refreshed during "Admitting…" */
+if(isCompleted(p)){ _dispBusy=false; showDispConflict(p); return; }
+const snap=captureDispSnap(p);
 let failed=false;
 try{
 completePatient(p, kind==='admit'?'Admitted':'Discharged');
@@ -13200,6 +13280,7 @@ if(p.timeline&&p.timeline.length){ const ev=p.timeline[p.timeline.length-1]; ev.
 }catch(e){ failed=true; }
 setTimeout(function(){
 _dispBusy=false;
+p=PATIENTS.find(x=>x.id===pid)||p;   /* n252 */
 const connBad=(typeof Backend!=='undefined'&&Backend&&Backend.conn==='error');
 if(failed||connBad){ restoreDispSnap(p,snap); try{renderAll();}catch(_){}
 if(activePatient===p.id) fillDrawer(p); showDispError(p,kind); return; }
@@ -13231,6 +13312,7 @@ t.classList.remove('open'); void t.offsetWidth; t.classList.add('open');
 const undoBtn=t.querySelector('.ut-undo');
 if(undoBtn) undoBtn.onclick=function(){
 clearTimeout(_dispUndoTimer); hideUndo();
+p=(window.fvCurPatient?fvCurPatient(p):p);   /* n252 */
 restoreDispSnap(p, snap);
 try{ if(typeof rdOnFlowUndo==='function') rdOnFlowUndo(p); }catch(_){}
 try{ renderAll(); }catch(_){}
@@ -13709,9 +13791,9 @@ function rdAuthHours(p){ const a=rdAuthRead(p); return a?(a.hours||[]).reduce((s
 
 
 function rdLowEnd(a){ if(!a) return null; const hi=a.estimate!=null?+a.estimate:null; return a.estimateLow!=null&&+a.estimateLow>0?+a.estimateLow:(hi!=null?Math.round(hi*.8):null); }
-function rdBalance(p){ const a=rdAuthRead(p);   /* n117: left to the low end = low end − current charges (same as Treatment Sheets) */
+function rdBalance(p){ const a=rdAuthRead(p);   /* n251: to the low end = low end − deposit (it was low end − charges, n117) */
 const lo=rdLowEnd(a); if(lo==null||!(lo>0)) return null;
-return lo-(+(a.bill||0)); }
+return lo-(+(a.deposited||0)); }
 function rdMoneyTone(p){ const a=rdAuthRead(p), lo=rdLowEnd(a); if(!a||lo==null) return '';   /* amber from 80% of the low end, red past the high end */
 const c=+(a.bill||0), hi=a.estimate!=null?+a.estimate:null; if(hi!=null&&c>hi) return 'over'; return c>=lo*.8?'warn':''; }
 function rdRemain(v){ return v==null?'—':(v<0?'−'+rdMoney(-v):rdMoney(v)); }
@@ -14248,12 +14330,13 @@ return`<div class="rd-handoff">
 }
 function rdFinHTML(p){
 const a=rdAuthRead(p);
-const est=rdLowEnd(a), dep=a?a.deposited:null, bal=rdBalance(p), tone=rdMoneyTone(p);
- 
+const est=rdLowEnd(a), hi=(a&&a.estimate!=null)?+a.estimate:null, dep=a?a.deposited:null, bal=rdBalance(p), tone=rdMoneyTone(p), ch=a&&a.bill!=null?' · current charges '+rdMoney(+a.bill):'';
+ /* n251: High end always shown; To low end = low end − deposit; the charges warning sits on the end it concerns */
 return`<div class="rd-finrow" data-act="row-fin" data-pid="${p.id}" role="button" tabindex="0" title="Open authorization &amp; financials" aria-label="Authorization and financials for ${rdEsc(rdFullName(p))}">
-    <div class="fcol"><span class="lbl">Low end</span><span class="v">${rdMoney(est)}</span></div>
+    <div class="fcol"><span class="lbl">Low end</span><span class="v${tone==='warn'?' warn':''}"${tone==='warn'?` title="Charges are near or past the low end${ch}"`:''}>${rdMoney(est)}</span></div>
+    <div class="fcol"><span class="lbl">High end</span><span class="v${tone==='over'?' over':''}"${tone==='over'?` title="Charges are past the high end${ch}"`:''}>${rdMoney(hi)}</span></div>
     <div class="fcol"><span class="lbl">Deposit</span><span class="v">${rdMoney(dep)}</span></div>
-    <div class="fcol"><span class="lbl">To low end</span><span class="v bal${tone?' '+tone:''}" title="Estimate low end minus charges so far">${rdRemain(bal)}</span></div>
+    <div class="fcol"><span class="lbl">To low end</span><span class="v bal" title="Low end minus deposit">${rdRemain(bal)}</span></div>
   </div>`;
 }
 
@@ -14372,7 +14455,7 @@ const low=(a.estimateLow!=null?+a.estimateLow:(high!=null?Math.round(high*.8):nu
 const charges=a.bill!=null?+a.bill:null;
 const deposit=a.deposited!=null?+a.deposited:null;
 const remHigh=(high!=null&&charges!=null)?Math.max(0,high-charges):null;
-const balance=rdBalance(p), mtone=rdMoneyTone(p);   /* n117: low end − current charges */
+const balance=rdBalance(p), mtone=rdMoneyTone(p);   /* n251: low end − deposit (mtone still colours the charges bar) */
 const depositRequired=(low!=null)?low*.75:null;
 const depositShortfall=(depositRequired!=null)?Math.max(0,depositRequired-(deposit||0)):null;
 const depositMet=depositRequired!=null&&deposit!=null&&deposit>=depositRequired;
@@ -14404,7 +14487,7 @@ return`<div class="rd-auth-stack">
           <div><span>High End</span>${rdFinEditable(pid,'estimate',high)}</div>
           <div><span>Deposit</span>${rdFinEditable(pid,'deposited',deposit)}</div>
           <div><span>Current charges</span><b class="rd-fin-computed">${charges!=null?rdMoney(charges):'—'}</b></div>
-          <div><span>Left to low end</span><b class="rd-fin-computed${mtone?' '+mtone:''}" title="Estimate low end minus charges so far">${rdRemain(balance)}</b></div>
+          <div><span>To low end</span><b class="rd-fin-computed" title="Low end minus deposit">${rdRemain(balance)}</b></div>
         </div>
         ${depositRequired!=null?`<div class="rd-deposit-rule ${depositMet?'is-met':'is-low'}"><span aria-hidden="true">${depositMet?PVX_GI.check:PVX_GI.bang}</span><div><b>${depositMet?'75% deposit met':'Deposit below 75% minimum'}</b><small>${depositMet?('Minimum '+rdMoney(depositRequired)+' · Deposit '+rdMoney(deposit)):('Minimum '+rdMoney(depositRequired)+' · '+rdMoney(depositShortfall)+' more needed')}</small></div></div>`:''}
         ${high!=null?`<div class="rd-est-runway">
@@ -14790,17 +14873,17 @@ try{ rdPruneQueues(); }catch(e){}
 const sub=document.getElementById('rdDateline');
 if(sub){ const sh=RD_SHIFTS.find(s=>s.key===rdShift); sub.textContent=rdHeaderDate()+'  ·  '+sh.label+' Rounds · '+sh.at; }
 document.querySelectorAll('#rdShiftSeg button').forEach(b=>b.classList.toggle('on',b.dataset.shift===rdShift));
-const k=document.getElementById('rdKpis'); if(k) k.innerHTML=rdKpiHTML();
+const k=document.getElementById('rdKpis'); if(k) rdN248Set(k,rdKpiHTML());
 const nrCount=rdCensus().filter(p=>!rdReviewed(p)).length;
 const chips=document.getElementById('rdSvcChips');
 if(chips){
 const c=rdCensus();
 const items=[{key:'all',l:'All patients',n:c.length},{key:'new',l:'New admits',n:c.filter(p=>p.rounds.newAdmit).length}]
 .concat(RD_SERVICES.map(s=>({key:s.key,l:s.label,n:c.filter(p=>p.rounds.service===s.key).length})));
-chips.innerHTML=items.map(x=>`<button class="rd-svcbtn ${rdSvcFilter===x.key?'on':''}" data-act="svc-filter" data-key="${x.key}">${x.l}${x.n?` <span>${x.n}</span>`:''}</button>`).join('')
-+`<span class="rd-toolgap"></span><button class="rd-svcbtn warn ${rdKpiFilter==='review'?'on':''}" data-act="kpi" data-key="review">Not reviewed${nrCount?` <span>${nrCount}</span>`:''}</button>`;
+rdN248Set(chips,items.map(x=>`<button class="rd-svcbtn ${rdSvcFilter===x.key?'on':''}" data-act="svc-filter" data-key="${x.key}">${x.l}${x.n?` <span>${x.n}</span>`:''}</button>`).join('')
++`<span class="rd-toolgap"></span><button class="rd-svcbtn warn ${rdKpiFilter==='review'?'on':''}" data-act="kpi" data-key="review">Not reviewed${nrCount?` <span>${nrCount}</span>`:''}</button>`);
 }
-const side=document.getElementById('rdSide'); if(side) side.innerHTML=rdOnServiceHTML()+rdTomorrowHTML();
+const side=document.getElementById('rdSide'); if(side) rdN248Set(side,rdOnServiceHTML()+rdTomorrowHTML());
 const nr=rdCensus().filter(p=>!rdReviewed(p)).length;
 const note=document.getElementById('rdRevNote');
 if(note){
@@ -14811,7 +14894,7 @@ else { note.innerHTML=nr+' patient'+(nr>1?'s':'')+' not yet reviewed'; note.clas
 const ended=rdEndedToday();
 const holds=rdHolds().filter(p=>rdMatchesQuery(p,rdQuery.trim().toLowerCase()));
 const holdsCollapsed=!!rdCollapse['holds'];
-list.innerHTML=rdSectionsHTML(rdFiltered())
+const rdHtml248=rdSectionsHTML(rdFiltered())
 +(holds.length?`<div class="rd-secgroup holds ${holdsCollapsed?'collapsed':''}">
       <button class="rd-sechead" data-act="sec-toggle" data-key="holds"><span class="tri">${holdsCollapsed?'▶':'▼'}</span><span class="t">Boarding &amp; Holds</span><span class="n">${holds.length}</span></button>
       ${holdsCollapsed?'':holds.map(rdHoldRowHTML).join('')}</div>`:'')
@@ -14819,6 +14902,7 @@ list.innerHTML=rdSectionsHTML(rdFiltered())
       <div class="rd-endbody"><div class="rd-endbody-inner">${ended.map(p=>`<div class="rd-endrow"><span class="rd-dot" style="background:${RD_ACUITY[p.rounds.acuity].color}"></span><b>${rdEsc(rdFullName(p))}</b><span class="o">${p.rounds.outcome.type.toUpperCase()}</span><span class="w">Today · ${rdT(p.rounds.outcome.at)}</span></div>`).join('')}</div></div></div>`:'')
 +(PATIENTS.some(p=>p._demo)?`<div class="rd-demonote">Sample census loaded for preview — session only, never saved. <button class="rd-link" data-act="clear-demo">Remove sample data</button></div>`:'');
 
+rdN248Paint(list,rdHtml248);
 if(rdCollapse['ended'] && rdEndedPrev!=null && ended.length>rdEndedPrev){
 const nEl=list.querySelector('.rd-secgroup.ended .rd-sechead .n');
 if(nEl){ nEl.classList.add('bump'); setTimeout(()=>nEl.classList.remove('bump'),520); }
@@ -16616,6 +16700,7 @@ function buildStale(){
   sheet.querySelector('.fs-list').addEventListener('click',function(e){ var b=e.target.closest('button[data-act]'); if(!b) return;
     var p=PATIENTS.find(function(x){ return String(x.id)===b.getAttribute('data-id'); }); if(!p) return; var act=b.getAttribute('data-act');
     if(act==='keep'){ p.staleKeepUntil=new Date(Date.now()+STALE_H*3600000); (p.timeline=p.timeline||[]).push({label:'Kept on board (12-hour review)', at:new Date(), meta:me().name}); try{ scheduleRender(); }catch(_){ try{ renderAll(); }catch(__){} } rowDone(b,'Kept'); return; }
+    if(act==='admit'&&window.pvxCanAdmit&&!pvxCanAdmit()){ pvxAdmitDenied(); return; }   /* n253 */
     /* Discharge / Admit need a second tap */
     if(!b.classList.contains('arm')){ sheet.querySelectorAll('button.arm').forEach(function(x){ x.classList.remove('arm'); x.textContent=x.getAttribute('data-label'); });
       b.classList.add('arm'); b.textContent='Confirm'; clearTimeout(b._t); b._t=setTimeout(function(){ b.classList.remove('arm'); b.textContent=b.getAttribute('data-label'); },4000); return; }
@@ -16918,6 +17003,27 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
     r.events.sort(function(x,y){ return new Date(x.at)-new Date(y.at); });
     /* treatments already on the treatment sheet arrive once the sheet is inpatient */
     if(!r.treatments.length) setTimeout(function(){ fvRoundsTreatments(p); },1800); };
+  /* n250: triage saved after the patient is on Rounds: write or replace the triage line and its trend points */
+  function triParts(t){ var v=t.vitals||{}, a=t.assess||{}, parts=[];
+    [['temp','T'],['hr','HR'],['rr','RR'],['weight','']].forEach(function(x){ if(v[x[0]]) parts.push((x[1]?x[1]+' ':'')+v[x[0]]); });
+    [['mentation','Mentation'],['mm','MM'],['crt','CRT']].forEach(function(x){ if(a[x[0]]) parts.push(x[1]+' '+a[x[0]]); });
+    return parts; }
+  window.fvRoundsTriage=function(p0){ var p=cur(p0)||p0, r=p&&p.rounds; if(!r||r.outcome) return false;
+    var t=p.triage||{}, v=t.vitals||{}, parts=triParts(t); if(!parts.length) return false;
+    var text='Triage — '+parts.join(' · ')+(t.by?' ('+t.by+')':''), at=rdIso(triAt(p,t));
+    r.events=r.events||[]; r.series=r.series||{};
+    var old=null; r.events.forEach(function(e){ if(!old&&e&&e.kind==='clinical'&&/^Triage — /.test(e.text||'')) old=e; });
+    var oldAt=old?old.at:null, sig=function(){ return JSON.stringify([old&&[old.text,old.at,old.by],['temp','hr','rr'].map(function(k){ return r.series[k]||[]; })]); }, before=sig();
+    if(old){ old.text=text; old.at=at; old.by=t.by||null; }
+    else { old={id:rdId(),at:at,text:text,by:t.by||null,kind:'clinical'}; r.events.push(old); }
+    ['temp','hr','rr'].forEach(function(k){ var L=(r.series[k]||[]).filter(function(pt){ return !oldAt||pt.at!==oldAt; }), n=num(v[k]);
+      if(n!=null) L.push({at:at,v:n,v2:null});
+      L.sort(function(x,y){ return new Date(x.at)-new Date(y.at); });
+      if(L.length||r.series[k]) r.series[k]=L; });
+    if(sig()===before) return false;
+    r.events.sort(function(x,y){ return new Date(x.at)-new Date(y.at); });
+    try{ rdTouch(p,'Triage vitals from Flow'); }catch(e){ try{ renderAll(); }catch(_){} }
+    return true; };
   function rxLine(o){ var bits=[]; if(o.dose!=null&&o.dose!=='') bits.push(o.dose+(o.unit?' '+o.unit:'')); if(o.rate) bits.push(o.rate+(o.rate_u?' '+o.rate_u:' mL/hr')); if(o.route) bits.push(o.route); if(o.freq&&o.freq!=='CRI') bits.push(o.freq); return bits.join(' · '); }
   window.fvRoundsTreatments=function(p){ try{ if(typeof DB==='undefined'||!DB||!window.fvAdmitSheet) return;
     DB.collection('sheets').doc(fvAdmitSheet.id(p)).get().then(function(s){ var d=s.exists&&s.data(); if(!d) return; var q=cur(p); if(!q.rounds||q.rounds.outcome||q.rounds.treatments.length) return;
@@ -16958,6 +17064,7 @@ if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=func
 })();
 </script>
 <script>/* n114 Grid link: only for accounts Grid lets in (keep in step with grid/index.html ALLOWED) */(function(){var a=document.getElementById("navGrid");if(!a)return;var OK=["daniel.giordano@pravix.app"];function set(u){var e=u&&u.email?String(u.email).toLowerCase():"";a.style.display=OK.indexOf(e)>-1?"":"none";}try{if(typeof AUTH!=="undefined"&&AUTH&&AUTH.onAuthStateChanged){set(AUTH.currentUser);AUTH.onAuthStateChanged(set);}}catch(e){}})();</script>
+<style id="n251-css">.rd-finrow .v.warn{color:var(--ra,#EBC95D)}.rd-finrow .v.over{color:var(--s-critical,#e5484d)}body:not(.dark) .rd-finrow .v.warn{color:#9A6A00}body:not(.dark) .rd-finrow .v.over{color:#B3141A}</style>
 <style id="n116-css">.rd-finrow .v.bal.over,.rd-fin-computed.over{color:var(--s-critical,#e5484d)}
 .rd-finrow .v.bal.warn,.rd-fin-computed.warn{color:var(--ra,#EBC95D)}
 body:not(.dark) .rd-finrow .v.bal.warn,body:not(.dark) .rd-fin-computed.warn{color:#9A6A00}
@@ -19362,10 +19469,10 @@ body:not(.dark) .fvv-more{color:#1F7F96;}body:not(.dark) .fvv-check.ok b{color:#
       upd.updated_at=now.toISOString(); upd.updated_by=who.initials; t.update(ref,upd);
     }); }).catch(function(e){ console.warn('[flow→sheet triage]',e); });
   }
-  if(typeof saveTriageEdit==='function'){
-    var origTri=saveTriageEdit;
-    window.saveTriageEdit=saveTriageEdit=function(){ var p=(typeof triEditPatient!=='undefined')?triEditPatient:null; var r=origTri.apply(this,arguments); if(p) setTimeout(function(){ syncTriage(p); },300); return r; };
-  }
+  /* n250: called by saveTriageEdit itself (wrapping it missed the Save button, which holds the original) */
+  window.fvAfterTriage=function(p){ if(!p||p._demo) return; setTimeout(function(){
+    try{ syncTriage(p); }catch(e){ console.warn('[flow→sheet triage]',e); }
+    try{ if(typeof window.fvRoundsTriage==='function') window.fvRoundsTriage(p); }catch(e){ console.warn('[triage → Rounds]',e); } },300); };
   var prevUndo=window.rdOnFlowUndo;
   window.rdOnFlowUndo=function(p){ var r; if(typeof prevUndo==='function'){ try{ r=prevUndo.apply(this,arguments); }catch(e){} } try{ undoSheet(p); }catch(e){} return r; };
 
@@ -22022,5 +22129,82 @@ body:not(.dark) .search-bar .pvx-skey{border-color:rgba(15,23,42,.14);background
   setInterval(function(){ if(last&&ok()) last.forEach(claim); },60000);   /* a claim left unfinished by a closed screen */
 })();
 </script>
+<script id="pvx-n252-net">/* PVX-N252 - every ending acts on the current patient; admissions that never reached Rounds are added (see patch_n252.py) */
+(function(){
+  if(typeof completePatient!=='function') return;
+  var base=completePatient;
+  window.completePatient=completePatient=function(p,finalStatus){ var a=[].slice.call(arguments); a[0]=window.fvCurPatient?fvCurPatient(p):p; return base.apply(this,a); };
+  if(typeof LOBBY!=='undefined'&&LOBBY) return;
+  var tried={}, failed={};
+  function ms(v){ var t=v?new Date(v).getTime():NaN; return isNaN(t)?null:t; }
+  function sheetIdOf(p){ try{ if(window.fvAdmitSheet&&fvAdmitSheet.id) return fvAdmitSheet.id(p); }catch(e){} return p.tsSheetId?String(p.tsSheetId):'v_'+String(p.id||'').replace(/[\/\s.#$\[\]]/g,'_'); }
+  function enroll(p,why){ var q=window.fvCurPatient?fvCurPatient(p):p; if(!q||q.rounds) return;
+    try{ rdEnroll(q);
+      var t0=ms(q.admittedAt)||ms(q.completedAt)||ms(q.arrival);
+      if(q.rounds&&t0&&t0<Date.now()) q.rounds.admittedAt=rdIso(new Date(t0));
+      try{ rdAudit(q,'Added to Rounds — '+why); }catch(e){}
+      console.info('[flow-n252] added',q.name,'to Rounds —',why);
+      try{ renderAll(); }catch(e){}
+    }catch(e){ console.warn('[flow-n252] couldn’t add',q&&q.name,'to Rounds',e);
+      if(!failed[q.id]){ failed[q.id]=1; try{ notify('Couldn’t add '+bcEsc(q.name||'a patient')+' to Rounds','Open Rounds and add them from the census',{icon:'info',color:'var(--priority-p1)',dur:9000}); }catch(_){} } } }
+  function sweep(){
+    var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){}
+    if(!u||typeof PATIENTS==='undefined'||!PATIENTS.length||typeof DB==='undefined'||!DB||(typeof Backend!=='undefined'&&Backend.mode!=='staff')) return;
+    var now=Date.now();
+    PATIENTS.forEach(function(p){ if(!p||p._demo||p.rounds||p.id==null) return;
+      var id=String(p.id); if(tried[id]&&now-tried[id]<300000) return;
+      if(p.status==='Hospitalized'&&(typeof isActive!=='function'||isActive(p))){ tried[id]=now;
+        setTimeout(function(){ enroll(p,'a direct admit that hadn’t reached Rounds'); },500+Math.random()*3000); return; }
+      if(p.status==='Admitted'){ var at=ms(p.admittedAt)||ms(p.completedAt); if(!at||now-at>7*86400000) return; tried[id]=now;
+        DB.collection('sheets').doc(sheetIdOf(p)).get().then(function(snap){ var d=snap&&snap.exists?snap.data():null;
+          if(!d||d.status!=='active'||(d.board||'IP')!=='IP') return;
+          setTimeout(function(){ enroll(p,'admitted in Flow, with an inpatient sheet'); },500+Math.random()*3000); }).catch(function(){ tried[id]=0; }); } });
+  }
+  window.fvRoundsSweep=sweep;
+  setTimeout(sweep,6000); setInterval(sweep,30000);
+})();</script>
+<style id="pvx-n253-css">.disposition-card.pvx-locked{opacity:.5;cursor:not-allowed}.disposition-card.pvx-locked .dc-arrow{visibility:hidden}
+.disposition-card .dc-note.pvx-lock{display:block;line-height:1.3;text-wrap:balance}.ap-seg-btn.pvx-locked{opacity:.5;cursor:not-allowed}</style>
+<script id="pvx-n253-admit">/* PVX-N253 - only doctors, liaisons and management admit (see patch_n253.py) */
+(function(){
+  var role=null, WHO='Doctors, liaisons and management admit';
+  function lists(){ var d=[], l=[];
+    try{ d=d.concat(typeof DOCTOR_NAMES!=='undefined'?DOCTOR_NAMES:[]); }catch(e){}
+    try{ d=d.concat((typeof IM_DOCTORS!=='undefined'?IM_DOCTORS:[]).map(function(x){ return x.name; })); }catch(e){}
+    try{ l=l.concat(typeof LIAISON_NAMES!=='undefined'?LIAISON_NAMES:[]); }catch(e){}
+    return {doctors:d, liaisons:l}; }
+  window.pvxCanAdmit=function(){ try{ if(typeof IS_ADMIN!=='undefined'&&IS_ADMIN) return true; }catch(e){} return !!(window.PvxRoles&&PvxRoles.canAdmit(role)); };
+  window.pvxAdmitRole=function(){ return role; };
+  window.pvxAdmitDenied=function(){ try{ notify(WHO,'Ask a doctor, liaison or manager to admit this patient',{icon:'info',color:'var(--accent)'}); }catch(e){} };
+  function apply(){ var ok=pvxCanAdmit();
+    var c=document.querySelector('#dispActions .disposition-card.admit');
+    if(c){ if(ok) c.removeAttribute('disabled'); else c.setAttribute('disabled',''); c.setAttribute('aria-disabled',String(!ok)); c.classList.toggle('pvx-locked',!ok);
+      var body=c.querySelector('.dc-body'), n=c.querySelector('.dc-note.pvx-lock');
+      if(!ok&&body&&!n){ n=document.createElement('span'); n.className='dc-note pvx-lock'; n.textContent='Doctors, liaisons and management'; body.appendChild(n); }
+      if(ok&&n) n.remove(); c.title=ok?'':WHO; }
+    var b=document.querySelector('#apArrival [data-arrival="hospitalized"]');
+    if(b){ b.classList.toggle('pvx-locked',!ok); if(ok){ b.removeAttribute('aria-disabled'); b.title=''; } else { b.setAttribute('aria-disabled','true'); b.title=WHO; } } }
+  window.pvxAdmitApply=apply;
+  function refresh(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){}
+    if(!u||!window.PvxRoles){ role=null; apply(); return; }
+    var nm=''; try{ nm=(typeof CURRENT_USER==='string'&&CURRENT_USER)||u.displayName||''; }catch(e){}
+    PvxRoles.resolve(u.email,nm,lists()).then(function(r){ role=r; apply(); }); }
+  window.pvxAdmitRefresh=refresh;
+  try{ if(AUTH&&AUTH.onAuthStateChanged) AUTH.onAuthStateChanged(function(){ setTimeout(refresh,0); }); }catch(e){}
+  setTimeout(refresh,0);
+  if(typeof fillDrawer==='function'){ var fd=fillDrawer; window.fillDrawer=fillDrawer=function(){ var r=fd.apply(this,arguments); try{ apply(); }catch(e){} return r; }; }
+  if(typeof openAddPatient==='function'){ var oa=openAddPatient; window.openAddPatient=openAddPatient=function(){ var r=oa.apply(this,arguments); try{ apply(); }catch(e){} return r; }; }
+  /* the arrival chip: a click on Direct admit is refused (it is not a real disabled button, so the others keep their keyboard order) */
+  document.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('#apArrival [data-arrival="hospitalized"]');
+    if(b&&!pvxCanAdmit()){ e.stopImmediatePropagation(); e.preventDefault(); pvxAdmitDenied(); } },true);
+  if(typeof openDispConfirm==='function'){ var od=openDispConfirm; window.openDispConfirm=openDispConfirm=function(kind){ if(kind==='admit'&&!pvxCanAdmit()){ pvxAdmitDenied(); return; }
+    var r=od.apply(this,arguments); try{ var cf=document.getElementById('dispConfirm'); if(cf&&typeof activePatient!=='undefined') cf.setAttribute('data-pid',String(activePatient)); }catch(e){} return r; }; }
+  /* a board refresh (any change on any screen) no longer closes an open Admit / Discharge confirmation or the "Admitting…" state */
+  if(typeof renderDisposition==='function'){ var rdp=renderDisposition; window.renderDisposition=renderDisposition=function(p){ try{ var cf=document.getElementById('dispConfirm');
+    if(p&&cf&&!isCompleted(p)&&((typeof _dispBusy!=='undefined'&&_dispBusy)||(cf.querySelector('.confirmation')&&cf.getAttribute('data-pid')===String(p.id)))){ apply(); return; } }catch(e){}
+    return rdp.apply(this,arguments); }; }
+  if(typeof submitDisp==='function'){ var sd=submitDisp; window.submitDisp=submitDisp=function(kind){ if(kind==='admit'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ closeDispConfirm(); }catch(e){} return; } return sd.apply(this,arguments); }; }
+  if(typeof moveStatus==='function'){ var ms=moveStatus; window.moveStatus=moveStatus=function(p,st){ if(st==='Admitted'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ renderAll(); }catch(e){} return; } return ms.apply(this,arguments); }; }
+})();</script>
 </body>
 </html>
