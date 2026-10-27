@@ -1429,7 +1429,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   function apply(){ var ok=tsCanAdmit(); [].forEach.call(document.querySelectorAll('.tsh-admit'),function(b){ b.disabled=!ok; var it=b.closest('[title]'); if(it) it.title=ok?'Make this an inpatient sheet':WHO; }); }
   function refresh(){ var u=null; try{ u=firebase.auth().currentUser; }catch(e){} if(!u||!window.PvxRoles){ role=null; apply(); return; }
     var S=window.TS_STAFF||{}, nm=u.displayName||String(u.email||'').split('@')[0].replace(/[._]+/g,' ');
-    PvxRoles.resolve(u.email,nm,{doctors:S.doctors||[],liaisons:S.liaisons||[]}).then(function(r){ role=r; apply(); }); }
+    PvxRoles.resolve(u.email,nm,{doctors:S.doctors||[],liaisons:S.liaisons||[]}).then(function(r){ role=r; var was=window.tsDirRole; window.tsDirRole=r; if(was!==r&&window.tsApplyRole){ try{ tsApplyRole(); }catch(e){} } apply(); }); }   /* n254: the Directory's doctors are doctors here */
   window.tsAdmitRefresh=refresh;
   function wire(){ try{ firebase.auth().onAuthStateChanged(function(){ setTimeout(refresh,0); }); }catch(e){ return setTimeout(wire,300); }
     var ns=window.tsNewSheet; if(typeof ns==='function'&&!ns._n253){ window.tsNewSheet=function(){ if(!tsCanAdmit()){ try{ toast(WHO); }catch(e){} return; } return ns.apply(this,arguments); }; window.tsNewSheet._n253=1; }
@@ -1437,7 +1437,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   document.addEventListener('DOMContentLoaded',function(){ setTimeout(wire,0); });
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
-<script defer src="store.js?v=dea0812a97"></script>
+<script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
+<script defer src="store.js?v=90988040a2"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
