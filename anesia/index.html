@@ -279,7 +279,20 @@ body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){co
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script defer src="engine.js?v=67a3d99dfb"></script>
-<script defer src="app.js?v=48861a0d2d"></script>
+<script defer src="/assets/pvx-yakuri.js?v=77dffe7ef6"></script>
+<script defer src="app.js?v=95d6c9e215"></script>
+<script>/* n254: Give drug shows the chosen drug's Yakuri line (held, or "no clinical approval yet") with Open in Yakuri */
+(function(){ function sheet(){ return document.getElementById('anSheet'); }
+  function chosen(w){ var on=w.querySelector('[data-pick][aria-pressed="true"]'); if(on&&on.getAttribute('data-pick')!=='other') return on.textContent;
+    var sel=w.querySelector('[name=drug]'); return sel&&sel.value&&sel.selectedIndex>-1?sel.options[sel.selectedIndex].textContent:''; }
+  function show(){ var w=sheet(); if(!w||!window.PvxYakuri||!PvxYakuri.ready()) return; var nm=chosen(w), box=w.querySelector('.pvx-yk-note');
+    var h=nm?PvxYakuri.orderNote(nm):''; if(!h){ if(box) box.remove(); return; }
+    var tmp=document.createElement('div'); tmp.innerHTML=h; var n=tmp.firstChild; if(box){ box.replaceWith(n); } else { var f=w.querySelector('form')||w; f.insertBefore(n,f.firstChild); } }
+  document.addEventListener('click',function(e){ if(e.target&&e.target.closest&&e.target.closest('#anSheet [data-pick]')) setTimeout(show,0); },true);
+  document.addEventListener('change',function(e){ if(e.target&&e.target.matches&&e.target.matches('#anSheet [name=drug]')) setTimeout(show,0); },true);
+  document.addEventListener('DOMContentLoaded',function(){ if(window.PvxYakuri) setTimeout(function(){ PvxYakuri.load().catch(function(){}); },3000); });
+})();</script>
+
 </head>
 <body class="dark">
 <a class="an-vh" href="#anApp" style="position:absolute" onfocus="this.classList.remove('an-vh')" onblur="this.classList.add('an-vh')">Skip to the record</a>

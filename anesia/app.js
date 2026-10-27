@@ -2007,7 +2007,7 @@
 
   /* ---------------- n177: Emergency drugs ---------------- */
   /* Strengths: Pravix's stock list (Treatment Sheets). Where Pravix lists more than one, the person chooses the one in the crash cart
-     (remembered on this device). Doses: the Pravix drug database, found by indication; no dose is ever made up here. */
+     (remembered on this device). Doses: Yakuri (n254), found by indication; no dose is ever made up here. */
   var STOCK = {
     Epinephrine: { s: [[1, '1 mg/mL (1:1,000)'], [0.1, '0.1 mg/mL (1:10,000)']], pick: 1 }, Atropine: { s: [[0.54, '0.54 mg/mL'], [0.4, '0.4 mg/mL']], pick: 1 },
     Vasopressin: { s: [[20, '20 U/mL']], u: 'U' }, Lidocaine: { s: [[20, '2% · 20 mg/mL']] }, Amiodarone: { s: [[50, '50 mg/mL']] }, Esmolol: { s: [[10, '10 mg/mL']] },
@@ -2023,6 +2023,9 @@
   var DRUGDB = { st: 'idle', cbs: [] };
   function loadDrugDB(cb) {
     if (window.PRAVIX_DRUGS) { DRUGDB.st = 'ok'; return cb(); }
+    if (window.PvxYakuri) { DRUGDB.cbs.push(cb); if (DRUGDB.st === 'loading') return; DRUGDB.st = 'loading';   /* n254: the doses come from Yakuri */
+      var fin = function (ok) { DRUGDB.st = ok && window.PRAVIX_DRUGS ? 'ok' : 'fail'; var c = DRUGDB.cbs.splice(0); c.forEach(function (f) { try { f(); } catch (e) { console.warn(e); } }); };
+      PvxYakuri.drugs().then(function (l) { window.PRAVIX_DRUGS = { v: 'yakuri', d: l }; fin(true); }, function () { fin(false); }); return; }
     DRUGDB.cbs.push(cb); if (DRUGDB.st === 'loading') return; DRUGDB.st = 'loading';
     var sc = document.createElement('script'); sc.src = '/treatment/drugs.js'; sc.async = true;
     var done = function (ok) { DRUGDB.st = ok && window.PRAVIX_DRUGS ? 'ok' : 'fail'; var c = DRUGDB.cbs.splice(0); c.forEach(function (f) { try { f(); } catch (e) { console.warn(e); } }); };
@@ -2062,18 +2065,18 @@
     if (r.status === 'planned') h += '<p class="an-em-note strong">Calculated ahead for this patient. Give opens once anesthesia has started.</p>';
     else if (r.status !== 'active') h += '<p class="an-em-note strong">Anesthesia has ended, so drugs can’t be given on this record.</p>';
     if (dnr) h += '<div class="an-banner warn" role="note"><span><b>Do not resuscitate.</b> The CPR drugs are shown for reference only. Don’t give them without the doctor.</span></div>';
-    if (sp === 'other') h += '<div class="an-banner info"><span>The Pravix drug database has dog and cat doses only. Strengths are shown; enter any dose yourself.</span></div>';
-    if (db === 'loading') h += '<p class="an-em-note" role="status">Loading the Pravix drug database…</p>';
-    else if (db === 'fail') h += '<div class="an-banner warn"><span>The Pravix drug database didn’t load, so no doses are shown. Strengths are still listed.</span></div>';
-    else h += '<p class="an-em-note">Reference doses from the Pravix drug database (Plumb’s), for this weight. Check the dose and the vial before you give it.</p>';
+    if (sp === 'other') h += '<div class="an-banner info"><span>Yakuri has dog and cat doses only. Strengths are shown; enter any dose yourself.</span></div>';
+    if (db === 'loading') h += '<p class="an-em-note" role="status">Loading Yakuri…</p>';
+    else if (db === 'fail') h += '<div class="an-banner warn"><span>Yakuri didn’t load, so no doses are shown. Strengths are still listed.</span></div>';
+    else h += '<p class="an-em-note">Reference doses from Yakuri, for this weight. No dose in Yakuri has clinical approval yet, and doses on hold aren’t shown. Check the dose and the vial before you give it.</p>';
     EMER.forEach(function (G) {
       h += '<section class="an-em-g' + (G.cpr && dnr ? ' dnr' : '') + '"><h3>' + esc(G.g) + (G.cpr && dnr ? '<span class="an-em-dnr">DNR</span>' : '') + '</h3><ul class="an-em-list">';
       G.items.forEach(function (it) {
         var name = it[0], st = STOCK[name], rec = r.drugs.filter(function (d) { return d.kind === 'drug' && d.name.toLowerCase() === name.toLowerCase(); })[0];
         var pick = rec && rec.conc ? [rec.conc, conc(rec.conc) + ' · on this record'] : stockPick(name), cc = st && st.u === 'U' ? null : pick ? pick[0] : null;
         var rg = db === 'ok' && sp !== 'other' ? regimen(name, it[1], sp) : null, lg = lastGiven(r, name);
-        var row = '<li class="an-em-row" data-em="' + esc(name) + '"><div class="nm"><b>' + esc(name) + '</b><span>' +
-          (rg ? esc(sig(rg.lo) + (rg.hi !== rg.lo ? '–' + sig(rg.hi) : '') + ' ' + rg.u + '/kg' + (rg.route ? ' ' + rg.route : '') + (rg.freq ? ' · ' + rg.freq : '')) : db === 'ok' && sp !== 'other' ? 'No ' + esc(sp) + ' dose in the Pravix drug database' : '') + '</span>' +
+        var row = '<li class="an-em-row" data-em="' + esc(name) + '"><div class="nm"><b>' + (window.PvxYakuri && PvxYakuri.ready() ? PvxYakuri.link(name, esc(name)) : esc(name)) + '</b><span>' +
+          (rg ? esc(sig(rg.lo) + (rg.hi !== rg.lo ? '–' + sig(rg.hi) : '') + ' ' + rg.u + '/kg' + (rg.route ? ' ' + rg.route : '') + (rg.freq ? ' · ' + rg.freq : '')) : db === 'ok' && sp !== 'other' ? 'No ' + esc(sp) + ' dose in Yakuri' : '') + '</span>' +
           (lg ? '<span class="lg">Last given ' + esc(fmtTime(lg.at)) + ' · ' + esc(amt(lg.mg)) + ' (' + Math.max(0, Math.round((now() - lg.at) / 60000)) + ' min ago)</span>' : '') + '</div>';
         /* strength: one, or a choice */
         row += '<div class="st">' + (st && st.pick && !(rec && rec.conc) ? '<div class="an-chips sm" role="group" aria-label="' + esc(name) + ' strength">' + st.s.map(function (x) { return '<button type="button" class="an-chip" data-emst="' + esc(name) + '" data-v="' + x[0] + '" aria-pressed="' + (!!pick && pick[0] === x[0]) + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>' : '<span class="stk">' + esc(pick ? pick[1] : st ? st.s[0][1] : '') + '</span>') + '</div>';
