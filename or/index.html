@@ -4311,7 +4311,7 @@ function tabPreop(c){
   const pend=READINESS_ITEMS.filter(i=>c.readiness[i.id]==='pending').sort((a,b)=>(READY_HARD.includes(b.id)?1:0)-(READY_HARD.includes(a.id)?1:0)), rest=READINESS_ITEMS.filter(i=>c.readiness[i.id]!=='pending');
   const list=(pend.length?`<div class="or-missing">${pend.map(i=>row(i).replace('or-check ','or-check '+(READY_HARD.includes(i.id)?'is-hard ':'is-look '))).join('')}</div>`:'')
     +`<details class="or-donefold"${pend.length?'':' open'}><summary><span class="ok">${I.check}${rs.done} done</span><span>${esc(rest.filter(i=>c.readiness[i.id]==='done').slice(0,5).map(i=>i.label.replace(/ (confirmed|signed|reviewed|complete|verified|placed|ordered|available|assigned)$/,'')).join(' · '))}${rs.done>5?' …':''}</span></summary>${rest.map(row).join('')}</details>`;
-  const readiness=panel('Pre-op readiness', hero+`<div class="or-rows">${list}</div><div class="or-sources" style="margin-top:14px"><span><i></i>Consent</span><span><i></i>Flow</span><span><i></i>Treatment Sheets</span><span><i></i>Kura</span><span><i></i>Anesia</span><span><i></i>WoofWare</span></div><p style="font-size:0.75rem;color:var(--ink-400);margin:10px 0 0;line-height:1.5">${LIVE?'CPR / DNR comes from Flow; fluids, medications, antibiotics, NPO and the estimate from the treatment sheet. Tap any item to mark it yourself — your tick always wins.':'Items marked with a product are answered automatically by that Pravix product. Tap any item to override in this prototype.'}</p>`, {cls:'span7'});
+  const readiness=panel('Pre-op readiness', hero+(window.orYkHeld?orYkHeld(c):'')+`<div class="or-rows">${list}</div><div class="or-sources" style="margin-top:14px"><span><i></i>Consent</span><span><i></i>Flow</span><span><i></i>Treatment Sheets</span><span><i></i>Kura</span><span><i></i>Anesia</span><span><i></i>WoofWare</span></div><p style="font-size:0.75rem;color:var(--ink-400);margin:10px 0 0;line-height:1.5">${LIVE?'CPR / DNR comes from Flow; fluids, medications, antibiotics, NPO and the estimate from the treatment sheet. Tap any item to mark it yourself — your tick always wins.':'Items marked with a product are answered automatically by that Pravix product. Tap any item to override in this prototype.'}</p>`, {cls:'span7'});
   const kura=panel('Required items', c.kura.length?`<div class="or-list">${c.kura.map(k=>`<div class="or-li"><span class="ic ${k.status==='Unavailable'?'crit':'ok'}">${k.status==='Unavailable'?'!':'✓'}</span><span class="tt">${esc(k.item)}</span><span class="st ${k.status==='Unavailable'?'crit':k.status==='Requested'?'warn':''}">${esc(k.status)} ${k.status==='Unavailable'?'':'✓'}</span></div>`).join('')}</div>`:`<div class="or-empty">No implants or equipment reserved for this case</div>`, {cls:'span5', right:`<span class="count">Kura</span>`});
   const to=c.timeout;
   const timeout=panel('Surgical time out', to.done?`<div class="or-timeout-done"><div class="ai">${I.check}</div><div><b>Time out complete</b><br><span>${fmtT(to.t)} · Incision may follow</span></div></div>`
@@ -4355,8 +4355,8 @@ function tabProcedure(c){
    and lands on the sheet as a one-time order, already given, with an OR tag. Nobody copies it over afterwards. */
 function drugsPanel(c,span){
   const due=LINK.due(c), given=c.drugs.slice().sort((a,b)=>b.t-a.t), can=c.date===TODAY&&c.status!=='cancelled';
-  const dueRows=due.map(d=>`<div class="or-li or-drug is-due"><span class="tm">${fmtShort(d.due)}</span><span class="tt">${esc(drugLine(d))}<small>${d.due<now()-18?'Due '+fmtT(d.due)+' · late':'Due '+fmtT(d.due)} · on the sheet</small></span><button class="or-btn sm primary" data-give="${esc(d.key)}"${can?'':' disabled'}>Given</button></div>`).join('');
-  const givenRows=given.map(d=>`<div class="or-li or-drug"><span class="tm">${fmtShort(d.t)}</span><span class="tt">${esc(drugLine(d))}<small>${esc(d.by||'—')}${d.note?' · '+esc(d.note):''} · ${LINK.live?(d.err?'<b class="or-drug-err">Not saved — tap to retry</b>':'On the sheet'):'Demo · stays on this screen'}</small></span>${LINK.live&&!d.err?`<span class="st ok">${I.check}</span>`:''}<button class="or-btn sm ghost" data-undo="${esc(d.id)}" title="Remove this dose"${can?'':' disabled'}>Undo</button></div>`).join('');
+  const dueRows=due.map(d=>`<div class="or-li or-drug is-due"><span class="tm">${fmtShort(d.due)}</span><span class="tt">${window.orYkLine?orYkLine(d):esc(drugLine(d))}<small>${d.due<now()-18?'Due '+fmtT(d.due)+' · late':'Due '+fmtT(d.due)} · on the sheet</small></span><button class="or-btn sm primary" data-give="${esc(d.key)}"${can?'':' disabled'}>Given</button></div>`).join('');
+  const givenRows=given.map(d=>`<div class="or-li or-drug"><span class="tm">${fmtShort(d.t)}</span><span class="tt">${window.orYkLine?orYkLine(d):esc(drugLine(d))}<small>${esc(d.by||'—')}${d.note?' · '+esc(d.note):''} · ${LINK.live?(d.err?'<b class="or-drug-err">Not saved — tap to retry</b>':'On the sheet'):'Demo · stays on this screen'}</small></span>${LINK.live&&!d.err?`<span class="st ok">${I.check}</span>`:''}<button class="or-btn sm ghost" data-undo="${esc(d.id)}" title="Remove this dose"${can?'':' disabled'}>Undo</button></div>`).join('');
   const body=(dueRows?`<div class="or-drug-h">Due on the sheet</div><div class="or-list">${dueRows}</div>`:'')
     +(givenRows?`<div class="or-drug-h">Given</div><div class="or-list">${givenRows}</div>`:'')
     +(!dueRows&&!givenRows?`<div class="or-empty">No drugs given yet. Doses due on the treatment sheet show here while ${esc(pt(c).name)} is in surgery.</div>`:'');
@@ -5205,6 +5205,18 @@ pvxSeg('#caseTabs',{mode:'tabs',label:'Case sections'});
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
+<script src="/assets/pvx-yakuri.js?v=77dffe7ef6"></script>
+<script>/* n254: OR drugs link to Yakuri, and Pre-op readiness lists any drug on hold in Yakuri (a warning: the doctor decides) */
+(function(){ if(!window.PvxYakuri) return;
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  window.orYkLine=function(d){ var line=drugLine(d); if(!PvxYakuri.ready()||!d||!d.name) return esc(line);
+    var rest=line.slice(String(d.name).length); return PvxYakuri.link(d.name, esc(d.name))+esc(rest); };
+  window.orYkHeld=function(c){ if(!PvxYakuri.ready()||!c) return ''; var names=[], seen={};
+    [].concat((typeof LINK!=='undefined'&&LINK.due)?LINK.due(c):[], c.drugs||[]).forEach(function(d){ var y=d&&PvxYakuri.match(d.name); if(y&&PvxYakuri.held(y)&&!seen[y.id]){ seen[y.id]=1; names.push(PvxYakuri.link(y,esc(y.n),{badge:false})); } });
+    return names.length?'<div class="pvx-yk-note hold" role="note"><span><b>On hold in Yakuri:</b> '+names.join(', ')+'. Check the dose with the doctor before it’s given.</span></div>':''; };
+  PvxYakuri.onReady(function(){ try{ if(typeof renderAll==='function') renderAll(); else if(typeof render==='function') render(); }catch(e){} });
+  setTimeout(function(){ PvxYakuri.load().catch(function(){}); },3000);
+})();</script>
 </body>
 
 <!-- PVX-TYPE n135: contrast + type floor (shared sheet + or rules) -->
