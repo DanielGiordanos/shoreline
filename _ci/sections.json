@@ -1,0 +1,586 @@
+[
+ {
+  "i": 0,
+  "name": "list",
+  "needs": []
+ },
+ {
+  "i": 1,
+  "name": "record",
+  "needs": []
+ },
+ {
+  "i": 2,
+  "name": "vitals in the Now column",
+  "needs": []
+ },
+ {
+  "i": 3,
+  "name": "give drug with quick picks, undo",
+  "needs": []
+ },
+ {
+  "i": 4,
+  "name": "weight change → pumps",
+  "needs": []
+ },
+ {
+  "i": 5,
+  "name": "infusion rate",
+  "needs": []
+ },
+ {
+  "i": 6,
+  "name": "event",
+  "needs": []
+ },
+ {
+  "i": 7,
+  "name": "strike through from the chart",
+  "needs": []
+ },
+ {
+  "i": 8,
+  "name": "offline",
+  "needs": []
+ },
+ {
+  "i": 9,
+  "name": "two at once",
+  "needs": []
+ },
+ {
+  "i": 10,
+  "name": "end, sign",
+  "needs": []
+ },
+ {
+  "i": 11,
+  "name": "no weight",
+  "needs": []
+ },
+ {
+  "i": 12,
+  "name": "new record",
+  "needs": []
+ },
+ {
+  "i": 13,
+  "name": "n155: the HIG audit fixes",
+  "needs": []
+ },
+ {
+  "i": 14,
+  "name": "n158: glass on the floating layer only, with a guard",
+  "needs": []
+ },
+ {
+  "i": 15,
+  "name": "n159: grouped glass toolbar, scroll edge, shrink on scroll, morphing popovers",
+  "needs": []
+ },
+ {
+  "i": 16,
+  "name": "n161: patient summary, outputs and fluid balance, weight method",
+  "needs": []
+ },
+ {
+  "i": 17,
+  "name": "n163: antibiotics, airway & lines, ventilation, time-out, team, more monitors",
+  "needs": []
+ },
+ {
+  "i": 18,
+  "name": "n164: Apple typography and Larger Text",
+  "needs": []
+ },
+ {
+  "i": 19,
+  "name": "n165: Apple color rules",
+  "needs": []
+ },
+ {
+  "i": 20,
+  "name": "n166: Anesia inside the Treatment Sheet",
+  "needs": []
+ },
+ {
+  "i": 21,
+  "name": "n167: no grey canvas behind the record when the computer is in dark mode and the sheet is light",
+  "needs": []
+ },
+ {
+  "i": 22,
+  "name": "n171: Pravix Symbols (SF Symbols rules on our own symbols)",
+  "needs": []
+ },
+ {
+  "i": 23,
+  "name": "n172: Apple Icons HIG — optical sizing and centering, labels, right-to-left",
+  "needs": []
+ },
+ {
+  "i": 24,
+  "name": "n173: Apple Writing HIG",
+  "needs": []
+ },
+ {
+  "i": 25,
+  "name": "n174: main actions in Flow's patient-drawer card style (Admit / Discharge)",
+  "needs": []
+ },
+ {
+  "i": 26,
+  "name": "n174: status pills in Flow's P3 / P2 badge colours",
+  "needs": []
+ },
+ {
+  "i": 27,
+  "name": "n175: premium motion, round 2",
+  "needs": []
+ },
+ {
+  "i": 28,
+  "name": "n170: premium motion",
+  "needs": []
+ },
+ {
+  "i": 29,
+  "name": "n169: Expand on desktop and iPad (standalone)",
+  "needs": []
+ },
+ {
+  "i": 30,
+  "name": "n169: Expand inside Treatment Sheets (covers the sheet, fills the window)",
+  "needs": []
+ },
+ {
+  "i": 31,
+  "name": "gates",
+  "needs": []
+ },
+ {
+  "i": 32,
+  "name": "iPad first, then desktop light and phone",
+  "needs": []
+ },
+ {
+  "i": 33,
+  "name": "n168: Liquid Glass switch knob while held",
+  "needs": []
+ },
+ {
+  "i": 34,
+  "name": "n176: Anesia ⇄ Treatment Sheets ⇄ OR, through the sheet document",
+  "needs": []
+ },
+ {
+  "i": 36,
+  "name": "n180: recovery phase",
+  "needs": []
+ },
+ {
+  "i": 37,
+  "name": "n181: ready to leave recovery, temperature forecast, interns",
+  "needs": []
+ },
+ {
+  "i": 38,
+  "name": "n182: dark mode has no cyan-filled buttons (Admit/Discharge card face instead); one calm recovery green",
+  "needs": []
+ },
+ {
+  "i": 39,
+  "name": "n184: Flow follows the HIG Layout page",
+  "needs": []
+ },
+ {
+  "i": 40,
+  "name": "n185: Flow's floating layer wears Anesia's glass (HIG Materials)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 41,
+  "name": "n186: Flow typography (HIG Typography)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 42,
+  "name": "n187: Flow icons (HIG Icons)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 43,
+  "name": "n188: Flow motion (HIG Motion)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 44,
+  "name": "n189: SF Symbols rules in Flow, as in Anesia",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 45,
+  "name": "n190: one Pravix type scale",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 46,
+  "name": "n191: charts (HIG Charting data)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 47,
+  "name": "n192: drag and drop (HIG Drag and drop)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 48,
+  "name": "n193: entering data (HIG Entering data)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 49,
+  "name": "n194: full screen (HIG Going full screen)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 50,
+  "name": "n195: launching (HIG Launching)",
+  "needs": [
+   39,
+   47
+  ]
+ },
+ {
+  "i": 51,
+  "name": "n196: offering help (HIG Offering help)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 52,
+  "name": "n197: notifications (HIG Managing notifications)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 53,
+  "name": "n198: action sheets (HIG Action sheets)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 54,
+  "name": "n199: buttons (HIG Buttons)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 55,
+  "name": "n200: a sheet doesn't take focus back from a field already chosen",
+  "needs": []
+ },
+ {
+  "i": 56,
+  "name": "n201: context menus (HIG Context menus)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 57,
+  "name": "n202: keyboard Undo and Redo (HIG Edit menus / Undo and redo)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 58,
+  "name": "n203: menus (HIG Menus)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 59,
+  "name": "n204: iPhone — Anesia's charting toolbar stays on screen (HIG Ornaments / Toolbars)",
+  "needs": []
+ },
+ {
+  "i": 60,
+  "name": "n205: pop-up buttons (HIG Pop-up buttons)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 61,
+  "name": "n206: pull-down buttons (HIG Pull-down buttons)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 62,
+  "name": "n207: keyboard and the Mac menu bar (HIG The menu bar)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 63,
+  "name": "n208: toolbars (HIG Toolbars)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 64,
+  "name": "n209: alerts (HIG Alerts)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 65,
+  "name": "n210: panels and page controls (HIG Panels, Page controls)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 66,
+  "name": "n211: sheets and windows (HIG Sheets, Windows)",
+  "needs": [
+   39,
+   47
+  ]
+ },
+ {
+  "i": 67,
+  "name": "n212: search fields and tab bars (HIG Search fields, Tab bars)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 68,
+  "name": "n213: token fields (HIG Token fields) - Reason for visit",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 69,
+  "name": "n214: combo boxes (HIG Combo boxes)",
+  "needs": [
+   39
+  ]
+ },
+ {
+  "i": 70,
+  "name": "n215: pickers and segmented controls (Flow, Anesia, Client Check-In)",
+  "needs": [
+   39,
+   47
+  ]
+ },
+ {
+  "i": 71,
+  "name": "n216: segmented controls and sliders across the suite",
+  "needs": []
+ },
+ {
+  "i": 72,
+  "name": "n218: LIU students' real dates in the curriculum",
+  "needs": []
+ },
+ {
+  "i": 73,
+  "name": "n219: one curriculum (the Overview takes the intern layout; Monday-to-Sunday schedule)",
+  "needs": []
+ },
+ {
+  "i": 74,
+  "name": "n220: schedule check, today at Shoreline, ask the curriculum",
+  "needs": []
+ },
+ {
+  "i": 76,
+  "name": "n222: SGVP catch-up audit (HIG)",
+  "needs": []
+ },
+ {
+  "i": 78,
+  "name": "n224: HIG Icons on the SGVP pages (standard Export and Save, no emoji, small icons as heavy as their text)",
+  "needs": [
+   76
+  ]
+ },
+ {
+  "i": 79,
+  "name": "n225: HIG Layout across the suite (fit, no floating controls, text size, safe areas)",
+  "needs": []
+ },
+ {
+  "i": 80,
+  "name": "n226: HIG Materials across the suite (Anesia's glass on the floating layer)",
+  "needs": []
+ },
+ {
+  "i": 81,
+  "name": "n227: HIG SF Symbols across the suite",
+  "needs": []
+ },
+ {
+  "i": 82,
+  "name": "n228: HIG Motion across the suite",
+  "needs": []
+ },
+ {
+  "i": 83,
+  "name": "n229: HIG Typography across the suite",
+  "needs": []
+ },
+ {
+  "i": 84,
+  "name": "n230: Treatment Sheets — HIG Color, Layout, Materials (synthetic training patients)",
+  "needs": [
+   71
+  ]
+ },
+ {
+  "i": 85,
+  "name": "n231: Treatment Sheets — HIG Typography (legibility), Branding, Icons",
+  "needs": [
+   84
+  ]
+ },
+ {
+  "i": 86,
+  "name": "n232: Treatment Sheets — HIG Motion, SF Symbols, Charting data (synthetic training patients)",
+  "needs": [
+   71,
+   84
+  ]
+ },
+ {
+  "i": 87,
+  "name": "n233: Treatment Sheets — HIG Collaboration and sharing, Drag and drop, Entering data (synthetic training patients)",
+  "needs": [
+   86
+  ]
+ },
+ {
+  "i": 88,
+  "name": "n234: Treatment Sheets — HIG Feedback, File management, Going full screen (synthetic training patients)",
+  "needs": [
+   86
+  ]
+ },
+ {
+  "i": 89,
+  "name": "n235: Treatment Sheets — HIG Launching, Loading, Managing accounts (synthetic training patients)",
+  "needs": [
+   71,
+   84,
+   86
+  ]
+ },
+ {
+  "i": 90,
+  "name": "n236: Treatment Sheets — HIG Managing notifications, Modality, Multitasking (synthetic training patients)",
+  "needs": [
+   71,
+   84,
+   86
+  ]
+ },
+ {
+  "i": 91,
+  "name": "n237: Treatment Sheets — HIG Printing, Searching, Settings (synthetic training patients)",
+  "needs": [
+   71,
+   84,
+   86
+  ]
+ },
+ {
+  "i": 92,
+  "name": "n238: Treatment Sheets — HIG Undo and redo, Charts, Text views (synthetic training patients)",
+  "needs": [
+   71,
+   84,
+   86
+  ]
+ },
+ {
+  "i": 94,
+  "name": "n240: Treatment Sheets — HIG Column views, Disclosure controls, Labels (synthetic training patients)",
+  "needs": [
+   71,
+   84,
+   86
+  ]
+ },
+ {
+  "i": 95,
+  "name": "n241: Treatment Sheets — HIG Lists and tables, Lockups, Outline views (synthetic training patients)",
+  "needs": [
+   71,
+   84,
+   86
+  ]
+ },
+ {
+  "i": 96,
+  "name": "n242: a sheet started in Treatment Sheets joins Flow and Rounds (synthetic training patients)",
+  "needs": []
+ },
+ {
+  "i": 97,
+  "name": "n243: the top bar’s Flow opens Flow, not the app you were last in",
+  "needs": []
+ },
+ {
+  "i": 98,
+  "name": "n245 + n247: Treatment Sheets — light-mode colours; problem names in Title Case (synthetic training patients)",
+  "needs": [
+   71,
+   84,
+   86
+  ]
+ },
+ {
+  "i": 99,
+  "name": "n246: Treatment Sheets — one line per medication product (synthetic training patients)",
+  "needs": [
+   98
+  ]
+ }
+]
