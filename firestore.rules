@@ -3,6 +3,8 @@
 //   allows staff() (signed in, and not the lobby account). The lobby display needs a sign-in (it was public).
 //   Publish ONLY after every front-desk person has their own account — until then this locks the shared login out.
 // Oct 15 2026 (n147) — D-A: On the way rules tightened (tenant + field lists); D-D: sched_months / sched_settings (admin-only writes).
+// Oct 28 2026 (assessment) — SGVP intern reviews: sgvp_review_rounds, sgvp_review_assign, sgvp_reviews (the block marked
+//   "SGVP intern reviews"; nothing else changed).
 rules_version = '2';
 // Oct 13 2026 (n127) — On the way: incoming and eta_log (the two blocks marked "Oct 13 (n127)").
 // Oct 13 2026 (n126) — verify codes: doc_verify (the block marked "Oct 13 (n126)"; nothing else changed).
@@ -404,6 +406,86 @@ match /client_intakes/{docId} {
         && request.resource.data.keys().hasOnly(['tenant_id', 'rec', 'uid', 'name', 'at']);
       allow delete: if staff() && resource.data.uid == request.auth.uid;
     }
+    // ── SGVP intern reviews (sgvp/assessment/) ──────────────────────────────────────────────────────────
+    // Daniel opens a review round and assigns evaluators per intern. Every assignment has exactly one review
+    // document with the same id (<round>__<intern>__<evaluator email>). An evaluator reads and writes only her
+    // own review, only while it is a draft and the round is open; Submit locks it. Daniel and Heather read every
+    // review and may reopen a submitted one; nobody can change a submitted review's ratings or text, and nothing
+    // is ever deleted. Interns and the managers' account have no assignments, so they can read nothing here.
+    function myEmail() { return request.auth.token.get('email', '').lower(); }
+    function reviewReader() {
+      return request.auth != null && myEmail() in ['daniel.giordano@pravix.app', 'heather.galano@vca.com'];
+    }
+    match /sgvp_review_rounds/{roundId} {
+      allow read: if staff();
+      allow create, update: if reviewReader()
+        && request.resource.data.keys().hasOnly(['name', 'kind', 'period', 'year', 'interns', 'status',
+                                                  'created_at', 'created_by', 'updated_at'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 120
+        && request.resource.data.interns is list && request.resource.data.interns.size() <= 20
+        && request.resource.data.status in ['open', 'closed'];
+      allow delete: if false;
+    }
+    match /sgvp_review_assign/{aid} {
+      allow read: if reviewReader() || (staff() && resource.data.email == myEmail());
+      allow create: if reviewReader()
+        && request.resource.data.keys().hasOnly(['round', 'intern', 'email', 'evaluator_name', 'record_id',
+                                                  'created_at', 'created_by'])
+        && request.resource.data.email == request.resource.data.email.lower()
+        && aid == request.resource.data.round + '__' + request.resource.data.intern + '__' + request.resource.data.email
+        && exists(/databases/$(database)/documents/sgvp_review_rounds/$(request.resource.data.round))
+        && request.resource.data.intern in get(/databases/$(database)/documents/sgvp_review_rounds/$(request.resource.data.round)).data.interns
+        && request.resource.data.record_id is string && request.resource.data.record_id.size() <= 40;
+      allow update: if reviewReader()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['evaluator_name']);
+      // an assignment can be taken back only before the evaluator has started
+      allow delete: if reviewReader() && !exists(/databases/$(database)/documents/sgvp_reviews/$(aid));
+    }
+    match /sgvp_reviews/{aid} {
+      function asg() { return get(/databases/$(database)/documents/sgvp_review_assign/$(aid)).data; }
+      function roundOpen(r) { return get(/databases/$(database)/documents/sgvp_review_rounds/$(r)).data.status == 'open'; }
+      function content() {
+        return ['answers', 'notes', 'observations', 'progress', 'updated_at', 'status', 'submitted_at'];
+      }
+      allow read: if reviewReader() || (staff() && resource.data.email == myEmail());
+      allow create: if staff()
+        && exists(/databases/$(database)/documents/sgvp_review_assign/$(aid))
+        && asg().email == myEmail()
+        && roundOpen(asg().round)
+        && request.resource.data.keys().hasOnly(['round', 'intern', 'email', 'uid', 'evaluator_name', 'record_id',
+                                                  'answers', 'notes', 'observations', 'progress',
+                                                  'status', 'created_at', 'updated_at'])
+        && request.resource.data.email == myEmail()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.round == asg().round
+        && request.resource.data.intern == asg().intern
+        && request.resource.data.record_id == asg().record_id
+        && request.resource.data.evaluator_name == asg().evaluator_name
+        && request.resource.data.status == 'draft'
+        && request.resource.data.created_at == request.time
+        && request.resource.data.updated_at == request.time;
+      allow update: if
+        // the evaluator, while it is her draft and the round is open
+        ( staff()
+          && resource.data.email == myEmail()
+          && resource.data.status == 'draft'
+          && roundOpen(resource.data.round)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(content())
+          && request.resource.data.updated_at == request.time
+          && ( (request.resource.data.status == 'draft'
+                && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['submitted_at']))
+            || (request.resource.data.status == 'submitted'
+                && request.resource.data.submitted_at == request.time) ) )
+        // Daniel or Heather reopening a submitted review (ratings and text untouched)
+        || ( reviewReader()
+          && resource.data.status == 'submitted'
+          && request.resource.data.status == 'draft'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reopened_at', 'reopened_by'])
+          && request.resource.data.reopened_at == request.time
+          && request.resource.data.reopened_by == myEmail() );
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
