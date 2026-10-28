@@ -4421,6 +4421,9 @@ async def main():
                 for vp, touch in (((1440, 900), False), ((390, 844), True)):
                     ctx, pg, errs = await new_page(br, user=FU229, vp=vp, touch=touch)
                     await pg.goto(f'http://127.0.0.1:{PORT}/' + path); await pg.wait_for_timeout(2200)
+                    if path == 'kura/':
+                        try: await pg.wait_for_function("!document.querySelector('.auth-page')", timeout=10000); await pg.wait_for_timeout(400)
+                        except Exception: pass
                     r = await pg.evaluate(T229); key = path + '@' + str(vp[0])
                     for x in ('fam', 'small', 'off', 'track', 'light'):
                         if r[x]: bad[x][key] = r[x]

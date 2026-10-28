@@ -36,10 +36,15 @@ def shards(n):
         if best is None or load < best[0]: best = (load, parts)
     return best[1]
 
+DETAIL = {}
 def run(sel, tag):
     env = dict(os.environ, PYTHONUNBUFFERED='1', SECTIONS=','.join(map(str, sel)), HELPERS=','.join(map(str, closure(sel))), RESULTS=os.path.join(SHOTS, f'results-{tag}.json'))
     t0 = time.time()
-    p = subprocess.run([sys.executable, os.path.join(HERE, 'suite.py'), SITE, SHOTS], env=env)
+    p = subprocess.Popen([sys.executable, os.path.join(HERE, 'suite.py'), SITE, SHOTS], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    for line in p.stdout:   # shown live, and each failure's details kept for the annotations
+        sys.stdout.write(line)
+        if line.startswith('FAIL '): DETAIL.setdefault(line[5:].split('  ', 1)[0].strip(), line[5:].strip())
+    p.wait()
     try: res = json.load(open(env['RESULTS'], encoding='utf-8'))
     except Exception: res = None
     return res, time.time() - t0, p.returncode
@@ -73,7 +78,9 @@ else:
         summary.append(f'- ⚠️ flaky: {NAME[k]}')
     for k in still:
         for kk, nm, c in res:
-            if kk == k and not c: print(f'::error title={NAME[k][:60]}::{nm[:300]}')
+            if kk == k and not c:
+                d = DETAIL.get(nm.strip(), nm)
+                print(f'::error title={NAME[k][:60]}::{d[:900]}'); summary.append(f'  - {d[:400]}')
         summary.append(f'- ❌ {NAME[k]}')
     for k in missing: summary.append(f'- (no checks reported) {NAME[k]}')
     ok_all = not still
