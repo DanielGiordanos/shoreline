@@ -1,6 +1,7 @@
-"""Audit harness for Treatment Sheets (n255): fake Firebase, synthetic training patients, fixed clock."""
+"""The Treatment harness the per-build checks use (was n255/audit/h.py): fake Firebase, the synthetic training patients,
+the stand-in drug library, the pinned clock, and ts() to open a sheet in any size, look and section."""
 import os, json, threading, functools, http.server, socketserver
-SUITE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+SUITE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 FAKE = open(os.path.join(SUITE, 'fakefs.js')).read()
 SEED = json.loads(open(os.path.join(SUITE, 'seed.json')).read())
 SEED.update(json.load(open(os.path.join(SUITE, 'seed_ts_n230.json'))))
@@ -55,7 +56,20 @@ async def ts(br, port, vp=(1440, 900), dark=True, touch=False, media=None, big=F
     await pg.goto(f'http://127.0.0.1:{port}/treatment/'); await pg.wait_for_timeout(wait)
     if sheet: await pg.evaluate(f"tsOpenSheet('{sheet}')"); await pg.wait_for_timeout(900)
     if view: await pg.evaluate(f"selectCTab('{view}')"); await pg.wait_for_timeout(900)
+    await settle(pg)
     return ctx, pg, errs
+
+SETTLE = """(()=>{const g=document.getElementById('sheetInner'),s=document.getElementById('sheetScroll');
+  return [document.readyState, g?g.querySelectorAll('.mark').length:-1, g?[...g.querySelectorAll('.rl-off')].filter(e=>!e.hidden).length:-1,
+          s?s.scrollWidth:-1, document.querySelectorAll('[tabindex="0"]').length, document.body.className].join('|')})()"""
+async def settle(pg, timeout=6000):
+    """wait until the page stops changing (three looks 120 ms apart agree). A cold browser on a busy machine was still
+    laying out the sheet when the first check looked — t255 failed on GitHub's WebKit now and then."""
+    last, same, waited = None, 0, 0
+    while waited < timeout and same < 2:
+        cur = await pg.evaluate(SETTLE)
+        same = same + 1 if cur == last else 0
+        last = cur; await pg.wait_for_timeout(120); waited += 120
 
 # ---- probes (JS) ----
 VIS = r"""const vis=e=>{if(!e.getClientRects().length)return false;const c=getComputedStyle(e);if(c.visibility==='hidden'||+c.opacity===0)return false;const r=e.getBoundingClientRect();if(r.width<1||r.height<1)return false;
@@ -113,3 +127,5 @@ TEXTSIZE = VIS + DESC + r"""
 
 ANIM = r"""(()=>{const a=document.getAnimations().map(x=>{const t=x.effect&&x.effect.target;const k=x.effect&&x.effect.getKeyframes?x.effect.getKeyframes():[];const props=[...new Set(k.flatMap(f=>Object.keys(f)).filter(p=>!['offset','easing','composite','computedOffset'].includes(p)))];
   const tim=x.effect.getComputedTiming();return {name:x.animationName||x.transitionProperty||x.constructor.name,props,inf:tim.iterations===Infinity,dur:tim.duration,target:t?(t.id||t.className&&String(t.className).slice(0,40)||t.tagName):''}});return a})()"""
+
+__all__ = [n for n in dir() if not n.startswith('__')]
