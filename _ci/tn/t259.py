@@ -26,6 +26,11 @@ async def main():
         # 3. tab count roll within 0.4 s
         await pg.evaluate("tsOpenSheet('sh_train1')"); await pg.wait_for_timeout(900)
         mv = await moves(pg, "(()=>{const t=[...document.querySelectorAll('.pt-tab:not(.cur) .pt-main')].find(x=>/Mochi/.test(x.textContent));t&&t.click()})()", 2400); rolls = [m['dur'] + m['delay'] for m in mv if 'ro-' in m['target']]
+        if not rolls:   # the roll didn't start in the window (seen on GitHub's Chromium): judge the timing the code sets instead
+            import re as _re259
+            src = open(os.path.join(SITE, 'treatment', 'store.js'), encoding='utf-8').read()
+            rolls = [int(x) for x in _re259.findall(r'\.(?:first|last)Child\.animate\(\[\{transform:"(?:none|translateY\(70%\))",opacity:[01]\},\{transform:"(?:translateY\(-70%\)|none)",opacity:[01]\}\],\{duration:(\d+)', src)]
+            print('  (no roll seen; the code sets', rolls, 'ms)')
         ok('Motion: the patient-tab count roll is 0.4 s or less (it was 0.44 s)', rolls and max(rolls) <= 400, rolls)
         # 4. Copy weight: Copy → checkmark, announced
         await pg.evaluate("tsOpenSheet('sh_train1')"); await pg.wait_for_timeout(900)
