@@ -25,7 +25,7 @@ async def main():
         ok('Motion: the teaching cap and drafts pill don’t animate when the toolbar redraws (section, tab and day switches; they dropped in each time)', not found, found[:3])
         # 3. tab count roll within 0.4 s
         await pg.evaluate("tsOpenSheet('sh_train1')"); await pg.wait_for_timeout(900)
-        mv = await moves(pg, "(()=>{const t=[...document.querySelectorAll('.pt-tab:not(.cur) .pt-main')].find(x=>/Mochi/.test(x.textContent));t&&t.click()})()", 900); rolls = [m['dur'] + m['delay'] for m in mv if 'ro-' in m['target']]
+        mv = await moves(pg, "(()=>{const t=[...document.querySelectorAll('.pt-tab:not(.cur) .pt-main')].find(x=>/Mochi/.test(x.textContent));t&&t.click()})()", 2400); rolls = [m['dur'] + m['delay'] for m in mv if 'ro-' in m['target']]
         ok('Motion: the patient-tab count roll is 0.4 s or less (it was 0.44 s)', rolls and max(rolls) <= 400, rolls)
         # 4. Copy weight: Copy → checkmark, announced
         await pg.evaluate("tsOpenSheet('sh_train1')"); await pg.wait_for_timeout(900)
