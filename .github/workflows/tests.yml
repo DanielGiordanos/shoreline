@@ -27,8 +27,8 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       - name: Fonts (the same faces as the build machine, so text measures the same)
@@ -61,8 +61,8 @@ jobs:
       matrix:
         browser: [chromium, webkit]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       - name: Fonts
