@@ -1,0 +1,81 @@
+# Pravix tests (Oct 28 2026). Every push to a branch other than main runs the whole regression suite, split across
+# six machines, plus the per-build checks in Chromium and WebKit. A build goes to a branch, these run, and merging
+# it into main is the deploy.
+#
+# Licensed data never comes here: the drug library's checks need it and run on the build machine before each deploy.
+# The few sections that carry staff-only data (who is off on each holiday) also run there only.
+name: Tests
+on:
+  push:
+    branches-ignore: [main]
+    paths-ignore: ['firestore.rules']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  PLAYWRIGHT_VERSION: '1.56.0'
+jobs:
+  suite:
+    name: Suite ${{ matrix.shard }}/6
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Fonts (the same faces as the build machine, so text measures the same)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-inter fonts-liberation fonts-dejavu-core fonts-noto-color-emoji fonts-noto-cjk > /dev/null
+          sudo cp _ci/fonts/56-prefer-inter.conf /etc/fonts/conf.d/ && fc-cache -f > /dev/null
+      - name: Playwright
+        run: |
+          pip install -q "playwright==$PLAYWRIGHT_VERSION"
+          python -m playwright install --with-deps chromium > /dev/null
+      - name: Suite
+        env:
+          TZ: America/New_York
+          YK_SEED: _ci/yk_standin.json   # a stand-in library: one drug name, no doses (the licensed one stays off GitHub)
+        run: python _ci/run.py . shots --shard ${{ matrix.shard }}/6
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: suite-${{ matrix.shard }}
+          path: shots/
+          retention-days: 7
+
+  checks:
+    name: Per-build checks (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-inter fonts-liberation fonts-dejavu-core fonts-noto-color-emoji fonts-noto-cjk > /dev/null
+          sudo cp _ci/fonts/56-prefer-inter.conf /etc/fonts/conf.d/ && fc-cache -f > /dev/null
+      - name: Playwright
+        run: |
+          pip install -q "playwright==$PLAYWRIGHT_VERSION"
+          python -m playwright install --with-deps ${{ matrix.browser }} > /dev/null
+      - name: Checks
+        env:
+          TZ: America/New_York
+          WK: ${{ matrix.browser == 'webkit' && '1' || '' }}
+        run: python _ci/tn/run_tn.py .
