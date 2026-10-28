@@ -56,7 +56,20 @@ async def ts(br, port, vp=(1440, 900), dark=True, touch=False, media=None, big=F
     await pg.goto(f'http://127.0.0.1:{port}/treatment/'); await pg.wait_for_timeout(wait)
     if sheet: await pg.evaluate(f"tsOpenSheet('{sheet}')"); await pg.wait_for_timeout(900)
     if view: await pg.evaluate(f"selectCTab('{view}')"); await pg.wait_for_timeout(900)
+    await settle(pg)
     return ctx, pg, errs
+
+SETTLE = """(()=>{const g=document.getElementById('sheetInner'),s=document.getElementById('sheetScroll');
+  return [document.readyState, g?g.querySelectorAll('.mark').length:-1, g?[...g.querySelectorAll('.rl-off')].filter(e=>!e.hidden).length:-1,
+          s?s.scrollWidth:-1, document.querySelectorAll('[tabindex="0"]').length, document.body.className].join('|')})()"""
+async def settle(pg, timeout=6000):
+    """wait until the page stops changing (three looks 120 ms apart agree). A cold browser on a busy machine was still
+    laying out the sheet when the first check looked — t255 failed on GitHub's WebKit now and then."""
+    last, same, waited = None, 0, 0
+    while waited < timeout and same < 2:
+        cur = await pg.evaluate(SETTLE)
+        same = same + 1 if cur == last else 0
+        last = cur; await pg.wait_for_timeout(120); waited += 120
 
 # ---- probes (JS) ----
 VIS = r"""const vis=e=>{if(!e.getClientRects().length)return false;const c=getComputedStyle(e);if(c.visibility==='hidden'||+c.opacity===0)return false;const r=e.getBoundingClientRect();if(r.width<1||r.height<1)return false;
