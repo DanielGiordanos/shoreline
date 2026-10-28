@@ -943,8 +943,7 @@ async def main():
             await pg.wait_for_timeout(600); await pg.evaluate("document.querySelector('.an-tools [data-zoom=\"5\"]').click();0"); await pg.wait_for_timeout(600)
             # 3. sparkline → trend
             await pg.locator('.an-tile[data-vk=hr] .an-spark').scroll_into_view_if_needed()   # n196: the tip now sits at the foot of the chart, so Got it scrolls the page
-            box = await pg.locator('.an-tile[data-vk=hr] .an-spark').bounding_box()
-            await pg.mouse.click(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2); await pg.wait_for_selector('#anSheet .an-trend'); await pg.wait_for_timeout(500)
+            await pg.locator('.an-tile[data-vk=hr] .an-spark').click(); await pg.wait_for_selector('#anSheet .an-trend'); await pg.wait_for_timeout(500)
             tr = await pg.evaluate("[document.getElementById('anShT').textContent, document.querySelectorAll('#anSheet .an-trend circle').length, !!document.getElementById('anVForm')]")
             ok('n175: tapping a tile’s sparkline opens that vital’s trend (not the vitals form)', tr[0] == 'Heart rate' and tr[1] >= 5 and not tr[2], tr)
             await pg.keyboard.press('Escape'); await pg.wait_for_timeout(400)
