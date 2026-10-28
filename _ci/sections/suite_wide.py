@@ -489,8 +489,10 @@ async def s_n229(br):
             ctx, pg, errs = await new_page(br, user=FU229, vp=vp, touch=touch)
             await pg.goto(f'http://127.0.0.1:{PORT}/' + path); await pg.wait_for_timeout(2200)
             if path == 'kura/':
-                try: await pg.wait_for_function("!document.querySelector('.auth-page')", timeout=10000); await pg.wait_for_timeout(400)
-                except Exception: pass
+                # Kura can't sign in with the fake Firebase: it stays on "Opening Kura…" here and sometimes reaches its sign-in
+                # page on GitHub, so what got measured depended on the machine. Kura is measured only when its app is showing.
+                if not await until(pg, "!!document.querySelector('.kura-rail')", 8000):
+                    print('  (n229: Kura isn’t signed in here — left out of this measurement)'); await ctx.close(); continue
             r = await pg.evaluate(T229); key = path + '@' + str(vp[0])
             for x in ('fam', 'small', 'off', 'track', 'light'):
                 if r[x]: bad[x][key] = r[x]
