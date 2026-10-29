@@ -65,13 +65,17 @@ async def s_t260(br):
     ok('Writing: with a mouse, the band’s tooltip still offers Option/Alt-click for all sections', all('-click: all sections' in x[1] for x in tip if x[1]), tip[:2])
     # Writing 3. the estimate says what to enter
     await pg.evaluate("openEstimate()"); await until(pg, "!!document.getElementById('esHigh')", 3000)
-    await pg.fill('#esLow', '5000'); await pg.fill('#esHigh', '1000'); await pg.locator('#esHigh').blur(); await pg.wait_for_timeout(300)
+    await pg.wait_for_timeout(1000)   # the form's checks attach just after it opens (n233 waits the same); on GitHub's slower machines a blur before that went unseen
+    HIGH = "/Enter a high end that’s at least the low end/.test(document.querySelector('#tsModal').innerText)"
+    for _ in range(3):
+        await pg.fill('#esLow', '5000'); await pg.fill('#esHigh', '1000'); await pg.locator('#esHigh').blur()
+        if await until(pg, HIGH, 2000): break
     em = await pg.evaluate("document.querySelector('#tsModal').innerText")
     await pg.fill('#esHigh', '6000'); await pg.fill('#esCur', 'about 900'); await pg.wait_for_timeout(200)
     await pg.evaluate("(()=>{document.querySelectorAll('#toastWrap .ctoast').forEach(t=>t.remove());const b=document.querySelector('#tsModal .tm-foot .primary');b&&b.click()})()"); await pg.wait_for_timeout(400)
     et = await pg.evaluate(TOASTS)
     ok('Writing: the estimate says what to enter — “Enter a high end that’s at least the low end”, “Enter current charges as a number, like 1250” (it said “… must be …”)',
-       'Enter a high end that’s at least the low end' in em and any('Enter current charges as a number, like 1250' in x for x in et), [em[-200:], et])
+       'Enter a high end that’s at least the low end' in em and any('Enter current charges as a number, like 1250' in x for x in et), [[l for l in em.split('\n') if 'high end' in l.lower() or 'Enter' in l], et])
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
     ok('no page errors (writing checks)', not e, e[:2]); await ctx.close()
     # Writing 3./4./7./8. the messages that only show on a failure, read from the code the page loads
