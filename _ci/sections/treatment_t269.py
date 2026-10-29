@@ -41,4 +41,18 @@ async def s_t269(br):
     ctx, pg, e = await ts(br, PORT, vp=(1024, 1366), touch=True, view='sheet')
     p0 = await pg.evaluate(ST); await pg.click('#ctab-sheet .brief-toggle'); await pg.wait_for_timeout(500); p1 = await pg.evaluate(ST)
     ok('Split views: on iPad Patient info says whether it’s showing, before and after it’s chosen', p0['tog'] and p0['exp'] == 'false' and p1['open'] and p1['exp'] == 'true', [p0, p1])
+    DR = """(()=>{const s=document.getElementById('clinSidebar'),r=s.getBoundingClientRect(),c=getComputedStyle(s);const hit=document.elementFromPoint(r.x+r.width/2,r.y+Math.min(220,r.height/2));
+      const bars=Math.max(...['nav.topnav','.subnav','.pt-row'].map(q=>document.querySelector(q)).filter(e=>e&&e.getClientRects().length).map(e=>e.getBoundingClientRect().bottom).filter(b=>b<innerHeight/2));
+      return {inside:!!(hit&&s.contains(hit)),top:Math.round(r.top),bars:Math.round(bars),left:Math.round(r.left),radius:c.borderTopLeftRadius,bg:c.backgroundColor,blur:c.backdropFilter}})()"""
+    d = await pg.evaluate(DR)
+    ok('Split views: the Patient info drawer is on top — what’s under a tap inside it is the drawer, not its scrim (a tap inside closed it) — and it sits below the bars, solid, 12 pt from the edge, with 20 pt corners',
+       d['inside'] and d['top'] >= d['bars'] + 8 and d['left'] == 12 and d['radius'] == '20px' and d['bg'] not in ('rgba(0, 0, 0, 0)',) and d['blur'] in ('none', ''), d)
+    box = await pg.evaluate("(()=>{const h=[...document.querySelectorAll('#clinSidebar h4')].find(h=>h.getClientRects().length);const r=h.getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()")   # a heading: nothing to open
+    await pg.mouse.click(box[0], box[1]); await pg.wait_for_timeout(400)
+    ok('…a tap inside it leaves it open', await pg.evaluate("document.getElementById('clinSidebar').classList.contains('open')"), '')
+    await pg.mouse.click(800, 900); await pg.wait_for_timeout(500)
+    ok('…and a tap outside closes it', not await pg.evaluate("document.getElementById('clinSidebar').classList.contains('open')"), '')
+    await pg.evaluate("selectCTab('vitals')"); await pg.wait_for_timeout(700); await pg.evaluate("selectCTab('sheet')"); await pg.wait_for_timeout(900)
+    await pg.click('#ctab-sheet .brief-toggle'); await pg.wait_for_timeout(500)
+    ok('…and it still opens after the sheet is redrawn', await pg.evaluate("document.getElementById('clinSidebar').classList.contains('open')") and (await pg.evaluate(DR))['inside'], '')
     ok('no page errors (iPad)', not e, e[:2]); await ctx.close()
