@@ -886,6 +886,16 @@ body:not(.dark) .a-sheet{background:#fff}
 .pvx-actions .live.off{background:rgba(232,168,48,.14);border-color:rgba(232,168,48,.4);color:#8A5D00}
 body.dark .pvx-actions .live.off{color:#F0BC55}
 .pvx-actions .live.off i{background:currentColor}
+.a-search{position:relative;display:block;margin-top:6px}
+.a-search>svg{position:absolute;left:12px;top:50%;width:18px;height:18px;margin-top:-9px;fill:none;stroke:var(--a-ink-2);stroke-width:2;stroke-linecap:round;pointer-events:none}
+.a-field .a-search input{width:100%;padding-left:38px;padding-right:44px;margin-top:0}
+.a-search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
+.a-search-x{position:absolute;right:2px;top:50%;width:40px;height:40px;margin-top:-20px;display:grid;place-items:center;border:0;border-radius:10px;background:transparent;color:var(--a-ink-2);cursor:pointer}
+.a-search-x[hidden]{display:none}
+.a-search-x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.a-search-x:hover{background:var(--a-soft)}
+.a-search-x:active{background:var(--a-line)}
+.a-search-x:focus-visible{outline:2px solid var(--a-acc);outline-offset:1px}
 .a-pick{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--a-soft);border-radius:12px}
 .a-pick button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:6px 12px;border:0;border-bottom:1px solid var(--a-soft);background:transparent;text-align:left;cursor:pointer}
 .a-pick button:last-child{border-bottom:0}
@@ -955,8 +965,8 @@ body:not(.dark) .a-note{background:#0E1A2B}
 /* the printed record is built into #printRoot; everything else is hidden on paper */
 #printRoot{display:none}
 @media print{
-  body>*:not(#printRoot){display:none!important}
-  #printRoot{display:block!important}
+  html.pr-on body>*:not(#printRoot){display:none!important}
+  html.pr-on #printRoot{display:block!important}
 }
 
 /* screen-reader-only text */
@@ -2652,7 +2662,7 @@ function buildPrintRecord(r) {
     const taken = new Set(S.all.assigns.filter(a => a.intern === slug).map(a => a.email));
     let pick = null; const opts = { discard: 'Discard this assignment?' };
     sheet(`<h2 id="aSheetT">Assign an evaluator</h2><p>${esc(fullName(i))} · ${esc(r.name)}. Once assigned, the evaluator sees this intern in My reviews.</p>
-      <label class="a-field">Find a doctor<input name="q" type="search" placeholder="Name or service" autocomplete="off"></label>
+      <label class="a-field">Find a doctor<span class="a-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input name="q" type="search" placeholder="Name or service" autocomplete="off"><button type="button" class="a-search-x" aria-label="Clear search" hidden>${ICON.x}</button></span></label>
       <div class="a-pick" role="listbox" aria-label="Doctors"></div>
       <details style="margin-top:10px"><summary class="a-btn quiet small" style="display:inline-flex"><svg class="a-disc" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>Someone not in the Directory</summary>
         <label class="a-field">Email<input name="email" type="email" placeholder="name@vca.com" autocapitalize="off" spellcheck="false"></label></details>
@@ -2692,7 +2702,15 @@ function buildPrintRecord(r) {
         if (to < 0) { q.focus(); return; }
         const t = all[Math.min(to, all.length - 1)]; all.forEach(b => { b.tabIndex = b === t ? 0 : -1; }); t.focus();
       });
-      opts.escape = () => { if (list.contains(document.activeElement)) { q.focus(); return true; } return false; };
+      /* Escape: from the list, back to the field; in the field with text, clear it; otherwise the sheet's own Escape */
+      const qx = box.querySelector('.a-search-x'), showX = () => { qx.hidden = !q.value; };
+      const clearQ = () => { q.value = ''; showX(); draw(); q.focus(); };
+      qx.addEventListener('click', clearQ); q.addEventListener('input', showX);
+      opts.escape = () => {
+        if (list.contains(document.activeElement)) { q.focus(); return true; }
+        if (document.activeElement === q && q.value) { clearQ(); return true; }
+        return false;
+      };
       pn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ok.click(); } });
       list.addEventListener('click', e => {
         const b = e.target.closest('button[data-email]'); if (!b || b.disabled) return;
@@ -3082,24 +3100,38 @@ function buildPrintRecord(r) {
     }));
   }
 
+  /* What prints: the page's Print buttons build a record and mark it (html.pr-on); the browser's own
+     File › Print / ⌘P builds the open review's record, or prints the page as shown. Nothing is left over afterwards. */
+  let printTitle = null;
+  function printPrep() { if (printTitle === null) printTitle = document.title; document.documentElement.classList.add('pr-on'); }
+  function buildOpenRecord() {
+    const o = S.open; if (!o) return false;
+    buildPrintRecord({ rev: Object.assign({}, o.rev, { evaluator_name: o.a.evaluator_name, record_id: o.a.record_id }),
+      round: o.round, internName: fullName(intern(o.a.intern)) });
+    return true;
+  }
+  addEventListener('beforeprint', () => {
+    if (document.documentElement.classList.contains('pr-on')) return;   // a Print button already built it
+    const r = document.getElementById('printRoot'); if (r) r.innerHTML = '';
+    if (S.open) { flush(); printPrep(); buildOpenRecord(); }
+  });
+  addEventListener('afterprint', () => {
+    document.documentElement.classList.remove('pr-on');
+    const r = document.getElementById('printRoot'); if (r) r.innerHTML = '';
+    if (printTitle !== null) { document.title = printTitle; printTitle = null; }
+  });
   function printIntern(slug) {
     const A = S.all, r = A.rounds.find(x => x.id === A.roundId); if (!r) return;
     const i = intern(slug);
     const list = A.assigns.filter(a => a.intern === slug && (A.reviews[a.id] || {}).status === 'submitted').sort((a, b) => a.record_id.localeCompare(b.record_id));
     if (!list.length) return;
-    const title = document.title;
-    addEventListener('afterprint', () => { document.title = title; }, { once: true });
+    printPrep();
     buildPrintRecords(list.map(a => ({ rev: Object.assign({}, A.reviews[a.id], { evaluator_name: a.evaluator_name, record_id: a.record_id }), round: r, internName: fullName(i) })),
       `${fullName(i)} · ${r.name} · ${list.length} submitted review${list.length === 1 ? '' : 's'}`);
     requestAnimationFrame(() => window.print());
   }
   function printReview() {
-    const o = S.open;
-    flush();
-    const title = document.title;
-    addEventListener('afterprint', () => { document.title = title; }, { once: true });
-    buildPrintRecord({ rev: Object.assign({}, o.rev, { evaluator_name: o.a.evaluator_name, record_id: o.a.record_id }),
-      round: o.round, internName: fullName(intern(o.a.intern)) });
+    flush(); printPrep(); buildOpenRecord();
     requestAnimationFrame(() => window.print());
   }
 
