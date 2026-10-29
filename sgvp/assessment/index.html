@@ -658,6 +658,8 @@ body.dark #asm,body.dark .a-sheet-wrap{--a-card:#0E1628;--a-card-2:#131E34;--a-l
   --a-ok-ink:#5FD39B;--a-warn-ink:#F0BC55;--a-ph:#8BA3BE}
 body:not(.dark) #asm,body:not(.dark) .a-sheet-wrap{--a-card:#FFFFFF;--a-card-2:#F6F8FB;--a-line:rgba(12,41,82,.12);--a-soft:rgba(12,41,82,.07)}
 #asm,.a-sheet-wrap{font-variant-numeric:tabular-nums}
+body.dark #asm,body.dark .a-sheet-wrap,body.dark .a-note{color-scheme:dark}
+body:not(.dark) #asm,body:not(.dark) .a-sheet-wrap{color-scheme:light}
 #asm{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:30px 32px 96px;color:var(--a-ink)}
 .a-sheet-wrap *,.a-sheet-wrap *::before,.a-sheet-wrap *::after{box-sizing:border-box}
 .a-sheet-wrap button{font-family:inherit}
@@ -754,6 +756,12 @@ body:not(.dark) #asm,body:not(.dark) .a-sheet-wrap{--a-card:#FFFFFF;--a-card-2:#
 .a-q:first-of-type{margin-top:12px}
 .a-q .tag{font-size:.6875rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--a-ink-3)}
 .a-q .tag.ok{color:var(--a-ok-ink)}
+.a-q .tag.ok::before,.a-foot .st.ok::before,.a-list .a-ok::before{content:"";display:inline-block;width:1.15em;height:1.15em;margin-right:.3em;vertical-align:-.2em;background:currentColor;-webkit-mask:var(--a-ck) center/contain no-repeat;mask:var(--a-ck) center/contain no-repeat}
+#asm,.a-sheet-wrap{--a-ck:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}
+@media (forced-colors:active){.a-q .tag.ok::before,.a-foot .st.ok::before,.a-list .a-ok::before{background:CanvasText}}
+.a-list .a-ok{font-weight:600;color:var(--a-ok-ink)}
+.a-step .n svg,.a-lvl b.n svg{width:1.05em;height:1.05em;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.a-lvl b.n svg{stroke-width:2}
 .a-q h3{margin:6px 0 12px;font-size:1rem;line-height:1.45;font-weight:600}
 .a-scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) auto;gap:6px}
 .a-score{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:6px 4px;border-radius:12px;border:1px solid var(--a-line);background:var(--a-card-2);cursor:pointer;text-align:center}
@@ -763,6 +771,8 @@ body:not(.dark) #asm,body:not(.dark) .a-sheet-wrap{--a-card:#FFFFFF;--a-card-2:#
 .a-score[aria-checked=true]{background:var(--a-fill);border-color:transparent;color:var(--a-fill-ink)}
 .a-score[aria-checked=true] span{color:inherit}
 .a-score.no{min-width:84px;padding:6px 10px}
+.a-score.no svg{width:1.15em;height:1.15em;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.a-score.no{gap:4px}
 .a-score.no[aria-checked=true]{background:var(--a-ink-3);color:var(--a-card)}
 .a-score:disabled{cursor:default}
 .a-score:disabled:not([aria-checked=true]){opacity:.55}
@@ -833,8 +843,13 @@ body:not(.dark) .a-sheet{background:#fff}
 .a-check input{width:18px;height:18px;accent-color:#38BDD2}
 .a-err{margin:10px 0 0;font-size:.875rem;color:#BE3A2E}
 body.dark .a-err{color:#FF8A80}
-.a-note{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9600;max-width:min(560px,calc(100% - 32px));padding:12px 16px;border-radius:12px;background:#131E34;color:#E6EEF6;border:1px solid rgba(150,185,220,.2);font-size:.875rem;line-height:1.45;box-shadow:0 12px 32px rgba(0,0,0,.35)}
+.a-note{display:flex;align-items:center;gap:10px;position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9600;max-width:min(560px,calc(100% - 32px));padding:12px 16px;border-radius:12px;background:#131E34;color:#E6EEF6;border:1px solid rgba(150,185,220,.2);font-size:.875rem;line-height:1.45;box-shadow:0 12px 32px rgba(0,0,0,.35)}
 body:not(.dark) .a-note{background:#0E1A2B}
+.a-note svg{flex:none;width:1.25em;height:1.25em;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.a-note.stay{border-color:rgba(255,138,128,.45)}
+.a-note-x{flex:none;display:grid;place-items:center;width:44px;height:44px;margin:-10px -10px -10px 0;border:0;border-radius:10px;background:transparent;color:inherit;cursor:pointer}
+.a-note-x:hover{background:rgba(255,255,255,.08)}
+.a-note-x:focus-visible{outline:2px solid #38BDD2;outline-offset:2px}
 
 /* ── smaller screens ── */
 @media (max-width:1180px){
@@ -866,7 +881,7 @@ body:not(.dark) .a-note{background:#0E1A2B}
 /* Increase Contrast: stronger inks and edges, solid fills */
 @media (prefers-contrast:more){
   #asm,.a-sheet-wrap{--a-ink-3:var(--a-ink-2);--a-line:currentColor;--a-fill:#0B5A6E;--a-ok-ink:#145A3B;--a-warn-ink:#6E4A00;--a-ph:#4A5D74}
-  body.dark #asm,body.dark .a-sheet-wrap{--a-line:rgba(200,220,240,.55);--a-ok-ink:#7FE6B4;--a-warn-ink:#FFD27A;--a-ph:#A9BDD3}
+  body.dark #asm,body.dark .a-sheet-wrap{--a-ink-2:#D3E0EE;--a-ink-3:#D3E0EE;--a-line:rgba(200,220,240,.55);--a-ok-ink:#7FE6B4;--a-warn-ink:#FFD27A;--a-ph:#A9BDD3}
   .a-score,.a-btn,.a-pill,.a-check,.a-step .n{border-color:currentColor}
   .a-score[aria-checked=true]{outline:2px solid currentColor;outline-offset:-4px}
 }
@@ -949,6 +964,7 @@ html.pvx-signed-out body{overflow:hidden}
 .pr-score th{text-align:left;font-size:6.5pt;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
   color:#8A9099;padding:0 6px 5px;border-bottom:1px solid #D8DDE3;}
 .pr-score th.n,.pr-score td.n{text-align:right;}
+.pr-score th.n{white-space:nowrap;}
 .pr-score td{padding:5px 6px;border-bottom:1px solid #EDEFF2;font-size:9pt;vertical-align:middle;}
 .pr-score tr:last-child td{border-bottom:0;}
 .pr-score td.d{font-weight:600;}
@@ -957,6 +973,12 @@ html.pvx-signed-out body{overflow:hidden}
 .pr-score td.rated{font-variant-numeric:tabular-nums;color:#5C6672;width:62px;text-align:right;}
 .pr-bar{display:inline-block;width:78px;height:5px;background:#EDEFF2;position:relative;vertical-align:middle;}
 .pr-bar i{position:absolute;left:0;top:0;bottom:0;background:#0C2952;}
+.pr-bar{background-image:linear-gradient(#C9CED6,#C9CED6),linear-gradient(#C9CED6,#C9CED6),linear-gradient(#C9CED6,#C9CED6);background-size:1px 100%;background-position:0 0,50% 0,100% 0;background-repeat:no-repeat;}
+.pr-bar.none{background:transparent;}
+.pr-score th.sc{width:90px;}
+.pr-ticks{display:flex;justify-content:space-between;width:78px;font-variant-numeric:tabular-nums;letter-spacing:0;}
+.pr-ticks b{font-weight:800;}
+.pr-mnote{margin:-10px 0 14px;font-size:7.5pt;line-height:1.45;color:#5C6672;}
 
 /* ── anchor legend (cover) ── */
 .pr-legend{border:1px solid #D8DDE3;padding:9px 11px;}
@@ -1241,6 +1263,10 @@ const HOSPITAL = 'VCA Shoreline Veterinary Referral & Emergency Center';
 const DIRECTOR = 'Heather Galano, VMD, DACVIM · Medical and Program Director';
 /* who reads every review and runs the rounds: keep in step with reviewReader() in firestore.rules */
 const REVIEW_READERS = ['daniel.giordano@pravix.app', 'heather.galano@vca.com'];
+/* How the page names the two readers (who sees every review, who reopens). */
+const READER_NAMES = { 'heather.galano@vca.com': 'Dr. Galano', 'daniel.giordano@pravix.app': 'Daniel Giordano' };
+const READERS_AND = 'Dr. Galano and Daniel Giordano';
+const READERS_OR = 'Dr. Galano or Daniel Giordano';
 /* names as they print, where the credentials are known; anyone else prints as the Directory lists them */
 const PRINT_NAME = {
   'heather.galano@vca.com': 'Heather Galano, VMD, DACVIM',
@@ -1916,9 +1942,9 @@ function prCover(r) {
   let rated = 0, total = 0;
   const rows = DOMAINS.map(d => {
     const s = prStats(r.rev, d); rated += s.rated; total += s.total;
-    const pct = s.mean ? ((s.mean - 1) / 4) * 100 : 0;
+    const pct = s.mean ? Math.max(3, ((s.mean - 1) / 4) * 100) : 0;
     return `<tr><td class="num">${d.num}</td><td class="d">${prEsc(d.title)}</td>`
-      + `<td><span class="pr-bar"><i style="width:${pct.toFixed(0)}%"></i></span></td>`
+      + `<td>${s.mean ? `<span class="pr-bar"><i style="width:${pct.toFixed(0)}%"></i></span>` : '<span class="pr-bar none"></span>'}</td>`
       + `<td class="n">${s.mean ? s.mean.toFixed(1) : '—'}</td><td class="rated">${s.rated} / ${s.total}</td></tr>`;
   }).join('');
   const stamp = r.rev.status === 'submitted' ? prDate(r.rev.submitted_at) : 'Not yet submitted';
@@ -1936,8 +1962,9 @@ function prCover(r) {
       <div><dt>Record ID</dt><dd>${prEsc(r.rev.record_id)}</dd></div>
     </div>
     <div class="pr-sec"><i></i><h2>Competency Summary</h2></div>
-    <table class="pr-score"><thead><tr><th></th><th>Domain</th><th></th><th class="n">Mean</th><th class="n">Rated</th></tr></thead>
+    <table class="pr-score"><thead><tr><th></th><th>Domain</th><th class="sc"><span class="pr-ticks"><b>1</b><b>3</b><b>5</b></span></th><th class="n">Mean (1–5)</th><th class="n">Rated</th></tr></thead>
       <tbody>${rows}</tbody></table>
+    <p class="pr-mnote">Mean of the rated items on the 1–5 scale. Not observed and blank items aren’t counted.</p>
     <div class="pr-sec"><i></i><h2>Rating Scale</h2></div>
     <div class="pr-legend">
       ${SCALE.map(s => `<div class="l"><b>${s[0]}</b><span><em>${prEsc(s[2])}.</em> <i>${prEsc(s[3])}</i></span></div>`).join('')}
@@ -2054,7 +2081,11 @@ function buildPrintRecord(r) {
     print: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg>',
     plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>',
-    info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>'
+    info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    check: '<svg viewBox="0 0 24 24" aria-hidden="true" class="ck"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    eyeSlash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0112 5c5 0 9 4.5 10 7a12.6 12.6 0 01-3.2 4.3M6.1 6.6C3.9 8 2.5 10.2 2 12c1 2.5 5 7 10 7a10 10 0 004.6-1.1"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>',
+    x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    warn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5L2.5 20h19z"/><path d="M12 10v4.5M12 17.3h.01"/></svg>'
   };
 
   let fb = null, db = null;
@@ -2074,6 +2105,10 @@ function buildPrintRecord(r) {
     return fb;
   }
   const ts = () => firebase.firestore.FieldValue.serverTimestamp();
+  /* "Shaylan Meyer, DVM" → "Dr. Meyer" (doctors are named, never "she" or "he") */
+  const dr = n => { const w = String(n || '').split(',')[0].trim().split(/\s+/).filter(Boolean); return w.length ? 'Dr. ' + w[w.length - 1] : 'The evaluator'; };
+  const denied = e => /permission/.test((e && e.code) || '');
+  const retry = 'Check your connection, then try again.';
   const del = () => firebase.firestore.FieldValue.delete();
 
   /* ── sign-in (same card as the SGVP Overview) ── */
@@ -2082,7 +2117,7 @@ function buildPrintRecord(r) {
     const c = (e && e.code) || '';
     if (/too-many-requests/.test(c)) return 'Too many tries. Wait a few minutes, then try again.';
     if (/network/.test(c)) return 'Can’t reach the sign-in service. Check your connection, then try again.';
-    if (/user-disabled/.test(c)) return 'This account is turned off. Ask the program director.';
+    if (/user-disabled/.test(c)) return `This account is turned off. Ask ${READERS_OR}.`;
     if (/invalid-email/.test(c)) return 'Enter a full email address, like name@vca.com.';
     return 'That email and password don’t match. Check them and try again.';
   }
@@ -2125,10 +2160,20 @@ function buildPrintRecord(r) {
 
   /* ── small UI helpers ── */
   let noteT = 0;
-  function say(text) {
-    let n = $('.a-note'); if (!n) { n = document.createElement('div'); n.className = 'a-note'; n.setAttribute('role', 'status'); document.body.appendChild(n); }
-    n.textContent = text; clearTimeout(noteT); noteT = setTimeout(() => n.remove(), 6000);
+  function say(text, kind) {
+    const stay = kind === 'error' || kind === 'warn';
+    let n = $('.a-note');
+    if (!n || n.dataset.text !== text) {
+      if (n) n.remove();
+      n = document.createElement('div'); n.className = 'a-note' + (stay ? ' stay' : ''); n.setAttribute('role', stay ? 'alert' : 'status'); n.dataset.text = text;
+      n.innerHTML = (stay ? ICON.warn : '') + '<span></span>' + (stay ? `<button type="button" class="a-note-x" aria-label="Close">${ICON.x}</button>` : '');
+      n.querySelector('span').textContent = text; document.body.appendChild(n);
+      if (stay) n.querySelector('.a-note-x').addEventListener('click', () => { clearTimeout(noteT); n.remove(); });
+      else { const hold = () => clearTimeout(noteT), arm = () => noteArm(n); n.addEventListener('mouseenter', hold); n.addEventListener('mouseleave', arm); n.addEventListener('focusin', hold); n.addEventListener('focusout', arm); }
+    }
+    clearTimeout(noteT); if (!stay) noteArm(n);
   }
+  function noteArm(n) { clearTimeout(noteT); noteT = setTimeout(() => n.remove(), Math.max(4000, 70 * n.dataset.text.length)); }
   function sheet(html, onOpen) {
     const prevFocus = document.activeElement;
     const wrap = document.createElement('div'); wrap.className = 'a-sheet-wrap';
@@ -2233,7 +2278,7 @@ function buildPrintRecord(r) {
   function renderMine() {
     const M = S.mine;
     const rounds = Object.values(M.rounds).sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || (toDate(b.created_at) || 0) - (toDate(a.created_at) || 0));
-    let html = head('Intern reviews', 'My reviews', `Signed in as ${esc(S.name)}. Your reviews save as you go. Only you and the program director can see them.`, viewSwitch());
+    let html = head('Intern reviews', 'My reviews', `Signed in as ${esc(S.name)}. Your reviews save as you go. Only you, ${READERS_AND} can see them.`, viewSwitch());
     if (!M.assigns.length) {
       html += `<div class="a-card a-empty"><h2>No reviews assigned to you</h2><p>When the program asks you to review an intern, the intern appears here.${S.reader ? ' Use All reviews to open a round and assign evaluators.' : ''}</p></div>`;
     }
@@ -2267,7 +2312,7 @@ function buildPrintRecord(r) {
     }
     const subs = A.assigns.filter(a => (A.reviews[a.id] || {}).status === 'submitted').length;
     html += `<div class="a-toolbar"><label class="sr-only" for="aRound">Round</label><select id="aRound" class="a-select" data-act="pick-round">${opts}</select>`
-      + `<span class="a-roundmeta">${esc(KINDS[r.kind] || '')}${r.period ? ' · ' + esc(r.period) : ''} · ${subs} of ${A.assigns.length} submitted</span>`
+      + `<span class="a-roundmeta">${[r.period ? esc(r.period) : '', A.assigns.length ? `${subs} of ${A.assigns.length} submitted` : 'No evaluators assigned yet'].filter(Boolean).join(' · ')}</span>`
       + `<span style="flex:1"></span>${pill(r.status)}`
       + `<button type="button" class="a-btn small" data-act="toggle-round">${r.status === 'open' ? 'Close round' : 'Reopen round'}</button></div>`;
     (r.interns || []).map(intern).sort((a, b) => a.num.localeCompare(b.num)).forEach(i => {
@@ -2327,7 +2372,7 @@ function buildPrintRecord(r) {
           await db.collection(C.rounds).doc(id).set({ name, kind: f('kind').value, period: f('period').value.trim(), year: YEAR.label,
             interns, status: 'open', created_at: ts(), created_by: S.email });
           close(); S.all.roundId = id; go('#all/' + encodeURIComponent(id));
-        } catch (e) { err.textContent = 'The round wasn’t saved. ' + (e.message || ''); err.hidden = false; }
+        } catch (e) { err.textContent = 'The round wasn’t saved. ' + (denied(e) ? `Only ${READERS_AND} can open rounds.` : retry); err.hidden = false; }
       });
     });
   }
@@ -2336,7 +2381,7 @@ function buildPrintRecord(r) {
     const r = S.all.rounds.find(x => x.id === S.all.roundId), i = intern(slug);
     const taken = new Set(S.all.assigns.filter(a => a.intern === slug).map(a => a.email));
     let pick = null;
-    sheet(`<h2 id="aSheetT">Assign an evaluator</h2><p>${esc(fullName(i))} · ${esc(r.name)}. The evaluator sees this intern in My reviews as soon as you assign her.</p>
+    sheet(`<h2 id="aSheetT">Assign an evaluator</h2><p>${esc(fullName(i))} · ${esc(r.name)}. Once assigned, the evaluator sees this intern in My reviews.</p>
       <label class="a-field">Find a doctor<input name="q" type="search" placeholder="Name or service" autocomplete="off"></label>
       <div class="a-pick" role="listbox" aria-label="Doctors"></div>
       <details style="margin-top:10px"><summary class="a-btn quiet small" style="display:inline-flex">Someone not in the Directory</summary>
@@ -2375,19 +2420,19 @@ function buildPrintRecord(r) {
           const record_id = `SGVP-${YEAR.code}-${i.num}-ASM-${String(seq).padStart(2, '0')}`;
           const aid = `${r.id}__${slug}__${email}`;
           await db.collection(C.assign).doc(aid).set({ round: r.id, intern: slug, email, evaluator_name: pn.value.trim(), record_id, created_at: ts(), created_by: S.email });
-          close(); await loadRound(r.id); renderAll(); say(`${pn.value.trim()} will see ${i.name} in My reviews.`);
-        } catch (e) { err.textContent = 'The assignment wasn’t saved. ' + (e.message || ''); err.hidden = false; valid(); }
+          close(); await loadRound(r.id); renderAll(); say(`${dr(pn.value.trim())} will see ${i.name} in My reviews.`);
+        } catch (e) { err.textContent = 'The assignment wasn’t saved. ' + (denied(e) ? 'This doctor may already be assigned to this intern, or the round is closed.' : retry); err.hidden = false; valid(); }
       });
     });
   }
 
   async function unassign(aid) {
     const a = S.all.assigns.find(x => x.id === aid); if (!a) return;
-    sheet(`<h2 id="aSheetT">Remove this evaluator?</h2><p>${esc(a.evaluator_name)} hasn’t started reviewing ${esc(intern(a.intern).name)}. Removing the assignment takes the intern off her list. Record ${esc(a.record_id)} won’t be reused.</p>
+    sheet(`<h2 id="aSheetT">Remove this evaluator?</h2><p>${esc(a.evaluator_name)} hasn’t started reviewing ${esc(intern(a.intern).name)}. Removing the assignment takes the intern off ${esc(dr(a.evaluator_name))}’s list. Record ${esc(a.record_id)} won’t be reused.</p>
       <div class="btns"><button type="button" class="a-btn" data-close>Keep</button><button type="button" class="a-btn primary" data-ok>Remove</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
       try { await db.collection(C.assign).doc(aid).delete(); close(); await loadRound(S.all.roundId); renderAll(); }
-      catch (e) { close(); say('The evaluator has already started, so the assignment stays.'); await loadRound(S.all.roundId); renderAll(); }
+      catch (e) { close(); say('The evaluator has already started, so the assignment stays.', 'warn'); await loadRound(S.all.roundId); renderAll(); }
     }));
   }
 
@@ -2400,14 +2445,14 @@ function buildPrintRecord(r) {
       <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok>${closing ? 'Close round' : 'Reopen round'}</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
       try { await db.collection(C.rounds).doc(r.id).update({ status: closing ? 'closed' : 'open', updated_at: ts() }); close(); await loadRounds(); renderAll(); }
-      catch (e) { close(); say('The round wasn’t changed. ' + (e.message || '')); }
+      catch (e) { close(); say('The round wasn’t changed. ' + (denied(e) ? `Only ${READERS_AND} can close or reopen rounds.` : retry), 'error'); }
     }));
   }
 
   /* ── one review ── */
   async function openReview(aid) {
     const aSnap = await db.collection(C.assign).doc(aid).get();
-    if (!aSnap.exists) { say('That review isn’t assigned to you.'); go('#mine'); return; }
+    if (!aSnap.exists) { say('That review isn’t assigned to you.', 'warn'); go('#mine'); return; }
     const a = Object.assign({ id: aid }, aSnap.data());
     const [rSnap, vSnap] = await Promise.all([db.collection(C.rounds).doc(a.round).get(), db.collection(C.reviews).doc(aid).get()]);
     const round = Object.assign({ id: a.round }, rSnap.exists ? rSnap.data() : { name: '', status: 'closed' });
@@ -2432,11 +2477,11 @@ function buildPrintRecord(r) {
     const doneN = DOMAINS.filter(x => domainDone(r, x)).length;
     const noN = DOMAINS.reduce((n, x) => n + Object.values((r.answers || {})[x.key] || {}).filter(v => v === NOT_OBSERVED).length, 0);
     let lock = '';
-    if (r.status === 'submitted') lock = `<div class="a-lock">${ICON.lock}<span>Submitted ${esc(fmtDate(r.submitted_at))}. This review is locked.${S.reader ? '' : ' If something needs to change, ask the program director to reopen it.'}</span>`
+    if (r.status === 'submitted') lock = `<div class="a-lock">${ICON.lock}<span>Submitted ${esc(fmtDate(r.submitted_at))}. This review is locked.${S.reader ? '' : ` If something needs to change, ask ${READERS_OR} to reopen it.`}</span>`
       + (S.reader ? `<span style="flex:1"></span><button type="button" class="a-btn small" data-act="reopen">Reopen for ${esc(o.a.evaluator_name.split(',')[0])}</button>` : '') + `</div>`;
-    else if (!o.mine) lock = `<div class="a-lock warn">${ICON.info}<span>You’re reading ${esc(o.a.evaluator_name)}’s ${o.exists ? 'draft' : 'review, which she hasn’t started'}. Only she can change it.</span></div>`;
-    else if (o.round.status !== 'open') lock = `<div class="a-lock warn">${ICON.lock}<span>This round is closed, so the draft can’t be changed. Ask the program director to reopen the round.</span></div>`;
-    else if (r.reopened_at) lock = `<div class="a-lock warn">${ICON.info}<span>The program director reopened this review on ${esc(fmtDate(r.reopened_at))}. Make your changes, then submit it again.</span></div>`;
+    else if (!o.mine) lock = `<div class="a-lock warn">${ICON.info}<span>${o.exists ? `You’re reading ${esc(o.a.evaluator_name)}’s draft. Only ${esc(dr(o.a.evaluator_name))} can change it.` : `${esc(dr(o.a.evaluator_name))} hasn’t started this review. Only ${esc(dr(o.a.evaluator_name))} can write it.`}</span></div>`;
+    else if (o.round.status !== 'open') lock = `<div class="a-lock warn">${ICON.lock}<span>This round is closed, so the draft can’t be changed. Ask ${READERS_OR} to reopen the round.</span></div>`;
+    else if (r.reopened_at) lock = `<div class="a-lock warn">${ICON.info}<span>${esc(READER_NAMES[r.reopened_by] || 'The program')} reopened this review on ${esc(fmtDate(r.reopened_at))}. Make your changes, then submit it again.</span></div>`;
 
     const back = S.reader && !o.mine ? '#all/' + encodeURIComponent(o.a.round) : '#mine';
     root.innerHTML = `<button type="button" class="a-crumb" data-go="${back}">${ICON.back}${S.reader && !o.mine ? 'All reviews' : 'My reviews'}</button>`
@@ -2447,20 +2492,20 @@ function buildPrintRecord(r) {
       + `<div class="a-kpis">
           <div class="a-kpi"><div class="l">Completion</div><div class="v">${pct}<small>%</small></div><div class="a-bar"><i style="width:${pct}%"></i></div><div class="s">${p.rated} of ${p.total} items</div></div>
           <div class="a-kpi"><div class="l">Domains complete</div><div class="v">${doneN}<small> of 10</small></div><div class="s">${doneN === 10 ? (r.status === 'submitted' ? 'Every domain complete' : 'Ready to submit') : r.status === 'submitted' ? 'Blank items print as Not rated' : 'Rate every item to complete a domain'}</div></div>
-          <div class="a-kpi"><div class="l">Not observed</div><div class="v">${noN}</div><div class="s">Items the evaluator didn’t see</div></div>
+          <div class="a-kpi"><div class="l">Not observed</div><div class="v">${noN}</div><div class="s">${o.mine ? 'Items you didn’t see' : `Items ${esc(dr(o.a.evaluator_name))} didn’t see`}</div></div>
           <div class="a-kpi"><div class="l">Status</div><div class="v" style="font-size:1rem;margin-top:10px">${pill(o.exists ? r.status : 'ns')}</div><div class="s">${r.status === 'submitted' ? 'Locked' : ed ? 'Saves as you go' : 'Read only'}</div></div>
         </div>`
       + `<div class="a-work"><nav class="a-rail" aria-label="Domains">${DOMAINS.map((x, k) => {
           const n = rated(r, x), t = x.overall ? 1 : x.questions.length, ok = domainDone(r, x);
           return `<button type="button" class="a-step${ok ? ' done' : ''}" data-step="${k}"${k === o.cur ? ' aria-current="step"' : ''}>`
-            + `<span class="n">${ok ? '✓' : x.num}</span><span class="t">${esc(x.short)}</span><span class="c">${n}/${t}</span></button>`;
+            + `<span class="n">${ok ? ICON.check + '<span class="sr-only">Complete: </span>' : x.num}</span><span class="t">${esc(x.short)}</span><span class="c">${n}/${t}</span></button>`;
         }).join('')}</nav>
         <section class="a-panel" aria-labelledby="aDomT">${domainHTML(d, ed)}</section>
         <aside class="a-guide" aria-label="Rating guide"><h3>Rating guide</h3><p>Use the same anchors on every service. Rate only what you saw.</p>
           ${SCALE.map(s => `<div class="a-lvl"><b class="n">${s[0]}</b><div><b>${esc(s[2])}</b><p>${esc(s[3])}</p></div></div>`).join('')}
-          <div class="a-lvl"><b class="n">–</b><div><b>Not observed</b><p>You didn’t see this during the review period. It isn’t a low rating.</p></div></div>
-          <div class="save">${ed ? 'Your draft saves as you go. Submit locks it and sends it to the program director.' : 'Submitted reviews are part of the intern’s training record.'}</div></aside></div>`;
-    if (top) requestAnimationFrame(() => { try { window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' }); } catch (e) {} });
+          <div class="a-lvl"><b class="n">${ICON.eyeSlash}</b><div><b>Not observed</b><p>You didn’t see this during the review period. It isn’t a low rating.</p></div></div>
+          <div class="save">${ed ? `Your draft saves as you go. Submit locks it and sends it to ${READERS_AND}.` : 'Submitted reviews are part of the intern’s training record.'}</div></aside></div>`;
+    if (top) requestAnimationFrame(() => { try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {} });
   }
 
   function scale(key, qi, val, ed, label) {
@@ -2469,7 +2514,7 @@ function buildPrintRecord(r) {
     return `<div class="a-scale" role="radiogroup" aria-label="${esc(label)}">` + SCALE.map(s =>
       `<button type="button" role="radio" class="a-score" aria-checked="${val === s[0]}"${ti(s[0])} data-score="${s[0]}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}><b>${s[0]}</b><span class="lv">${esc(s[1])}</span>`
       + (s[1].toLowerCase() === s[2].toLowerCase() ? '' : `<span class="sr-only">, ${esc(s[2])}</span>`) + `</button>`).join('')
-      + `<button type="button" role="radio" class="a-score no" aria-checked="${val === NOT_OBSERVED}"${ti(NOT_OBSERVED)} data-score="${NOT_OBSERVED}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}><span>Not observed</span></button></div>`;
+      + `<button type="button" role="radio" class="a-score no" aria-checked="${val === NOT_OBSERVED}"${ti(NOT_OBSERVED)} data-score="${NOT_OBSERVED}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}>${ICON.eyeSlash}<span>Not observed</span></button></div>`;
   }
   function domainHTML(d, ed) {
     const o = S.open, r = o.rev, A = (r.answers || {})[d.key] || {}, N = (r.notes || {})[d.key] || {};
@@ -2478,7 +2523,7 @@ function buildPrintRecord(r) {
     if (d.overall) {
       body = `<div class="a-intro"><div class="eb">${d.num} · ${esc(d.title)}</div><h2 id="aDomT">${esc(d.subtitle)}</h2>
           <p>Summarize progression, entrustment, strengths, and priorities for continued development.</p></div>
-        <div class="a-q"><div class="tag${A[0] ? ' ok' : ''}">${A[0] ? '✓ ' : ''}Entrustment</div><h3>${esc(ENTRUSTMENT_Q)}</h3>${scale(d.key, 0, A[0], ed, 'Entrustment')}</div>`
+        <div class="a-q"><div class="tag${A[0] ? ' ok' : ''}">Entrustment</div><h3>${esc(ENTRUSTMENT_Q)}</h3>${scale(d.key, 0, A[0], ed, 'Entrustment')}</div>`
         + OVERALL_PROMPTS.map((p, n) => `<div class="a-q"><div class="tag${String(N[n + 1] || '').trim() ? ' ok' : ''}">${esc(p[0])}</div><h3><label for="aN${n}">${esc(p[1])}</label></h3>`
           + `<textarea id="aN${n}" class="a-ta" data-note="${d.key}" data-q="${n + 1}" style="min-height:${n === 3 ? 140 : 96}px" ${ed ? 'placeholder="Specific, actionable feedback"' : 'readonly'}>${esc(N[n + 1] || '')}</textarea></div>`).join('');
     } else {
@@ -2486,7 +2531,7 @@ function buildPrintRecord(r) {
           <p>Rate only performance you directly observed. Choose Not observed for anything you didn’t see. Add a note only when it adds context.</p></div>`
         + d.questions.map((q, qi) => {
           const v = A[qi], note = String(N[qi] || ''), show = note || o.openNotes[d.key + qi];
-          return `<div class="a-q" id="aQ${qi}"><div class="tag${v ? ' ok' : ''}">${v ? '✓ ' : ''}Competency ${Number(d.num)}.${qi + 1}</div><h3>${esc(q)}</h3>`
+          return `<div class="a-q" id="aQ${qi}"><div class="tag${v ? ' ok' : ''}">Competency ${Number(d.num)}.${qi + 1}</div><h3>${esc(q)}</h3>`
             + scale(d.key, qi, v, ed, `Competency ${Number(d.num)}.${qi + 1}`)
             + (show ? `<label class="sr-only" for="aI${qi}">Note for competency ${Number(d.num)}.${qi + 1}</label><textarea id="aI${qi}" class="a-ta" data-note="${d.key}" data-q="${qi}" ${ed ? 'placeholder="Context for this rating"' : 'readonly'}>${esc(note)}</textarea>`
                     : ed ? `<button type="button" class="a-btn quiet small a-notebtn" data-act="add-note" data-q="${qi}">${ICON.plus}Add note</button>` : '')
@@ -2496,7 +2541,7 @@ function buildPrintRecord(r) {
         + `<textarea id="aObs" class="a-ta" data-obs="${d.key}" ${ed ? `placeholder="Observations for ${esc(d.short)}"` : 'readonly'}>${esc((r.observations || {})[d.key] || '')}</textarea></div>`;
     }
     return body + `<div class="a-foot">${prev ? `<button type="button" class="a-btn" data-step="${k - 1}">${ICON.back}${esc(prev.short)}</button>` : '<span></span>'}`
-      + `<span class="st${ok ? ' ok' : ''}">${ok ? '✓ ' + esc(d.short) + ' complete' : `Domain ${d.num} of 10`}</span>`
+      + `<span class="st${ok ? ' ok' : ''}">${ok ? esc(d.short) + ' complete' : `Domain ${d.num} of 10`}</span>`
       + (next ? `<button type="button" class="a-btn primary" data-step="${k + 1}">${esc(next.short)}</button>`
               : ed ? `<button type="button" class="a-btn primary" data-act="submit">Review and submit</button>` : '<span></span>') + `</div>`;
   }
@@ -2531,13 +2576,13 @@ function buildPrintRecord(r) {
     };
     o.chain = o.chain.then(write).then(() => { if (!Object.keys(o.pending).length) o.since = 0; }, e => {
       console.warn('save', e);
-      if (/permission/.test((e && e.code) || '')) say('That change didn’t save: this review is locked or its round is closed. Reload to see the latest.');
-      else say('That change didn’t save. Check your connection; your next change will try again.');
+      if (/permission/.test((e && e.code) || '')) say('That change didn’t save: this review is locked or its round is closed. Reload to see the latest.', 'error');
+      else say('That change didn’t save. Check your connection; your next change will try again.', 'error');
       Object.assign(o.pending, changes);   // keep it for the next try
     });
     return o.chain;
   }
-  setInterval(() => { const o = S.open; if (o && o.since && Date.now() - o.since > WARN_AFTER) { say('Some changes haven’t reached the database yet. Keep this page open until you’re back online.'); o.since = Date.now(); } }, 30000);
+  setInterval(() => { const o = S.open; if (o && o.since && Date.now() - o.since > WARN_AFTER) { say('Some changes haven’t reached the database yet. Keep this page open until you’re back online.', 'warn'); o.since = Date.now(); } }, 30000);
   addEventListener('beforeunload', e => { const o = S.open; if (o && Object.keys(o.pending).length) { flush(); e.preventDefault(); e.returnValue = ''; } });
   addEventListener('pagehide', () => flush());
 
@@ -2553,21 +2598,21 @@ function buildPrintRecord(r) {
     if (k[3] && !o.exists) k[3].querySelector('.v').innerHTML = pill('draft');
     root.querySelectorAll('.a-step').forEach((b, n) => {
       const x = DOMAINS[n], ok = domainDone(r, x);
-      b.classList.toggle('done', ok); b.querySelector('.n').textContent = ok ? '✓' : x.num;
+      b.classList.toggle('done', ok); b.querySelector('.n').innerHTML = ok ? ICON.check + '<span class="sr-only">Complete: </span>' : x.num;
       b.querySelector('.c').textContent = `${rated(r, x)}/${x.overall ? 1 : x.questions.length}`;
     });
     const d = DOMAINS[o.cur], st = root.querySelector('.a-foot .st'), ok = domainDone(r, d);
-    if (st) { st.classList.toggle('ok', ok); st.textContent = ok ? '✓ ' + d.short + ' complete' : `Domain ${d.num} of 10`; }
+    if (st) { st.classList.toggle('ok', ok); st.textContent = ok ? d.short + ' complete' : `Domain ${d.num} of 10`; }
   }
 
   function submitSheet() {
     flush();
     const o = S.open, r = o.rev, p = computeProgress(r);
     const rows = DOMAINS.map(d => { const n = rated(r, d), t = d.overall ? 1 : d.questions.length, ok = domainDone(r, d);
-      return `<li>${esc(d.num + ' · ' + d.short)}<span>${ok ? '✓ Complete' : d.overall ? (n ? 'Narratives incomplete' : 'Not rated') : `${n} of ${t} rated`}</span></li>`; }).join('');
+      return `<li>${esc(d.num + ' · ' + d.short)}<span>${ok ? '<b class="a-ok">Complete</b>' : d.overall ? (n ? 'Narratives incomplete' : 'Not rated') : `${n} of ${t} rated`}</span></li>`; }).join('');
     const missing = p.total - p.rated;
     sheet(`<h2 id="aSheetT">Submit your review of ${esc(intern(o.a.intern).name)}?</h2>
-      <p>${missing ? `${missing} item${missing === 1 ? ' is' : 's are'} still blank and will print as Not rated. Mark anything you didn’t see as Not observed instead. ` : 'Every item has a rating. '}After you submit, the review is locked and goes to the program director. You can still read and print it.</p>
+      <p>${missing ? `${missing} item${missing === 1 ? ' is' : 's are'} still blank and will print as Not rated. Mark anything you didn’t see as Not observed instead. ` : 'Every item has a rating. '}After you submit, the review is locked and goes to ${READERS_AND}. You can still read and print it.</p>
       <ul class="a-list">${rows}</ul>
       <p style="margin-top:12px;font-size:.8125rem;color:var(--a-ink-3)">By submitting, you confirm that the ratings and observations are your own and reflect performance you directly observed.</p>
       <div class="btns"><button type="button" class="a-btn" data-close>Keep editing</button><button type="button" class="a-btn primary" data-ok>Submit review</button></div>`,
@@ -2578,20 +2623,20 @@ function buildPrintRecord(r) {
         await o.chain;
         await db.collection(C.reviews).doc(o.aid).update({ status: 'submitted', submitted_at: ts(), updated_at: ts(), progress: computeProgress(r) });
         const fresh = await db.collection(C.reviews).doc(o.aid).get();
-        Object.assign(r, fresh.data()); close(); renderReview(true); say('Submitted. The program director has your review.');
-      } catch (e) { b.disabled = false; b.textContent = 'Submit review'; say('The review wasn’t submitted. ' + (/permission/.test((e && e.code) || '') ? 'Its round may be closed.' : 'Check your connection, then try again.')); }
+        Object.assign(r, fresh.data()); close(); renderReview(true); say(`Submitted. ${READERS_AND} have your review.`);
+      } catch (e) { b.disabled = false; b.textContent = 'Submit review'; say('The review wasn’t submitted. ' + (/permission/.test((e && e.code) || '') ? 'Its round may be closed.' : 'Check your connection, then try again.'), 'error'); }
     }));
   }
 
   function reopenSheet() {
     const o = S.open;
-    sheet(`<h2 id="aSheetT">Reopen this review?</h2><p>${esc(o.a.evaluator_name)} can change her ratings and must submit again. Her ratings and text stay as they are until she does.</p>
+    sheet(`<h2 id="aSheetT">Reopen this review?</h2><p>${esc(dr(o.a.evaluator_name))} can change the ratings and must submit again. The ratings and text stay as they are until then.</p>
       <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok>Reopen</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
       try {
         await db.collection(C.reviews).doc(o.aid).update({ status: 'draft', reopened_at: ts(), reopened_by: S.email });
         const fresh = await db.collection(C.reviews).doc(o.aid).get(); Object.assign(o.rev, fresh.data()); close(); renderReview(false);
-      } catch (e) { close(); say('The review wasn’t reopened. ' + (e.message || '')); }
+      } catch (e) { close(); say('The review wasn’t reopened. ' + (denied(e) ? 'It may already be open.' : retry), 'error'); }
     }));
   }
 
@@ -2608,7 +2653,7 @@ function buildPrintRecord(r) {
     root.addEventListener('click', e => {
       const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); go(g.dataset.go); return; }
       const st = e.target.closest('[data-step]');
-      if (st && S.open) { flush(); S.open.cur = Number(st.dataset.step); renderReview(true); const h = $('#aDomT'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); } return; }
+      if (st && S.open) { flush(); S.open.cur = Number(st.dataset.step); renderReview(false); const h = $('#aDomT'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); const y = h.closest('.a-panel').getBoundingClientRect().top; const nav = $('#pvxSubnav') || $('#pvxTopnav'); const off = Math.max(0, nav ? nav.getBoundingClientRect().bottom : 0) + 16; if (y < off || y > innerHeight * 0.6) window.scrollTo({ top: Math.max(0, scrollY + y - off), behavior: 'auto' }); } return; }
       const sc = e.target.closest('.a-score');
       if (sc && !sc.disabled && S.open) {
         const key = sc.dataset.key, qi = sc.dataset.q, v = sc.dataset.score, cur = ((S.open.rev.answers || {})[key] || {})[qi];
@@ -2616,7 +2661,7 @@ function buildPrintRecord(r) {
         setField(`answers.${key}.${qi}`, nv);
         sc.parentElement.querySelectorAll('.a-score').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.score === nv)); b.tabIndex = b === sc ? 0 : -1; });
         const tag = sc.closest('.a-q') && sc.closest('.a-q').querySelector('.tag');
-        if (tag) { tag.classList.toggle('ok', !!nv); tag.textContent = (nv ? '✓ ' : '') + tag.textContent.replace(/^✓ /, ''); }
+        if (tag) tag.classList.toggle('ok', !!nv);
         refreshChrome(); return;
       }
       const act = e.target.closest('[data-act]'); if (!act) return;
@@ -2670,7 +2715,7 @@ function buildPrintRecord(r) {
       S.reader = REVIEW_READERS.includes(S.email);
       if (INTERNS.some(i => i.email === S.email)) {
         root.innerHTML = head('Intern reviews', 'Your reviews', '') + `<div class="a-card a-empty"><h2>Reviews are written by your evaluators</h2>
-          <p>The program director goes over each review with you at your one-on-one, and you get a signed copy then.</p></div>`;
+          <p>Each review is gone over with you at your one-on-one, and you get a signed copy then.</p></div>`;
         return;
       }
       if (!location.hash && S.reader) history.replaceState(null, '', '#all');   // Daniel and Heather start on All reviews
