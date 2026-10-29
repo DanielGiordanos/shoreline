@@ -73,7 +73,7 @@ async def s_t260(br):
     em = await pg.evaluate("document.querySelector('#tsModal').innerText")
     await pg.fill('#esHigh', '6000'); await pg.fill('#esCur', 'about 900'); await pg.wait_for_timeout(200)
     await pg.evaluate("(()=>{document.querySelectorAll('#toastWrap .ctoast').forEach(t=>t.remove());const b=document.querySelector('#tsModal .tm-foot .primary');b&&b.click()})()"); await pg.wait_for_timeout(400)
-    et = await pg.evaluate(TOASTS)
+    et = await pg.evaluate(TOASTS) + [await pg.evaluate("[...document.querySelectorAll('#tsModal .pvx-fmsg')].map(e=>e.innerText).join(' ')")]   # n261: said under the field now, not in a message
     ok('Writing: the estimate says what to enter — “Enter a high end that’s at least the low end”, “Enter current charges as a number, like 1250” (it said “… must be …”)',
        'Enter a high end that’s at least the low end' in em and any('Enter current charges as a number, like 1250' in x for x in et), [[l for l in em.split('\n') if 'high end' in l.lower() or 'Enter' in l], et])
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
