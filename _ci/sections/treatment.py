@@ -1291,7 +1291,7 @@ async def s_n237(br):
     rc = [await pg.evaluate("document.activeElement.id"), await pg.evaluate(FIND237)]
     await pg.screenshot(path=f'{SHOTS}/n237-search-recent.png')
     ok('n237: ⌘K focuses the search (it did nothing)', rc[0] == 'globalSearch', rc)
-    ok('n237: before typing, the search lists the patients you opened most recently, newest first', bool(rc[1]) and rc[1].startswith('RECENTLY OPENED / Biscuit Training') and 'Mochi Training' in rc[1], rc[1])
+    ok('n237: before typing, the search lists the patients you opened most recently, newest first', bool(rc[1]) and rc[1].replace('RECENTLY OPENED / Clear / ', 'RECENTLY OPENED / ', 1).startswith('RECENTLY OPENED / Biscuit Training') and 'Mochi Training' in rc[1], rc[1])   # n265: the heading has Clear
     ks = await pg.evaluate("Object.keys(localStorage).filter(k=>/recent|find|search/i.test(k))")
     await pg.keyboard.press('Escape'); await pg.reload(); await pg.wait_for_timeout(3000)
     await pg.keyboard.press('Control+k'); await pg.wait_for_timeout(500)
