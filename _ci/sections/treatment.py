@@ -1331,6 +1331,7 @@ async def s_n237(br):
     ok('n237: nothing found says “No patient or order matches”', bool(nm) and 'No patient or order matches “zzzz”.' in nm, nm)
     ok('n237: Clear empties the field and keeps the cursor in it', cl == ['', 'globalSearch', 'none'], cl)
     await pg.keyboard.press('Escape'); await pg.mouse.click(700, 760)
+    await pg.evaluate("try{tsOrderClose()}catch(e){};try{closeDrawers()}catch(e){}")   # n264: that click opens an order's sheet, and ⌘K waits while a sheet is open
     await pg.evaluate("selectCTab('dash')"); await pg.wait_for_timeout(900)
     await pg.keyboard.press('Meta+k'); await pg.keyboard.type('Gabapentin'); await pg.wait_for_timeout(700)
     br237 = await pg.evaluate("(document.getElementById('ctab-dash')||{innerText:''}).innerText")
