@@ -831,6 +831,11 @@ body:not(.dark) .a-sheet{background:#fff}
 .a-field input,.a-field select{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--a-line);background:var(--a-card-2);color:var(--a-ink);font-family:inherit;font-size:1rem;font-weight:500;line-height:1.3}
 .a-field input:focus-visible{outline:none;border-color:var(--a-acc);box-shadow:0 0 0 3px rgba(56,189,210,.18)}
 .a-field .hint{font-weight:400;color:var(--a-ink-3)}
+.a-cred{margin:6px 0 0;font-size:.8125rem;line-height:1.45;color:var(--a-warn-ink)}
+.a-btn[aria-busy=true]{cursor:progress;opacity:.75}
+.pvx-actions .live.off{background:rgba(232,168,48,.14);border-color:rgba(232,168,48,.4);color:#8A5D00}
+body.dark .pvx-actions .live.off{color:#F0BC55}
+.pvx-actions .live.off i{background:currentColor}
 .a-pick{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--a-soft);border-radius:12px}
 .a-pick button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:6px 12px;border:0;border-bottom:1px solid var(--a-soft);background:transparent;text-align:left;cursor:pointer}
 .a-pick button:last-child{border-bottom:0}
@@ -2085,6 +2090,7 @@ function buildPrintRecord(r) {
     check: '<svg viewBox="0 0 24 24" aria-hidden="true" class="ck"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     eyeSlash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0112 5c5 0 9 4.5 10 7a12.6 12.6 0 01-3.2 4.3M6.1 6.6C3.9 8 2.5 10.2 2 12c1 2.5 5 7 10 7a10 10 0 004.6-1.1"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>',
     x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    mail: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>',
     warn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5L2.5 20h19z"/><path d="M12 10v4.5M12 17.3h.01"/></svg>'
   };
 
@@ -2173,6 +2179,8 @@ function buildPrintRecord(r) {
     }
     clearTimeout(noteT); if (!stay) noteArm(n);
   }
+  function busy(b, label) { b.dataset.label = b.textContent; b.disabled = true; b.setAttribute('aria-busy', 'true'); b.textContent = label; }
+  function unbusy(b) { b.disabled = false; b.removeAttribute('aria-busy'); if (b.dataset.label) b.textContent = b.dataset.label; }
   function noteArm(n) { clearTimeout(noteT); noteT = setTimeout(() => n.remove(), Math.max(4000, 70 * n.dataset.text.length)); }
   function sheet(html, onOpen) {
     const prevFocus = document.activeElement;
@@ -2236,14 +2244,29 @@ function buildPrintRecord(r) {
       .sort((a, b) => (toDate(b.created_at) || 0) - (toDate(a.created_at) || 0));
     if (!S.all.rounds.some(x => x.id === S.all.roundId)) S.all.roundId = (S.all.rounds.find(x => x.status === 'open') || S.all.rounds[0] || {}).id || '';
   }
-  async function loadRound(id) {
-    if (!id) { S.all.assigns = []; S.all.reviews = {}; return; }
-    const [as, rs] = await Promise.all([
-      db.collection(C.assign).where('round', '==', id).get(),
-      db.collection(C.reviews).where('round', '==', id).get()]);
-    S.all.assigns = as.docs.map(d => Object.assign({ id: d.id }, d.data()));
-    S.all.reviews = {}; rs.docs.forEach(d => { S.all.reviews[d.id] = d.data(); });
+  /* All reviews stays live: the open round's assignments and reviews are listened to, and the list redraws
+     as evaluators work (focus is kept on the same control). */
+  let watch = { id: '', stop: null, ready: null };
+  function stopRound() { if (watch.stop) watch.stop(); watch = { id: '', stop: null, ready: null }; }
+  function loadRound(id) {
+    if (!id) { stopRound(); S.all.assigns = []; S.all.reviews = {}; return Promise.resolve(); }
+    if (watch.id === id && watch.ready) return watch.ready;
+    stopRound();
+    let waiting = 2, done; const ready = new Promise(r => { done = r; });
+    const tick = () => { if (waiting > 0) { if (--waiting === 0) done(); return; } if (S.view === 'all' && S.all.roundId === id && !S.open) redrawAll(); };
+    const fail = () => { if (waiting > 0) { waiting = 0; done(); } };
+    const u1 = db.collection(C.assign).where('round', '==', id).onSnapshot(s => { if (watch.id !== id) return; S.all.assigns = s.docs.map(d => Object.assign({ id: d.id }, d.data())); tick(); }, fail);
+    const u2 = db.collection(C.reviews).where('round', '==', id).onSnapshot(s => { if (watch.id !== id) return; S.all.reviews = {}; s.docs.forEach(d => { S.all.reviews[d.id] = d.data(); }); tick(); }, fail);
+    watch = { id, stop: () => { u1(); u2(); }, ready };
+    return ready;
   }
+  function focusKey() {
+    const a = document.activeElement; if (!a || !root.contains(a)) return null;
+    for (const k of ['act', 'go', 'aid', 'intern', 'step', 'key', 'q', 'score']) if (a.dataset && a.dataset[k] !== undefined) return a.closest('[data-aid],[data-intern],[data-go],[data-key]') ? `[data-${k}="${CSS.escape(a.dataset[k])}"]` + (a.dataset.intern ? `[data-intern="${CSS.escape(a.dataset.intern)}"]` : '') + (a.dataset.aid ? `[data-aid="${CSS.escape(a.dataset.aid)}"]` : '') + (a.dataset.key ? `[data-key="${CSS.escape(a.dataset.key)}"][data-q="${CSS.escape(a.dataset.q || '')}"][data-score="${CSS.escape(a.dataset.score || '')}"]` : '') : `[data-${k}="${CSS.escape(a.dataset[k])}"]`;
+    return a.id ? '#' + CSS.escape(a.id) : null;
+  }
+  function refocus(sel) { if (!sel) return; const e = root.querySelector(sel); if (e) e.focus({ preventScroll: true }); }
+  function redrawAll() { const k = focusKey(); renderAll(); refocus(k); }
 
   /* ── routing ── */
   function go(hash) { if (location.hash !== hash) location.hash = hash; else route(); }
@@ -2254,9 +2277,10 @@ function buildPrintRecord(r) {
       closeEditor();
       if (h.startsWith('all') && S.reader) {
         S.view = 'all'; const rid = h.split('/')[1]; if (rid) S.all.roundId = rid;
+        if (watch.id && watch.id !== S.all.roundId) stopRound();
         await loadRounds(); await loadRound(S.all.roundId); renderAll(); return;
       }
-      S.view = 'mine'; await loadMine(); renderMine();
+      stopRound(); S.view = 'mine'; await loadMine(); renderMine();
     } catch (e) { console.warn(e); renderError(e); }
   }
   function renderError(e) {
@@ -2301,6 +2325,16 @@ function buildPrintRecord(r) {
   }
 
   /* ── All reviews (Daniel, Heather) ── */
+  /* A ready email in the reader's own mail app to everyone assigned in this round who hasn't submitted (BCC). */
+  function mailLink(r, A) {
+    if (r.status !== 'open') return '';
+    const to = [...new Set(A.assigns.filter(a => (A.reviews[a.id] || {}).status !== 'submitted').map(a => a.email))].filter(e => e !== S.email);
+    if (!to.length) return '';
+    const link = location.origin + '/sgvp/assessment/#mine';
+    const body = `Hello,\n\nYou have intern reviews to complete for the ${r.name}${r.period ? ' (' + r.period + ')' : ''}. They're waiting for you in Pravix:\n${link}\n\nYour ratings save as you go. Submit each review when it's done.\n\nThank you,\n${S.name}`;
+    const href = 'mailto:?bcc=' + to.map(encodeURIComponent).join(',') + '&subject=' + encodeURIComponent('Intern reviews: ' + r.name) + '&body=' + encodeURIComponent(body);
+    return `<a class="a-btn small" href="${esc(href)}" title="Opens an email in your mail app to everyone who hasn’t submitted. Nothing is sent until you send it.">${ICON.mail}Email ${to.length} evaluator${to.length === 1 ? '' : 's'}</a>`;
+  }
   function renderAll() {
     const A = S.all, r = A.rounds.find(x => x.id === A.roundId);
     const opts = A.rounds.map(x => `<option value="${esc(x.id)}"${x.id === A.roundId ? ' selected' : ''}>${esc(x.name)}${x.status === 'closed' ? ' (closed)' : ''}</option>`).join('');
@@ -2313,7 +2347,7 @@ function buildPrintRecord(r) {
     const subs = A.assigns.filter(a => (A.reviews[a.id] || {}).status === 'submitted').length;
     html += `<div class="a-toolbar"><label class="sr-only" for="aRound">Round</label><select id="aRound" class="a-select" data-act="pick-round">${opts}</select>`
       + `<span class="a-roundmeta">${[r.period ? esc(r.period) : '', A.assigns.length ? `${subs} of ${A.assigns.length} submitted` : 'No evaluators assigned yet'].filter(Boolean).join(' · ')}</span>`
-      + `<span style="flex:1"></span>${pill(r.status)}`
+      + `<span style="flex:1"></span>${pill(r.status)}` + mailLink(r, A)
       + `<button type="button" class="a-btn small" data-act="toggle-round">${r.status === 'open' ? 'Close round' : 'Reopen round'}</button></div>`;
     (r.interns || []).map(intern).sort((a, b) => a.num.localeCompare(b.num)).forEach(i => {
       const list = A.assigns.filter(a => a.intern === i.slug).sort((a, b) => a.record_id.localeCompare(b.record_id));
@@ -2366,13 +2400,15 @@ function buildPrintRecord(r) {
         const name = f('name').value.trim();
         if (!interns.length) { err.textContent = 'Pick at least one intern.'; err.hidden = false; return; }
         if (!name) { err.textContent = 'Give the round a name.'; err.hidden = false; f('name').focus(); return; }
+        if (!f('period').value.trim()) { err.textContent = 'Add the review period. It prints on every record.'; err.hidden = false; f('period').focus(); return; }
         let id = (YEAR.code + '-' + f('kind').value + '-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-')).replace(/-+$/, '').slice(0, 60);
         while (S.all.rounds.some(x => x.id === id)) id += '-2';
+        const b = box.querySelector('[data-ok]'); if (b.disabled) return; busy(b, 'Opening…');
         try {
           await db.collection(C.rounds).doc(id).set({ name, kind: f('kind').value, period: f('period').value.trim(), year: YEAR.label,
             interns, status: 'open', created_at: ts(), created_by: S.email });
           close(); S.all.roundId = id; go('#all/' + encodeURIComponent(id));
-        } catch (e) { err.textContent = 'The round wasn’t saved. ' + (denied(e) ? `Only ${READERS_AND} can open rounds.` : retry); err.hidden = false; }
+        } catch (e) { unbusy(b); err.textContent = 'The round wasn’t saved. ' + (denied(e) ? `Only ${READERS_AND} can open rounds.` : retry); err.hidden = false; }
       });
     });
   }
@@ -2386,13 +2422,19 @@ function buildPrintRecord(r) {
       <div class="a-pick" role="listbox" aria-label="Doctors"></div>
       <details style="margin-top:10px"><summary class="a-btn quiet small" style="display:inline-flex">Someone not in the Directory</summary>
         <label class="a-field">Email<input name="email" type="email" placeholder="name@vca.com" autocapitalize="off" spellcheck="false"></label></details>
-      <label class="a-field">Name as it prints <span class="hint">Include credentials, for example Shaylan Meyer, DVM</span><input name="pname" maxlength="80"></label>
+      <label class="a-field">Name as it prints <span class="hint">Include credentials, for example Shaylan Meyer, DVM</span><input name="pname" maxlength="80" autocomplete="off" aria-describedby="aCred"></label>
+      <p class="a-cred" id="aCred" hidden></p>
       <p class="a-err" role="alert" hidden></p>
       <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok aria-disabled="true">Assign</button></div>`,
     (box, close) => {
       const list = box.querySelector('.a-pick'), q = box.querySelector('[name=q]'), em = box.querySelector('[name=email]'),
         pn = box.querySelector('[name=pname]'), ok = box.querySelector('[data-ok]'), err = box.querySelector('.a-err');
-      const valid = () => ok.setAttribute('aria-disabled', (pick || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.value.trim())) && pn.value.trim() ? 'false' : 'true');
+      const cred = box.querySelector('.a-cred');
+      const valid = () => {
+        ok.setAttribute('aria-disabled', (pick || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.value.trim())) && pn.value.trim() ? 'false' : 'true');
+        const v = pn.value.trim(); cred.hidden = !v || /,\s*\S/.test(v);
+        if (!cred.hidden) cred.textContent = `No credentials: the record will print “${v}”. Add DVM or VMD if it applies.`;
+      };
       const draw = () => {
         const t = q.value.trim().toLowerCase();
         list.innerHTML = DOCTORS.filter(d => !t || (d.name + ' ' + d.title + ' ' + d.dept).toLowerCase().includes(t)).map(d =>
@@ -2412,7 +2454,7 @@ function buildPrintRecord(r) {
         const email = (pick ? pick.email : em.value.trim()).toLowerCase();
         if (taken.has(email)) { err.textContent = 'This evaluator is already assigned to this intern.'; err.hidden = false; return; }
         if (S.email === email) { /* allowed: the program director may review too */ }
-        ok.setAttribute('aria-disabled', 'true');
+        if (ok.disabled) return; busy(ok, 'Assigning…');
         try {
           /* next record number for this intern, across every round */
           const prev = await db.collection(C.assign).where('intern', '==', slug).get();
@@ -2421,7 +2463,7 @@ function buildPrintRecord(r) {
           const aid = `${r.id}__${slug}__${email}`;
           await db.collection(C.assign).doc(aid).set({ round: r.id, intern: slug, email, evaluator_name: pn.value.trim(), record_id, created_at: ts(), created_by: S.email });
           close(); await loadRound(r.id); renderAll(); say(`${dr(pn.value.trim())} will see ${i.name} in My reviews.`);
-        } catch (e) { err.textContent = 'The assignment wasn’t saved. ' + (denied(e) ? 'This doctor may already be assigned to this intern, or the round is closed.' : retry); err.hidden = false; valid(); }
+        } catch (e) { unbusy(ok); err.textContent = 'The assignment wasn’t saved. ' + (denied(e) ? 'This doctor may already be assigned to this intern, or the round is closed.' : retry); err.hidden = false; valid(); }
       });
     });
   }
@@ -2430,7 +2472,8 @@ function buildPrintRecord(r) {
     const a = S.all.assigns.find(x => x.id === aid); if (!a) return;
     sheet(`<h2 id="aSheetT">Remove this evaluator?</h2><p>${esc(a.evaluator_name)} hasn’t started reviewing ${esc(intern(a.intern).name)}. Removing the assignment takes the intern off ${esc(dr(a.evaluator_name))}’s list. Record ${esc(a.record_id)} won’t be reused.</p>
       <div class="btns"><button type="button" class="a-btn" data-close>Keep</button><button type="button" class="a-btn primary" data-ok>Remove</button></div>`,
-    (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
+    (box, close) => box.querySelector('[data-ok]').addEventListener('click', async e => {
+      const b = e.currentTarget; if (b.disabled) return; busy(b, 'Removing…');
       try { await db.collection(C.assign).doc(aid).delete(); close(); await loadRound(S.all.roundId); renderAll(); }
       catch (e) { close(); say('The evaluator has already started, so the assignment stays.', 'warn'); await loadRound(S.all.roundId); renderAll(); }
     }));
@@ -2443,7 +2486,8 @@ function buildPrintRecord(r) {
       ? 'Evaluators can still read their reviews, but drafts can no longer be changed or submitted. You can reopen the round later.'
       : 'Evaluators can finish their drafts again.'}</p>
       <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok>${closing ? 'Close round' : 'Reopen round'}</button></div>`,
-    (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
+    (box, close) => box.querySelector('[data-ok]').addEventListener('click', async e => {
+      const b = e.currentTarget; if (b.disabled) return; busy(b, closing ? 'Closing…' : 'Reopening…');
       try { await db.collection(C.rounds).doc(r.id).update({ status: closing ? 'closed' : 'open', updated_at: ts() }); close(); await loadRounds(); renderAll(); }
       catch (e) { close(); say('The round wasn’t changed. ' + (denied(e) ? `Only ${READERS_AND} can close or reopen rounds.` : retry), 'error'); }
     }));
@@ -2464,7 +2508,15 @@ function buildPrintRecord(r) {
       chain: Promise.resolve(), pending: {}, timer: 0, since: 0, openNotes: {} };
     S.open.unsub = db.collection(C.reviews).doc(aid).onSnapshot(s => {
       const o = S.open; if (!o || o.aid !== aid || !s.exists) return;
-      const d = s.data(); if (d.status !== o.rev.status || (d.submitted_at && !o.rev.submitted_at)) { Object.assign(o.rev, { status: d.status, submitted_at: d.submitted_at, reopened_at: d.reopened_at }); o.exists = true; renderReview(false); }
+      if (s.metadata && s.metadata.hasPendingWrites) return;
+      const d = s.data(); if (d.status !== o.rev.status || (d.submitted_at && !o.rev.submitted_at)) { Object.assign(o.rev, { status: d.status, submitted_at: d.submitted_at, reopened_at: d.reopened_at }); o.exists = true; renderReview(false); return; }
+      const typing = document.activeElement && document.activeElement.matches && document.activeElement.matches('.a-ta');
+      if (Object.keys(o.pending).length || o.inflight || typing) return;
+      const same = k => JSON.stringify(d[k] || {}) === JSON.stringify(o.rev[k] || {});
+      if (!same('answers') || !same('notes') || !same('observations')) {
+        const k = focusKey(); Object.assign(o.rev, { answers: d.answers || {}, notes: d.notes || {}, observations: d.observations || {}, progress: d.progress || o.rev.progress });
+        o.exists = true; renderReview(false); refocus(k);
+      }
     }, () => {});
     renderReview(true);
   }
@@ -2560,7 +2612,7 @@ function buildPrintRecord(r) {
     const o = S.open; if (!o) return o;
     clearTimeout(o.timer);
     const changes = o.pending; if (!Object.keys(changes).length) return o.chain;
-    o.pending = {};
+    o.pending = {}; o.inflight = (o.inflight || 0) + 1;
     const ref = db.collection(C.reviews).doc(o.aid);
     o.rev.progress = computeProgress(o.rev);
     const write = () => {
@@ -2579,7 +2631,7 @@ function buildPrintRecord(r) {
       if (/permission/.test((e && e.code) || '')) say('That change didn’t save: this review is locked or its round is closed. Reload to see the latest.', 'error');
       else say('That change didn’t save. Check your connection; your next change will try again.', 'error');
       Object.assign(o.pending, changes);   // keep it for the next try
-    });
+    }).then(() => { o.inflight--; });
     return o.chain;
   }
   setInterval(() => { const o = S.open; if (o && o.since && Date.now() - o.since > WARN_AFTER) { say('Some changes haven’t reached the database yet. Keep this page open until you’re back online.', 'warn'); o.since = Date.now(); } }, 30000);
@@ -2632,7 +2684,8 @@ function buildPrintRecord(r) {
     const o = S.open;
     sheet(`<h2 id="aSheetT">Reopen this review?</h2><p>${esc(dr(o.a.evaluator_name))} can change the ratings and must submit again. The ratings and text stay as they are until then.</p>
       <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok>Reopen</button></div>`,
-    (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
+    (box, close) => box.querySelector('[data-ok]').addEventListener('click', async e => {
+      const b = e.currentTarget; if (b.disabled) return; busy(b, 'Reopening…');
       try {
         await db.collection(C.reviews).doc(o.aid).update({ status: 'draft', reopened_at: ts(), reopened_by: S.email });
         const fresh = await db.collection(C.reviews).doc(o.aid).get(); Object.assign(o.rev, fresh.data()); close(); renderReview(false);
@@ -2649,6 +2702,20 @@ function buildPrintRecord(r) {
   }
 
   /* ── events ── */
+  function setConn() {
+    const p = document.querySelector('.pvx-actions .live'); if (!p) return;
+    const on = navigator.onLine; p.classList.toggle('off', !on);
+    p.lastChild.textContent = on ? 'Live' : 'Offline';
+    p.title = on ? 'Connected. Changes save as you go.' : 'Offline. Changes are kept on this page until you’re back.';
+  }
+  addEventListener('offline', () => { setConn(); say('You’re offline. Your ratings are kept on this page and saved when you’re back. Keep this page open.', 'warn'); });
+  addEventListener('online', async () => {
+    setConn();
+    const n = $('.a-note'); if (n && /offline/.test(n.dataset.text || '')) n.remove();
+    const o = S.open; let saved = true;
+    if (o) { try { flush(); await o.chain; saved = !Object.keys(o.pending).length; } catch (e) { saved = false; } }
+    if (saved) say(o ? 'Back online. Your changes are saved.' : 'Back online.');
+  });
   function wire() {
     root.addEventListener('click', e => {
       const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); go(g.dataset.go); return; }
@@ -2704,7 +2771,7 @@ function buildPrintRecord(r) {
   function boot() {
     root = document.getElementById('asm');
     if (!firebaseApp()) { root.innerHTML = '<div class="a-card a-empty"><h2>Can’t reach Pravix</h2><p>Check your connection, then reload the page.</p></div>'; return; }
-    wire();
+    wire(); setConn();
     firebase.auth().onAuthStateChanged(u => {
       closeEditor();
       if (!u) { S.email = ''; showGate(); return; }
