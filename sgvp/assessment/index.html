@@ -856,8 +856,8 @@ details[open]>summary .a-disc{transform:rotate(90deg)}
 /* ── sheets (dialogs) ── */
 .a-sheet-wrap{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(5,10,20,.42)}
 .a-sheet{width:min(560px,100%);max-height:min(86vh,760px);overflow:auto;background:var(--a-card);color:var(--a-ink);border:1px solid var(--a-line);border-radius:18px;padding:22px 22px 18px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-body.dark .a-sheet{background:#131E34}
-body:not(.dark) .a-sheet{background:#fff}
+body.dark .a-sheet{background:#131E34;--a-sbg:#131E34}
+body:not(.dark) .a-sheet{background:#fff;--a-sbg:#fff}
 .a-sheet h2{margin:0 0 6px;font-size:1.25rem}
 .a-sheet>p{margin:0 0 12px;font-size:.875rem;line-height:1.5;color:var(--a-ink-2)}
 .a-sheet .btns{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
@@ -910,6 +910,10 @@ body.dark .pvx-actions .live.off{color:#F0BC55}
 .a-sheet:has(> .a-pick)>*{flex:none}
 .a-sheet:has(> .a-pick)>.a-pick{flex:0 1 300px;min-height:120px}
 .a-sheet:focus{outline:none}
+.a-shead{display:none}
+/* links that look like the cards and buttons they replace */
+a.a-intern{color:inherit;text-decoration:none}
+a.a-crumb{text-decoration:none}
 .a-pick button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:6px 12px;border:0;border-bottom:1px solid var(--a-soft);background:transparent;text-align:left;cursor:pointer}
 .a-pick button:last-child{border-bottom:0}
 .a-pick button:hover,.a-pick button[aria-selected=true]{background:rgba(56,189,210,.10)}
@@ -971,7 +975,22 @@ body:not(.dark) .a-note{background:#0E1A2B}
   .a-sheet .btns>span{display:none}
   .a-sheet .a-list li{padding:6px 0}
   /* a focused field or an error never sits under the pinned buttons */
-  .a-sheet{scroll-padding-bottom:150px}
+  .a-sheet{scroll-padding-bottom:150px;touch-action:pan-y}
+  /* iPhone form sheets (Assign, New round, due date): Cancel / title / action in a top bar that stays put while the form scrolls */
+  .a-sheet.form{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:0;align-content:start;padding-top:0;scroll-padding:64px 0 16px}
+  .a-sheet.form>*{grid-column:1 / -1}
+  .a-sheet.form>.a-shead{display:block;grid-row:1;position:sticky;top:0;z-index:2;height:56px;margin:0 calc(-1 * var(--sr)) 6px calc(-1 * var(--sl));background:var(--a-sbg);box-shadow:inset 0 -1px 0 var(--a-soft)}
+  .a-sheet.form>h2{grid-row:1;grid-column:2;position:sticky;top:0;z-index:3;height:56px;margin:0;padding:0 8px;display:flex;align-items:center;justify-content:center;
+    font-size:1.0625rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .a-sheet.form>.btns{display:contents}
+  .a-sheet.form>.btns>[data-close],.a-sheet.form>.btns>[data-ok]{grid-row:1;position:sticky;top:6px;z-index:3;align-self:start;width:auto;min-height:44px;margin:0;padding:0 2px;
+    border:0;background:none;box-shadow:none;color:var(--a-acc-ink);font-size:1.0625rem;font-weight:500;order:0}
+  .a-sheet.form>.btns>[data-close]{grid-column:1;justify-self:start}
+  .a-sheet.form>.btns>[data-ok]{grid-column:3;justify-self:end;font-weight:700}
+  .a-sheet.form>.btns>[data-ok][aria-disabled=true]{opacity:.45}
+  .a-sheet.form>.btns>[data-clear]{grid-column:1 / -1;width:100%;min-height:50px;margin-top:14px}
+  .a-sheet.form>.btns>span{display:none}
+  .a-sheet.form .a-pick{max-height:clamp(120px,calc(100dvh - 420px),300px)}
 }
 @media (max-width:420px){
   .a-score:not(.no) span.lv{display:none}
@@ -2358,6 +2377,8 @@ function buildPrintRecord(r) {
     behind.forEach(el => { el.inert = true; });
     document.body.appendChild(wrap);
     const box = wrap.firstElementChild;
+    /* a sheet with fields is a form: on iPhone its Cancel / title / action sit in a top bar (app.css) */
+    if (box.querySelector('input,select,textarea')) { box.classList.add('form'); box.insertAdjacentHTML('afterbegin', '<div class="a-shead" aria-hidden="true"></div>'); }
     const close = () => { wrap.remove(); behind.forEach(el => { el.inert = false; }); document.removeEventListener('keydown', key, true); try { prevFocus && prevFocus.focus(); } catch (e) {} };
     let dirty = false, asking = null;
     box.addEventListener('input', () => { dirty = true; }); box.addEventListener('change', () => { dirty = true; });
@@ -2395,6 +2416,7 @@ function buildPrintRecord(r) {
       e.preventDefault(); ok.click();
     });
     if (onOpen) onOpen(box, close);
+    swipeToDismiss(wrap, box, close, () => dirty && opts && opts.discard, discard);
     /* first focus: the first field; a sheet with only buttons focuses the sheet itself, so VoiceOver reads the title and message
        and no button (Cancel least of all) is pressed by Return. The sheet opens at its top either way. */
     setTimeout(() => {
@@ -2404,6 +2426,45 @@ function buildPrintRecord(r) {
       box.scrollTop = 0;
     }, 30);
     return close;
+  }
+  /* iPhone: drag a sheet down to dismiss it. From its top bar, or from anywhere while it's scrolled to the top
+     (not from inside the doctor list or a field). Past a third of its height, or a flick, it closes; otherwise it
+     springs back. With typed changes it springs back and asks Discard…? Reduce Motion: no spring, no slide. */
+  function swipeToDismiss(wrap, box, close, isDirty, ask) {
+    const phone = matchMedia('(max-width:600px)'), still = matchMedia('(prefers-reduced-motion: reduce)');
+    let d = null;
+    const dim = k => { wrap.style.backgroundColor = k >= 1 ? '' : `rgba(5,10,20,${(0.42 * k).toFixed(3)})`; };
+    const reset = () => { box.style.transition = ''; box.style.transform = ''; dim(1); };
+    const back = () => {
+      if (still.matches) return reset();
+      box.style.transition = 'transform .32s cubic-bezier(.2,1.25,.4,1)'; box.style.transform = 'translateY(0)'; dim(1);
+      setTimeout(reset, 340);
+    };
+    box.addEventListener('touchstart', e => {
+      if (!phone.matches || e.touches.length !== 1) return;
+      const y = e.touches[0].clientY, top = box.getBoundingClientRect().top, t = e.target;
+      const inBar = box.classList.contains('form') && y - top < 60;
+      if (!inBar && (box.scrollTop > 0 || t.closest('.a-pick,input,select,textarea'))) return;
+      d = { y0: y, dy: 0, moving: false, pts: [[y, e.timeStamp]] };
+    }, { passive: true });
+    box.addEventListener('touchmove', e => {
+      if (!d) return;
+      const y = e.touches[0].clientY, dy = y - d.y0;
+      if (!d.moving) { if (dy < -4) { d = null; return; } if (dy < 8) return; d.moving = true; box.style.transition = 'none'; }
+      e.preventDefault();
+      d.dy = Math.max(0, dy); d.pts.push([y, e.timeStamp]); if (d.pts.length > 5) d.pts.shift();
+      box.style.transform = `translateY(${d.dy}px)`; dim(1 - Math.min(1, d.dy / box.offsetHeight));
+    }, { passive: false });
+    const end = () => {
+      if (!d) return; const g = d; d = null; if (!g.moving) return;
+      const [a, b] = [g.pts[0], g.pts[g.pts.length - 1]], v = (b[0] - a[0]) / Math.max(1, b[1] - a[1]);   // px per ms
+      if (!(g.dy > box.offsetHeight / 3 || (g.dy > 40 && v > 0.5))) return back();
+      if (isDirty()) { back(); ask(); return; }
+      if (still.matches) return close();
+      box.style.transition = 'transform .2s ease-in'; box.style.transform = `translateY(${box.offsetHeight + 40}px)`; dim(0);
+      setTimeout(close, 200);
+    };
+    box.addEventListener('touchend', end); box.addEventListener('touchcancel', () => { if (d && d.moving) { d = null; back(); } else d = null; });
   }
   /* a sheet's error is said (role=alert) and shown: scrolled into view if the sheet had scrolled away from it */
   function showErr(err, text) {
@@ -2417,7 +2478,7 @@ function buildPrintRecord(r) {
   const helpLine = () => `<p class="a-help">Questions about a review? Email ${esc(HELP_CONTACT.name)} · <a href="mailto:${esc(HELP_CONTACT.email)}">${esc(HELP_CONTACT.email)}</a></p>`;
   function guideSheet() {
     sheet(`<h2 id="aSheetT">Rating guide</h2><p>Use the same anchors on every service. Rate only what you saw.</p><div class="a-guide-in">${guideLevels()}</div>${helpLine()}
-      <div class="btns"><button type="button" class="a-btn primary" data-close>Done</button></div>`);
+      <div class="btns"><button type="button" class="a-btn" data-close>Close</button></div>`);
   }
   function pill(st) {
     const m = { ns: ['ns', 'Not started'], draft: ['dr', 'Draft'], submitted: ['sb', 'Submitted'], open: ['sb', 'Open'], closed: ['cl', 'Closed'] }[st] || ['ns', st];
@@ -2579,11 +2640,11 @@ function buildPrintRecord(r) {
       list.forEach(a => {
         const i = intern(a.intern), rev = M.reviews[a.id], p = progressOf(rev), pct = Math.round(100 * p.rated / p.total);
         const st = rev ? rev.status : 'ns';
-        html += `<button type="button" class="a-card a-intern" data-go="#review/${encodeURIComponent(a.id)}">`
+        html += `<a class="a-card a-intern" href="#review/${encodeURIComponent(a.id)}" data-go="#review/${encodeURIComponent(a.id)}">`
           + `<div class="top"><span class="a-av ${esc(i.group)}" aria-hidden="true">${initials(i.name)}</span><div><div class="nm">${esc(fullName(i))}</div>`
           + `<div class="meta">${esc(GROUPS[i.group] || '')}<span>${esc(a.record_id)}</span></div></div></div>`
           + `<div class="a-bar" aria-hidden="true"><i style="width:${pct}%"></i></div>`
-          + `<div class="a-ifoot">${pill(st)}<span>${st === 'submitted' ? 'Submitted ' + esc(fmtDate(rev.submitted_at)) : `${p.rated} of ${p.total} rated`}</span></div></button>`;
+          + `<div class="a-ifoot">${pill(st)}<span>${st === 'submitted' ? 'Submitted ' + esc(fmtDate(rev.submitted_at)) : `${p.rated} of ${p.total} rated`}</span></div></a>`;
       });
       html += `</div>`;
     });
@@ -2633,7 +2694,7 @@ function buildPrintRecord(r) {
         html += `<div class="a-ev" data-row="${esc(a.id)}"><div class="who"><b>${esc(a.evaluator_name)}</b><span>${esc(a.email)} · ${esc(a.record_id)}</span></div>`
           + `<div class="prog"><small>${st === 'submitted' ? esc(fmtDate(rev.submitted_at)) : `${p.rated} of ${p.total} rated`}</small><div class="a-bar"><i style="width:${Math.round(100 * p.rated / p.total)}%"></i></div></div>`
           + pill(st)
-          + (rev ? `<button type="button" class="a-btn small" data-go="#review/${encodeURIComponent(a.id)}">Open</button>`
+          + (rev ? `<a class="a-btn small" href="#review/${encodeURIComponent(a.id)}" data-go="#review/${encodeURIComponent(a.id)}">Open</a>`
                  : `<button type="button" class="a-btn small quiet danger" data-act="unassign" data-aid="${esc(a.id)}">Remove…</button>`)
           + `</div>`;
       });
@@ -2913,7 +2974,7 @@ function buildPrintRecord(r) {
     else if (r.reopened_at) lock = `<div class="a-lock warn">${ICON.info}<span>${esc(READER_NAMES[r.reopened_by] || 'The program')} reopened this review on ${esc(fmtDate(r.reopened_at))}. Make your changes, then submit it again.</span></div>`;
 
     const back = S.reader && !o.mine ? '#all/' + encodeURIComponent(o.a.round) : '#mine';
-    root.innerHTML = `<button type="button" class="a-crumb" data-go="${back}">${ICON.back}${S.reader && !o.mine ? 'All reviews' : 'My reviews'}</button>`
+    root.innerHTML = `<a class="a-crumb" href="${back}" data-go="${back}">${ICON.back}${S.reader && !o.mine ? 'All reviews' : 'My reviews'}</a>`
       + head(o.round.name, fullName(i), `${o.mine ? 'Your review' : 'Review by ' + esc(o.a.evaluator_name)} · ${esc(o.a.record_id)}${o.round.period ? ' · ' + esc(o.round.period) : ''}`,
         `<button type="button" class="a-btn" data-act="print">${ICON.print}Print${r.status === 'submitted' ? '' : ' draft'}…</button>`
         + (ed ? `<button type="button" class="a-btn primary" data-act="submit">Review and submit…</button>` : ''))
@@ -3210,6 +3271,8 @@ function buildPrintRecord(r) {
   function wire() {
     root.addEventListener('click', e => {
       const g = e.target.closest('[data-go]'); if (g) {
+        /* reviews and the crumb are links: ⌘-click, Shift-click and middle-click open them in a new tab or window, as the browser does */
+        if (g.tagName === 'A' && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button)) return;
         e.preventDefault();
         if (/^#review\//.test(g.dataset.go)) {
           opening(g);
