@@ -425,7 +425,8 @@ match /client_intakes/{docId} {
         && request.resource.data.name is string && request.resource.data.name.size() <= 120
         && request.resource.data.interns is list && request.resource.data.interns.size() <= 20
         && request.resource.data.status in ['open', 'closed'];
-      allow delete: if false;
+      // a round opened by mistake can be deleted; the page offers it only while no evaluator is assigned
+      allow delete: if reviewReader();
     }
     match /sgvp_review_assign/{aid} {
       allow read: if reviewReader() || (staff() && resource.data.email == myEmail());
