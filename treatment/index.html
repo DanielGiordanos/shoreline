@@ -1296,6 +1296,26 @@ body:not(.dark) #tsOrderSheet .bt-mic:not(.on),body:not(.dark) .v-chip.cur.cyan,
 #sheetInner .cell .mk-pair>.mark{flex:0 1 auto;min-width:0}
 #tsModal .ts-join{margin:8px 0 0;font-size:.8125rem;color:var(--ink-500,#5C5E62)}
 </style>
+<script id="pvx-n267-ts">
+/* n267 · Treatment Sheets against HIG Text views, Web views, Boxes, Collections
+   (claude/hig-audit-treatment-textviews-webviews-boxes-collections.md) */
+(function(){
+  /* Collections 1. a redraw never takes away what someone is typing (HIG: don't change the layout while people are
+     interacting with it). A view that redraws itself calls pvxKeepFields(root) first and the returned function after:
+     what was typed in a field with an id comes back, with the cursor where it was. */
+  window.pvxKeepFields=function(root){ if(!root) return null; var a=document.activeElement, keep=[], focus=null;
+    [].forEach.call(root.querySelectorAll('input[id],textarea[id]'),function(f){ if(f.type==='hidden'||f.type==='checkbox'||f.type==='radio') return;
+      if(f.value!==f.defaultValue) keep.push([f.id,f.value]); });
+    if(a&&root.contains(a)&&a.id&&/^(INPUT|TEXTAREA)$/.test(a.tagName)){ var s=null,e=null; try{ s=a.selectionStart; e=a.selectionEnd; }catch(x){} focus=[a.id,s,e]; }
+    if(!keep.length&&!focus) return null;
+    return function(){ keep.forEach(function(k){ var f=document.getElementById(k[0]); if(f&&root.contains(f)&&f.value!==k[1]&&(f.value===''||f.value===f.defaultValue)) f.value=k[1]; });
+      if(focus){ var f=document.getElementById(focus[0]); if(f&&root.contains(f)){ try{ f.focus({preventScroll:true}); if(focus[1]!=null) f.setSelectionRange(focus[1],focus[2]); }catch(x){} } } }; };
+})();
+</script>
+<style id="pvx-n267-css">
+/* Boxes 1. one level deep: the hospitalization level's summary is a plain line under the choice, not a box in a box */
+.ch-lvnow{background:none!important;border-radius:0!important;padding:10px 0 0!important;margin:12px 15px 0!important;border-top:1px solid var(--glass-hairline,rgba(150,185,220,.14))}
+</style>
 </head>
 <body>
 <!-- Same theme bootstrap as Pravix Flow: shared pvx_theme cookie; until someone chooses, the system's light or dark (n230). -->
@@ -1439,7 +1459,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=5d4fec3d10"></script>
+<script defer src="store.js?v=cbdb796b77"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
