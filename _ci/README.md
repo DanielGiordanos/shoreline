@@ -18,7 +18,7 @@ python3 tests/run.py SITE --list                 # what there is, with its tags
 
 **Apps:** anesia, treatment, flow, or, sgvp, kura, checkin, directory, scheduling, forms, grid, yakuri, topbar.
 
-**Topics:** layout, typography, motion, color, accessibility, dark-mode, icons, materials, branding, menus, toolbars, sheets-alerts, search, drag-drop, notifications, data-entry, calendar, drugs, offline, sign-in, printing, behaviour.
+**Topics:** layout, typography, motion, color, accessibility, dark-mode, icons, materials, branding, menus, toolbars, sheets-alerts, search, drag-drop, writing, charts, sharing, notifications, data-entry, calendar, drugs, offline, sign-in, printing, behaviour.
 
 ## Layout
 | Path | What it is |
