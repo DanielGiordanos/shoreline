@@ -3067,7 +3067,7 @@ body.dark .sn-bar .sn-x{color:#5fd3e6}
   function groups(){ return [
     {title:'General', items:[{keys:['mod','K'],label:'Search patients and orders'},{keys:['?'],label:'Show keyboard shortcuts'}]},
     {title:'Patient tabs', items:[{keys:['alt','1–9'],label:'Go to patient tab 1 to 9'},{keys:['←','→'],label:'Move between tabs (on a tab)'},{keys:['Delete'],label:'Close the tab (on a tab)'}]},
-    {title:'Treatment sheet', items:[{keys:['↑','↓','←','→'],label:'Move around the sheet'},{keys:['Home','End'],label:'Go to the start or end of the row'},{keys:['return'],label:'Chart or open the cell'},
+    {title:'Treatment sheet', items:[{keys:['alt','E'],label:'Full view on or off'},{keys:['alt','I'],label:'Show or hide patient info (in full view and on narrow screens)'},{keys:['↑','↓','←','→'],label:'Move around the sheet'},{keys:['Home','End'],label:'Go to the start or end of the row'},{keys:['return'],label:'Chart or open the cell'},
       {keys:['mod','Z'],label:'Undo'},{keys:['shift','mod','Z'],label:'Redo'},{keys:['alt','Click'],label:'Fold or unfold every section (on a section)'}]},
     {title:'Status board', items:[{keys:['1–4'],label:'Your patients, Outpatients, Inpatients, Boarding'},{keys:['H'],label:'Hours or list'}]},
     {title:'Inpatients display', items:[{keys:['←','→'],label:'Turn the page'},{keys:['esc'],label:'Leave the display'}]},
@@ -3230,5 +3230,39 @@ body:not(.dark) #tsFind .ts-fr-clear{color:#0062CC}
   body:not(.dark) #sheetInner .grow.zb>.rl{box-shadow:inset 0 0 0 999px rgba(30,45,90,.05)!important}
 }
 </style>
+<script id="pvx-n269-ts">
+/* n269 · Treatment Sheets against HIG Lockups, Outline views, Split views
+   (claude/hig-audit-treatment-lockups-outlines-splitviews.md) */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)};
+  var MAC=/Mac|iPhone|iPad|iPod/.test(navigator.platform||navigator.userAgent), K=function(l){ return MAC?'⌥'+l:'Alt+'+l; };
+  function shown(e){ return !!(e&&e.getClientRects().length&&getComputedStyle(e).display!=='none'); }
+  function typing(){ var a=document.activeElement; return !!(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable)); }
+  function say(t){ try{ window.pvxSay&&pvxSay(t); }catch(e){} }
+
+  /* Split views 1. the Patient info pane says whether it's showing (aria-expanded, aria-controls), and a hidden pane
+     comes back from the keyboard too: ⌥E full view on and off, ⌥I patient info (HIG: several ways to reveal a hidden pane) */
+  function paint(){
+    var t=$('#ctab-sheet .brief-toggle'), s=$('#clinSidebar');
+    if(t&&s){ var open=s.classList.contains('open'); if(t.getAttribute('aria-expanded')!==String(open)) t.setAttribute('aria-expanded',String(open));
+      if(t.getAttribute('aria-controls')!=='clinSidebar') t.setAttribute('aria-controls','clinSidebar'); t.setAttribute('aria-keyshortcuts','Alt+I');
+      var tt=(open?'Hide patient info':'Show patient info')+' · '+K('I'); if(t.title!==tt) t.title=tt; }
+    var x=$('#ctab-sheet .ts-expand-btn'); if(x){ x.setAttribute('aria-keyshortcuts','Alt+E'); var b=(x.title||'').replace(/ · (⌥|Alt\+)E$/,''); if(b&&x.title!==b+' · '+K('E')) x.title=b+' · '+K('E'); } }
+  window.addEventListener('keydown',function(e){ if(!e.altKey||e.metaKey||e.ctrlKey||e.shiftKey||e.isComposing||typing()) return;
+    if(e.code!=='KeyE'&&e.code!=='KeyI') return; if(typeof currentCTab!=='undefined'&&currentCTab!=='sheet') return;
+    var s=$('#clinSidebar'), briefOpen=!!(s&&s.classList.contains('open'));
+    if(window.pvxModalUp&&pvxModalUp()&&!briefOpen) return;
+    if(e.code==='KeyE'){ var x=$('#ctab-sheet .ts-expand-btn'); if(!shown(x)) return; e.preventDefault(); if(briefOpen) try{ closeBrief(); }catch(z){}
+      var on=!document.body.classList.contains('ts-expand'); x.click(); say(on?'Full view':'Full view off'); setTimeout(paint,300); return; }
+    var t=$('#ctab-sheet .brief-toggle'); if(!shown(t)) return;   /* the pane is already beside the sheet */
+    e.preventDefault(); if(briefOpen){ try{ closeBrief(); }catch(z){} try{ t.focus({preventScroll:true}); }catch(z){} say('Patient info hidden'); }
+    else { try{ openBrief(); }catch(z){} say('Patient info'); }
+    setTimeout(paint,30); },true);
+
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ paint(); }catch(e){} }); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
 </body>
 </html>
