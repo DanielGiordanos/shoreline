@@ -2255,14 +2255,16 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   /* ---------- printing ---------- */
   var SHEET_TABS={sheet:1,vitals:1,timeline:1,charges:1,notes:1,anes:1,anesthesia:1};
   function kind(){ var t=(typeof currentCTab!=='undefined')?currentCTab:''; var f=F(); var cur=f&&f.cur();
+    if(t==='tasks'&&window.pvxPrintTasks) return 'tasks';   /* n265 */
     return cur&&SHEET_TABS[t]?'sheet':(cur&&t!=='dash'&&t!=='tasks'?'sheet':'board'); }
   window.tsPrintSheet=function(){ if(window.__tsPrintLive&&!__tsPrintLive('sheet')) try{ toast('Open a sheet to print it'); }catch(e){} };
   window.tsPrintBoard=function(){ window.__tsPrintLive&&__tsPrintLive('board'); };
   window.tsPrintItem=function(){ var ok=window.tsPrintReady&&tsPrintReady(), key=matchMedia('(hover:hover)').matches?(MAC?' · ⌘P':' · Ctrl+P'):'';
-    return '<div class="ts-cm-sep" role="separator"></div><button type="button" role="menuitem" data-c="print"'+(ok?'':' aria-disabled="true" disabled')+'><b>Print…</b><small>'+(ok?'This sheet, today'+key:'Available once the sheet has loaded')+'</small></button>'; };
+    return '<div class="ts-cm-sep" role="separator"></div><button type="button" role="menuitem" data-c="print"'+(ok?'':' aria-disabled="true" disabled')+'><b>Print…</b><small>'+(ok?'This sheet, '+(window.pvxPrintDay?pvxPrintDay():'today')+key:'Available once the sheet has loaded')+'</small></button>'; };
   /* ⌘P stays the browser's: when printing starts, a paper version of what's open is put in place */
   window.addEventListener('beforeprint',function(){ if(document.documentElement.classList.contains('dt-printing')||!window.__tsPrintLive) return;
-    var k=kind(); if(k==='sheet'&&!(window.tsPrintReady&&tsPrintReady())) k='board'; try{ __tsPrintLive(k,true); }catch(e){ console.warn('[print]',e); } });
+    var k=kind(); if(k==='tasks'){ try{ if(pvxPrintTasks(true)) return; }catch(e){ console.warn('[print]',e); } k='board'; }
+    if(k==='sheet'&&!(window.tsPrintReady&&tsPrintReady())) k='board'; try{ __tsPrintLive(k,true); }catch(e){ console.warn('[print]',e); } });
 
   /* ---------- the finder ---------- */
   var recent=[], lastCur=null, rows=[], idx=0, shown=false;
@@ -2284,19 +2286,30 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   var OIC='<span class="ts-fo-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 1 1 7-7l7 7a4.95 4.95 0 1 1-7 7Z"/><path d="m8.5 8.5 7 7"/></svg></span>';
   function pRow(e,i){ var cur=F().cur(); return '<button type="button" class="mi'+(i===idx?' cur':'')+(e._id===cur?' open':'')+'" role="option" id="tsFindO'+i+'" aria-selected="'+(i===idx)+'" data-open="'+esc(e._id)+'">'+med(e)+'<span class="tx"><b>'+esc(nm(e))+'</b><small>'+esc(sub(e))+'</small></span></button>'; }
   function oRow(h,i){ return '<button type="button" class="mi ord'+(i===idx?' cur':'')+'" role="option" id="tsFindO'+i+'" aria-selected="'+(i===idx)+'" data-open="'+esc(h.s._id)+'" data-order="'+esc(h.o.id)+'">'+OIC+'<span class="tx"><b>'+esc(h.o.name)+'</b><small>'+esc(nm(h.s)+' · '+oLine(h.o))+'</small></span></button>'; }
+  /* n265 (HIG Searching: corrections): close matches when nothing matches exactly — one letter off for short words, two for long ones */
+  function osa(a,b){ var m=a.length,n=b.length,i,j; if(Math.abs(m-n)>2) return 9; var d=[]; for(i=0;i<=m;i++) d[i]=[i]; for(j=0;j<=n;j++) d[0][j]=j;
+    for(i=1;i<=m;i++) for(j=1;j<=n;j++){ var c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c); if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]) d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1); } return d[m][n]; }
+  function near(w,ws){ var lim=w.length<4?0:w.length<6?1:2; return ws.some(function(x){ if(!x) return false; if(x.indexOf(w)===0) return true; if(!lim) return false; return osa(w,x)<=lim||(x.length>w.length&&osa(w,x.slice(0,w.length))<=lim); }); }
+  function closeMatches(q){ var w=fold(q).split(/\s+/).filter(Boolean), p=[], o=[]; if(!w.length||w.join('').length<4) return {p:p,o:o};
+    (F().all()||[]).forEach(function(e){ var t=e.patient||{}; var ws=fold([t.name,t.last,t.location,t.doctor,t.tech,t.breed,t.problem,t.reason].filter(Boolean).join(' ')).split(/[\s,·]+/);
+      if(w.every(function(x){ return near(x,ws); })) p.push(e);
+      var os=e.orders||{}; Object.keys(os).forEach(function(k){ var r=os[k]; if(!r||r.dc||r.draft||!r.name) return; if(w.every(function(x){ return near(x,fold(r.name).split(/\s+/)); })) o.push({s:e,o:r}); }); });
+    return {p:p.slice(0,4),o:o.slice(0,4)}; }
   function draw(q){ var f=F(), el=f.el(), html='', i=0; rows=[];
     if(!q){ var my=mine().slice(0,5), seen={}; my.forEach(function(e){ seen[e._id]=1; });
       var rc=recent.map(sheetById).filter(function(e){ return e&&!seen[e._id]; }).slice(0,5);
       if(!my.length&&!rc.length) return false;
       if(my.length){ html+='<div class="mh">Your patients</div>'+my.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join(''); }
-      if(rc.length){ html+='<div class="mh">Recently opened</div>'+rc.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join(''); }
+      if(rc.length){ html+='<div class="mh ts-fr-h">Recently opened<button type="button" class="ts-fr-clear" data-clear-recent aria-label="Clear recently opened">Clear</button></div>'+rc.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join(''); }
     } else {
       var pl=f.list(q), oh=orderHits(q), ids={}; oh.forEach(function(h){ ids[h.s._id]=1; });
       /* a patient found only by an order shows under Orders, not twice */
       var pOnly=pl.filter(function(e){ var w=fold(q).split(/\s+/).filter(Boolean); var t=e.patient||{}; var hay=fold([t.name,t.last,t.owner,t.reason,t.location,t.doctor,t.breed,t.species,t.problem,(t.problems||[]).map(function(x){ return x&&(x.name||x.text||x); }).join(' ')].filter(Boolean).join(' '));
         return w.every(function(x){ return hay.indexOf(x)>-1; })||!ids[e._id]; }).slice(0,6);
       if(pOnly.length) html+='<div class="mh">Patients</div>'+pOnly.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join('');
-      else if(!oh.length) html+='<div class="mh">Patients and orders</div><div class="me">No patient or order matches “'+esc(q)+'”.</div>';
+      else if(!oh.length){ var cm=closeMatches(q);
+        if(cm.p.length||cm.o.length) html+='<div class="mh">Close matches</div><div class="me">Nothing matches “'+esc(q)+'” exactly.</div>'+cm.p.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join('')+cm.o.map(function(h){ rows.push({id:h.s._id,order:h.o.id}); return oRow(h,i++); }).join('');
+        else html+='<div class="mh">Patients and orders</div><div class="me">No patient or order matches “'+esc(q)+'”.</div>'; }
       if(oh.length){ html+='<div class="mh">Orders</div>'+oh.slice(0,6).map(function(h){ rows.push({id:h.s._id,order:h.o.id}); return oRow(h,i++); }).join(''); }
     }
     if(idx>=rows.length) idx=Math.max(0,rows.length-1);
@@ -2317,6 +2330,10 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
       if(row&&f.cur()===id){ try{ row.scrollIntoView({block:'center'}); }catch(e){} row.classList.remove('ts-order-hl'); void row.offsetWidth; row.classList.add('ts-order-hl'); setTimeout(function(){ row.classList.remove('ts-order-hl'); },1800); return; }
       if(tries<30) setTimeout(look,100); })(); }
   document.addEventListener('mousedown',function(e){ var t=e.target.closest&&e.target.closest('#tsFind [data-order]'); if(!t) return; e.preventDefault(); e.stopPropagation(); openAtOrder(t.getAttribute('data-open'),t.getAttribute('data-order')); },true);
+  /* n265: Clear empties Recently opened, on this computer, and keeps the search open */
+  function clearRecent(e){ var t=e.target.closest&&e.target.closest('#tsFind [data-clear-recent]'); if(!t) return; e.preventDefault(); e.stopPropagation();
+    if(e.type==='click'&&e.detail) return; recent=[]; lastCur=(F()&&F().cur())||null; idx=0; if(!draw('')) F().hide(); var b=$('#globalSearch'); b&&b.focus(); try{ window.pvxSay&&pvxSay('Recently opened cleared'); }catch(x){} }
+  document.addEventListener('mousedown',clearRecent,true); document.addEventListener('click',clearRecent,true);
   function aria(){ var i=$('#globalSearch'), el=$('#tsFind'); if(!i) return; var open=!!(el&&el.classList.contains('show'));
     i.setAttribute('aria-expanded',open?'true':'false'); var c=el&&$('.mi.cur',el); if(open&&c&&c.id) i.setAttribute('aria-activedescendant',c.id); else i.removeAttribute('aria-activedescendant'); }
   function wireSearch(){ var i=$('#globalSearch'); if(!i||i._pvx237) return; i._pvx237=1;
@@ -3047,6 +3064,77 @@ body:not(.dark) .pvx-tip-x{color:#4A5268}
 body:not(.dark) .pvx-tip-x:hover{background:rgba(0,0,0,.055)}
 @media (hover:none){.pvx-tip{font-size:max(0.8125rem,13px)}.pvx-tip-x::after{content:"";position:absolute;inset:-8px}}
 @media (prefers-contrast:more){.pvx-tip{border-width:2px}}
+</style>
+<script id="pvx-n265-ts">
+/* n265 · Treatment Sheets against HIG Playing audio, Printing, Ratings and reviews, Searching
+   (claude/hig-audit-treatment-audio-printing-ratings-searching.md) */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  var MAC=/Mac|iPhone|iPad|iPod/.test(navigator.platform||navigator.userAgent);
+  function esc(x){ return String(x==null?'':x).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function vis(e){ return !!(e&&e.getClientRects().length); }
+  function dk(d){ return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0'); }
+
+  /* Printing 2. Print… says which day it prints (it said "today" on an earlier day) */
+  window.pvxPrintDay=function(){ try{ var v=window.tsViewDk&&tsViewDk(); if(!v||v===dk(new Date())) return 'today';
+    return new Date(+v.slice(0,4),+v.slice(4,6)-1,+v.slice(6,8)).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }catch(e){ return 'today'; } };
+
+  /* Printing 1. Tasks prints the task list it shows (it printed the Status board) */
+  function stamp(){ var me={}; try{ me=(window.__tsFind&&__tsFind.me())||{}; }catch(e){} var now=new Date();
+    var at=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).replace(',','')+' at '+now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return {at:at, line:'printed '+at+(me.name?' by '+me.name:'')}; }
+  function taskRows(){ var root=$('#ctab-tasks'), out=[]; if(!root) return out;
+    $$('.wl-sec',root).filter(vis).forEach(function(sec){ var h=$('h3',sec), c=h?h.cloneNode(true):null; if(c) $$('span',c).forEach(function(s){ s.remove(); });
+      var g={title:c?c.textContent.replace(/\s+/g,' ').trim():'', rows:[]};
+      $$('.wl-pt',sec).filter(vis).forEach(function(pt){ var ph=$('.wl-pth',pt), nm=ph&&$('b',ph)?$('b',ph).textContent.trim():'', sub=ph&&$('span',ph)?$('span',ph).textContent.trim():'';
+        $$('.wl-row',pt).forEach(function(r){ var w=$('.wl-what',r); g.rows.push([($('.wl-time',r)||{}).textContent||'', nm, sub, w&&$('b',w)?$('b',w).textContent.trim():'', w&&$('small',w)?$('small',w).textContent.trim():'']); }); });
+      if(g.rows.length) out.push(g); });
+    return out; }
+  window.pvxPrintTasks=function(noPrint){ var root=$('#ctab-tasks'); if(!root) return false;
+    var gs=taskRows(), n=gs.reduce(function(a,g){ return a+g.rows.length; },0), st=stamp();
+    var seg=$('.wl-seg button.on',root), chip=$('.wl-chip.on',root);
+    var scope=[seg?seg.textContent.trim():'', chip&&chip.textContent.trim()!=='All'?chip.textContent.trim():''].filter(Boolean).join(' · ');
+    var body=gs.map(function(g){ return '<h4>'+esc(g.title)+' <small>'+g.rows.length+'</small></h4><table class="dp-board dp-tasks"><colgroup><col class="t"><col class="p"><col class="w"><col class="v"><col class="i"></colgroup>'+
+      '<thead><tr><th>Time</th><th>Patient</th><th>Task</th><th>Value</th><th>Initials</th></tr></thead><tbody>'+
+      g.rows.map(function(r){ return '<tr><td>'+esc(r[0].trim())+'</td><td><b>'+esc(r[1])+'</b><small>'+esc(r[2])+'</small></td><td><b>'+esc(r[3])+'</b>'+(r[4]?'<small>'+esc(r[4])+'</small>':'')+'</td><td></td><td></td></tr>'; }).join('')+'</tbody></table>'; }).join('');
+    var html='<section class="dp-page"><div class="dp-band live">TREATMENT · TASKS'+(scope?' · '+esc(scope.toUpperCase()):'')+' · '+n+' task'+(n===1?'':'s')+' · '+esc(st.line)+'</div>'+
+      (body||'<p class="dp-none">No tasks in this view.</p>')+'<div class="dp-foot">Printed from Treatment. Tasks in Treatment are current; this page is not. Chart what you do in Treatment.</div></section>';
+    var host=$('#tsDtPrint'); if(!host){ host=document.createElement('div'); host.id='tsDtPrint'; host.setAttribute('translate','no'); document.body.appendChild(host); }
+    host.innerHTML=html; document.documentElement.classList.add('dt-printing');
+    var t0=document.title; document.title=('Treatment tasks – '+st.at).replace(/:/g,'.').replace(/[  ]/g,' ');
+    var done=function(){ document.title=t0; document.documentElement.classList.remove('dt-printing'); window.removeEventListener('afterprint',done); };
+    window.addEventListener('afterprint',done);
+    if(!noPrint) setTimeout(function(){ try{ window.print(); }catch(x){ try{ toast('Couldn’t open printing'); }catch(y){} } setTimeout(done,1500); },60);
+    return true; };
+
+  /* Printing 1b. a Print… button on Tasks, as the board has (HIG: make printing discoverable; dimmed when there's nothing to print) */
+  var PIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>';
+  function printBtn(){ var top=$('#ctab-tasks .wl-top'); if(!top) return; var b=$('.wl-print',top);
+    if(!b){ b=document.createElement('button'); b.type='button'; b.className='sb-tvb wl-print'; b.innerHTML=PIC;
+      b.onclick=function(){ if(b.getAttribute('aria-disabled')==='true'){ try{ toast('No tasks to print in this view'); }catch(e){} return; } pvxPrintTasks(false); };
+      var seg=$('.wl-seg',top); seg&&seg.parentNode===top?top.insertBefore(b,seg.nextSibling):top.appendChild(b); }
+    var none=!taskRows().length, key=matchMedia('(hover:hover)').matches?(MAC?' ⌘P':' Ctrl+P'):'';
+    b.setAttribute('aria-label','Print the task list…'); b.title=none?'No tasks to print in this view':'Print the task list…'+key;
+    if(none) b.setAttribute('aria-disabled','true'); else b.removeAttribute('aria-disabled'); }
+
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ printBtn(); }catch(e){} }); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<style id="pvx-n265-css">
+#tsDtPrint .dp-tasks col.t{width:11%}#tsDtPrint .dp-tasks col.p{width:27%}#tsDtPrint .dp-tasks col.w{width:32%}#tsDtPrint .dp-tasks col.v{width:18%}#tsDtPrint .dp-tasks col.i{width:12%}
+#tsDtPrint .dp-tasks td{height:22px}
+#ctab-tasks .wl-top .wl-print{flex:0 0 auto;width:38px;height:38px;padding:0;display:inline-grid;place-items:center}
+#ctab-tasks .wl-top .wl-print svg{width:18px;height:18px;margin:0}
+#ctab-tasks .wl-top .wl-print[aria-disabled=true]{opacity:.45;cursor:default}
+@media (pointer:coarse){#ctab-tasks .wl-top .wl-print{width:44px;height:44px}}
+#tsFind .ts-fr-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#tsFind .ts-fr-clear{border:0;background:transparent;padding:2px 6px;margin:-2px -6px -2px 0;border-radius:6px;font:inherit;font-size:0.75rem;font-weight:600;letter-spacing:0;text-transform:none;color:#38BDD2;cursor:pointer;position:relative}
+body:not(.dark) #tsFind .ts-fr-clear{color:#0062CC}
+#tsFind .ts-fr-clear:hover{background:rgba(150,185,220,.14)}
+#tsFind .ts-fr-clear:focus-visible{outline:3px solid rgba(88,166,255,.55);outline-offset:1px}
+@media (pointer:coarse){#tsFind .ts-fr-clear::after{content:"";position:absolute;inset:-12px -8px}}
 </style>
 </body>
 </html>
