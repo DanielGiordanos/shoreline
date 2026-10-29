@@ -755,7 +755,10 @@ body:not(.dark) #asm,body:not(.dark) .a-sheet-wrap{color-scheme:light}
 .a-lock svg{width:1.4em;height:1.4em;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 .a-work{display:grid;grid-template-columns:232px minmax(0,1fr) 272px;gap:16px;align-items:start}
-.a-rail,.a-guide{position:sticky;top:150px}
+.a-rail,.a-guide{position:sticky;top:92px}
+/* sidebars only stick if body isn't its own scroll container: the shell's body{overflow-x:hidden} next to html{overflow-x:clip}
+   makes it one, and it never scrolls. html's clip still stops sideways scrolling. Phones keep the shell as it is. */
+@media (min-width:821px){html:not(.pvx-signed-out) body{overflow-x:visible}}
 .a-rail{background:var(--a-card);border:1px solid var(--a-line);border-radius:16px;padding:8px}
 .a-step{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:6px 8px;border:0;border-radius:10px;background:transparent;text-align:left;cursor:pointer;color:var(--a-ink-2)}
 .a-step:hover{background:var(--a-soft)}
@@ -773,9 +776,13 @@ body:not(.dark) #asm,body:not(.dark) .a-sheet-wrap{color-scheme:light}
 .a-q:first-of-type{margin-top:12px}
 .a-q .tag{font-size:.6875rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--a-ink-2)}
 .a-q .tag.ok{color:var(--a-ok-ink)}
-.a-q .tag.ok::before,.a-foot .st.ok::before,.a-list .a-ok::before{content:"";display:inline-block;width:1.15em;height:1.15em;margin-right:.3em;vertical-align:-.2em;background:currentColor;-webkit-mask:var(--a-ck) center/contain no-repeat;mask:var(--a-ck) center/contain no-repeat}
+.a-lh{margin:4px 0 2px;font-size:.6875rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--a-ink-2)}
+.a-lh.ok{color:var(--a-ok-ink)}
+.a-sheet>p.a-lh{margin:6px 0 2px;font-size:.6875rem;line-height:1.4}
+.a-sheet>p.a-lh.ok{color:var(--a-ok-ink)}
+.a-q .tag.ok::before,.a-foot .st.ok::before,.a-list .a-ok::before,.a-lh.ok::before{content:"";display:inline-block;width:1.15em;height:1.15em;margin-right:.3em;vertical-align:-.2em;background:currentColor;-webkit-mask:var(--a-ck) center/contain no-repeat;mask:var(--a-ck) center/contain no-repeat}
 #asm,.a-sheet-wrap{--a-ck:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}
-@media (forced-colors:active){.a-q .tag.ok::before,.a-foot .st.ok::before,.a-list .a-ok::before{background:CanvasText}}
+@media (forced-colors:active){.a-q .tag.ok::before,.a-foot .st.ok::before,.a-list .a-ok::before,.a-lh.ok::before{background:CanvasText}}
 .a-list .a-ok{font-weight:600;color:var(--a-ok-ink)}
 .a-step .n svg,.a-lvl b.n svg{width:1.05em;height:1.05em;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .a-lvl b.n svg{stroke-width:2}
@@ -856,7 +863,7 @@ body:not(.dark) .a-sheet{background:#fff}
 .a-sheet .btns{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
 .a-list{margin:8px 0 0;padding:0;list-style:none;border-top:1px solid var(--a-soft)}
 .a-list li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;line-height:1.45;border-bottom:1px solid var(--a-soft);font-size:.875rem}
-.a-list li span{color:var(--a-ink-2);font-variant-numeric:tabular-nums}
+.a-list li span{color:var(--a-ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .a-field{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:.8125rem;font-weight:600;color:var(--a-ink-2)}
 .a-field input,.a-field select{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--a-line);background:var(--a-card-2);color:var(--a-ink);font-family:inherit;font-size:1rem;font-weight:500;line-height:1.3}
 .a-field input:focus-visible{outline:none;border-color:var(--a-acc);box-shadow:0 0 0 3px rgba(56,189,210,.18)}
@@ -897,6 +904,12 @@ body.dark .pvx-actions .live.off{color:#F0BC55}
 .a-search-x:active{background:var(--a-line)}
 .a-search-x:focus-visible{outline:2px solid var(--a-acc);outline-offset:1px}
 .a-pick{max-height:300px;overflow:auto;margin-top:8px;border:1px solid var(--a-soft);border-radius:12px}
+/* one scroll area in Assign: the doctor list takes the room left in the sheet (two and a half rows at least, so the cut-off row shows it scrolls; 300 px at most);
+   the sheet itself scrolls only when the window is too short even for that */
+.a-sheet:has(> .a-pick){display:flex;flex-direction:column}
+.a-sheet:has(> .a-pick)>*{flex:none}
+.a-sheet:has(> .a-pick)>.a-pick{flex:0 1 300px;min-height:120px}
+.a-sheet:focus{outline:none}
 .a-pick button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:6px 12px;border:0;border-bottom:1px solid var(--a-soft);background:transparent;text-align:left;cursor:pointer}
 .a-pick button:last-child{border-bottom:0}
 .a-pick button:hover,.a-pick button[aria-selected=true]{background:rgba(56,189,210,.10)}
@@ -944,6 +957,21 @@ body:not(.dark) .a-note{background:#0E1A2B}
 /* phones: the domain panel is the screen, so it drops its card; hairlines still separate the items */
 @media (max-width:600px){
   .a-panel{background:transparent;border:0;border-radius:0;padding:4px 0 8px}
+  /* iPhone: sheets rise from the bottom edge, in thumb reach; buttons full width, the action on top, Cancel / Keep at the bottom */
+  .a-sheet-wrap{align-items:flex-end;padding:max(20px,env(safe-area-inset-top,0px)) 0 0}
+  .a-sheet{--sl:max(18px,env(safe-area-inset-left,0px));--sr:max(18px,env(safe-area-inset-right,0px));--sb:calc(14px + env(safe-area-inset-bottom,0px));
+    width:100%;max-height:100%;border-radius:20px 20px 0 0;border-bottom:0;padding:20px var(--sr) var(--sb) var(--sl)}
+  /* the choices stay on screen even when a long sheet scrolls */
+  .a-sheet .btns{flex-direction:column;align-items:stretch;gap:8px;position:sticky;bottom:calc(-1 * var(--sb));z-index:1;
+    margin:12px calc(-1 * var(--sr)) calc(-1 * var(--sb)) calc(-1 * var(--sl));padding:10px var(--sr) var(--sb) var(--sl);
+    background:inherit;box-shadow:0 -1px 0 var(--a-soft)}
+  .a-sheet .btns>button{width:100%;min-height:50px;justify-content:center}
+  .a-sheet .btns>[data-ok]{order:-2}
+  .a-sheet .btns>[data-clear]{order:-1}
+  .a-sheet .btns>span{display:none}
+  .a-sheet .a-list li{padding:6px 0}
+  /* a focused field or an error never sits under the pinned buttons */
+  .a-sheet{scroll-padding-bottom:150px}
 }
 @media (max-width:420px){
   .a-score:not(.no) span.lv{display:none}
@@ -2338,32 +2366,49 @@ function buildPrintRecord(r) {
       if (asking) { asking.querySelector('button').focus(); return; }
       asking = document.createElement('div'); asking.className = 'a-discard'; asking.setAttribute('role', 'alert');
       asking.innerHTML = `<span>${esc(opts.discard)}</span><span class="b"><button type="button" class="a-btn small" data-keep>Keep editing</button><button type="button" class="a-btn small danger" data-discard>Discard</button></span>`;
-      box.appendChild(asking);
+      const bar = box.querySelector(':scope > .btns'); if (bar) box.insertBefore(asking, bar); else box.appendChild(asking);   // the question sits just above the buttons it replaces
       asking.querySelector('[data-keep]').addEventListener('click', () => { asking.remove(); asking = null; const f = box.querySelector('input,select'); if (f) f.focus(); });
       asking.querySelector('[data-discard]').addEventListener('click', close);
       asking.querySelector('[data-keep]').focus();
     };
     function key(e) {
       if (e.key === 'Escape') { e.preventDefault(); if (opts && opts.escape && opts.escape(e)) return; discard(); return; }
+      if (e.key === '.' && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) { e.preventDefault(); discard(); return; }   // ⌘. cancels, as on a Mac
       if (e.key !== 'Tab') return;
       const f = [...box.querySelectorAll('button,input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent);
       if (!f.length) return;
-      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      if (document.activeElement === box) { e.preventDefault(); (e.shiftKey ? f[f.length - 1] : f[0]).focus(); }
+      else if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
       else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
     }
     document.addEventListener('keydown', key, true);
     wrap.addEventListener('mousedown', e => { if (e.target === wrap && !(dirty && opts && opts.discard)) close(); });
     box.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', discard));
-    /* Return in a field confirms the sheet's primary button; never a destructive one, never in a text box */
+    /* Return confirms the sheet's blue button, from a field or from the sheet itself; never a red one, never in a text box,
+       and never Cancel. opts.noDefault: no Return default at all, so the message gets read first (Submit). */
     box.addEventListener('keydown', e => {
       if (e.key !== 'Enter' || e.defaultPrevented || e.isComposing || e.shiftKey || e.altKey || e.metaKey || e.ctrlKey) return;
-      if (!(e.target instanceof HTMLInputElement)) return;
+      if (e.target === box) e.preventDefault();
+      else if (!(e.target instanceof HTMLInputElement)) return;
+      if (opts && opts.noDefault) return;
       const ok = box.querySelector('[data-ok]'); if (!ok || ok.classList.contains('danger') || ok.disabled) return;
       e.preventDefault(); ok.click();
     });
     if (onOpen) onOpen(box, close);
-    setTimeout(() => { const f = box.querySelector('[autofocus],input,select,button.primary,button'); if (f) f.focus(); }, 30);
+    /* first focus: the first field; a sheet with only buttons focuses the sheet itself, so VoiceOver reads the title and message
+       and no button (Cancel least of all) is pressed by Return. The sheet opens at its top either way. */
+    setTimeout(() => {
+      let f = box.querySelector('[autofocus],input,select');
+      if (!f) { box.tabIndex = -1; f = box; }
+      try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); }
+      box.scrollTop = 0;
+    }, 30);
     return close;
+  }
+  /* a sheet's error is said (role=alert) and shown: scrolled into view if the sheet had scrolled away from it */
+  function showErr(err, text) {
+    err.textContent = text; err.hidden = false;
+    requestAnimationFrame(() => { try { err.scrollIntoView({ block: 'nearest' }); } catch (e) {} });
   }
   function guideLevels() {
     return SCALE.map(s => `<div class="a-lvl"><b class="n">${s[0]}</b><div><b>${esc(s[2])}</b><p>${esc(s[3])}</p></div></div>`).join('')
@@ -2625,9 +2670,9 @@ function buildPrintRecord(r) {
       box.querySelector('[data-ok]').addEventListener('click', async () => {
         const interns = [...box.querySelectorAll('[name=intern]:checked')].map(x => x.value);
         const name = f('name').value.trim();
-        if (!interns.length) { err.textContent = 'Pick at least one intern.'; err.hidden = false; return; }
-        if (!name) { err.textContent = 'Give the round a name.'; err.hidden = false; f('name').focus(); return; }
-        if (!f('period').value.trim()) { err.textContent = 'Add the review period. It prints on every record.'; err.hidden = false; f('period').focus(); return; }
+        if (!interns.length) { showErr(err, 'Pick at least one intern.'); return; }
+        if (!name) { showErr(err, 'Give the round a name.'); f('name').focus(); return; }
+        if (!f('period').value.trim()) { showErr(err, 'Add the review period. It prints on every record.'); f('period').focus(); return; }
         let id = (YEAR.code + '-' + f('kind').value + '-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-')).replace(/-+$/, '').slice(0, 60);
         while (S.all.rounds.some(x => x.id === id)) id += '-2';
         const b = box.querySelector('[data-ok]'); if (b.disabled) return; busy(b, 'Opening…');
@@ -2635,7 +2680,7 @@ function buildPrintRecord(r) {
           await db.collection(C.rounds).doc(id).set(Object.assign({ name, kind: f('kind').value, period: f('period').value.trim(), year: YEAR.label,
             interns, status: 'open', created_at: ts(), created_by: S.email }, f('due').value ? { due: f('due').value } : {}));
           close(); S.all.roundId = id; go('#all/' + encodeURIComponent(id));
-        } catch (e) { unbusy(b); err.textContent = 'The round wasn’t saved. ' + (denied(e) ? `Only ${READERS_AND} can open rounds.` : retry); err.hidden = false; }
+        } catch (e) { unbusy(b); showErr(err, 'The round wasn’t saved. ' + (denied(e) ? `Only ${READERS_AND} can open rounds.` : retry)); }
       });
     }, { discard: 'Discard this round?' });
   }
@@ -2721,9 +2766,9 @@ function buildPrintRecord(r) {
       q.addEventListener('input', draw); em.addEventListener('input', () => { if (em.value.trim()) { pick = null; draw(); } valid(); }); pn.addEventListener('input', valid);
       draw();
       ok.addEventListener('click', async () => {
-        if (ok.getAttribute('aria-disabled') === 'true') { err.textContent = pick || em.value.trim() ? 'Enter the name as it prints.' : 'Pick a doctor, or enter an email.'; err.hidden = false; return; }
+        if (ok.getAttribute('aria-disabled') === 'true') { showErr(err, pick || em.value.trim() ? 'Enter the name as it prints.' : 'Pick a doctor, or enter an email.'); return; }
         const email = (pick ? pick.email : em.value.trim()).toLowerCase();
-        if (taken.has(email)) { err.textContent = 'This evaluator is already assigned to this intern.'; err.hidden = false; return; }
+        if (taken.has(email)) { showErr(err, 'This evaluator is already assigned to this intern.'); return; }
         if (S.email === email) { /* allowed: the program director may review too */ }
         if (ok.disabled) return; busy(ok, 'Assigning…');
         try {
@@ -2737,7 +2782,7 @@ function buildPrintRecord(r) {
           close(); await loadRound(r.id); renderAll();
           const ent = remember(H.all, { kind: 'all', label: `assign · ${dr(data.evaluator_name)}, ${i.name}`, run: back => back ? takeAssign(aid, data) : putAssign(aid, data) });
           say(`${dr(data.evaluator_name)} assigned to ${i.name}.`, null, { label: 'Undo', fn: () => undoEntry(H.all, ent) });
-        } catch (e) { unbusy(ok); err.textContent = 'The assignment wasn’t saved. ' + (denied(e) ? 'This doctor may already be assigned to this intern, or the round is closed.' : retry); err.hidden = false; valid(); }
+        } catch (e) { unbusy(ok); showErr(err, 'The assignment wasn’t saved. ' + (denied(e) ? 'This doctor may already be assigned to this intern, or the round is closed.' : retry)); valid(); }
       });
     }, opts);
   }
@@ -2760,7 +2805,7 @@ function buildPrintRecord(r) {
     const A = S.all, r = A.rounds.find(x => x.id === A.roundId); if (!r || A.assigns.length) return;
     sheet(`<h2 id="aSheetT">Delete this round?</h2><p>${esc(r.name)} has no evaluators assigned. Deleting it takes it off the round menu. This can’t be undone.</p>
       <p class="a-err" role="alert" hidden></p>
-      <div class="btns"><button type="button" class="a-btn" data-close>Keep</button><button type="button" class="a-btn danger" data-ok>Delete round</button></div>`,
+      <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn danger" data-ok>Delete round</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async e => {
       const b = e.currentTarget, err = box.querySelector('.a-err'); if (b.disabled) return; busy(b, 'Deleting…');
       try {
@@ -2768,14 +2813,14 @@ function buildPrintRecord(r) {
         if (chk.docs.length) { close(); say('An evaluator was just assigned to this round, so it stays.', 'warn'); return; }
         await db.collection(C.rounds).doc(r.id).delete();
         stopRound(); S.all.roundId = ''; close(); say(`${r.name} deleted.`); go('#all');
-      } catch (x) { unbusy(b); err.textContent = 'The round wasn’t deleted. ' + (denied(x) ? `Only ${READERS_AND} can delete rounds.` : retry); err.hidden = false; }
+      } catch (x) { unbusy(b); showErr(err, 'The round wasn’t deleted. ' + (denied(x) ? `Only ${READERS_AND} can delete rounds.` : retry)); }
     }));
   }
 
   async function unassign(aid) {
     const a = S.all.assigns.find(x => x.id === aid); if (!a) return;
     sheet(`<h2 id="aSheetT">Remove this evaluator?</h2><p>${esc(a.evaluator_name)} hasn’t started reviewing ${esc(intern(a.intern).name)}. Removing the assignment takes the intern off ${esc(dr(a.evaluator_name))}’s list.</p>
-      <div class="btns"><button type="button" class="a-btn" data-close>Keep</button><button type="button" class="a-btn danger" data-ok>Remove</button></div>`,
+      <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn danger" data-ok>Remove</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async e => {
       const b = e.currentTarget; if (b.disabled) return; busy(b, 'Removing…');
       const data = { round: a.round, intern: a.intern, email: a.email, evaluator_name: a.evaluator_name, record_id: a.record_id };
@@ -2790,7 +2835,7 @@ function buildPrintRecord(r) {
 
   function dueSheet() {
     const r = S.all.rounds.find(x => x.id === S.all.roundId); if (!r) return;
-    sheet(`<h2 id="aSheetT">Due date for ${esc(r.name)}</h2><p>Evaluators see it in My reviews, and it goes in Email evaluators.</p>
+    sheet(`<h2 id="aSheetT">${r.due ? 'Change' : 'Set'} due date</h2><p>For ${esc(r.name)}. Evaluators see it in My reviews, and it goes in Email evaluators.</p>
       <label class="a-field">Due by<input name="due" type="date" value="${esc(r.due || '')}"></label>
       <p class="a-err" role="alert" hidden></p>
       <div class="btns">${r.due ? '<button type="button" class="a-btn quiet danger" data-clear>Remove due date</button><span style="flex:1"></span>' : ''}<button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok>Save</button></div>`,
@@ -2799,18 +2844,18 @@ function buildPrintRecord(r) {
       const save = async (b, value) => {
         if (b.disabled) return; busy(b, 'Saving…');
         try { await db.collection(C.rounds).doc(r.id).update({ due: value === null ? del() : value, updated_at: ts() }); close(); await loadRounds(); renderAll(); }
-        catch (e) { unbusy(b); err.textContent = 'The due date wasn’t saved. ' + (denied(e) ? `Only ${READERS_AND} can change rounds.` : retry); err.hidden = false; }
+        catch (e) { unbusy(b); showErr(err, 'The due date wasn’t saved. ' + (denied(e) ? `Only ${READERS_AND} can change rounds.` : retry)); }
       };
-      box.querySelector('[data-ok]').addEventListener('click', e => { if (!inp.value) { err.textContent = 'Pick a date, or use Remove due date.'; err.hidden = false; inp.focus(); return; } save(e.currentTarget, inp.value); });
+      box.querySelector('[data-ok]').addEventListener('click', e => { if (!inp.value) { showErr(err, 'Pick a date, or use Remove due date.'); inp.focus(); return; } save(e.currentTarget, inp.value); });
       const c = box.querySelector('[data-clear]'); if (c) c.addEventListener('click', e => save(e.currentTarget, null));
     }, { discard: 'Discard the new due date?' });
   }
   async function toggleRound() {
     const r = S.all.rounds.find(x => x.id === S.all.roundId); if (!r) return;
     const closing = r.status === 'open';
-    sheet(`<h2 id="aSheetT">${closing ? 'Close' : 'Reopen'} ${esc(r.name)}?</h2><p>${closing
-      ? 'Evaluators can still read their reviews, but drafts can no longer be changed or submitted. You can reopen the round later.'
-      : 'Evaluators can finish their drafts again.'}</p>
+    sheet(`<h2 id="aSheetT">${closing ? 'Close' : 'Reopen'} this round?</h2><p>${closing
+      ? `Evaluators in ${esc(r.name)} can still read their reviews, but drafts can no longer be changed or submitted. You can reopen the round later.`
+      : `Evaluators in ${esc(r.name)} can finish their drafts again.`}</p>
       <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok>${closing ? 'Close round' : 'Reopen round'}</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async e => {
       const b = e.currentTarget; if (b.disabled) return; busy(b, closing ? 'Closing…' : 'Reopening…');
@@ -2889,7 +2934,7 @@ function buildPrintRecord(r) {
           ${guideLevels()}
           ${helpLine()}
           <div class="save">${ed ? `Your draft saves as you go. Submit locks it and sends it to ${READERS_AND}.` : 'Submitted reviews are part of the intern’s training record.'}</div></aside></div>`;
-    growAll(); paintFlash(); railToCurrent();
+    growAll(); paintFlash(); railToCurrent(); stickTops();
     if (top) requestAnimationFrame(() => { try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {} });
   }
 
@@ -2900,6 +2945,16 @@ function buildPrintRecord(r) {
       `<button type="button" role="radio" class="a-score" title="${esc(s[2] + ': ' + s[3])}" aria-checked="${val === s[0]}"${ti(s[0])} data-score="${s[0]}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}><b>${s[0]}</b><span class="lv">${esc(s[1])}</span>`
       + (s[1].toLowerCase() === s[2].toLowerCase() ? '' : `<span class="sr-only">, ${esc(s[2])}</span>`) + `</button>`).join('')
       + `<button type="button" role="radio" class="a-score no" aria-checked="${val === NOT_OBSERVED}"${ti(NOT_OBSERVED)} data-score="${NOT_OBSERVED}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}>${ICON.eyeSlash}<span>Not observed</span></button></div>`;
+  }
+  /* Mac / iPad landscape: the domain list and rating guide hold 16 px under the top bar while the domain scrolls.
+     One taller than the window holds by its bottom edge instead, so its last lines (help, save note) are always reachable. */
+  function stickTops() {
+    const nav = $('#pvxTopnav'), np = nav ? getComputedStyle(nav).position : '';
+    const base = (np === 'sticky' || np === 'fixed' ? nav.offsetHeight : 0) + 16;
+    root.querySelectorAll('.a-rail,.a-guide').forEach(el => {
+      el.style.top = '';
+      if (getComputedStyle(el).position === 'sticky') el.style.top = Math.min(base, innerHeight - el.offsetHeight - 16) + 'px';
+    });
   }
   /* iPad / iPhone: the domain list is a scrolling row; keep the current domain in view (centred where possible) */
   function railToCurrent() {
@@ -3067,14 +3122,16 @@ function buildPrintRecord(r) {
   function submitSheet() {
     flush();
     const o = S.open, r = o.rev, p = computeProgress(r);
-    const rows = DOMAINS.map(d => { const n = rated(r, d), t = d.overall ? 1 : d.questions.length, ok = domainDone(r, d);
-      return `<li>${esc(d.num + ' · ' + d.short)}<span>${ok ? '<b class="a-ok">Complete</b>' : d.overall ? (n ? 'Narratives incomplete' : 'Not rated') : `${n} of ${t} rated`}</span></li>`; }).join('');
+    /* only the domains still open are listed, so the sheet stays short enough not to scroll on a phone */
+    const left = DOMAINS.filter(d => !domainDone(r, d));
+    const rows = left.map(d => { const n = rated(r, d), t = d.overall ? 1 : d.questions.length;
+      return `<li>${esc(d.num + ' · ' + d.short)}<span>${d.overall ? (n ? 'Narratives incomplete' : 'Not rated') : `${n} of ${t} rated`}</span></li>`; }).join('');
     const missing = p.total - p.rated;
-    sheet(`<h2 id="aSheetT">Submit your review of ${esc(intern(o.a.intern).name)}?</h2>
-      <p>${missing ? `${missing} item${missing === 1 ? ' is' : 's are'} still blank and will print as Not rated. Mark anything you didn’t see as Not observed instead. ` : 'Every item has a rating. '}After you submit, the review is locked and goes to ${READERS_AND}. You can still read and print it.</p>
-      <ul class="a-list">${rows}</ul>
+    sheet(`<h2 id="aSheetT">Submit this review?</h2>
+      <p>${missing ? `Your review of ${esc(intern(o.a.intern).name)} has ${missing} blank item${missing === 1 ? '' : 's'}, which will print as Not rated. Mark anything you didn’t see as Not observed instead. ` : `Your review of ${esc(intern(o.a.intern).name)} has a rating for every item. `}After you submit, the review is locked and goes to ${READERS_AND}. You can still read and print it.</p>
+      ${left.length ? `<p class="a-lh" id="aLeftH">${left.length === 10 ? 'No domain is complete yet' : `Not complete yet · ${10 - left.length} of 10 domains done`}</p><ul class="a-list" aria-labelledby="aLeftH">${rows}</ul>` : '<p class="a-lh ok">All 10 domains complete</p>'}
       <p style="margin-top:12px;font-size:.8125rem;color:var(--a-ink-3)">By submitting, you confirm that the ratings and observations are your own and reflect performance you directly observed.</p>
-      <div class="btns"><button type="button" class="a-btn" data-close>Keep editing</button><button type="button" class="a-btn primary" data-ok>Submit review</button></div>`,
+      <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok>Submit review</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
       const b = box.querySelector('[data-ok]'); b.disabled = true; b.textContent = 'Submitting…';
       try {
@@ -3084,7 +3141,7 @@ function buildPrintRecord(r) {
         const fresh = await db.collection(C.reviews).doc(o.aid).get();
         Object.assign(r, fresh.data()); close(); renderReview(true); say(`Submitted. ${READERS_AND} have your review.`);
       } catch (e) { b.disabled = false; b.textContent = 'Submit review'; say('The review wasn’t submitted. ' + (/permission/.test((e && e.code) || '') ? 'Its round may be closed.' : 'Check your connection, then try again.'), 'error'); }
-    }));
+    }), { noDefault: true });   // a signed review: no Return default, so the blank-items line gets read
   }
 
   function reopenSheet() {
@@ -3239,7 +3296,7 @@ function buildPrintRecord(r) {
       e.preventDefault(); undo(redo);
     });
     addEventListener('hashchange', route);
-    let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.open) growAll(); }, 120); });
+    let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.open) { growAll(); stickTops(); } }, 120); });
   }
 
   /* ── boot ── */
