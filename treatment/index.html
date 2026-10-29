@@ -3174,7 +3174,8 @@ body:not(.dark) #tsFind .ts-fr-clear{color:#0062CC}
   var RX=/(^|[^\w.])(\d+(?:\.\d+)?)\s?(h|hr|min|d)\b(?![\w\/])/g, RT=/(^|[^\w.])\d+(?:\.\d+)?\s?(h|hr|min|d)\b(?![\w\/])/;
   function spell(t){ return t.replace(RX,function(m,pre,n,u){ var one=+n===1, w=u==='min'?(one?'minute':'minutes'):u==='d'?(one?'day':'days'):(one?'hour':'hours'); return pre+n+' '+w; }); }
   window.pvxSpell=spell;
-  function spoken(){ $$('[aria-label]').forEach(function(e){ var a=e.getAttribute('aria-label'); if(a&&RT.test(a)&&!e.closest('nav.topnav')){ var s=spell(a); if(s!==a) e.setAttribute('aria-label',s); } }); }
+  /* only the app's own time phrases (the sheet's marks and its Latest column): never words someone typed, such as a snippet */
+  function spoken(){ $$('#ctab-sheet .mark[aria-label], #ctab-sheet .rl-trend[aria-label]').forEach(function(e){ var a=e.getAttribute('aria-label'); if(a&&RT.test(a)&&!e.closest('nav.topnav')){ var s=spell(a); if(s!==a) e.setAttribute('aria-label',s); } }); }
 
   var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ place(); paint(); spoken(); }catch(e){} }); }
   function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-label']}); tick();
