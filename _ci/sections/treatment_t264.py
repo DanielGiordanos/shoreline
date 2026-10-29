@@ -35,12 +35,12 @@ async def s_t264(br):
 
     # ── 2. shortcuts wait while a dialog is open ──
     ctx, pg, e = await ts(br, PORT, view='sheet')
-    await pg.evaluate("tsOpenSheet('sh_train2')"); await pg.wait_for_timeout(900); a = await pg.evaluate(CUR)
+    await pg.evaluate("tsOpenSheet('sh_train2')"); await until(pg, "/Mochi/.test(" + CUR + ")", 6000); await pg.wait_for_timeout(300); a = await pg.evaluate(CUR)   # a slow machine opens it later
     await pg.click('.ts-gear'); await pg.wait_for_timeout(500)
     await pg.keyboard.press('Alt+1'); await pg.wait_for_timeout(500)
     await pg.keyboard.press('Control+k'); await pg.wait_for_timeout(400)
     r = [a, await pg.evaluate(CUR), await pg.evaluate("!!document.querySelector('.search.is-open,.search.is-focus')"), await pg.evaluate("!!document.querySelector('#tsOrderSheet.show')")]
-    ok('Modality: with Treatment settings open, ⌥1 doesn’t switch the patient behind it and Ctrl K doesn’t open the search over it', r[0] and r[0] == r[1] and not r[2] and r[3], r)
+    ok('Modality: with Treatment settings open, ⌥1 doesn’t switch the patient behind it and Ctrl K doesn’t open the search over it', 'Mochi' in r[0] and r[0] == r[1] and not r[2] and r[3], r)
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(400)
     await pg.keyboard.press('Control+k'); await pg.wait_for_timeout(400)
     ok('…and once it’s closed, Ctrl K opens the search again', await pg.evaluate("!!document.querySelector('.search.is-open,.search.is-focus')"), '')
