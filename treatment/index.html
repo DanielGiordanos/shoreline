@@ -1875,7 +1875,8 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     var b=top.querySelector('.pvx-hdr-more');
     if(!b){ b=document.createElement('button'); b.type='button'; b.className='pvx-hdr-more';
       b.addEventListener('click',function(){ open=!open; header(); }); top.appendChild(b); }
-    var lbl=open?(ES?'Menos':'Less'):(ES?'Detalles':'Details');
+    var lbl=ES?'Detalles':'Details';   /* n268: the name stays; the chevron and aria-expanded say open or closed */
+    var inf=h.querySelector('.tsh-info'); if(inf){ if(!inf.id) inf.id='tsHdrInfo'; if(b.getAttribute('aria-controls')!==inf.id) b.setAttribute('aria-controls',inf.id); }
     if(b.getAttribute('aria-expanded')!==String(open)||b.textContent!==lbl){ b.setAttribute('aria-expanded',String(open)); b.innerHTML=lbl+DOWN; }
   }
   function vhist(){
@@ -3213,6 +3214,21 @@ body:not(.dark) #tsFind .ts-fr-clear{color:#0062CC}
 @media (max-width:600px){.pvx-ur .btn[aria-disabled=true]{display:none}.treatment-toolbar .pvx-ur{order:-1}
 .treatment-toolbar:has(.pvx-ur:not([hidden])) .order-search-wrapper{flex-basis:calc(100% - 96px)!important}
 .treatment-toolbar:has(.pvx-ur:not([hidden]) .btn:not([aria-disabled=true])+.btn:not([aria-disabled=true])) .order-search-wrapper{flex-basis:calc(100% - 146px)!important}}
+</style>
+<style id="pvx-n268-css">
+/* Lists and tables 1. on touch screens there's no pointer to light up a row, so long rows alternate a faint tint to
+   follow across the hours (HIG: alternating row colors in a wide multicolumn table). With a mouse, pointing still
+   lights the row and its hour; the rows stay plain. */
+@media (hover:none){
+  #sheetInner .grow.zb:not(.is-draft)>.hcells{background:var(--row-alt)!important}
+  #sheetInner .grow.zb>.rl{box-shadow:inset 0 0 0 999px var(--row-alt)!important}
+}
+@media (hover:none) and (prefers-contrast:more){
+  body.dark #sheetInner .grow.zb:not(.is-draft)>.hcells{background:rgba(150,185,220,.09)!important}
+  body.dark #sheetInner .grow.zb>.rl{box-shadow:inset 0 0 0 999px rgba(150,185,220,.09)!important}
+  body:not(.dark) #sheetInner .grow.zb:not(.is-draft)>.hcells{background:rgba(30,45,90,.05)!important}
+  body:not(.dark) #sheetInner .grow.zb>.rl{box-shadow:inset 0 0 0 999px rgba(30,45,90,.05)!important}
+}
 </style>
 </body>
 </html>
