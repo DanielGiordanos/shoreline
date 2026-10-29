@@ -22,7 +22,7 @@ async def s_n216(br):
       const w=[...document.querySelectorAll('#sbBoards .sb-segb')].map(b=>Math.round(b.getBoundingClientRect().width));
       return {name:sw.getAttribute('aria-label'),cur,w,sheet:sw.querySelector('[data-ctab=sheet]').getAttribute('aria-label'),mine:(document.querySelector('#sbBoards [data-board="My Board"]')||{}).textContent}})()""")
     ok('n216: Treatment’s section switcher is named “Treatment sections” and says the open section (Dashboard)', tr['name'] == 'Treatment sections' and tr['cur'] == ['dash'], tr)
-    ok('n216: the status board’s boards are equal widths; sentence case — Treatment sheet, My patients', len(tr['w']) == 4 and max(tr['w']) - min(tr['w']) <= 1 and tr['sheet'] == 'Treatment sheet' and tr['mine'].startswith('My patients'), tr)
+    ok('n216: the status board’s boards are equal widths; sentence case — Treatment sheet, Your patients', len(tr['w']) == 4 and max(tr['w']) - min(tr['w']) <= 1 and tr['sheet'] == 'Treatment sheet' and tr['mine'].startswith('Your patients'), tr)   # n260: was “My patients” (one perspective)
     kb = await pg.evaluate(KEY, ['#sbBoards', 'ArrowRight'])
     ok('n216: the boards are a tablist named “Boards”; → moves to the next board with focus on it; one Tab stop', kb['role'] == 'tablist' and kb['name'] == 'Boards' and kb['sel'] == (kb['was'] + 1) % 4 and kb['focus'] == kb['sel'] and kb['stops'] == 1, kb)
     kv = await pg.evaluate(KEY, ['#sbView', 'ArrowRight'])
@@ -40,7 +40,7 @@ async def s_n216(br):
       const pop=document.querySelector('.pvx-sbpop');return {bottom:Math.round(r.bottom),h:innerHeight,tabs:vis.map(b=>b.title),fit:vis.every(b=>b.getBoundingClientRect().right<=innerWidth+1),
       pop:pop&&getComputedStyle(pop).display!=='none',opts:pop?[...pop.options].map(o=>o.textContent):[],name:pop&&pop.getAttribute('aria-label'),boards:getComputedStyle(document.getElementById('sbBoards')).display}})()""")
     ok('n216: on iPhone Treatment’s sections are a bottom tab bar — Dashboard, Tasks, Treatment sheet, Vitals, More — and all fit', tp['bottom'] == tp['h'] and tp['tabs'] == ['Dashboard', 'Tasks', 'Treatment sheet', 'Vitals', 'More'] and tp['fit'], tp)
-    ok('n216: on iPhone the four boards are a “Board” pop-up with their counts (none cut off)', tp['pop'] and tp['boards'] == 'none' and len(tp['opts']) == 4 and tp['opts'][0].startswith('My patients') and tp['name'] == 'Board', tp)
+    ok('n216: on iPhone the four boards are a “Board” pop-up with their counts (none cut off)', tp['pop'] and tp['boards'] == 'none' and len(tp['opts']) == 4 and tp['opts'][0].startswith('Your patients') and tp['name'] == 'Board', tp)
     await pg.evaluate("document.querySelector('.pvx-tmore').click()"); await pg.wait_for_timeout(300)
     mm = await pg.evaluate("(()=>{const m=document.querySelector('.pvx-tmenu');return {open:!m.hidden,items:[...m.querySelectorAll('button')].map(b=>b.textContent),focus:m.contains(document.activeElement),exp:document.querySelector('.pvx-tmore').getAttribute('aria-expanded')}})()")
     ok('n216: More opens Anesthesia, Timeline, Charges and Notes, with the keyboard on the first', mm['open'] and mm['items'] == ['Anesthesia', 'Timeline', 'Charges', 'Notes'] and mm['focus'] and mm['exp'] == 'true', mm)

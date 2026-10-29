@@ -383,8 +383,8 @@ async def s_n231(br):
     await pg.evaluate("selectCTab('notes')"); await pg.wait_for_timeout(600)
     r3 = await pg.evaluate("[document.querySelector('#ctab-notes .btn').textContent.trim(),(document.querySelector('#noteDrawer h2')||{}).textContent,[...document.querySelectorAll('#noteDrawer .btn')].map(b=>b.textContent.trim())]")
     ok('n231: Filters uses Apple’s Filter symbol (three shortening lines), not a funnel', r['filt'] == 'M4 7h16M7 12h10M10 17h4', r['filt'])
-    ok('n231: sentence case — Status board, Care team, Estimate range, Add note, Save note, Basic observation, Patient care',
-       r2[0] == 'Status board' and 'Care team' in r2[1] and 'Estimate range' in r['est'] and r3[0] == 'Add note' and r3[1] == 'Add note' and 'Save note' in r3[2] and 'Basic observation' in r['sec'] and 'Patient care' in r['sec'] and not any(x in r['sec'] for x in ('Basic Observation', 'Patient Care')), (r2, r3, r['sec'], r['est']))
+    ok('n231: sentence case — Status board, Care team, Estimate range, Add note, Save note, Observations, Patient care',   # n260: one name per section, “Observations” (was “Basic observation”)
+       r2[0] == 'Status board' and 'Care team' in r2[1] and 'Estimate range' in r['est'] and r3[0] == 'Add note' and r3[1] == 'Add note' and 'Save note' in r3[2] and 'Observations' in r['sec'] and 'Patient care' in r['sec'] and not any(x in r['sec'] for x in ('Basic Observation', 'Patient Care')), (r2, r3, r['sec'], r['est']))
     ok('n231: numbers keep their width (tabular digits) everywhere in Treatment; the shared top bar keeps its own setting', r['tab'] == 'tabular-nums' and r['topTab'] == 'normal', r)
     ok('n231: the Mac keeps its sizes (grid order names 13 pt, their schedule line 11 pt)', r['nm'] == '13px' and r['meta'] == '11px', r)
     await pg.evaluate("selectCTab('sheet')"); await pg.wait_for_timeout(800)
@@ -657,8 +657,8 @@ async def s_n233(br):
     await pg.evaluate(CLOSE233)
     ok('n233: required fields are marked and the main button waits — pressing it anyway says in place what’s missing (New sheet, Estimate, Order, Allergies, Note; toasts before)',
        all(req[n][0] == 'true' and req[n][1] and req[n][2] and req[n][3] for n in ('new sheet', 'estimate', 'order', 'allergy')) and req['note'] == 'true', req)
-    ok('n233: the estimate says “The high end must be at least the low end” as you leave the field, and the button wakes when it’s right',
-       'The high end must be at least the low end' in ' '.join(req['low>high'][0]) and req['low>high'][1] == 'true' and req['estimate filled'] is None, req)
+    ok('n233: the estimate says “Enter a high end that’s at least the low end” as you leave the field, and the button wakes when it’s right',   # n260: was “The high end must be …” (say what to do)
+       'Enter a high end that’s at least the low end' in ' '.join(req['low>high'][0]) and req['low>high'][1] == 'true' and req['estimate filled'] is None, req)
     ok('n233: a weight that can’t be read is flagged as you leave the field, and Create waits (it saved no weight)', any('weight' in m for m in req['bad weight'][0]) and req['bad weight'][1] == 'true', req['bad weight'])
     ok('n233: the attending doctor comes from the roster (no real name as the example) and the patient and owner fields don’t autofill on shared computers',
        req['ns fields'].startswith('off,off,off,off|Choose or type|') and int(req['ns fields'].split('|')[-1]) > 0, req['ns fields'])
@@ -706,7 +706,8 @@ async def s_n233(br):
     await pg.evaluate("openCompletion('%s')" % ks); await pg.wait_for_timeout(900)
     hd = await pg.evaluate("[document.getElementById('cd-sub').textContent,!!document.querySelector('#completionDrawer .pvx-med.pm-g use'),!!document.querySelector('#completionDrawer .pm-sp')]")
     await pg.evaluate(CLOSE233)
-    ok('n233: the drawer shows the dog glyph (not “B / CAN”) and “Basic observation” in sentence case', hd[0].startswith('Basic observation') and hd[1] and not hd[2], hd)
+    ok('n233: the drawer shows the dog glyph (not “B / CAN”) and “Observations” in sentence case', hd[0].startswith('Observations')   # n260: was “Basic observation”
+       and hd[1] and not hd[2], hd)
     # 14. view only, said up front
     await pg.evaluate("currentRole='csr';try{renderSheet()}catch(e){}"); await pg.wait_for_timeout(900)
     vo = await pg.evaluate("(document.querySelector('.tsh .pvx-vo')||{}).textContent||''")
@@ -1301,7 +1302,8 @@ async def s_n237(br):
     ctx, pg, errs = await ts237(user=DOC237)
     await pg.keyboard.press('Meta+k'); await pg.wait_for_timeout(500)
     mp = await pg.evaluate(FIND237)
-    ok('n237: for a doctor, “My patients” comes first before typing', bool(mp) and mp.startswith('MY PATIENTS / ') and 'Biscuit Training' in mp, mp)
+    ok('n237: for a doctor, “Your patients” comes first before typing', bool(mp) and mp.startswith('YOUR PATIENTS / ')   # n260: was “My patients” (one perspective)
+       and 'Biscuit Training' in mp, mp)
     await pg.keyboard.press('Escape'); await ctx.close()
     # 1., 3., 5. orders are searched; a Clear button; a real search field for VoiceOver
     ctx, pg, errs = await ts237()
