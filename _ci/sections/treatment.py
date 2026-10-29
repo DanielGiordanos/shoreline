@@ -1291,7 +1291,7 @@ async def s_n237(br):
     rc = [await pg.evaluate("document.activeElement.id"), await pg.evaluate(FIND237)]
     await pg.screenshot(path=f'{SHOTS}/n237-search-recent.png')
     ok('n237: ⌘K focuses the search (it did nothing)', rc[0] == 'globalSearch', rc)
-    ok('n237: before typing, the search lists the patients you opened most recently, newest first', bool(rc[1]) and rc[1].startswith('RECENTLY OPENED / Biscuit Training') and 'Mochi Training' in rc[1], rc[1])
+    ok('n237: before typing, the search lists the patients you opened most recently, newest first', bool(rc[1]) and rc[1].replace('RECENTLY OPENED / Clear / ', 'RECENTLY OPENED / ', 1).startswith('RECENTLY OPENED / Biscuit Training') and 'Mochi Training' in rc[1], rc[1])   # n265: the heading has Clear
     ks = await pg.evaluate("Object.keys(localStorage).filter(k=>/recent|find|search/i.test(k))")
     await pg.keyboard.press('Escape'); await pg.reload(); await pg.wait_for_timeout(3000)
     await pg.keyboard.press('Control+k'); await pg.wait_for_timeout(500)
@@ -1331,10 +1331,12 @@ async def s_n237(br):
     ok('n237: nothing found says “No patient or order matches”', bool(nm) and 'No patient or order matches “zzzz”.' in nm, nm)
     ok('n237: Clear empties the field and keeps the cursor in it', cl == ['', 'globalSearch', 'none'], cl)
     await pg.keyboard.press('Escape'); await pg.mouse.click(700, 760)
+    # n264: that click opens an order's sheet (later on a slow machine), and ⌘K waits while a sheet is open: close it once it's there
+    await pg.wait_for_timeout(700); await until(pg, "(()=>{try{tsOrderClose()}catch(e){};try{closeDrawers()}catch(e){};return !(window.pvxModalUp&&pvxModalUp())})()", 4000); await pg.wait_for_timeout(300)
     await pg.evaluate("selectCTab('dash')"); await pg.wait_for_timeout(900)
     await pg.keyboard.press('Meta+k'); await pg.keyboard.type('Gabapentin'); await pg.wait_for_timeout(700)
     br237 = await pg.evaluate("(document.getElementById('ctab-dash')||{innerText:''}).innerText")
-    ok('n237: on the board an order filters the board to the patients on it', 'Biscuit Training' in br237 and 'Mochi Training' not in br237 and 'Juniper Training' not in br237, br237[:200])
+    ok('n237: on the board an order filters the board to the patients on it', 'Biscuit Training' in br237 and 'Mochi Training' not in br237 and 'Juniper Training' not in br237, [br237[:200], await pg.evaluate("[window.pvxModalUp?pvxModalUp():null,[...document.querySelectorAll('#tsModal.show,#tsOrderSheet.show,.drawer.open,.ts-menu.show,[aria-modal=true]')].filter(e=>e.getClientRects().length).map(e=>e.id||e.className)]")])
     await pg.keyboard.press('Escape')
     ok('n237: no page errors in search', not errs, errs[:3])
     await ctx.close()
