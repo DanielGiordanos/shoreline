@@ -689,6 +689,18 @@ body:not(.dark) #asm,body:not(.dark) .a-sheet-wrap{color-scheme:light}
 .a-btn.primary[aria-disabled=true]{opacity:.45;cursor:default}
 .a-btn.quiet{border-color:transparent;background:transparent;color:var(--a-acc-ink);padding:0 12px}
 .a-btn.danger{color:var(--a-bad-ink)}
+/* press state on every button (Brand Identity §9.1): a darker fill and a 0.97 scale for 0.1 s; fill only under Reduce Motion */
+.a-btn,.a-score,.a-intern,.a-step,.a-seg button,.a-pick button,.a-note-act,.a-note-x,.a-crumb{transition:scale .1s ease,filter .1s ease}
+.a-btn:not([disabled]):not([aria-disabled=true]):active,.a-score:not([disabled]):active,.a-intern:active,.a-step:active,.a-seg button:active,
+.a-pick button:not([disabled]):active,.a-note-act:active,.a-note-x:active,.a-crumb:active{filter:brightness(.88);scale:.97}
+@media (prefers-reduced-motion:reduce){
+  .a-btn,.a-score,.a-intern,.a-step,.a-seg button,.a-pick button,.a-note-act,.a-note-x,.a-crumb{transition:none}
+  .a-btn:active,.a-score:active,.a-intern:active,.a-step:active,.a-seg button:active,.a-pick button:active,.a-note-act:active,.a-note-x:active,.a-crumb:active{scale:none!important}
+}
+/* a slow action: a small spinner before the -ing label (still under Reduce Motion) */
+@keyframes a-spin{to{transform:rotate(360deg)}}
+.a-spin{display:inline-block;width:14px;height:14px;flex:none;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:a-spin .8s linear infinite}
+@media (prefers-reduced-motion:reduce){.a-spin{animation:none}}
 .a-btn.small{min-height:36px;padding:0 12px;font-size:.8125rem;border-radius:10px}
 .a-btn svg{width:1.2em;height:1.2em;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
@@ -2270,8 +2282,12 @@ function buildPrintRecord(r) {
     }
     clearTimeout(noteT); if (!stay) noteArm(n);
   }
-  function busy(b, label) { b.dataset.label = b.textContent; b.disabled = true; b.setAttribute('aria-busy', 'true'); b.textContent = label; }
-  function unbusy(b) { b.disabled = false; b.removeAttribute('aria-busy'); if (b.dataset.label) b.textContent = b.dataset.label; }
+  function busy(b, label) {
+    b.dataset.label = b.textContent; b.disabled = true; b.setAttribute('aria-busy', 'true'); b.textContent = label;
+    /* a real delay (over 0.4 s) shows a spinner before the label; fast actions never flicker one */
+    clearTimeout(b._spin); b._spin = setTimeout(() => { if (b.getAttribute('aria-busy') === 'true' && !b.querySelector('.a-spin')) b.insertAdjacentHTML('afterbegin', '<span class="a-spin" aria-hidden="true"></span>'); }, 400);
+  }
+  function unbusy(b) { clearTimeout(b._spin); b.disabled = false; b.removeAttribute('aria-busy'); if (b.dataset.label) b.textContent = b.dataset.label; }
   function noteArm(n) { clearTimeout(noteT); noteT = setTimeout(() => n.remove(), Math.max(n.dataset.hold ? 8000 : 4000, 70 * n.dataset.text.length)); }
   /* a brief highlight on what an undo, a redo or someone else's change touched (a still outline under Reduce Motion).
      It's kept by selector, so a live redraw in the middle carries it on from where it was. */
@@ -2328,6 +2344,13 @@ function buildPrintRecord(r) {
     document.addEventListener('keydown', key, true);
     wrap.addEventListener('mousedown', e => { if (e.target === wrap && !(dirty && opts && opts.discard)) close(); });
     box.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', discard));
+    /* Return in a field confirms the sheet's primary button; never a destructive one, never in a text box */
+    box.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || e.defaultPrevented || e.isComposing || e.shiftKey || e.altKey || e.metaKey || e.ctrlKey) return;
+      if (!(e.target instanceof HTMLInputElement)) return;
+      const ok = box.querySelector('[data-ok]'); if (!ok || ok.classList.contains('danger') || ok.disabled) return;
+      e.preventDefault(); ok.click();
+    });
     if (onOpen) onOpen(box, close);
     setTimeout(() => { const f = box.querySelector('[autofocus],input,select,button.primary,button'); if (f) f.focus(); }, 30);
     return close;
@@ -2522,14 +2545,14 @@ function buildPrintRecord(r) {
     const link = location.origin + '/sgvp/assessment/#mine';
     const body = `Hello,\n\nYou have intern reviews to complete for the ${r.name}${r.period ? ' (' + r.period + ')' : ''}. They're waiting for you in Pravix:\n${link}\n\nYour ratings save as you go. Submit each review when it's done${r.due ? ', by ' + fmtDue(r.due) : ''}.\n\nThank you,\n${S.name}`;
     const href = 'mailto:?bcc=' + to.map(encodeURIComponent).join(',') + '&subject=' + encodeURIComponent('Intern reviews: ' + r.name) + '&body=' + encodeURIComponent(body);
-    return `<a class="a-btn small" href="${esc(href)}" title="Opens an email in your mail app to everyone who hasn’t submitted. Nothing is sent until you send it.">${ICON.mail}Email ${to.length} evaluator${to.length === 1 ? '' : 's'}</a>`;
+    return `<a class="a-btn small" href="${esc(href)}" title="Opens an email in your mail app to everyone who hasn’t submitted. Nothing is sent until you send it.">${ICON.mail}Email ${to.length} evaluator${to.length === 1 ? '' : 's'}…</a>`;
   }
   function renderAll() {
     const A = S.all, r = A.rounds.find(x => x.id === A.roundId);
     setTitle('All reviews', r && r.name);
     const opts = A.rounds.map(x => `<option value="${esc(x.id)}"${x.id === A.roundId ? ' selected' : ''}>${esc(x.name)}${x.status === 'closed' ? ' (closed)' : ''}</option>`).join('');
     let html = head('Intern reviews', 'All reviews', `Signed in as ${esc(S.name)}. Open a round, choose who reviews each intern, and follow who has submitted.`,
-      viewSwitch() + `<button type="button" class="a-btn primary" data-act="new-round">${ICON.plus}New round</button>`);
+      viewSwitch() + `<button type="button" class="a-btn primary" data-act="new-round">${ICON.plus}New round…</button>`);
     if (!r) {
       root.innerHTML = html + `<div class="a-card a-empty"><h2>No review rounds yet</h2><p>Start with New round: name it, pick the interns, then assign evaluators to each intern.</p></div>`;
       return;
@@ -2538,17 +2561,17 @@ function buildPrintRecord(r) {
     html += `<div class="a-toolbar"><label class="sr-only" for="aRound">Round</label><select id="aRound" class="a-select" data-act="pick-round">${opts}</select>`
       + `<span class="a-roundmeta">${[r.period ? esc(r.period) : '', dueLine(r, subs < A.assigns.length), A.assigns.length ? `${subs} of ${A.assigns.length} submitted` : 'No evaluators assigned yet'].filter(Boolean).join(' · ')}</span>`
       + `<span style="flex:1"></span>${pill(r.status)}` + mailLink(r, A)
-      + (r.status === 'open' ? `<button type="button" class="a-btn small" data-act="due">${r.due ? 'Change due date' : 'Set due date'}</button>` : '')
-      + `<button type="button" class="a-btn small" data-act="toggle-round">${r.status === 'open' ? 'Close round' : 'Reopen round'}</button>`
-      + (A.assigns.length ? '' : `<button type="button" class="a-btn small quiet danger" data-act="delete-round">Delete round</button>`) + `</div>`;
+      + (r.status === 'open' ? `<button type="button" class="a-btn small" data-act="due">${r.due ? 'Change due date…' : 'Set due date…'}</button>` : '')
+      + `<button type="button" class="a-btn small" data-act="toggle-round">${r.status === 'open' ? 'Close round…' : 'Reopen round…'}</button>`
+      + (A.assigns.length ? '' : `<button type="button" class="a-btn small quiet danger" data-act="delete-round">Delete round…</button>`) + `</div>`;
     (r.interns || []).map(intern).sort((a, b) => a.num.localeCompare(b.num)).forEach(i => {
       const list = A.assigns.filter(a => a.intern === i.slug).sort((a, b) => a.record_id.localeCompare(b.record_id));
       const done = list.filter(a => (A.reviews[a.id] || {}).status === 'submitted').length;
       html += `<div class="a-card a-irow" data-irow="${esc(i.slug)}"><div class="hd"><span class="a-av ${esc(i.group)}" aria-hidden="true">${initials(i.name)}</span>`
         + `<div class="grow"><div class="nm">${esc(fullName(i))}</div><div class="meta">${esc(GROUPS[i.group] || '')}</div></div>`
         + (list.length ? `<span class="a-count">${done} of ${list.length} submitted</span>` : '')
-        + (done ? `<button type="button" class="a-btn small" data-act="print-intern" data-intern="${esc(i.slug)}">${ICON.print}Print ${done} submitted</button>` : '')
-        + (r.status === 'open' ? `<button type="button" class="a-btn small" data-act="assign" data-intern="${esc(i.slug)}">${ICON.plus}Assign evaluator</button>` : '') + `</div>`;
+        + (done ? `<button type="button" class="a-btn small" data-act="print-intern" data-intern="${esc(i.slug)}">${ICON.print}Print ${done} submitted…</button>` : '')
+        + (r.status === 'open' ? `<button type="button" class="a-btn small" data-act="assign" data-intern="${esc(i.slug)}">${ICON.plus}Assign evaluator…</button>` : '') + `</div>`;
       if (!list.length) html += `<div class="a-ev"><div class="who"><span>No evaluators assigned yet.</span></div></div>`;
       list.forEach(a => {
         const rev = A.reviews[a.id], st = rev ? rev.status : 'ns', p = progressOf(rev);
@@ -2556,7 +2579,7 @@ function buildPrintRecord(r) {
           + `<div class="prog"><small>${st === 'submitted' ? esc(fmtDate(rev.submitted_at)) : `${p.rated} of ${p.total} rated`}</small><div class="a-bar"><i style="width:${Math.round(100 * p.rated / p.total)}%"></i></div></div>`
           + pill(st)
           + (rev ? `<button type="button" class="a-btn small" data-go="#review/${encodeURIComponent(a.id)}">Open</button>`
-                 : `<button type="button" class="a-btn small quiet danger" data-act="unassign" data-aid="${esc(a.id)}">Remove</button>`)
+                 : `<button type="button" class="a-btn small quiet danger" data-act="unassign" data-aid="${esc(a.id)}">Remove…</button>`)
           + `</div>`;
       });
       html += `</div>`;
@@ -2719,7 +2742,7 @@ function buildPrintRecord(r) {
     const A = S.all, r = A.rounds.find(x => x.id === A.roundId); if (!r || A.assigns.length) return;
     sheet(`<h2 id="aSheetT">Delete this round?</h2><p>${esc(r.name)} has no evaluators assigned. Deleting it takes it off the round menu. This can’t be undone.</p>
       <p class="a-err" role="alert" hidden></p>
-      <div class="btns"><button type="button" class="a-btn" data-close>Keep</button><button type="button" class="a-btn primary" data-ok>Delete round</button></div>`,
+      <div class="btns"><button type="button" class="a-btn" data-close>Keep</button><button type="button" class="a-btn danger" data-ok>Delete round</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async e => {
       const b = e.currentTarget, err = box.querySelector('.a-err'); if (b.disabled) return; busy(b, 'Deleting…');
       try {
@@ -2734,7 +2757,7 @@ function buildPrintRecord(r) {
   async function unassign(aid) {
     const a = S.all.assigns.find(x => x.id === aid); if (!a) return;
     sheet(`<h2 id="aSheetT">Remove this evaluator?</h2><p>${esc(a.evaluator_name)} hasn’t started reviewing ${esc(intern(a.intern).name)}. Removing the assignment takes the intern off ${esc(dr(a.evaluator_name))}’s list.</p>
-      <div class="btns"><button type="button" class="a-btn" data-close>Keep</button><button type="button" class="a-btn primary" data-ok>Remove</button></div>`,
+      <div class="btns"><button type="button" class="a-btn" data-close>Keep</button><button type="button" class="a-btn danger" data-ok>Remove</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async e => {
       const b = e.currentTarget; if (b.disabled) return; busy(b, 'Removing…');
       const data = { round: a.round, intern: a.intern, email: a.email, evaluator_name: a.evaluator_name, record_id: a.record_id };
@@ -2821,7 +2844,7 @@ function buildPrintRecord(r) {
     const noN = DOMAINS.reduce((n, x) => n + Object.values((r.answers || {})[x.key] || {}).filter(v => v === NOT_OBSERVED).length, 0);
     let lock = '';
     if (r.status === 'submitted') lock = `<div class="a-lock">${ICON.lock}<span>Submitted ${esc(fmtDate(r.submitted_at))}. This review is locked.${S.reader ? '' : ` If something needs to change, ask ${READERS_OR} to reopen it.`}</span>`
-      + (S.reader ? `<span style="flex:1"></span><button type="button" class="a-btn small" data-act="reopen">Reopen for ${esc(o.a.evaluator_name.split(',')[0])}</button>` : '') + `</div>`;
+      + (S.reader ? `<span style="flex:1"></span><button type="button" class="a-btn small" data-act="reopen">Reopen for ${esc(o.a.evaluator_name.split(',')[0])}…</button>` : '') + `</div>`;
     else if (!o.mine) lock = `<div class="a-lock warn">${ICON.info}<span>${o.exists ? `You’re reading ${esc(o.a.evaluator_name)}’s draft. Only ${esc(dr(o.a.evaluator_name))} can change it.` : `${esc(dr(o.a.evaluator_name))} hasn’t started this review. Only ${esc(dr(o.a.evaluator_name))} can write it.`}</span></div>`;
     else if (o.round.status !== 'open') lock = `<div class="a-lock warn">${ICON.lock}<span>This round is closed, so the draft can’t be changed. Ask ${READERS_OR} to reopen the round.</span></div>`;
     else if (r.reopened_at) lock = `<div class="a-lock warn">${ICON.info}<span>${esc(READER_NAMES[r.reopened_by] || 'The program')} reopened this review on ${esc(fmtDate(r.reopened_at))}. Make your changes, then submit it again.</span></div>`;
@@ -2829,8 +2852,8 @@ function buildPrintRecord(r) {
     const back = S.reader && !o.mine ? '#all/' + encodeURIComponent(o.a.round) : '#mine';
     root.innerHTML = `<button type="button" class="a-crumb" data-go="${back}">${ICON.back}${S.reader && !o.mine ? 'All reviews' : 'My reviews'}</button>`
       + head(o.round.name, fullName(i), `${o.mine ? 'Your review' : 'Review by ' + esc(o.a.evaluator_name)} · ${esc(o.a.record_id)}${o.round.period ? ' · ' + esc(o.round.period) : ''}`,
-        `<button type="button" class="a-btn" data-act="print">${ICON.print}Print${r.status === 'submitted' ? '' : ' draft'}</button>`
-        + (ed ? `<button type="button" class="a-btn primary" data-act="submit">Review and submit</button>` : ''))
+        `<button type="button" class="a-btn" data-act="print">${ICON.print}Print${r.status === 'submitted' ? '' : ' draft'}…</button>`
+        + (ed ? `<button type="button" class="a-btn primary" data-act="submit">Review and submit…</button>` : ''))
       + lock
       + `<div class="a-kpis">
           <div class="a-kpi"><div class="l">Completion</div><div class="v">${pct}<small>%</small></div><div class="a-bar"><i style="width:${pct}%"></i></div><div class="s">${p.rated} of ${p.total} items</div></div>
@@ -2915,7 +2938,7 @@ function buildPrintRecord(r) {
     return body + `<div class="a-foot">${prev ? `<button type="button" class="a-btn" data-step="${k - 1}">${ICON.back}${esc(prev.short)}</button>` : '<span></span>'}`
       + `<span class="st${ok ? ' ok' : ''}">${ok ? esc(d.short) + ' complete' : `Domain ${d.num} of 10`}</span>`
       + (next ? `<button type="button" class="a-btn primary" data-step="${k + 1}">${esc(next.short)}</button>`
-              : ed ? `<button type="button" class="a-btn primary" data-act="submit">Review and submit</button>` : '<span></span>') + `</div>`;
+              : ed ? `<button type="button" class="a-btn primary" data-act="submit">Review and submit…</button>` : '<span></span>') + `</div>`;
   }
 
   /* ── undo and redo: ⌘Z / ⇧⌘Z (Ctrl+Z / Ctrl+Shift+Z or Ctrl+Y elsewhere) ──
