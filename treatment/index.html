@@ -1439,7 +1439,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=2716cd07c5"></script>
+<script defer src="store.js?v=d9031781aa"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -2101,7 +2101,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
       '<button class="continue is-inactive" id="sbBtn" type="submit">Sign in</button></div></form>'+
       '<div class="page-foot"><b>VCA Shoreline</b> · Protected Pravix Workspace</div></div></div>'; };
   function why(c){ return c==='auth/wrong-password'||c==='auth/invalid-credential'||c==='auth/user-not-found'||c==='auth/invalid-login-credentials'||c==='auth/invalid-email'?'Incorrect email or password. Please try again.':
-      c==='auth/too-many-requests'?'Too many tries. Wait a minute and try again.':c==='auth/user-disabled'?'This account is turned off.':'Connection problem. Try again.'; }
+      c==='auth/too-many-requests'?'Too many tries. Wait a minute and try again.':c==='auth/user-disabled'?'This account is turned off. Ask an admin to turn it back on.':'Connection problem. Try again.'; }
   function lock(on){ document.body.classList.toggle('sb-locked',on); [].forEach.call(document.body.children,function(el){ if(el.id==='tsGate'||el.id==='toastWrap'||el.tagName==='SCRIPT') return; try{ on?el.setAttribute('inert',''):el.removeAttribute('inert'); }catch(x){} }); }
   window.pvxSignInWire=function(root){ var ov=root&&root.querySelector('#sbLogin'); if(!ov||ov._w) return; ov._w=1; root.classList.add('pvx-flow-login'); lock(true);
     var form=ov.querySelector('#sbLoginForm'), email=ov.querySelector('#sbEmail'), password=ov.querySelector('#sbPass'), reveal=ov.querySelector('#sbReveal'), btn=ov.querySelector('#sbBtn'),
@@ -2149,8 +2149,9 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   window.pvxAlertSound=function(on){ if(on===undefined) return ls('pvxAlertSound')!=='0'; ls('pvxAlertSound',on?'1':'0'); return on; };
   function tone(f,g,d){ if(!pvxAlertSound()) return; try{ var A=window.AudioContext||window.webkitAudioContext, a=new A(), o=a.createOscillator(), n=a.createGain();
     o.frequency.value=f; n.gain.value=g; o.connect(n); n.connect(a.destination); o.start(); o.stop(a.currentTime+d); setTimeout(function(){ try{ a.close(); }catch(e){} },(d+.3)*1000); }catch(e){} }
-  window.pvxDocAlertLife=function(n,crit){
-    if(crit){ tone(880,.04,.18); var rt=setTimeout(function(){ if(n.isConnected) tone(660,.02,.14); },120000); return; }
+  window.pvxDocAlertLife=function(n,crit,quiet){
+    if(crit){ if(quiet) return;   /* n262: alerts already seen don't sound again when Treatment reopens */
+      tone(880,.04,.18); var rt=setTimeout(function(){ if(n.isConnected) tone(660,.02,.14); },120000); return; }
     var left=15000, last=Date.now();
     var iv=setInterval(function(){ if(!n.isConnected){ clearInterval(iv); return; } var now=Date.now();
       if(document.visibilityState==='visible'&&!n.matches(':hover')&&!n.contains(document.activeElement)) left-=now-last; last=now;
