@@ -881,6 +881,7 @@ body.dark .pvx-actions .live.off{color:#F0BC55}
 .a-pick button b{display:block;font-size:.9375rem}
 .a-pick button span{font-size:.75rem;color:var(--a-ink-2)}
 .a-pick button[disabled]{opacity:.45;cursor:default}
+.a-pick button .ck{width:20px;height:20px;flex:none;fill:none;stroke:var(--a-acc-ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .a-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-top:8px}
 .a-check{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--a-soft);font-size:.9375rem;font-weight:500;color:var(--a-ink);cursor:pointer}
 .a-check input{width:18px;height:18px;accent-color:#38BDD2}
@@ -2441,10 +2442,23 @@ function buildPrintRecord(r) {
         if (watch.id && watch.id !== S.all.roundId) stopRound();
         await loadRounds(); await loadRound(S.all.roundId);
         if (H.all.rid !== S.all.roundId) H.all = { rid: S.all.roundId, u: [], r: [] };
-        renderAll(); return;
+        renderAll(); restorePlace(); return;
       }
-      stopRound(); S.view = 'mine'; await loadMine(); renderMine();
+      stopRound(); S.view = 'mine'; await loadMine(); renderMine(); restorePlace();
     } catch (e) { console.warn(e); loaded(); renderError(e); } finally { loaded(); }
+  }
+  /* coming back from a review: the list scrolls back to where it was, and the card or row you opened gets focus and a brief highlight */
+  let place = null;
+  function restorePlace() {
+    const p = place; place = null;
+    if (!p || p.view !== S.view || (S.view === 'all' && p.round !== S.all.roundId)) return;
+    const f = root.querySelector(p.focus); if (!f) return;
+    requestAnimationFrame(() => {
+      window.scrollTo(0, Math.min(p.y, document.documentElement.scrollHeight - innerHeight));
+      try { f.focus({ preventScroll: true }); } catch (e) {}
+      flashSel(p.mark);
+      const r = f.getBoundingClientRect(); if (r.top < 80 || r.bottom > innerHeight) scrollShow(f);
+    });
   }
   function renderError(e) {
     if (denied(e)) return renderNoAccess();
@@ -2636,7 +2650,7 @@ function buildPrintRecord(r) {
         const found = findDoctors(q.value);
         list.innerHTML = found.map(d =>
           `<button type="button" role="option" tabindex="-1" data-email="${esc(d.email)}" aria-selected="${pick && pick.email === d.email}"${taken.has(d.email) ? ' disabled' : ''}>`
-          + `<div><b>${esc(d.name)}</b><span>${esc(d.title)} · ${esc(d.dept)}</span></div>${taken.has(d.email) ? '<span>Assigned</span>' : ''}</button>`).join('')
+          + `<div><b>${esc(d.name)}</b><span>${esc(d.title)} · ${esc(d.dept)}</span></div>${taken.has(d.email) ? '<span>Assigned</span>' : pick && pick.email === d.email ? ICON.check : ''}</button>`).join('')
           || '<div class="a-empty" style="padding:16px">No doctor matches. Use Someone not in the Directory.</div>';
         const os = options();
         const stop = os.find(b => b.getAttribute('aria-selected') === 'true') || os[0]; if (stop) stop.tabIndex = 0;   // one Tab stop for the list
@@ -2834,7 +2848,7 @@ function buildPrintRecord(r) {
           ${guideLevels()}
           ${helpLine()}
           <div class="save">${ed ? `Your draft saves as you go. Submit locks it and sends it to ${READERS_AND}.` : 'Submitted reviews are part of the intern’s training record.'}</div></aside></div>`;
-    growAll(); paintFlash();
+    growAll(); paintFlash(); railToCurrent();
     if (top) requestAnimationFrame(() => { try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {} });
   }
 
@@ -2845,6 +2859,13 @@ function buildPrintRecord(r) {
       `<button type="button" role="radio" class="a-score" title="${esc(s[2] + ': ' + s[3])}" aria-checked="${val === s[0]}"${ti(s[0])} data-score="${s[0]}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}><b>${s[0]}</b><span class="lv">${esc(s[1])}</span>`
       + (s[1].toLowerCase() === s[2].toLowerCase() ? '' : `<span class="sr-only">, ${esc(s[2])}</span>`) + `</button>`).join('')
       + `<button type="button" role="radio" class="a-score no" aria-checked="${val === NOT_OBSERVED}"${ti(NOT_OBSERVED)} data-score="${NOT_OBSERVED}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}>${ICON.eyeSlash}<span>Not observed</span></button></div>`;
+  }
+  /* iPad / iPhone: the domain list is a scrolling row; keep the current domain in view (centred where possible) */
+  function railToCurrent() {
+    const rail = root.querySelector('.a-rail'), cur = rail && rail.querySelector('[aria-current=step]');
+    if (!rail || !cur || rail.scrollWidth <= rail.clientWidth + 1) return;
+    const R = rail.getBoundingClientRect(), C = cur.getBoundingClientRect();
+    rail.scrollLeft = Math.max(0, rail.scrollLeft + (C.left - R.left) - (rail.clientWidth - C.width) / 2);
   }
   /* writing on a review that can't be edited: shown as text, in full, line breaks kept */
   const roText = (t, empty) => String(t || '').trim() ? `<p class="a-ro">${esc(String(t).replace(/\s+$/, ''))}</p>` : empty ? `<p class="a-ro none">${esc(empty)}</p>` : '';
@@ -3076,7 +3097,18 @@ function buildPrintRecord(r) {
   });
   function wire() {
     root.addEventListener('click', e => {
-      const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); if (/^#review\//.test(g.dataset.go)) opening(g); go(g.dataset.go); return; }
+      const g = e.target.closest('[data-go]'); if (g) {
+        e.preventDefault();
+        if (/^#review\//.test(g.dataset.go)) {
+          opening(g);
+          /* remember where this was opened from, so coming back keeps the place */
+          const row = g.closest('[data-row]');
+          if (!S.open && (S.view === 'mine' || S.view === 'all')) place = { view: S.view, round: S.all.roundId, y: scrollY,
+            mark: row ? `[data-row="${CSS.escape(row.dataset.row)}"]` : `.a-intern[data-go="${CSS.escape(g.dataset.go)}"]`,
+            focus: row ? `[data-row="${CSS.escape(row.dataset.row)}"] [data-go]` : `.a-intern[data-go="${CSS.escape(g.dataset.go)}"]` };
+        }
+        go(g.dataset.go); return;
+      }
       const st = e.target.closest('[data-step]');
       if (st && S.open) { flush(); S.open.cur = Number(st.dataset.step); renderReview(false); const h = $('#aDomT'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); const y = h.closest('.a-panel').getBoundingClientRect().top; const nav = $('#pvxSubnav') || $('#pvxTopnav'); const off = Math.max(0, nav ? nav.getBoundingClientRect().bottom : 0) + 16; if (y < off || y > innerHeight * 0.6) window.scrollTo({ top: Math.max(0, scrollY + y - off), behavior: 'auto' }); } return; }
       const sc = e.target.closest('.a-score');
