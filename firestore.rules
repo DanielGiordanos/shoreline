@@ -448,7 +448,11 @@ match /client_intakes/{docId} {
       function content() {
         return ['answers', 'notes', 'observations', 'progress', 'updated_at', 'status', 'submitted_at'];
       }
-      allow read: if reviewReader() || (staff() && resource.data.email == myEmail());
+      // an evaluator may also read her review before it exists (opening an intern she hasn't started yet):
+      // a missing document is readable only by the evaluator it's assigned to
+      allow read: if reviewReader()
+        || (staff() && resource != null && resource.data.email == myEmail())
+        || (staff() && resource == null && exists(/databases/$(database)/documents/sgvp_review_assign/$(aid)) && asg().email == myEmail());
       allow create: if staff()
         && exists(/databases/$(database)/documents/sgvp_review_assign/$(aid))
         && asg().email == myEmail()
