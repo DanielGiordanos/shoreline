@@ -1439,7 +1439,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=d9031781aa"></script>
+<script defer src="store.js?v=5d4fec3d10"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -1997,7 +1997,10 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
       x.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'; x.onclick=kill; el.appendChild(x); }
     el.addEventListener('mouseenter',hold); el.addEventListener('mouseleave',run);
     el.addEventListener('focusin',hold); el.addEventListener('focusout',function(e){ if(!el.contains(e.relatedTarget)) run(); });
-    run(); return kill;
+    /* n264 (HIG Multitasking): hidden, it waits; back on screen it stays at least 3 s more */
+    function vis(){ if(done){ document.removeEventListener('visibilitychange',vis); return; } if(document.visibilityState==='hidden') hold(); else { left=Math.max(3000,left); run(); } }
+    document.addEventListener('visibilitychange',vis);
+    run(); if(document.visibilityState==='hidden') hold(); return kill;
   };
   /* 1.–2. offline: the browser's word, and the database's (serving from this computer's copy for 10 s) */
   var NET={cache:false,fcT:0,since:null,was:null};
@@ -2194,8 +2197,8 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   function card(){ var m=$('#tsModal.show .tm-card'); return m; }
   function openC(){ var m=card(); if(m&&fields(m).length) return m; var d=$('#completionDrawer.open'); if(d) return d; var n=$('#noteDrawer.open'); return n||null; }
   function sess(c){ return c.classList.contains('drawer')?(c.id+':'+(typeof activeTaskId!=='undefined'?activeTaskId:'')+':'+sheetId()):'m'; }
-  function arm(c){ if(!c) return; var k=sess(c); if(c._pvxSess===k) return; c._pvxSess=k; SNAP.delete(c); c._pvxKey=null;
-    setTimeout(function(){ if(!c.isConnected||c._pvxSess!==k) return; SNAP.set(c,vals(c)); c._pvxKey=formKey(c);
+  function arm(c){ if(!c) return; var k=sess(c); if(c._pvxSess===k) return; c._pvxSess=k; SNAP.delete(c); c._pvxKey=null; c._pvxSnap0=vals(c); c._pvxEarly=false;
+    setTimeout(function(){ if(!c.isConnected||c._pvxSess!==k) return; SNAP.set(c,c._pvxEarly?c._pvxSnap0:vals(c)); c._pvxKey=formKey(c);
       var d=c._pvxKey&&draftGet(c._pvxKey);
       if(d){ var n=0; Object.keys(d.v).forEach(function(id){ var f=document.getElementById(id); if(f&&c.contains(f)&&f.value!==d.v[id]){ f.value=d.v[id]; f.dispatchEvent(new Event('input',{bubbles:true})); f.dispatchEvent(new Event('change',{bubbles:true})); n++; } });
         if(n){ try{ toast('Draft restored'); }catch(e){} } }
@@ -2203,6 +2206,8 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
       var T=0; c.addEventListener('input',function(){ clearTimeout(T); T=setTimeout(function(){ if(!c._pvxKey) return; if(dirty(c)){ var a=SNAP.get(c), b=vals(c), o={}; Object.keys(b).forEach(function(k){ if(a[k]!==b[k]) o[k]=b[k]; }); draftPut(c._pvxKey,o); } else draftDrop(c._pvxKey); },400); },true);
       c.addEventListener('change',function(){ c.dispatchEvent(new Event('input',{bubbles:true})); },true);
     },600); }
+  /* n264: typing before the starting copy is taken counts as typing */
+  document.addEventListener('input',function(e){ if(!e.isTrusted||!e.target.closest) return; var c=e.target.closest('.tm-card,.drawer'); if(c&&c._pvxSess&&!SNAP.has(c)) c._pvxEarly=true; },true);
   /* saving clears the draft */
   document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#tsModal [data-ok], #completionDrawer .btn.primary, #noteDrawer .btn.primary'); if(!b) return;
     var c=b.closest('.tm-card')||b.closest('.drawer'); if(!c) return; var k=c._pvxKey;
@@ -2328,7 +2333,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
       var right=s.getBoundingClientRect().right, room=right-sw.getBoundingClientRect().right-12; bar.style.setProperty('width',Math.max(220,Math.min(340,room))+'px','important'); }
     i.addEventListener('focus',fit); addEventListener('resize',function(){ if(document.activeElement===i) fit(); });
     i.addEventListener('input',sync); i.addEventListener('blur',function(){ setTimeout(function(){ sync(); if(!i.value&&bar) bar.style.width=''; },0); }); sync(); }
-  window.addEventListener('keydown',function(e){ if(!(e.metaKey||e.ctrlKey)||e.altKey||e.shiftKey||e.isComposing) return; if((e.key||'').toLowerCase()!=='k') return;
+  window.addEventListener('keydown',function(e){ if(!(e.metaKey||e.ctrlKey)||e.altKey||e.shiftKey||e.isComposing) return; if((e.key||'').toLowerCase()!=='k') return; if(window.pvxModalUp&&pvxModalUp()) return;
     var i=$('#globalSearch'); if(!i) return; e.preventDefault(); var s=i.closest('.search'), b=s&&$('.ts-search-open',s);
     if(b&&getComputedStyle(b).display!=='none'&&b.getAttribute('aria-hidden')==='false') b.click(); else i.focus(); try{ i.select(); }catch(x){} },true);
 
@@ -2930,6 +2935,118 @@ body.dark #ctab-tasks .wl-dnr{color:#C9A8F0;background:rgba(168,136,224,.16)}
 body.dark .sn-bar .sn-x{color:#5fd3e6}
 @media (hover:none){.sn-bar .sn-x{opacity:.75;width:30px}.sn-bar .sn-x::after{content:"";position:absolute;inset:-9px -4px}}
 @media (prefers-reduced-motion:reduce){.sn-bar .sn-x{transition:none}}
+</style>
+<script src="/assets/pvx-keys.js?v=5fe708296b" defer></script>
+<script id="pvx-n264-ts">
+/* n264 · Treatment Sheets against HIG Modality, Multitasking, Offering help and Onboarding
+   (claude/hig-audit-treatment-modality-multitasking-help-onboarding.md) */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  var TOUCH=matchMedia('(hover:none)').matches;
+  function shown(e){ if(!e||!e.getClientRects().length) return false; var c=getComputedStyle(e); return c.visibility!=='hidden'&&+c.opacity>0.05; }
+
+  /* 2. is a dialog, sheet or menu open? Shortcuts wait until it's closed (HIG Modality: one at a time) */
+  window.pvxModalUp=function(){
+    if(window.PvxKeys&&PvxKeys.isOpen()) return true;
+    if($('#tsModal.show, #tsOrderSheet.show, .drawer.open, #tsTake.show, #tsDowntime.show')) return true;
+    return $$('.ts-menu.show, #tsAlertMenu, #tsCopyMenu, #tsReportsMenu, [role=dialog][aria-modal=true], [role=alertdialog]').some(shown);
+  };
+
+  /* 1. menus: Esc closes the open one and focus goes back to its button; ↑ ↓ Home End move through it; Tab leaves it */
+  var opener=null, openerAt=0, keyAt=0;
+  document.addEventListener('pointerdown',function(e){ var b=e.target.closest&&e.target.closest('button,[role=button],a[href]'); if(b&&!b.closest('.ts-menu')){ opener=b; openerAt=Date.now(); } },true);
+  document.addEventListener('keydown',function(e){ if(e.key!=='Enter'&&e.key!==' ') return; var b=document.activeElement; if(b&&b!==document.body&&!b.closest('.ts-menu')){ opener=b; openerAt=keyAt=Date.now(); } },true);
+  function menus(){ return $$('.ts-menu.show, #tsAlertMenu').filter(function(m){ return !m.matches('[role=dialog]')&&m.getClientRects().length&&getComputedStyle(m).visibility!=='hidden'; }); }  /* not opacity: a menu fades in */
+  function itemsOf(m){ return $$('button,[role=menuitem],a[href]',m).filter(function(b){ return !b.disabled&&shown(b); }); }
+  function closeMenu(m,back){ if(m.id==='tsPatientMenu') m.classList.remove('show'); else m.remove();
+    var o=m._pvxFrom; if(back!==false&&o&&o.isConnected) try{ o.focus({preventScroll:true}); }catch(e){} }
+  function tagMenus(){
+    menus().forEach(function(m){ if(m._pvxSeen) return; m._pvxSeen=1; m._pvxFrom=(Date.now()-openerAt<1500&&opener)||document.activeElement;
+      if(!m.getAttribute('role')&&!$('input,textarea,select',m)){ m.setAttribute('role','menu'); var its=itemsOf(m), radio=its.some(function(b){ return b.classList.contains('on'); });
+        its.forEach(function(b){ if(b.getAttribute('role')) return; b.setAttribute('role',radio?'menuitemradio':'menuitem'); if(radio) b.setAttribute('aria-checked',String(b.classList.contains('on'))); }); }
+      if(Date.now()-keyAt<900){ var its2=itemsOf(m), f=its2.filter(function(b){ return b.classList.contains('on'); })[0]||its2[0]; f&&f.focus({preventScroll:true}); } });
+    $$('.ts-menu').forEach(function(m){ if(m._pvxSeen&&!m.classList.contains('show')) m._pvxSeen=0; });
+  }
+  window.addEventListener('keydown',function(e){ var ms=menus(); if(!ms.length||e.isComposing) return; var m=ms[ms.length-1];
+    if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); closeMenu(m); return; }
+    var a=document.activeElement, inside=m.contains(a);
+    if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    if(e.key==='Tab'&&inside){ e.preventDefault(); closeMenu(m); return; }
+    if(!/^(ArrowDown|ArrowUp|Home|End)$/.test(e.key)) return;
+    var its=itemsOf(m); if(!its.length) return; var i=its.indexOf(a);
+    e.preventDefault(); e.stopImmediatePropagation();
+    var n=e.key==='Home'?0:e.key==='End'?its.length-1:e.key==='ArrowDown'?(i<0?0:Math.min(its.length-1,i+1)):(i<0?its.length-1:Math.max(0,i-1));
+    its[n].focus({preventScroll:true}); },true);
+
+  /* 3. a view-only card closes with its ✕ only */
+  function oneClose(){ $$('#tsOrderSheet .op-card').forEach(function(c){ if(!$('.op-x',c)) return;
+    $$('button',c).forEach(function(b){ if(b.classList.contains('op-x')||b.hidden||b.textContent.trim()!=='Close') return; b.hidden=true;
+      var p=b.parentElement; if(p&&p!==c&&!$$('button,a,input,select,textarea',p).some(function(x){ return !x.hidden&&x!==b; })&&!p.textContent.trim().replace('Close','')) p.hidden=true; }); }); }
+
+  /* 6. tooltips say what a control does; the name is added only when the label is hidden */
+  var CT={dash:'see every patient and what’s due', tasks:'see what’s due for your patients, in order', sheet:'chart this patient’s treatments by the hour',
+          vitals:'see readings and trends, and take vitals', anes:'open this patient’s anesthesia record', timeline:'see everything charted and changed, in order',
+          charges:'mark charges as entered on the invoice', notes:'read and write this patient’s notes'};
+  var BD={'My Board':'Show only the patients you care for','OP Board':'Show outpatients','IP Board':'Show admitted patients','Boarding':'Show boarding patients'};
+  function cap1(t){ return t.charAt(0).toUpperCase()+t.slice(1); }
+  function labelShown(b){ var r=document.createRange(); return [].some.call(b.childNodes,function(n){ if(n.nodeType!==3||!n.nodeValue.trim()) return false; r.selectNodeContents(n); var x=r.getBoundingClientRect(); return x.width>1&&x.height>1; }); }
+  function tip(e){ var t=e.target; if(!t||!t.closest) return;
+    var s=t.closest('.seg[data-ctab]'); if(s&&CT[s.dataset.ctab]){ var nm=s.getAttribute('aria-label')||''; s.title=labelShown(s)?cap1(CT[s.dataset.ctab]):nm+' — '+CT[s.dataset.ctab]; return; }
+    var b=t.closest('.sb-segb[data-board]'); if(b&&BD[b.dataset.board]){ b.dataset.tip=BD[b.dataset.board]; return; }
+    b=t.closest('.sb-segb[data-key="H"]'); if(b){ var hrs=/Hours/.test(b.textContent); b.dataset.tip=hrs?'Show each patient’s day by the hour':'Show the patients as a list'; return; }
+    b=t.closest('.sb-filters'); if(b){ b.dataset.tip='Choose which patients the board shows'; return; }
+    b=t.closest('.ts-audit-btn'); if(b){ b.title='Open the timeline: who charted and changed what'; return; }
+    b=t.closest('.ts-gear'); if(b){ b.title='Open Treatment settings'; return; }
+    b=t.closest('.ts-search-open'); if(b){ b.title='Search patients and orders'; return; }
+    b=t.closest('.treatment-legend [title]'); if(b&&b.title.trim()===b.textContent.trim()) b.removeAttribute('title'); }
+  document.addEventListener('mouseover',tip,true); document.addEventListener('focusin',tip,true);
+
+  /* 8. one tip: a whole hour at once (HIG Offering help: a less obvious, faster way; once a day; retired once used or closed) */
+  var TK='pvxTipHour', seen={};
+  function st(){ try{ return JSON.parse(localStorage.getItem(TK)||'{}')||{}; }catch(e){ return {}; } }
+  function put(o){ try{ localStorage.setItem(TK,JSON.stringify(o)); }catch(e){} }
+  function retire(){ var o=st(); if(!o.done){ o.done=1; put(o); } var n=$('#pvxTipHour'); n&&n.remove(); }
+  var XS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  function showTip(){ var o=st(), today=new Date().toDateString(); if(o.done||o.shown===today||$('#pvxTipHour')) return;
+    var sc=$('#sheetScroll'); if(!sc||!sc.parentElement) return;
+    var d=document.createElement('div'); d.id='pvxTipHour'; d.className='pvx-tip'; d.setAttribute('role','status');
+    d.innerHTML='<span>Chart a whole hour at once: '+(TOUCH?'tap':'click')+' its time at the top of the sheet.</span><button type="button" class="pvx-tip-x" aria-label="Close tip">'+XS+'</button>';
+    d.querySelector('button').onclick=retire; sc.parentElement.insertBefore(d,sc); o.shown=today; put(o); }
+  document.addEventListener('click',function(e){ var t=e.target; if(!t.closest) return;
+    if(t.closest('#ctab-sheet .hcell')){ retire(); return; }
+    var m=t.closest('#ctab-sheet .mark[data-t]'); if(!m||!/^(overdue|due)$/.test(m.dataset.s||'')) return;
+    var p=(m.dataset.t||'').split('_'); if(p.length<3) return; var k=p[0]+'_'+Math.floor(+p[p.length-1]/60);
+    (seen[k]=seen[k]||{})[p.slice(1,-1).join('_')]=1; if(Object.keys(seen[k]).length>=3) showTip(); },true);
+  document.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('#ctab-sheet .hcell')) retire(); },true);
+
+  /* 7. the Keyboard shortcuts sheet: ? */
+  function groups(){ return [
+    {title:'General', items:[{keys:['mod','K'],label:'Search patients and orders'},{keys:['?'],label:'Show keyboard shortcuts'}]},
+    {title:'Patient tabs', items:[{keys:['alt','1–9'],label:'Go to patient tab 1 to 9'},{keys:['←','→'],label:'Move between tabs (on a tab)'},{keys:['Delete'],label:'Close the tab (on a tab)'}]},
+    {title:'Treatment sheet', items:[{keys:['↑','↓','←','→'],label:'Move around the sheet'},{keys:['Home','End'],label:'Go to the start or end of the row'},{keys:['return'],label:'Chart or open the cell'},
+      {keys:['mod','Z'],label:'Undo'},{keys:['shift','mod','Z'],label:'Redo'},{keys:['alt','Click'],label:'Fold or unfold every section (on a section)'}]},
+    {title:'Status board', items:[{keys:['1–4'],label:'Your patients, Outpatients, Inpatients, Boarding'},{keys:['H'],label:'Hours or list'}]},
+    {title:'Inpatients display', items:[{keys:['←','→'],label:'Turn the page'},{keys:['esc'],label:'Leave the display'}]},
+    {title:'Menus and sheets', items:[{keys:['esc'],label:'Close the menu or sheet'},{keys:['↑','↓'],label:'Move through a menu'},{keys:['return'],label:'Choose'}]} ]; }
+
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ tagMenus(); oneClose(); }catch(e){} }); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+    if(window.PvxKeys) PvxKeys.bind(groups,{skip:function(){ return pvxModalUp()||!!document.getElementById('tsTv'); }}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<style id="pvx-n264-css">
+.pvx-tip{display:flex;align-items:center;gap:10px;margin:0 0 8px;padding:8px 8px 8px 14px;border-radius:12px;font-size:0.8125rem;line-height:1.4;background:rgba(56,189,210,.10);color:#D8E8F4;border:1px solid rgba(56,189,210,.22)}
+.pvx-tip span{flex:1;min-width:0}
+.pvx-tip-x{flex:0 0 auto;width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:#A7C2D8;cursor:pointer;position:relative}
+.pvx-tip-x svg{width:14px;height:14px}
+.pvx-tip-x:hover{background:rgba(150,185,220,.14)}
+.pvx-tip-x:focus-visible{outline:3px solid rgba(88,166,255,.55);outline-offset:1px}
+body:not(.dark) .pvx-tip{background:rgba(35,67,156,.06);color:#181A1F;border-color:rgba(35,67,156,.16)}
+body:not(.dark) .pvx-tip-x{color:#4A5268}
+body:not(.dark) .pvx-tip-x:hover{background:rgba(0,0,0,.055)}
+@media (hover:none){.pvx-tip{font-size:max(0.8125rem,13px)}.pvx-tip-x::after{content:"";position:absolute;inset:-8px}}
+@media (prefers-contrast:more){.pvx-tip{border-width:2px}}
 </style>
 </body>
 </html>
