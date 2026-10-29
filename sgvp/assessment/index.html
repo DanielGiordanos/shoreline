@@ -645,6 +645,11 @@ html.pvx-noblur :is(.pvx-msg,.to-pop,.ap-pop){background:var(--pvx-glass-solid)!
 </style>
 <style id="pvx-n229-sup">/* PVX-N229 - superscripts stay at the 11 pt minimum */
 sup,sub{font-size:max(.6875rem,11px)}</style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Assessments">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style id="asm-css">
 /* ═══ SGVP intern assessment (sgvp/assessment/) ═══════════════════════════════════════════════════════
    Content styles only — the shared top bar, sub-nav, theme and type tokens come from the SGVP shell.
@@ -833,6 +838,15 @@ body:not(.dark) .a-sheet{background:#fff}
 .a-field .hint{font-weight:400;color:var(--a-ink-3)}
 .a-cred{margin:6px 0 0;font-size:.8125rem;line-height:1.45;color:var(--a-warn-ink)}
 .a-btn[aria-busy=true]{cursor:progress;opacity:.75}
+.is-opening{cursor:progress;opacity:.7}
+/* loading placeholders (static: nothing moves, so nothing to turn off for Reduce Motion) */
+.a-skel{display:flex;flex-direction:column;gap:12px;min-height:120px}
+.a-skel i,.a-skel-head i{display:block;height:14px;border-radius:7px;background:var(--a-soft)}
+.a-skel i:first-child{width:55%;height:18px}
+.a-skel i.s,.a-skel-head i.s{width:35%}
+.a-skel-head{display:flex;flex-direction:column;gap:10px;margin:8px 0 24px}
+.a-skel-head i:first-child{width:240px;max-width:60%;height:28px;border-radius:9px}
+#asm>.a-skel{margin-bottom:14px}
 .pvx-actions .live.off{background:rgba(232,168,48,.14);border-color:rgba(232,168,48,.4);color:#8A5D00}
 body.dark .pvx-actions .live.off{color:#F0BC55}
 .pvx-actions .live.off i{background:currentColor}
@@ -2054,7 +2068,7 @@ function buildPrintRecord(r) {
   let html = `<section class="pr-page">${wm}<div class="pr-flow">${prCover(r)}</div>${prFooter(r, 1, m, draft)}</section>`;
   pages.forEach((p, i) => { html += `<section class="pr-page">${wm}<div class="pr-flow">${p.join('')}</div>${prFooter(r, i + 2, m, draft)}</section>`; });
   root.innerHTML = html;
-  document.title = `${r.rev.record_id} · ${r.internName} · ${r.rev.evaluator_name}`;
+  document.title = `${draft ? 'Draft · ' : ''}${r.rev.record_id} · ${r.internName} · ${r.rev.evaluator_name}`;
 }
 
 /* ═══ SGVP intern assessment — sgvp/assessment/ ═══════════════════════════════════════════════════════
@@ -2270,10 +2284,28 @@ function buildPrintRecord(r) {
 
   /* ── routing ── */
   function go(hash) { if (location.hash !== hash) location.hash = hash; else route(); }
+  /* loading: placeholders in the page's shape, only when a load takes longer than 300 ms */
+  let skelT = 0;
+  function skeleton(kind) {
+    clearTimeout(skelT);
+    skelT = setTimeout(() => {
+      const card = '<div class="a-card a-skel" aria-hidden="true"><i></i><i></i><i class="s"></i></div>';
+      root.setAttribute('aria-busy', 'true');
+      root.innerHTML = `<p class="sr-only" role="status">${kind === 'review' ? 'Opening the review…' : 'Loading your reviews…'}</p>`
+        + (kind === 'review' ? '<div class="a-skel-head" aria-hidden="true"><i></i><i class="s"></i></div>' + card + card
+                             : '<div class="a-skel-head" aria-hidden="true"><i></i><i class="s"></i></div><div class="a-grid">' + card + card + card + '</div>');
+    }, 300);
+  }
+  function loaded() { clearTimeout(skelT); root.removeAttribute('aria-busy'); }
+  function opening(el) {
+    el.setAttribute('aria-busy', 'true'); el.classList.add('is-opening');
+    const t = el.querySelector('.a-ifoot span:last-child'); if (t) t.textContent = 'Opening…'; else if (!el.querySelector('*')) el.textContent = 'Opening…';
+  }
   async function route() {
     const h = decodeURIComponent(location.hash.slice(1));
+    skeleton(h.startsWith('review/') ? 'review' : 'list');
     try {
-      if (h.startsWith('review/')) { await openReview(h.slice(7)); return; }
+      if (h.startsWith('review/')) { const [aid, n] = h.slice(7).split('/'); await openReview(aid, n === undefined ? null : Number(n) - 1); return; }
       closeEditor();
       if (h.startsWith('all') && S.reader) {
         S.view = 'all'; const rid = h.split('/')[1]; if (rid) S.all.roundId = rid;
@@ -2281,7 +2313,7 @@ function buildPrintRecord(r) {
         await loadRounds(); await loadRound(S.all.roundId); renderAll(); return;
       }
       stopRound(); S.view = 'mine'; await loadMine(); renderMine();
-    } catch (e) { console.warn(e); renderError(e); }
+    } catch (e) { console.warn(e); loaded(); renderError(e); } finally { loaded(); }
   }
   function renderError(e) {
     root.innerHTML = `<div class="a-card a-empty"><h2>Reviews didn’t load</h2><p>${/permission/.test((e && e.code) || '') ? 'This account can’t open intern reviews.' : 'Check your connection, then reload the page.'}</p></div>`;
@@ -2494,7 +2526,7 @@ function buildPrintRecord(r) {
   }
 
   /* ── one review ── */
-  async function openReview(aid) {
+  async function openReview(aid, at) {
     const aSnap = await db.collection(C.assign).doc(aid).get();
     if (!aSnap.exists) { say('That review isn’t assigned to you.', 'warn'); go('#mine'); return; }
     const a = Object.assign({ id: aid }, aSnap.data());
@@ -2504,7 +2536,8 @@ function buildPrintRecord(r) {
     const rev = vSnap.exists ? vSnap.data() : { round: a.round, intern: a.intern, email: a.email, uid: S.uid, evaluator_name: a.evaluator_name,
       record_id: a.record_id, answers: {}, notes: {}, observations: {}, progress: { rated: 0, total: TOTAL }, status: 'draft' };
     closeEditor();
-    S.open = { aid, a, round, rev, exists: vSnap.exists, mine, cur: S.open && S.open.aid === aid ? S.open.cur : 0,
+    const resume = Math.max(0, DOMAINS.findIndex(d => !domainDone(rev, d)));
+    S.open = { aid, a, round, rev, exists: vSnap.exists, mine, cur: at !== null && at >= 0 && at < DOMAINS.length ? at : S.open && S.open.aid === aid ? S.open.cur : resume,
       chain: Promise.resolve(), pending: {}, timer: 0, since: 0, openNotes: {} };
     S.open.unsub = db.collection(C.reviews).doc(aid).onSnapshot(s => {
       const o = S.open; if (!o || o.aid !== aid || !s.exists) return;
@@ -2524,6 +2557,7 @@ function buildPrintRecord(r) {
   const editable = () => { const o = S.open; return o && o.mine && o.rev.status === 'draft' && o.round.status === 'open'; };
 
   function renderReview(top) {
+    try { history.replaceState(null, '', '#review/' + encodeURIComponent(S.open.aid) + '/' + (S.open.cur + 1)); } catch (e) {}
     const o = S.open, r = o.rev, i = intern(o.a.intern), ed = editable(), d = DOMAINS[o.cur];
     const p = computeProgress(r), pct = Math.round(100 * p.rated / p.total);
     const doneN = DOMAINS.filter(x => domainDone(r, x)).length;
@@ -2696,6 +2730,8 @@ function buildPrintRecord(r) {
   function printReview() {
     const o = S.open;
     flush();
+    const title = document.title;
+    addEventListener('afterprint', () => { document.title = title; }, { once: true });
     buildPrintRecord({ rev: Object.assign({}, o.rev, { evaluator_name: o.a.evaluator_name, record_id: o.a.record_id }),
       round: o.round, internName: fullName(intern(o.a.intern)) });
     requestAnimationFrame(() => window.print());
@@ -2718,7 +2754,7 @@ function buildPrintRecord(r) {
   });
   function wire() {
     root.addEventListener('click', e => {
-      const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); go(g.dataset.go); return; }
+      const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); if (/^#review\//.test(g.dataset.go)) opening(g); go(g.dataset.go); return; }
       const st = e.target.closest('[data-step]');
       if (st && S.open) { flush(); S.open.cur = Number(st.dataset.step); renderReview(false); const h = $('#aDomT'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); const y = h.closest('.a-panel').getBoundingClientRect().top; const nav = $('#pvxSubnav') || $('#pvxTopnav'); const off = Math.max(0, nav ? nav.getBoundingClientRect().bottom : 0) + 16; if (y < off || y > innerHeight * 0.6) window.scrollTo({ top: Math.max(0, scrollY + y - off), behavior: 'auto' }); } return; }
       const sc = e.target.closest('.a-score');

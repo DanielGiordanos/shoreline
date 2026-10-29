@@ -1,0 +1,16 @@
+{
+  "name": "Assessments · Pravix",
+  "short_name": "Assessments",
+  "description": "Intern reviews for the VCA Shoreline Graduate Veterinarian Program",
+  "start_url": "/sgvp/assessment/#mine",
+  "scope": "/sgvp/assessment/",
+  "id": "/sgvp/assessment/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A1222",
+  "theme_color": "#0A1222",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
