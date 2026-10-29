@@ -2418,11 +2418,17 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     run:function(e,fromKey){ var i=ST.indexOf(e); if(i<0) return false; var q=quietly(function(){ return e.undo(); });
       if(q.r===false) return false;   /* the step said it couldn't be undone (someone changed it since) */
       ST.splice(ST.indexOf(e),1); e.kill&&e.kill(); if(e.redo) RD.push(e);
-      if(fromKey&&!q.n) window.toast('Undone — '+plain(e.label)+(e.redo?(MAC?' · ⇧⌘Z to redo':' · Ctrl+Y to redo'):''));
+      if(fromKey&&!q.n) window.toast('Undone — '+plain(e.label)+(e.redo&&fromKey!=='touch'?(MAC?' · ⇧⌘Z to redo':' · Ctrl+Y to redo'):''));
       return true; },
     redo:function(e){ var i=RD.indexOf(e); if(i<0) return false; RD.splice(i,1); var q=quietly(function(){ return e.redo(); }); ST.push(e); if(!q.n) window.toast('Redone — '+plain(e.label)); return true; },
     size:function(){ return [ST.length,RD.length]; }
   };
+  /* n266: the toolbar's Undo and Redo on touch screens use the same history */
+  window.pvxTsTop=function(){ return [ST.length?plain(ST[ST.length-1].label):null, RD.length?plain(RD[RD.length-1].label):null]; };
+  function needSheetT(e,verb){ if(!e.sheet||e.sheet===cur()) return false; var nm=sheetName(e.sheet); try{ tsOpenSheet(e.sheet,true); }catch(x){}
+    window.toast('Opened '+nm+' — choose '+(verb==='redo'?'Redo':'Undo')+' again to '+verb+' “'+plain(e.label)+'”'); return true; }
+  window.pvxTsUndo=function(){ var e=ST[ST.length-1]; if(!e){ window.toast('Nothing to undo'); return; } if(needSheetT(e,'undo')) return; pvxTsHist.run(e,'touch'); };
+  window.pvxTsRedo=function(){ var r=RD[RD.length-1]; if(!r){ window.toast('Nothing to redo'); return; } if(needSheetT(r,'redo')) return; pvxTsHist.redo(r); };
   function busy(){ return !!$('#tsModal.show, #tsOrderSheet.show, .drawer.open, #tsCopyMenu, #tsReportsMenu, #tsAlertMenu, #tsFind.show, #tsDowntime.show, #tsTake.show, .ts-menu.show'); }
   function typing(t){ return t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable); }
   function needSheet(e,verb){ if(!e.sheet||e.sheet===cur()) return false; var nm=sheetName(e.sheet);
@@ -3135,6 +3141,58 @@ body:not(.dark) #tsFind .ts-fr-clear{color:#0062CC}
 #tsFind .ts-fr-clear:hover{background:rgba(150,185,220,.14)}
 #tsFind .ts-fr-clear:focus-visible{outline:3px solid rgba(88,166,255,.55);outline-offset:1px}
 @media (pointer:coarse){#tsFind .ts-fr-clear::after{content:"";position:absolute;inset:-12px -8px}}
+</style>
+<script id="pvx-n266-ts">
+/* n266 · Treatment Sheets against HIG Settings, Undo and redo, Charts, Image views
+   (claude/hig-audit-treatment-settings-undo-charts-images.md) */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  var TOUCH=matchMedia('(hover:none), (pointer:coarse)'), NARROW=matchMedia('(max-width:600px)');
+
+  /* Undo and redo 1. on iPad and iPhone, Undo and Redo in the toolbar, named for what they'll do (HIG: buttons when
+     the system has no other way in; standard symbols, in a toolbar). With a keyboard, ⌘Z / ⇧⌘Z as before. */
+  var UI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+  var RI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>';
+  function group(){ var g=document.createElement('span'); g.className='pvx-ur'; g.setAttribute('role','group'); g.setAttribute('aria-label','Undo and redo');
+    g.innerHTML='<button type="button" class="btn ghost pvx-u">'+UI+'</button><button type="button" class="btn ghost pvx-r">'+RI+'</button>';
+    g.querySelector('.pvx-u').onclick=function(){ if(this.getAttribute('aria-disabled')!=='true'&&window.pvxTsUndo) pvxTsUndo(); paint(); };
+    g.querySelector('.pvx-r').onclick=function(){ if(this.getAttribute('aria-disabled')!=='true'&&window.pvxTsRedo) pvxTsRedo(); paint(); };
+    return g; }
+  function place(){ if(!TOUCH.matches||!window.pvxTsTop){ $$('.pvx-ur').forEach(function(g){ g.remove(); }); return; }
+    /* iPad: before View; iPhone: after the order search, which gives up the room, so the toolbar keeps its rows */
+    var slot=$('#ctab-sheet #tsView')||$('#tsView'), os=$('#ctab-sheet .order-search-wrapper'), g=$('#ctab-sheet .pvx-ur')||(slot||os?group():null);
+    if(g&&NARROW.matches&&os){ if(os.nextElementSibling!==g) os.parentNode.insertBefore(g,os.nextSibling); }
+    else if(g&&slot&&slot.parentNode&&slot.previousElementSibling!==g) slot.parentNode.insertBefore(g,slot);
+    var top=$('#ctab-tasks .wl-top'); if(top&&!$('.pvx-ur',top)){ var p=$('.wl-print',top); top.insertBefore(group(),p||null); } }
+  function paint(){ if(!window.pvxTsTop) return; var t=pvxTsTop(), any=!!(t[0]||t[1]);
+    $$('.pvx-ur').forEach(function(g){ g.hidden=!any; var u=$('.pvx-u',g), r=$('.pvx-r',g);
+      u.setAttribute('aria-label',t[0]?'Undo '+t[0]:'Nothing to undo'); u.title=u.getAttribute('aria-label'); t[0]?u.removeAttribute('aria-disabled'):u.setAttribute('aria-disabled','true');
+      r.setAttribute('aria-label',t[1]?'Redo '+t[1]:'Nothing to redo'); r.title=r.getAttribute('aria-label'); t[1]?r.removeAttribute('aria-disabled'):r.setAttribute('aria-disabled','true'); }); }
+
+  /* Charts 1. VoiceOver hears times in words: "11 hours late", "7 days ago", "in 4 hours" — not "11 h", "7 d" (HIG: avoid
+     ambiguous abbreviations in accessibility labels). What's on screen keeps its short form; "q4h" is a frequency and stays. */
+  var RX=/(^|[^\w.])(\d+(?:\.\d+)?)\s?(h|hr|min|d)\b(?![\w\/])/g, RT=/(^|[^\w.])\d+(?:\.\d+)?\s?(h|hr|min|d)\b(?![\w\/])/;
+  function spell(t){ return t.replace(RX,function(m,pre,n,u){ var one=+n===1, w=u==='min'?(one?'minute':'minutes'):u==='d'?(one?'day':'days'):(one?'hour':'hours'); return pre+n+' '+w; }); }
+  window.pvxSpell=spell;
+  /* only the app's own time phrases (the sheet's marks and its Latest column): never words someone typed, such as a snippet */
+  function spoken(){ $$('#ctab-sheet .mark[aria-label], #ctab-sheet .rl-trend[aria-label]').forEach(function(e){ var a=e.getAttribute('aria-label'); if(a&&RT.test(a)&&!e.closest('nav.topnav')){ var s=spell(a); if(s!==a) e.setAttribute('aria-label',s); } }); }
+
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ place(); paint(); spoken(); }catch(e){} }); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-label']}); tick();
+    try{ TOUCH.addEventListener('change',tick); NARROW.addEventListener('change',tick); }catch(e){} }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<style id="pvx-n266-css">
+.pvx-ur{display:inline-flex;gap:4px;flex:0 0 auto;align-items:center}
+.pvx-ur[hidden]{display:none!important}
+.pvx-ur .btn{width:44px;height:44px;min-width:44px;padding:0;display:inline-grid;place-items:center}
+.pvx-ur .btn svg{width:20px;height:20px;margin:0}
+.pvx-ur .btn[aria-disabled=true]{opacity:.4;cursor:default}
+/* iPhone: in the order search's row (the toolbar orders its items; the search gives up the room) */
+@media (max-width:600px){.pvx-ur .btn[aria-disabled=true]{display:none}.treatment-toolbar .pvx-ur{order:-1}
+.treatment-toolbar:has(.pvx-ur:not([hidden])) .order-search-wrapper{flex-basis:calc(100% - 96px)!important}
+.treatment-toolbar:has(.pvx-ur:not([hidden]) .btn:not([aria-disabled=true])+.btn:not([aria-disabled=true])) .order-search-wrapper{flex-basis:calc(100% - 146px)!important}}
 </style>
 </body>
 </html>
