@@ -36,11 +36,12 @@ def serve(site):
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv.server_address[1]
 
-async def ts(br, port, vp=(1440, 900), dark=True, touch=False, media=None, big=False, view='sheet', sheet='sh_train1', user=USER, wait=2600):
+async def ts(br, port, vp=(1440, 900), dark=True, touch=False, media=None, big=False, view='sheet', sheet='sh_train1', user=USER, wait=2600, init=None, seed=None):
     ctx = await br.new_context(viewport={'width': vp[0], 'height': vp[1]}, timezone_id='America/Los_Angeles', locale='en-US',
                                color_scheme='dark' if dark else 'light', **(dict(has_touch=True, is_mobile=True) if touch else {}))
     await ctx.add_cookies([{'name': 'pvx_theme', 'value': 'dark' if dark else 'light', 'url': f'http://127.0.0.1:{port}/'}])
-    await ctx.add_init_script(INIT.replace('@@USER@@', user).replace('@@SEED@@', SEED)); await ctx.add_init_script(FAKE)
+    await ctx.add_init_script(INIT.replace('@@USER@@', user).replace('@@SEED@@', seed or SEED)); await ctx.add_init_script(FAKE)
+    if init: await ctx.add_init_script(init)   # n262: a section's own setup before the page loads (stored state, hooks)
     if big: await ctx.add_init_script("document.addEventListener('DOMContentLoaded',()=>{document.documentElement.style.fontSize='200%'})")
     pg = await ctx.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)))

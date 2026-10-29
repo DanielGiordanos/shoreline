@@ -1439,7 +1439,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=98c19118a3"></script>
+<script defer src="store.js?v=d9031781aa"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -1904,7 +1904,9 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     {mark:'#esLow', btn:function(){return $('#tsModal .tm-foot .primary')}, req:['#esLow','#esHigh'], checks:[
       ['#esLow',function(v){return num(v)>0},'Enter the low end, like 3,600'],
       ['#esHigh',function(v){return num(v)>0},'Enter the high end, like 4,500'],
-      ['#esHigh',function(v){var l=num(($('#esLow')||{}).value);return !(num(v)>0&&l>0&&num(v)<l)},'Enter a high end that’s at least the low end']]},
+      ['#esHigh',function(v){var l=num(($('#esLow')||{}).value);return !(num(v)>0&&l>0&&num(v)<l)},'Enter a high end that’s at least the low end'],
+      ['#esCur',function(v){return !v.trim()||num(v)>=0},'Enter current charges as a number, like 1250'],   /* n261: was refused only on Save */
+      ['#esDep',function(v){return !v.trim()||num(v)>=0},'Enter the deposit as a number, like 500']]},
     {mark:'#rxDose', btn:function(){return $('#tsModal .tm-foot .primary')}, req:['#rxDose'], checks:[
       ['#rxDose',function(v){return num(v)>0},'Enter the dose, like 1']]},
     {mark:'#flV', btn:function(){return $('#tsModal .tm-foot .primary')}, req:['#flV'], checks:[
@@ -2099,7 +2101,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
       '<button class="continue is-inactive" id="sbBtn" type="submit">Sign in</button></div></form>'+
       '<div class="page-foot"><b>VCA Shoreline</b> · Protected Pravix Workspace</div></div></div>'; };
   function why(c){ return c==='auth/wrong-password'||c==='auth/invalid-credential'||c==='auth/user-not-found'||c==='auth/invalid-login-credentials'||c==='auth/invalid-email'?'Incorrect email or password. Please try again.':
-      c==='auth/too-many-requests'?'Too many tries. Wait a minute and try again.':c==='auth/user-disabled'?'This account is turned off.':'Connection problem. Try again.'; }
+      c==='auth/too-many-requests'?'Too many tries. Wait a minute and try again.':c==='auth/user-disabled'?'This account is turned off. Ask an admin to turn it back on.':'Connection problem. Try again.'; }
   function lock(on){ document.body.classList.toggle('sb-locked',on); [].forEach.call(document.body.children,function(el){ if(el.id==='tsGate'||el.id==='toastWrap'||el.tagName==='SCRIPT') return; try{ on?el.setAttribute('inert',''):el.removeAttribute('inert'); }catch(x){} }); }
   window.pvxSignInWire=function(root){ var ov=root&&root.querySelector('#sbLogin'); if(!ov||ov._w) return; ov._w=1; root.classList.add('pvx-flow-login'); lock(true);
     var form=ov.querySelector('#sbLoginForm'), email=ov.querySelector('#sbEmail'), password=ov.querySelector('#sbPass'), reveal=ov.querySelector('#sbReveal'), btn=ov.querySelector('#sbBtn'),
@@ -2147,8 +2149,9 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   window.pvxAlertSound=function(on){ if(on===undefined) return ls('pvxAlertSound')!=='0'; ls('pvxAlertSound',on?'1':'0'); return on; };
   function tone(f,g,d){ if(!pvxAlertSound()) return; try{ var A=window.AudioContext||window.webkitAudioContext, a=new A(), o=a.createOscillator(), n=a.createGain();
     o.frequency.value=f; n.gain.value=g; o.connect(n); n.connect(a.destination); o.start(); o.stop(a.currentTime+d); setTimeout(function(){ try{ a.close(); }catch(e){} },(d+.3)*1000); }catch(e){} }
-  window.pvxDocAlertLife=function(n,crit){
-    if(crit){ tone(880,.04,.18); var rt=setTimeout(function(){ if(n.isConnected) tone(660,.02,.14); },120000); return; }
+  window.pvxDocAlertLife=function(n,crit,quiet){
+    if(crit){ if(quiet) return;   /* n262: alerts already seen don't sound again when Treatment reopens */
+      tone(880,.04,.18); var rt=setTimeout(function(){ if(n.isConnected) tone(660,.02,.14); },120000); return; }
     var left=15000, last=Date.now();
     var iv=setInterval(function(){ if(!n.isConnected){ clearInterval(iv); return; } var now=Date.now();
       if(document.visibilityState==='visible'&&!n.matches(':hover')&&!n.contains(document.activeElement)) left-=now-last; last=now;
@@ -2913,6 +2916,20 @@ body.dark #ctab-tasks .wl-dnr{color:#C9A8F0;background:rgba(168,136,224,.16)}
 /* 9. Vitals: the Range and Alert range lines wrap inside their column, numbers kept together */
 #ctab-vitals .vx-now small:is(.vx-rng,.vx-alr){white-space:normal;overflow-wrap:normal}
 #ctab-vitals .vx-now .vx-nw{white-space:nowrap}
+</style>
+<style id="pvx-n261-css">/* PVX-N261 · HIG Entering data, Feedback, Going full screen, Loading, Live-viewing apps — Treatment only (see patch_n261.py) */
+/* 2. dimmed (not disabled), so they keep their tooltip and say why when pressed */
+.ts-daynav .dn-next[aria-disabled="true"],.ts-zoom .zm-b[aria-disabled="true"]{opacity:.38;cursor:default}
+/* 3. a snippet's × is its own button beside the chip: shown on hover or focus with a mouse, always on touch (44 pt) */
+.sn-own{flex:none;display:inline-flex;align-items:center;border-radius:999px;background:var(--pvx-cm39)}
+.sn-own .sn-chip.own{background:transparent;padding-right:3px}
+.sn-bar .sn-x{all:unset;flex:none;cursor:pointer;position:relative;display:inline-grid;place-items:center;width:24px;height:26px;margin-right:2px;border-radius:999px;color:var(--accent-ink,var(--accent));opacity:0;transition:opacity .15s}
+.sn-bar .sn-x svg{width:12px;height:12px}
+.sn-own:hover .sn-x,.sn-bar .sn-x:focus-visible{opacity:.8}
+.sn-bar .sn-x:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+body.dark .sn-bar .sn-x{color:#5fd3e6}
+@media (hover:none){.sn-bar .sn-x{opacity:.75;width:30px}.sn-bar .sn-x::after{content:"";position:absolute;inset:-9px -4px}}
+@media (prefers-reduced-motion:reduce){.sn-bar .sn-x{transition:none}}
 </style>
 </body>
 </html>

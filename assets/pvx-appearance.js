@@ -77,3 +77,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
   window.pvxAppearance = { want: want, choice: function () { return choice; }, system: sys, apply: apply };
 })();
+/* n263 · who is signed in, in the shared top bar (assets/pvx-account.js): loaded from here because every staff page loads this file first */
+(function () { if (window.pvxAccount || document.getElementById('pvx-account-js')) return; var s = document.createElement('script'); s.id = 'pvx-account-js'; s.src = '/assets/pvx-account.js?v=031545b1d5'; s.defer = true; (document.head || document.documentElement).appendChild(s); })();
