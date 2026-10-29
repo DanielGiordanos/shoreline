@@ -899,6 +899,12 @@ body:not(.dark) .a-sheet{background:#fff;--a-sbg:#fff}
 .a-skel-head{display:flex;flex-direction:column;gap:10px;margin:8px 0 24px}
 .a-skel-head i:first-child{width:240px;max-width:60%;height:28px;border-radius:9px}
 #asm>.a-skel{margin-bottom:14px}
+/* placeholders pulse while loading, so the page never looks frozen; still under Reduce Motion */
+@keyframes a-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.a-skel i,.a-skel-head i{animation:a-pulse 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.a-skel i,.a-skel-head i{animation:none}}
+.a-slow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border-radius:12px;background:var(--a-card);border:1px solid var(--a-line);font-size:.875rem;color:var(--a-ink)}
+.a-slow p{margin:0}
 .pvx-actions .live.off{background:rgba(232,168,48,.14);border-color:rgba(232,168,48,.4);color:#8A5D00}
 body.dark .pvx-actions .live.off{color:#F0BC55}
 .pvx-actions .live.off i{background:currentColor}
@@ -908,6 +914,16 @@ body.dark .pvx-actions .live.off{color:#F0BC55}
 .a-search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
 .a-search-x{position:absolute;right:2px;top:50%;width:40px;height:40px;margin-top:-20px;display:grid;place-items:center;border:0;border-radius:10px;background:transparent;color:var(--a-ink-2);cursor:pointer}
 .a-search-x[hidden]{display:none}
+/* plain text fields with a Clear button: no magnifying glass, room for the × */
+.a-field .a-clr{margin-top:0}
+.a-field .a-clr input{width:100%;padding-left:12px;padding-right:44px;margin-top:0}
+.a-fielderr{margin:6px 0 0;font-size:.8125rem;font-weight:600;color:var(--a-bad-ink)}
+/* New round: each group's checkbox heads its interns, indented beneath */
+.a-groups{border:0;padding:0;margin-inline:0;min-width:0}
+.a-groups legend{padding:0;margin-bottom:2px}
+.a-grp{margin-top:8px}
+.a-grp .a-checks{margin:6px 0 0 28px}
+.a-gchk{font-weight:700;border-color:var(--a-line)}
 .a-search-x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
 .a-search-x:hover{background:var(--a-soft)}
 .a-search-x:active{background:var(--a-line)}
@@ -2426,6 +2442,12 @@ function buildPrintRecord(r) {
     });
     if (onOpen) onOpen(box, close);
     swipeToDismiss(wrap, box, close, () => dirty && opts && opts.discard, discard);
+    /* text fields with a Clear button (×): shown only while there's text, including text the page filled in */
+    const clrs = [...box.querySelectorAll('.a-clr')].map(w => ({ i: w.querySelector('input'), x: w.querySelector('.a-clr-x') }));
+    const syncX = () => clrs.forEach(c => { c.x.hidden = !c.i.value; });
+    clrs.forEach(c => c.x.addEventListener('click', () => { c.i.value = ''; c.i.dispatchEvent(new Event('input', { bubbles: true })); syncX(); c.i.focus(); }));
+    ['input', 'change', 'click', 'focusin'].forEach(t => box.addEventListener(t, () => setTimeout(syncX, 0)));
+    setTimeout(syncX, 0);
     /* first focus: the first field; a sheet with only buttons focuses the sheet itself, so VoiceOver reads the title and message
        and no button (Cancel least of all) is pressed by Return. The sheet opens at its top either way. */
     setTimeout(() => {
@@ -2572,9 +2594,17 @@ function buildPrintRecord(r) {
       root.innerHTML = `<p class="sr-only" role="status">${kind === 'review' ? 'Opening the review…' : 'Loading your reviews…'}</p>`
         + (kind === 'review' ? '<div class="a-skel-head" aria-hidden="true"><i></i><i class="s"></i></div>' + card + card
                              : '<div class="a-skel-head" aria-hidden="true"><i></i><i class="s"></i></div><div class="a-grid">' + card + card + card + '</div>');
+      /* a load that's still going after 8 s says so, and offers Reload (the hospital network can be slow) */
+      clearTimeout(slowT);
+      slowT = setTimeout(() => {
+        if (root.getAttribute('aria-busy') !== 'true' || root.querySelector('.a-slow')) return;
+        root.insertAdjacentHTML('afterbegin', '<div class="a-slow" role="status"><p>Still loading. If it doesn’t open soon, check your connection.</p><button type="button" class="a-btn small" data-reload>Reload</button></div>');
+        root.querySelector('[data-reload]').addEventListener('click', () => location.reload());
+      }, 8000);
     }, 300);
   }
-  function loaded() { clearTimeout(skelT); root.removeAttribute('aria-busy'); }
+  let slowT = 0;
+  function loaded() { clearTimeout(skelT); clearTimeout(slowT); root.removeAttribute('aria-busy'); }
   function opening(el) {
     el.setAttribute('aria-busy', 'true'); el.classList.add('is-opening');
     const t = el.querySelector('.a-ifoot span:last-child'); if (t) t.textContent = 'Opening…'; else if (!el.querySelector('*')) el.textContent = 'Opening…';
@@ -2720,13 +2750,21 @@ function buildPrintRecord(r) {
     if (a === b) return `${x.m} ${x.d}, ${x.y}`;
     return x.y === y.y ? `${x.m} ${x.d} – ${y.m} ${y.d}, ${y.y}` : `${x.m} ${x.d}, ${x.y} – ${y.m} ${y.d}, ${y.y}`;
   }
+  /* New round's interns, under a checkbox for each group (March, July); anyone without a group is listed after */
+  function internChecks() {
+    const box = i => `<label class="a-check"><input type="checkbox" name="intern" value="${i.slug}" data-of="${esc(i.group || '')}">${esc(i.name)}</label>`;
+    const groups = Object.keys(GROUPS).filter(g => INTERNS.some(i => i.group === g));
+    const rest = INTERNS.filter(i => !groups.includes(i.group));
+    return groups.map(g => `<div class="a-grp"><label class="a-check a-gchk"><input type="checkbox" data-group="${g}">${esc(GROUPS[g])}</label>`
+      + `<div class="a-checks" role="group" aria-label="${esc(GROUPS[g])}">${INTERNS.filter(i => i.group === g).map(box).join('')}</div></div>`).join('')
+      + (rest.length ? `<div class="a-checks">${rest.map(box).join('')}</div>` : '');
+  }
   async function newRound() {
     const groupInterns = g => INTERNS.filter(i => i.group === g).map(i => i.slug);
     sheet(`<h2 id="aSheetT">New review round</h2><p>Name the round and pick the interns. You’ll assign evaluators to each intern next.</p>
       <label class="a-field">Kind<select name="kind"><option value="mid-year">Mid-year review</option><option value="end-of-year">End-of-year review</option><option value="rotation">Rotation review</option></select></label>
-      <div class="a-field">Interns<div class="a-checks">${INTERNS.map(i => `<label class="a-check"><input type="checkbox" name="intern" value="${i.slug}">${esc(i.name)}</label>`).join('')}</div>
-        <div class="a-actions" style="margin-top:6px"><button type="button" class="a-btn small" data-g="march">March group</button><button type="button" class="a-btn small" data-g="july">July group</button></div></div>
-      <label class="a-field">Name<input name="name" maxlength="120" placeholder="Mid-year review · March group"></label>
+      <fieldset class="a-field a-groups"><legend>Interns</legend>${internChecks()}</fieldset>
+      <label class="a-field">Name<span class="a-search a-clr"><input name="name" maxlength="120" placeholder="Mid-year review · March group" enterkeyhint="done"><button type="button" class="a-search-x a-clr-x" aria-label="Clear name" hidden>${ICON.x}</button></span></label>
       <fieldset class="a-field a-period"><legend>Review period <span class="hint">It prints on every record.</span></legend>
         <div class="a-two"><label>From<input name="from" type="date"></label><label>To<input name="to" type="date"></label></div>
         <p class="a-prints" aria-live="polite"></p></fieldset>
@@ -2742,10 +2780,16 @@ function buildPrintRecord(r) {
         const g = ['march', 'july'].find(g => picked.length && picked.every(s => intern(s).group === g) && groupInterns(g).every(s => picked.includes(s)));
         f('name').value = KINDS[f('kind').value] + (g ? ' · ' + GROUPS[g] : '');
       };
-      box.querySelectorAll('[data-g]').forEach(b => b.addEventListener('click', () => {
-        const want = groupInterns(b.dataset.g);
-        box.querySelectorAll('[name=intern]').forEach(c => { c.checked = want.includes(c.value); }); auto();
-      }));
+      /* a group's checkbox ticks or unticks just its own interns; it shows a dash when only some are picked */
+      const syncGroups = () => box.querySelectorAll('[data-group]').forEach(gc => {
+        const cs = [...box.querySelectorAll(`[name=intern][data-of="${gc.dataset.group}"]`)], n = cs.filter(c => c.checked).length;
+        gc.checked = n > 0 && n === cs.length; gc.indeterminate = n > 0 && n < cs.length;
+      });
+      box.addEventListener('change', e => {
+        const gc = e.target.closest('[data-group]');
+        if (gc) box.querySelectorAll(`[name=intern][data-of="${gc.dataset.group}"]`).forEach(c => { c.checked = gc.checked; });
+        syncGroups();
+      });
       box.addEventListener('change', auto); auto();
       /* the review period comes from two date pickers; the text that prints is written for you */
       const from = f('from'), to = f('to'), prints = box.querySelector('.a-prints');
@@ -2797,11 +2841,12 @@ function buildPrintRecord(r) {
     const taken = new Set(S.all.assigns.filter(a => a.intern === slug).map(a => a.email));
     let pick = null; const opts = { discard: 'Discard this assignment?' };
     sheet(`<h2 id="aSheetT">Assign an evaluator</h2><p>${esc(fullName(i))} · ${esc(r.name)}. Once assigned, the evaluator sees this intern in My reviews.</p>
-      <label class="a-field">Find a doctor<span class="a-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input name="q" type="search" placeholder="Name or service" autocomplete="off"><button type="button" class="a-search-x" aria-label="Clear search" hidden>${ICON.x}</button></span></label>
+      <label class="a-field">Find a doctor<span class="a-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input name="q" type="search" placeholder="Name or service" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button type="button" class="a-search-x" aria-label="Clear search" hidden>${ICON.x}</button></span></label>
       <div class="a-pick" role="listbox" aria-label="Doctors"></div>
       <details style="margin-top:10px"><summary class="a-btn quiet small" style="display:inline-flex"><svg class="a-disc" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>Someone not in the Directory</summary>
-        <label class="a-field">Email<input name="email" type="email" placeholder="name@vca.com" autocapitalize="off" spellcheck="false"></label></details>
-      <label class="a-field">Name as it prints <span class="hint">Include credentials, for example Shaylan Meyer, DVM</span><input name="pname" maxlength="80" autocomplete="off" aria-describedby="aCred"></label>
+        <label class="a-field">Email<span class="a-search a-clr"><input name="email" type="email" placeholder="name@vca.com" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-describedby="aEmErr"><button type="button" class="a-search-x a-clr-x" aria-label="Clear email" hidden>${ICON.x}</button></span></label>
+        <p class="a-fielderr" id="aEmErr" hidden></p></details>
+      <label class="a-field">Name as it prints <span class="hint">Include credentials, for example Shaylan Meyer, DVM</span><span class="a-search a-clr"><input name="pname" maxlength="80" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-describedby="aCred"><button type="button" class="a-search-x a-clr-x" aria-label="Clear name as it prints" hidden>${ICON.x}</button></span></label>
       <p class="a-cred" id="aCred" hidden></p>
       <p class="a-err" role="alert" hidden></p>
       <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok aria-disabled="true">Assign</button></div>`,
@@ -2847,6 +2892,11 @@ function buildPrintRecord(r) {
         return false;
       };
       pn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ok.click(); } });
+      /* an email is checked when you leave the field, and the message goes as soon as it's right */
+      const emErr = box.querySelector('#aEmErr'), emOk = () => !em.value.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em.value.trim());
+      const emShow = bad => { emErr.hidden = !bad; emErr.textContent = bad ? 'That isn’t an email address.' : ''; if (bad) em.setAttribute('aria-invalid', 'true'); else em.removeAttribute('aria-invalid'); };
+      em.addEventListener('blur', () => emShow(!emOk()));
+      em.addEventListener('input', () => { if (!emErr.hidden && emOk()) emShow(false); });
       list.addEventListener('click', e => {
         const b = e.target.closest('button[data-email]'); if (!b || b.disabled) return;
         pick = DOCTORS.find(d => d.email === b.dataset.email); em.value = '';
@@ -3223,14 +3273,14 @@ function buildPrintRecord(r) {
       <p style="margin-top:12px;font-size:.8125rem;color:var(--a-ink-3)">By submitting, you confirm that the ratings and observations are your own and reflect performance you directly observed.</p>
       <div class="btns"><button type="button" class="a-btn" data-close>Cancel</button><button type="button" class="a-btn primary" data-ok>Submit review</button></div>`,
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
-      const b = box.querySelector('[data-ok]'); b.disabled = true; b.textContent = 'Submitting…';
+      const b = box.querySelector('[data-ok]'); if (b.disabled) return; busy(b, 'Submitting…');   // the same spinner as every other slow action
       try {
         if (!o.exists) { o.pending['status'] = 'draft'; flush(); }   // a review with no changes yet still needs its document
         await o.chain;
         await db.collection(C.reviews).doc(o.aid).update({ status: 'submitted', submitted_at: ts(), updated_at: ts(), progress: computeProgress(r) });
         const fresh = await db.collection(C.reviews).doc(o.aid).get();
         Object.assign(r, fresh.data()); close(); renderReview(true); say(`Submitted. ${READERS_AND} have your review.`);
-      } catch (e) { b.disabled = false; b.textContent = 'Submit review'; say('The review wasn’t submitted. ' + (/permission/.test((e && e.code) || '') ? 'Its round may be closed.' : 'Check your connection, then try again.'), 'error'); }
+      } catch (e) { unbusy(b); say('The review wasn’t submitted. ' + (/permission/.test((e && e.code) || '') ? 'Its round may be closed.' : 'Check your connection, then try again.'), 'error'); }
     }), { noDefault: true });   // a signed review: no Return default, so the blank-items line gets read
   }
 
