@@ -1417,7 +1417,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 <div class="ctoast-wrap" id="toastWrap"></div>
 
-<script defer src="core.js?v=33bd357f8b"></script>
+<script defer src="core.js?v=f75888f32b"></script>
 <script>window.TS_STAFF={"doctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Heather Galano", "Anthony Roccisano", "Chelsea Marko", "Danelle Provost", "Danielle Splawski", "Dawn Nolte", "Dianne Kittrell", "Jessica Giannetto", "Kate Taikowski", "Kate Walsh", "Larry Berkwitt", "Madison Roche", "Miranda Stone", "Samantha Corrado", "Tara Fowler", "Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristi Wenger", "Sarah Herron"], "liaisons": ["Melissa Hamilton", "Jamie Cisneros", "Tammy Guinto", "Nyla Chase", "Daniel Giordano", "Alexa Marucci", "Liz DeLauri", "Alexandra Rimkus", "Stephanie Bamford", "Sara DeVitto", "Rhiannon Cappannelli"], "flowDoctors": ["Annie Downes", "Kelley Harpin", "Amber Koch", "Mara Kraenzlin", "Marissa Marinaccio", "Michael McCann", "Shaylan Meyer", "Sarah Schiff", "Klaudia Polak", "Morgan Vrana", "Larry Berkwitt", "Dianne Kittrell"], "interns": ["Jordan Hanson", "Alexa Vander Ploeg", "Rachel Eberle", "Marissa Peck", "Benjamin Kerns", "Kristi Wenger", "Sarah Herron"], "techs": ["Alexis Distasio", "Allie Rodriguez", "Ally Tewksbury", "Amanda Inzitari", "Amanda Van Kuren", "Amber Horvath", "Ann LeStrange", "Bethany Oczkowski", "Brandy Fellin", "Carly Kudola", "Catherine Fappiano", "Chris Densky", "Christina Rodriguez", "Courtney Thieke", "Danielle Infante", "Danielle Kiley", "Delahla Rosario", "Dharianna Villa", "Erin Cummings", "Felisha Barnes", "Gabriella Palumbo", "Gabrielle Lungarini", "Janitza Lopez", "Jordain Williams", "Kimberly Hulme", "Lauren Francione", "Lauren Whitney", "Lindsay Martin", "Lizzy Dixon", "Malachi Quinones", "Malyssa Kubik", "Myranda May", "Nelson Diaz", "Paola Velazquez", "Rachel Pieger", "Sam Mitchell", "Shelsey Vega", "Stacey Smith", "Tanneil Buchanan", "Vanessa Ruiz", "Viviana Fonseca", "Stephanie Cseh"]};window.TS_DRUGS_VER="d8c5024f";</script>
 
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -1439,7 +1439,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=f826ae65b7"></script>
+<script defer src="store.js?v=98c19118a3"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -1873,7 +1873,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
 <script id="pvx-n231-ts">
 /* PVX-N231 - the grid's section names in sentence case (their keys stay as they are in the orders) */
 (function(){
-  var K={'Basic Observation':'Basic observation','Patient Care':'Patient care','Continuous Infusions':'Continuous infusions'};
+  var K={'Basic Observation':'Observations','Patient Care':'Patient care','Continuous Infusions':'Infusions'};   /* n260: the section bar's names, everywhere */
   window.tsSecLabel=function(k){ return K[k]||k; };
   function fix(){
     document.querySelectorAll('.stitle, #flPop .fp-lab b, .ts-cat').forEach(function(e){
@@ -1904,7 +1904,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     {mark:'#esLow', btn:function(){return $('#tsModal .tm-foot .primary')}, req:['#esLow','#esHigh'], checks:[
       ['#esLow',function(v){return num(v)>0},'Enter the low end, like 3,600'],
       ['#esHigh',function(v){return num(v)>0},'Enter the high end, like 4,500'],
-      ['#esHigh',function(v){var l=num(($('#esLow')||{}).value);return !(num(v)>0&&l>0&&num(v)<l)},'The high end must be at least the low end']]},
+      ['#esHigh',function(v){var l=num(($('#esLow')||{}).value);return !(num(v)>0&&l>0&&num(v)<l)},'Enter a high end that’s at least the low end']]},
     {mark:'#rxDose', btn:function(){return $('#tsModal .tm-foot .primary')}, req:['#rxDose'], checks:[
       ['#rxDose',function(v){return num(v)>0},'Enter the dose, like 1']]},
     {mark:'#flV', btn:function(){return $('#tsModal .tm-foot .primary')}, req:['#flV'], checks:[
@@ -2280,7 +2280,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     if(!q){ var my=mine().slice(0,5), seen={}; my.forEach(function(e){ seen[e._id]=1; });
       var rc=recent.map(sheetById).filter(function(e){ return e&&!seen[e._id]; }).slice(0,5);
       if(!my.length&&!rc.length) return false;
-      if(my.length){ html+='<div class="mh">My patients</div>'+my.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join(''); }
+      if(my.length){ html+='<div class="mh">Your patients</div>'+my.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join(''); }
       if(rc.length){ html+='<div class="mh">Recently opened</div>'+rc.map(function(e){ rows.push({id:e._id}); return pRow(e,i++); }).join(''); }
     } else {
       var pl=f.list(q), oh=orderHits(q), ids={}; oh.forEach(function(h){ ids[h.s._id]=1; });
@@ -2437,7 +2437,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     if(lo==null&&hi==null) return ''; var r=lo!=null&&hi!=null?nf(lo)+'–'+nf(hi):lo!=null?'at least '+nf(lo):'up to '+nf(hi); return 'Alert range '+r+(u?' '+u:''); };
   window.pvxBandTxt=function(t){ var s=pvxBandShort(t); return s?' Shaded: '+s.charAt(0).toLowerCase()+s.slice(1)+'.':''; };
   function alertLines(){ $$('#ctab-vitals .v-chart[role=img]').forEach(function(c){ var m=/Shaded: alert range (.+)\.$/.exec(c.getAttribute('aria-label')||''); var row=c.closest('.v-row'), now=row&&$('.vx-now',row); if(!now) return;
-      var x=$('.vx-alr',now); if(!m){ x&&x.remove(); return; } var txt='Alert range '+m[1]; if(x&&x.textContent===txt) return; if(!x){ x=document.createElement('small'); x.className='vx-alr'; x.setAttribute('aria-hidden','true'); now.appendChild(x); } x.textContent=txt; }); }
+      var x=$('.vx-alr',now); if(!m){ x&&x.remove(); return; } var txt='Alert range '+m[1]; if(x&&x.textContent===txt) return; if(!x){ x=document.createElement('small'); x.className='vx-alr'; x.setAttribute('aria-hidden','true'); now.appendChild(x); } x.innerHTML='Alert range <span class="vx-nw">'+m[1].replace(/[&<>]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[ch]})+'</span>'; }); }
   function legend(){ var ax=$('#ctab-vitals .v-row.vx-ax .v-name'); if(!ax||$('.vx-key',ax)) return; if(!$('#ctab-vitals .vx-band')) return;
     var k=document.createElement('span'); k.className='vx-key'; k.innerHTML='<i aria-hidden="true"></i>Shaded: alert range'; ax.appendChild(k); }
 
@@ -2595,7 +2595,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     e.preventDefault(); e.stopImmediatePropagation(); foldAll(g); },true);
   /* the band's tooltip says so */
   var MOD=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent||'')?'Option':'Alt';
-  function tips(){ $$('.gband .gsection[role=button]').forEach(function(g){ var t=g.getAttribute('title')||''; if(t&&t.indexOf('-click: all sections')<0) g.setAttribute('title',t+' · '+MOD+'-click: all sections'); }); }
+  function tips(){ if(!matchMedia('(hover:hover)').matches) return; $$('.gband .gsection[role=button]').forEach(function(g){ var t=g.getAttribute('title')||''; if(t&&t.indexOf('-click: all sections')<0) g.setAttribute('title',t+' · '+MOD+'-click: all sections'); }); }
 
   var q=0; function sched(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ board(); charges(); tasks(); tips(); }catch(x){ console.warn('[n241]',x); } }); }
   function boot(){ mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeOldValue:true,attributeFilter:['class','role','tabindex','aria-label','aria-sort','title']}); sched(); }
@@ -2908,6 +2908,11 @@ body.dark #ctab-tasks .wl-dnr{color:#C9A8F0;background:rgba(168,136,224,.16)}
   body.dark #ctab-tasks .wl-dnr{color:#DCC2F5}
   body.dark #tsSecNav .sn-n.due{color:#B5F0F8}
 }
+</style>
+<style id="pvx-n260-css">/* PVX-N260 · HIG Writing, Charting data, Collaboration and sharing, Drag and drop — Treatment only (see patch_n260.py) */
+/* 9. Vitals: the Range and Alert range lines wrap inside their column, numbers kept together */
+#ctab-vitals .vx-now small:is(.vx-rng,.vx-alr){white-space:normal;overflow-wrap:normal}
+#ctab-vitals .vx-now .vx-nw{white-space:nowrap}
 </style>
 </body>
 </html>
