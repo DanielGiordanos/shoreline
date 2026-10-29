@@ -3259,10 +3259,29 @@ body:not(.dark) #tsFind .ts-fr-clear{color:#0062CC}
     else { try{ openBrief(); }catch(z){} say('Patient info'); }
     setTimeout(paint,30); },true);
 
-  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ paint(); }catch(e){} }); }
+  /* Split views 3. the Patient info drawer is on top of its scrim and below the bars. It sat under its own scrim (they
+     were in different layers), so it was dimmed and a tap inside it closed it; and its top was under the app's bars. */
+  function scrim(){ var sc=document.getElementById('briefScrim'); if(!sc){ sc=document.createElement('div'); sc.className='brief-scrim'; sc.id='briefScrim'; sc.setAttribute('onclick','closeBrief()'); document.body.appendChild(sc); } return sc; }
+  function barsBottom(){ var b=0; ['nav.topnav','.subnav','.pt-row'].forEach(function(q){ var e=$(q); if(!shown(e)) return; var r=e.getBoundingClientRect(); if(r.bottom>b&&r.bottom<innerHeight/2) b=r.bottom; }); return Math.round(b); }
+  function wrap(){ if(!window.openBrief||openBrief._pvx269) return; var oO=window.openBrief, oC=window.closeBrief;
+    window.openBrief=function(){ var s=$('#clinSidebar'), sc=scrim(); if(s&&s.parentElement&&sc.nextSibling!==s) s.parentElement.insertBefore(sc,s);
+      if(s) s.style.setProperty('--pvx-brief-top',(barsBottom()+12)+'px'); var r=oO.apply(this,arguments); setTimeout(paint,30); return r; };
+    window.openBrief._pvx269=1;
+    window.closeBrief=function(){ scrim(); var r=oC.apply(this,arguments); setTimeout(function(){ var sc=document.getElementById('briefScrim'), s=$('#clinSidebar');
+        if(sc&&!sc.classList.contains('show')&&sc.parentElement!==document.body) document.body.appendChild(sc); if(s&&!s.classList.contains('open')) s.style.removeProperty('--pvx-brief-top'); paint(); },320); return r; }; }
+
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ wrap(); paint(); }catch(e){} }); }
   function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); tick(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
+<style id="pvx-n269-css">
+/* Split views 3. the Patient info drawer (full view, narrow screens) is a solid panel floating 12 pt below the bars and from
+   the edges, with 20 pt corners, like every Pravix drawer (Brand §6). It was glass from the top of the window, under the
+   bars. */
+.clinical-sidebar.open{top:var(--pvx-brief-top,max(12px,env(safe-area-inset-top)))!important;left:max(12px,env(safe-area-inset-left))!important;height:calc(100vh - var(--pvx-brief-top,12px) - 12px - env(safe-area-inset-bottom))!important;height:calc(100dvh - var(--pvx-brief-top,12px) - 12px - env(safe-area-inset-bottom))!important;
+  border-radius:20px!important;background:#0E1628!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:1px solid rgba(150,185,220,.16)!important;max-width:calc(100vw - 24px)}
+body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color:rgba(0,0,0,.08)!important;box-shadow:0 24px 60px rgba(16,22,44,.18)!important}
+</style>
 </body>
 </html>
