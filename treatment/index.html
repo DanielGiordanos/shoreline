@@ -1459,7 +1459,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=cbdb796b77"></script>
+<script defer src="store.js?v=6d44b6b272"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -3282,6 +3282,89 @@ body:not(.dark) #tsFind .ts-fr-clear{color:#0062CC}
 .clinical-sidebar.open{top:var(--pvx-brief-top,max(12px,env(safe-area-inset-top)))!important;left:max(12px,env(safe-area-inset-left))!important;height:calc(100vh - var(--pvx-brief-top,12px) - 12px - env(safe-area-inset-bottom))!important;height:calc(100dvh - var(--pvx-brief-top,12px) - 12px - env(safe-area-inset-bottom))!important;
   border-radius:20px!important;background:#0E1628!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:1px solid rgba(150,185,220,.16)!important;max-width:calc(100vw - 24px)}
 body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color:rgba(0,0,0,.08)!important;box-shadow:0 24px 60px rgba(16,22,44,.18)!important}
+</style>
+<style id="pvx-n270-css">
+/* n270 · HIG Buttons, Context menus, Activity views, Tab views (Treatment Sheets only)
+
+   1. Touch targets (HIG Buttons: "a hit region of at least 44x44 pt"; Brand §9.1). On iPad most of Treatment's
+      controls were 26–39 pt (the toolbar, sub-nav, section switcher, patient tabs, section chips and bands, and the
+      Vitals, Tasks, Timeline, Charges, Notes and board controls). Under pointer: coarse:
+      a. small controls keep their drawing and get an invisible 44 pt hit area (::after, centred);
+      b. controls inside a scrolling or clipping strip, or stacked edge to edge, are 44 pt tall. */
+@media (pointer: coarse) {
+  /* a. invisible 44 pt hit areas */
+  :is(.treatment-toolbar :is(.brief-toggle, .dn-prev, .today, .dn-next, .zm-b, .zm-mid, .ts-seen, .ts-view-btn, .ts-audit-btn, .lg-act, .ts-expand-btn),
+      .tsh-flags .ts-al, .pvx-hdr-more, #sheetInner .rl > .rl-off, #sheetInner .rl-trend, #sheetInner .gsection .sec-add,
+      #tsSecNav .sn-chip, .search-bar .ts-search-open,
+      #ctab-vitals :is(.v-header .btn, #vxTake, #vxWin button, .lb-seg button, .v-sw),
+      #ctab-tasks :is(.wl-seg button, .wl-chip), #ctab-timeline .tl-filters .chip,
+      #ctab-charges :is(.ch-acts .btn, .ch-lv), #ctab-notes .btn.primary,
+      #ctab-dash :is(.sb-segb, .sb-tvb, .sb-filters, .sb-sorth, .sb-blk),
+      #clinSidebar :is(.fin-link, .wc-cp), :is(#completionDrawer, #noteDrawer) .close, #completionDrawer .sn-bar .sn-chip,
+      .op-card :is(.op-x, .v-sw, .op-link), #tvPanel :is(.tv-x, .tv-mic, .btn), .fp-clear,
+      #tsModal :is(.ts-btn, .rx-chip, .of-more, .pvx-yk, .td-o button))::after {
+    content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px);
+    transform: translate(-50%, -50%); background: none; border: 0; box-shadow: none; pointer-events: auto;
+  }
+  :is(.treatment-toolbar :is(.brief-toggle, .dn-prev, .today, .dn-next, .zm-b, .zm-mid, .ts-seen, .ts-view-btn, .ts-audit-btn, .lg-act, .ts-expand-btn),
+      .tsh-flags .ts-al, .pvx-hdr-more, #sheetInner .rl > .rl-off, #sheetInner .rl-trend, #sheetInner .gsection .sec-add,
+      #tsSecNav .sn-chip,
+      #ctab-vitals :is(.v-header .btn, #vxTake, .lb-seg button),
+      #ctab-tasks :is(.wl-seg button, .wl-chip), #ctab-timeline .tl-filters .chip,
+      #ctab-charges :is(.ch-acts .btn, .ch-lv), #ctab-notes .btn.primary,
+      #ctab-dash :is(.sb-tvb, .sb-filters, .sb-sorth),
+      #clinSidebar .fin-link, #completionDrawer .sn-bar .sn-chip, .op-card :is(.op-x, .op-link), #tvPanel :is(.tv-x, .btn), .fp-clear,
+      #tsModal :is(.ts-btn, .rx-chip, .of-more, .pvx-yk, .td-o button)) { position: relative; }
+  /* the strips around them leave room for the hit areas */
+  #tsZoom { overflow: visible; }
+  .treatment-toolbar .zm-b { min-width: 44px; }
+  /* iPhone: the wider − and + still fit the first toolbar row */
+  @media (max-width: 600px) {
+    .treatment-toolbar #tsZoom { margin-left: 0; }
+    .treatment-toolbar .day-nav { gap: 4px; }
+    .treatment-toolbar :is(.dn-prev, .dn-next) { width: 36px; padding: 0; }
+    .treatment-toolbar .today { padding-inline: 6px; }
+    .treatment-toolbar .ts-seen { width: 32px; }
+  }
+  #ctab-vitals .lb-seg button { min-width: 44px; }
+  #tsSecNav, #completionDrawer .sn-bar { min-height: 48px; align-items: center; }
+  /* rows of wrapped buttons are 44 pt apart, so one row's hit areas don't cover the next */
+  #ctab-timeline .tl-filters, #ctab-vitals .v-header, #ctab-charges .ch-acts { row-gap: 10px; }
+  /* iPhone board card: Add alert's hit area covered the Tech name above it */
+  @media (max-width: 600px) {
+    #ctab-dash .sb-row .sbc.c-team { padding-bottom: 14px !important; }
+    #ctab-dash .sb-row .sbc.c-alerts { padding-top: 15px !important; padding-bottom: 15px !important; }
+  }
+  /* iPhone: “‹ 3” sits at the foot of the order's label, so its hit area rises from there and stays in its row */
+  #sheetInner .rl .rl-meta .rl-off::after { top: auto; bottom: -3px; height: 44px; }
+  @media (min-width: 700px) { #ctab-dash :is(#sbBoards, #sbView) { overflow: visible; } }
+
+  /* b. 44 pt tall where a strip clips or rows touch */
+  #clinSwitcher { height: auto; min-height: 44px; }
+  #clinSwitcher .seg { min-height: 44px; min-width: 44px; }
+  .subnav :is(.ts-chip, .ts-gear) { min-height: 44px; }
+  .subnav .ts-gear { min-width: 44px; }
+  .pt-row .pt-scroll { height: auto; min-height: 44px; }
+  .pt-row .pt-tab { height: 44px; }
+  .pt-row .pt-tab .pt-main { min-height: 44px; }
+  .pt-row :is(.pt-btn, .pt-cur, .pt-open) { min-height: 44px; }
+  .pt-row .pt-btn { min-width: 44px; }
+  #sheetInner .grow.gband { min-height: 46px; }
+  #sheetInner .grow.gband > .gsection { min-height: 44px; }
+  #ctab-charges .ch-day > summary { min-height: 44px; }
+  #ctab-dash .sb-sorth, #ctab-dash .ward-sel { min-height: 44px; }
+  .pt-pop .pt-mi { min-height: 44px; }
+  #tsModal .td-ok { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+  :is(#tsModal, #completionDrawer, #noteDrawer, #clinSidebar, .op-card) select { min-height: 44px; }
+}
+
+/* 2. A press state on every button (HIG Buttons; Brand §9.1: a darker fill, brightness 0.88, and a 0.97 scale;
+      with Reduce Motion only the fill). Buttons with their own press keep it (zero specificity here). Wide rows only
+      darken. The shared top bar keeps its own. */
+:where(button, summary, [role=button], [role=tab], [role=menuitem]):where(:not(:disabled, [aria-disabled="true"], .topnav *)):active { filter: brightness(.88); }
+@media (prefers-reduced-motion: no-preference) {
+  :where(button, [role=button], [role=tab], [role=menuitem]):where(:not(:disabled, [aria-disabled="true"], .topnav *, .gsection, .pt-main, .pt-cur, .rl-name, .mark, .ts-seen, .sn-chip, .sec-add, #vxTake, .wl-done, .ch-lv, .sb-segb, .btn.primary, [role=menuitem])):active { scale: .97; }
+}
 </style>
 </body>
 </html>
