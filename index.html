@@ -7378,6 +7378,7 @@ Backend._subVisits=function(){   /* n92: one place that (re)starts the live visi
 if(Backend.unsubVisits){ try{ Backend.unsubVisits(); }catch(e){} }
 Backend.unsubVisits = fvVisitsListen(function(docs,meta){
 if(fvKeepBoard(docs,meta)) return;   /* an empty answer from the local cache never wipes a board that has patients */
+if(!(meta&&meta.fromCache)||(docs&&docs.length)) Backend._gotVisits=true;   /* n272: an empty answer from the local cache isn't an answer yet */
 Backend._liveAt=Date.now(); Backend._retry=0;
 _persistLock = true;
 var pvxKeep=window.fvUnsavedTake?fvUnsavedTake():null;   /* n252 */
@@ -7450,6 +7451,7 @@ refetch: async function(){
 _persistLock = true;
 try{
 const docs = await fvVisitsGetServer();   /* n92: never rebuild the board from the local cache */
+Backend._gotVisits=true;   /* n272 */
 var pvxKeep=window.fvUnsavedTake?fvUnsavedTake():null;   /* n252 */
 PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
 Backend._lastRows = fvRowsCopy(PATIENTS);   /* n252: the server's copy, taken now (edits during the next read are this screen's) */
@@ -7531,7 +7533,7 @@ function fvKeepBoard(docs,meta){
     console.warn('[visits] ignored an empty cached update — keeping the board'); fvConfirmLive(); return true; }catch(e){ return false; } }
 var _fvConfT=null;
 function fvConfirmLive(){ if(_fvConfT) return; _fvConfT=setTimeout(function(){ _fvConfT=null;
-  fvVisitsAll().limit(1).get({source:'server'}).then(function(){ Backend._liveAt=Date.now(); Backend._retry=0; if(Backend.conn!=='live') Backend.setConn('live'); })
+  fvVisitsAll().limit(1).get({source:'server'}).then(function(){ Backend._liveAt=Date.now(); Backend._retry=0; if(!Backend._gotVisits){ Backend._gotVisits=true; try{ renderRounds(true); }catch(e){} } if(Backend.conn!=='live') Backend.setConn('live'); })
   .catch(function(){ Backend.setConn('reconnecting'); fvResubscribeSoon(); }); },400); }
 var _fvRetryT=null;
 function fvResubscribeSoon(){ if(_fvRetryT) return; var n=Backend._retry=(Backend._retry||0)+1, wait=Math.min(30000,1000*Math.pow(2,n));
@@ -14244,7 +14246,7 @@ const k=[
 {key:'auth',      n:c.filter(p=>{const a=rdAuthState(p);return a&&a.status!=='ok';}).length, l:'Auth Expiring', tone:'amber'}
 ];
 return k.map(x=>`<button class="rd-kpi ${x.tone||''} ${rdKpiFilter===x.key&&x.key?'on':''} ${(!x.key&&!rdKpiFilter)?'on-neutral':''}" data-act="kpi" data-key="${x.key||''}">
-      <span class="n">${x.n}</span><span class="l">${x.l}</span></button>`).join('');
+      ${rdLoading()?'<span class="n rd-ph" aria-hidden="true"></span>':`<span class="n">${x.n}</span>`}<span class="l">${x.l}</span></button>`).join('');
 }
 
  
@@ -14848,9 +14850,13 @@ function rdArchivePool(){ const have={}, L=PATIENTS.filter(p=>{ have[p.id]=1; re
     fvVisitHistory().then(list=>{ rdOld=list; rdOldLoading=false; try{ renderRdArchive(); }catch(e){} }).catch(()=>{ rdOldLoading=false; }); }
   return L; }
 
+/* n272: Rounds is loading until Flow's first answer (no "No patients", no 0s) */
+function rdLoading(){ try{ return typeof Backend!=='undefined'&&!Backend._gotVisits&&['connecting','reconnecting','live'].indexOf(Backend.conn)>=0&&!PATIENTS.some(p=>p.rounds); }catch(e){ return false; } }
+function rdLoadingHTML(){ return`<div class="rd-loading" role="status"><svg class="rd-ecg" viewBox="0 0 240 48" aria-hidden="true"><path class="base" d="M0 32 H40 q5 -7 10 0 H62 l4 5 l7 -35 l7 42 l5 -12 H96 q9 -12 18 0 H140 q5 -7 10 0 H162 l4 5 l7 -35 l7 42 l5 -12 H196 q9 -12 18 0 H240"/><path class="beam" pathLength="100" d="M0 32 H40 q5 -7 10 0 H62 l4 5 l7 -35 l7 42 l5 -12 H96 q9 -12 18 0 H140 q5 -7 10 0 H162 l4 5 l7 -35 l7 42 l5 -12 H196 q9 -12 18 0 H240"/></svg><div class="rd-load-l" aria-hidden="true">Loading</div><span class="rd-vh">Loading patients</span><div class="rd-load-slow">Still loading — check the connection</div></div>`; }
 function rdSectionsHTML(list){
 const groups=rdGroupsOf(list);
 if(!groups.length){
+if(rdLoading()) return rdLoadingHTML();
 if(rdCensus().length) return`<div class="rd-emptystate"><b>No matching patients</b><p>Adjust the filters above to see the census.</p></div>`;
 return`<div class="rd-emptystate"><b>No patients in Rounds</b><p>Patients moved to <b>Admitted</b> in Flow appear here automatically — no rounds sheet to maintain.</p>
       ${PATIENTS.some(p=>p._demo)?'':'<button class="rd-btn" data-act="seed-demo">Load sample census</button>'}</div>`;
@@ -22247,5 +22253,31 @@ body:not(.dark) .pvx-ykmeds button{color:#23439C}.pvx-ykmeds .r{margin-top:10px;
   function start(){ try{ if(typeof LOBBY!=='undefined'&&LOBBY) return; if(typeof Backend!=='undefined'&&Backend.mode&&Backend.mode!=='staff') return; }catch(e){} PvxYakuri.load().catch(function(){}); }
   setTimeout(start,6000);
 })();</script>
+<style id="pvx-n272-css">
+/* n272 · Rounds says it's loading (Daniel, Oct 29: before the census arrived, Rounds said "No patients in Rounds", offered
+   "Load sample census" and showed 0 in every tile). Until Flow's first answer: a heartbeat trace with LOADING, quiet
+   placeholders in the tiles, and after 10 s "Still loading — check the connection". */
+.rd-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:72px 20px 64px;text-align:center}
+.rd-ecg{width:min(280px,70vw);height:56px;overflow:visible}
+.rd-ecg path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.rd-ecg .base{stroke:var(--rc-2,#5FD3E6);stroke-width:1.6;opacity:.16}
+.rd-ecg .beam{stroke:var(--rc-2,#5FD3E6);stroke-width:2.4;stroke-dasharray:22 100;stroke-dashoffset:22;
+  filter:drop-shadow(0 0 6px rgba(95,211,230,.65));animation:rdEcgSweep 1.7s cubic-bezier(.45,.05,.35,1) infinite}
+body:not(.dark) .rd-ecg .beam{filter:drop-shadow(0 0 5px rgba(30,143,168,.35))}
+@keyframes rdEcgSweep{from{stroke-dashoffset:22}to{stroke-dashoffset:-100}}
+.rd-load-l{font-size:0.75rem;font-weight:800;letter-spacing:.32em;text-transform:uppercase;color:var(--ink-500);padding-left:.32em}
+.rd-load-slow{font-size:0.8125rem;color:var(--ink-400);opacity:0;animation:rdLoadSlow .4s ease 10s forwards}
+@keyframes rdLoadSlow{to{opacity:1}}
+.rd-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* the tiles: no counts until there's something to count */
+.rd-kpi .n.rd-ph{display:block;width:26px;height:1.5125rem;padding:4px 0;box-sizing:border-box}
+.rd-kpi .n.rd-ph::before{content:"";display:block;height:100%;border-radius:6px;background:var(--rslate,rgba(150,185,220,.12))}
+/* Reduce Motion: the trace breathes instead of sweeping */
+@media (prefers-reduced-motion: reduce){
+  .rd-ecg .beam{display:none}
+  .rd-ecg .base{opacity:.5;animation:rdEcgFade 2.4s ease-in-out infinite alternate}
+  @keyframes rdEcgFade{from{opacity:.25}to{opacity:.7}}
+}
+</style>
 </body>
 </html>
