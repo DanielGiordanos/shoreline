@@ -1017,7 +1017,16 @@ body:not(.dark) .a-note{background:#0E1A2B}
   .a-sheet.form>.btns>span{display:none}
   .a-sheet.form .a-pick{max-height:clamp(120px,calc(100dvh - 420px),300px)}
 }
+/* the one-line summary and the score-name line exist only on narrow screens */
+.a-kpiline,.a-sclabel{display:none}
+@media (max-width:600px){
+  .a-kpis{display:none}
+  .a-kpiline{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:0 0 16px;font-size:.875rem;line-height:1.4;color:var(--a-ink-2)}
+  .a-kpiline b{color:var(--a-ink);font-weight:700}
+}
 @media (max-width:420px){
+  .a-sclabel{display:block;grid-column:1 / -1;min-height:1.3em;margin:-2px 2px 2px;font-size:.8125rem;line-height:1.3;color:var(--a-ink-2)}
+  .a-sclabel b{color:var(--a-ink);font-weight:700;margin-right:2px}
   .a-score:not(.no) span.lv{display:none}
   .a-score{min-height:48px}
 }
@@ -3070,6 +3079,7 @@ function buildPrintRecord(r) {
         `<button type="button" class="a-btn" data-act="print">${ICON.print}Print${r.status === 'submitted' ? '' : ' draft'}…</button>`
         + (ed ? `<button type="button" class="a-btn primary" data-act="submit">Review and submit…</button>` : ''))
       + lock
+      + `<p class="a-kpiline">${kpiLine(o, o.exists ? r.status : 'ns')}</p>`
       + `<div class="a-kpis">
           <div class="a-kpi"><div class="l">Completion</div><div class="v">${pct}<small>%</small></div><div class="a-bar"><i style="width:${pct}%"></i></div><div class="s">${p.rated} of ${p.total} items</div></div>
           <div class="a-kpi"><div class="l">Domains complete</div><div class="v">${doneN}<small> of 10</small></div><div class="s">${doneN === 10 ? (r.status === 'submitted' ? 'Every domain complete' : 'Ready to submit') : r.status === 'submitted' ? 'Blank items print as Not rated' : 'Rate every item to complete a domain'}</div></div>
@@ -3090,12 +3100,22 @@ function buildPrintRecord(r) {
     if (top) requestAnimationFrame(() => { try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {} });
   }
 
+  /* iPhone: the 1–5 buttons show only numbers, so a line under them names the chosen score, or what 1 and 5 mean
+     before one is chosen. VoiceOver already hears each button's full name, so the line is hidden from it. */
+  function scaleLabel(val) {
+    const s = SCALE.find(x => x[0] === val);
+    if (s) return `<b>${esc(s[0])}</b> ${esc(s[1])}`;
+    if (val === NOT_OBSERVED) return '';
+    const lo = SCALE[0], hi = SCALE[SCALE.length - 1];
+    return `<b>${esc(lo[0])}</b> ${esc(lo[1])} · <b>${esc(hi[0])}</b> ${esc(hi[1])}`;
+  }
   function scale(key, qi, val, ed, label) {
     const vals = SCALE.map(s => s[0]).concat(NOT_OBSERVED), stop = vals.includes(val) ? val : vals[0];
     const ti = v => ` tabindex="${v === stop ? 0 : -1}"`;
     return `<div class="a-scale" role="radiogroup" aria-label="${esc(label)}">` + SCALE.map(s =>
       `<button type="button" role="radio" class="a-score" title="${esc(s[2] + ': ' + s[3])}" aria-checked="${val === s[0]}"${ti(s[0])} data-score="${s[0]}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}><b>${s[0]}</b><span class="lv">${esc(s[1])}</span>`
       + (s[1].toLowerCase() === s[2].toLowerCase() ? '' : `<span class="sr-only">, ${esc(s[2])}</span>`) + `</button>`).join('')
+      + `<span class="a-sclabel" aria-hidden="true">${scaleLabel(val)}</span>`
       + `<button type="button" role="radio" class="a-score no" aria-checked="${val === NOT_OBSERVED}"${ti(NOT_OBSERVED)} data-score="${NOT_OBSERVED}" data-key="${key}" data-q="${qi}"${ed ? '' : ' disabled'}>${ICON.eyeSlash}<span>Not observed</span></button></div>`;
   }
   /* Mac / iPad landscape: the domain list and rating guide hold 16 px under the top bar while the domain scrolls.
@@ -3252,6 +3272,13 @@ function buildPrintRecord(r) {
   addEventListener('pagehide', () => flush());
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
 
+  /* iPhone: the four summary cards become one line, so the first question starts near the top */
+  function kpiLine(o, status) {
+    const r = o.rev, p = computeProgress(r), doneN = DOMAINS.filter(x => domainDone(r, x)).length;
+    const noN = DOMAINS.reduce((n, x) => n + Object.values((r.answers || {})[x.key] || {}).filter(v => v === NOT_OBSERVED).length, 0);
+    const tail = r.status === 'submitted' ? 'Locked' : editable() ? 'Saves as you go' : 'Read only';
+    return `${pill(status)}<span><b>${p.rated} of ${p.total}</b> rated · <b>${doneN} of 10</b> domains${noN ? ` · ${noN} not observed` : ''} · ${tail}</span>`;
+  }
   function refreshChrome() {
     /* repaint progress, rail and tags without re-rendering text areas the evaluator is typing in */
     const o = S.open, r = o.rev, p = computeProgress(r), pct = Math.round(100 * p.rated / p.total);
@@ -3262,6 +3289,7 @@ function buildPrintRecord(r) {
     const noN = DOMAINS.reduce((n, x) => n + Object.values((r.answers || {})[x.key] || {}).filter(v => v === NOT_OBSERVED).length, 0);
     if (k[2]) k[2].querySelector('.v').textContent = noN;
     if (k[3] && !o.exists) k[3].querySelector('.v').innerHTML = pill('draft');
+    const kl = root.querySelector('.a-kpiline'); if (kl) kl.innerHTML = kpiLine(o, o.exists ? r.status : 'draft');
     root.querySelectorAll('.a-step').forEach((b, n) => {
       const x = DOMAINS[n], ok = domainDone(r, x);
       b.classList.toggle('done', ok); b.querySelector('.n').innerHTML = ok ? ICON.check + '<span class="sr-only">Complete: </span>' : x.num;
@@ -3387,6 +3415,7 @@ function buildPrintRecord(r) {
         setField(path, nv);
         if (nv === null && H.review.u[H.review.u.length - 1] === ent) say(`Rating cleared · ${ent.label}`, null, { label: 'Undo', fn: () => undoEntry(H.review, ent) });
         sc.parentElement.querySelectorAll('.a-score').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.score === nv)); b.tabIndex = b === sc ? 0 : -1; });
+        const sl = sc.parentElement.querySelector('.a-sclabel'); if (sl) sl.innerHTML = scaleLabel(nv);
         const tag = sc.closest('.a-q') && sc.closest('.a-q').querySelector('.tag');
         if (tag) tag.classList.toggle('ok', !!nv);
         refreshChrome(); return;
