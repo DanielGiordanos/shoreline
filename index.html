@@ -182,7 +182,7 @@ window.PVX_GI=(function(){function g(n,d){return '<svg class="pvx-gi pvx-gi-'+n+
 return {check:g('check','<path d="M5 12.5l4.5 4.5L19 7"/>'),xmark:g('xmark','<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
 circle:g('circle','<circle cx="12" cy="12" r="7"/>'),
 warn:g('warn','<path class="s" d="M10.3 4.2L2.6 17.6A2 2 0 0 0 4.3 20.6h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17h.01"/>'),
-bang:g('bang','<path d="M12 5.5v8.5"/><path d="M12 18.5h.01"/>')};})();</script>
+bang:g('bang','<path d="M12 5.5v8.5"/><path d="M12 18.5h.01"/>'),circlecheck:g('circlecheck','<circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.2"/>')};})();</script>
 <style id="pvx-n187-css">
 /* PVX-N187 - icons */
 .pvx-gi{display:inline-block;width:1em;height:1em;vertical-align:-0.125em;flex:none;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
@@ -5937,6 +5937,140 @@ html.pvx-text-l :where(h1,h2,h3,.page-title,.hero-title,.card-title,.cc-title,.t
 }
 @media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ html.pvx-tabbar #switcher .seg.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
 </style>
+<script id="pvx-n273-rd">
+/* n273 · Rounds loading — the approved Pravix loading design (Daniel, Oct 30), on real work only.
+   Progress = the census lists Flow's visits feed has actually answered (fvVisitsListen: in hospital, active, recent),
+   counted only when the answer comes from the server or brings patients (an empty answer from the local cache isn't
+   one). Before the feed starts, or with one list (the full-list fallback), it is indeterminate: no percentage.
+   Ready = Backend._gotVisits. Silent: no sound, no toast. */
+(function(){
+  var L = window.RdLoad = { total:0, done:{}, started:false, t0:0, shown:false, retrying:false, iv:null, said:'', ready:false };
+  function db(){ return typeof DB!=='undefined' && !!DB; }
+  function got(){ return typeof Backend!=='undefined' && !!Backend._gotVisits; }
+  /* a restarted feed (Flow resubscribes after sleep or an error) never takes back what was already counted */
+  window.rdLoadFeed = function(n){ if(got()) return; if(L.total!==n){ L.total=n; L.done={}; } L.started=true; L.paint(); };
+  window.rdLoadPart = function(i, fromCache, len){ if(got()) return; if(!fromCache || len) L.done[i]=1; L.paint(); };
+  L.count = function(){ return Object.keys(L.done).length; };
+  L.pct = function(){ return (L.started && L.total>1) ? Math.round(100*Math.min(L.count(),L.total)/L.total) : null; };
+  L.state = function(){
+    var c = typeof Backend!=='undefined' ? Backend.conn : '';
+    var age = L.t0 ? Date.now()-L.t0 : 0;
+    if(L.retrying) return 'retry';
+    if(db() && (c==='reconnecting'||c==='error'||c==='offline'||navigator.onLine===false) && age>2000) return 'failed';
+    if(age>10000) return 'slow';
+    if(!L.started) return 'prep';
+    if(L.total && L.count()>=L.total) return 'organize';
+    return 'census';
+  };
+  var COPY = {
+    prep:['Preparing rounds',''],
+    census:['Retrieving patient census',''],
+    organize:['Organizing rounds',''],
+    slow:['Taking longer than expected','The census hasn’t responded. Try connecting again.'],
+    failed:['Couldn’t load the census','Check the connection, then try again.'],
+    retry:['Connecting again','']
+  };
+  function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function live(){ var e=document.getElementById('rdLoadLive');
+    if(!e){ e=document.createElement('span'); e.id='rdLoadLive'; e.className='rd-vh'; e.setAttribute('role','status'); e.setAttribute('aria-live','polite'); document.body.appendChild(e); }
+    return e; }
+  function say(t){ if(t===L.said) return; L.said=t; live().textContent=t; }
+  /* the markup reflects the current state, so a re-render of the list shows the same thing */
+  window.rdLoadingHTML = function(){
+    L.shown=true; L.ready=false; if(!L.t0) L.t0=Date.now(); L.tick();
+    var st=L.state(), p=L.pct(), cp=COPY[st], retry=(st==='slow'||st==='failed'||st==='retry');
+    var bar = p==null || st==='retry';
+    return '<div class="rd-loading" data-state="'+st+'">'
+      + '<div class="rd-ld-line"><span class="rd-ld-task">'+esc(cp[0])+'</span><span class="rd-ld-pct" aria-hidden="true">'+(bar?'':p+'%')+'</span></div>'
+      + '<div class="rd-ld-track'+(bar?' ind':'')+'" role="progressbar" aria-label="Loading the patient census"'+(bar?'':' aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+p+'"')+'>'
+      + '<div class="rd-ld-fill" style="'+(bar?'':'width:'+p+'%')+'"></div></div>'
+      + '<div class="rd-ld-msg"><span class="rd-ld-help">'+esc(cp[1])+'</span>'
+      + '<button type="button" class="rd-ld-retry"'+(retry?'':' hidden')+(st==='retry'?' aria-disabled="true"':'')+'>'+(st==='retry'?'Trying…':'Try again')+'</button></div></div>';
+  };
+  /* in place between renders: the bar eases to what's done (CSS), the words change by phase */
+  L.paint = function(){
+    var el=document.querySelector('#rdList .rd-loading:not(.rd-ld-out)'); if(!el) return;
+    var st=L.state(), p=L.pct(), cp=COPY[st], bar=(p==null||st==='retry'), retry=(st==='slow'||st==='failed'||st==='retry');
+    if(el.dataset.state!==st) el.dataset.state=st;
+    var tk=el.querySelector('.rd-ld-task'); if(tk.textContent!==cp[0]) tk.textContent=cp[0];
+    var pc=el.querySelector('.rd-ld-pct'), pt=bar?'':p+'%'; if(pc.textContent!==pt) pc.textContent=pt;
+    var tr=el.querySelector('.rd-ld-track'), fl=el.querySelector('.rd-ld-fill');
+    tr.classList.toggle('ind',bar);
+    if(bar){ ['aria-valuemin','aria-valuemax','aria-valuenow'].forEach(function(a){ tr.removeAttribute(a); }); fl.style.width=''; }
+    else { tr.setAttribute('aria-valuemin','0'); tr.setAttribute('aria-valuemax','100'); tr.setAttribute('aria-valuenow',String(p)); fl.style.width=p+'%'; }
+    var hp=el.querySelector('.rd-ld-help'); if(hp.textContent!==cp[1]) hp.textContent=cp[1];
+    var b=el.querySelector('.rd-ld-retry'); if(b){ b.hidden=!retry;
+    if(st==='retry'){ b.setAttribute('aria-disabled','true'); if(b.textContent!=='Trying…') b.textContent='Trying…'; }
+    else { b.removeAttribute('aria-disabled'); if(b.textContent!=='Try again') b.textContent='Try again'; } }
+    /* VoiceOver hears each phase once, never every step of the bar */
+    say(cp[0]+(cp[1]?'. '+cp[1]:''));
+  };
+  L.tick = function(){
+    if(L.iv) return;
+    L.iv=setInterval(function(){
+      if(!document.querySelector('#rdList .rd-loading:not(.rd-ld-out)')){ clearInterval(L.iv); L.iv=null; return; }
+      L.paint();
+    },1000);
+  };
+  /* Try again: the real loading operation (restart the feed, read the census from the server), one at a time */
+  L.retry = async function(){
+    if(L.retrying || got()) return;
+    L.retrying=true; L.runs=(L.runs||0)+1; L.paint();
+    try{ if(window._fvRetryT){ clearTimeout(window._fvRetryT); window._fvRetryT=null; } }catch(e){}
+    try{ Backend._retry=0; if(Backend._subVisits) Backend._subVisits(); await Backend.refetch(); }catch(e){}
+    L.retrying=false;
+    if(!got()){ L.t0=Date.now()-2100; }   /* still nothing: say so now, and give it another 10 s before "taking longer" */
+    L.paint();
+  };
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('#rdList .rd-loading:not(.rd-ld-out) .rd-ld-retry'); if(!b) return;
+    e.preventDefault(); e.stopPropagation(); if(b.getAttribute('aria-disabled')==='true') return; L.retry();
+  },true);
+  /* the census is in: the loader completes (check, "Rounds ready") and crossfades into the list, in the same place */
+  /* a re-render of the list while loading keeps focus on Try again (or the loader) */
+  L.focusIn = function(list){ var el=list.querySelector('.rd-loading:not(.rd-ld-out)'); return !!(el&&el.contains(document.activeElement)); };
+  L.refocus = function(list, had){
+    if(!had) return; var el=list.querySelector('.rd-loading:not(.rd-ld-out)'); if(!el) return;
+    var b=el.querySelector('.rd-ld-retry'); var t=(b&&!b.hidden)?b:el; if(t===el) el.setAttribute('tabindex','-1');
+    if(document.activeElement!==t) try{ t.focus({preventScroll:true}); }catch(e){}
+  };
+  L.capture = function(list){
+    if(!L.shown || (typeof rdLoading==='function' && rdLoading())) return null;
+    var el=list.querySelector('.rd-loading:not(.rd-ld-out)'); if(!el){ L.shown=false; return null; }
+    var lr=list.getBoundingClientRect(), r=el.getBoundingClientRect();
+    var foc=el.contains(document.activeElement)||!!L._hadFocus;
+    var n=el.cloneNode(true);
+    n.dataset.state='ready'; n.setAttribute('aria-hidden','true');
+    var tr=n.querySelector('.rd-ld-track'); tr.classList.remove('ind'); tr.removeAttribute('role');
+    n.querySelector('.rd-ld-fill').style.width='100%';
+    n.querySelector('.rd-ld-pct').textContent='';
+    n.querySelector('.rd-ld-task').innerHTML=(window.PVX_GI&&PVX_GI.circlecheck||'')+'<span>Rounds ready</span>';
+    n.querySelector('.rd-ld-help').textContent=''; var b=n.querySelector('.rd-ld-retry'); if(b) b.remove();
+    return {n:n, top:r.top-lr.top, h:lr.height, foc:foc};
+  };
+  L.footHTML = function(){
+    var left = L.readyAt ? 6000-(Date.now()-L.readyAt) : 0; if(left<=0) return '';
+    return '<div class="rd-ready" style="animation-delay:'+Math.max(0,left-400)+'ms">'+(window.PVX_GI&&PVX_GI.circlecheck||'')+'<span>Census up to date</span></div>';
+  };
+  L.handoff = function(list, h){
+    L.shown=false; L.ready=true; L.t0=0; if(L.iv){ clearInterval(L.iv); L.iv=null; }
+    var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(getComputedStyle(list).position==='static') list.style.position='relative';
+    if(!reduce){
+      list.style.minHeight=h.h+'px';
+      h.n.classList.add('rd-ld-out'); h.n.style.top=h.top+'px'; list.appendChild(h.n);
+      list.classList.add('rd-ld-in');
+      setTimeout(function(){ try{ h.n.remove(); }catch(e){} list.classList.remove('rd-ld-in'); list.style.minHeight=''; },320);
+    }
+    var n=0; try{ n=rdCensus().length; }catch(e){}
+    say('Rounds ready. '+(n?n+' patient'+(n>1?'s':''):'No patients in Rounds')+'.');
+    /* a quiet confirmation at the foot of the list, gone after a few seconds */
+    L.readyAt=Date.now(); var f=document.createElement('div'); f.innerHTML=L.footHTML(); if(f.firstChild) list.appendChild(f.firstChild);
+    if(h.foc){ var f=list.querySelector('.rd-row .rd-name, .rd-row button, .rd-emptystate button, button')||document.querySelector('#view-rd-census h1, #view-rd-census h2');
+      if(f){ if(!f.matches('button,a,[tabindex]')) f.setAttribute('tabindex','-1'); try{ f.focus({preventScroll:true}); }catch(e){} } }
+  };
+})();
+</script>
 </head>
 <body>
 <script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#F2F4F8';}catch(e){}}window.__pvxPaintCanvas=paint;try{var W=JSON.parse(localStorage.getItem('pvx:flow:where')||'null');var FL=/^#app=flow$/.test(location.hash);if(FL&&!(W&&W.app==='flow'))history.replaceState(null,'',location.pathname+location.search);if(W&&W.app&&Date.now()-W.at<432e5&&(FL?W.app==='flow':!location.hash)&&!/[?&](tv|visit|patient)=/.test(location.search)&&(W.app!=='flow'||(W.view&&W.view!=='dashboard'))){history.replaceState(null,'',location.pathname+location.search+'#app='+W.app);window.__pvxRestore=W;document.documentElement.classList.add('pvx-app-boot');}}catch(e){}try{if(/[#&]app=(rounds|ultrasound)\b/.test(location.hash))document.documentElement.classList.add('pvx-app-boot');}catch(e){}try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
@@ -7376,8 +7510,10 @@ try{ fxLobbySync(); }catch(e){}
 
 Backend._subVisits=function(){   /* n92: one place that (re)starts the live visits feed */
 if(Backend.unsubVisits){ try{ Backend.unsubVisits(); }catch(e){} }
+window.__rdFeed=1;   /* n273: this is the feed Rounds waits for */
 Backend.unsubVisits = fvVisitsListen(function(docs,meta){
 if(fvKeepBoard(docs,meta)) return;   /* an empty answer from the local cache never wipes a board that has patients */
+if(meta&&meta.real!==undefined?meta.real:(!(meta&&meta.fromCache)||(docs&&docs.length))) Backend._gotVisits=true;   /* n273: every census list answered for real (an empty list from the local cache isn't an answer yet) */
 Backend._liveAt=Date.now(); Backend._retry=0;
 _persistLock = true;
 var pvxKeep=window.fvUnsavedTake?fvUnsavedTake():null;   /* n252 */
@@ -7450,6 +7586,7 @@ refetch: async function(){
 _persistLock = true;
 try{
 const docs = await fvVisitsGetServer();   /* n92: never rebuild the board from the local cache */
+Backend._gotVisits=true;   /* n272 */
 var pvxKeep=window.fvUnsavedTake?fvUnsavedTake():null;   /* n252 */
 PATIENTS = docs.map(function(d){ return mapToApp(Object.assign({ id:d.id }, d.data())); }).concat(PATIENTS.filter(function(p){ return p._demo; }));
 Backend._lastRows = fvRowsCopy(PATIENTS);   /* n252: the server's copy, taken now (edits during the next read are this screen's) */
@@ -7508,11 +7645,12 @@ function fvVisitQueries(){ var b=fvVisitsAll(), cut=new Date(Date.now()-FV_RECEN
 function fvMerge(lists){ var seen={}, out=[]; lists.forEach(function(L){ (L||[]).forEach(function(d){ if(!seen[d.id]){ seen[d.id]=1; out.push(d); } }); }); return out; }
 function fvVisitsListen(onDocs,onErr,opts){ opts=opts||{};
   var qs=fvVisitQueries(), parts=qs.map(function(){ return null; }), cache=qs.map(function(){ return false; }), subs=[], full=null, dead=false, t=null;
-  function flush(){ t=null; if(dead||full) return; Backend._visitsMode='recent'; onDocs(fvMerge(parts),{fromCache:cache.some(Boolean)}); }
+  var rdc=!!window.__rdFeed; window.__rdFeed=0; try{ rdc&&window.rdLoadFeed&&rdLoadFeed(qs.length); }catch(e){}   /* n273: only Flow's own feed (Backend) counts for Rounds' loader */
+  function flush(){ t=null; if(dead||full) return; Backend._visitsMode='recent'; onDocs(fvMerge(parts),{fromCache:cache.some(Boolean),real:parts.every(function(x,i){ return !cache[i]||(x&&x.length); })}); }
   function fallback(err){ if(dead||full) return; console.warn('[visits] loading the full list instead —',(err&&err.message)||err);
-    subs.forEach(function(u){ try{ u(); }catch(e){} }); subs=[]; Backend._visitsMode='all';
-    full=fvVisitsAll().onSnapshot(opts,function(s){ onDocs(s.docs,{fromCache:!!s.metadata.fromCache}); },onErr||function(){}); }
-  qs.forEach(function(q,i){ subs.push(q.onSnapshot(opts,function(s){ parts[i]=s.docs; cache[i]=!!s.metadata.fromCache;
+    subs.forEach(function(u){ try{ u(); }catch(e){} }); subs=[]; Backend._visitsMode='all'; try{ rdc&&window.rdLoadFeed&&rdLoadFeed(1); }catch(e){}
+    full=fvVisitsAll().onSnapshot(opts,function(s){ try{ rdc&&window.rdLoadPart&&rdLoadPart(0,!!s.metadata.fromCache,s.docs.length); }catch(e){} onDocs(s.docs,{fromCache:!!s.metadata.fromCache}); },onErr||function(){}); }
+  qs.forEach(function(q,i){ subs.push(q.onSnapshot(opts,function(s){ parts[i]=s.docs; cache[i]=!!s.metadata.fromCache; try{ rdc&&window.rdLoadPart&&rdLoadPart(i,cache[i],s.docs.length); }catch(e){}
       if(parts.every(function(x){ return x!==null; })&&!t) t=setTimeout(flush,0); },   /* one change seen by two queries (a discharge) lands as one update */
     function(err){ fallback(err); })); });
   return function(){ dead=true; if(t) clearTimeout(t); subs.forEach(function(u){ try{ u(); }catch(e){} }); if(full) try{ full(); }catch(e){} }; }
@@ -7531,7 +7669,7 @@ function fvKeepBoard(docs,meta){
     console.warn('[visits] ignored an empty cached update — keeping the board'); fvConfirmLive(); return true; }catch(e){ return false; } }
 var _fvConfT=null;
 function fvConfirmLive(){ if(_fvConfT) return; _fvConfT=setTimeout(function(){ _fvConfT=null;
-  fvVisitsAll().limit(1).get({source:'server'}).then(function(){ Backend._liveAt=Date.now(); Backend._retry=0; if(Backend.conn!=='live') Backend.setConn('live'); })
+  fvVisitsAll().limit(1).get({source:'server'}).then(function(s){ Backend._liveAt=Date.now(); Backend._retry=0; if(!Backend._gotVisits){ if(!s||!s.docs||!s.docs.length){ Backend._gotVisits=true; try{ renderRounds(true); }catch(e){} } else if(!Backend._n273fetch){ Backend._n273fetch=1; Backend.refetch(); } } if(Backend.conn!=='live') Backend.setConn('live'); })
   .catch(function(){ Backend.setConn('reconnecting'); fvResubscribeSoon(); }); },400); }
 var _fvRetryT=null;
 function fvResubscribeSoon(){ if(_fvRetryT) return; var n=Backend._retry=(Backend._retry||0)+1, wait=Math.min(30000,1000*Math.pow(2,n));
@@ -14244,7 +14382,7 @@ const k=[
 {key:'auth',      n:c.filter(p=>{const a=rdAuthState(p);return a&&a.status!=='ok';}).length, l:'Auth Expiring', tone:'amber'}
 ];
 return k.map(x=>`<button class="rd-kpi ${x.tone||''} ${rdKpiFilter===x.key&&x.key?'on':''} ${(!x.key&&!rdKpiFilter)?'on-neutral':''}" data-act="kpi" data-key="${x.key||''}">
-      <span class="n">${x.n}</span><span class="l">${x.l}</span></button>`).join('');
+      ${rdLoading()?'<span class="n rd-ph" aria-hidden="true"></span>':`<span class="n">${x.n}</span>`}<span class="l">${x.l}</span></button>`).join('');
 }
 
  
@@ -14848,9 +14986,12 @@ function rdArchivePool(){ const have={}, L=PATIENTS.filter(p=>{ have[p.id]=1; re
     fvVisitHistory().then(list=>{ rdOld=list; rdOldLoading=false; try{ renderRdArchive(); }catch(e){} }).catch(()=>{ rdOldLoading=false; }); }
   return L; }
 
+/* n273: Rounds is loading until Flow's first real answer (no "No patients", no 0s); the loader is n273.js */
+function rdLoading(){ try{ return typeof Backend!=='undefined'&&typeof DB!=='undefined'&&!!DB&&Backend.mode!=='lobby'&&!Backend._gotVisits; }catch(e){ return false; } }
 function rdSectionsHTML(list){
 const groups=rdGroupsOf(list);
 if(!groups.length){
+if(rdLoading()&&window.rdLoadingHTML) return rdLoadingHTML();
 if(rdCensus().length) return`<div class="rd-emptystate"><b>No matching patients</b><p>Adjust the filters above to see the census.</p></div>`;
 return`<div class="rd-emptystate"><b>No patients in Rounds</b><p>Patients moved to <b>Admitted</b> in Flow appear here automatically — no rounds sheet to maintain.</p>
       ${PATIENTS.some(p=>p._demo)?'':'<button class="rd-btn" data-act="seed-demo">Load sample census</button>'}</div>`;
@@ -14881,21 +15022,21 @@ if(chips){
 const c=rdCensus();
 const items=[{key:'all',l:'All patients',n:c.length},{key:'new',l:'New admits',n:c.filter(p=>p.rounds.newAdmit).length}]
 .concat(RD_SERVICES.map(s=>({key:s.key,l:s.label,n:c.filter(p=>p.rounds.service===s.key).length})));
-rdN248Set(chips,items.map(x=>`<button class="rd-svcbtn ${rdSvcFilter===x.key?'on':''}" data-act="svc-filter" data-key="${x.key}">${x.l}${x.n?` <span>${x.n}</span>`:''}</button>`).join('')
-+`<span class="rd-toolgap"></span><button class="rd-svcbtn warn ${rdKpiFilter==='review'?'on':''}" data-act="kpi" data-key="review">Not reviewed${nrCount?` <span>${nrCount}</span>`:''}</button>`);
+rdN248Set(chips,items.map(x=>`<button class="rd-svcbtn ${rdSvcFilter===x.key?'on':''}" data-act="svc-filter" data-key="${x.key}">${x.l}${x.n&&!rdLoading()?` <span>${x.n}</span>`:''}</button>`).join('')
++`<span class="rd-toolgap"></span><button class="rd-svcbtn warn ${rdKpiFilter==='review'?'on':''}" data-act="kpi" data-key="review">Not reviewed${nrCount&&!rdLoading()?` <span>${nrCount}</span>`:''}</button>`);
 }
 const side=document.getElementById('rdSide'); if(side) rdN248Set(side,rdOnServiceHTML()+rdTomorrowHTML());
 const nr=rdCensus().filter(p=>!rdReviewed(p)).length;
 const note=document.getElementById('rdRevNote');
 if(note){
-if(rdCensus().length===0) note.textContent='';
+if(rdCensus().length===0||rdLoading()) note.textContent='';
 else if(nr===0){ note.textContent='Rounds complete — all '+rdCensus().length+' active patients reviewed.'; note.className='rd-revnote done'; }
 else { note.innerHTML=nr+' patient'+(nr>1?'s':'')+' not yet reviewed'; note.className='rd-revnote'; }
 }
 const ended=rdEndedToday();
 const holds=rdHolds().filter(p=>rdMatchesQuery(p,rdQuery.trim().toLowerCase()));
 const holdsCollapsed=!!rdCollapse['holds'];
-const rdHtml248=rdSectionsHTML(rdFiltered())
+const rdHtml248=rdSectionsHTML(rdFiltered())+(window.RdLoad?RdLoad.footHTML():'')
 +(holds.length?`<div class="rd-secgroup holds ${holdsCollapsed?'collapsed':''}">
       <button class="rd-sechead" data-act="sec-toggle" data-key="holds"><span class="tri">${holdsCollapsed?'▶':'▼'}</span><span class="t">Boarding &amp; Holds</span><span class="n">${holds.length}</span></button>
       ${holdsCollapsed?'':holds.map(rdHoldRowHTML).join('')}</div>`:'')
@@ -14903,7 +15044,9 @@ const rdHtml248=rdSectionsHTML(rdFiltered())
       <div class="rd-endbody"><div class="rd-endbody-inner">${ended.map(p=>`<div class="rd-endrow"><span class="rd-dot" style="background:${RD_ACUITY[p.rounds.acuity].color}"></span><b>${rdEsc(rdFullName(p))}</b><span class="o">${p.rounds.outcome.type.toUpperCase()}</span><span class="w">Today · ${rdT(p.rounds.outcome.at)}</span></div>`).join('')}</div></div></div>`:'')
 +(PATIENTS.some(p=>p._demo)?`<div class="rd-demonote">Sample census loaded for preview — session only, never saved. <button class="rd-link" data-act="clear-demo">Remove sample data</button></div>`:'');
 
-rdN248Paint(list,rdHtml248);
+const rdFoc=window.RdLoad?RdLoad.focusIn(list):false; if(window.RdLoad) RdLoad._hadFocus=rdFoc; const rdHand=window.RdLoad?RdLoad.capture(list):null;   /* n273 */
+rdN248Paint(list,(rdLoading()&&window.rdLoadingHTML)?rdLoadingHTML():rdHtml248);
+if(rdHand) RdLoad.handoff(list,rdHand); else if(window.RdLoad) RdLoad.refocus(list,rdFoc);
 if(rdCollapse['ended'] && rdEndedPrev!=null && ended.length>rdEndedPrev){
 const nEl=list.querySelector('.rd-secgroup.ended .rd-sechead .n');
 if(nEl){ nEl.classList.add('bump'); setTimeout(()=>nEl.classList.remove('bump'),520); }
@@ -22247,5 +22390,57 @@ body:not(.dark) .pvx-ykmeds button{color:#23439C}.pvx-ykmeds .r{margin-top:10px;
   function start(){ try{ if(typeof LOBBY!=='undefined'&&LOBBY) return; if(typeof Backend!=='undefined'&&Backend.mode&&Backend.mode!=='staff') return; }catch(e){} PvxYakuri.load().catch(function(){}); }
   setTimeout(start,6000);
 })();</script>
+<style id="pvx-n273-css">
+/* n273 · Rounds loading — the approved Pravix loading design: a slim rounded bar with a fine upper highlight and a
+   narrow shimmer, the task in system type, an understated percentage (only when the work can be counted), a delayed
+   explanation with Try again, and a crossfade into the list with a check. Light: Treatment's cobalt #23439C (Daniel, Oct 30; the design had navy #0C2952). Dark: cyan #63CDDD. */
+#rdList{--rd-ld-accent:#23439C;--rd-ld-track:#E3E8EE;--rd-ld-ink:#202A38;--rd-ld-muted:#637084;--rd-ld-edge:#E2E7EF;--rd-ld-tint:#EDF1F6}
+body.dark #rdList{--rd-ld-accent:#63CDDD;--rd-ld-track:#25354A;--rd-ld-ink:#E5EDF6;--rd-ld-muted:#9AAEC3;--rd-ld-edge:#223044;--rd-ld-tint:#182638}
+.rd-loading{width:min(100%,380px);margin:0 auto;padding:64px 0 48px;color:var(--rd-ld-ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;font-optical-sizing:auto}
+.rd-ld-line{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:13px}
+.rd-ld-task{display:inline-flex;align-items:center;gap:7px;font-size:0.9375rem;font-weight:500;letter-spacing:-.015em;color:var(--rd-ld-ink)}
+.rd-ld-task .pvx-gi{color:var(--rd-ld-accent);width:16px;height:16px;stroke-width:2.2}
+.rd-ld-pct{font-size:0.75rem;color:var(--rd-ld-muted);font-variant-numeric:tabular-nums}
+.rd-ld-track{position:relative;height:7px;border-radius:99px;background:var(--rd-ld-track);overflow:hidden}
+.rd-ld-fill{position:relative;height:100%;width:0%;border-radius:inherit;background:var(--rd-ld-accent);overflow:hidden;transition:width .45s cubic-bezier(.25,.8,.25,1)}
+.rd-ld-fill::before{content:"";position:absolute;inset:1px 2px auto;height:1px;background:rgba(255,255,255,.19);border-radius:99px}
+.rd-ld-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.07) 44%,rgba(255,255,255,.38) 50%,rgba(255,255,255,.07) 56%,transparent 62%);transform:translateX(-100%);animation:rdLdSweep 2.8s ease-in-out infinite}
+@keyframes rdLdSweep{0%,15%{transform:translateX(-100%)}85%,100%{transform:translateX(100%)}}
+/* can't be counted yet: a short segment travels the track, no percentage */
+.rd-ld-track.ind .rd-ld-fill{width:30%;position:absolute;left:0;top:0;transition:none;animation:rdLdInd 1.7s cubic-bezier(.45,.05,.35,1) infinite}
+@keyframes rdLdInd{from{transform:translateX(-105%)}to{transform:translateX(340%)}}
+.rd-ld-msg{min-height:47px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:8px}
+.rd-ld-help{font-size:0.75rem;line-height:1.5;color:var(--rd-ld-muted)}
+.rd-ld-retry{flex:none;min-height:44px;padding:9px 14px;border-radius:8px;background:var(--rd-ld-tint);border:1px solid var(--rd-ld-edge);color:var(--rd-ld-ink);font:500 0.8125rem -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;cursor:pointer}
+.rd-ld-retry:active{opacity:.7}
+.rd-ld-retry[aria-disabled="true"]{opacity:.55;cursor:default}
+.rd-ld-retry:focus-visible{outline:2px solid var(--rd-ld-accent);outline-offset:2px}
+.rd-loading[data-state="failed"] .rd-ld-fill,.rd-loading[data-state="slow"] .rd-ld-fill{opacity:.55}
+/* the crossfade: the finished loader fades out where it was while the list fades in, nothing moves */
+.rd-loading.rd-ld-out{position:absolute;left:0;right:0;z-index:2;pointer-events:none;animation:rdLdOut .22s ease forwards}
+.rd-loading.rd-ld-out .rd-ld-fill::after{animation:none}
+@keyframes rdLdOut{to{opacity:0;visibility:hidden}}
+#rdList.rd-ld-in>:not(.rd-ld-out){animation:rdLdIn .22s ease both}
+@keyframes rdLdIn{from{opacity:0}to{opacity:1}}
+.rd-ready{display:flex;align-items:center;justify-content:center;gap:6px;margin:12px 0 2px;font-size:0.6875rem;color:var(--rd-ld-muted);animation:rdReadyOut .4s ease forwards}
+@keyframes rdReadyOut{to{opacity:0}}
+.rd-ready .pvx-gi{width:14px;height:14px;color:var(--rd-ld-accent);stroke-width:2}
+.rd-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* the tiles: no counts until there's something to count */
+.rd-kpi .n.rd-ph{display:block;width:26px;height:1.5125rem;padding:4px 0;box-sizing:border-box}
+.rd-kpi .n.rd-ph::before{content:"";display:block;height:100%;border-radius:6px;background:var(--rslate,rgba(150,185,220,.12))}
+@media (max-width:420px){.rd-loading{padding:44px 0 36px}.rd-ld-msg{align-items:flex-start}}
+@media (prefers-reduced-motion:reduce){
+  .rd-ld-fill{transition:none}
+  .rd-ld-fill::after{display:none}
+  .rd-ld-track.ind .rd-ld-fill{width:100%;animation:none;transform:none;opacity:.32}
+  .rd-loading.rd-ld-out{display:none}
+  #rdList.rd-ld-in>*{animation:none}
+}
+@media (prefers-contrast:more){
+  #rdList{--rd-ld-muted:#3D4B60;--rd-ld-edge:#728095}
+  body.dark #rdList{--rd-ld-muted:#C4D4E5;--rd-ld-edge:#8397AE}
+}
+</style>
 </body>
 </html>
