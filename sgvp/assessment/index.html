@@ -1324,81 +1324,62 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script id="asm-framework">
-/* SGVP intern assessment — the framework (10 domains, 55 competency statements, entrustment) and the
-   program facts the page needs. Copied verbatim from the Sept 2026 prototype; change wording here only
+/* SGVP intern assessment — the framework (10 domains, 36 competency statements, entrustment) and the
+   program facts the page needs. Wording from the Sept 2026 prototype, cut from 55 to 4 per domain on Oct 30 2026; change wording here only
    with the program director, because every saved review refers to items by domain key and position. */
 const DOMAINS = [
   {key:"clinical",num:"01",title:"Clinical Knowledge & Reasoning",short:"Clinical Reasoning",subtitle:"Reasoning from presentation to clinical decision",questions:[
     "Demonstrates veterinary medical knowledge appropriate for the current stage of internship.",
     "Applies medical knowledge appropriately to clinical cases.",
     "Generates and prioritizes reasonable differential diagnoses.",
-    "Selects appropriate diagnostic tests and interprets findings appropriately.",
-    "Recognizes limitations in knowledge and seeks appropriate consultation.",
-    "Integrates new information into clinical decision-making."
+    "Selects appropriate diagnostic tests and interprets findings appropriately."
   ]},
   {key:"case",num:"02",title:"Case Management",short:"Case Management",subtitle:"Managing the complete case",questions:[
     "Obtains and synthesizes a relevant history and physical examination.",
     "Develops an appropriate diagnostic and treatment plan.",
     "Reassesses the patient and adjusts the plan when clinically indicated.",
-    "Maintains continuity and appropriate follow-through on assigned cases.",
-    "Completes accurate, organized, and timely medical records.",
-    "Coordinates hospitalization, transfer, discharge, and outstanding diagnostics appropriately.",
-    "Escalates cases or concerns to a supervising clinician when appropriate."
+    "Completes accurate, organized, and timely medical records."
   ]},
   {key:"communication",num:"03",title:"Communication Skills",short:"Communication",subtitle:"Clear communication with clients and clinical teams",questions:[
-    "Communicates clearly, respectfully, and professionally with clients.",
     "Explains medical findings, options, uncertainty, and recommendations in understandable language.",
     "Listens effectively and demonstrates appropriate empathy with clients.",
     "Presents cases to clinicians in a clear, organized, and clinically useful manner.",
-    "Communicates effectively during rounds, transfers, and handoffs.",
-    "Communicates significant patient changes promptly to the appropriate team members.",
-    "Written communication and medical records support continuity of care."
+    "Communicates effectively during rounds, transfers, and handoffs."
   ]},
   {key:"professional",num:"04",title:"Professional Responsibility",short:"Professional Responsibility",subtitle:"Ownership, preparation, reliability, and work ethic",questions:[
     "Arrives prepared and fulfills assigned responsibilities reliably.",
-    "Demonstrates initiative and identifies appropriate ways to assist the team.",
     "Takes ownership of assigned patients and follows tasks through to completion.",
     "Manages workload and competing responsibilities appropriately.",
-    "Maintains professionalism and composure during demanding clinical situations.",
-    "Seeks assistance appropriately without excessive dependence on reassurance."
+    "Maintains professionalism and composure during demanding clinical situations."
   ]},
   {key:"teamwork",num:"05",title:"Teamwork & Interaction With Others",short:"Teamwork",subtitle:"Working effectively across the hospital team",questions:[
     "Treats technicians, assistants, CSRs, clinicians, and other staff with respect.",
     "Works collaboratively with fellow interns.",
-    "Communicates effectively with nursing and technical staff.",
     "Accepts appropriate team input and contributes constructively to patient care.",
-    "Contributes positively to the work environment.",
     "Demonstrates professionalism when disagreement or conflict occurs."
   ]},
   {key:"independence",num:"06",title:"Clinical Independence & Confidence",short:"Independence & Confidence",subtitle:"Progression toward appropriate independent practice",questions:[
     "Demonstrates appropriate confidence when presenting recommendations and plans.",
     "Makes reasonable clinical decisions without unnecessary reassurance.",
     "Takes appropriate leadership and ownership of cases.",
-    "Recognizes when independent action is appropriate and when supervision is required.",
-    "Demonstrates increasing independence as experience develops.",
-    "Demonstrates increasing confidence with hands-on clinical skills."
+    "Recognizes when independent action is appropriate and when supervision is required."
   ]},
   {key:"technical",num:"07",title:"Procedural & Technical Skills",short:"Technical Skills",subtitle:"Safe, prepared, and increasingly proficient execution",questions:[
     "Approaches procedures with appropriate preparation, aseptic technique, and patient-safety awareness.",
     "Performs commonly encountered procedures at a level appropriate to current training.",
-    "Recognizes when assistance or supervision is required.",
     "Demonstrates improvement in technical proficiency with repeated exposure.",
     "Communicates procedural plans and complications appropriately."
   ]},
   {key:"learning",num:"08",title:"Learning Behavior & Response to Feedback",short:"Learning & Feedback",subtitle:"Teachability, reflection, and measurable growth",questions:[
     "Actively seeks appropriate learning opportunities.",
-    "Asks thoughtful and clinically relevant questions.",
     "Receives constructive feedback professionally.",
     "Incorporates feedback into subsequent performance.",
-    "Identifies personal knowledge or skill gaps.",
     "Demonstrates measurable improvement following teaching or coaching."
   ]},
   {key:"safety",num:"09",title:"Patient Safety & Clinical Judgment",short:"Patient Safety",subtitle:"Prioritization, escalation, and safe decision-making",questions:[
     "Recognizes unstable or deteriorating patients and responds appropriately.",
     "Prioritizes urgent clinical problems appropriately.",
     "Escalates safety concerns or significant patient changes promptly.",
-    "Demonstrates appropriate medication, dose, and treatment-plan awareness.",
-    "Recognizes personal limitations and avoids practicing beyond current competence.",
     "Demonstrates sound judgment regarding clinical risk and patient welfare."
   ]},
   {key:"overall",num:"10",title:"Overall Assessment",short:"Overall Assessment",subtitle:"Entrustment, strengths, and next-stage development",overall:true}
@@ -1412,6 +1393,13 @@ const SCALE = [
   ['5', 'Advanced',              'Advanced',                 'Performance and judgment are beyond expectations for the current internship stage.']
 ];
 const NOT_OBSERVED = 'no';   /* stored value for "Not observed" */
+/* a domain's saved answers, limited to the items it has now. Reviews store answers by position, so an answer
+   saved under a position the rubric no longer has is ignored instead of counted or shown. */
+function domainAnswers(rev, d) {
+  const a = ((rev && rev.answers) || {})[d.key] || {}, n = d.overall ? 1 : d.questions.length, out = {};
+  for (let i = 0; i < n; i++) if (a[i]) out[i] = a[i];
+  return out;
+}
 
 const OVERALL_PROMPTS = [
   ['Strengths', "What are this intern's greatest strengths?"],
@@ -2110,7 +2098,7 @@ const PR_W = 720, PR_BUDGET = 900;
 const prEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function prStats(rev, d) {
-  const a = (rev.answers || {})[d.key] || {};
+  const a = domainAnswers(rev, d);
   if (d.overall) { const v = Number(a[0]) || null; return { rated: a[0] ? 1 : 0, total: 1, mean: v, no: a[0] === NOT_OBSERVED ? 1 : 0 }; }
   const vals = Object.values(a), nums = vals.map(Number).filter(Boolean);
   return { rated: vals.length, total: d.questions.length, mean: nums.length ? nums.reduce((x, y) => x + y, 0) / nums.length : null,
@@ -2554,20 +2542,21 @@ function buildPrintRecord(r) {
   }
   function progressOf(rev) {
     if (!rev) return { rated: 0, total: TOTAL };
-    if (rev.progress && typeof rev.progress.rated === 'number') return rev.progress;
-    return computeProgress(rev);
+    /* counted from the answers against today's rubric, so a review saved before a rubric change shows true totals */
+    if (rev.answers || !(rev.progress && typeof rev.progress.rated === 'number')) return computeProgress(rev);
+    return rev.progress;
   }
   function computeProgress(rev) {
-    let rated = 0; const A = rev.answers || {};
-    DOMAINS.forEach(d => { const a = A[d.key] || {}; rated += d.overall ? (a[0] ? 1 : 0) : Object.keys(a).filter(k => a[k]).length; });
+    let rated = 0;
+    DOMAINS.forEach(d => { rated += Object.keys(domainAnswers(rev, d)).length; });
     return { rated, total: TOTAL };
   }
   function domainDone(rev, d) {
-    const a = (rev.answers || {})[d.key] || {};
+    const a = domainAnswers(rev, d);
     if (d.overall) { const n = (rev.notes || {})[d.key] || {}; return !!a[0] && [1, 2, 3, 4].every(i => String(n[i] || '').trim()); }
     return d.questions.every((q, i) => a[i]);
   }
-  const rated = (rev, d) => { const a = (rev.answers || {})[d.key] || {}; return d.overall ? (a[0] ? 1 : 0) : Object.keys(a).filter(k => a[k]).length; };
+  const rated = (rev, d) => Object.keys(domainAnswers(rev, d)).length;
 
   /* ── data ── */
   async function loadMine() {
@@ -3081,7 +3070,7 @@ function buildPrintRecord(r) {
     setTitle(i.name, o.round.name);
     const p = computeProgress(r), pct = Math.round(100 * p.rated / p.total);
     const doneN = DOMAINS.filter(x => domainDone(r, x)).length;
-    const noN = DOMAINS.reduce((n, x) => n + Object.values((r.answers || {})[x.key] || {}).filter(v => v === NOT_OBSERVED).length, 0);
+    const noN = DOMAINS.reduce((n, x) => n + Object.values(domainAnswers(r, x)).filter(v => v === NOT_OBSERVED).length, 0);
     let lock = '';
     if (r.status === 'submitted') lock = `<div class="a-lock">${ICON.lock}<span>Submitted ${esc(fmtDate(r.submitted_at))}. This review is locked.${S.reader ? '' : ` If something needs to change, ask ${READERS_OR} to reopen it.`}</span>`
       + (S.reader ? `<span style="flex:1"></span><button type="button" class="a-btn small" data-act="reopen">Reopen for ${esc(o.a.evaluator_name.split(',')[0])}…</button>` : '') + `</div>`;
@@ -3312,7 +3301,7 @@ function buildPrintRecord(r) {
   /* iPhone: the four summary cards become one line, so the first question starts near the top */
   function kpiLine(o, status) {
     const r = o.rev, p = computeProgress(r), doneN = DOMAINS.filter(x => domainDone(r, x)).length;
-    const noN = DOMAINS.reduce((n, x) => n + Object.values((r.answers || {})[x.key] || {}).filter(v => v === NOT_OBSERVED).length, 0);
+    const noN = DOMAINS.reduce((n, x) => n + Object.values(domainAnswers(r, x)).filter(v => v === NOT_OBSERVED).length, 0);
     const tail = r.status === 'submitted' ? 'Locked' : editable() ? 'Saves as you go' : 'Read only';
     return `${pill(status)}<span><b>${p.rated} of ${p.total}</b> rated · <b>${doneN} of 10</b> domains${noN ? ` · ${noN} not observed` : ''} · ${tail}</span>`;
   }
@@ -3323,7 +3312,7 @@ function buildPrintRecord(r) {
     if (k[0]) { k[0].querySelector('.v').innerHTML = `${pct}<small>%</small>`; k[0].querySelector('.a-bar i').style.width = pct + '%'; k[0].querySelector('.s').textContent = `${p.rated} of ${p.total} items`; }
     const doneN = DOMAINS.filter(x => domainDone(r, x)).length;
     if (k[1]) { k[1].querySelector('.v').innerHTML = `${doneN}<small> of 10</small>`; k[1].querySelector('.s').textContent = doneN === 10 ? 'Ready to submit' : 'Rate every item to complete a domain'; }
-    const noN = DOMAINS.reduce((n, x) => n + Object.values((r.answers || {})[x.key] || {}).filter(v => v === NOT_OBSERVED).length, 0);
+    const noN = DOMAINS.reduce((n, x) => n + Object.values(domainAnswers(r, x)).filter(v => v === NOT_OBSERVED).length, 0);
     if (k[2]) k[2].querySelector('.v').textContent = noN;
     if (k[3] && !o.exists) k[3].querySelector('.v').innerHTML = pill('draft');
     const kl = root.querySelector('.a-kpiline'); if (kl) kl.innerHTML = kpiLine(o, o.exists ? r.status : 'draft');
