@@ -921,6 +921,7 @@ body:not(.dark) .a-sheet{background:#fff;--a-sbg:#fff}
 @media (prefers-reduced-motion:reduce){.a-skel i,.a-skel-head i{animation:none}}
 .a-slow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border-radius:12px;background:var(--a-card);border:1px solid var(--a-line);font-size:.875rem;color:var(--a-ink)}
 .a-slow p{margin:0}
+.pvx-actions .live[hidden]{display:none}
 .pvx-actions .live.off{background:rgba(232,168,48,.14);border-color:rgba(232,168,48,.4);color:#8A5D00}
 body.dark .pvx-actions .live.off{color:#F0BC55}
 .pvx-actions .live.off i{background:currentColor}
@@ -1308,7 +1309,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     <span class="pvx-spacer"></span>
     <div class="pvx-actions">
       
-      <span class="live"><i></i>Live</span>
+      <span class="live" hidden><i></i>Live</span>
     </div>
   </div>
 
@@ -2732,7 +2733,7 @@ function buildPrintRecord(r) {
     const A = S.all, r = A.rounds.find(x => x.id === A.roundId);
     setTitle('All reviews', r && r.name);
     const opts = A.rounds.map(x => `<option value="${esc(x.id)}"${x.id === A.roundId ? ' selected' : ''}>${esc(x.name)}${x.status === 'closed' ? ' (closed)' : ''}</option>`).join('');
-    let html = head('Intern reviews', 'All reviews', `Signed in as ${esc(S.name)}. Open a round, choose who reviews each intern, and follow who has submitted.`,
+    let html = head('Intern reviews', 'All reviews', '',
       viewSwitch() + `<button type="button" class="a-btn primary" data-act="new-round">${ICON.plus}New round…</button>`);
     if (!r) {
       root.innerHTML = html + `<div class="a-card a-empty"><h2>No review rounds yet</h2><p>Start with New round: name it, pick the interns, then assign evaluators to each intern.</p></div>`;
@@ -3403,7 +3404,7 @@ function buildPrintRecord(r) {
   /* ── events ── */
   function setConn() {
     const p = document.querySelector('.pvx-actions .live'); if (!p) return;
-    const on = navigator.onLine; p.classList.toggle('off', !on);
+    const on = navigator.onLine; p.classList.toggle('off', !on); p.hidden = on;   /* shown only when offline */
     p.lastChild.textContent = on ? 'Live' : 'Offline';
     p.title = on ? 'Connected. Changes save as you go.' : 'Offline. Changes are kept on this page until you’re back.';
   }
