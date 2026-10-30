@@ -213,3 +213,59 @@ async def s_t274(br):
     await p.evaluate("document.getElementById('t274cover').remove()"); await p.wait_for_timeout(500)
     ok('a sheet closing under a resting pointer doesn’t open the panel (it opens when the pointer moves)', await p.evaluate("pvxNav.state()") == 'rest', '')
     await c.close()
+
+
+@section(id='t275', title='n275 · the app navigation after the stress test (theme switch, shoulders, sizes, managers, print, resize)',
+         apps=['treatment', 'flow', 'directory', 'yakuri', 'topbar'], topics=['navigation', 'color', 'layout'], engines=('chromium', 'webkit'))
+async def s_t275(br):
+    MGR = '{"uid":"u9","email":"au733@vca.com","displayName":"Manager"}'
+    rgb = lambda s: [float(x) for x in re.findall(r'[\d.]+', s)[:3]]
+    # Flow fades its bar over 0.4 s: a switch (closed or open) leaves the panel the bar's new colour, not a mid-fade grey
+    for start_dark in (False, True):
+        c, p, e = await opn(br, '', dark=start_dark)
+        await p.click('.theme-toggle'); await p.wait_for_timeout(700)
+        await hover_in(p); await p.wait_for_timeout(700)
+        a = await p.evaluate("[getComputedStyle(document.querySelector('nav.topnav')).backgroundColor,getComputedStyle(document.querySelector('.pvxn-panel')).backgroundColor,document.body.classList.contains('dark')]")
+        await p.click('.theme-toggle'); await p.wait_for_timeout(900)
+        b = await p.evaluate("[getComputedStyle(document.querySelector('nav.topnav')).backgroundColor,getComputedStyle(document.querySelector('.pvxn-panel')).backgroundColor,document.body.classList.contains('dark'),pvxNav.state()]")
+        same = lambda x: all(abs(i - j) <= 6 for i, j in zip(rgb(x[0]), rgb(x[1])))
+        ok('Flow, starting %s: after a switch the panel is the bar’s new colour, and after a switch while it’s open too (was the light bar’s grey in dark)' % ('dark' if start_dark else 'light'),
+           a[2] != start_dark and same(a) and b[2] == start_dark and same(b) and b[3] == 'open', [a, b])
+        await c.close()
+    # the shoulders are drawn inside their own square: nothing above the bar's bottom edge, so the VCA lockup is never cut
+    c, p, e = await opn(br, 'treatment/', vp=(1280, 800))
+    await hover_in(p); await p.wait_for_timeout(700)
+    sh = await p.evaluate("(()=>{const pn=document.querySelector('.pvxn-panel'),n=document.querySelector('nav.topnav').getBoundingClientRect();return ['::before','::after'].map(w=>{const c=getComputedStyle(pn,w);return [c.boxShadow,c.backgroundImage.slice(0,15),Math.round(pn.getBoundingClientRect().top+parseFloat(c.top)-n.bottom)]})})()")
+    ok('the shoulders paint no shadow above the bar (a gradient in their own square, starting at the bar’s edge)', all(x[0] == 'none' and x[1].startswith('radial-gradient') and x[2] >= -3 for x in sh), sh)
+    await p.set_viewport_size({'width': 700, 'height': 800}); await p.wait_for_timeout(700)
+    rz = await p.evaluate("(()=>{const r=document.querySelector('.pvxn-panel').getBoundingClientRect();return [Math.round(r.left),Math.round(r.right),document.documentElement.clientWidth,pvxNav.state()]})()")
+    ok('resized while open (1280 → 700 pt): the panel shrinks to the window', rz[0] >= 0 and rz[1] <= rz[2] and rz[3] == 'open', rz)
+    await p.emulate_media(media='print'); await p.wait_for_timeout(200)
+    pr = await p.evaluate("[getComputedStyle(document.querySelector('.pvxn-dock')).display,getComputedStyle(document.querySelector('nav.topnav')).marginBottom]")
+    ok('printing leaves the navigation out (no lip, no strip)', pr == ['none', '0px'], pr)
+    await c.close()
+    # Directory (an app inside More): the underline is under More once it opens
+    c, p, e = await opn(br, 'directory/', dark=False)
+    await hover_in(p); await p.wait_for_timeout(800)
+    u = await p.evaluate("(()=>{const a=document.getElementById('pvxnMoreBtn').getBoundingClientRect(),t=document.querySelector('.pvxn-travel').getBoundingClientRect();return Math.round(a.left+a.width/2-(t.left+t.width/2))})()")
+    ok('Directory: the underline is under More (it was off by the panel’s growth in Safari)', abs(u) <= 1, u)
+    await c.close()
+    # Yakuri sizes every button 44 pt: the lip stays 24 pt and keeps off its sub-nav
+    c, p, e = await opn(br, 'yakuri/')
+    y = await p.evaluate("(()=>{const l=document.querySelector('.pvxn-lip').getBoundingClientRect(),s=document.querySelector('.subnav,.pvx-subnav,#pvxSubnav');return [Math.round(l.height),s?Math.round(s.getBoundingClientRect().top-l.bottom):null]})()")
+    ok('Yakuri: the lip is 24 pt deep and clear of the sub-nav (Yakuri’s own 44 pt button rule made it cover it)', y[0] == 24 and (y[1] is None or y[1] >= -1), y)
+    await c.close()
+    # a phone on its side: More's list stays in the window and scrolls
+    c, p, e = await opn(br, 'treatment/', vp=(844, 390), touch=True)
+    await p.tap('.pvxn-lip'); await p.wait_for_timeout(600); await p.tap('#pvxnMoreBtn'); await p.wait_for_timeout(400)
+    m = await p.evaluate("(()=>{const m=document.getElementById('pvxnMore'),r=m.getBoundingClientRect();return [Math.round(r.bottom),innerHeight,m.scrollHeight>m.clientHeight,getComputedStyle(m).overflowY]})()")
+    ok('844 × 390: More’s list ends inside the window and scrolls (it ran 230 pt off it)', m[0] <= m[1] and m[2] and m[3] == 'auto', m)
+    await c.close()
+    # the managers' "Unauthorized" view: the lip and the open panel are above its box, so the apps can still be reached
+    c, p, e = await opn(br, 'treatment/', user=MGR)
+    await p.wait_for_timeout(600)
+    r0 = await p.evaluate("(()=>{const l=document.querySelector('.pvxn-lip').getBoundingClientRect(),h=document.elementFromPoint(l.left+l.width/2,l.top+l.height/2);return [!!document.querySelector('.pvx-ua-box'),!!(h&&h.closest('.pvxn-lip'))]})()")
+    await hover_in(p); await p.wait_for_timeout(700)
+    r1 = await p.evaluate("(()=>{const a=document.getElementById('navOR').getBoundingClientRect(),h=document.elementFromPoint(a.left+a.width/2,a.top+a.height/2),b=document.querySelector('.pvx-ua-box').getBoundingClientRect(),pn=document.querySelector('.pvxn-panel').getBoundingClientRect();return [!!(h&&h.closest('#navOR')),Math.round(b.top-pn.bottom)]})()")
+    ok('managers’ view: “Unauthorized” starts under the lip, and under the panel while it’s open, so the apps are reachable (its box covered both)', r0 == [True, True] and r1[0] and r1[1] >= 0, [r0, r1])
+    await c.close()

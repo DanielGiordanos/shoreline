@@ -37,15 +37,16 @@
     '@supports (overflow:clip){nav.topnav .pvxn-dock{overflow-x:clip}}',
     'nav.topnav .pvxn-panel{position:absolute;top:0;left:50%;width:var(--pvxn-lip-w,154px);height:var(--pvxn-lip-h,24px);transform:translateX(-50%);box-sizing:border-box;',
     '  background:var(--pvxn-surface);border-radius:0 0 18px 18px;pointer-events:auto;',
-    '  transition:width 480ms cubic-bezier(.18,.85,.25,1.055),height 450ms cubic-bezier(.18,.85,.25,1.025),border-radius 450ms cubic-bezier(.18,.85,.25,1.025),box-shadow 300ms ease}',
+    '  transition:width 480ms cubic-bezier(.18,.85,.25,1.055),height 450ms cubic-bezier(.18,.85,.25,1.025),border-radius 450ms cubic-bezier(.18,.85,.25,1.025),box-shadow 300ms ease,background-color 400ms ease}',
     'nav.topnav .pvxn-panel::before,nav.topnav .pvxn-panel::after{content:"";position:absolute;top:0;width:27px;height:27px;pointer-events:none;opacity:0;transition:opacity 160ms ease}',
-    'nav.topnav .pvxn-panel::before{left:-27px;border-top-right-radius:27px;box-shadow:9px -9px 0 9px var(--pvxn-surface)}',
-    'nav.topnav .pvxn-panel::after{right:-27px;border-top-left-radius:27px;box-shadow:-9px -9px 0 9px var(--pvxn-surface)}',
+    'nav.topnav .pvxn-panel::before{left:-27px;background:radial-gradient(circle at 0 100%,transparent 26.5px,var(--pvxn-surface) 27px)}',
+    'nav.topnav .pvxn-panel::after{right:-27px;background:radial-gradient(circle at 100% 100%,transparent 26.5px,var(--pvxn-surface) 27px)}',
     'nav.topnav.pvxn.pvxn-open .pvxn-panel{width:var(--pvxn-open-w,min(calc(100% - 54px),1120px));height:var(--pvxn-open-h,119px);border-radius:0 0 32px 32px;box-shadow:var(--pvxn-shadow)}',
     'nav.topnav.pvxn.pvxn-open .pvxn-panel::before,nav.topnav.pvxn.pvxn-open .pvxn-panel::after{opacity:1}',
     /* the lip: the current app's name and a chevron; a 44 pt target without a bigger lip */
     'nav.topnav .pvxn-lip{position:absolute;top:0;left:50%;transform:translateX(-50%);width:var(--pvxn-lip-w,154px);height:var(--pvxn-lip-h,24px);margin:0;padding:0 18px;box-sizing:border-box;',
     '  display:flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:0 0 18px 18px;background:transparent;color:var(--pvxn-muted);cursor:pointer;z-index:3;',
+    '  min-height:0;min-width:0;max-width:none;box-shadow:none;text-transform:none;',   /* a page's own button rules (Yakuri: 44 pt) don't resize the lip */
     '  font:500 11px/1 -apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro",system-ui,sans-serif;letter-spacing:.015em;-webkit-tap-highlight-color:transparent}',
     '@media (pointer:coarse){nav.topnav .pvxn-lip::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px}}',
     'nav.topnav .pvxn-lip:hover,nav.topnav .pvxn-lip:focus-visible{color:var(--pvxn-ink)}',
@@ -75,10 +76,10 @@
     'html body nav.topnav.pvxn #pvxnPanel .pvxn-row>[aria-current="page"],html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.pvxn-more[data-selected="true"]{color:var(--pvxn-ink)!important;font-weight:600!important}',
     'html body nav.topnav.pvxn #pvxnPanel .pvxn-row>[aria-current="page"] svg,html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.pvxn-more[data-selected="true"] svg{color:var(--pvxn-accent);background:radial-gradient(circle,var(--pvxn-halo) 0%,transparent 72%);filter:drop-shadow(0 0 3px var(--pvxn-glow))}',
     'html body nav.topnav.pvxn #pvxnPanel .pvxn-row>*:focus-visible{outline:2px solid var(--pvxn-accent)!important;outline-offset:2px}',
-    'nav.topnav .pvxn-travel{position:absolute;left:0;top:0;width:12px;height:2px;border-radius:3px;background:var(--pvxn-accent);pointer-events:none;opacity:0;transition:transform 340ms cubic-bezier(.16,1,.3,1),opacity 120ms ease}',
+    'nav.topnav .pvxn-travel{position:absolute;left:50%;top:0;width:12px;height:2px;border-radius:3px;background:var(--pvxn-accent);pointer-events:none;opacity:0;transition:transform 340ms cubic-bezier(.16,1,.3,1),opacity 120ms ease}',
     'nav.topnav.pvxn.pvxn-open .pvxn-travel{opacity:.85;transition:transform 340ms cubic-bezier(.16,1,.3,1),opacity 200ms ease 160ms}',
     /* More: unfolds from its button, the same surface and treatment */
-    'nav.topnav .pvxn-pop{position:absolute;z-index:6;width:250px;max-width:calc(100vw - 24px);box-sizing:border-box;padding:12px;border-radius:22px;pointer-events:auto;',
+    'nav.topnav .pvxn-pop{position:absolute;z-index:6;width:250px;max-width:calc(100vw - 24px);box-sizing:border-box;padding:12px;border-radius:22px;pointer-events:auto;overflow-y:auto;overscroll-behavior:contain;',
     '  background:var(--pvxn-pop);border:1px solid var(--pvxn-pop-edge);box-shadow:var(--pvxn-pop-shadow);transform-origin:85% 0;',
     '  font:400 13px/1.3 -apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro",system-ui,sans-serif}',
     'nav.topnav .pvxn-pop[hidden]{display:none!important}',
@@ -88,7 +89,7 @@
     'nav.topnav .pvxn-grp:first-child .pvxn-cat{padding-top:4px}',
     'nav.topnav .pvxn-grp[hidden]{display:none}',
     'html body nav.topnav.pvxn #pvxnMore .nav-item{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;width:100%!important;height:auto!important;',
-    '  min-height:44px;margin:0!important;padding:10px 11px!important;box-sizing:border-box;position:relative;border:0!important;border-radius:11px!important;background:transparent!important;box-shadow:none!important;',
+    '  min-height:44px!important;max-height:none!important;margin:0!important;padding:10px 11px!important;box-sizing:border-box!important;position:relative;border:0!important;border-radius:11px!important;background:transparent!important;box-shadow:none!important;',
     '  color:var(--pvxn-ink)!important;font:400 13px/1.3 -apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro",system-ui,sans-serif!important;letter-spacing:0!important;text-decoration:none!important;white-space:nowrap;outline-offset:-2px}',
     'html body nav.topnav.pvxn #pvxnMore .nav-item svg{width:18px!important;height:18px!important;flex:none;color:var(--pvxn-muted);transition:color 160ms ease,transform 90ms ease}',
     'html body nav.topnav.pvxn #pvxnMore .nav-item:hover{color:var(--pvxn-accent)!important}',
@@ -102,12 +103,16 @@
     '@media (max-width:700px){nav.topnav .pvxn-row{width:calc(var(--pvxn-open-w,366px) - 20px);margin-left:calc((var(--pvxn-open-w,366px) - 20px)/-2);top:14px;grid-template-columns:repeat(4,minmax(0,1fr));row-gap:6px}',
     '  nav.topnav.pvxn.pvxn-open .pvxn-panel{border-radius:0 0 26px 26px}',
     '  nav.topnav .pvxn-panel::before,nav.topnav .pvxn-panel::after{width:20px;height:20px}',
-    '  nav.topnav .pvxn-panel::before{left:-20px;border-top-right-radius:20px;box-shadow:7px -7px 0 7px var(--pvxn-surface)}',
-    '  nav.topnav .pvxn-panel::after{right:-20px;border-top-left-radius:20px;box-shadow:-7px -7px 0 7px var(--pvxn-surface)}',
+    '  nav.topnav .pvxn-panel::before{left:-20px;background:radial-gradient(circle at 0 100%,transparent 19.5px,var(--pvxn-surface) 20px)}',
+    '  nav.topnav .pvxn-panel::after{right:-20px;background:radial-gradient(circle at 100% 100%,transparent 19.5px,var(--pvxn-surface) 20px)}',
     '  html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.nav-item,html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.pvxn-more{min-height:70px;gap:6px!important}}',
     '@media (max-height:500px){html body nav.topnav.pvxn{margin-bottom:0!important}nav.topnav.pvxn:not(.pvxn-open) .pvxn-panel{height:0}nav.topnav.pvxn .pvxn-lip{top:-24px;border-radius:12px}nav.topnav.pvxn.pvxn-open .pvxn-lip{opacity:0;pointer-events:none}}',
     '@media (prefers-reduced-motion:reduce){nav.topnav .pvxn-panel,nav.topnav .pvxn-panel::before,nav.topnav .pvxn-panel::after,nav.topnav .pvxn-lip *,nav.topnav .pvxn-travel,nav.topnav .pvxn-row>*,nav.topnav .pvxn-row svg,nav.topnav .pvxn-pop .nav-item svg{transition:none!important}',
     '  html body nav.topnav.pvxn #pvxnPanel .pvxn-row>*{transform:none!important}nav.topnav .pvxn-pop.pvxn-in{animation:none}nav.topnav .pvxn-row>*:active svg{transform:none!important}}',
+    /* print: the page, not the navigation */
+    '@media print{nav.topnav .pvxn-dock{display:none!important}html body nav.topnav.pvxn{margin-bottom:0!important}}',
+    /* the managers' "Unauthorized" view (n223) lays its box right under the bar: it starts under the lip, and under the panel while it is open */
+    'html.pvx-ua.pvxn-ua .pvx-ua-box{top:var(--pvxn-ua-top)!important}',
     '@media (forced-colors:active){nav.topnav .pvxn-panel,nav.topnav .pvxn-pop{border:1px solid CanvasText}nav.topnav .pvxn-travel{background:Highlight}}'
   ].join('\n');
 
@@ -125,25 +130,41 @@
     return 'rgb(' + [0, 1, 2].map(function (i) { return Math.round(a[i] * al + b[i] * (1 - al)); }).join(',') + ')';
   }
   function hex(v) { v = String(v || '').trim(); var m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i); if (m) { var h = m[1]; if (h.length === 3) h = h.replace(/./g, '$&$&'); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; } var r = rgb(v); return r && r.length >= 3 ? r.slice(0, 3) : null; }
+  /* a fresh element has no transition running, so its colour is where the bar is going (Flow's bar fades over 0.4 s) */
+  function settledBg() {
+    var tw = null, bg;
+    /* only while the bar's own colour is fading: otherwise its colour is final, and the page's DOM is left alone */
+    var fading = false; try { fading = !!(nav.getAnimations && nav.getAnimations().some(function (a) { return /background/.test(a.transitionProperty || ''); })); } catch (e) {}
+    if (!fading) return getComputedStyle(nav).backgroundColor;
+    try {
+      tw = document.createElement(nav.tagName); tw.className = String(nav.className).replace(/\bpvxn[\w-]*/g, ''); if (nav.id) tw.id = nav.id;   /* for the moment it's measured; it never paints */
+      tw.setAttribute('aria-hidden', 'true'); tw.style.cssText = 'position:absolute!important;left:-9999px!important;top:0!important;width:10px!important;height:10px!important;visibility:hidden!important;pointer-events:none!important;transition:none!important';
+      nav.parentNode.insertBefore(tw, nav.nextSibling); bg = getComputedStyle(tw).backgroundColor;
+    } catch (e) { bg = null; }
+    if (tw && tw.parentNode) tw.parentNode.removeChild(tw);
+    return bg && rgb(bg) ? bg : getComputedStyle(nav).backgroundColor;
+  }
+  /* a value is written only when it changes, so the page's own observers see nothing on a quiet re-read */
+  function setv(st, k, v) { if (st.getPropertyValue(k) !== v) st.setProperty(k, v); }
   function tokens() {
     if (!nav) return;
-    var d = isDark(), cs = getComputedStyle(nav), bs = getComputedStyle(document.body);
+    var d = isDark(), bs = getComputedStyle(document.body);
     var under = getComputedStyle(document.documentElement).backgroundColor; if (!rgb(under) || rgb(under)[3] === 0) under = bs.backgroundColor;
-    var surf = solid(cs.backgroundColor, under) || (d ? 'rgb(13,23,48)' : 'rgb(255,255,255)');
+    var surf = solid(settledBg(), under) || (d ? 'rgb(13,23,48)' : 'rgb(255,255,255)');
     /* accent: the top bar's cyan in dark; in light the page's own accent ink (Treatment's cobalt, Flow's teal ink) */
     var acc = d ? [56, 189, 210] : (hex(bs.getPropertyValue('--accent-ink')) || hex(bs.getPropertyValue('--accent')) || [31, 143, 168]);
     if (!d && acc[0] > 40 && acc[1] > 160 && acc[2] > 180) acc = [31, 143, 168];   /* a pale cyan can't mark an icon on white: Flow's accent ink instead */
     var s = nav.style, A = acc.join(',');
-    s.setProperty('--pvxn-surface', surf);
-    s.setProperty('--pvxn-accent', 'rgb(' + A + ')');
-    s.setProperty('--pvxn-halo', 'rgba(' + A + ',' + (d ? .16 : .12) + ')');
-    s.setProperty('--pvxn-glow', 'rgba(' + A + ',' + (d ? .22 : .14) + ')');
-    s.setProperty('--pvxn-ink', d ? '#E6EEF6' : '#1D1D1F');
-    s.setProperty('--pvxn-muted', d ? '#8FA6BE' : '#5C5E62');
-    s.setProperty('--pvxn-shadow', d ? '0 14px 24px rgba(0,0,0,.28)' : '0 14px 24px rgba(30,45,90,.08)');
-    s.setProperty('--pvxn-pop', d ? '#101A32' : '#FFFFFF');
-    s.setProperty('--pvxn-pop-edge', d ? 'rgba(255,255,255,.08)' : 'rgba(29,29,31,.10)');
-    s.setProperty('--pvxn-pop-shadow', d ? '0 18px 44px rgba(0,0,0,.4)' : '0 18px 44px rgba(20,28,40,.18)');
+    setv(s, '--pvxn-surface', surf); if (panel) setv(panel.style, '--pvxn-surface', surf);
+    setv(s, '--pvxn-accent', 'rgb(' + A + ')');
+    setv(s, '--pvxn-halo', 'rgba(' + A + ',' + (d ? .16 : .12) + ')');
+    setv(s, '--pvxn-glow', 'rgba(' + A + ',' + (d ? .22 : .14) + ')');
+    setv(s, '--pvxn-ink', d ? '#E6EEF6' : '#1D1D1F');
+    setv(s, '--pvxn-muted', d ? '#8FA6BE' : '#5C5E62');
+    setv(s, '--pvxn-shadow', d ? '0 14px 24px rgba(0,0,0,.28)' : '0 14px 24px rgba(30,45,90,.08)');
+    setv(s, '--pvxn-pop', d ? '#101A32' : '#FFFFFF');
+    setv(s, '--pvxn-pop-edge', d ? 'rgba(255,255,255,.08)' : 'rgba(29,29,31,.10)');
+    setv(s, '--pvxn-pop-shadow', d ? '0 18px 44px rgba(0,0,0,.4)' : '0 18px 44px rgba(20,28,40,.18)');
   }
 
   /* ---- the links ---- */
@@ -213,31 +234,41 @@
     lip.setAttribute('aria-label', txt + (expanded ? ', hide apps' : ', show apps'));
     /* the lip fits the name (154 pt at least) */
     var w = Math.max(154, Math.ceil(label.scrollWidth) + 18 * 2 + 16);
-    nav.style.setProperty('--pvxn-lip-w', Math.min(w, 260) + 'px');
+    setv(nav.style, '--pvxn-lip-w', Math.min(w, 260) + 'px');
     if (!first) fadeLabel();
   }
   function fadeLabel() {
     if (mqReduce.matches || !label.animate) return; if (labelAnim) labelAnim.cancel();
     labelAnim = label.animate([{ opacity: 0, transform: 'translateY(3px)' }, { opacity: 1, transform: 'translateY(-2px)' }], { duration: 220, easing: 'cubic-bezier(.16,1,.3,1)' });
   }
-  function placeTravel() {
+  function placeTravel(jump) {
     if (!travel || !row) return; var cur = current(), tg = cur && row.contains(cur) ? cur : (cur ? more : null);
     if (!tg) { travel.style.visibility = 'hidden'; return; } travel.style.visibility = '';
-    var x = row.offsetLeft + tg.offsetLeft + tg.offsetWidth / 2 - 6, y = row.offsetTop + tg.offsetTop + tg.offsetHeight - 2;
-    travel.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+    var x = tg.offsetLeft + tg.offsetWidth / 2 - row.offsetWidth / 2 - 6, y = row.offsetTop + tg.offsetTop + tg.offsetHeight - 2;
+    var tf = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)'; if (travel.style.transform === tf) return;
+    /* it travels when the app changes; when the window changes size it is simply there */
+    if (jump) { travel.style.transition = 'none'; travel.style.transform = tf; void travel.offsetWidth; travel.style.transition = ''; }
+    else travel.style.transform = tf;
   }
-  function openWidth() { var w = nav.clientWidth, ow = innerWidth <= 700 ? w - 24 : Math.min(w - 54, 1120); nav.style.setProperty('--pvxn-open-w', Math.max(0, Math.round(ow)) + 'px'); }
-  function openHeight() { openWidth(); var h = row.offsetTop + row.scrollHeight + (innerWidth <= 700 ? 16 : 24); nav.style.setProperty('--pvxn-open-h', Math.round(h) + 'px'); }
+  function openWidth() { var w = nav.clientWidth, ow = innerWidth <= 700 ? w - 24 : Math.min(w - 54, 1120); setv(nav.style, '--pvxn-open-w', Math.max(0, Math.round(ow)) + 'px'); }
+  function uaTop() {
+    var h = document.documentElement; if (!h.classList.contains('pvx-ua')) { h.classList.remove('pvxn-ua'); return; }
+    var b = nav.getBoundingClientRect().bottom, oh = parseFloat(nav.style.getPropertyValue('--pvxn-open-h')) || 124;
+    var y = expanded ? b + oh + 8 : b + (parseFloat(getComputedStyle(nav).marginBottom) || 0);
+    if (popOpen) y = Math.max(y, pop.getBoundingClientRect().bottom + 8);
+    setv(h.style, '--pvxn-ua-top', Math.round(y) + 'px'); h.classList.add('pvxn-ua');
+  }
+  function openHeight() { openWidth(); var h = row.offsetTop + row.scrollHeight + (innerWidth <= 700 ? 16 : 24); setv(nav.style, '--pvxn-open-h', Math.round(h) + 'px'); }
   function expand() {
-    clearTimeout(t); if (expanded) return; expanded = true; openHeight();
+    clearTimeout(t); if (expanded) return; expanded = true; tokens(); openHeight();
     nav.classList.add('pvxn-open'); lip.setAttribute('aria-expanded', 'true'); lip.setAttribute('aria-label', lastLabel + ', hide apps');
-    placeTravel();
+    placeTravel(); uaTop();
   }
   function collapse(focusLip) {
     clearTimeout(t); closeMore(false);
     if (!expanded) { if (focusLip) lip.focus(); return; }
     var hadFocus = dock.contains(document.activeElement);
-    expanded = false; nav.classList.remove('pvxn-open'); lip.setAttribute('aria-expanded', 'false'); lip.setAttribute('aria-label', lastLabel + ', show apps');
+    expanded = false; nav.classList.remove('pvxn-open'); lip.setAttribute('aria-expanded', 'false'); lip.setAttribute('aria-label', lastLabel + ', show apps'); uaTop();
     if (focusLip || hadFocus) { try { lip.focus({ preventScroll: true }); } catch (e) { lip.focus(); } }
     fadeLabel();
   }
@@ -253,14 +284,16 @@
     var nr = nav.getBoundingClientRect(), mr = more.getBoundingClientRect(), w = pop.offsetWidth || 250, oh = parseFloat(nav.style.getPropertyValue('--pvxn-open-h')) || 119;
     var left = Math.max(12, Math.min(mr.right - nr.left - w + 6, document.documentElement.clientWidth - nr.left - w - 12));
     pop.style.left = Math.round(left) + 'px'; pop.style.top = Math.round(oh + 8) + 'px';
+    /* a short window (a phone on its side): the list scrolls inside the window instead of running off it */
+    var room = innerHeight - (nr.bottom + oh + 8) - 12; pop.style.maxHeight = room < 420 ? Math.max(132, Math.floor(room)) + 'px' : '';
   }
   function openMore(focusFirst) {
     clearTimeout(t); expand(); if (popOpen) return; popOpen = true; pop.hidden = false; more.setAttribute('aria-expanded', 'true');
-    placePop(); pop.classList.remove('pvxn-in'); void pop.offsetWidth; pop.classList.add('pvxn-in');
+    placePop(); pop.classList.remove('pvxn-in'); void pop.offsetWidth; pop.classList.add('pvxn-in'); uaTop();
     if (focusFirst) { var f = [].filter.call(pop.querySelectorAll('.nav-item'), shown)[0]; if (f) f.focus(); }
   }
   function closeMore(restore) {
-    if (!popOpen) return; popOpen = false; pop.hidden = true; more.setAttribute('aria-expanded', 'false');
+    if (!popOpen) return; popOpen = false; pop.hidden = true; more.setAttribute('aria-expanded', 'false'); uaTop();
     if (restore) more.focus();
   }
 
@@ -313,9 +346,18 @@
     /* the page changes the current app (Flow switches in place), a gate opens Grid or Forms, the theme or the size changes */
     var mo = new MutationObserver(function () { sync(); });
     items.forEach(function (a) { mo.observe(a, { attributes: true, attributeFilter: ['class', 'aria-current', 'style', 'hidden'] }); });
-    var th = new MutationObserver(function () { tokens(); });
+    var tt = [], tkey = isDark() + '|' + (document.documentElement.dataset.theme || ''); function retoken() {
+      tokens(); var k = isDark() + '|' + (document.documentElement.dataset.theme || ''); if (k === tkey) return; tkey = k;   /* other class changes (a TV going full screen) aren't a theme switch */
+      tt.forEach(clearTimeout); tt = [120, 450, 1000, 2000].map(function (ms) { return setTimeout(tokens, ms); });
+    }
+    var th = new MutationObserver(retoken);
+    nav.addEventListener('transitionend', function (e) { if (e.target === nav && /background/.test(e.propertyName)) tokens(); });
+    nav.addEventListener('transitioncancel', function (e) { if (e.target === nav) tokens(); });
     th.observe(document.body, { attributes: true, attributeFilter: ['class'] }); th.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
-    var rs = function () { openWidth(); if (expanded) openHeight(); placeTravel(); if (popOpen) placePop(); };
+    new MutationObserver(function () { var h = document.documentElement; if (h.classList.contains('pvx-ua') !== h.classList.contains('pvxn-ua')) uaTop(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    var rs0 = function () { openWidth(); if (expanded) openHeight(); placeTravel(true); if (popOpen) placePop(); uaTop(); };
+    /* now, and again once the new size is laid out (Safari reports a resize before its layout) */
+    var rs = function () { rs0(); if (window.requestAnimationFrame) requestAnimationFrame(function () { requestAnimationFrame(rs0); }); setTimeout(rs0, 120); };
     if (window.ResizeObserver) new ResizeObserver(rs).observe(nav); window.addEventListener('resize', rs);
     panel.addEventListener('transitionend', function (e) { if (e.target === panel) { placeTravel(); if (popOpen) placePop(); } });
     if (window.ResizeObserver) new ResizeObserver(function () { placeTravel(); }).observe(panel);
@@ -328,7 +370,7 @@
 
   function start() {
     if (api.ready || !build()) return false;
-    openWidth(); tokens(); sync(); wire(); api.ready = true;
+    openWidth(); tokens(); sync(); wire(); uaTop(); api.ready = true;
     api.expand = expand; api.collapse = collapse; api.openMore = openMore; api.closeMore = closeMore; api.refresh = function () { tokens(); sync(); };
     api.state = function () { return popOpen ? 'more' : expanded ? 'open' : 'rest'; };
     var prev = window.pvxTopbar; window.pvxTopbar = { layout: sync, setActive: setActive, version: 'n274', prev: prev && prev.version };
