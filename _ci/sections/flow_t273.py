@@ -98,6 +98,6 @@ async def s_t273(br):
     for nm, kw in [('dark', {}), ('light', dict(dark=False)), ('iphone', dict(vp=(390, 844))), ('rm', dict(rm=True))]:
         c, p, e = await page(br, '[1500,60000,60000]', 60000, **kw)
         await p.wait_for_timeout(5000); res[nm] = await p.evaluate(ST); await c.close()
-    ok('One version in the current theme: navy #0C2952 in light, cyan #63CDDD in dark', res['light']['fill'] == 'rgb(12, 41, 82)' and res['dark']['fill'] == 'rgb(99, 205, 221)', [res['light']['fill'], res['dark']['fill']])
+    ok('One version in the current theme: Treatment’s cobalt #23439C in light, cyan #63CDDD in dark', res['light']['fill'] == 'rgb(35, 67, 156)' and res['dark']['fill'] == 'rgb(99, 205, 221)', [res['light']['fill'], res['dark']['fill']])
     ok('…a narrow shimmer on the bar; on a 390 pt iPhone the loader fits the screen', res['dark']['shimmer'] == 'block' and res['iphone']['st'] and res['iphone']['w'] <= res['iphone']['vw'], [res['dark']['shimmer'], res['iphone']['w'], res['iphone']['vw']])
     ok('…with Reduce Motion, no shimmer and nothing travels', res['rm']['st'] and res['rm']['shimmer'] == 'none' and res['rm']['fillanim'] in ('none', ''), res['rm'])
