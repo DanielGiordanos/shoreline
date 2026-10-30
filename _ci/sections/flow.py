@@ -1838,6 +1838,7 @@ async def s_n243(br):
     # from Treatment Sheets, last on Rounds → Flow opens Flow
     ctx, pg, errs = await page243("{app:'rounds',view:'census'}", 'treatment/')
     h0 = await pg.evaluate("(()=>{const a=document.getElementById('navFlow');const h=a.getAttribute('href');a.setAttribute('href',h.replace('https://shoreline.pravix.app/',location.origin+'/'));return h})()")   # the test server stands in for shoreline.pravix.app
+    await pg.evaluate("window.pvxNav&&pvxNav.expand&&pvxNav.expand()"); await pg.wait_for_timeout(700)   # n274: the apps are in the top bar's panel
     await pg.click('#navFlow'); await pg.wait_for_timeout(4500)
     a1 = await pg.evaluate(APP243); u1 = pg.url
     await pg.screenshot(path=f'{SHOTS}/n243-flow-from-treatment.png')
