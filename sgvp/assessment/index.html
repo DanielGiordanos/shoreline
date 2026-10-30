@@ -798,6 +798,22 @@ body:not(.dark) #asm,body:not(.dark) .a-sheet-wrap{color-scheme:light}
 .a-score.no svg{width:1.15em;height:1.15em;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .a-score.no{gap:4px}
 .a-score.no[aria-checked=true]{background:var(--a-ink-3);color:var(--a-card)}
+/* choosing a score: the new fill blooms in and the old one eases away (app.js glide()); text stays above them */
+.a-scale{position:relative;z-index:0}
+.a-score{transition:background-color .18s ease,border-color .18s ease,color .12s ease,scale .1s ease,filter .1s ease}
+.a-score>*{position:relative;z-index:2}
+.a-score b{font-size:1.0625rem;font-weight:700;letter-spacing:-.01em}
+.a-glide{position:absolute;left:0;top:0;z-index:1;border-radius:12px;background:var(--a-fill);pointer-events:none;box-shadow:0 2px 8px rgba(15,107,130,.28)}
+.a-glide.no{background:var(--a-ink-3);box-shadow:none}
+.a-score.a-landing,.a-score.a-landing[aria-checked=true]{background:var(--a-card-2);border-color:var(--a-line)}
+.a-score.a-landing[aria-checked=true]{background:transparent;border-color:transparent}
+.a-score[aria-checked=true]:not(.no){box-shadow:0 2px 8px rgba(15,107,130,.28)}
+/* a competency's check, and a domain's checkmark in the list, arrive with a small pop */
+@keyframes a-pop{0%{scale:.6;opacity:.3}60%{scale:1.15;opacity:1}100%{scale:1}}
+.a-q .tag.ok.a-pop::before,.a-step.a-pop .n{animation:a-pop .34s cubic-bezier(.3,1.4,.5,1)}
+@keyframes a-swap{from{opacity:.25;translate:0 2px}to{opacity:1;translate:0 0}}
+.a-sclabel.a-swap{animation:a-swap .22s ease-out}
+@media (prefers-reduced-motion:reduce){.a-q .tag.ok.a-pop::before,.a-step.a-pop .n,.a-sclabel.a-swap{animation:none}.a-score{transition:background-color .12s,color .12s}}
 .a-score:disabled{cursor:default}
 .a-score:disabled:not([aria-checked=true]){opacity:.55}
 .a-notebtn{margin-top:8px;min-height:36px}
@@ -3100,6 +3116,27 @@ function buildPrintRecord(r) {
     if (top) requestAnimationFrame(() => { try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) {} });
   }
 
+  /* Choosing a score: the old choice's fill eases away while the new one blooms in with a slight spring, so a tap
+     feels answered without anything sliding across the other scores' labels. Clearing a score just lets it fade.
+     The real fill takes over as the bloom settles. Reduce Motion: the colours just change. */
+  const stillMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  function glide(group, from, to) {
+    if (stillMotion.matches || !group.animate || from === to) return;
+    group.querySelectorAll('.a-glide').forEach(g => g.remove());
+    const G = group.getBoundingClientRect();
+    const fill = el => {
+      const r = el.getBoundingClientRect(), g = document.createElement('i');
+      g.className = 'a-glide' + (el.classList.contains('no') ? ' no' : ''); g.setAttribute('aria-hidden', 'true');
+      Object.assign(g.style, { left: (r.left - G.left) + 'px', top: (r.top - G.top) + 'px', width: r.width + 'px', height: r.height + 'px' });   // left/top, so the spring scales around its own centre
+      group.appendChild(g); return g;
+    };
+    if (from) { const g = fill(from); g.animate([{ opacity: 1, scale: '1' }, { opacity: 0, scale: '.92' }], { duration: 180, easing: 'ease-out' }).onfinish = () => g.remove(); }
+    if (to) {
+      to.classList.add('a-landing'); const g = fill(to);
+      g.animate([{ opacity: 0, scale: '.82' }, { opacity: 1, scale: '1.04', offset: .65 }, { opacity: 1, scale: '1' }],
+        { duration: 300, easing: 'cubic-bezier(.2,.8,.3,1)' }).onfinish = () => { to.classList.remove('a-landing'); g.remove(); };
+    }
+  }
   /* iPhone: the 1–5 buttons show only numbers, so a line under them names the chosen score, or what 1 and 5 mean
      before one is chosen. VoiceOver already hears each button's full name, so the line is hidden from it. */
   function scaleLabel(val) {
@@ -3292,7 +3329,9 @@ function buildPrintRecord(r) {
     const kl = root.querySelector('.a-kpiline'); if (kl) kl.innerHTML = kpiLine(o, o.exists ? r.status : 'draft');
     root.querySelectorAll('.a-step').forEach((b, n) => {
       const x = DOMAINS[n], ok = domainDone(r, x);
+      const was = b.classList.contains('done');
       b.classList.toggle('done', ok); b.querySelector('.n').innerHTML = ok ? ICON.check + '<span class="sr-only">Complete: </span>' : x.num;
+      if (ok && !was) { b.classList.remove('a-pop'); void b.offsetWidth; b.classList.add('a-pop'); }   // a domain just completed
       b.querySelector('.c').textContent = `${rated(r, x)}/${x.overall ? 1 : x.questions.length}`;
     });
     const d = DOMAINS[o.cur], st = root.querySelector('.a-foot .st'), ok = domainDone(r, d);
@@ -3414,10 +3453,12 @@ function buildPrintRecord(r) {
           anchor: d.overall ? '#aQe' : `#aQ${qi}`, label: d.overall ? 'Entrustment' : `Competency ${Number(d.num)}.${Number(qi) + 1}` });
         setField(path, nv);
         if (nv === null && H.review.u[H.review.u.length - 1] === ent) say(`Rating cleared · ${ent.label}`, null, { label: 'Undo', fn: () => undoEntry(H.review, ent) });
+        const prevSel = sc.parentElement.querySelector('.a-score[aria-checked=true]');
         sc.parentElement.querySelectorAll('.a-score').forEach(b => { b.setAttribute('aria-checked', String(b.dataset.score === nv)); b.tabIndex = b === sc ? 0 : -1; });
-        const sl = sc.parentElement.querySelector('.a-sclabel'); if (sl) sl.innerHTML = scaleLabel(nv);
+        glide(sc.parentElement, prevSel, nv === null ? null : sc);
+        const sl = sc.parentElement.querySelector('.a-sclabel'); if (sl) { sl.innerHTML = scaleLabel(nv); sl.classList.remove('a-swap'); void sl.offsetWidth; sl.classList.add('a-swap'); }
         const tag = sc.closest('.a-q') && sc.closest('.a-q').querySelector('.tag');
-        if (tag) tag.classList.toggle('ok', !!nv);
+        if (tag) { const was = tag.classList.contains('ok'); tag.classList.toggle('ok', !!nv); if (!was && nv) { tag.classList.remove('a-pop'); void tag.offsetWidth; tag.classList.add('a-pop'); } }
         refreshChrome(); return;
       }
       const act = e.target.closest('[data-act]'); if (!act) return;
