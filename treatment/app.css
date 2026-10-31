@@ -209,3 +209,44 @@ body.dark .ts-ql{--pvx-cm115:#172033;--pvx-cm58:#15293C;--pvx-cm122:rgba(17,26,4
 /* n280 · canvas and bars: Flow's exact surfaces in dark (as OR, Yakuri, SGVP) */
 body.dark .topnav{background:#0D1730}
 body.dark .subnav{background:#101A32;border-bottom-color:rgba(77,200,224,.10)}
+
+/* n283 · HIG Menus / Pop-up buttons: the current choice has a checkmark (Tech, Location); a separator after the "none" choice */
+.ts-tech-menu button{position:relative;padding-left:32px}
+.ts-tech-menu button.on::before{content:"";position:absolute;left:11px;top:50%;width:14px;height:14px;margin-top:-7px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/contain no-repeat}
+.ts-tech-menu:not(.ts-loc-menu){width:296px}
+.ts-tech-menu button{flex-wrap:wrap;row-gap:1px}
+.ts-tech-menu b{white-space:nowrap}
+.ts-tech-menu small{margin-left:auto}
+.ts-tm-sep{height:1px;margin:4px 10px;background:rgba(0,0,0,.10)}
+body.dark .ts-tm-sep{background:rgba(255,255,255,.10)}
+
+/* n284 · HIG Toolbars / Pull-down buttons: iPhone — View, Audit and Expand in More (•••), beside Share and the search field */
+.treatment-toolbar .ts-more-btn{display:none}
+@media (max-width:599px){
+  #ctab-sheet .treatment-toolbar>*{order:5!important}
+  #ctab-sheet .treatment-toolbar>.brief-toggle{order:0!important}
+  #ctab-sheet .treatment-toolbar>.order-search-wrapper{order:1!important;flex:1 1 150px!important;min-width:0!important}
+  #ctab-sheet .treatment-toolbar>#tsCopyBtn{order:2!important}
+  #ctab-sheet .treatment-toolbar>.ts-more-btn{order:3!important;display:inline-flex;flex:0 0 auto;width:40px;height:38px;padding:0;align-items:center;justify-content:center;border-radius:999px;position:relative}
+  #ctab-sheet .treatment-toolbar>.dn-late{order:4!important}
+  #ctab-sheet .treatment-toolbar>:is(.ts-view-slot,.ts-audit-btn,.ts-expand-btn){display:none!important}
+  .treatment-toolbar .ts-more-btn svg{width:18px;height:18px}
+  .treatment-toolbar .ts-more-btn::after{content:"";position:absolute;inset:-3px -2px}
+}
+.ts-more-pop{width:248px;padding:6px 8px}
+.ts-more-pop .fp-row{width:100%}
+.ts-more-pop .mo-chev{width:12px;height:12px;opacity:.55;flex:none}
+
+/* n285 · HIG Search fields: a Clear button in Vitals' filter and Add a charge's finder; the finder's search symbol */
+.pvx-sf-x{flex:0 0 auto;position:relative;width:22px;height:22px;margin:-4px -4px -4px 0;padding:0;border:0;border-radius:999px;display:inline-grid;place-items:center;background:rgba(120,120,128,.24);color:var(--ink-400,#8a8f98);cursor:pointer}
+.pvx-sf-x[hidden]{display:none}
+.pvx-sf-x svg{width:10px;height:10px}
+.pvx-sf-x::after{content:"";position:absolute;inset:-11px}
+.pvx-sf-x:hover{background:rgba(120,120,128,.34)}
+.pvx-sf-x:active{filter:brightness(.88)}
+.pvx-sf-x:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+.pvx-sfw{display:block;position:relative;margin-top:14px}
+#tsOrderSheet .pvx-sfw .ch-q{margin-top:0;padding-left:38px;padding-right:42px}
+.pvx-sfw>.pvx-sf-ic{position:absolute;left:13px;top:50%;width:16px;height:16px;margin-top:-8px;color:#8a8f98;pointer-events:none}
+.pvx-sfw>.pvx-sf-x{position:absolute;right:11px;top:50%;margin:-11px 0 0}
+input[role=searchbox]::-webkit-search-cancel-button{display:none}

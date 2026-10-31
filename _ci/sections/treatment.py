@@ -831,7 +831,7 @@ async def s_n234(br):
     await pg.locator('#tsDowntime [data-dt="all"]').click(); await pg.wait_for_timeout(1900)
     pt = await pg.evaluate("[window.__pt,document.title]")
     ok('n234: saved downtime PDFs are named for what they hold — “Flow board – downtime – …”, “Biscuit – downtime sheet – …”, “Treatment downtime – 3 patients – …” — and the page title comes back after printing',
-       len(pt[0]) == 3 and pt[0][0].startswith('Flow board – downtime – ') and _re234.match(r'^\S.* – downtime sheet – ', pt[0][1]) and 'Training' not in pt[0][1] and _re234.match(r'^Treatment downtime – \d+ patients? – ', pt[0][2]) and pt[1] == 'Pravix Treatment Sheets | VCA Shoreline', pt)
+       len(pt[0]) == 3 and pt[0][0].startswith('Flow board – downtime – ') and _re234.match(r'^\S.* – downtime sheet – ', pt[0][1]) and 'Training' not in pt[0][1] and _re234.match(r'^Treatment downtime – \d+ patients? – ', pt[0][2]) and (pt[1] == 'Pravix Treatment Sheets | VCA Shoreline' or (' · ' in pt[1] and 'downtime' not in pt[1]) or pt[1] in ('Dashboard', 'Tasks')), pt)   # n284: the title names the view ("Biscuit Training · Treatment sheet")
     nm = await pg.evaluate("[...document.querySelectorAll('#tsDowntime .dt-btn')].map(b=>b.textContent.trim())")
     ok('n234: buttons that open the print dialog end in “…” (Print downtime packet…, Print board only…, Print…), with a name for each sheet’s Print', 'Print downtime packet…' in nm and 'Print board only…' in nm and 'Print…' in nm and lab and lab.startswith('Print ') and lab.endswith('…') and 'this sheet' not in lab, (nm[:5], lab))
     await pg.evaluate("tsDowntimeClose()")

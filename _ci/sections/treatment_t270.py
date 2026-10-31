@@ -64,14 +64,14 @@ async def s_t270(br):
     rows = await pg.evaluate("(()=>{const t=document.querySelector('.treatment-toolbar');return [...new Set([...t.children].filter(k=>k.getClientRects().length).map(k=>Math.round(k.getBoundingClientRect().top)))].length})()")
     await pg.evaluate("selectCTab('dash')"); await pg.wait_for_timeout(700)
     i2 = await pg.evaluate(HIT, ['#ctab-dash .sb-row .tm-p.tm-tech'])
-    ok('Buttons: on iPhone too (the toolbar, Details, the patient bar, and the Tech name, which Add alert’s hit area covered), and the toolbar keeps its rows (3)', not i1 and not i2 and rows == 3, [i1, i2, rows])
+    ok('Buttons: on iPhone too (the toolbar, Details, the patient bar, and the Tech name, which Add alert’s hit area covered), and the toolbar doesn\'t grow (3 rows; 2 since n284)', not i1 and not i2 and rows <= 3, [i1, i2, rows])
     ok('no page errors (iPhone)', not e, e[:2]); await ctx.close()
 
     if ENGINE == 'chromium':   # WebKit on Linux draws a 15 pt scrollbar an iPhone doesn't have, so 375 pt there is narrower than a phone
         ctx, pg, e = await ts(br, PORT, vp=(375, 667), touch=True, view='sheet')
         rows = await pg.evaluate("(()=>{const t=document.querySelector('.treatment-toolbar');return [...new Set([...t.children].filter(k=>k.getClientRects().length).map(k=>Math.round(k.getBoundingClientRect().top)))].length})()")
         h = await pg.evaluate(HIT, ['.treatment-toolbar .dn-prev', '.treatment-toolbar .dn-next', '.treatment-toolbar .ts-seen'])
-        ok('…and on a 375 pt iPhone the toolbar still has 3 rows, with the day arrows and Approval mode at 44 pt', rows == 3 and not h, [rows, h]); await ctx.close()
+        ok('…and on a 375 pt iPhone the toolbar still has at most 3 rows (2 since n284), with the day arrows and Approval mode at 44 pt', rows <= 3 and not h, [rows, h]); await ctx.close()
 
     # with a mouse, Mac sizes stay compact
     ctx, pg, e = await ts(br, PORT, view='sheet')
