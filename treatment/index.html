@@ -145,7 +145,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Treatment">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="app.css?v=bda2dbe218">
+<link rel="stylesheet" href="app.css?v=e725340b3b">
 
 <script>window.PVX_LANG_SRC={es:'es.js?v=ea367c6e7b'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
 <style>html.i18n-wait body{visibility:hidden}</style>
@@ -392,7 +392,7 @@ body.dark #ctab-vitals .v-rec:hover{background:rgba(56,189,210,.26)!important}
   .tsh:not(.pvx-open) .tsh-mini{display:flex!important;flex-wrap:wrap;white-space:normal;row-gap:4px}
   .tsh:not(.pvx-open):has(.tsh-flags .ts-al) .tsh-mini .ts-al{display:none}
   .tsh .tsh-top{flex-wrap:wrap;row-gap:6px}
-  .tsh .tsh-id{min-width:0;flex:1 1 0}
+  .tsh .tsh-id{min-width:0;flex:1 1 auto;max-width:calc(100% - 52px)}
   .tsh .tsh-name{flex-wrap:wrap;row-gap:0}
   .tsh .tsh-info{flex-wrap:wrap}
   .tsh .tsh-v{flex-wrap:wrap;white-space:normal}
@@ -1459,7 +1459,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=22eecf79ca"></script>
+<script defer src="store.js?v=9097c7408b"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -1876,7 +1876,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     if(!b){ b=document.createElement('button'); b.type='button'; b.className='pvx-hdr-more';
       b.addEventListener('click',function(){ open=!open; header(); }); top.appendChild(b); }
     var lbl=ES?'Detalles':'Details';   /* n268: the name stays; the chevron and aria-expanded say open or closed */
-    var inf=h.querySelector('.tsh-info'); if(inf){ if(!inf.id) inf.id='tsHdrInfo'; if(b.getAttribute('aria-controls')!==inf.id) b.setAttribute('aria-controls',inf.id); }
+    var inf=h.querySelector('.tsh-info'); if(inf){ if(!inf.id) inf.id='tsHdrInfo'+(window.__pvxHdrN=(window.__pvxHdrN||0)+1); if(b.getAttribute('aria-controls')!==inf.id) b.setAttribute('aria-controls',inf.id); }
     if(b.getAttribute('aria-expanded')!==String(open)||b.textContent!==lbl){ b.setAttribute('aria-expanded',String(open)); b.innerHTML=lbl+DOWN; }
   }
   function vhist(){
