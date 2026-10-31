@@ -206,3 +206,6 @@ body.dark .sec-dot.overdue{--pvx-cm71:rgba(232,168,48,0.2);--pvx-cm72:rgba(232,1
 body.dark .sec-dot.skipped{--pvx-cm71:rgba(134,134,139,0.2);--pvx-cm72:rgba(134,134,139,0.55)}
 .ts-ql{--pvx-cm115:#F8F8F9;--pvx-cm58:#EBEEF6;--pvx-cm122:rgba(255,255,255,0.86)}
 body.dark .ts-ql{--pvx-cm115:#172033;--pvx-cm58:#15293C;--pvx-cm122:rgba(17,26,45,0.86)}
+/* n280 · canvas and bars: Flow's exact surfaces in dark (as OR, Yakuri, SGVP) */
+body.dark .topnav{background:#0D1730}
+body.dark .subnav{background:#101A32;border-bottom-color:rgba(77,200,224,.10)}
