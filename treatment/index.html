@@ -145,9 +145,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Treatment">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="app.css?v=ae91d075dc">
+<link rel="stylesheet" href="app.css?v=b42faf287a">
 
-<script>window.PVX_LANG_SRC={es:'es.js?v=ea367c6e7b'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
+<script>window.PVX_LANG_SRC={es:'es.js?v=d2fc8f577a'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
 <style>html.i18n-wait body{visibility:hidden}</style>
 <!-- CL-T04 n133 -->
 <!-- n134 CL-T03 CL-T06 -->
@@ -1459,7 +1459,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=9097c7408b"></script>
+<script defer src="store.js?v=fe4bfd8eab"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -2836,7 +2836,12 @@ html.pvx-snav-icons #tsPatientChip{max-width:min(42vw,26rem)}
   function fitBar(){ var bar=$('#ctab-sheet .treatment-toolbar'); if(!bar) return;
     if(ro) [bar].concat([].slice.call(bar.children)).forEach(function(e){ if(!roSeen.has(e)){ roSeen.add(e); ro.observe(e); } });
     bar.setAttribute('data-measure',''); var was=bar.getAttribute('data-fit'); bar.removeAttribute('data-fit');
-    if(innerWidth>=600&&bar.getClientRects().length&&getComputedStyle(bar).flexWrap==='nowrap'){
+    var nw=getComputedStyle(bar).flexWrap==='nowrap';   /* n284: a toolbar that wraps (iPad) counts its rows of controls */
+    if(innerWidth>=600&&bar.getClientRects().length&&!nw){ var over=function(){ var rows=[];
+        [].forEach.call(bar.children,function(e){ if(e.matches('.order-search-wrapper,.brief-toggle,.dn-late,.pvx-ur,.ts-more-btn')) return; var q=e.getBoundingClientRect(); if(!(q.width>0&&q.height>0)) return;
+          var c=(q.top+q.bottom)/2; if(!rows.some(function(r){ return Math.abs(r-c)<14; })) rows.push(c); }); return rows.length>1; };
+      for(var j=1;j<=2&&over();j++) bar.setAttribute('data-fit',String(j)); }
+    if(innerWidth>=600&&bar.getClientRects().length&&nw){
       var over=function(){ var r=bar.getBoundingClientRect(), edge=r.right-parseFloat(getComputedStyle(bar).paddingRight)+0.5, m=r.left;
         [].forEach.call(bar.children,function(e){ var q=e.getBoundingClientRect(); if(q.width>0) m=Math.max(m,q.right); }); return m>edge||bar.scrollWidth>bar.clientWidth+1; };
       for(var i=1;i<=3&&over();i++) bar.setAttribute('data-fit',String(i)); }
@@ -3065,9 +3070,10 @@ body.dark .sn-bar .sn-x{color:#5fd3e6}
   document.addEventListener('keydown',function(e){ if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('#ctab-sheet .hcell')) retire(); },true);
 
   /* 7. the Keyboard shortcuts sheet: ? */
+  window.pvxTsKeyGroups=function(){ return groups(); };
   function groups(){ return [
     {title:'General', items:[{keys:['mod','K'],label:'Search patients and orders'},{keys:['?'],label:'Show keyboard shortcuts'}]},
-    {title:'Patient tabs', items:[{keys:['alt','1–9'],label:'Go to patient tab 1 to 9'},{keys:['←','→'],label:'Move between tabs (on a tab)'},{keys:['Delete'],label:'Close the tab (on a tab)'}]},
+    {title:'Patient tabs', items:[{keys:['alt','1–9'],label:'Go to patient tab 1 to 9'},{keys:['←','→'],label:'Move between tabs (on a tab)'},{keys:['alt','←','→'],label:'Next or previous tab'},{keys:['shift','mod','←','→'],label:'Move the tab left or right (on a tab)'},{keys:['Delete'],label:'Close the tab (on a tab)'}]},
     {title:'Treatment sheet', items:[{keys:['alt','E'],label:'Full view on or off'},{keys:['alt','I'],label:'Show or hide patient info (in full view and on narrow screens)'},{keys:['↑','↓','←','→'],label:'Move around the sheet'},{keys:['Home','End'],label:'Go to the start or end of the row'},{keys:['return'],label:'Chart or open the cell'},
       {keys:['mod','Z'],label:'Undo'},{keys:['shift','mod','Z'],label:'Redo'},{keys:['alt','Click'],label:'Fold or unfold every section (on a section)'}]},
     {title:'Status board', items:[{keys:['1–4'],label:'Your patients, Outpatients, Inpatients, Boarding'},{keys:['H'],label:'Hours or list'}]},
@@ -3386,6 +3392,130 @@ body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color
   var tries=0; function boot(){ if(go()||++tries>40) return; setTimeout(boot,250); }
   if(document.readyState==='complete') setTimeout(boot,600); else window.addEventListener('load',function(){ setTimeout(boot,600); });
   window.addEventListener('hashchange',function(){ var w=want(); if(!w) return; W=w; tries=0; boot(); });
+})();
+</script>
+
+<script id="pvx-n283-ts">
+/* n283 · HIG Menus and Pop-up buttons (claude/hig-audit-treatment-menus-ornaments-popups.md)
+   · Display and Filters say they open something; Display's list is a menu, and ↑ ↓ Home End move through it
+   · View's Collapse all / Expand all are menu items
+   · in Tech and Location, typing a letter moves to the first name that starts with it */
+(function(){
+  var $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  function shown(e){ if(!e||!e.getClientRects().length) return false; var c=getComputedStyle(e); return c.visibility!=='hidden'&&+c.opacity>0.05; }
+  var TV='.sb-tvb[onclick^="tsTvPick"]';   /* Display (Reports shares the class and keeps its own state) */
+  function tag(){
+    $$(TV).forEach(function(b){ if(b.getAttribute('aria-haspopup')!=='menu') b.setAttribute('aria-haspopup','menu'); });
+    $$('.sb-filters').forEach(function(b){ if(!b.getAttribute('aria-haspopup')) b.setAttribute('aria-haspopup','true'); });
+    var pop=document.getElementById('flPop');
+    $$(TV+',.sb-filters,.ts-view-btn').forEach(function(b){ var v=String(!!pop&&b.classList.contains('active')); if(b.getAttribute('aria-expanded')!==v) b.setAttribute('aria-expanded',v); });
+    if(!pop) return;
+    $$('.tv-pick',pop).forEach(function(m){ if(m.getAttribute('role')) return; m.setAttribute('role','menu'); m.setAttribute('aria-label','Inpatients on a TV');
+      $$('.fp-row',m).forEach(function(b){ b.setAttribute('role','menuitem'); }); });
+    $$('.vw-pop .vw-all button',pop).forEach(function(b){ if(!b.getAttribute('role')) b.setAttribute('role','menuitem'); });
+  }
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ tag(); }catch(e){} }); }
+  function items(m){ return $$('[role^=menuitem]',m).filter(function(b){ return !b.disabled&&shown(b); }); }
+  var buf='', bufAt=0;
+  window.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey||e.isComposing) return;
+    var a=document.activeElement; if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    /* ↑ ↓ Home End in Display's menu and View's (the other menus have this since n264) */
+    var pop=document.getElementById('flPop'), pm=pop&&pop.querySelector('[role=menu]');
+    if(pm&&/^(ArrowDown|ArrowUp|Home|End)$/.test(e.key)&&(pop.contains(a)||(a&&a.classList&&a.classList.contains('active')))){
+      var its=items(pm); if(!its.length) return; var i=its.indexOf(a); e.preventDefault(); e.stopImmediatePropagation();
+      var n=e.key==='Home'?0:e.key==='End'?its.length-1:e.key==='ArrowDown'?(i<0?0:Math.min(its.length-1,i+1)):(i<0?its.length-1:Math.max(0,i-1));
+      its[n].focus({preventScroll:true}); return; }
+    /* type to select, in Tech and Location */
+    if(e.key.length!==1||!/\S/.test(e.key)) return;
+    var m=$$('.ts-tech-menu.show').filter(shown).pop(); if(!m) return;
+    var now=Date.now(); buf=(now-bufAt>700?'':buf)+e.key.toLowerCase(); bufAt=now;
+    var bs=$$('button',m).filter(shown), name=function(b){ var t=b.querySelector('b'); return ((t||b).textContent||'').trim().toLowerCase(); };
+    var from=bs.indexOf(a), rot=bs.slice(from+1).concat(bs.slice(0,from+1));
+    var hit=(buf.length===1?rot:bs).filter(function(b){ return name(b).indexOf(buf)===0; })[0];
+    if(hit){ e.preventDefault(); e.stopImmediatePropagation(); hit.focus({preventScroll:false}); }
+  },true);
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); tag(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+<script id="pvx-n284-ts">
+/* n284 · HIG Toolbars, Pull-down buttons (claude/hig-audit-treatment-pulldowns-menubar-toolbars.md)
+   1. the window's title names what's on screen, not the app ("Biscuit Training · Vitals", "Tasks")
+   2. iPhone: View, Audit and Expand the sheet in a More (•••) menu beside Share */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)};
+  var BASE=document.title, last=null, printing=false;
+  addEventListener('beforeprint',function(){ printing=true; }); addEventListener('afterprint',function(){ printing=false; setTimeout(title,300); });
+  function shown(e){ return !!(e&&e.getClientRects().length); }
+  function want(){
+    var tab=typeof currentCTab!=='undefined'?currentCTab:null; if(!tab||shown($('#sbLogin'))) return BASE;   /* signed out: the app's name */
+    if(document.getElementById('tsTv')) return null;   /* the ward display keeps what it had */
+    var seg=$('.seg[data-ctab="'+tab+'"]'), sec=seg?(seg.getAttribute('aria-label')||seg.textContent).trim():'';
+    if(!sec) return BASE;
+    if(tab==='dash'||tab==='tasks') return sec;
+    var nm=$('#tsHdr .tsh-name > span:first-child'), n=nm?nm.textContent.replace(/\s+/g,' ').trim():'';
+    return n?n+' · '+sec:sec; }
+  function title(){ if(printing) return; var cur=document.title; if(cur!==BASE&&cur!==last) return;   /* set by someone else (printing names the file) */
+    var w=want(); if(w&&w!==cur){ document.title=w; last=w; } }
+
+  var MORE='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
+  var CHEV='<svg class="mo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function more(){ var bar=$('#ctab-sheet .treatment-toolbar'); if(!bar) return; var b=$('.ts-more-btn',bar);
+    if(!b){ b=document.createElement('button'); b.type='button'; b.className='btn ghost ts-more-btn'; b.setAttribute('aria-label','More'); b.title='More';
+      b.setAttribute('aria-haspopup','menu'); b.setAttribute('aria-expanded','false'); b.innerHTML=MORE; b.onclick=open; }
+    if(b.parentElement!==bar||b.nextElementSibling) bar.appendChild(b);
+    var v=String(!!document.getElementById('flPop')&&b.classList.contains('active')); if(b.getAttribute('aria-expanded')!==v) b.setAttribute('aria-expanded',v); }
+  function open(e){ e.stopPropagation(); var b=e.currentTarget, x=document.getElementById('tsExpandBtn'), on=x&&x.getAttribute('aria-pressed')==='true';
+    var row=function(a,label,sub,extra,tail,cls){ return '<button type="button" class="fp-row wf-row'+(cls||'')+'" data-a="'+a+'" '+extra+'><span class="fp-lab"><b>'+esc(label)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span>'+(tail||'')+'</button>'; };
+    var pop=_openPop(b,'<div class="sb-filter-pop wf-pop ts-more-pop" role="menu" aria-label="More">'+
+      row('view','View','Rows and sections','role="menuitem" aria-haspopup="menu"',CHEV)+
+      row('audit','Audit','Who charted and changed what','role="menuitem"')+
+      (x?row('expand',(x.getAttribute('aria-label')||'Expand the sheet'),'Full view · the sheet takes the whole screen','role="menuitemcheckbox" aria-checked="'+on+'"','<i class="wf-ck"></i>',(on?' on':'')):'')+'</div>');
+    var root=(pop&&pop.querySelectorAll)?pop:document.getElementById('flPop');
+    [].forEach.call(root.querySelectorAll('[data-a]'),function(r){ r.onclick=function(ev){ ev.stopPropagation(); var a=r.getAttribute('data-a'); _closePop();
+      if(a==='view'&&window.tsViewOpen) tsViewOpen(b);
+      else if(a==='audit'){ var u=$('#ctab-sheet .ts-audit-btn'); u&&u.click(); }
+      else if(a==='expand'){ var y=document.getElementById('tsExpandBtn'); y&&y.click(); } }; });
+    if(e.detail===0){ var f=root.querySelector('[data-a]'); f&&f.focus({preventScroll:true}); } }
+  /* iPhone: the add field's hint fits the narrower field */
+  function hint(){ var i=document.getElementById('tsSearch'); if(!i) return; var ph=i.placeholder, EN='Add treatment…', ES='Agregar tratamiento…';
+    if(innerWidth<600){ if(ph===EN||ph===ES) return; var s=/^Add treatment or template/.test(ph)?EN:/^Agregar tratamiento o plantilla/.test(ph)?ES:null; if(s){ i.dataset.ph=ph; i.placeholder=s; } }
+    else if((ph===EN||ph===ES)&&i.dataset.ph) i.placeholder=i.dataset.ph; }   /* only the default hint; "Add to Observations…" is left as it is */
+  addEventListener('resize',function(){ tick(); });
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ title(); }catch(x){} try{ more(); }catch(x){} try{ hint(); }catch(x){} }); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','aria-pressed']}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+<script id="pvx-n285-ts">
+/* n285 · HIG Search fields (claude/hig-audit-treatment-pathcontrols-searchfields-sidebars.md):
+   Vitals' filter and Add a charge's finder get a Clear button; Esc clears what's typed; Return says Search */
+(function(){
+  var X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var Q='<svg class="pvx-sf-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>';
+  function sf(i,wrap){ if(i._pvxSf) return; i._pvxSf=1;
+    i.setAttribute('role','searchbox'); i.setAttribute('enterkeyhint','search'); i.setAttribute('autocomplete','off');
+    var host=i.parentElement;
+    if(wrap){ host=document.createElement('span'); host.className='pvx-sfw'; i.parentElement.insertBefore(host,i); host.innerHTML=Q; host.appendChild(i); }
+    var x=document.createElement('button'); x.type='button'; x.className='pvx-sf-x'; x.setAttribute('aria-label','Clear'); x.title='Clear'; x.innerHTML=X; host.appendChild(x);
+    function sync(){ x.hidden=!i.value; }
+    function clear(){ i.value=''; i.dispatchEvent(new Event('input',{bubbles:true})); sync(); }
+    x.addEventListener('mousedown',function(e){ e.preventDefault(); });   /* the field keeps focus */
+    x.onclick=function(e){ e.stopPropagation(); clear(); var j=fresh(i); try{ j.focus({preventScroll:true}); }catch(t){} };
+    i.addEventListener('input',sync);
+    i.addEventListener('keydown',function(e){ if(e.key==='Escape'&&i.value){ e.preventDefault(); e.stopPropagation(); clear(); } });
+    sync(); }
+  /* Vitals redraws its header: the field typed in may have been replaced */
+  function fresh(i){ return i.isConnected?i:(document.querySelector('.v-filter input')||i); }
+  function scan(){ [].forEach.call(document.querySelectorAll('.v-filter input'),function(i){ sf(i,false); });
+    [].forEach.call(document.querySelectorAll('#tsOrderSheet .ch-q'),function(i){ sf(i,true); }); }
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ scan(); }catch(x){} }); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
 </body>
