@@ -139,7 +139,7 @@
 <title>Pravix Treatment Sheets | VCA Shoreline</title>
 <link rel="icon" type="image/png" href="img/3ad4e7dbff.png">
 <meta name="theme-color" content="#0A1222">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest?v=3db4b7fbe0">
 <link rel="apple-touch-icon" href="treatment-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1618,8 +1618,9 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   function shown(a){ return a.style.display!=='none'&&!a.hidden; }   /* account-gated links (Grid, Forms) are display:none until allowed */
   var gap=0, busy=false;
   function layout(){ if(busy) return; busy=true;
-    try{ var all=items(); all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
-      var vis=all.filter(shown); var PIN=['navGrid'];   /* PVX-N150: Grid always in More (unless it is the current app) */
+    try{ var ORD=['navDirectory','navAssets','navCurriculum','navSchedule','navFlow','navUltrasound','navTreatment','navRounds','navOR','navAnesia','navYakuri','navGrid','navForms'], all=items(), k=function(a){ var i=ORD.indexOf(a.id); return i<0?1000+all.indexOf(a):i; }; all=all.slice().sort(function(x,y){ return k(x)-k(y); });   /* n281: the apps keep the suite's order wherever they sit (the bar, More), whichever was current before */
+      all.forEach(function(a){ center.insertBefore(a,more); a.removeAttribute('role'); });
+      var vis=all.filter(shown); var PIN=['navGrid','navDirectory','navAssets','navUltrasound','navAnesia'];   /* PVX-N150: Grid always in More (unless it is the current app) · n281: Directory, Assets, Ultrasound and Anesia too (Daniel) */
       var pin=vis.filter(function(a){ return PIN.indexOf(a.id)>-1&&!(a.classList.contains('active')||a.getAttribute('aria-current')); }); vis=vis.filter(function(a){ return pin.indexOf(a)<0; });
       if(!vis.length&&!pin.length){ more.hidden=true; return; }
       gap=parseFloat(getComputedStyle(center).columnGap||getComputedStyle(center).gap)||0;
@@ -3366,5 +3367,26 @@ body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color
   :where(button, [role=button], [role=tab], [role=menuitem]):where(:not(:disabled, [aria-disabled="true"], .topnav *, .gsection, .pt-main, .pt-cur, .rl-name, .mark, .ts-seen, .sn-chip, .sec-add, #vxTake, .wl-done, .ch-lv, .sb-segb, .btn.primary, [role=menuitem])):active { scale: .97; }
 }
 </style>
+
+<script id="pvx-n282-ts">
+/* n282 · HIG Dock menus and Home Screen quick actions: the app's shortcuts (manifest) open where they say.
+   #view=tasks → Tasks · #view=mine → the board, Your patients · #find → the patient search (as ⌘K).
+   Applied once the app has drawn (and again on hashchange); the address is then tidied, as #display= is. */
+(function(){
+  function want(){ var h=String(location.hash||''); var m=/^#(?:.*&)?(view=(tasks|mine)|find)(?:&|$)/.exec(h); return m?(m[2]||'find'):null; }
+  function tidy(){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} }
+  function find(){ var i=document.getElementById('globalSearch'); if(!i) return false; var s=i.closest('.search'), b=s&&s.querySelector('.ts-search-open');
+    if(b&&getComputedStyle(b).display!=='none'&&b.getAttribute('aria-hidden')==='false') b.click(); else i.focus(); try{ i.select(); }catch(e){} return true; }
+  var W=want();   /* read now: the app tidies the address while it starts */
+  function go(){ var w=W; if(!w) return true; if(typeof selectCTab!=='function') return false;
+    try{ if(w==='tasks') selectCTab('tasks');
+      else if(w==='mine'){ if(typeof setSbBoard==='function') setSbBoard('My Board'); selectCTab('dash'); }
+      else { if(!find()) return false; } }catch(e){ return false; }
+    W=null; if(want()) tidy(); return true; }
+  var tries=0; function boot(){ if(go()||++tries>40) return; setTimeout(boot,250); }
+  if(document.readyState==='complete') setTimeout(boot,600); else window.addEventListener('load',function(){ setTimeout(boot,600); });
+  window.addEventListener('hashchange',function(){ var w=want(); if(!w) return; W=w; tries=0; boot(); });
+})();
+</script>
 </body>
 </html>
