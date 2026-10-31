@@ -142,7 +142,7 @@ async def s_t255(br):
       const l=t.querySelector('.dn-late');const lr=l&&l.getBoundingClientRect();const m=t.querySelector('.dn-mid');const q=t.querySelector('.order-search-wrapper').getBoundingClientRect();
       return {rows,late:l?[Math.round(lr.left),Math.round(lr.right),innerWidth,getComputedStyle(l).color]:null,mid:m?[m.innerText.trim(),m.getAttribute('aria-label')||m.textContent]:null,search:Math.round(q.width)}})()""")
     ok('iPhone: the sheet toolbar is 4 rows with "N from last night" (5 before, and that button ran off the edge), and on screen in amber', (tb['rows'] <= 4 and tb['late'] and tb['late'][0] >= 0 and tb['late'][1] <= tb['late'][2] and tb['late'][3] != 'rgb(255, 255, 255)') or (tb['late'] is None and tb['rows'] <= 3), tb)   # the button shows only while last night's doses are uncharted
-    ok('iPhone: the day button reads "Today" (its label keeps the date) and the search keeps the row\'s width', tb['mid'] and tb['mid'][0] == 'Today' and 'Today ·' in tb['mid'][1] and tb['search'] >= 240, tb)
+    ok('iPhone: the day button reads "Today" (its label keeps the date) and the search keeps most of its row (≥ 160 pt beside Share and More since n284)', tb['mid'] and tb['mid'][0] == 'Today' and 'Today ·' in tb['mid'][1] and tb['search'] >= 160, tb)
     ok('iPhone: no page errors', not e4, e4[:3])
     await c4.close()
     # 200 % text: hour headings don't run together
