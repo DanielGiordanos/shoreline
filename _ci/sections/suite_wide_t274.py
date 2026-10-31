@@ -269,3 +269,18 @@ async def s_t275(br):
     r1 = await p.evaluate("(()=>{const a=document.getElementById('navOR').getBoundingClientRect(),h=document.elementFromPoint(a.left+a.width/2,a.top+a.height/2),b=document.querySelector('.pvx-ua-box').getBoundingClientRect(),pn=document.querySelector('.pvxn-panel').getBoundingClientRect();return [!!(h&&h.closest('#navOR')),Math.round(b.top-pn.bottom)]})()")
     ok('managers’ view: “Unauthorized” starts under the lip, and under the panel while it’s open, so the apps are reachable (its box covered both)', r0 == [True, True] and r1[0] and r1[1] >= 0, [r0, r1])
     await c.close()
+
+
+@section(id='t276', title='n276 · the app navigation draws its apps without a clipping layer (Safari kept a stale clip)',
+         apps=['flow', 'treatment', 'topbar'], topics=['navigation', 'motion'], engines=('chromium', 'webkit'))
+async def s_t276(br):
+    PROBE = """(()=>{window.__fr=[];const pn=document.querySelector('.pvxn-panel');const t0=performance.now();function f(){const p=pn.getBoundingClientRect();const out=[];document.querySelectorAll('.pvxn-row>*').forEach(a=>{const o=+getComputedStyle(a).opacity;if(o<.04)return;const s=a.querySelector('svg').getBoundingClientRect();const lab=(a.querySelector('span')||a).getBoundingClientRect();const L=Math.min(s.left,lab.left),R=Math.max(s.right,lab.right),B=Math.max(s.bottom,lab.bottom);if(L<p.left-1||R>p.right+1||B>p.bottom+1)out.push(a.id)});__fr.push(out);if(performance.now()-t0<900)requestAnimationFrame(f)}requestAnimationFrame(f)})()"""
+    for path, vp in (('#app=rounds', (1600, 840)), ('treatment/', (390, 844))):
+        c, p, e = await opn(br, path, vp=vp, touch=vp[0] < 500)
+        clip = await p.evaluate("[...document.querySelectorAll('.pvxn-dock *')].filter(x=>{if(!(x instanceof HTMLElement))return false;const c=getComputedStyle(x);return /hidden|clip/.test(c.overflowX+c.overflowY)&&parseFloat(c.borderTopLeftRadius+c.borderBottomLeftRadius)>0&&!x.closest('.pvxn-pop')}).map(x=>x.className)")
+        await p.evaluate(PROBE + ";pvxNav.expand()"); await p.wait_for_timeout(1100)
+        fr = await p.evaluate("__fr")
+        vis = await p.evaluate("(()=>{const p=document.querySelector('.pvxn-panel').getBoundingClientRect();return [...document.querySelectorAll('.pvxn-row>*')].map(a=>{const s=a.querySelector('svg').getBoundingClientRect(),l=a.querySelector('span').getBoundingClientRect(),h=document.elementFromPoint(l.left+l.width/2,l.top+l.height/2);return [a.id,getComputedStyle(a).opacity,!!(h&&a.contains(h)),s.bottom<=p.bottom]})})()")
+        ok('%s %d pt: no rounded clipping layer in the panel, nothing shows outside the panel while it opens (%d frames), and every app shows in full once open (Daniel’s Rounds screenshot: cut off under the bar in Safari)' % (path, vp[0], len(fr)),
+           not clip and not [x for x in fr if x] and all(v[1] == '1' and v[2] and v[3] for v in vis), [clip, [x for x in fr if x][:2], [v for v in vis if not (v[1] == '1' and v[2] and v[3])]])
+        await c.close()
