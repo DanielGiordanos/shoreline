@@ -2695,7 +2695,7 @@ function buildPrintRecord(r) {
     const M = S.mine;
     const rounds = Object.values(M.rounds).sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || (toDate(b.created_at) || 0) - (toDate(a.created_at) || 0));
     setTitle('My reviews');
-    let html = head('Intern reviews', 'My reviews', `Signed in as ${esc(S.name)}. Your reviews save as you go. Only you, ${READERS_AND} can see them.`, viewSwitch());
+    let html = head('Intern reviews', 'My reviews', '', viewSwitch());
     if (!M.assigns.length) {
       html += `<div class="a-card a-empty"><h2>No reviews assigned to you</h2><p>When the program asks you to review an intern, the intern appears here.${S.reader ? ' Use All reviews to open a round and assign evaluators.' : ''}</p></div>`;
     }
