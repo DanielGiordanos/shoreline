@@ -57,7 +57,7 @@
     'nav.topnav.pvxn.pvxn-open .pvxn-lip{height:8px}',
     'nav.topnav.pvxn.pvxn-open .pvxn-lip .pvxn-lab,nav.topnav.pvxn.pvxn-open .pvxn-lip .pvxn-chev{opacity:0}',
     /* the row of apps: Monoline, no square hover, a faint halo for the current app and one underline that travels */
-    'nav.topnav .pvxn-clip{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none}',
+    'nav.topnav .pvxn-clip{position:absolute;inset:0;pointer-events:none}',
     'nav.topnav .pvxn-clip>*{pointer-events:auto}',
     'nav.topnav .pvxn-row{position:absolute;left:50%;width:calc(var(--pvxn-open-w,1120px) - 36px);margin-left:calc((var(--pvxn-open-w,1120px) - 36px)/-2);top:18px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;visibility:hidden;transition:visibility 0s linear 140ms}',
     'nav.topnav.pvxn.pvxn-open .pvxn-row{visibility:visible;transition-delay:0s}',
@@ -66,7 +66,7 @@
     '  border:0!important;border-radius:14px!important;background:transparent!important;box-shadow:none!important;color:var(--pvxn-muted)!important;',
     '  font:500 11px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro",system-ui,sans-serif!important;letter-spacing:.02em!important;text-transform:none!important;text-decoration:none!important;white-space:nowrap;cursor:pointer;',
     '  opacity:0;transform:translateY(5px);transition:opacity 120ms ease,transform 200ms ease,color 160ms ease;-webkit-tap-highlight-color:transparent;outline-offset:2px}',
-    'html body nav.topnav.pvxn.pvxn-open #pvxnPanel .pvxn-row>*{opacity:1;transform:none;transition:opacity 180ms ease,transform 320ms cubic-bezier(.16,1,.3,1),color 160ms ease;transition-delay:calc(85ms + var(--pvxn-i,0)*20ms),calc(85ms + var(--pvxn-i,0)*20ms),0ms}',
+    'html body nav.topnav.pvxn.pvxn-open #pvxnPanel .pvxn-row>*{opacity:1;transform:none;transition:opacity 180ms ease,transform 320ms cubic-bezier(.16,1,.3,1),color 160ms ease;transition-delay:var(--pvxn-d,calc(85ms + var(--pvxn-i,0)*20ms)),var(--pvxn-d,calc(85ms + var(--pvxn-i,0)*20ms)),0ms}',
     'html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.nav-item svg,html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.pvxn-more svg{width:20px!important;height:20px!important;padding:11px;box-sizing:content-box;flex:none;border-radius:50%;background:transparent;color:inherit;transition:color 160ms ease,transform 90ms ease}',
     'html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.pvxn-more svg{fill:currentColor;stroke:none}',
     'html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.nav-item>span,html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.pvxn-more>span{max-width:100%;overflow:hidden;text-overflow:ellipsis}',
@@ -77,7 +77,7 @@
     'html body nav.topnav.pvxn #pvxnPanel .pvxn-row>[aria-current="page"] svg,html body nav.topnav.pvxn #pvxnPanel .pvxn-row>.pvxn-more[data-selected="true"] svg{color:var(--pvxn-accent);background:radial-gradient(circle,var(--pvxn-halo) 0%,transparent 72%);filter:drop-shadow(0 0 3px var(--pvxn-glow))}',
     'html body nav.topnav.pvxn #pvxnPanel .pvxn-row>*:focus-visible{outline:2px solid var(--pvxn-accent)!important;outline-offset:2px}',
     'nav.topnav .pvxn-travel{position:absolute;left:50%;top:0;width:12px;height:2px;border-radius:3px;background:var(--pvxn-accent);pointer-events:none;opacity:0;transition:transform 340ms cubic-bezier(.16,1,.3,1),opacity 120ms ease}',
-    'nav.topnav.pvxn.pvxn-open .pvxn-travel{opacity:.85;transition:transform 340ms cubic-bezier(.16,1,.3,1),opacity 200ms ease 160ms}',
+    'nav.topnav.pvxn.pvxn-open .pvxn-travel{opacity:.85;transition:transform 340ms cubic-bezier(.16,1,.3,1),opacity 200ms ease var(--pvxn-d,160ms)}',
     /* More: unfolds from its button, the same surface and treatment */
     'nav.topnav .pvxn-pop{position:absolute;z-index:6;width:250px;max-width:calc(100vw - 24px);box-sizing:border-box;padding:12px;border-radius:22px;pointer-events:auto;overflow-y:auto;overscroll-behavior:contain;',
     '  background:var(--pvxn-pop);border:1px solid var(--pvxn-pop-edge);box-shadow:var(--pvxn-pop-shadow);transform-origin:85% 0;',
@@ -259,8 +259,30 @@
     setv(h.style, '--pvxn-ua-top', Math.round(y) + 'px'); h.classList.add('pvxn-ua');
   }
   function openHeight() { openWidth(); var h = row.offsetTop + row.scrollHeight + (innerWidth <= 700 ? 16 : 24); setv(nav.style, '--pvxn-open-h', Math.round(h) + 'px'); }
+  /* when the growing panel reaches a point: the panel's width (480 ms) and height (450 ms) springs, solved for time */
+  function bez(x1, y1, x2, y2) {
+    function cx(t) { return 3 * x1 * t * (1 - t) * (1 - t) + 3 * x2 * t * t * (1 - t) + t * t * t; }
+    function cy(t) { return 3 * y1 * t * (1 - t) * (1 - t) + 3 * y2 * t * t * (1 - t) + t * t * t; }
+    return function (x) { var lo = 0, hi = 1, t = x; for (var i = 0; i < 24; i++) { t = (lo + hi) / 2; if (cx(t) < x) lo = t; else hi = t; } return cy(t); };
+  }
+  var BW = bez(.18, .85, .25, 1.055), BH = bez(.18, .85, .25, 1.025);
+  function reach(f, dur, need) { if (need <= 0) return 0; for (var ms = 0; ms <= dur; ms += 10) if (f(ms / dur) >= need) return ms; return dur; }
+  function stagger() {
+    var ow = parseFloat(nav.style.getPropertyValue('--pvxn-open-w')) || 1120, oh = parseFloat(nav.style.getPropertyValue('--pvxn-open-h')) || 124;
+    var lw = parseFloat(nav.style.getPropertyValue('--pvxn-lip-w')) || 154, lh = 24, half = row.offsetWidth / 2;
+    function at(x, y) {   /* x from the row's centre, y from the panel's top: the later of width and height reaching it */
+      var tw = reach(BW, 480, (Math.abs(x) + 30 - lw / 2) / Math.max(1, ow / 2 - lw / 2)), th = reach(BH, 450, (y - lh) / Math.max(1, oh - lh));
+      return Math.max(tw, th);
+    }
+    [].forEach.call(row.children, function (b) {
+      var x = b.offsetLeft + b.offsetWidth / 2 - half, y = row.offsetTop + b.offsetTop + b.offsetHeight + 4;
+      b.style.setProperty('--pvxn-d', Math.max(85, at(x, y)) + 'ms');
+    });
+    var cur = current(), tg = cur && row.contains(cur) ? cur : (cur ? more : null);
+    if (tg) travel.style.setProperty('--pvxn-d', Math.max(160, at(tg.offsetLeft + tg.offsetWidth / 2 - half, row.offsetTop + tg.offsetTop + tg.offsetHeight)) + 'ms');
+  }
   function expand() {
-    clearTimeout(t); if (expanded) return; expanded = true; tokens(); openHeight();
+    clearTimeout(t); if (expanded) return; expanded = true; tokens(); openHeight(); if (!mqReduce.matches) stagger();
     nav.classList.add('pvxn-open'); lip.setAttribute('aria-expanded', 'true'); lip.setAttribute('aria-label', lastLabel + ', hide apps');
     placeTravel(); uaTop();
   }
