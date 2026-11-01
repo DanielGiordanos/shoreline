@@ -73,6 +73,22 @@ async function main() {
         editors: ['new-user@example.test'], data: 'safe',
       });
       await setDoc(doc(db, 'sgvp_review_rounds', 'r1'), {status: 'open'});
+      await setDoc(doc(db, 'form_requests', 'form-open'), {
+        tenant_id: 'shoreline', visit_id: 'visit-a', template_id: 'tpl-1',
+        status: 'requested',
+      });
+      await setDoc(doc(db, 'form_requests', 'form-final'), {
+        tenant_id: 'shoreline', visit_id: 'visit-a', template_id: 'tpl-1',
+        status: 'signed',
+      });
+      await setDoc(doc(db, 'form_requests', 'form-other'), {
+        tenant_id: 'another-hospital', visit_id: 'visit-b', template_id: 'tpl-1',
+        status: 'requested',
+      });
+      await setDoc(doc(db, 'visit_docs', 'signed-one'), {
+        tenant_id: 'shoreline', visit_id: 'visit-a',
+        sha256: 'a'.repeat(64),
+      });
       await setDoc(doc(db, 'pub', 'tracker-open'), {
         tenant_id: 'shoreline', is_active: true,
         resus_pref: null, resus_status: null, resus_recorded_at: null,
@@ -227,6 +243,100 @@ async function main() {
       assertFails(setDoc(doc(staff, 'kura_outbox', 'another-hospital', 'events', 'e1'), {
         event_id: 'e1', hospital: 'another-hospital', env: '{}',
         written_at: serverTimestamp(),
+      })));
+    await check('anonymous pending intake with valid envelope remains possible', () =>
+      assertSucceeds(setDoc(doc(anon, 'client_intakes', 'INT-123456'), {
+        tenant_id: 'shoreline', id: 'INT-123456',
+        submittedAt: new Date().toISOString(),
+        record: {id: 'INT-123456', status: 'awaiting_csr_review'},
+      })));
+    await check('client cannot claim accepted intake on submission', () =>
+      assertFails(setDoc(doc(anon, 'client_intakes', 'INT-999999'), {
+        tenant_id: 'shoreline', id: 'INT-999999',
+        submittedAt: new Date().toISOString(),
+        record: {id: 'INT-999999', status: 'completed'},
+      })));
+    await check('client intake document id must match submitted id', () =>
+      assertFails(setDoc(doc(anon, 'client_intakes', 'INT-777777'), {
+        tenant_id: 'shoreline', id: 'INT-888888',
+        submittedAt: new Date().toISOString(),
+        record: {id: 'INT-888888', status: 'awaiting_csr_review'},
+      })));
+    await check('client intake cannot add privileged metadata fields', () =>
+      assertFails(setDoc(doc(anon, 'client_intakes', 'INT-555555'), {
+        tenant_id: 'shoreline', id: 'INT-555555',
+        submittedAt: new Date().toISOString(),
+        role: 'admin',
+        record: {id: 'INT-555555', status: 'awaiting_csr_review'},
+      })));
+    await check('admin can read a Shoreline form request', () =>
+      assertSucceeds(getDoc(doc(admin, 'form_requests', 'form-open'))));
+    await check('approved staff cannot read other hospital form request', () =>
+      assertFails(getDoc(doc(staff, 'form_requests', 'form-other'))));
+    await check('clinician can create a form request in requested state', () =>
+      assertSucceeds(setDoc(doc(staff, 'form_requests', 'form-new'), {
+        tenant_id: 'shoreline', visit_id: 'visit-a', template_id: 'tpl-1',
+        status: 'requested',
+      })));
+    await check('staff cannot directly create a forged signed request', () =>
+      assertFails(setDoc(doc(staff, 'form_requests', 'forged-new'), {
+        tenant_id: 'shoreline', visit_id: 'visit-a', template_id: 'tpl-1',
+        status: 'signed',
+      })));
+    await check('staff cannot change form request patient visit', () =>
+      assertFails(updateDoc(doc(staff, 'form_requests', 'form-open'), {
+        visit_id: 'visit-b',
+      })));
+    await check('staff cannot change form request template', () =>
+      assertFails(updateDoc(doc(staff, 'form_requests', 'form-open'), {
+        template_id: 'another',
+      })));
+    await check('staff may advance form to with-family status', () =>
+      assertSucceeds(updateDoc(doc(staff, 'form_requests', 'form-open'), {
+        status: 'family',
+      })));
+    await check('staff may advance form to signed status', () =>
+      assertSucceeds(updateDoc(doc(staff, 'form_requests', 'form-open'), {
+        status: 'signed', sha256: 'a'.repeat(64), doc_id: 'signed-one',
+      })));
+    await check('signed form request cannot be reverted', () =>
+      assertFails(updateDoc(doc(staff, 'form_requests', 'form-final'), {
+        status: 'requested',
+      })));
+    await check('signed PDF document can be read by approved staff', () =>
+      assertSucceeds(getDoc(doc(staff, 'visit_docs', 'signed-one'))));
+    await check('signed PDF digest cannot be rewritten after save', () =>
+      assertFails(updateDoc(doc(staff, 'visit_docs', 'signed-one'), {
+        sha256: 'b'.repeat(64),
+      })));
+    await check('signed PDF tenant cannot be modified after creation', () =>
+      assertFails(updateDoc(doc(staff, 'visit_docs', 'signed-one'), {
+        tenant_id: 'another-hospital',
+      })));
+    await check('badly formatted signed PDF digest is rejected', () =>
+      assertFails(setDoc(doc(staff, 'visit_docs', 'bad-signed-pdf'), {
+        tenant_id: 'shoreline', visit_id: 'visit-a',
+        sha256: 'z'.repeat(64),
+      })));
+    await check('foreign tenant signed PDF create is rejected', () =>
+      assertFails(setDoc(doc(staff, 'visit_docs', 'foreign-signed-pdf'), {
+        tenant_id: 'another-hospital', visit_id: 'visit-a',
+        sha256: 'b'.repeat(64),
+      })));
+    await check('valid Shoreline signed PDF metadata is accepted', () =>
+      assertSucceeds(setDoc(doc(staff, 'visit_docs', 'new-signed-pdf'), {
+        tenant_id: 'shoreline', visit_id: 'visit-a',
+        sha256: 'b'.repeat(64),
+      })));
+    await check('verification receipt must belong to Shoreline', () =>
+      assertFails(setDoc(doc(staff, 'doc_verify', 'ABCD2345EFGH6789'), {
+        tenant_id: 'another-hospital', v: 1, sha256: 'a'.repeat(64),
+        signed_on: '2026-11-01', hospital: 'Foreign', title: 'Consent', pages: 1,
+      })));
+    await check('verification receipt must use real hex digest', () =>
+      assertFails(setDoc(doc(staff, 'doc_verify', 'ABCD2345EFGH6789'), {
+        tenant_id: 'shoreline', v: 1, sha256: 'z'.repeat(64),
+        signed_on: '2026-11-01', hospital: 'Shoreline', title: 'Consent', pages: 1,
       })));
     process.stdout.write('Passed ' + seen.length + ' emulator authorization tests.\n');
   } finally {
