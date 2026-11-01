@@ -250,3 +250,24 @@ body.dark .ts-tm-sep{background:rgba(255,255,255,.10)}
 .pvx-sfw>.pvx-sf-ic{position:absolute;left:13px;top:50%;width:16px;height:16px;margin-top:-8px;color:#8a8f98;pointer-events:none}
 .pvx-sfw>.pvx-sf-x{position:absolute;right:11px;top:50%;margin:-11px 0 0}
 input[role=searchbox]::-webkit-search-cancel-button{display:none}
+
+/* n286 · HIG Action sheets: on iPhone a confirming step stacks its buttons, the destructive one first, Cancel-like last */
+@media (max-width:599px){
+  #tsOrderSheet .op-actions:has(.danger.solid){display:flex;flex-direction:column;gap:10px}
+  #tsOrderSheet .op-actions:has(.danger.solid)>.op-btn{width:100%;min-height:48px}
+  #tsOrderSheet .op-actions:has(.danger.solid)>.danger.solid{order:-1}
+  .pvx-discard{flex-direction:column!important;align-items:stretch!important}
+  .pvx-discard b{flex:0 0 auto!important;text-align:center}
+  .pvx-discard button{width:100%;height:48px!important;font-size:.9375rem!important}
+  .pvx-discard button.danger{order:-1}
+  .pvx-discard b{order:-2}
+}
+/* n286 · HIG Token fields: a problem's context menu */
+.ts-pl-menu{position:fixed;z-index:9600;min-width:220px;padding:6px;border-radius:14px}
+.ts-pl-menu button{display:flex;width:100%;align-items:center;min-height:36px;padding:8px 12px;border:0;border-radius:9px;background:none;font:inherit;font-size:.875rem;color:inherit;text-align:left;cursor:pointer}
+.ts-pl-menu button:hover,.ts-pl-menu button:focus-visible{background:rgba(56,189,210,.14);outline:none}
+.ts-pl-menu button.danger{color:#B3141A}
+body.dark .ts-pl-menu button.danger{color:#FF6B6B}
+.ts-pl-menu .ts-tm-sep{height:1px;margin:4px 8px;background:rgba(0,0,0,.10)}
+body.dark .ts-pl-menu .ts-tm-sep{background:rgba(255,255,255,.10)}
+@media (pointer:coarse){.ts-pl-menu button{min-height:44px}}
