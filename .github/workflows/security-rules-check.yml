@@ -1,0 +1,37 @@
+# Emulator-only authorization checks. NEVER deploy production rules from this workflow.
+name: Security Rules Tests
+on:
+  push:
+    branches:
+      - 'security/**'
+    paths:
+      - 'firestore.rules'
+      - 'security/**'
+      - '.github/workflows/security-rules-check.yml'
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'security/**'
+      - '.github/workflows/security-rules-check.yml'
+permissions:
+  contents: read
+jobs:
+  firestore-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install isolated test dependencies
+        run: npm install --prefix security --no-audit --no-fund
+      - name: Run Firestore rule tests in local emulator
+        run: >
+          npx --yes firebase-tools@13.29.1 emulators:exec
+          --only firestore --project demo-pravix-security
+          "node security/firestore.rules.test.cjs"
