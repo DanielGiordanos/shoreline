@@ -334,8 +334,25 @@ match /client_intakes/{docId} {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['printed_at', 'printed_by']);
       allow delete: if false;
       match /parts/{part} {
-        allow read: if staff();
-        allow create: if staff();
+        // The PDF writer uploads parts BEFORE its parent metadata document.
+        // Check the parent for reads; permit new typed chunks when the parent
+        // is not yet present. Once it exists, it must belong to Shoreline.
+        allow get, list: if staff()
+          && exists(/databases/$(database)/documents/visit_docs/$(id))
+          && get(/databases/$(database)/documents/visit_docs/$(id)).data.tenant_id == 'shoreline';
+        allow create: if staff()
+          && (!exists(/databases/$(database)/documents/visit_docs/$(id))
+            || get(/databases/$(database)/documents/visit_docs/$(id)).data.tenant_id == 'shoreline')
+          && request.resource.data.keys().hasOnly(['data', 'i', 'n'])
+          && request.resource.data.keys().hasAll(['data', 'i', 'n'])
+          && request.resource.data.data is string
+          && request.resource.data.data.size() <= 700000
+          && request.resource.data.i is int
+          && request.resource.data.n is int
+          && request.resource.data.i >= 0
+          && request.resource.data.n > 0
+          && request.resource.data.n <= 256
+          && request.resource.data.i < request.resource.data.n;
         allow update, delete: if false;
       }
     }
