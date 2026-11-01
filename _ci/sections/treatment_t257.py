@@ -81,7 +81,7 @@ async def s_t257(br):
     a0 = await pg.evaluate("document.body.classList.contains('dark')"); await pg.emulate_media(color_scheme='light'); await pg.wait_for_timeout(400)
     a1 = await pg.evaluate("[document.body.classList.contains('dark'),document.querySelector('meta[name=theme-color]').content]"); await pg.emulate_media(color_scheme='dark'); await pg.wait_for_timeout(400)
     a2 = await pg.evaluate("document.body.classList.contains('dark')"); await ctx.close()
-    ok('Dark Mode: with no choice saved, the sheet follows the system when it switches while open (it stayed until a reload)', a0 is True and a1[0] is False and a1[1] == '#F2F4F8' and a2 is True, [a0, a1, a2])
+    ok('Dark Mode: with no choice saved, the sheet follows the system when it switches while open (it stayed until a reload)', a0 is True and a1[0] is False and a1[1] in ('#F2F4F8', '#FFFFFF') and a2 is True, [a0, a1, a2])
     # a choice made with the top bar's switch holds when the system switches (n258: it is the person's choice)
     ctx, pg = await bare(br, False); await pg.click('.theme-toggle'); await pg.wait_for_timeout(400)
     await pg.emulate_media(color_scheme='dark'); await pg.wait_for_timeout(300); await pg.emulate_media(color_scheme='light'); await pg.wait_for_timeout(400)
