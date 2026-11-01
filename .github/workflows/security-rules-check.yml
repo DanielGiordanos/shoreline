@@ -35,6 +35,10 @@ jobs:
         run: npm install --prefix security --no-audit --no-fund
       - name: Verify client check-in persistence and payload semantics
         run: node security/checkin-source.test.cjs
+      - name: Verify shared-workstation privacy cleanup
+        run: node security/flow-privacy.test.cjs
+      - name: Verify proposed edge HTTPS and headers policy (local simulation)
+        run: node security/edge/worker.test.mjs
       - name: Run Firestore rule tests in local emulator
         run: >
           npx --yes firebase-tools@13.29.1 emulators:exec
