@@ -162,17 +162,29 @@ match /client_intakes/{docId} {
     }
     // Oct 7 — shared staff directory roster (Flow reads tenants/shoreline/directory/roster; the Directory app edits it).
     match /tenants/{tenant}/directory/{doc} {
-      allow read: if staff();
-      allow write: if sgvpAdmin() || (staff() && request.auth.token.directoryEditor == true);
+      allow read: if staff() && tenant == 'shoreline';
+      allow write: if tenant == 'shoreline'
+        && staff()
+        && (sgvpAdmin() || membership().get('directory_editor', false) == true);
     }
 
+    // Private operations data must never be returned to unauthenticated clients.
+    // Public scheduling/announcements use dedicated, intentionally public collections.
     match /shifts/{tenant} {
-      allow get: if true;
-      allow write: if staff();
+      allow get: if staff() && tenant == 'shoreline';
+      allow list: if false;
+      allow create, update: if tenant == 'shoreline'
+        && staff()
+        && (sgvpAdmin() || membership().get('manage_shifts', false) == true);
+      allow delete: if false;
     }
     match /alerts/{tenant} {
-      allow get: if true;
-      allow write: if staff();
+      allow get: if staff() && tenant == 'shoreline';
+      allow list: if false;
+      allow create, update: if tenant == 'shoreline'
+        && staff()
+        && (sgvpAdmin() || membership().get('manage_alerts', false) == true);
+      allow delete: if false;
     }
 
     match /sgvp_mentors/{docId} {
@@ -198,7 +210,7 @@ match /client_intakes/{docId} {
       allow read: if staff();
       allow write: if sgvpAdmin()
         || ((doc == 'house_doses' || doc == 'snippets') && staff())
-        || (resource != null
+        || (staff() && resource != null
             && request.auth.token.email.lower() in resource.data.get('editors', [])
             && request.resource.data.get('editors', []) == resource.data.get('editors', []));
     }
@@ -216,30 +228,33 @@ match /client_intakes/{docId} {
     // kura_outbox/{hospital}/events/{eventId}: staff create it once (server time, no Kura field); Kura's own staff account reads
     // them and may only add its acknowledgement field "kura". Events are never changed otherwise or deleted.
     match /kura_outbox/{hospital}/events/{eventId} {
-      allow read: if staff();
-      allow create: if staff()
+      allow read: if staff() && hospital == 'shoreline';
+      allow create: if staff() && hospital == 'shoreline'
         && request.resource.data.event_id == eventId
         && request.resource.data.hospital == hospital
         && request.resource.data.env is string
         && request.resource.data.env.size() < 20000
         && request.resource.data.written_at == request.time
         && !('kura' in request.resource.data);
-      allow update: if staff()
+      allow update: if staff() && hospital == 'shoreline'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kura']);
       allow delete: if false;
     }
     match /sheets/{sheetId} {
-      allow read: if staff();
+      allow get, list: if staff() && resource.data.tenant_id == 'shoreline';
       allow create: if staff()
-        && request.resource.data.tenant_id is string
+        && request.resource.data.tenant_id == 'shoreline'
         && request.resource.data.status == 'active'
         && request.resource.data.patient is map;
       allow update: if staff()
+        && resource.data.tenant_id == 'shoreline'
         && request.resource.data.tenant_id == resource.data.tenant_id;
-      allow delete: if false;   // sheets are closed, never deleted
-      // charting by day + archived audit (Treatment Sheets)
+      allow delete: if false; // charted clinical records are retained
+      // Child chart data inherits the parent sheet's hospital boundary.
       match /{sub=**} {
-        allow read, create, update: if staff();
+        allow read, create, update: if staff()
+          && exists(/databases/$(database)/documents/sheets/$(sheetId))
+          && get(/databases/$(database)/documents/sheets/$(sheetId)).data.tenant_id == 'shoreline';
         allow delete: if false;
       }
     }
@@ -438,7 +453,8 @@ match /client_intakes/{docId} {
     // is ever deleted. Interns and the managers' account have no assignments, so they can read nothing here.
     function myEmail() { return request.auth.token.get('email', '').lower(); }
     function reviewReader() {
-      return request.auth != null && myEmail() in ['daniel.giordano@pravix.app', 'heather.galano@vca.com'];
+      return staff()
+        && (sgvpAdmin() || membership().get('review_manager', false) == true);
     }
     match /sgvp_review_rounds/{roundId} {
       allow read: if staff();
