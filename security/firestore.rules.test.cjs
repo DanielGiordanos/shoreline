@@ -89,6 +89,16 @@ async function main() {
         tenant_id: 'shoreline', visit_id: 'visit-a',
         sha256: 'a'.repeat(64),
       });
+      await setDoc(doc(db, 'visit_docs', 'signed-foreign'), {
+        tenant_id: 'another-hospital', visit_id: 'visit-b',
+        sha256: 'a'.repeat(64),
+      });
+      await setDoc(doc(db, 'visit_docs', 'signed-one', 'parts', '0'), {
+        data: 'AAAA', i: 0, n: 1,
+      });
+      await setDoc(doc(db, 'visit_docs', 'signed-foreign', 'parts', '0'), {
+        data: 'AAAA', i: 0, n: 1,
+      });
       await setDoc(doc(db, 'pub', 'tracker-open'), {
         tenant_id: 'shoreline', is_active: true,
         resus_pref: null, resus_status: null, resus_recorded_at: null,
@@ -337,6 +347,29 @@ async function main() {
       assertFails(setDoc(doc(staff, 'doc_verify', 'ABCD2345EFGH6789'), {
         tenant_id: 'shoreline', v: 1, sha256: 'z'.repeat(64),
         signed_on: '2026-11-01', hospital: 'Shoreline', title: 'Consent', pages: 1,
+      })));
+    await check('foreign signed PDF metadata cannot be read by Shoreline staff', () =>
+      assertFails(getDoc(doc(staff, 'visit_docs', 'signed-foreign'))));
+    await check('signed PDF list requires tenant restriction', () =>
+      assertFails(getDocs(collection(staff, 'visit_docs'))));
+    await check('signed PDF Shoreline-specific list succeeds', () =>
+      assertSucceeds(getDocs(query(collection(staff, 'visit_docs'),
+        where('tenant_id', '==', 'shoreline')))));
+    await check('own signed PDF parts remain readable', () =>
+      assertSucceeds(getDoc(doc(staff, 'visit_docs', 'signed-one', 'parts', '0'))));
+    await check('foreign signed PDF parts cannot be read by Shoreline staff', () =>
+      assertFails(getDoc(doc(staff, 'visit_docs', 'signed-foreign', 'parts', '0'))));
+    await check('signing workflow can upload typed chunks before parent metadata', () =>
+      assertSucceeds(setDoc(doc(staff, 'visit_docs', 'future-pdf', 'parts', '0'), {
+        data: 'AAAA', i: 0, n: 1,
+      })));
+    await check('foreign existing signed PDF cannot receive new chunks', () =>
+      assertFails(setDoc(doc(staff, 'visit_docs', 'signed-foreign', 'parts', '1'), {
+        data: 'AAAA', i: 1, n: 2,
+      })));
+    await check('signed PDF chunk metadata cannot be forged with extra fields', () =>
+      assertFails(setDoc(doc(staff, 'visit_docs', 'future-other', 'parts', '0'), {
+        data: 'AAAA', i: 0, n: 1, privileged: true,
       })));
     process.stdout.write('Passed ' + seen.length + ' emulator authorization tests.\n');
   } finally {
