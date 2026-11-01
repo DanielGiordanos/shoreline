@@ -1,7 +1,9 @@
 # Pravix security patch: staff membership migration
 
-**Branch:** `security/auth-tenant-guard-2026-11-01`  
-**Status:** DRAFT / NOT DEPLOYED. No production patient information is used in these tests.
+**Source:** PR #30 (merged 2026-11-01).  
+**Status:** Firebase rules published successfully to `shoreline-flow` on 2026-11-01 via GitHub Actions. App hosting published the source merge. Future Firestore deployments are manual-only. No production patient information was used in the synthetic authorization tests.
+
+**Operational access notice:** All staff access now requires an explicit approved `staff_members/{uid}` record. If staff have not yet been provisioned, they cannot use the protected application. Provision and test approved accounts before hospital go-live.
 
 ## Changes made in this branch
 
@@ -15,7 +17,7 @@
 - Keep the production Firestore publication GitHub Action *manual only*.
 - Add Firebase Local Emulator tests with exclusively synthetic users and records.
 
-## Required provisioning BEFORE live deployment
+## Required provisioning BEFORE staff go-live
 
 1. Confirm the deployed rules and hosting branch match the reviewed revision. Back up the existing Firestore ruleset and prepare a tested rollback.
 2. Confirm the list of active staff identities with hospital leadership. Do not export clinical patient data. Confirm each Firebase Auth **UID**, not just email address.
@@ -56,8 +58,8 @@ The tests require `FIRESTORE_EMULATOR_HOST`, enforced by the script. **They cann
 
 ## Release constraints
 
-- This patch is purposely *fail closed*. Deploying it before membership provisioning will block normal hospital staff. The former email-based authority is gone.
-- This branch does not change GitHub Pages' HTTPS edge policy or inject headers. Those require hosting/CDN changes and separate compatibility testing.
-- Changing Firestore rules from the application GitHub Pages repository is not itself a live database deployment.
-- Never merge a future version that re-enables automatic production rules deployment before provisioning and signed-off staging tests.
+- This patch is purposely *fail closed*. Staff without membership provisioning are now intentionally denied access; approved users must be provisioned before hospital go-live. The former email-based authority is gone.
+- This release does not change GitHub Pages' HTTPS edge policy or inject headers. Those require hosting/CDN changes and separate compatibility testing.
+- Firestore rules were separately deployed by the successful GitHub Actions Firebase publish workflow; changing the static GitHub Pages source alone would not have been sufficient.
+- Do not re-enable automatic production rules deployment without signed-off staging tests and approval.
 - Known open work: exact clinical roles by operation; hospital isolation for all collections; consent/signature immutability; client intake rate limiting; safe offline writes; concurrent patient-edit conflict handling; storage and server-side authorization.
