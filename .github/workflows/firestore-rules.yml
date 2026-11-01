@@ -1,13 +1,12 @@
 # Publishes firestore.rules to the shoreline-flow Firebase project.
-# Runs when firestore.rules changes on main, or by hand (Actions › Publish Firestore rules › Run workflow).
+# SECURITY CHANGE: manual deployment ONLY while staff membership migration is pending.
+# A merge must NEVER automatically lock staff out of the live hospital.
+# After provisioning/approvals, use Actions > Publish Firestore rules > Run workflow.
 # Needs one repository secret, FIREBASE_SERVICE_ACCOUNT: the JSON key of a service account with the
 # "Firebase Rules Admin" role (created by Daniel). Without it the run says so and does nothing.
 # firebase-tools compiles the rules first: a rules error fails the run and nothing is published.
 name: Publish Firestore rules
 on:
-  push:
-    branches: [main]
-    paths: ['firestore.rules']
   workflow_dispatch:
 permissions:
   contents: read
