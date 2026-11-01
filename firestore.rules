@@ -78,8 +78,18 @@ service cloud.firestore {
       allow write: if sgvpAdmin();
     }
 match /client_intakes/{docId} {
+  // Client check-in creates a pending intake. Rate limits and bot verification
+  // must additionally be enforced at a trusted ingress, outside Firestore.
   allow create: if request.resource.data.tenant_id == 'shoreline'
+                && request.resource.data.keys().hasOnly(['tenant_id', 'id', 'submittedAt', 'record'])
+                && request.resource.data.keys().hasAll(['tenant_id', 'id', 'submittedAt', 'record'])
+                && request.resource.data.id == docId
+                && docId.size() <= 100
+                && request.resource.data.submittedAt is string
+                && request.resource.data.submittedAt.size() <= 40
                 && request.resource.data.record is map
+                && request.resource.data.record.id == docId
+                && request.resource.data.record.status == 'awaiting_csr_review'
                 && request.resource.size() < 200 * 1024;
   allow read, update, delete: if staff();
 }
@@ -309,11 +319,18 @@ match /client_intakes/{docId} {
     // Oct 13 — signed PDFs on a visit. Written once and never changed (only the "printed" note may be added), never deleted.
     // Staff only: none of this is in pub (the family tracker) or lobby (the waiting room).
     match /visit_docs/{id} {
+      // Flow queries by visit_id alone; change to tenant-scoped queries before
+      // moving the read/list rule to a document-level tenant predicate.
       allow read: if staff();
       allow create: if staff()
+        && request.resource.data.tenant_id == 'shoreline'
         && request.resource.data.visit_id is string
-        && request.resource.data.sha256 is string && request.resource.data.sha256.size() == 64;
-      allow update: if staff() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['printed_at', 'printed_by']);
+        && request.resource.data.sha256 is string
+        && request.resource.data.sha256.matches('^[0-9a-fA-F]{64}$');
+      allow update: if staff()
+        && resource.data.tenant_id == 'shoreline'
+        && request.resource.data.tenant_id == resource.data.tenant_id
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['printed_at', 'printed_by']);
       allow delete: if false;
       match /parts/{part} {
         allow read: if staff();
@@ -323,7 +340,18 @@ match /client_intakes/{docId} {
     }
     // Oct 13 — forms a doctor sends to reception (requested → with the family → signed, or cancelled). Never deleted.
     match /form_requests/{id} {
-      allow read, create, update: if staff();
+      allow get, list: if staff() && resource.data.tenant_id == 'shoreline';
+      allow create: if staff()
+        && request.resource.data.tenant_id == 'shoreline'
+        && request.resource.data.visit_id is string
+        && request.resource.data.status == 'requested';
+      allow update: if staff()
+        && resource.data.tenant_id == 'shoreline'
+        && request.resource.data.tenant_id == resource.data.tenant_id
+        && request.resource.data.visit_id == resource.data.visit_id
+        && request.resource.data.template_id == resource.data.template_id
+        && resource.data.status in ['requested', 'family']
+        && request.resource.data.status in ['requested', 'family', 'signed', 'cancelled'];
       allow delete: if false;
     }
     // Oct 13 (n126) — verify codes printed on signed PDFs. The document id IS the 16-character code: anyone holding the
@@ -336,7 +364,9 @@ match /client_intakes/{docId} {
       allow create: if staff()
         && code.matches('^[2-9A-HJ-NP-Z]{16}$')
         && request.resource.data.keys().hasOnly(['v','sha256','signed_on','hospital','title','pages','tenant_id','created_at'])
-        && request.resource.data.sha256 is string && request.resource.data.sha256.size() == 64
+        && request.resource.data.tenant_id == 'shoreline'
+        && request.resource.data.sha256 is string
+        && request.resource.data.sha256.matches('^[0-9a-fA-F]{64}$')
         && request.resource.data.signed_on is string && request.resource.data.signed_on.size() == 10
         && request.resource.data.title is string && request.resource.data.title.size() <= 120
         && request.resource.data.hospital is string && request.resource.data.hospital.size() <= 80;
