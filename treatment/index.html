@@ -3735,5 +3735,52 @@ body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
+
+<style id="pvx-n289-css">
+/* n289 · HIG Combo boxes: a fixed list of values is a pop-up, not a text field */
+.v-input select.v-in.pvx-choice{width:118px;height:auto;padding:7px 26px 7px 9px;cursor:pointer;
+  -webkit-appearance:none;appearance:none;background-repeat:no-repeat;background-position:right 9px center;background-size:10px 10px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
+select.bt-val.pvx-choice{width:118px;text-align:left;padding:0 26px 0 9px;cursor:pointer;-webkit-appearance:none;appearance:none;
+  background-repeat:no-repeat;background-position:right 9px center;background-size:10px 10px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
+body.dark select.bt-val.pvx-choice{background-color:var(--surface-0,#0E1628)}
+select.pvx-choice:invalid,select.pvx-choice.pvx-none{color:var(--ink-500,#7A98B8)}
+select.pvx-choice option{color:var(--ink-900,#181A1F)}
+body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
+@media (pointer:coarse){ .v-input select.v-in.pvx-choice,select.bt-val.pvx-choice{min-height:44px} }
+</style>
+<script id="pvx-n289-ts">
+/* n289 · HIG Combo boxes (claude/hig-audit-treatment-colorwells-comboboxes-digitentry.md): a reading with a fixed set of
+   values is a pop-up in Vitals and Chart several; it was a text field that said "Select" and refused anything else */
+(function(){
+  var memo={}, lastFocus=null;
+  function none(s){ s.classList.toggle('pvx-none',!s.value); }
+  function popify(inp){ var dl=inp.list||document.getElementById(inp.getAttribute('list')); if(!dl) return;
+    var vals=[].map.call(dl.options,function(o){ return o.value||o.textContent; }).filter(function(v){ return String(v).trim(); }); if(!vals.length) return;
+    var s=document.createElement('select'); s.className=inp.className+' pvx-choice';
+    ['id','aria-label','data-id','onkeydown','oninput','title'].forEach(function(a){ var v=inp.getAttribute(a); if(v!=null) s.setAttribute(a,v); });
+    if(inp.disabled) s.disabled=true;
+    var o0=document.createElement('option'); o0.value=''; o0.textContent='Choose…'; s.appendChild(o0);
+    vals.forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); });
+    var cur=String(inp.value||'').trim().toLowerCase(), keep=s.id&&memo[s.id], want=cur||(keep?String(keep).toLowerCase():'');
+    if(want){ var m=vals.filter(function(v){ return String(v).toLowerCase()===want; })[0]; if(m!=null) s.value=m; }
+    var hadFocus=document.activeElement===inp;
+    inp.parentNode.replaceChild(s,inp); dl.remove(); none(s);
+    s.addEventListener('change',function(){ none(s); if(s.id){ if(s.value) memo[s.id]=s.value; else delete memo[s.id]; } });
+    if(hadFocus||(lastFocus&&lastFocus===s.id&&(document.activeElement===document.body||!document.activeElement))){ try{ s.focus({preventScroll:true}); }catch(x){} } }
+  function scan(){ [].forEach.call(document.querySelectorAll('input.v-in[list], input.bt-val[list]'),popify);
+    /* the sheet's charting drawer keeps typing (checked against the values), with the values as buttons under it: say so */
+    var cd=document.getElementById('cd-value'); if(cd&&cd.placeholder==='Choose or type'&&document.querySelector('.cd-opts')) cd.placeholder='Choose below, or type one'; }
+  document.addEventListener('focusin',function(e){ var t=e.target; lastFocus=t&&t.classList&&t.classList.contains('pvx-choice')?t.id||null:null; },true);
+  /* a recorded value is forgotten, so a redraw doesn't bring it back */
+  function wrap(){ if(!window.tsVRecord||tsVRecord._pvx289) return; var o=window.tsVRecord;
+    window.tsVRecord=function(id){ var r=o.apply(this,arguments); setTimeout(function(){ var el=document.getElementById('vin-'+id); if(!el||!el.value) delete memo['vin-'+id]; if(el&&el.classList.contains('pvx-choice')) none(el); },0); return r; };
+    window.tsVRecord._pvx289=1; }
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ wrap(); scan(); }catch(x){} },0); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
 </body>
 </html>
