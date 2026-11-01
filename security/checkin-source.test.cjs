@@ -24,13 +24,17 @@ async function verify(path) {
   assert.ok(baseStart > close && baseEnd > baseStart);
   new Function(html.slice(baseStart, baseEnd));
   
-  const storage = new Map();
+  const storage = new Map([
+    ['pravix_client_intakes', JSON.stringify([{id:'OLD-PRIVATE-RECORD',name:'Old test client'}])],
+    ['pravix_intake_analytics', JSON.stringify([{type:'old'}])]
+  ]);
   let resolveWrite, savedEnvelope;
   const sandbox = {
     Promise, JSON, Date,
     localStorage: {
       getItem(k) { return storage.get(k) || null; },
       setItem(k,v) { storage.set(k, String(v)); },
+      removeItem(k) { storage.delete(k); },
     },
     window: {
       __ciDB: {
@@ -49,12 +53,23 @@ async function verify(path) {
   };
   vm.runInNewContext(storeCode, sandbox, {filename: path, timeout: 1500});
   const store = sandbox.FlowIntakeStore;
+  assert.equal(storage.has('pravix_client_intakes'), false,
+    path + ' must purge legacy browser intake records at startup');
+  assert.equal(storage.has('pravix_intake_analytics'), false,
+    path + ' must purge legacy analytics at startup');
+  assert.equal(store._all().length, 0, path + ' must not restore another client\'s intake');
+  assert.ok(!html.includes("localStorage.setItem('pravix_intake_analytics'"),
+    path + ' must not persist clinical analytics');
+  assert.ok(html.includes('var __ciIntakeEvents=[]'),
+    path + ' must hold intake analytics in page memory');
   const rec = {id:'INT-synthetic',submittedAt:new Date().toISOString(),
     status:'awaiting_csr_review', patient:{name:'Synthetic'}};
   const write = store.submitClientIntake(rec);
   assert.equal(typeof write.then, 'function', path + ' must return a promise');
   const current = store._all();
   assert.equal(current.length, 1);
+  assert.equal(storage.has('pravix_client_intakes'), false,
+    path + ' must not write sensitive intake to persistent storage');
   current[0].enriched = true;
   store._saveAll(current); // later wrapper enriches on the same JS turn
   await Promise.resolve(); // deferred write reads the enriched local copy
