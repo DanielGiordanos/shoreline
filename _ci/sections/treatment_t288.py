@@ -49,8 +49,10 @@ async def s_t288(br):
     m = await pg.evaluate("[...document.querySelectorAll('.pt-pop.show .pt-mi')].map(b=>b.textContent.trim())")
     await pg.click('.pt-pop.show [data-k=pvxwin]'); await pg.wait_for_timeout(1200)
     mo = await pg.evaluate("!!document.querySelector('.pt-pop.show')")
+    if len(pages) == 2:   # the new window settles on its sheet (the address is tidied while it loads)
+        await until(pages[1], "location.hash==='#sheet=sh_train3'&&typeof currentCTab!=='undefined'&&currentCTab==='sheet'", 12000)
     ok('…and the patient tab’s menu starts with “Open in new window”, which opens it and closes the menu',
-       m and m[0] == 'Open in new window' and len(pages) == 2 and 'sheet=sh_train3' in pages[1].url and not mo, [m, [p.url[-24:] for p in pages], mo])
+       m and m[0] == 'Open in new window' and len(pages) == 2 and 'sheet=sh_train3' in await pages[1].evaluate('location.href') and not mo, [m, [p.url[-24:] for p in pages], mo])
     ok('no page errors', not e, e[:2])
     await ctx.close()
 

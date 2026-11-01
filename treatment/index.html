@@ -3782,5 +3782,43 @@ body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
+
+<style id="pvx-n290-css">
+/* n290 · HIG Segmented controls: segments the same width */
+.wl-seg[role=radiogroup],.sb-seg[role=radiogroup]{display:inline-grid!important;grid-auto-flow:column;grid-auto-columns:1fr}
+.wl-seg[role=radiogroup]>button,.sb-seg[role=radiogroup]>button{justify-content:center}
+</style>
+<script id="pvx-n290-ts">
+/* n290 · HIG Segmented controls (claude/hig-audit-treatment-imagewells-pickers-segmented-sliders.md): a single choice is a
+   radio group — one Tab stop, arrows choose, wrapping at the ends */
+(function(){
+  var SEL='.vx-seg, .lb-seg';
+  function segs(g){ return [].filter.call(g.querySelectorAll('button'),function(b){ return b.getClientRects().length; }); }
+  function on(b){ var p=b.getAttribute('aria-pressed'); return p!=null?p==='true':b.classList.contains('on'); }
+  function paint(){ [].forEach.call(document.querySelectorAll(SEL),function(g){ if(g.getAttribute('role')!=='radiogroup') g.setAttribute('role','radiogroup');
+      var bs=segs(g); if(!bs.length) return; var cur=bs.filter(on)[0]||bs[0];
+      bs.forEach(function(b){ var c=b===cur; if(b.getAttribute('role')!=='radio') b.setAttribute('role','radio');
+        if(b.getAttribute('aria-checked')!==String(c)) b.setAttribute('aria-checked',String(c)); var ti=c?'0':'-1'; if(b.getAttribute('tabindex')!==ti) b.setAttribute('tabindex',ti); }); }); }
+  function move(g,b,k){ var bs=segs(g), i=bs.indexOf(b); if(i<0) return false; var n=bs.length,
+      j=k==='Home'?0:k==='End'?n-1:/^(ArrowRight|ArrowDown)$/.test(k)?(i+1)%n:/^(ArrowLeft|ArrowUp)$/.test(k)?(i-1+n)%n:-1;
+    if(j<0) return false; var t=bs[j], label=t.getAttribute('data-w')||t.getAttribute('data-u')||t.textContent.trim(), key=t.getAttribute('data-w')?'data-w':t.getAttribute('data-u')?'data-u':null;
+    if(t.getAttribute('aria-checked')!=='true') t.click();
+    var gid=g.id, lb=g.closest('[data-lb]'), lbk=lb&&lb.getAttribute('data-lb'), gc='.'+g.classList[0]+'[role=radiogroup]', n0=0;
+    function find(){ if(g.isConnected) return g; if(gid&&document.getElementById(gid)) return document.getElementById(gid);
+      if(lbk){ var w=document.querySelector('[data-lb="'+lbk+'"]'); if(w&&w.querySelector(SEL)) return w.querySelector(SEL); }
+      return [].filter.call(document.querySelectorAll(gc),function(x){ return x.getClientRects().length; })[0]||null; }
+    (function settle(){ paint(); var g2=find();
+      var nb=g2?segs(g2).filter(function(x){ return key?x.getAttribute(key)===label:x.textContent.trim()===label; })[0]:null;
+      if(nb&&nb.getAttribute('aria-checked')==='true'){ if(document.activeElement!==nb) nb.focus({preventScroll:true}); if(++n0<4) setTimeout(settle,120); return; }
+      if(nb&&document.activeElement!==nb) nb.focus({preventScroll:true});
+      if(++n0<12) setTimeout(settle,100); })();
+    return true; }
+  window.addEventListener('keydown',function(e){ if(e.altKey||e.metaKey||e.ctrlKey) return; var b=e.target, g=b&&b.closest&&b.closest(SEL+', .sb-seg[role=radiogroup], .wl-seg[role=radiogroup]');
+    if(!g||b.tagName!=='BUTTON') return; if(move(g,b,e.key)){ e.preventDefault(); e.stopPropagation(); } },true);
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ paint(); }catch(x){} },0); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-pressed','class']}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
 </body>
 </html>
