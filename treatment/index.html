@@ -138,7 +138,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Pravix Treatment Sheets | VCA Shoreline</title>
 <link rel="icon" type="image/png" href="img/3ad4e7dbff.png">
-<meta name="theme-color" content="#0A1222">
+<meta name="theme-color" content="#0D1730">
 <link rel="manifest" href="manifest.webmanifest?v=3db4b7fbe0">
 <link rel="apple-touch-icon" href="treatment-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2088,7 +2088,7 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   window.pvxNetWatch=function(q){ if(w0) w0(q); if(window.__pvxReadyQ) return; window.__pvxReadyQ=1;
     try{ q.onSnapshot({includeMetadataChanges:true},function(sn){ if(sn&&!(sn.metadata&&sn.metadata.fromCache)&&!window.tsListReady){ window.tsListReady=true; pvxListReady(); } },function(){}); }catch(e){} };
   /* 2. the status bar follows the theme */
-  function tc(){ var m=document.querySelector('meta[name=theme-color]'); if(!m||!document.body) return; var v=document.body.classList.contains('dark')?'#0A1222':'#F2F4F8'; if(m.content!==v) m.content=v; }
+  function tc(){ var m=document.querySelector('meta[name=theme-color]'); if(!m||!document.body) return; var v=document.body.classList.contains('dark')?'#0D1730':'#FFFFFF'; /* n294: the colour of the top bar under it */ if(m.content!==v) m.content=v; }
   function tcBoot(){ tc(); try{ new MutationObserver(tc).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){} }
   if(document.body) tcBoot(); else document.addEventListener('DOMContentLoaded',tcBoot);
   /* 3. the app's own files on every device, so it opens with a slow or no connection */
@@ -3071,14 +3071,22 @@ body.dark .sn-bar .sn-x{color:#5fd3e6}
 
   /* 7. the Keyboard shortcuts sheet: ? */
   window.pvxTsKeyGroups=function(){ return groups(); };
-  function groups(){ return [
+  /* n295 · HIG Keyboards: Windows lists Ctrl, Alt, Shift in its own order (the Mac keeps Control, Option, Shift, Command), and Ctrl+Y for Redo */
+  function groups(){ var mac=!!(window.PvxKeys&&PvxKeys.mac), O={ctrl:0,mod:0,alt:1,shift:2};
+    return groups0().map(function(g){ var items=[];
+      g.items.forEach(function(it){ var k=it.keys.slice();
+        if(!mac){ var m=k.filter(function(x){ return x in O; }).sort(function(a,b){ return O[a]-O[b]; }), r=k.filter(function(x){ return !(x in O); }); k=m.concat(r); }
+        items.push({keys:k,label:it.label});
+        if(!mac&&it.label==='Redo') items.push({keys:['mod','Y'],label:'Redo'}); });
+      return {title:g.title,items:items}; }); }
+  function groups0(){ return [
     {title:'General', items:[{keys:['mod','K'],label:'Search patients and orders'},{keys:['?'],label:'Show keyboard shortcuts'}]},
     {title:'Patient tabs', items:[{keys:['alt','1–9'],label:'Go to patient tab 1 to 9'},{keys:['←','→'],label:'Move between tabs (on a tab)'},{keys:['alt','←','→'],label:'Next or previous tab'},{keys:['shift','mod','←','→'],label:'Move the tab left or right (on a tab)'},{keys:['Delete'],label:'Close the tab (on a tab)'}]},
     {title:'Treatment sheet', items:[{keys:['alt','E'],label:'Full view on or off'},{keys:['alt','I'],label:'Show or hide patient info (in full view and on narrow screens)'},{keys:['↑','↓','←','→'],label:'Move around the sheet'},{keys:['Home','End'],label:'Go to the start or end of the row'},{keys:['return'],label:'Chart or open the cell'},
       {keys:['mod','Z'],label:'Undo'},{keys:['shift','mod','Z'],label:'Redo'},{keys:['alt','Click'],label:'Fold or unfold every section (on a section)'}]},
     {title:'Status board', items:[{keys:['1–4'],label:'Your patients, Outpatients, Inpatients, Boarding'},{keys:['H'],label:'Hours or list'}]},
     {title:'Inpatients display', items:[{keys:['←','→'],label:'Turn the page'},{keys:['esc'],label:'Leave the display'}]},
-    {title:'Menus and sheets', items:[{keys:['esc'],label:'Close the menu or sheet'},{keys:['↑','↓'],label:'Move through a menu'},{keys:['return'],label:'Choose'}]} ]; }
+    {title:'Menus and sheets', items:[{keys:['esc'],label:'Close the menu or sheet'},{keys:['mod','.'],label:'Cancel, as Esc does'},{keys:['↑','↓'],label:'Move through a menu'},{keys:['return'],label:'Choose'}]} ]; }
 
   var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ tagMenus(); oneClose(); }catch(e){} }); }
   function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
