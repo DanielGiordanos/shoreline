@@ -7256,19 +7256,20 @@ const arr=[];
 snap.forEach(function(d){ const v=d.data()||{}; const rec=(v && v.record)?v.record:v; if(rec && rec.id) arr.push(rec); });
 arr.sort(function(a,b){ return String((b&&b.submittedAt)||'').localeCompare(String((a&&a.submittedAt)||'')); });
 _writeMirror(arr); _emit();
-}, function(err){ });
+}, function(err){ console.warn('[intake-sync] subscription error',err&&err.code||'unknown'); try{window.dispatchEvent(new CustomEvent('pvx:intake-sync-error',{detail:{source:'subscription'}}))}catch(_){} });
 }catch(e){}
 }
 function _push(id, rec, extra){
-if(!_db) return;
-try{ _db.collection(COL).doc(id).set(Object.assign({ tenant_id:TENANT_ID, id:id, record:rec }, extra||{}), {merge:true}); }catch(e){}
+function warn(error){ console.warn('[intake-sync] write failed',error&&error.code||'connection'); try{window.dispatchEvent(new CustomEvent('pvx:intake-sync-error',{detail:{source:'write',id:id}}))}catch(_){} try{if(typeof toast==='function')toast('Client intake failed to sync. Check your connection.')}catch(_){} return false; }
+if(!_db) return Promise.resolve(warn(null));
+try{ return _db.collection(COL).doc(id).set(Object.assign({ tenant_id:TENANT_ID, id:id, record:rec }, extra||{}), {merge:true}).then(function(){return true}).catch(warn); }catch(e){return Promise.resolve(warn(e))}
 }
 return {
 getPendingIntakes(){ return _all().filter(r=> r && r.status!=='completed'&& r.status!=='dismissed'); },
 getIntake(id){ return _all().find(r=> r && r.id===id) || null; },
 submitClientIntake(rec){ const q=_all(); q.unshift(rec); _saveAll(q); _push(rec.id, rec, { submittedAt: rec.submittedAt||new Date().toISOString() }); return rec; },
 updateIntake(id,patch){ const q=_all(); const i=q.findIndex(r=>r&&r.id===id); let merged=null; if(i>=0){ merged=Object.assign({},q[i],patch); q[i]=merged; _saveAll(q); } _push(id, merged||patch); return merged; },
-completeIntake(id){ const q=_all().map(r=> (r&&r.id===id)?Object.assign({},r,{status:'completed'}):r ); _saveAll(q); _push(id, {status:'completed'}); },
+completeIntake(id){ const q=_all().map(r=> (r&&r.id===id)?Object.assign({},r,{status:'completed'}):r ); return _push(id, {status:'completed'}).then(function(ok){ if(ok)_saveAll(q); return ok; }); },
 onChange(fn){ listeners.add(fn); return ()=>listeners.delete(fn); },
 _attach:_attach, _all:_all, _saveAll:_saveAll
 };
@@ -7718,7 +7719,7 @@ batch.set(DB.collection('pub').doc(p.publicToken), safeProjection(p), { merge:tr
 fxLobbyWrite(batch,p);
 if(typeof fxCodesSync==='function') fxCodesSync([p],true);   /* n118: codes/{CODE}-{pet name}, its own batch (codes_n118.js) */
 });
-try{ await batch.commit(); }catch(err){ changed.forEach(function(p){ delete _fxLobby[String(p.id)]; }); if(typeof fvSaveFallback==='function') await fvSaveFallback(changed); else throw err; }
+try{ await batch.commit(); }catch(err){ changed.forEach(function(p){ delete _fxLobby[String(p.id)]; }); throw err; /* Never rewrite a potentially stale entire patient record after a failed batch. */ }
 Backend._lastRows = fvRowsCopy(LIVE);
 if(Backend.conn!=='live') Backend.setConn('live');
 pvxPersistEvt('saved',pvxAt);   /* PVX-N148: the server confirmed */
@@ -16800,12 +16801,9 @@ window.fvSaveVisit=function(batch,p,prev){
   if(!n) return;
   batch.update(ref, Object.assign(d, stamp));
 };
-/* If a field-level update can't apply (e.g. the record was removed elsewhere), fall back to a merge. */
-window.fvSaveFallback=async function(changed){
-  var b=DB.batch(), who=me();
-  changed.forEach(function(p){ b.set(DB.collection('visits').doc(String(p.id)), Object.assign({}, mapToDb(p), {last_by:who.name||null,last_by_uid:who.uid||null,last_at:new Date().toISOString()}), {merge:true}); });
-  return b.commit();
-};
+/* Unsafe whole-record merge fallback disabled. An operator must reconcile
+   conflicts against the latest server version before retrying. */
+window.fvSaveFallback=async function(){ throw new Error('Whole-record fallback is disabled to protect concurrent edits.'); };
 
 /* ---------- 3. milestones ---------- */
 try{ if(typeof moveRoom==='function'){ var _mr=moveRoom; moveRoom=function(p,r){ var was=p&&p.room; var out=_mr.apply(this,arguments);
@@ -18675,7 +18673,7 @@ body.cf-family-on{overflow:hidden;}
   /* ---------- documents on a visit ---------- */
   var DOCS={};
   function loadDocs(p,force){ var k=String(p.id), c=DOCS[k]; if(c&&!force&&(c.list||c.p)) return c.p||Promise.resolve(c.list); var D=db(); if(!D) return Promise.resolve([]);
-    c=DOCS[k]=c||{list:null}; c.p=D.collection('visit_docs').where('visit_id','==',k).get().then(function(s){
+    c=DOCS[k]=c||{list:null}; c.p=D.collection('visit_docs').where('visit_id','==',k).where('tenant_id','==',T()).get().then(function(s){
       c.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(m){ return !m.tenant_id||m.tenant_id===T(); }).sort(function(a,b){ return String(b.created_at||'').localeCompare(String(a.created_at||'')); });
       c.p=null; return c.list; }).catch(function(e){ console.warn('[docs] list',e); c.p=null; c.err=true; return c.list||[]; });
     return c.p; }
