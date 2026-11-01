@@ -3799,7 +3799,8 @@ body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
       var bs=segs(g); if(!bs.length) return; var cur=bs.filter(on)[0]||bs[0];
       bs.forEach(function(b){ var c=b===cur; if(b.getAttribute('role')!=='radio') b.setAttribute('role','radio');
         if(b.getAttribute('aria-checked')!==String(c)) b.setAttribute('aria-checked',String(c)); var ti=c?'0':'-1'; if(b.getAttribute('tabindex')!==ti) b.setAttribute('tabindex',ti); }); }); }
-  function move(g,b,k){ var bs=segs(g), i=bs.indexOf(b); if(i<0) return false; var n=bs.length,
+  var GEN=0; document.addEventListener('pointerdown',function(){ GEN++; },true);
+  function move(g,b,k){ var my=++GEN; var bs=segs(g), i=bs.indexOf(b); if(i<0) return false; var n=bs.length,
       j=k==='Home'?0:k==='End'?n-1:/^(ArrowRight|ArrowDown)$/.test(k)?(i+1)%n:/^(ArrowLeft|ArrowUp)$/.test(k)?(i-1+n)%n:-1;
     if(j<0) return false; var t=bs[j], label=t.getAttribute('data-w')||t.getAttribute('data-u')||t.textContent.trim(), key=t.getAttribute('data-w')?'data-w':t.getAttribute('data-u')?'data-u':null;
     if(t.getAttribute('aria-checked')!=='true') t.click();
@@ -3807,7 +3808,7 @@ body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
     function find(){ if(g.isConnected) return g; if(gid&&document.getElementById(gid)) return document.getElementById(gid);
       if(lbk){ var w=document.querySelector('[data-lb="'+lbk+'"]'); if(w&&w.querySelector(SEL)) return w.querySelector(SEL); }
       return [].filter.call(document.querySelectorAll(gc),function(x){ return x.getClientRects().length; })[0]||null; }
-    (function settle(){ paint(); var g2=find();
+    (function settle(){ if(my!==GEN) return; paint(); var g2=find(); var ae=document.activeElement; if(ae&&(/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)||ae.closest&&ae.closest(SEL+', .sb-seg[role=radiogroup], .wl-seg[role=radiogroup]'))&&!(g2&&g2.contains(ae))&&!(g.isConnected&&g.contains(ae))) return;
       var nb=g2?segs(g2).filter(function(x){ return key?x.getAttribute(key)===label:x.textContent.trim()===label; })[0]:null;
       if(nb&&nb.getAttribute('aria-checked')==='true'){ if(document.activeElement!==nb) nb.focus({preventScroll:true}); if(++n0<4) setTimeout(settle,120); return; }
       if(nb&&document.activeElement!==nb) nb.focus({preventScroll:true});
@@ -3817,6 +3818,55 @@ body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
     if(!g||b.tagName!=='BUTTON') return; if(move(g,b,e.key)){ e.preventDefault(); e.stopPropagation(); } },true);
   var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ paint(); }catch(x){} },0); }
   function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-pressed','class']}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+<style id="pvx-n291-css">
+/* n291 · HIG Steppers: the zoom shows its value */
+.ts-zoom .pvx-zv{font-variant-numeric:tabular-nums;white-space:nowrap}
+.treatment-toolbar .qadd>.pvx-sf-x{margin-right:2px}
+</style>
+<script id="pvx-n291-ts">
+/* n291 · HIG Steppers, Text fields, Virtual keyboards (claude/hig-audit-treatment-steppers-textfields-toggles-keyboards.md) */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  function set(el,a,v){ if(el&&el.getAttribute(a)!==v) el.setAttribute(a,v); }
+  /* ---------- keyboards: the keyboard and Return key that fit each field ---------- */
+  function kb(){
+    var s=$('#tsSearch'); if(s){ set(s,'autocorrect','off'); set(s,'autocapitalize','off'); set(s,'spellcheck','false'); set(s,'enterkeyhint','search'); }
+    ['#nsName','#nsLast','#nsDoc','#nsBreed'].forEach(function(q){ var i=$(q); if(i){ set(i,'autocapitalize','words'); set(i,'autocorrect','off'); set(i,'spellcheck','false'); } });
+    var ini=$('#esIni'); if(ini){ set(ini,'autocapitalize','characters'); set(ini,'autocorrect','off'); set(ini,'spellcheck','false'); }
+    ['#epLo','#epHi'].forEach(function(q){ var i=$(q); if(i) set(i,'inputmode','numeric'); });
+    $$('.v-input .v-in, .v-input .v-note').forEach(function(i){ if(i.tagName==='INPUT') set(i,'enterkeyhint','done'); });
+    var cd=$('#cd-value'); if(cd) set(cd,'enterkeyhint','done');
+    var bt=$$('#tsOrderSheet .bt-val').filter(function(i){ return i.tagName==='INPUT'; }); bt.forEach(function(i,k){ set(i,'enterkeyhint',k<bt.length-1?'next':'done'); }); }
+  /* ---------- the add-treatment field: a Clear button ---------- */
+  var X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  function clearBtn(){ var i=$('#tsSearch'); if(!i||i._pvx291) return; var host=i.parentElement; if(!host) return; i._pvx291=1;
+    var x=document.createElement('button'); x.type='button'; x.className='pvx-sf-x'; x.setAttribute('aria-label','Clear'); x.title='Clear'; x.innerHTML=X; host.appendChild(x);
+    function sync(){ x.hidden=!i.value; }
+    x.addEventListener('mousedown',function(e){ e.preventDefault(); });
+    x.onclick=function(e){ e.stopPropagation(); i.value=''; i.dispatchEvent(new Event('input',{bubbles:true})); sync(); try{ i.focus({preventScroll:true}); }catch(t){} };
+    i.addEventListener('input',sync); i.addEventListener('change',sync); sync();
+    setInterval(function(){ if(i.isConnected) sync(); },700); }
+  /* ---------- the zoom shows how many hours are on screen ---------- */
+  function hours(){ var s=$('#sheetScroll'); if(!s||!s.getClientRects().length) return 0; var r=s.getBoundingClientRect(), seen={};
+    $$('.hcell .hl',s).forEach(function(h){ var b=h.getBoundingClientRect(); if(!b.width||b.left<r.left-2||b.right>r.right+2||b.top<0||b.bottom>innerHeight) return;
+      var el=document.elementFromPoint(b.left+b.width/2,b.top+b.height/2); if(el&&(el===h||h.contains(el)||el.closest&&el.closest('.hcell')===h.parentElement)) seen[h.textContent.trim()]=1; });   /* not hidden under the order column */
+    return Object.keys(seen).length; }
+  function zoom(){ var z=$('.ts-zoom'); if(!z) return; var bs=$$('button',z); if(bs.length!==3) return; var mid=bs[1];
+    var own=mid.textContent.trim(); if(own&&own!=='Fit'&&!$('.pvx-zv',mid)) return;   /* zoomed in, the button already shows its hours ("9 h") */
+    var n=hours(); if(!n) return;
+    var t=n+' h'; if(mid.textContent.trim()!==t){ var sp=$('.pvx-zv',mid); if(!sp){ mid.textContent=''; sp=document.createElement('span'); sp.className='pvx-zv'; mid.appendChild(sp); } sp.textContent=t; }
+    var fits=mid.getAttribute('aria-disabled')==='true';
+    set(mid,'aria-label','Showing '+n+' hour'+(n===1?'':'s')+(fits?'':' · fit to the screen'));
+    set(z,'aria-label','Hours shown: '+n); }
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ kb(); clearBtn(); zoom(); }catch(x){} },30); }
+  var ro=window.ResizeObserver?new ResizeObserver(tick):null, watched=null;
+  function watch(){ var g=$('#sheetScroll'), c=g&&g.firstElementChild; if(!ro||!c||c===watched) return; try{ if(watched) ro.disconnect(); ro.observe(g); ro.observe(c); watched=c; }catch(x){} }
+  function boot(){ new MutationObserver(function(){ watch(); tick(); }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-disabled','style','class']});
+    addEventListener('resize',tick); setInterval(function(){ if(!document.hidden) zoom(); },1500); watch(); tick(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
