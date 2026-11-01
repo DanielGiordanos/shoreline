@@ -1463,7 +1463,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
-<script defer src="voice.js?v=674ccb2375"></script>
+<script defer src="voice.js?v=a78f196d1f"></script>
 
 <script>/* CL-T02 n132: compact search — the visible Search button is the Tab stop while collapsed; the field opens on focus/click and closes when left empty */(function(){var s=document.querySelector(".subnav .search"),i=document.getElementById("globalSearch"),b=s&&s.querySelector(".ts-search-open"),mq=window.matchMedia("(max-width:1680px)");if(!s||!i||!b)return;function collapsed(){return mq.matches&&!s.classList.contains("is-open")&&!s.classList.contains("is-focus");}function sync(){var c=collapsed();i.tabIndex=c?-1:0;b.tabIndex=c?0:-1;b.setAttribute("aria-hidden",c?"false":"true");}b.addEventListener("click",function(){s.classList.add("is-open");i.focus();sync();});s.addEventListener("click",function(e){if(!s.contains(document.activeElement)){i.focus();sync();}});i.addEventListener("focus",function(){s.classList.add("is-focus");sync();});i.addEventListener("input",function(){s.classList.toggle("is-open",!!i.value);sync();});i.addEventListener("blur",function(){s.classList.remove("is-focus");if(!i.value)s.classList.remove("is-open");setTimeout(sync,0);});mq.addEventListener?mq.addEventListener("change",sync):mq.addListener(sync);sync();})();</script>
 
@@ -3992,5 +3992,10 @@ body.dark .ts-load-card.mid .ts-lc-lvl,body.dark .ts-load-card.hi .ts-lc-lvl{col
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
+<style id="pvx-n297-css">
+/* n297 · HIG Machine learning: where LUNA's speech goes, as a quiet last line of its help */
+.fv-help .fv-note{display:block!important;grid-column:1/-1;margin-top:8px;padding-top:8px;border-top:1px solid rgba(127,127,127,.18);font-size:0.75rem;line-height:1.45;color:var(--ink-500,#6e6e73)}
+body.dark .fv-help .fv-note{color:#A7B8CC}
+</style>
 </body>
 </html>
