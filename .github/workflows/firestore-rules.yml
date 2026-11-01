@@ -1,15 +1,12 @@
 # Publishes firestore.rules to the shoreline-flow Firebase project.
-# One-time authorized prelaunch security deployment upon PR #30 merge.
-# Must be returned to manual-only after publishing to avoid future implicit rules pushes.
-# The owner confirms no staff account currently needs live system access.
+# Security controls deployed in prelaunch hardening PR #30.
+# Production Firebase rule publication requires an explicit manual Actions dispatch.
+# Do not enable automatic rules publishing without controlled staging and review.
 # Needs one repository secret, FIREBASE_SERVICE_ACCOUNT: the JSON key of a service account with the
 # "Firebase Rules Admin" role (created by Daniel). Without it the run says so and does nothing.
 # firebase-tools compiles the rules first: a rules error fails the run and nothing is published.
 name: Publish Firestore rules
 on:
-  push:
-    branches: [main]
-    paths: ['firestore.rules']
   workflow_dispatch:
 permissions:
   contents: read
