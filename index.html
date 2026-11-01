@@ -7468,7 +7468,7 @@ AUTH.onAuthStateChanged(function(user){
 if(user&&pvxIsLobbyAccount(user)){ pvxLobbyAccountCard(user); return; }   /* PVX-N149: the lobby account never opens the staff board */
 if(user){ /* PVX-N155: return to the page that asked for sign-in (a path on this site only) */ try{ var pvxNext=new URLSearchParams(location.search).get('next'); if(pvxNext&&/^\/(?![\/\\])[\w\-\/.#=&%?]*$/.test(pvxNext)){ location.replace(pvxNext); return; } }catch(e){}
   pvxLobbyAccountCard(null); try{ CURRENT_USER = userDisplayName(user); }catch(e){} try{ usApplyRoleForUser(user); }catch(e){} const ov=document.getElementById('sbLogin'); if(ov){ sbFinishLogin(ov); } Backend.loadAndSubscribe(); }
-else { pvxLobbyAccountCard(null); showLogin(); }
+else { pvxClearPrivateLocalState(); pvxLobbyAccountCard(null); showLogin(); }
 });
 },
 loadShifts: async function(){
