@@ -104,8 +104,9 @@ match /client_intakes/{docId} {
         || ( request.resource.data.diff(resource.data).affectedKeys()
                .hasOnly(['resus_pref','resus_status','resus_recorded_at'])
              && resource.data.is_active == true
-             && ( request.resource.data.resus_pref == null
-                  || ( request.resource.data.resus_pref is string && request.resource.data.resus_pref.size() <= 24 ) )
+             && resource.data.tenant_id == 'shoreline'
+             && request.resource.data.resus_pref in ['CPR', 'DNR']
+             && request.resource.data.resus_status == 'client_selected'
              && ( request.resource.data.resus_recorded_at == request.time
                   || request.resource.data.resus_recorded_at == null
                   || ( request.resource.data.resus_recorded_at is string && request.resource.data.resus_recorded_at.size() <= 40 ) ) );
@@ -142,7 +143,12 @@ match /client_intakes/{docId} {
              && request.resource.data.body is string
              && request.resource.data.body.size() > 0
              && request.resource.data.body.size() <= 1000
-             && exists(/databases/$(database)/documents/pub/$(token)) );
+             && request.resource.data.keys().hasOnly(['sender', 'body', 'created_at'])
+             && request.resource.data.created_at is string
+             && request.resource.data.created_at.size() <= 40
+             && exists(/databases/$(database)/documents/pub/$(token))
+             && get(/databases/$(database)/documents/pub/$(token)).data.tenant_id == 'shoreline'
+             && get(/databases/$(database)/documents/pub/$(token)).data.is_active == true );
       allow update, delete: if staff();
     }
     // Oct 7 — Flow's "new message from family" listener (collectionGroup('items')).
