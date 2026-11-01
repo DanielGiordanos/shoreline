@@ -6,6 +6,9 @@ on:
       - 'security/**'
     paths:
       - 'firestore.rules'
+      - 'index.html'
+      - 'checkin/index.html'
+      - 'flow-client-checkin.html'
       - 'security/**'
       - '.github/workflows/security-rules-check.yml'
   pull_request:
@@ -30,6 +33,8 @@ jobs:
           java-version: '21'
       - name: Install isolated test dependencies
         run: npm install --prefix security --no-audit --no-fund
+      - name: Verify client check-in persistence and payload semantics
+        run: node security/checkin-source.test.cjs
       - name: Run Firestore rule tests in local emulator
         run: >
           npx --yes firebase-tools@13.29.1 emulators:exec
