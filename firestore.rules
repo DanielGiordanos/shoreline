@@ -321,9 +321,8 @@ match /client_intakes/{docId} {
     // Oct 13 — signed PDFs on a visit. Written once and never changed (only the "printed" note may be added), never deleted.
     // Staff only: none of this is in pub (the family tracker) or lobby (the waiting room).
     match /visit_docs/{id} {
-      // Flow queries by visit_id alone; change to tenant-scoped queries before
-      // moving the read/list rule to a document-level tenant predicate.
-      allow read: if staff();
+      // Flow and Forms now include tenant_id on all signed-PDF queries.
+      allow get, list: if staff() && resource.data.tenant_id == 'shoreline';
       allow create: if staff()
         && request.resource.data.tenant_id == 'shoreline'
         && request.resource.data.visit_id is string
