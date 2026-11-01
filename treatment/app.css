@@ -271,3 +271,9 @@ body.dark .ts-pl-menu button.danger{color:#FF6B6B}
 .ts-pl-menu .ts-tm-sep{height:1px;margin:4px 8px;background:rgba(0,0,0,.10)}
 body.dark .ts-pl-menu .ts-tm-sep{background:rgba(255,255,255,.10)}
 @media (pointer:coarse){.ts-pl-menu button{min-height:44px}}
+
+/* n287 · HIG Page controls: more than 10 pages read as words */
+#tsTv .tv-pager .tv-pg-txt{font-size:clamp(14px,1.2vw,22px);font-weight:600;color:var(--sub,#A7C2D8);font-variant-numeric:tabular-nums}
+/* n287 · HIG Alerts: an alert with no default shows its focus quietly */
+#tsModal .tm-card[role=alertdialog]:focus{outline:none}
+#tsModal .tm-card[role=alertdialog]:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}

@@ -145,7 +145,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Treatment">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="app.css?v=2eb5c65a2e">
+<link rel="stylesheet" href="app.css?v=77188969d6">
 
 <script>window.PVX_LANG_SRC={es:'es.js?v=d2fc8f577a'};try{var l=localStorage.getItem('pvx_lang')||((document.cookie.match(/(?:^|;\s*)pvx_lang=(es|en)/)||[])[1]);if(l==='es'){document.documentElement.classList.add('i18n-wait');document.documentElement.lang='es';var e=document.createElement('script');e.id='pvxLangEs';e.src=window.PVX_LANG_SRC.es;e.async=true;document.head.appendChild(e);}}catch(e){}</script>
 <style>html.i18n-wait body{visibility:hidden}</style>
@@ -1459,7 +1459,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=9b3ede13e2"></script>
+<script defer src="store.js?v=949fb7830b"></script>
 
 
 <script defer src="anes.js?v=9413920cd8"></script>
@@ -3564,6 +3564,39 @@ body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color
   document.addEventListener('click',function(e){ if(held&&e.target.closest&&e.target.closest('.pl-txt')){ held=false; e.preventDefault(); e.stopImmediatePropagation(); } },true);
   window.addEventListener('keydown',function(e){ if(menu&&e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); close(true); } },true);
   window.addEventListener('scroll',function(){ menu&&close(false); },true);
+})();
+</script>
+
+<script id="pvx-n287-ts">
+/* n287 · HIG Alerts (claude/hig-audit-treatment-alerts-pagecontrols-panels.md):
+   ⌘. cancels like Esc; a question is an alert (alertdialog, described by its message); a confirmation that replaces or
+   deletes something has no default — focus goes to the alert itself */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)};
+  function shown(e){ return !!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'); }
+  var DESTRUCTIVE=/^(replace|stop|delete|remove|clear|erase|discard)\b/i;
+  function alertify(){ var m=$('#tsModal'); if(!m||!m.classList.contains('show')) return; var c=$('.tm-card',m); if(!c||c._pvxA) return;
+    var h=$('h3',c), t=h?h.textContent.trim():''; if(!/\?$/.test(t)) return; c._pvxA=1;
+    c.setAttribute('role','alertdialog'); if(!h.id) h.id='pvxAt'+Date.now().toString(36); c.setAttribute('aria-labelledby',h.id);
+    var p=$('p',c); if(p&&p.textContent.trim()){ if(!p.id) p.id='pvxAm'+Date.now().toString(36); c.setAttribute('aria-describedby',p.id); }
+    var ok=$('[data-ok]',c);
+    if(ok&&DESTRUCTIVE.test(ok.textContent.trim())){ c.setAttribute('tabindex','-1'); c._pvxNoDefault=1; ok.classList.remove('primary');
+      [120,260].forEach(function(ms){ setTimeout(function(){ if(!c.isConnected||!m.classList.contains('show')) return; var a=document.activeElement;
+        if(a===c||(a&&a.tagName==='INPUT'&&c.contains(a))) return; try{ c.focus({preventScroll:true}); }catch(x){} },ms); }); } }
+  var q=0; function tick(){ if(q) return; q=requestAnimationFrame(function(){ q=0; try{ alertify(); }catch(x){} }); }
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+
+  /* ⌘. / Ctrl+. : the same as Esc for whatever is on top */
+  window.addEventListener('keydown',function(e){ if(e.key!=='.'||!(e.metaKey||e.ctrlKey)||e.altKey||e.shiftKey) return;
+    var d=[].slice.call(document.querySelectorAll('.pvx-discard')).filter(shown).pop();
+    var hit=null;
+    if(d) hit=$('[data-keep]',d);
+    else if(window.PvxKeys&&PvxKeys.isOpen()){ e.preventDefault(); e.stopImmediatePropagation(); PvxKeys.close(); return; }
+    else if($('#tsModal.show')) hit=$('#tsModal.show [data-x]');
+    else if($('#tsOrderSheet.show')) hit=[].slice.call(document.querySelectorAll('#tsOrderSheet .op-x')).filter(shown).pop();
+    else { var dr=[].slice.call(document.querySelectorAll('.drawer.open')).filter(shown).pop(); if(dr) hit=$('.close',dr)||$('[aria-label=Close]',dr); }
+    if(!hit) return; e.preventDefault(); e.stopImmediatePropagation(); hit.click(); },true);
 })();
 </script>
 </body>
