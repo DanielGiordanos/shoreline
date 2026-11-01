@@ -3870,5 +3870,119 @@ body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
+
+<style id="pvx-n292-css">
+/* n292 · HIG Progress indicators: the Pravix loader (n273's design) in the list area while it waits */
+.pvx-ld{padding:6px 0 14px;max-width:560px}
+.pvx-ld-line{display:flex;align-items:baseline;gap:12px;margin-bottom:11px}
+.pvx-ld-task{font-size:0.9375rem;font-weight:500;letter-spacing:-.01em;color:var(--ink-900,#1d1d1f)}
+body.dark .pvx-ld-task{color:#E6EEF6}
+.pvx-ld-task .s2,html.ts-load-slow .pvx-skel .pvx-ld-task .s1{display:none}
+html.ts-load-slow .pvx-skel .pvx-ld-task .s2{display:inline}
+.pvx-ld-track{position:relative;height:7px;border-radius:99px;background:rgba(127,127,127,.18);overflow:hidden}
+.pvx-ld-track i{position:absolute;left:0;top:0;height:100%;width:30%;border-radius:inherit;background:#23439C;animation:pvxLdInd 1.7s cubic-bezier(.45,.05,.35,1) infinite}
+body.dark .pvx-ld-track i{background:#63CDDD}
+.pvx-ld-track i::before{content:"";position:absolute;inset:1px 2px auto;height:1px;background:rgba(255,255,255,.22);border-radius:99px}
+@keyframes pvxLdInd{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+html.ts-load-slow .pvx-skel .pvx-ld-track i{opacity:.55}
+.pvx-skel .pvx-skel-slow{margin-top:10px;line-height:1.5}
+.pvx-sksheet .pvx-ld{margin-bottom:14px}
+@media (prefers-reduced-motion:reduce){.pvx-ld-track i{width:100%;animation:none;transform:none;opacity:.32}}
+/* n292 · HIG Gauges: the estimate bar names its ends */
+.est-card.fin2 .pvx-gends{position:relative;height:16px;margin-top:5px;font-size:0.6875rem;line-height:16px;color:var(--ink-500,#6e6e73);white-space:nowrap}
+body.dark .est-card.fin2 .pvx-gends{color:#A7B8CC}
+.est-card.fin2 .pvx-gends span{position:absolute;top:0}
+.est-card.fin2 .pvx-gends .lo{transform:translateX(-50%)}
+.est-card.fin2 .pvx-gends .lo.end{transform:translateX(-100%)}
+.est-card.fin2 .pvx-gends .hi{right:0}
+/* n292 · HIG Gauges: the workload bars */
+.ts-load-card .ts-lc-top{display:flex;align-items:center;gap:8px}
+.ts-load-card .ts-lc-lvl{margin-left:auto;font-size:0.6875rem;font-weight:600;color:var(--ink-500,#6e6e73)}
+.ts-load-card.mid .ts-lc-lvl,.ts-load-card.hi .ts-lc-lvl{color:#9A5B00}
+body.dark .ts-load-card .ts-lc-lvl{color:#A7B8CC}
+body.dark .ts-load-card.mid .ts-lc-lvl,body.dark .ts-load-card.hi .ts-lc-lvl{color:#F0B13C}
+.ts-lc-bar{background:rgba(127,127,127,.2)!important}
+</style>
+<script id="pvx-n292-ts">
+/* n292 · HIG Gauges and Progress indicators (claude/hig-audit-treatment-activityrings-gauges-progress-ratings.md) */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  function h(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  /* ---------- 1. the Pravix loader where a list or sheet waits for its first answer ---------- */
+  function loader(task,slow){ return '<div class="pvx-ld"><div class="pvx-ld-line"><span class="pvx-ld-task"><span class="s1">'+h(task)+'</span>'+(slow?'<span class="s2">'+h(slow)+'</span>':'')+'</span></div>'+
+    '<div class="pvx-ld-track" role="progressbar" aria-label="'+h(task)+'"><i></i></div></div>'; }
+  function wrapSkel(){ var f=window.pvxSkelRows; if(typeof f!=='function'||f.__n292) return;
+    var w=function(){ var s=f.apply(this,arguments); if(typeof s!=='string'||s.indexOf('pvx-ld')>-1) return s;
+      s=s.replace(/<span class="pvx-sr">[^<]*<\/span>/,loader('Retrieving the patient list','Taking longer than expected'));
+      return s.replace(/<div class="pvx-skel-slow">[^<]*<\/div>/,'<div class="pvx-skel-slow">The patient list hasn’t answered yet. Check the connection; it keeps trying.</div>'); };
+    w.__n292=1; window.pvxSkelRows=w; }
+  function wrapSheet(){ var f=window.pvxSheetSkel; if(typeof f!=='function'||f.__n292) return;
+    var w=function(){ var s=f.apply(this,arguments); if(typeof s!=='string'||!s||s.indexOf('pvx-ld')>-1) return s;
+      return s.replace(/<span class="pvx-sr">([^<]*?)…?<\/span>/,function(m,t){ var d=document.createElement('div'); d.innerHTML=t; return loader(d.textContent.replace(/…$/,'')); }); };
+    w.__n292=1; window.pvxSheetSkel=w; }
+  /* ---------- 2. the estimate bar: both ends named, on screen and to VoiceOver ---------- */
+  function money(n){ n=+n||0; var whole=Math.abs(n-Math.round(n))<0.005; return (n<0?'−':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:whole?0:2,maximumFractionDigits:2}); }
+  function est(){ var V; try{ V=(typeof VISIT!=='undefined')?VISIT:null; }catch(x){ V=null; } if(!V) return;
+    $$('.est-card.fin2 .est-bar').forEach(function(b){
+      var lo=+V.estLow||0, hi=+V.estHigh||0, cur=+V.estCurrent||0; if(!(hi>0)) return;
+      var hasLo=lo>0&&lo<hi, d=hasLo?lo:hi, lbl;
+      if(cur>hi) lbl='Charges '+money(cur)+': '+money(cur-hi)+' past the '+money(hi)+' high end.'+(hasLo?' Low end '+money(lo)+'.':'');
+      else if(hasLo&&cur>lo) lbl='Charges '+money(cur)+': '+money(cur-lo)+' past the '+money(lo)+' low end, '+money(hi-cur)+' left to the '+money(hi)+' high end.';
+      else lbl='Charges '+money(cur)+': '+money(d-cur)+' left to the '+money(d)+(hasLo?' low end. High end '+money(hi)+'.':' high end.');
+      if(b.getAttribute('aria-label')!==lbl) b.setAttribute('aria-label',lbl);
+      var mk=b.querySelector('.est-lo'), at=hasLo?(lo/hi*100):100, g=b.nextElementSibling;
+      if(!g||!g.classList.contains('pvx-gends')){ g=document.createElement('div'); g.className='pvx-gends'; g.setAttribute('aria-hidden','true'); b.parentNode.insertBefore(g,b.nextSibling); }
+      var sig=(hasLo?at.toFixed(1):'-')+'|'+b.getBoundingClientRect().width.toFixed(0);
+      if(g.dataset.sig===sig) return; g.dataset.sig=sig;
+      g.innerHTML=(hasLo?'<span class="lo" style="left:'+at.toFixed(1)+'%">Low end</span>':'')+'<span class="hi">High end</span>';
+      var br=b.getBoundingClientRect(), gr0=g.getBoundingClientRect(), ml=parseFloat(g.style.marginLeft)||0;
+      g.style.marginLeft=(ml+br.left-gr0.left).toFixed(1)+'px'; g.style.width=br.width.toFixed(1)+'px';
+      var l=g.querySelector('.lo'), r=g.querySelector('.hi'); if(!l) return;
+      var gr=g.getBoundingClientRect(), lr=l.getBoundingClientRect();
+      if(lr.left<gr.left){ l.style.left='0'; l.style.transform='none'; lr=l.getBoundingClientRect(); }
+      if(lr.right>r.getBoundingClientRect().left-8){ l.classList.add('end'); lr=l.getBoundingClientRect(); }
+      if(lr.right>r.getBoundingClientRect().left-8){ r.textContent=''; l.textContent='Low end · high end'; l.classList.add('end'); l.style.left='100%'; }
+    }); }
+  /* ---------- 3. the workload bars: a fixed scale, the level in words, a VoiceOver label ---------- */
+  var FULL=12;
+  function wrapLoad(){ var f=window.tsLoadStrip; if(typeof f!=='function'||f.__n292) return;
+    var w=function(){ var s=f.apply(this,arguments); if(typeof s!=='string'||s.indexOf('ts-load-card')<0) return s;
+      var t=document.createElement('template'); t.innerHTML=s; var cards=[].slice.call(t.content.querySelectorAll('.ts-load-card')), rows=[];
+      cards.forEach(function(c){ var nums=[].slice.call(c.querySelectorAll('.ts-lc-nums span')), due=0, late=0, pts=0;
+        nums.forEach(function(sp){ var v=parseInt((sp.querySelector('b')||{}).textContent,10)||0, tx=sp.textContent;
+          if(sp.classList.contains('late')) late=v; else if(/due/.test(tx)) due=v; else if(/pt/.test(tx)) pts=v; });
+        rows.push({c:c,due:due,late:late,pts:pts,score:due+2*late}); });
+      var max=Math.max.apply(null,[FULL].concat(rows.map(function(r){ return r.score; })));
+      rows.forEach(function(r){ var c=r.c, lvl=c.classList.contains('hi')?'Heavy':c.classList.contains('mid')?'Busy':'Light', nm=((c.querySelector('.ts-lc-top b')||{}).textContent||'').trim();
+        var top=c.querySelector('.ts-lc-top'); if(top&&!top.querySelector('.ts-lc-lvl')){ var e=document.createElement('span'); e.className='ts-lc-lvl'; e.textContent=lvl; top.appendChild(e); }
+        var bar=c.querySelector('.ts-lc-bar'), i=bar&&bar.querySelector('i'); if(!bar) return;
+        if(i) i.style.width=Math.round(Math.min(1,r.score/max)*100)+'%';
+        bar.setAttribute('role','img');
+        bar.setAttribute('aria-label',(nm?nm+': ':'')+lvl.toLowerCase()+' workload, '+r.due+' due within the hour'+(r.late?', '+r.late+' late':'')+', '+r.pts+(r.pts===1?' patient':' patients'));
+      });
+      return t.innerHTML; };
+    w.__n292=1; window.tsLoadStrip=w; }
+  function tick(){ wrapSkel(); wrapSheet(); wrapLoad(); est(); }
+  tick();
+  function boot(){ tick(); new MutationObserver(function(){ est(); }).observe(document.body,{childList:true,subtree:true});
+    addEventListener('resize',function(){ $$('.pvx-gends').forEach(function(g){ g.dataset.sig=''; }); est(); });
+    setInterval(function(){ if(!document.hidden) tick(); },1000); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+<script id="pvx-n293-ts">
+/* n293 · HIG Controls: a toggle keeps its name; its state is on or off (claude/hig-audit-treatment-appshortcuts-complications-controls.md) */
+(function(){
+  function set(el,a,v){ if(el&&el.getAttribute(a)!==v) el.setAttribute(a,v); }
+  function names(){
+    var x=document.querySelectorAll('.ts-expand-btn[aria-pressed]'); for(var i=0;i<x.length;i++) set(x[i],'aria-label','Expand the sheet');
+    var c=document.querySelectorAll('.dr-cap[aria-pressed]');
+    for(var j=0;j<c.length;j++){ set(c[j],'aria-label','Approval mode'); var t=c[j].getAttribute('data-tip')||''; if(t) set(c[j],'aria-description',t); }
+  }
+  function boot(){ names(); new MutationObserver(names).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-label','aria-pressed','data-tip']}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
 </body>
 </html>

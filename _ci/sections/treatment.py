@@ -911,7 +911,7 @@ async def s_n235(br):
     await ctx.close()
     ctx, pg, errs = await ts235(after='window.__fsDelay=60000;', wait=10800)
     sl = await pg.evaluate("[document.documentElement.className,(document.querySelector('#ctab-dash .pvx-skel-slow')||{}).innerText||'',getComputedStyle(document.querySelector('#ctab-dash .pvx-skel-slow')).display]")
-    ok('n235: after 10 s without an answer it says “Still loading the patient list — check the connection”', 'ts-load-slow' in sl[0] and sl[1].startswith('Still loading the patient list') and sl[2] == 'block', sl)
+    ok('n235: after 10 s without an answer it says the patient list hasn’t answered and to check the connection (n292’s wording, under “Taking longer than expected”)', 'ts-load-slow' in sl[0] and sl[1].startswith('The patient list hasn’t answered yet. Check the connection') and sl[2] == 'block', sl)
     await ctx.close()
     ctx, pg, errs = await ts235(dark=False)
     ok('n235: … and light #F2F4F8 in the light theme (it was always dark; Treatment is its own Home Screen app since n234)', await pg.evaluate("document.querySelector('meta[name=theme-color]').content") == '#F2F4F8')
