@@ -260,8 +260,10 @@ match /client_intakes/{docId} {
         && resource.data.tenant_id == 'shoreline'
         && request.resource.data.tenant_id == resource.data.tenant_id;
       allow delete: if false; // charted clinical records are retained
-      // Child chart data inherits the parent sheet's hospital boundary.
-      match /{sub=**} {
+      // Explicitly require at least one child collection/document pair.
+      // A bare recursive wildcard can match zero segments and accidentally
+      // override the tighter tenant controls on /sheets/{sheetId} itself.
+      match /{subcollection}/{subdocument}/{descendants=**} {
         allow read, create, update: if staff()
           && exists(/databases/$(database)/documents/sheets/$(sheetId))
           && get(/databases/$(database)/documents/sheets/$(sheetId)).data.tenant_id == 'shoreline';
