@@ -26,10 +26,26 @@ service cloud.firestore {
 
     // n149: the lobby screen account (keep in step with Flow, or/ and treatment/)
     function lobbyAccount() { return request.auth != null && request.auth.token.get('email', '').lower() in ['au733@vca.com']; }
-    function staff() { return request.auth != null && !lobbyAccount(); }
-        function sgvpAdmin() {
-      return request.auth != null
-        && ( request.auth.token.email.lower() == 'daniel.giordano@pravix.app' || roleAdmin() );    }
+    // Stage only: populate every active user's UID membership before deployment.
+    function membershipPath() {
+      return /databases/$(database)/documents/staff_members/$(request.auth.uid);
+    }
+    function membership() { return get(membershipPath()).data; }
+    function staff() {
+      return request.auth != null && !lobbyAccount()
+        && exists(membershipPath())
+        && membership().get('active', false) == true
+        && membership().get('tenant_id', '') == 'shoreline'
+        && membership().get('role', '') in
+          ['owner', 'admin', 'management', 'doctor', 'technician', 'liaison', 'intern', 'staff'];
+    }
+    match /staff_members/{uid} {
+      allow get: if staff() && uid == request.auth.uid;
+      allow list, create, update, delete: if false;
+    }
+    function sgvpAdmin() {
+      return staff() && membership().get('role', '') in ['owner', 'admin'];
+    }
 
     // n223: the managers' shared account (au733@vca.com) reads the curriculum Overview, read only: the plan (grid),
     // time off and holidays off. Not the change history, not change requests, nothing else in Pravix.
@@ -62,13 +78,18 @@ service cloud.firestore {
       allow write: if sgvpAdmin();
     }
 match /client_intakes/{docId} {
-  allow create: if request.resource.data.tenant_id is string
+  allow create: if request.resource.data.tenant_id == 'shoreline'
                 && request.resource.data.record is map
                 && request.resource.size() < 200 * 1024;
   allow read, update, delete: if staff();
 }
     match /visits/{id} {
-      allow read, write: if staff();
+      allow get, list: if staff() && resource.data.tenant_id == 'shoreline';
+      allow create: if staff() && request.resource.data.tenant_id == 'shoreline';
+      allow update: if staff()
+        && resource.data.tenant_id == 'shoreline'
+        && request.resource.data.tenant_id == resource.data.tenant_id;
+      allow delete: if false;
     }
 
     // Oct 7 — family tracker feed. The document id IS the private tracker token: open by id, never listed by the public.
@@ -157,10 +178,7 @@ match /client_intakes/{docId} {
     allow write: if sgvpAdmin();
     }
 
-    function roleAdmin() {
-    return exists(/databases/$(database)/documents/sgvp_roles/$(request.auth.token.email.lower()))
-    && get(/databases/$(database)/documents/sgvp_roles/$(request.auth.token.email.lower())).data.admin == true;
-    }
+    // Email-keyed sgvp_roles are display/configuration data, not a privilege authority.
 
 
     // Treatment Sheets — Charges code list: staff read; owner writes; 'map' (hospital codes per drug) writable by staff
@@ -223,7 +241,7 @@ match /client_intakes/{docId} {
     // device; Firebase keeps the shared record: a head {seq}, one log entry per change (written once, never changed or
     // deleted, numbered with no gaps because the head moves with it), full copies in checkpoints/, settings in meta/.
     function kuraOwner() {
-      return request.auth != null && request.auth.token.email.lower() == 'daniel.giordano@pravix.app';
+      return staff() && membership().get('kura_owner', false) == true;
     }
     match /kura/{space} {
       allow read: if kuraOwner();
