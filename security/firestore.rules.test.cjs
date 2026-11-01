@@ -38,6 +38,9 @@ async function main() {
       await setDoc(doc(db, 'staff_members', 'staff-a'), {
         active: true, tenant_id: 'shoreline', role: 'doctor',
       });
+      await setDoc(doc(db, 'staff_members', 'admin-a'), {
+        active: true, tenant_id: 'shoreline', role: 'admin',
+      });
       await setDoc(doc(db, 'staff_members', 'staff-b'), {
         active: true, tenant_id: 'another-hospital', role: 'doctor',
       });
@@ -53,6 +56,23 @@ async function main() {
       await setDoc(doc(db, 'visits', 'visit-b'), {
         tenant_id: 'another-hospital', status: 'Waiting', is_active: true,
       });
+      await setDoc(doc(db, 'shifts', 'shoreline'), {assignments: {day: 'test'}});
+      await setDoc(doc(db, 'alerts', 'shoreline'), {active: true, title: 'Test alert'});
+      await setDoc(doc(db, 'shifts', 'another-hospital'), {assignments: {}});
+      await setDoc(doc(db, 'tenants', 'shoreline', 'directory', 'roster'), {records: []});
+      await setDoc(doc(db, 'tenants', 'another-hospital', 'directory', 'roster'), {records: []});
+      await setDoc(doc(db, 'sheets', 'sheet-a'), {
+        tenant_id: 'shoreline', patient: {name: 'Synthetic'}, status: 'active',
+      });
+      await setDoc(doc(db, 'sheets', 'sheet-b'), {
+        tenant_id: 'another-hospital', patient: {name: 'Synthetic'}, status: 'active',
+      });
+      await setDoc(doc(db, 'sheets', 'sheet-a', 'days', 'd1'), {note: 'Test'});
+      await setDoc(doc(db, 'sheets', 'sheet-b', 'days', 'd1'), {note: 'Test'});
+      await setDoc(doc(db, 'ts_settings', 'protected-editors'), {
+        editors: ['new-user@example.test'], data: 'safe',
+      });
+      await setDoc(doc(db, 'sgvp_review_rounds', 'r1'), {status: 'open'});
       await setDoc(doc(db, 'pub', 'tracker-open'), {
         tenant_id: 'shoreline', is_active: true,
         resus_pref: null, resus_status: null, resus_recorded_at: null,
@@ -66,6 +86,9 @@ async function main() {
     const anon = env.unauthenticatedContext().firestore();
     const unlisted = env.authenticatedContext('unknown-uid', {
       email: 'new-user@example.test',
+    }).firestore();
+    const admin = env.authenticatedContext('admin-a', {
+      email: 'admin@example.test',
     }).firestore();
     const staff = env.authenticatedContext('staff-a', {
       email: 'approved@example.test',
@@ -153,6 +176,57 @@ async function main() {
     await check('closed tracker cannot create new family messages', () =>
       assertFails(setDoc(doc(anon, 'messages', 'tracker-closed', 'items', 'message-four'), {
         sender: 'client', body: 'Post closure', created_at: new Date().toISOString(),
+      })));
+    await check('anonymous cannot read private staffing shifts', () =>
+      assertFails(getDoc(doc(anon, 'shifts', 'shoreline'))));
+    await check('anonymous cannot read internal hospital alerts', () =>
+      assertFails(getDoc(doc(anon, 'alerts', 'shoreline'))));
+    await check('approved staff can read their own shifts', () =>
+      assertSucceeds(getDoc(doc(staff, 'shifts', 'shoreline'))));
+    await check('foreign-hospital user cannot access Shoreline shifts', () =>
+      assertFails(getDoc(doc(otherHospital, 'shifts', 'shoreline'))));
+    await check('ordinary doctor cannot rewrite staffing assignments', () =>
+      assertFails(updateDoc(doc(staff, 'shifts', 'shoreline'), {assignments: {day: 'forged'}})));
+    await check('provisioned admin can edit staffing assignments', () =>
+      assertSucceeds(updateDoc(doc(admin, 'shifts', 'shoreline'), {assignments: {day: 'updated'}})));
+    await check('doctor cannot change alert without authorization', () =>
+      assertFails(updateDoc(doc(staff, 'alerts', 'shoreline'), {title: 'forged'})));
+    await check('admin can manage hospital alert', () =>
+      assertSucceeds(updateDoc(doc(admin, 'alerts', 'shoreline'), {title: 'updated'})));
+    await check('Shoreline staff cannot read another hospital directory', () =>
+      assertFails(getDoc(doc(staff, 'tenants', 'another-hospital', 'directory', 'roster'))));
+    await check('Shoreline staff can read Shoreline directory', () =>
+      assertSucceeds(getDoc(doc(staff, 'tenants', 'shoreline', 'directory', 'roster'))));
+    await check('staff cannot edit the directory without editor role', () =>
+      assertFails(updateDoc(doc(staff, 'tenants', 'shoreline', 'directory', 'roster'), {records: ['forged']})));
+    await check('approved admin may edit the Shoreline directory', () =>
+      assertSucceeds(updateDoc(doc(admin, 'tenants', 'shoreline', 'directory', 'roster'), {records: []})));
+    await check('Shoreline staff can access own treatment sheet', () =>
+      assertSucceeds(getDoc(doc(staff, 'sheets', 'sheet-a'))));
+    await check('Shoreline staff cannot access foreign treatment sheet', () =>
+      assertFails(getDoc(doc(staff, 'sheets', 'sheet-b'))));
+    await check('Shoreline staff cannot create foreign treatment sheet', () =>
+      assertFails(setDoc(doc(staff, 'sheets', 'new-foreign-sheet'), {
+        tenant_id: 'another-hospital', patient: {}, status: 'active',
+      })));
+    await check('Shoreline staff cannot retag treatment sheet', () =>
+      assertFails(updateDoc(doc(staff, 'sheets', 'sheet-a'), {
+        tenant_id: 'another-hospital',
+      })));
+    await check('Shoreline staff can access own charted subdocument', () =>
+      assertSucceeds(getDoc(doc(staff, 'sheets', 'sheet-a', 'days', 'd1'))));
+    await check('Shoreline staff cannot access foreign charted subdocument', () =>
+      assertFails(getDoc(doc(staff, 'sheets', 'sheet-b', 'days', 'd1'))));
+    await check('unapproved email-listed user cannot edit hospital settings', () =>
+      assertFails(updateDoc(doc(unlisted, 'ts_settings', 'protected-editors'), {
+        data: 'bad',
+      })));
+    await check('unapproved user cannot become SGVP review manager via email', () =>
+      assertFails(getDoc(doc(unlisted, 'sgvp_review_rounds', 'r1'))));
+    await check('cross-hospital inventory event is rejected', () =>
+      assertFails(setDoc(doc(staff, 'kura_outbox', 'another-hospital', 'events', 'e1'), {
+        event_id: 'e1', hospital: 'another-hospital', env: '{}',
+        written_at: serverTimestamp(),
       })));
     process.stdout.write('Passed ' + seen.length + ' emulator authorization tests.\n');
   } finally {
