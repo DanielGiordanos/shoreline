@@ -170,8 +170,8 @@ async def s_t255(br):
     cf = await p6.evaluate("(()=>{const e=document.activeElement;return [e.tagName,(e.textContent||'').trim().slice(0,20)]})()")
     ok('Add a charge: Escape gives focus back to the Add charge button (it went to the page)', cf[0] == 'BUTTON' and 'Add charge' in cf[1], cf)
     if not WK:
-        snap = await p6.accessibility.snapshot()
-        txt = json.dumps(snap)
+        # Playwright 1.63 removed page.accessibility; the ARIA snapshot reads the same tree
+        txt = json.dumps(await p6.accessibility.snapshot()) if hasattr(p6, 'accessibility') else await p6.locator('body').aria_snapshot()
         ok('Closed dialogs aren\'t read by VoiceOver (the charge dialog\'s fields are gone from the accessibility tree)', 'Find a charge by code or name' not in txt, '')
     # message with an action lasts and pauses
     ta = await p6.evaluate("typeof toastAct==='function'")
