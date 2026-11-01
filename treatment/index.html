@@ -3599,5 +3599,141 @@ body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color
     if(!hit) return; e.preventDefault(); e.stopImmediatePropagation(); hit.click(); },true);
 })();
 </script>
+
+<style id="pvx-n288-css">
+/* n288 · HIG Scroll views, Popovers, Sheets (claude/hig-audit-treatment-popovers-scrollviews-sheets-windows.md) */
+@media (max-width:700px),(max-height:500px){
+  #ctab-sheet #sheetScroll{height:max(260px,var(--pvx-stage-h,calc(100dvh - 150px)))!important}
+}
+.pvx-grab{display:none}
+@media (max-width:599px){
+  /* View and Filters: a sheet, not a popover */
+  #flPop.pvx-as-sheet{left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-width:none!important;
+    max-height:min(80dvh,640px)!important;overflow:auto!important;z-index:9420!important;border-radius:20px 20px 0 0!important;
+    padding-bottom:env(safe-area-inset-bottom)!important;box-sizing:border-box;overscroll-behavior:contain;transform-origin:50% 100%!important}
+  #flPop.pvx-as-sheet>*{width:auto!important;max-width:none!important}
+  .pvx-pop-scrim{position:fixed;inset:0;z-index:9410;background:rgba(8,14,26,.42);opacity:0;transition:opacity .2s}
+  .pvx-pop-scrim.on{opacity:1}
+  /* a form: from the bottom, Cancel and its action at the top */
+  #tsModal:has(.tm-card.pvx-isheet){align-items:flex-end}
+  #tsModal .tm-card.pvx-isheet{width:100%;max-height:calc(100dvh - 44px - env(safe-area-inset-top));border-radius:20px 20px 0 0;
+    padding-bottom:calc(22px + env(safe-area-inset-bottom));overscroll-behavior:contain;display:flex;flex-direction:column}
+  #tsModal .tm-card.pvx-isheet>*{flex-shrink:0}
+  #tsModal .tm-card.pvx-isheet>.pvx-discard{order:-1}
+  #tsModal .tm-card.pvx-isheet>.tm-foot{position:sticky;top:-22px;bottom:auto;margin:-22px -22px 14px;padding:24px 16px 10px;
+    border-top:0;border-bottom:1px solid rgba(60,72,90,.12);justify-content:space-between;touch-action:none;order:-2}
+  body.dark #tsModal .tm-card.pvx-isheet>.tm-foot{border-bottom-color:rgba(150,185,220,.14)}
+  #tsModal .tm-card.pvx-isheet>.tm-foot::before,#flPop.pvx-as-sheet::before,#tsOrderSheet .op-card::before{content:"";position:absolute;
+    top:7px;left:50%;width:36px;height:5px;margin-left:-18px;border-radius:3px;background:rgba(120,120,128,.45);pointer-events:none}
+  #flPop.pvx-as-sheet{padding-top:18px!important}
+  #flPop.pvx-as-sheet::before{position:sticky;display:block;top:0;margin:-11px auto 6px;left:auto}
+  #tsOrderSheet .op-card{position:relative}
+  #tsOrderSheet .op-card::before{z-index:5}
+  .pvx-swiping{transition:none!important}
+}
+@media (max-width:599px) and (prefers-reduced-motion:reduce){ .pvx-pop-scrim{transition:none} }
+</style>
+<script id="pvx-n288-ts">
+/* n288 · HIG Popovers, Scroll views, Sheets and Windows (claude/hig-audit-treatment-popovers-scrollviews-sheets-windows.md) */
+(function(){
+  var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
+  var PHONE=matchMedia('(max-width:599px)'), RM=matchMedia('(prefers-reduced-motion: reduce)');
+  function shown(e){ return !!(e&&e.isConnected&&e.getClientRects().length); }
+
+  /* ---------- 1. keyboard scrolling when nothing has focus ---------- */
+  function scroller(){
+    var pts=[[innerWidth/2,innerHeight*0.6],[innerWidth/2,innerHeight*0.45]];
+    for(var i=0;i<pts.length;i++){ var el=document.elementFromPoint(pts[i][0],pts[i][1]);
+      while(el&&el!==document.body&&el!==document.documentElement){ var cs=getComputedStyle(el);
+        if(/(auto|scroll)/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+2) return el; el=el.parentElement; } }
+    var s=document.scrollingElement; return s&&s.scrollHeight>s.clientHeight+2?s:null; }
+  window.addEventListener('keydown',function(e){ if(e.defaultPrevented||e.altKey||e.metaKey||e.ctrlKey||e.isComposing) return;
+    var k=e.key; if(!/^(PageDown|PageUp| |Home|End|ArrowDown|ArrowUp)$/.test(k)) return;
+    var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement) return;
+    if((window.pvxModalUp&&pvxModalUp())||$('#flPop')||$('.ts-menu.show')||$('.pt-pop.show')||$('.ts-copymenu')||$('#tsTv')) return;
+    var sc=scroller(); if(!sc) return; e.preventDefault();
+    var page=Math.max(40,sc.clientHeight-48), b=RM.matches?'auto':'smooth';
+    if(k==='Home') sc.scrollTo({top:0,behavior:b}); else if(k==='End') sc.scrollTo({top:sc.scrollHeight,behavior:b});
+    else sc.scrollBy({top:k==='PageDown'||(k===' '&&!e.shiftKey)?page:k==='PageUp'||k===' '?-page:k==='ArrowDown'?40:-40,behavior:b}); });
+
+  /* ---------- 2. iPhone: the grid is as tall as the area it scrolls in ---------- */
+  function fit(){ var st=$('.stage'); if(!st) return; var h=st.clientHeight; if(h>0) document.documentElement.style.setProperty('--pvx-stage-h',h+'px'); }
+  addEventListener('resize',fit); addEventListener('orientationchange',function(){ setTimeout(fit,300); });
+
+  /* ---------- 3. iPhone: View and Filters as a sheet ---------- */
+  var scrim=null, popWasSheet=false;
+  function unScrim(){ if(scrim){ var s=scrim; scrim=null; s.classList.remove('on'); setTimeout(function(){ s.remove(); },380); } }
+  function popSheet(){ var f=$('#flPop');
+    if(!f){ popWasSheet=false; unScrim(); return; }
+    var menu=!!f.querySelector('[role=menu]:not(.vw-pop)'), want=PHONE.matches&&(!!f.querySelector('.vw-pop')||(!menu&&(!!f.querySelector('.wf-pop')||popWasSheet)));
+    if(!want){ if(f.classList.contains('pvx-as-sheet')){ f.classList.remove('pvx-as-sheet'); f.removeAttribute('role'); f.removeAttribute('aria-modal'); } popWasSheet=false; unScrim(); return; }
+    if(!f.classList.contains('pvx-as-sheet')){ f.classList.add('pvx-as-sheet'); f.setAttribute('role','dialog'); f.setAttribute('aria-modal','true');
+      if(!f.getAttribute('aria-label')) f.setAttribute('aria-label',f.querySelector('.vw-pop')?'View':'Filters'); }
+    popWasSheet=true;
+    if(!scrim){ scrim=document.createElement('div'); scrim.className='pvx-pop-scrim'; scrim.setAttribute('aria-hidden','true'); document.body.insertBefore(scrim,f);
+      requestAnimationFrame(function(){ scrim&&scrim.classList.add('on'); }); } }
+
+  /* ---------- 4. iPhone: forms as sheets from the bottom, Cancel and the action at the top ---------- */
+  function formSheet(){ var m=$('#tsModal'); if(!m||!m.classList.contains('show')) return; var c=$('.tm-card',m); if(!c) return;
+    if(!PHONE.matches){ return; }
+    if(!c._pvxIs){ var foot=$(':scope > .tm-foot',c);
+      if(c.getAttribute('role')==='alertdialog'||!foot||!foot.querySelector('[data-x]')||!foot.querySelector('[data-ok]')||!c.querySelector('input:not([type=hidden]),select,textarea')) return;
+      c._pvxIs=1; c.classList.add('pvx-isheet'); } }
+
+  /* ---------- swipe down to close (iPhone sheets) ---------- */
+  var S=null;
+  function sheetAt(t){ if(!PHONE.matches||!t||!t.closest) return null; var c=t.closest('#flPop.pvx-as-sheet, #tsOrderSheet .op-card, #tsModal .tm-card.pvx-isheet'); return c&&shown(c)?c:null; }
+  function close(c){ if(c.id==='flPop'){ window._closePop&&_closePop(); return; }
+    if(c.classList.contains('op-card')){ var x=$$('#tsOrderSheet .op-x').filter(shown).pop(); x&&x.click(); return; }
+    var b=$('#tsModal.show [data-x]'); b&&b.click(); }
+  document.addEventListener('touchstart',function(e){ if(e.touches.length!==1) return; var t=e.target, c=sheetAt(t); if(!c) return;
+    if(t.closest('input,select,textarea,button,a,[role=slider]')) return; var r=c.getBoundingClientRect(), y=e.touches[0].clientY;
+    var inBar=c.classList.contains('pvx-isheet')&&t.closest('.tm-foot'); if(!inBar&&(y-r.top>36||c.scrollTop>0)) return;
+    S={c:c,y0:y,x0:e.touches[0].clientX,t0:Date.now(),dy:0,on:false}; },{capture:true,passive:true});
+  document.addEventListener('touchmove',function(e){ if(!S) return; var p=e.touches[0], dy=p.clientY-S.y0, dx=p.clientX-S.x0;
+    if(!S.on){ if(dy>8&&Math.abs(dx)<dy){ S.on=true; S.c.classList.add('pvx-swiping'); } else if(dy<-4||Math.abs(dx)>12){ S=null; return; } else return; }
+    e.preventDefault(); S.dy=Math.max(0,dy); S.c.style.transform='translateY('+S.dy+'px)'; },{capture:true,passive:false});
+  function end(){ if(!S) return; var s=S; S=null; if(!s.on) return; var v=s.dy/Math.max(1,Date.now()-s.t0);
+    s.c.classList.remove('pvx-swiping'); s.c.style.transition=RM.matches?'none':'transform .2s cubic-bezier(.2,.8,.2,1)'; s.c.style.transform='';
+    setTimeout(function(){ s.c.style.transition=''; },220);
+    if(s.dy>100||(s.dy>40&&v>0.5)) close(s.c); }
+  document.addEventListener('touchend',end,true); document.addEventListener('touchcancel',end,true);
+
+  /* ---------- 5. Windows: open a sheet in a new window ---------- */
+  var MAC=/Mac|iPhone|iPad/.test(navigator.platform||'')||/Mac OS X/.test(navigator.userAgent);
+  function sheetOf(t){ if(!t||!t.closest) return null; var tab=t.closest('.pt-tab[data-id]'); if(tab) return t.closest('.pt-x')?null:tab.getAttribute('data-id');
+    var row=t.closest('.sb-row[data-id]'); return row?row.getAttribute('data-id'):null; }
+  function openWin(id){ var u=location.origin+location.pathname+location.search+'#sheet='+encodeURIComponent(id)+'&win=1';
+    window.open(u,'_blank'); window.pvxSay&&pvxSay('Opened in a new window'); }
+  window.pvxOpenSheetWindow=openWin;
+  document.addEventListener('click',function(e){ if(!(MAC?e.metaKey:e.ctrlKey)||e.altKey) return; var id=sheetOf(e.target); if(!id) return;
+    e.preventDefault(); e.stopImmediatePropagation(); openWin(id); },true);
+  document.addEventListener('mousedown',function(e){ if(e.button===1&&sheetOf(e.target)) e.preventDefault(); },true);
+  document.addEventListener('auxclick',function(e){ if(e.button!==1) return; var id=sheetOf(e.target); if(!id) return; e.preventDefault(); e.stopImmediatePropagation(); openWin(id); },true);
+  /* the new window opens on that patient's sheet */
+  (function(){ var h=location.hash||'', m=/[#&]win=1\b/.test(h)&&(h.match(/sheet=([^&]+)/)||[])[1]; if(!m) return; var id=decodeURIComponent(m), t0=Date.now(), ok=0;
+    (function go(){ if(Date.now()-t0>15000) return; var cur=null; try{ cur=localStorage.getItem('tsCurrentSheet'); }catch(x){}
+      var tab=typeof currentCTab!=='undefined'?currentCTab:null;
+      if(typeof window.tsOpenSheet==='function'&&typeof window.selectCTab==='function'){
+        if(cur!==id){ ok=0; try{ tsOpenSheet(id); }catch(x){} } else if(tab!=='sheet'){ ok=0; try{ selectCTab('sheet'); }catch(x){} }
+        else if(++ok>=6){ try{ history.replaceState(null,'',location.pathname+location.search+'#sheet='+encodeURIComponent(id)); }catch(x){} return; } }
+      setTimeout(go,400); })(); })();
+  var lastTab=null, POINTER=matchMedia('(hover:hover) and (pointer:fine)');
+  document.addEventListener('contextmenu',function(e){ var t=e.target.closest&&e.target.closest('.pt-tab[data-id]'); lastTab=t?t.getAttribute('data-id'):null; },true);
+  document.addEventListener('keydown',function(e){ var t=e.target&&e.target.closest&&e.target.closest('.pt-tab[data-id]'); if(t&&(e.key==='ContextMenu'||(e.key==='F10'&&e.shiftKey))) lastTab=t.getAttribute('data-id'); },true);
+  function tabMenu(){ $$('.pt-pop.show').forEach(function(m){ if(m._pvxWin||!m.querySelector('[data-k=left],[data-k=close]')||!lastTab||!POINTER.matches) return; m._pvxWin=lastTab;
+    var b=document.createElement('button'); b.type='button'; b.setAttribute('role','menuitem'); b.className='pt-mi'; b.setAttribute('data-k','pvxwin');
+    b.innerHTML='<span class="pt-tx">Open in new window</span>'; var sep=document.createElement('div'); sep.className='pt-psep';
+    m.insertBefore(sep,m.firstChild); m.insertBefore(b,sep);
+    if(document.activeElement&&m.contains(document.activeElement)&&document.activeElement!==b){ try{ b.focus({preventScroll:true}); }catch(x){} } }); }
+  document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.pt-pop [data-k=pvxwin]'); if(!b) return; e.preventDefault(); e.stopImmediatePropagation();
+    var m=b.closest('.pt-pop'), id=m._pvxWin; m.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); if(m.isConnected&&m.classList.contains('show')){ m.classList.remove('show'); }
+    id&&openWin(id); },true);
+
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ popSheet(); formSheet(); tabMenu(); fit(); }catch(x){} },0); }   /* not rAF: it waits while the window is hidden */
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); tick(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
 </body>
 </html>
