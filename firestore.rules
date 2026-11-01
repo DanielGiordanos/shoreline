@@ -78,8 +78,18 @@ service cloud.firestore {
       allow write: if sgvpAdmin();
     }
 match /client_intakes/{docId} {
+  // Client check-in creates a pending intake. Rate limits and bot verification
+  // must additionally be enforced at a trusted ingress, outside Firestore.
   allow create: if request.resource.data.tenant_id == 'shoreline'
+                && request.resource.data.keys().hasOnly(['tenant_id', 'id', 'submittedAt', 'record'])
+                && request.resource.data.keys().hasAll(['tenant_id', 'id', 'submittedAt', 'record'])
+                && request.resource.data.id == docId
+                && docId.size() <= 100
+                && request.resource.data.submittedAt is string
+                && request.resource.data.submittedAt.size() <= 40
                 && request.resource.data.record is map
+                && request.resource.data.record.id == docId
+                && request.resource.data.record.status == 'awaiting_csr_review'
                 && request.resource.size() < 200 * 1024;
   allow read, update, delete: if staff();
 }
@@ -162,17 +172,29 @@ match /client_intakes/{docId} {
     }
     // Oct 7 — shared staff directory roster (Flow reads tenants/shoreline/directory/roster; the Directory app edits it).
     match /tenants/{tenant}/directory/{doc} {
-      allow read: if staff();
-      allow write: if sgvpAdmin() || (staff() && request.auth.token.directoryEditor == true);
+      allow read: if staff() && tenant == 'shoreline';
+      allow write: if tenant == 'shoreline'
+        && staff()
+        && (sgvpAdmin() || membership().get('directory_editor', false) == true);
     }
 
+    // Private operations data must never be returned to unauthenticated clients.
+    // Public scheduling/announcements use dedicated, intentionally public collections.
     match /shifts/{tenant} {
-      allow get: if true;
-      allow write: if staff();
+      allow get: if staff() && tenant == 'shoreline';
+      allow list: if false;
+      allow create, update: if tenant == 'shoreline'
+        && staff()
+        && (sgvpAdmin() || membership().get('manage_shifts', false) == true);
+      allow delete: if false;
     }
     match /alerts/{tenant} {
-      allow get: if true;
-      allow write: if staff();
+      allow get: if staff() && tenant == 'shoreline';
+      allow list: if false;
+      allow create, update: if tenant == 'shoreline'
+        && staff()
+        && (sgvpAdmin() || membership().get('manage_alerts', false) == true);
+      allow delete: if false;
     }
 
     match /sgvp_mentors/{docId} {
@@ -198,7 +220,7 @@ match /client_intakes/{docId} {
       allow read: if staff();
       allow write: if sgvpAdmin()
         || ((doc == 'house_doses' || doc == 'snippets') && staff())
-        || (resource != null
+        || (staff() && resource != null
             && request.auth.token.email.lower() in resource.data.get('editors', [])
             && request.resource.data.get('editors', []) == resource.data.get('editors', []));
     }
@@ -216,30 +238,35 @@ match /client_intakes/{docId} {
     // kura_outbox/{hospital}/events/{eventId}: staff create it once (server time, no Kura field); Kura's own staff account reads
     // them and may only add its acknowledgement field "kura". Events are never changed otherwise or deleted.
     match /kura_outbox/{hospital}/events/{eventId} {
-      allow read: if staff();
-      allow create: if staff()
+      allow read: if staff() && hospital == 'shoreline';
+      allow create: if staff() && hospital == 'shoreline'
         && request.resource.data.event_id == eventId
         && request.resource.data.hospital == hospital
         && request.resource.data.env is string
         && request.resource.data.env.size() < 20000
         && request.resource.data.written_at == request.time
         && !('kura' in request.resource.data);
-      allow update: if staff()
+      allow update: if staff() && hospital == 'shoreline'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kura']);
       allow delete: if false;
     }
     match /sheets/{sheetId} {
-      allow read: if staff();
+      allow get, list: if staff() && resource.data.tenant_id == 'shoreline';
       allow create: if staff()
-        && request.resource.data.tenant_id is string
+        && request.resource.data.tenant_id == 'shoreline'
         && request.resource.data.status == 'active'
         && request.resource.data.patient is map;
       allow update: if staff()
+        && resource.data.tenant_id == 'shoreline'
         && request.resource.data.tenant_id == resource.data.tenant_id;
-      allow delete: if false;   // sheets are closed, never deleted
-      // charting by day + archived audit (Treatment Sheets)
-      match /{sub=**} {
-        allow read, create, update: if staff();
+      allow delete: if false; // charted clinical records are retained
+      // Explicitly require at least one child collection/document pair.
+      // A bare recursive wildcard can match zero segments and accidentally
+      // override the tighter tenant controls on /sheets/{sheetId} itself.
+      match /{subcollection}/{subdocument}/{descendants=**} {
+        allow read, create, update: if staff()
+          && exists(/databases/$(database)/documents/sheets/$(sheetId))
+          && get(/databases/$(database)/documents/sheets/$(sheetId)).data.tenant_id == 'shoreline';
         allow delete: if false;
       }
     }
@@ -294,21 +321,55 @@ match /client_intakes/{docId} {
     // Oct 13 — signed PDFs on a visit. Written once and never changed (only the "printed" note may be added), never deleted.
     // Staff only: none of this is in pub (the family tracker) or lobby (the waiting room).
     match /visit_docs/{id} {
-      allow read: if staff();
+      // Flow and Forms now include tenant_id on all signed-PDF queries.
+      allow get, list: if staff() && resource.data.tenant_id == 'shoreline';
       allow create: if staff()
+        && request.resource.data.tenant_id == 'shoreline'
         && request.resource.data.visit_id is string
-        && request.resource.data.sha256 is string && request.resource.data.sha256.size() == 64;
-      allow update: if staff() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['printed_at', 'printed_by']);
+        && request.resource.data.sha256 is string
+        && request.resource.data.sha256.matches('^[0-9a-fA-F]{64}$');
+      allow update: if staff()
+        && resource.data.tenant_id == 'shoreline'
+        && request.resource.data.tenant_id == resource.data.tenant_id
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['printed_at', 'printed_by']);
       allow delete: if false;
       match /parts/{part} {
-        allow read: if staff();
-        allow create: if staff();
+        // The PDF writer uploads parts BEFORE its parent metadata document.
+        // Check the parent for reads; permit new typed chunks when the parent
+        // is not yet present. Once it exists, it must belong to Shoreline.
+        allow get, list: if staff()
+          && exists(/databases/$(database)/documents/visit_docs/$(id))
+          && get(/databases/$(database)/documents/visit_docs/$(id)).data.tenant_id == 'shoreline';
+        allow create: if staff()
+          && (!exists(/databases/$(database)/documents/visit_docs/$(id))
+            || get(/databases/$(database)/documents/visit_docs/$(id)).data.tenant_id == 'shoreline')
+          && request.resource.data.keys().hasOnly(['data', 'i', 'n'])
+          && request.resource.data.keys().hasAll(['data', 'i', 'n'])
+          && request.resource.data.data is string
+          && request.resource.data.data.size() <= 700000
+          && request.resource.data.i is int
+          && request.resource.data.n is int
+          && request.resource.data.i >= 0
+          && request.resource.data.n > 0
+          && request.resource.data.n <= 256
+          && request.resource.data.i < request.resource.data.n;
         allow update, delete: if false;
       }
     }
     // Oct 13 — forms a doctor sends to reception (requested → with the family → signed, or cancelled). Never deleted.
     match /form_requests/{id} {
-      allow read, create, update: if staff();
+      allow get, list: if staff() && resource.data.tenant_id == 'shoreline';
+      allow create: if staff()
+        && request.resource.data.tenant_id == 'shoreline'
+        && request.resource.data.visit_id is string
+        && request.resource.data.status == 'requested';
+      allow update: if staff()
+        && resource.data.tenant_id == 'shoreline'
+        && request.resource.data.tenant_id == resource.data.tenant_id
+        && request.resource.data.visit_id == resource.data.visit_id
+        && request.resource.data.template_id == resource.data.template_id
+        && resource.data.status in ['requested', 'family']
+        && request.resource.data.status in ['requested', 'family', 'signed', 'cancelled'];
       allow delete: if false;
     }
     // Oct 13 (n126) — verify codes printed on signed PDFs. The document id IS the 16-character code: anyone holding the
@@ -321,7 +382,9 @@ match /client_intakes/{docId} {
       allow create: if staff()
         && code.matches('^[2-9A-HJ-NP-Z]{16}$')
         && request.resource.data.keys().hasOnly(['v','sha256','signed_on','hospital','title','pages','tenant_id','created_at'])
-        && request.resource.data.sha256 is string && request.resource.data.sha256.size() == 64
+        && request.resource.data.tenant_id == 'shoreline'
+        && request.resource.data.sha256 is string
+        && request.resource.data.sha256.matches('^[0-9a-fA-F]{64}$')
         && request.resource.data.signed_on is string && request.resource.data.signed_on.size() == 10
         && request.resource.data.title is string && request.resource.data.title.size() <= 120
         && request.resource.data.hospital is string && request.resource.data.hospital.size() <= 80;
@@ -438,7 +501,8 @@ match /client_intakes/{docId} {
     // is ever deleted. Interns and the managers' account have no assignments, so they can read nothing here.
     function myEmail() { return request.auth.token.get('email', '').lower(); }
     function reviewReader() {
-      return request.auth != null && myEmail() in ['daniel.giordano@pravix.app', 'heather.galano@vca.com'];
+      return staff()
+        && (sgvpAdmin() || membership().get('review_manager', false) == true);
     }
     match /sgvp_review_rounds/{roundId} {
       allow read: if staff();
