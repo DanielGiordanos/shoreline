@@ -14,7 +14,7 @@ const {
 } = require('@firebase/rules-unit-testing');
 const {
   doc, collection, query, where,
-  getDoc, getDocs, setDoc, updateDoc, deleteDoc
+  getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp
 } = require('firebase/firestore');
 
 async function main() {
@@ -52,6 +52,14 @@ async function main() {
       });
       await setDoc(doc(db, 'visits', 'visit-b'), {
         tenant_id: 'another-hospital', status: 'Waiting', is_active: true,
+      });
+      await setDoc(doc(db, 'pub', 'tracker-open'), {
+        tenant_id: 'shoreline', is_active: true,
+        resus_pref: null, resus_status: null, resus_recorded_at: null,
+      });
+      await setDoc(doc(db, 'pub', 'tracker-closed'), {
+        tenant_id: 'shoreline', is_active: false,
+        resus_pref: null, resus_status: null, resus_recorded_at: null,
       });
     });
 
@@ -111,6 +119,41 @@ async function main() {
     await check('anonymous intake cannot target other hospital', () =>
       assertFails(setDoc(doc(anon, 'client_intakes', 'fake-other-hospital'),
         {tenant_id: 'another-hospital', record: {id: 'fake-other-hospital'}})));
+    await check('anonymous valid CPR request remains possible', () =>
+      assertSucceeds(updateDoc(doc(anon, 'pub', 'tracker-open'), {
+        resus_pref: 'CPR',
+        resus_status: 'client_selected',
+        resus_recorded_at: serverTimestamp(),
+      })));
+    await check('anonymous cannot forge clinician CPR confirmation', () =>
+      assertFails(updateDoc(doc(anon, 'pub', 'tracker-open'), {
+        resus_pref: 'DNR',
+        resus_status: 'confirmed',
+        resus_recorded_at: serverTimestamp(),
+      })));
+    await check('anonymous cannot change closed visit CPR preference', () =>
+      assertFails(updateDoc(doc(anon, 'pub', 'tracker-closed'), {
+        resus_pref: 'CPR',
+        resus_status: 'client_selected',
+        resus_recorded_at: serverTimestamp(),
+      })));
+    await check('family message works for an active tracker', () =>
+      assertSucceeds(setDoc(doc(anon, 'messages', 'tracker-open', 'items', 'message-one'), {
+        sender: 'client', body: 'Test message', created_at: new Date().toISOString(),
+      })));
+    await check('family message cannot masquerade as staff', () =>
+      assertFails(setDoc(doc(anon, 'messages', 'tracker-open', 'items', 'message-two'), {
+        sender: 'staff', body: 'Forged', created_at: new Date().toISOString(),
+      })));
+    await check('family message cannot add forged staff metadata', () =>
+      assertFails(setDoc(doc(anon, 'messages', 'tracker-open', 'items', 'message-three'), {
+        sender: 'client', body: 'Forged metadata', created_at: new Date().toISOString(),
+        staff_name: 'Test doctor',
+      })));
+    await check('closed tracker cannot create new family messages', () =>
+      assertFails(setDoc(doc(anon, 'messages', 'tracker-closed', 'items', 'message-four'), {
+        sender: 'client', body: 'Post closure', created_at: new Date().toISOString(),
+      })));
     process.stdout.write('Passed ' + seen.length + ' emulator authorization tests.\n');
   } finally {
     await env.cleanup();
