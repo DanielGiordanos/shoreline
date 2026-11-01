@@ -10,6 +10,8 @@
 - Kura requires the `kura_owner: true` flag on an approved member.
 - Scope clinical `visits` reads/writes to the Shoreline tenant and deny direct client deletion.
 - Reject unauthenticated client intake submissions claiming a different tenant.
+- Accept only provisional `CPR`/`DNR` family requests from active Shoreline tracker tokens; a client cannot write a clinical `confirmed` status.
+- Allow anonymous family messaging only to active Shoreline tracker tokens, with the expected message fields and no forged staff metadata.
 - Keep the production Firestore publication GitHub Action *manual only*.
 - Add Firebase Local Emulator tests with exclusively synthetic users and records.
 
