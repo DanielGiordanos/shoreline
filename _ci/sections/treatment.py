@@ -990,7 +990,7 @@ async def s_n235(br):
         off = ['reload failed: ' + str(e)[:80]]
     await ctx.set_offline(False)
     ok('n235: Treatment’s app-file service worker is set up on an ordinary device, not only the downtime computer', reg and reg[0].endswith('/treatment/') and reg[1].endswith('/treatment/downtime-sw.js'), reg)
-    ok('n235: with no connection, a reload still opens Treatment and says it’s offline (it was the browser’s error page)', off[0] == 'Pravix Treatment Sheets | VCA Shoreline' and off[1] and off[2], off)
+    ok('n235: with no connection, a reload still opens Treatment and says it’s offline (it was the browser’s error page)', (off[0] == 'Pravix Treatment Sheets | VCA Shoreline' or off[0] in ('Dashboard', 'Tasks') or ' · ' in off[0]) and off[1] and off[2], off)   # n284: the title names the view
     await ctx.close()
     sw = open(os.path.join(BUILD, 'treatment', 'downtime-sw.js'), encoding='utf-8').read()
     ok('n235: the worker keeps only Treatment’s files and the Firebase scripts (no database requests), and opens the saved copy after 2 s', 'WAIT=2000' in sw and "u.pathname.indexOf('/treatment/')===0" in sw and 'firestore.googleapis' not in sw)
