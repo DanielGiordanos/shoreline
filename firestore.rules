@@ -123,19 +123,51 @@ service cloud.firestore {
       allow write: if sgvpAdmin();
     }
 match /client_intakes/{docId} {
-  // Client check-in creates a pending intake. Rate limits and bot verification
-  // must additionally be enforced at a trusted ingress, outside Firestore.
+  // Browser clients may only submit untrusted pending requests, never accepted
+  // clinical chart data. These checks reduce payload poisoning and cost, but
+  // cannot provide IP rate limiting or anti-bot guarantees in Firestore Rules.
+  // Deploy trusted App Check + challenge + rate-limited ingress before launch.
   allow create: if request.resource.data.tenant_id == 'shoreline'
                 && request.resource.data.keys().hasOnly(['tenant_id', 'id', 'submittedAt', 'record'])
                 && request.resource.data.keys().hasAll(['tenant_id', 'id', 'submittedAt', 'record'])
+                && docId.matches('^INT-[0-9A-Za-z-]{8,60}$')
                 && request.resource.data.id == docId
-                && docId.size() <= 100
                 && request.resource.data.submittedAt is string
                 && request.resource.data.submittedAt.size() <= 40
                 && request.resource.data.record is map
+                && request.resource.data.record.keys().hasAll([
+                     'id','submittedAt','status','patient','client','reason',
+                     'additionalProblems','priority','doctor','location'])
                 && request.resource.data.record.id == docId
+                && request.resource.data.record.submittedAt == request.resource.data.submittedAt
                 && request.resource.data.record.status == 'awaiting_csr_review'
-                && request.resource.size() < 200 * 1024;
+                && request.resource.data.record.priority == null
+                && request.resource.data.record.doctor == null
+                && request.resource.data.record.location == 'Lobby'
+                && request.resource.data.record.patient is map
+                && request.resource.data.record.patient.keys().hasOnly([
+                     'name','species','speciesDisplay','breed','breedId','age',
+                     'birthday','birthdayEstimated','approximateAge','sex',
+                     'sexDisplay','weight'])
+                && request.resource.data.record.patient.name is string
+                && request.resource.data.record.patient.name.size() > 0
+                && request.resource.data.record.patient.name.size() <= 120
+                && request.resource.data.record.client is map
+                && request.resource.data.record.client.keys().hasOnly([
+                     'first','last','phone','email'])
+                && request.resource.data.record.client.first is string
+                && request.resource.data.record.client.first.size() <= 100
+                && request.resource.data.record.client.last is string
+                && request.resource.data.record.client.last.size() <= 100
+                && request.resource.data.record.client.phone is string
+                && request.resource.data.record.client.phone.size() <= 40
+                && request.resource.data.record.client.email is string
+                && request.resource.data.record.client.email.size() <= 200
+                && request.resource.data.record.reason is string
+                && request.resource.data.record.reason.size() <= 5000
+                && request.resource.data.record.additionalProblems is list
+                && request.resource.data.record.additionalProblems.size() <= 25
+                && request.resource.size() < 128 * 1024;
   allow read, update, delete: if staff();
 }
     match /visits/{id} {
@@ -148,8 +180,28 @@ match /client_intakes/{docId} {
     }
 
     // Oct 7 — family tracker feed. The document id IS the private tracker token: open by id, never listed by the public.
+    // A random tracker token is a bearer capability. Require an active visit
+    // or a short post-discharge grace window, and honor immediate revocation.
+    // Existing active tokens remain usable. Legacy closed tokens without an
+    // explicit expiry fail closed rather than remain readable indefinitely.
+    function familyFeedReadable(data) {
+      return data.get('tenant_id', '') == 'shoreline'
+        && data.get('capability_revoked', false) == false
+        && (
+          data.get('is_active', false) == true
+          || (data.get('access_expires_at', null) is timestamp
+              && data.access_expires_at > request.time)
+        );
+    }
+    function familyFeedPath(token) {
+      return /databases/$(database)/documents/pub/$(token);
+    }
+    function familyFeedTokenReadable(token) {
+      return exists(familyFeedPath(token))
+        && familyFeedReadable(get(familyFeedPath(token)).data);
+    }
     match /pub/{token} {
-      allow get: if true;
+      allow get: if staff() || (resource != null && familyFeedReadable(resource.data));
       allow list: if staff();
       allow create, delete: if staff();
       // A family may change only its CPR/DNR choice, only while the visit is open. Flow shows it to staff as
@@ -159,6 +211,7 @@ match /client_intakes/{docId} {
         || ( request.resource.data.diff(resource.data).affectedKeys()
                .hasOnly(['resus_pref','resus_status','resus_recorded_at'])
              && resource.data.is_active == true
+             && familyFeedReadable(resource.data)
              && resource.data.tenant_id == 'shoreline'
              && request.resource.data.resus_pref in ['CPR', 'DNR']
              && request.resource.data.resus_status == 'client_selected'
@@ -192,7 +245,7 @@ match /client_intakes/{docId} {
     // Oct 7 — family ↔ staff chat: readable only under a token you already have (pub can't be listed by the
     // public, and the collection-group read below is staff only); a family message must belong to a real tracker link.
     match /messages/{token}/items/{id} {
-      allow get, list: if true;
+      allow get, list: if staff() || familyFeedTokenReadable(token);
       allow create: if staff()
         || ( request.resource.data.sender == 'client'
              && request.resource.data.body is string
@@ -203,7 +256,8 @@ match /client_intakes/{docId} {
              && request.resource.data.created_at.size() <= 40
              && exists(/databases/$(database)/documents/pub/$(token))
              && get(/databases/$(database)/documents/pub/$(token)).data.tenant_id == 'shoreline'
-             && get(/databases/$(database)/documents/pub/$(token)).data.is_active == true );
+             && get(/databases/$(database)/documents/pub/$(token)).data.is_active == true
+             && familyFeedTokenReadable(token) );
       allow update, delete: if staff();
     }
     // Oct 7 — Flow's "new message from family" listener (collectionGroup('items')).

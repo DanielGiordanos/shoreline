@@ -772,10 +772,25 @@ function acceptMessages(s){
  MSGS=s.docs.map(x=>{const m=x.data();return {sender:m.sender,body:m.body,staff_name:m.staff_name,created_at:m.created_at};});messagesLoaded=true;
  msgReady=serverSnapshot(s);if(msgReady)lastSync=Date.now();if(OV)renderFeed();tickUpd();
 }
+// Expired/revoked links are never displayed as an old cached clinical page.
+function trackerLocalExpired(ov){
+ if(!ov||ov.capability_revoked===true)return true;
+ if(ov.is_active===true)return false;
+ const expiration=dateValue(ov.access_expires_at);
+ return !expiration || expiration.getTime()<=Date.now();
+}
+function trackerRevokeDisplay(){
+ stopPoll();
+ OV=null;MSGS=[];TOKEN=null;codeInactive=true;stopped=true;
+ try{history.replaceState(null,'',location.pathname);}catch(_){}
+ renderEntry('This tracking link is no longer available. Please contact the hospital for assistance.');
+}
 function acceptOverview(s){
  docReady=serverSnapshot(s);if(docReady)lastSync=Date.now();
- if(!s.exists){if(docReady){stopped=true;renderEntry('Visit not found. Please check with the front desk.');}else tickUpd();return;}
- OV=s.data();OV.resus_recorded_at=_iso(OV.resus_recorded_at);renderVisit();
+ if(!s.exists){if(docReady){trackerRevokeDisplay();}else tickUpd();return;}
+ const next=s.data();
+ if(trackerLocalExpired(next)){trackerRevokeDisplay();return;}
+ OV=next;OV.resus_recorded_at=_iso(OV.resus_recorded_at);renderVisit();
  if(ended(OV)&&docReady){
   stopped=true;clearInterval(pollT);pollT=null;if(offDoc){offDoc();offDoc=null;}
   if(messagesLoaded&&msgReady)stopPoll();tickUpd();
@@ -783,6 +798,7 @@ function acceptOverview(s){
 }
 function relative(v){const d=dateValue(v);if(!d)return tr('Time unavailable');const min=Math.floor((Date.now()-d.getTime())/60000);if(min<0)return absolute(v);return min<1?tr('just now'):min<60?tr('{n} min ago',min):min<1440?tr('{n} hr ago',Math.floor(min/60)):tr('{n} days ago',Math.floor(min/1440));}
 function tickUpd(){
+ if(OV && trackerLocalExpired(OV)){trackerRevokeDisplay();return;}
  for(const button of document.querySelectorAll('.timeline-time[aria-pressed="false"]'))button.textContent=relative(button.dataset.at);
  const el=$('tbUpd');if(!el)return;
  if(stopped&&OV){el.textContent=tr('This visit has ended');return;}
@@ -809,8 +825,16 @@ function startPoll(){
   },60000);
  }
  failedDoc=failedMsgs=false;
- offMsgs=r.msgs.onSnapshot({includeMetadataChanges:true},s=>{if(!valid())return;acceptMessages(s);if(stopped&&msgReady)stopPoll();},()=>fallback('msgs'));
- offDoc=r.doc.onSnapshot({includeMetadataChanges:true},s=>{if(valid())acceptOverview(s);},()=>fallback('doc'));
+ offMsgs=r.msgs.onSnapshot({includeMetadataChanges:true},s=>{if(!valid())return;acceptMessages(s);if(stopped&&msgReady)stopPoll();},err=>{
+   if(!valid())return;
+   if(err&&err.code==='permission-denied'){trackerRevokeDisplay();return;}
+   fallback('msgs');
+ });
+ offDoc=r.doc.onSnapshot({includeMetadataChanges:true},s=>{if(valid())acceptOverview(s);},err=>{
+   if(!valid())return;
+   if(err&&err.code==='permission-denied'){trackerRevokeDisplay();return;}
+   fallback('doc');
+ });
 }
 function boot(){
  if(typeof TOKEN!=='string'||!TOKEN||TOKEN.includes('/')){renderEntry('Visit not found. Please check with the front desk.');return;}

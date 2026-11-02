@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="referrer" content="no-referrer">
 <meta name="flow-build" content="20261027-1915-89d324de">
 <script src="/assets/pvx-appearance.js?v=110011ea35"></script>
 <script id="pvx-n248-rounds">/* PVX-N248 - Rounds never blinks: rewrite only what changed, animate only what is new (patch_n248.py) */
@@ -7368,8 +7369,26 @@ let _persistLock = false;
 function _toISO(d){ return d ? (d instanceof Date ? d.toISOString() : d) : null; }
 function _fromTS(v){ if(!v) return null; if(v instanceof Date) return v; if(typeof v==='string') return new Date(v); if(v && v.toDate) try{ return v.toDate(); }catch(e){} return null; }
 
-function genTrackCode(){ const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<6;i++) s+=A[Math.floor(Math.random()*A.length)]; return s; }
-function genToken(){ try{ return crypto.randomUUID(); }catch(e){ return'tok-'+Date.now()+'-'+Math.random().toString(36).slice(2,10); } }
+// Never use a predictable timestamp or Math.random() for client capabilities.
+function genTrackCode(){
+  const alphabet='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  if(!window.crypto||typeof crypto.getRandomValues!=='function')
+    throw new Error('Secure random generator is unavailable');
+  let code='';
+  const limit=256-(256%alphabet.length);
+  while(code.length<6){
+    const bytes=new Uint8Array(12);crypto.getRandomValues(bytes);
+    for(const b of bytes){if(b<limit&&code.length<6)code+=alphabet[b%alphabet.length];}
+  }
+  return code;
+}
+function genToken(){
+  if(!window.crypto||typeof crypto.getRandomValues!=='function')
+    throw new Error('Secure tracker token generator is unavailable');
+  if(typeof crypto.randomUUID==='function') return crypto.randomUUID();
+  const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);
+  return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+}
 
 
 
@@ -7378,6 +7397,16 @@ function fxVisitEnd(p){   /* how the visit ended, for the family tracker — Rou
   if(o){ if(o==='Euthanized'||o==='Deceased') return 'loss'; if(o==='Transferred') return 'transferred'; if(o==='Discharged') return 'home'; return 'ended'; }
   if(p.status==='Euthanized'||p.status==='Deceased') return 'loss'; if(p.status==='Discharged') return 'home'; return null; }
 function safeProjection(p){
+  // Families can review a completed visit for up to 48 hours. Staff can
+  // immediately revoke a link using pub.capability_revoked=true, a field
+  // deliberately excluded here so later merge writes do not undo revocation.
+  const closedAt=p.completed
+    ? (p.completedAt && !isNaN(new Date(p.completedAt).getTime())
+        ? new Date(p.completedAt) : new Date())
+    : null;
+  const readExpiresAt=closedAt
+    ? new Date(closedAt.getTime()+48*60*60*1000)
+    : null;
 const docName = (p.doctor && p.doctor!=='unassigned') ? (doc(p.doctor).name||null) : null;
 const liaName = p.liaison ? ((liaison(p.liaison)||{}).name||null) : null;
 return {
@@ -7391,6 +7420,7 @@ doctor_id: (p.doctor && p.doctor!=='unassigned') ? p.doctor : null,
 prio: p.prio||3, priority: p.prio||3, is_active: !p.completed,
 arrival_time: _toISO(p.arrival) || new Date().toISOString(),
 discharged_at: _toISO(p.completedAt),
+access_expires_at: readExpiresAt,
 track_code: p.trackCode||null,
 visit_end: fxVisitEnd(p),
 timeline: (p.timeline||[]).map(function(e){ return { label:e.label, at:_toISO(e.at) }; }),
