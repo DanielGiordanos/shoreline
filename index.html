@@ -7311,8 +7311,9 @@ const AUTH = (window.firebase && firebase.auth)      ? firebase.auth()      : nu
 const SB   = DB;
 
 // One-time, narrowly-scoped enrollment for the two authorized test accounts.
-// No new passwords are collected; Firestore Security Rules independently verify
-// the Firebase-signed email_verified claim, document UID, fixed fields, and expiry.
+// No new passwords are collected; Firestore Rules verify the signed UID,
+// approved email and role. Unverified email onboarding is available only to
+// existing Heather email/password sign-ins until the temporary expiry.
 async function pvxActivateApprovedStaffMember(user){
   if(!user || !DB) return false;
   const approved={
@@ -7328,7 +7329,14 @@ async function pvxActivateApprovedStaffMember(user){
   try{
     await user.reload();
     await user.getIdToken(true);
-    if(!user.emailVerified){
+    // Existing Heather email/password authentication is sufficient for
+    // prelaunch reviewer access; no additional verification email required.
+    // The effective Firestore rules independently check the signed provider,
+    // email, UID, hospital, exact role fields and temporary expiration.
+    const heatherPasswordLogin = email==='heather.galano@vca.com' &&
+      Array.isArray(user.providerData) &&
+      user.providerData.some(p=>p&&p.providerId==='password');
+    if(!user.emailVerified && !heatherPasswordLogin){
       if(window.confirm('Your Pravix email must be verified before access can be activated. Send a verification email now?')){
         try{ await user.sendEmailVerification(); }catch(_){}
       }

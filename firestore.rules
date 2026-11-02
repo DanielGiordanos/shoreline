@@ -48,6 +48,18 @@ service cloud.firestore {
         && request.auth.token.get('email_verified', false) == true
         && request.auth.token.get('email', '').lower() == approvedEmail;
     }
+    // Narrow prelaunch exception for the existing Heather email/password
+    // account: a successful Firebase password login can complete onboarding
+    // without a separate mailbox-verification email. This does NOT bypass
+    // authentication, and never applies to another address or auth provider.
+    // Treat this as a temporary reduction in email-ownership assurance;
+    // remove this helper after Heather's UID membership exists.
+    function heatherPasswordPilot(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.get('email', '').lower() == 'heather.galano@vca.com'
+        && request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'password';
+    }
     function validPilotMembership(roleName, kuraOwner) {
       return request.resource.data.keys().hasOnly(
            ['active','tenant_id','role','kura_owner','review_manager'])
@@ -61,15 +73,17 @@ service cloud.firestore {
     }
     match /staff_members/{uid} {
       allow get: if staff() && uid == request.auth.uid;
-      // Self-creation only; signed Firebase Auth + verified mailbox + strict
-      // immutable role/tenant fields. Existing records cannot self-update.
+      // Self-creation only; signed Firebase Auth, approved fixed role/tenant
+      // fields, verified Daniel or password-authenticated Heather. Existing
+      // records cannot self-update.
       // The temporary window ends automatically on 2026-11-16 UTC.
       allow create: if request.time < timestamp.date(2026, 11, 16)
         && (
           (verifiedPilot(uid, 'daniel.giordano@pravix.app')
             && validPilotMembership('owner', true))
           ||
-          (verifiedPilot(uid, 'heather.galano@vca.com')
+          ((verifiedPilot(uid, 'heather.galano@vca.com')
+              || heatherPasswordPilot(uid))
             && validPilotMembership('management', false))
         );
       allow list, update, delete: if false;

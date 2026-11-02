@@ -1,7 +1,7 @@
-/* Pravix SGVP Assessments — verified reviewer membership activation.
-   Uses the already authenticated Firebase user, never passwords or public
-   signup. The deployed Firestore Security Rules independently restrict UID,
-   verified email, exact fields, role, hospital and the 2026-11-16 deadline. */
+/* Pravix SGVP Assessments — Heather reviewer membership activation.
+   Uses the existing Firebase sign-in, never handles passwords or signup.
+   Server rules require Heather's exact Firebase email + password provider
+   (or verified email), matching UID, fixed role and tenant, with expiry. */
 (function () {
   'use strict';
 
@@ -43,7 +43,12 @@
             user.uid !== uid) {
           return { ok: false, reason: 'identity-changed' };
         }
-        if (!user.emailVerified) {
+        // An existing Firebase email/password sign-in is sufficient for this
+        // prelaunch Heather-only activation. Other providers still require
+        // verified email ownership; server-side rules independently enforce it.
+        const signedInWithPassword = Array.isArray(user.providerData) &&
+          user.providerData.some(p => p && p.providerId === 'password');
+        if (!user.emailVerified && !signedInWithPassword) {
           return { ok: false, reason: 'email-unverified' };
         }
 
