@@ -1241,6 +1241,7 @@ html.pvx-signed-out body{overflow:hidden}
   .pr-item,.pr-obs,.pr-narr,.pr-sign,.pr-attest{break-inside:avoid;page-break-inside:avoid;}
 }
 </style>
+<script defer src="reviewer-access.js?v=20261102-heather-reviewer"></script>
 </head>
 <body>
 <script>/* Pravix shared theme — carries across every pravix.app page via a domain cookie (default dark). Reads the cookie (mirrors it into localStorage so this page's own theme init agrees), applies before first paint, and persists ANY dark-class change back to the cookie via an observer, covering every toggle path. */
@@ -2300,7 +2301,7 @@ function buildPrintRecord(r) {
   const S = { email: '', uid: '', name: '', reader: false, view: 'mine',
     mine: { assigns: [], reviews: {}, rounds: {} },
     all: { rounds: [], roundId: '', assigns: [], reviews: {} },
-    open: null };
+    open: null, ready: false };
   let root = null;
 
   /* ── Firebase ── */
@@ -2638,6 +2639,7 @@ function buildPrintRecord(r) {
     const t = el.querySelector('.a-ifoot span:last-child'); if (t) t.textContent = 'Opening…'; else if (!el.querySelector('*')) el.textContent = 'Opening…';
   }
   async function route() {
+    if (!S.ready) return; // Do not query private reviews before Firebase membership is checked.
     const h = decodeURIComponent(location.hash.slice(1));
     skeleton(h.startsWith('review/') ? 'review' : 'list');
     try {
@@ -3514,6 +3516,36 @@ function buildPrintRecord(r) {
     let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.open) { growAll(); stickTops(); } }, 120); });
   }
 
+  /* ── approved reviewer account recovery ── */
+  function reviewerAccessProblem(reason) {
+    const verify = reason === 'email-unverified';
+    const title = verify ? 'Verify your Pravix email' : 'Assessment access needs verification';
+    const message = verify
+      ? 'Your existing Pravix account must have a verified email address before assessment access can be activated.'
+      : 'Your signed-in account could not complete its Shoreline reviewer membership check. If you have already verified your email, use Retry. Otherwise ask the project administrator to review the membership.';
+    setTitle(title);
+    root.innerHTML = head('Intern reviews', title, '') +
+      '<div class="a-card a-empty" role="alert"><h2>' + esc(title) + '</h2><p>' + esc(message) + '</p>' +
+      '<div class="a-actions">' +
+      (verify ? '<button type="button" class="a-btn primary" id="asmVerifyEmail">Send verification email</button>' : '') +
+      '<button type="button" class="a-btn" id="asmRetryReviewer">Retry access</button>' +
+      '<a class="a-btn" href="/">Open Pravix Flow</a></div></div>';
+    const retry = document.getElementById('asmRetryReviewer');
+    if (retry) retry.addEventListener('click', () => location.reload());
+    const send = document.getElementById('asmVerifyEmail');
+    if (send) send.addEventListener('click', async () => {
+      const u = firebase.auth().currentUser;
+      if (!u) { say('Sign in again before requesting verification.', 'warn'); return; }
+      send.disabled = true;
+      try {
+        await u.sendEmailVerification();
+        say('Verification email requested. Follow the link in your inbox, then choose Retry access.');
+      } catch (e) {
+        say('Could not send verification email. Try again later.', 'warn');
+      } finally { send.disabled = false; }
+    });
+  }
+
   /* ── boot ── */
   function boot() {
     root = document.getElementById('asm');
@@ -3529,14 +3561,36 @@ function buildPrintRecord(r) {
       try { history.replaceState(null, '', location.pathname + location.search + '#mine'); } catch (e) {}
       if (b) b.disabled = false;
     };
-    firebase.auth().onAuthStateChanged(u => {
+    firebase.auth().onAuthStateChanged(async u => {
       closeEditor();
-      if (!u) { S.email = ''; showGate(); return; }
+      S.ready = false;
+      if (!u) { S.email = ''; S.uid = ''; showGate(); return; }
       hideGate();
       S.email = String(u.email || '').toLowerCase(); S.uid = u.uid;
       const d = DOCTORS.find(x => x.email === S.email);
       S.name = u.displayName || (d && d.name) || S.email;
       S.reader = REVIEW_READERS.includes(S.email);
+
+      // Flow activates approved accounts on first sign-in; the assessment
+      // portal must independently do so for an already signed-in Heather.
+      // All permissions remain enforced by server-side Firestore Rules.
+      if (S.email === 'heather.galano@vca.com') {
+        if (typeof window.pvxAssessmentEnsureReviewer !== 'function') {
+          reviewerAccessProblem('connection');
+          return;
+        }
+        root.innerHTML = head('Intern reviews', 'Verifying staff access', '') +
+          '<div class="a-card a-empty"><h2>Checking your reviewer membership…</h2></div>';
+        const access = await window.pvxAssessmentEnsureReviewer(u, db);
+        // An earlier async sign-in must never overwrite a later sign-out.
+        if (!firebase.auth().currentUser || firebase.auth().currentUser.uid !== u.uid) return;
+        if (!access.ok) {
+          reviewerAccessProblem(access.reason);
+          return;
+        }
+      }
+
+      S.ready = true;
       if (INTERNS.some(i => i.email === S.email)) {
         root.innerHTML = head('Intern reviews', 'Your reviews', '') + `<div class="a-card a-empty"><h2>Reviews are written by your evaluators</h2>
           <p>Each review is gone over with you at your one-on-one, and you get a signed copy then.</p></div>`;
