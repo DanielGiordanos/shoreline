@@ -7310,6 +7310,51 @@ try{ if(DB && DB.enablePersistence && !(window.pvxFsMem&&pvxFsMem())) DB.enableP
 const AUTH = (window.firebase && firebase.auth)      ? firebase.auth()      : null;
 const SB   = DB;
 
+// One-time, narrowly-scoped enrollment for the two authorized test accounts.
+// No new passwords are collected; Firestore Security Rules independently verify
+// the Firebase-signed email_verified claim, document UID, fixed fields, and expiry.
+async function pvxActivateApprovedStaffMember(user){
+  if(!user || !DB) return false;
+  const approved={
+    'daniel.giordano@pravix.app': {
+      active:true,tenant_id:'shoreline',role:'owner',kura_owner:true,review_manager:true
+    },
+    'heather.galano@vca.com': {
+      active:true,tenant_id:'shoreline',role:'management',kura_owner:false,review_manager:true
+    }
+  };
+  const email=String(user.email||'').trim().toLowerCase();
+  if(!Object.prototype.hasOwnProperty.call(approved,email)) return true;
+  try{
+    await user.reload();
+    await user.getIdToken(true);
+    if(!user.emailVerified){
+      if(window.confirm('Your Pravix email must be verified before access can be activated. Send a verification email now?')){
+        try{ await user.sendEmailVerification(); }catch(_){}
+      }
+      window.alert('Please verify your email address, then sign in again.');
+      return false;
+    }
+    const ref=DB.collection('staff_members').doc(user.uid);
+    try{
+      const existing=await ref.get();
+      if(existing.exists && existing.data().active===true
+          && existing.data().tenant_id==='shoreline') return true;
+    }catch(_){ /* A missing membership is intentionally unreadable. */ }
+    await ref.set(approved[email]);
+    const verified=await ref.get();
+    if(!verified.exists || verified.data().active!==true
+        || verified.data().tenant_id!=='shoreline'){
+      throw new Error('Membership confirmation failed');
+    }
+    try{ if(typeof toast==='function') toast('Your Pravix access is now active'); }catch(_){}
+    return true;
+  }catch(_){
+    window.alert('Pravix could not activate this account. Confirm email verification and contact the project administrator if the problem continues.');
+    return false;
+  }
+}
+
 let _persistLock = false;
 
 function _toISO(d){ return d ? (d instanceof Date ? d.toISOString() : d) : null; }
@@ -7464,9 +7509,17 @@ if(Backend.mode==='lobby'){   /* PVX-N149: the lobby screen signs in (its own ac
 if(!AUTH){ showLogin(); return; }
 if(Backend._authWired) return;
 Backend._authWired = true;
-AUTH.onAuthStateChanged(function(user){
+AUTH.onAuthStateChanged(async function(user){
 if(user&&pvxIsLobbyAccount(user)){ pvxLobbyAccountCard(user); return; }   /* PVX-N149: the lobby account never opens the staff board */
-if(user){ /* PVX-N155: return to the page that asked for sign-in (a path on this site only) */ try{ var pvxNext=new URLSearchParams(location.search).get('next'); if(pvxNext&&/^\/(?![\/\\])[\w\-\/.#=&%?]*$/.test(pvxNext)){ location.replace(pvxNext); return; } }catch(e){}
+if(user){
+  // The original Pravix sign-in is the only password entry surface.
+  // Before staff subscriptions start, provision the approved UID from the
+  // temporary, verified-email Firebase Security Rules bootstrap.
+  if(!(await pvxActivateApprovedStaffMember(user))){
+    try{ await AUTH.signOut(); }catch(_){}
+    return;
+  }
+  /* PVX-N155: return to the page that asked for sign-in (a path on this site only) */ try{ var pvxNext=new URLSearchParams(location.search).get('next'); if(pvxNext&&/^\/(?![\/\\])[\w\-\/.#=&%?]*$/.test(pvxNext)){ location.replace(pvxNext); return; } }catch(e){}
   pvxLobbyAccountCard(null); try{ CURRENT_USER = userDisplayName(user); }catch(e){} try{ usApplyRoleForUser(user); }catch(e){} const ov=document.getElementById('sbLogin'); if(ov){ sbFinishLogin(ov); } Backend.loadAndSubscribe(); }
 else { pvxClearPrivateLocalState(); pvxLobbyAccountCard(null); showLogin(); }
 });
