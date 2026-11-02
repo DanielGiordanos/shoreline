@@ -59,6 +59,8 @@ jobs:
         run: node security/translation-privacy.test.cjs
       - name: Verify tracker expiry, revocation, randomness and intake schema
         run: node security/tracker-intake-source.test.cjs
+      - name: Check browser privacy meta and staged hosting edge
+        run: node security/browser-policy-source.test.cjs
       - name: Run Firestore rule tests in local emulator
         run: >
           npx --yes firebase-tools@13.29.1 emulators:exec
