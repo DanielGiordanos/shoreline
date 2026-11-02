@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - 'security/**'
-      - 'treatment/index.html'
-      - 'treatment/store.js'
-      - 'treatment/owner-access.js'
       - 'fix/**'
     paths:
       - 'firestore.rules'
