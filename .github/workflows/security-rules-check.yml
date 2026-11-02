@@ -14,6 +14,8 @@ on:
       - 'treatment/index.html'
       - 'treatment/store.js'
       - 'treatment/owner-access.js'
+      - 'sgvp/assessment/index.html'
+      - 'sgvp/assessment/reviewer-access.js'
       - '.github/workflows/security-rules-check.yml'
   pull_request:
     paths:
@@ -22,6 +24,8 @@ on:
       - 'treatment/index.html'
       - 'treatment/store.js'
       - 'treatment/owner-access.js'
+      - 'sgvp/assessment/index.html'
+      - 'sgvp/assessment/reviewer-access.js'
       - '.github/workflows/security-rules-check.yml'
 permissions:
   contents: read
@@ -48,6 +52,8 @@ jobs:
         run: node security/edge/worker.test.mjs
       - name: Verify owner onboarding in Treatment Sheets
         run: node security/treatment-owner-access.test.cjs
+      - name: Verify Heather assessment reviewer access
+        run: node security/sgvp-heather-access.test.cjs
       - name: Run Firestore rule tests in local emulator
         run: >
           npx --yes firebase-tools@13.29.1 emulators:exec
