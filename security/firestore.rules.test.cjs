@@ -371,6 +371,55 @@ async function main() {
       assertFails(setDoc(doc(staff, 'visit_docs', 'future-other', 'parts', '0'), {
         data: 'AAAA', i: 0, n: 1, privileged: true,
       })));
+    // Prelaunch temporary self-activation checks, synthetic Auth JWTs only.
+    const verifiedDaniel = env.authenticatedContext('pilot-daniel-uid', {
+      email: 'daniel.giordano@pravix.app', email_verified: true,
+    }).firestore();
+    const verifiedHeather = env.authenticatedContext('pilot-heather-uid', {
+      email: 'heather.galano@vca.com', email_verified: true,
+    }).firestore();
+    const unverifiedDaniel = env.authenticatedContext('pilot-unverified-uid', {
+      email: 'daniel.giordano@pravix.app', email_verified: false,
+    }).firestore();
+    const verifiedOther = env.authenticatedContext('pilot-outsider-uid', {
+      email: 'unknown@example.test', email_verified: true,
+    }).firestore();
+    const ownerPayload = {
+      active: true, tenant_id: 'shoreline', role: 'owner',
+      kura_owner: true, review_manager: true,
+    };
+    const directorPayload = {
+      active: true, tenant_id: 'shoreline', role: 'management',
+      kura_owner: false, review_manager: true,
+    };
+    await check('unverified email cannot self-provision owner', () =>
+      assertFails(setDoc(doc(unverifiedDaniel, 'staff_members', 'pilot-unverified-uid'), ownerPayload)));
+    await check('verified outsider cannot self-provision staff', () =>
+      assertFails(setDoc(doc(verifiedOther, 'staff_members', 'pilot-outsider-uid'), ownerPayload)));
+    await check('verified Heather cannot self-provision owner privileges', () =>
+      assertFails(setDoc(doc(verifiedHeather, 'staff_members', 'pilot-heather-uid'), ownerPayload)));
+    await check('verified owner cannot provision another UID', () =>
+      assertFails(setDoc(doc(verifiedDaniel, 'staff_members', 'some-other-uid'), ownerPayload)));
+    await check('verified owner cannot inject additional privilege flags', () =>
+      assertFails(setDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'), {
+        ...ownerPayload, manage_roles: true,
+      })));
+    await check('verified Daniel may create his exact UID-bound owner membership', () =>
+      assertSucceeds(setDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'), ownerPayload)));
+    await check('verified Heather may create her exact UID-bound management membership', () =>
+      assertSucceeds(setDoc(doc(verifiedHeather, 'staff_members', 'pilot-heather-uid'), directorPayload)));
+    await check('pilot member can read their own membership', () =>
+      assertSucceeds(getDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'))));
+    await check('pilot management can read Shoreline visits after activation', () =>
+      assertSucceeds(getDoc(doc(verifiedHeather, 'visits', 'visit-a'))));
+    await check('pilot owner cannot change their privileged role afterward', () =>
+      assertFails(updateDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'), {role:'admin'})));
+    await check('pilot owner cannot delete their own membership', () =>
+      assertFails(deleteDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'))));
+    await check('disabled membership cannot reactivate through create-only policy', () =>
+      assertFails(setDoc(doc(env.authenticatedContext('staff-disabled', {
+        email:'daniel.giordano@pravix.app', email_verified:true,
+      }).firestore(), 'staff_members', 'staff-disabled'), ownerPayload)));
     process.stdout.write('Passed ' + seen.length + ' emulator authorization tests.\n');
   } finally {
     await env.cleanup();
