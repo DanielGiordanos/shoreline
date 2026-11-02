@@ -1,0 +1,39 @@
+# One-time attempt to set GitHub Pages "Enforce HTTPS" using the
+# short-lived scoped GITHUB_TOKEN. Branch-only and intentionally removable.
+# GitHub's Pages API may require Administration:write permissions that
+# GITHUB_TOKEN cannot grant; if denied, fail without altering any setting.
+name: One-time GitHub Pages HTTPS enforcement attempt
+on:
+  push:
+    branches:
+      - 'fix/p0-https-translation-2026-11-02'
+    paths:
+      - '.github/workflows/try-pages-https.yml'
+permissions:
+  contents: read
+  pages: write
+jobs:
+  enable-https:
+    if: github.repository == 'DanielGiordanos/shoreline'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce HTTPS for Shoreline Pages through GitHub API
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REQ="https://api.github.com/repos/DanielGiordanos/shoreline/pages"
+          STATUS="$(curl -sS --max-time 20 -o "$RUNNER_TEMP/pvx-pages-response.json" -w '%{http_code}' \
+            -X PUT -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"https_enforced":true}' "$REQ")"
+          echo "GitHub Pages settings update HTTP status: $STATUS"
+          if [[ "$STATUS" != "204" ]]; then
+            echo "::error::Cannot enforce HTTPS using this token; a Pages administrator must enable 'Enforce HTTPS' in repository Settings > Pages."
+            exit 1
+          fi
+          echo "GitHub accepted the Enforce HTTPS setting."
