@@ -12239,66 +12239,57 @@ function sexEnglish(v){ return getSexDisplayLabel(v); }
 
 
 const TranslationService = (function(){
-function endpoint(){ return (typeof window!=='undefined'&& window.PRAVIX_TRANSLATE_URL) || FLOW_TRANSLATE_ENDPOINT ||''; }
+// Clinical intake narratives are confidential. A public machine translation
+// endpoint MUST NOT receive a pet's symptoms, complaint or medical history.
+// The only permitted integration is an explicitly configured HTTPS endpoint
+// on the SAME Pravix origin, where approved server controls can enforce
+// authentication, audit and data-processing restrictions.
+function endpoint(){
+  const configured=(typeof window!=='undefined'&&window.PRAVIX_TRANSLATE_URL) || FLOW_TRANSLATE_ENDPOINT || '';
+  if(!configured) return '';
+  try{
+    const base=new URL(window.location.href);
+    const target=new URL(configured,base);
+    if(base.protocol!=='https:' || target.protocol!=='https:' || target.origin!==base.origin)
+      return '';
+    if(target.username || target.password || target.search || target.hash) return '';
+    return target.href;
+  }catch(_){return '';}
+}
 async function _fetchT(url, opts){
 const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
 const timer=ctrl?setTimeout(()=>ctrl.abort(),12000):null;
-try{ return await fetch(url, Object.assign({}, opts, ctrl?{signal:ctrl.signal}:{})); }
+try{ return await fetch(url, Object.assign({}, opts, ctrl?{signal:ctrl.signal}:{}, {cache:'no-store',credentials:'same-origin'})); }
 finally{ if(timer) clearTimeout(timer); }
 }
-
 async function _viaEndpoint(url, list, source){
 const resp=await _fetchT(url,{ method:'POST', headers:{'Content-Type':'application/json'},
 body:JSON.stringify({ texts:list, source:source||null, target:'en'}) });
-if(!resp.ok){ const e=new Error('translation http '+resp.status); e.code='http_'+resp.status; throw e; }
+if(!resp.ok){ const err=new Error('translation http '+resp.status);err.code='http_'+resp.status;throw err; }
 const data=await resp.json();
 const out=data.translations||data.data||[];
-if(!Array.isArray(out) || out.length!==list.length){ const e=new Error('translation shape mismatch'); e.code='bad_response'; throw e; }
+if(!Array.isArray(out) || out.length!==list.length){ const err=new Error('translation shape mismatch');err.code='bad_response';throw err; }
 return { translations:out.map(x=>String(x==null?'':x)),
 detectedSourceLanguage:data.detectedSourceLanguage||data.detected||source||null,
-provider:data.provider||'cloud-translation', model:data.model||null };
-}
-
-
-
-async function _gtx(text, source){
-const url='https://translate.googleapis.com/translate_a/single?client=gtx&sl='+encodeURIComponent(source||'auto')+'&tl=en&dt=t&q='+encodeURIComponent(text);
-const resp=await _fetchT(url); if(!resp.ok) throw new Error('gtx '+resp.status);
-const data=await resp.json();
-const segs=(data&&data[0])||[]; const t=segs.map(s=>(s&&s[0])?s[0]:'').join('');
-if(!t) throw new Error('gtx empty');
-return { text:t, detected:(data&&data[2])||source||null };
-}
-async function _mymemory(text, source){
-const url='https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+encodeURIComponent((source||'auto')+'|en');
-const resp=await _fetchT(url); if(!resp.ok) throw new Error('mm '+resp.status);
-const data=await resp.json();
-const t=data&&data.responseData&&data.responseData.translatedText;
-if(!t) throw new Error('mm empty');
-return { text:String(t), detected:source||null };
-}
-async function _viaPublic(list, source){
-const out=[]; let detected=source||null, provider='';
-for(const t of list){
-if(!String(t).trim()){ out.push(''); continue; }
-let seg=null;
-try{ const r=await _gtx(t, source); seg=r.text; provider=provider||'google-gtx'; if(!detected)detected=r.detected; }
-catch(e1){ try{ const r=await _mymemory(t, source); seg=r.text; provider=provider||'mymemory'; }catch(e2){ const e=new Error('all_providers_failed'); e.code='provider_unreachable'; throw e; } }
-out.push(seg);
-}
-return { translations:out, detectedSourceLanguage:detected||source||null, provider:provider||'public', model:null };
+provider:data.provider||'private-translation',model:data.model||null };
 }
 async function translateBatch(texts, source){
 const list=(texts||[]).map(t=>t==null?'':String(t));
-if(!list.length) return { translations:[], detectedSourceLanguage:source||null, provider:'none', model:null };
+if(!list.length) return {translations:[],detectedSourceLanguage:source||null,provider:'none',model:null};
 const url=endpoint();
-return url ? _viaEndpoint(url, list, source) : _viaPublic(list, source);
+if(!url){
+  // The existing intake UI displays the unchanged original and a warning.
+  // It must NOT silently retry through public Google/MyMemory endpoints.
+  const err=new Error('Approved private translation is not configured');
+  err.code='translation_not_configured';throw err;
 }
-async function translateToEnglish(text, source){
-const r=await translateBatch([text], source);
-return { translatedText:r.translations[0]||'', sourceLanguage:r.detectedSourceLanguage||source||null, provider:r.provider, model:r.model };
+return _viaEndpoint(url,list,source);
 }
-return { translateBatch, translateToEnglish, endpoint };
+async function translateToEnglish(text,source){
+const r=await translateBatch([text],source);
+return { translatedText:r.translations[0]||'',sourceLanguage:r.detectedSourceLanguage||source||null,provider:r.provider,model:r.model };
+}
+return {translateBatch,translateToEnglish,endpoint};
 })();
 
 const _t9nPromises = {};
