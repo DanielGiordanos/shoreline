@@ -4,17 +4,24 @@ on:
   push:
     branches:
       - 'security/**'
+      - 'fix/**'
     paths:
       - 'firestore.rules'
       - 'index.html'
       - 'checkin/index.html'
       - 'flow-client-checkin.html'
       - 'security/**'
+      - 'treatment/index.html'
+      - 'treatment/store.js'
+      - 'treatment/owner-access.js'
       - '.github/workflows/security-rules-check.yml'
   pull_request:
     paths:
       - 'firestore.rules'
       - 'security/**'
+      - 'treatment/index.html'
+      - 'treatment/store.js'
+      - 'treatment/owner-access.js'
       - '.github/workflows/security-rules-check.yml'
 permissions:
   contents: read
@@ -39,6 +46,8 @@ jobs:
         run: node security/flow-privacy.test.cjs
       - name: Verify proposed edge HTTPS and headers policy (local simulation)
         run: node security/edge/worker.test.mjs
+      - name: Verify owner onboarding in Treatment Sheets
+        run: node security/treatment-owner-access.test.cjs
       - name: Run Firestore rule tests in local emulator
         run: >
           npx --yes firebase-tools@13.29.1 emulators:exec
