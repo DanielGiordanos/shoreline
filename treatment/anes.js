@@ -74,9 +74,9 @@
       orig.apply(this, arguments);
       var on = e === 'anes' && !!document.getElementById('ctab-anes');
       var st = document.getElementById('stage'); if (st) st.classList.toggle('anes-active', on);
-      clearInterval(poll); poll = null;
+      poll = false;
       if (!on) setExpanded(false, true);
-      if (on) { render(); poll = setInterval(function () { if (sheetId() !== frameSheet) render(); }, 800); }
+      if (on) { render(); poll = true; }   /* n298: the frame follows the sheet through the app's events (sheetMaybe), not an 800 ms poll */
     };
     wrapped.__anes = true; window.selectCTab = wrapped;
     return true;
@@ -109,6 +109,11 @@
       AN.unsub = fb.firestore().collection('sheets').doc(id).onSnapshot(function (d) { AN.sum = d.exists ? (d.data() || {}).anesthesia || null : null; if (sheetId() === id) anBadge(); }, function (e) { console.warn('[sheet ← Anesia]', e); });
     } catch (e) { }
   }
-  setInterval(watchSheet, 1000); window.addEventListener('load', watchSheet);
+  /* n298: the sheet says when it opens, draws, changes tab or redraws; the 800 ms and 1000 ms polls stay only where the app's bus isn't there */
+  function sheetMaybe() { setTimeout(function () { try { watchSheet(); } catch (e) { } if (poll && sheetId() !== frameSheet) render(); }, 0); }
+  function pollBoth() { setInterval(sheetMaybe, 800); }
+  if (window.pvxOn) pvxOn(['sheet.opening', 'sheet.drawn', 'tab', 'header.refresh', 'rendered'], sheetMaybe, pollBoth); else pollBoth();
+  window.addEventListener('hashchange', sheetMaybe); window.addEventListener('popstate', sheetMaybe);
+  window.addEventListener('load', watchSheet);
   window.tsAnes = { render: render, sheetId: sheetId, pre: pre, setExpanded: setExpanded, state: function () { return AN.sum; } };
 })();

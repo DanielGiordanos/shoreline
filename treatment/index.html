@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <script src="/assets/pvx-appearance.js?v=110011ea35"></script>
+<link rel="preload" href="core.js?v=f75888f32b" as="script"><link rel="preload" href="store.js?v=55b31da270" as="script">
 <script id="pvx-n225-text">
 /* PVX-N225 - Dynamic Type: on iPhone and iPad the page's text follows the system text size (-apple-system-body is 17 pt
    at the default size), re-read when the app comes back. Elsewhere the browser's own text size applies. The shared top bar
@@ -22,7 +23,8 @@
   probe(); mark();
   document.addEventListener('visibilitychange',function(){ if(!document.hidden){ probe(); mark(); } });
   window.addEventListener('resize',mark);
-  try{ new MutationObserver(mark).observe(de,{attributes:true,attributeFilter:['style']}); }catch(e){}
+  var lastF=de.style.fontSize;   /* n298: html's style attribute changes often (--pvx-stage-h and the like); only its font-size matters here */
+  try{ new MutationObserver(function(){ var f=de.style.fontSize; if(f!==lastF){ lastF=f; mark(); } }).observe(de,{attributes:true,attributeFilter:['style']}); }catch(e){}
   window.pvxTextScale=function(){ return parseFloat(getComputedStyle(de).fontSize)/16; };
 })();
 </script>
@@ -1459,10 +1461,10 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   new MutationObserver(function(){ if(document.querySelector('.tsh-admit')) apply(); }).observe(document.documentElement,{childList:true,subtree:true});
 })();</script>
 <script defer src="../assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="store.js?v=949fb7830b"></script>
+<script defer src="store.js?v=55b31da270"></script>
 
 
-<script defer src="anes.js?v=9413920cd8"></script>
+<script defer src="anes.js?v=3c296a3044"></script>
 <script defer src="voice.js?v=a78f196d1f"></script>
 
 <script>/* CL-T02 n132: compact search — the visible Search button is the Tab stop while collapsed; the field opens on focus/click and closes when left empty */(function(){var s=document.querySelector(".subnav .search"),i=document.getElementById("globalSearch"),b=s&&s.querySelector(".ts-search-open"),mq=window.matchMedia("(max-width:1680px)");if(!s||!i||!b)return;function collapsed(){return mq.matches&&!s.classList.contains("is-open")&&!s.classList.contains("is-focus");}function sync(){var c=collapsed();i.tabIndex=c?-1:0;b.tabIndex=c?0:-1;b.setAttribute("aria-hidden",c?"false":"true");}b.addEventListener("click",function(){s.classList.add("is-open");i.focus();sync();});s.addEventListener("click",function(e){if(!s.contains(document.activeElement)){i.focus();sync();}});i.addEventListener("focus",function(){s.classList.add("is-focus");sync();});i.addEventListener("input",function(){s.classList.toggle("is-open",!!i.value);sync();});i.addEventListener("blur",function(){s.classList.remove("is-focus");if(!i.value)s.classList.remove("is-open");setTimeout(sync,0);});mq.addEventListener?mq.addEventListener("change",sync):mq.addListener(sync);sync();})();</script>
@@ -2509,6 +2511,20 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
+<script id="pvx-n298-ts">
+/* n298 · performance: layers listen to the app's own events instead of polling (claude/treatment-performance-audit-2026-11-01.md).
+   pvxOn(events, fn, fallback): subscribes fn to the app's event bus (store.js: tsHooks.on) as soon as it exists; when the bus
+   isn't there once the page has loaded, fallback() installs the layer's old timer, so a page without store.js behaves as before. */
+(function(){
+  var queue=[];
+  function bus(){ var H=window.tsHooks; return H&&typeof H.on==='function'?H:null; }
+  function sub(H,evs,fn){ (Array.isArray(evs)?evs:[evs]).forEach(function(e){ H.on(e,function(){ try{ fn.apply(null,arguments); }catch(x){ console.warn('[n298 '+e+']',x); } }); }); }
+  function flush(){ var H=bus(); var q=queue; queue=[]; q.forEach(function(it){ if(H) sub(H,it.evs,it.fn); else if(it.fb){ try{ it.fb(); }catch(x){ console.warn('[n298 fallback]',x); } } }); }
+  window.pvxOn=function(evs,fn,fallback){ var H=bus(); if(H){ sub(H,evs,fn); return true; } queue.push({evs:evs,fn:fn,fb:fallback});
+    if(document.readyState!=='loading') setTimeout(flush,0); return false; };
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(flush,0); });
+})();
+</script>
 <script id="pvx-n239-ts">
 (function(){
   var $=function(q,r){return (r||document).querySelector(q)}, $$=function(q,r){return [].slice.call((r||document).querySelectorAll(q))};
@@ -2536,9 +2552,11 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
   var sel=null, os=null;
   function wrap(){ var f=window.selectCTab; if(typeof f==='function'&&!f.__pvx239){ sel=f; var w=function(){ var r=f.apply(this,arguments); try{ setTimeout(note,0); }catch(e){} return r; }; w.__pvx239=1; w.__orig=f; window.selectCTab=w; }
     var g=window.tsOpenSheet; if(typeof g==='function'&&!g.__pvx239){ os=g; var v=function(){ var r=g.apply(this,arguments); try{ setTimeout(note,0); }catch(e){} return r; }; v.__pvx239=1; window.tsOpenSheet=v; } }
-  wrap(); setInterval(wrap,1000);
+  wrap(); document.addEventListener('DOMContentLoaded',wrap);   /* n298: the app's scripts have run by then; boot wraps once more after load. No 1 s re-wrap */
   /* sheets opened from search, links and the patient tabs go through openSheet; catch them by watching the current sheet */
-  var lastCur=null; setInterval(function(){ var c=cur(); if(c) lastOpened=true; if(c!==lastCur){ lastCur=c; note(); } },250);
+  var lastCur=null; function check(){ var c=cur(); if(c) lastOpened=true; if(c!==lastCur){ lastCur=c; note(); } }
+  /* n298: the app says when a sheet opens, is drawn, or the section changes; no 250 ms poll */
+  pvxOn(['sheet.opening','sheet.drawn','tab','header.refresh','rendered'],function(){ setTimeout(check,0); },function(){ setInterval(check,250); });
   window.addEventListener('popstate',function(e){ var st=e.state&&e.state.pvx?e.state:null;
     if(!st){ var m=/[#&]sheet=([^&]+)/.exec(location.hash||''); st={pvx:1,area:m?'sheet':'dash',tab:m?'sheet':'dash',sheet:m?decodeURIComponent(m[1]):null}; }
     popping=true;
@@ -2617,9 +2635,10 @@ body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
     e.preventDefault(); e.stopImmediatePropagation(); r.click(); },true);
   /* coming back to the board puts focus on the row you left */
   var last=tab();
-  setInterval(function(){ var t=tab(); if(t===last) return; var was=last; last=t;
+  function tabbed(){ var t=tab(); if(t===last) return; var was=last; last=t;
     if(t==='dash'&&was&&was!=='dash'){ [150,450].forEach(function(ms){ setTimeout(function(){ var a=document.activeElement; if(a&&a!==document.body&&a!==document.documentElement&&a.isConnected&&a.getClientRects().length) return; board();
-      var r=$('#ctab-dash .sb-row.sel[role=row]')||$('#ctab-dash .sb-row[role=row][tabindex="0"]'); if(r){ try{ r.focus({preventScroll:true}); r.scrollIntoView({block:'nearest'}); }catch(x){} } },ms); }); } },120);
+      var r=$('#ctab-dash .sb-row.sel[role=row]')||$('#ctab-dash .sb-row[role=row][tabindex="0"]'); if(r){ try{ r.focus({preventScroll:true}); r.scrollIntoView({block:'nearest'}); }catch(x){} } },ms); }); } }
+  pvxOn('tab',tabbed,function(){ setInterval(tabbed,120); });   /* n298: the app announces the section; no 120 ms poll */
 
   /* ---------- 2. Charges: each tick names its charge and day ---------- */
   function charges(){ $$('.ch-row .ch-ck').forEach(function(b){ var row=b.closest('.ch-row'), nm=txt($('.ch-what b',row)), d=b.closest('details'), day=d?txt($('summary b',d)):'';
@@ -2834,7 +2853,7 @@ html.pvx-snav-icons #tsPatientChip{max-width:min(42vw,26rem)}
       else if(!narrow&&dd){ var full=mid.getAttribute('aria-label')||mid.textContent; mid.textContent=full; mid.removeAttribute('aria-label'); } } }
   var ro=window.ResizeObserver?new ResizeObserver(function(){ sched2(); }):null, roSeen=new WeakSet();
   function fitBar(){ var bar=$('#ctab-sheet .treatment-toolbar'); if(!bar) return;
-    if(ro) [bar].concat([].slice.call(bar.children)).forEach(function(e){ if(!roSeen.has(e)){ roSeen.add(e); ro.observe(e); } });
+    if(ro&&!roSeen.has(bar)){ roSeen.add(bar); ro.observe(bar); }   /* n298: the bar's own box; its children are measured below, not watched one by one */
     bar.setAttribute('data-measure',''); var was=bar.getAttribute('data-fit'); bar.removeAttribute('data-fit');
     var nw=getComputedStyle(bar).flexWrap==='nowrap';   /* n284: a toolbar that wraps (iPad) counts its rows of controls */
     if(innerWidth>=600&&bar.getClientRects().length&&!nw){ var over=function(){ var rows=[];
@@ -2854,7 +2873,12 @@ html.pvx-snav-icons #tsPatientChip{max-width:min(42vw,26rem)}
     if(cut) $$('#clinSwitcher .seg').forEach(function(b){ if(!b.title){ var t=b.textContent.replace(/\s+/g,' ').trim(); if(t) b.title=t; } }); }
   var q2=0; function sched2(){ if(q2) return; q2=requestAnimationFrame(function(){ q2=0; try{ compact(); fitBar(); fitNav(); }catch(x){ console.warn('[n255]',x); } }); }
   addEventListener('resize',sched); addEventListener('resize',sched2);
-  var mo=new MutationObserver(function(){ sched(); sched2(); watch(document.getElementById('tsOrderSheet')); watchDrawer(document.getElementById('completionDrawer')); share(); });
+  /* n298: the toolbar, the patient chip and the section switcher are re-measured when they changed (or the toolbar resized, or the window did); a redrawn grid is no reason */
+  var FIT='.treatment-toolbar,#tsPatientChip,#clinSwitcher';
+  function touches(ms){ for(var i=0;i<ms.length;i++){ var m=ms[i], t=m.target.nodeType===1?m.target:m.target.parentElement; if(t&&t.closest(FIT)) return true;
+      if(m.type==='childList'){ var ns=[].slice.call(m.addedNodes).concat([].slice.call(m.removedNodes)); for(var j=0;j<ns.length;j++){ var n=ns[j]; if(n.nodeType===1&&(n.matches(FIT)||n.querySelector(FIT))) return true; } } } return false; }
+  var mo=new MutationObserver(function(ms){ sched(); if(touches(ms)) sched2(); watch(document.getElementById('tsOrderSheet')); watchDrawer(document.getElementById('completionDrawer')); share(); });
+  try{ document.fonts&&document.fonts.ready.then(sched2); }catch(x){}
   function boot(){ skip(); hint(); watch(document.getElementById('tsOrderSheet')); share(); apply(); sched2(); mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']}); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
@@ -3665,8 +3689,11 @@ body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color
     else sc.scrollBy({top:k==='PageDown'||(k===' '&&!e.shiftKey)?page:k==='PageUp'||k===' '?-page:k==='ArrowDown'?40:-40,behavior:b}); });
 
   /* ---------- 2. iPhone: the grid is as tall as the area it scrolls in ---------- */
-  function fit(){ var st=$('.stage'); if(!st) return; var h=st.clientHeight; if(h>0) document.documentElement.style.setProperty('--pvx-stage-h',h+'px'); }
+  var lastH=0; function fit(){ var st=$('.stage'); if(!st) return; var h=st.clientHeight; if(h>0&&h!==lastH){ lastH=h; document.documentElement.style.setProperty('--pvx-stage-h',h+'px'); } }
   addEventListener('resize',fit); addEventListener('orientationchange',function(){ setTimeout(fit,300); });
+  /* n298: the stage's size is watched, not re-read after every change on the page */
+  var sro=window.ResizeObserver?new ResizeObserver(function(){ fit(); }):null;
+  function fitWatch(){ var st=$('.stage'); if(sro&&st&&!st.__pvx288){ st.__pvx288=1; sro.observe(st); } }
 
   /* ---------- 3. iPhone: View and Filters as a sheet ---------- */
   var scrim=null, popWasSheet=false;
@@ -3738,8 +3765,8 @@ body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color
     var m=b.closest('.pt-pop'), id=m._pvxWin; m.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); if(m.isConnected&&m.classList.contains('show')){ m.classList.remove('show'); }
     id&&openWin(id); },true);
 
-  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ popSheet(); formSheet(); tabMenu(); fit(); }catch(x){} },0); }   /* not rAF: it waits while the window is hidden */
-  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); tick(); }
+  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ popSheet(); formSheet(); tabMenu(); if(sro) fitWatch(); else fit(); }catch(x){} },0); }   /* not rAF: it waits while the window is hidden */
+  function boot(){ new MutationObserver(tick).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); fitWatch(); fit(); tick(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
@@ -3857,7 +3884,9 @@ body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
     x.addEventListener('mousedown',function(e){ e.preventDefault(); });
     x.onclick=function(e){ e.stopPropagation(); i.value=''; i.dispatchEvent(new Event('input',{bubbles:true})); sync(); try{ i.focus({preventScroll:true}); }catch(t){} };
     i.addEventListener('input',sync); i.addEventListener('change',sync); sync();
-    setInterval(function(){ if(i.isConnected) sync(); },700); }
+    /* n298: the field is emptied by the app with a pick (a click or Return), a section change or a redraw; no 700 ms poll */
+    ['focus','blur','keyup'].forEach(function(ev){ i.addEventListener(ev,sync); }); document.addEventListener('click',function(){ setTimeout(sync,0); },true);
+    pvxOn(['tab','rendered','sheet.drawn','header.refresh','orders.adding','orders.added','rx.opened','search.extra'],function(){ if(i.isConnected) sync(); },function(){ setInterval(function(){ if(i.isConnected) sync(); },700); }); }
   /* ---------- the zoom shows how many hours are on screen ---------- */
   function hours(){ var s=$('#sheetScroll'); if(!s||!s.getClientRects().length) return 0; var r=s.getBoundingClientRect(), seen={};
     $$('.hcell .hl',s).forEach(function(h){ var b=h.getBoundingClientRect(); if(!b.width||b.left<r.left-2||b.right>r.right+2||b.top<0||b.bottom>innerHeight) return;
@@ -3870,11 +3899,14 @@ body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
     var fits=mid.getAttribute('aria-disabled')==='true';
     set(mid,'aria-label','Showing '+n+' hour'+(n===1?'':'s')+(fits?'':' · fit to the screen'));
     set(z,'aria-label','Hours shown: '+n); }
-  var q=0; function tick(){ if(q) return; q=setTimeout(function(){ q=0; try{ kb(); clearBtn(); zoom(); }catch(x){} },30); }
-  var ro=window.ResizeObserver?new ResizeObserver(tick):null, watched=null;
-  function watch(){ var g=$('#sheetScroll'), c=g&&g.firstElementChild; if(!ro||!c||c===watched) return; try{ if(watched) ro.disconnect(); ro.observe(g); ro.observe(c); watched=c; }catch(x){} }
+  /* n298: the hours-shown count follows the grid's changes, its scrolling, a resize and the zoom buttons, trailing them by 150 ms (one recount per burst of changes); no 1.5 s poll */
+  var zq=0; function zoomSoon(){ clearTimeout(zq); zq=setTimeout(function(){ zq=0; try{ zoom(); }catch(x){} },150); }
+  var q=0; function tick(){ zoomSoon(); if(q) return; q=setTimeout(function(){ q=0; try{ kb(); clearBtn(); }catch(x){} },30); }
+  var ro=window.ResizeObserver?new ResizeObserver(zoomSoon):null, watched=null;
+  function watch(){ var g=$('#sheetScroll'), c=g&&g.firstElementChild; if(g&&!g.__pvx291s){ g.__pvx291s=1; g.addEventListener('scroll',zoomSoon,{passive:true}); }
+    if(!ro||!c||c===watched) return; try{ if(watched) ro.disconnect(); ro.observe(g); ro.observe(c); watched=c; }catch(x){} }
   function boot(){ new MutationObserver(function(){ watch(); tick(); }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-disabled','style','class']});
-    addEventListener('resize',tick); setInterval(function(){ if(!document.hidden) zoom(); },1500); watch(); tick(); }
+    addEventListener('resize',tick); document.addEventListener('visibilitychange',function(){ if(!document.hidden) tick(); }); watch(); tick(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
@@ -3931,7 +3963,7 @@ body.dark .ts-load-card.mid .ts-lc-lvl,body.dark .ts-load-card.hi .ts-lc-lvl{col
   /* ---------- 2. the estimate bar: both ends named, on screen and to VoiceOver ---------- */
   function money(n){ n=+n||0; var whole=Math.abs(n-Math.round(n))<0.005; return (n<0?'−':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:whole?0:2,maximumFractionDigits:2}); }
   function est(){ var V; try{ V=(typeof VISIT!=='undefined')?VISIT:null; }catch(x){ V=null; } if(!V) return;
-    $$('.est-card.fin2 .est-bar').forEach(function(b){
+    $$('.est-card.fin2 .est-bar').forEach(function(b){ if(ero&&!b.__n298){ b.__n298=1; ero.observe(b); }
       var lo=+V.estLow||0, hi=+V.estHigh||0, cur=+V.estCurrent||0; if(!(hi>0)) return;
       var hasLo=lo>0&&lo<hi, d=hasLo?lo:hi, lbl;
       if(cur>hi) lbl='Charges '+money(cur)+': '+money(cur-hi)+' past the '+money(hi)+' high end.'+(hasLo?' Low end '+money(lo)+'.':'');
@@ -3972,9 +4004,13 @@ body.dark .ts-load-card.mid .ts-lc-lvl,body.dark .ts-load-card.hi .ts-lc-lvl{col
     w.__n292=1; window.tsLoadStrip=w; }
   function tick(){ wrapSkel(); wrapSheet(); wrapLoad(); est(); }
   tick();
-  function boot(){ tick(); new MutationObserver(function(){ est(); }).observe(document.body,{childList:true,subtree:true});
+  /* n298: the estimate is re-read when its card changed, its bar resized or the header refreshed, not after every change on the page; the wrappers are checked once more after load. No 1 s tick */
+  var ero=window.ResizeObserver?new ResizeObserver(function(){ est(); }):null;
+  function estTouched(ms){ for(var i=0;i<ms.length;i++){ var m=ms[i], t=m.target.nodeType===1?m.target:m.target.parentElement; if(t&&t.closest('.est-card')) return true;
+      var ns=m.addedNodes; for(var j=0;j<ns.length;j++){ var n=ns[j]; if(n.nodeType===1&&(n.matches('.est-card')||n.querySelector('.est-card'))) return true; } } return false; }
+  function boot(){ tick(); new MutationObserver(function(ms){ if(estTouched(ms)) est(); }).observe(document.body,{childList:true,subtree:true});
     addEventListener('resize',function(){ $$('.pvx-gends').forEach(function(g){ g.dataset.sig=''; }); est(); });
-    setInterval(function(){ if(!document.hidden) tick(); },1000); }
+    pvxOn('header.refresh',est); addEventListener('load',function(){ setTimeout(tick,0); }); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
