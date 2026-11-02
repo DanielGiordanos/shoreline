@@ -49,7 +49,8 @@ function fixture(options={}){
 async function main(){
  await check('owner access script is included before Treatment store',()=>{
    assert.ok(html.indexOf('owner-access.js?v=')>=0);
-   assert.ok(html.indexOf('owner-access.js?v=') < html.indexOf('store.js?v='));
+   assert.ok(html.indexOf('<script defer src="owner-access.js?v=') < html.indexOf('<script defer src="store.js?v='));
+   assert.ok(html.includes('<link rel="preload" href="store.js?v=20261102-owner-bootstrap"'));
  });
  await check('Treatment waits for verified membership before subscribing',()=>{
    assert.ok(store.includes('onAuthStateChanged(async function(e)'));
