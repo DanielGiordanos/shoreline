@@ -17,6 +17,20 @@ const {
   getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp
 } = require('firebase/firestore');
 
+function validSyntheticIntake(id) {
+  const submittedAt = new Date().toISOString();
+  return {
+    tenant_id: 'shoreline', id, submittedAt,
+    record: {
+      id, submittedAt, status: 'awaiting_csr_review',
+      patient: {name: 'Synthetic Pet', species:'Dog', weight:''},
+      client: {first:'Synthetic',last:'Owner',phone:'',email:''},
+      reason:'Synthetic staging reason',additionalProblems:[],
+      priority:null,doctor:null,location:'Lobby',
+    },
+  };
+}
+
 async function main() {
   assert.ok(process.env.FIRESTORE_EMULATOR_HOST,
     'Only run with FIRESTORE_EMULATOR_HOST set by Firebase Emulator Suite');
@@ -107,6 +121,31 @@ async function main() {
         tenant_id: 'shoreline', is_active: false,
         resus_pref: null, resus_status: null, resus_recorded_at: null,
       });
+      await setDoc(doc(db, 'pub', 'tracker-grace'), {
+        tenant_id: 'shoreline', is_active: false,
+        access_expires_at: new Date(Date.now() + 24*60*60*1000),
+        resus_pref: null, resus_status: null, resus_recorded_at: null,
+      });
+      await setDoc(doc(db, 'pub', 'tracker-expired'), {
+        tenant_id: 'shoreline', is_active: false,
+        access_expires_at: new Date(Date.now() - 60*1000),
+        resus_pref: null, resus_status: null, resus_recorded_at: null,
+      });
+      await setDoc(doc(db, 'pub', 'tracker-revoked'), {
+        tenant_id: 'shoreline', is_active: true,
+        capability_revoked: true,
+        resus_pref: null, resus_status: null, resus_recorded_at: null,
+      });
+      await setDoc(doc(db, 'pub', 'tracker-other-tenant'), {
+        tenant_id: 'other-hospital', is_active: true,
+        resus_pref: null, resus_status: null, resus_recorded_at: null,
+      });
+      for (const token of ['tracker-closed','tracker-grace','tracker-expired','tracker-revoked','tracker-other-tenant']) {
+        await setDoc(doc(db, 'messages', token, 'items', 'old-message'), {
+          sender: 'staff', body: 'Synthetic no-patient note',
+          created_at: new Date().toISOString(),
+        });
+      }
     });
 
     const anon = env.unauthenticatedContext().firestore();
@@ -254,31 +293,23 @@ async function main() {
         event_id: 'e1', hospital: 'another-hospital', env: '{}',
         written_at: serverTimestamp(),
       })));
-    await check('anonymous pending intake with valid envelope remains possible', () =>
-      assertSucceeds(setDoc(doc(anon, 'client_intakes', 'INT-123456'), {
-        tenant_id: 'shoreline', id: 'INT-123456',
-        submittedAt: new Date().toISOString(),
-        record: {id: 'INT-123456', status: 'awaiting_csr_review'},
-      })));
-    await check('client cannot claim accepted intake on submission', () =>
-      assertFails(setDoc(doc(anon, 'client_intakes', 'INT-999999'), {
-        tenant_id: 'shoreline', id: 'INT-999999',
-        submittedAt: new Date().toISOString(),
-        record: {id: 'INT-999999', status: 'completed'},
-      })));
-    await check('client intake document id must match submitted id', () =>
-      assertFails(setDoc(doc(anon, 'client_intakes', 'INT-777777'), {
-        tenant_id: 'shoreline', id: 'INT-888888',
-        submittedAt: new Date().toISOString(),
-        record: {id: 'INT-888888', status: 'awaiting_csr_review'},
-      })));
-    await check('client intake cannot add privileged metadata fields', () =>
-      assertFails(setDoc(doc(anon, 'client_intakes', 'INT-555555'), {
-        tenant_id: 'shoreline', id: 'INT-555555',
-        submittedAt: new Date().toISOString(),
-        role: 'admin',
-        record: {id: 'INT-555555', status: 'awaiting_csr_review'},
-      })));
+    await check('anonymous pending intake with valid patient/client fields remains possible', () =>
+      assertSucceeds(setDoc(doc(anon, 'client_intakes', 'INT-synthetic123456'),
+        validSyntheticIntake('INT-synthetic123456'))));
+    await check('client cannot claim accepted intake on submission', () => {
+      const x = validSyntheticIntake('INT-status999999');
+      x.record.status='completed';
+      return assertFails(setDoc(doc(anon, 'client_intakes', x.id), x));
+    });
+    await check('client intake document id must match submitted id', () => {
+      const x = validSyntheticIntake('INT-synthetic8888');
+      return assertFails(setDoc(doc(anon, 'client_intakes', 'INT-synthetic7777'), x));
+    });
+    await check('client intake cannot add privileged metadata fields', () => {
+      const x = validSyntheticIntake('INT-synthetic5555');
+      x.role='admin';
+      return assertFails(setDoc(doc(anon, 'client_intakes', x.id), x));
+    });
     await check('admin can read a Shoreline form request', () =>
       assertSucceeds(getDoc(doc(admin, 'form_requests', 'form-open'))));
     await check('approved staff cannot read other hospital form request', () =>
@@ -450,6 +481,84 @@ async function main() {
       assertFails(setDoc(doc(env.authenticatedContext('staff-disabled', {
         email:'daniel.giordano@pravix.app', email_verified:true,
       }).firestore(), 'staff_members', 'staff-disabled'), ownerPayload)));
+    // Tracker bearer tokens: public access is bounded by revocation and expiry.
+    await check('active tracker remains readable without sign-in', () =>
+      assertSucceeds(getDoc(doc(anon, 'pub', 'tracker-open'))));
+    await check('closed legacy tracker without expiry is denied', () =>
+      assertFails(getDoc(doc(anon, 'pub', 'tracker-closed'))));
+    await check('closed tracker within 48-hour grace can still be read', () =>
+      assertSucceeds(getDoc(doc(anon, 'pub', 'tracker-grace'))));
+    await check('expired tracker is not readable anonymously', () =>
+      assertFails(getDoc(doc(anon, 'pub', 'tracker-expired'))));
+    await check('revoked active tracker is not readable anonymously', () =>
+      assertFails(getDoc(doc(anon, 'pub', 'tracker-revoked'))));
+    await check('other-hospital tracker cannot be read by Shoreline family', () =>
+      assertFails(getDoc(doc(anon, 'pub', 'tracker-other-tenant'))));
+    await check('staff retain authorized read access to expired tracker', () =>
+      assertSucceeds(getDoc(doc(staff, 'pub', 'tracker-expired'))));
+    await check('closed legacy tracker conversation is denied', () =>
+      assertFails(getDoc(doc(anon, 'messages', 'tracker-closed', 'items', 'old-message'))));
+    await check('closed legacy tracker conversation listing is denied', () =>
+      assertFails(getDocs(collection(anon, 'messages', 'tracker-closed', 'items'))));
+    await check('closed grace-period tracker conversation remains readable', () =>
+      assertSucceeds(getDoc(doc(anon, 'messages', 'tracker-grace', 'items', 'old-message'))));
+    await check('expired tracker conversation is denied', () =>
+      assertFails(getDoc(doc(anon, 'messages', 'tracker-expired', 'items', 'old-message'))));
+    await check('revoked active tracker conversation is denied', () =>
+      assertFails(getDoc(doc(anon, 'messages', 'tracker-revoked', 'items', 'old-message'))));
+    await check('revoked active tracker cannot accept client messages', () =>
+      assertFails(setDoc(doc(anon, 'messages', 'tracker-revoked', 'items', 'blocked-message'), {
+        sender:'client',body:'synthetic',created_at:new Date().toISOString(),
+      })));
+    await check('revoked active tracker cannot accept CPR/DNR changes', () =>
+      assertFails(updateDoc(doc(anon, 'pub', 'tracker-revoked'), {
+        resus_pref:'CPR',resus_status:'client_selected',resus_recorded_at:serverTimestamp(),
+      })));
+    // Check untrusted intake envelope validation. None are production writes.
+    await check('anonymous cannot choose a clinician or priority for intake', () => {
+      const x=validSyntheticIntake('INT-priority123');
+      x.record.priority=1;
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
+    await check('anonymous cannot pre-admit into a treatment room', () => {
+      const x=validSyntheticIntake('INT-location123');
+      x.record.location='ICU';
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
+    await check('client intake must contain a patient name', () => {
+      const x=validSyntheticIntake('INT-emptyname123');
+      x.record.patient.name='';
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
+    await check('client cannot inject privileged patient keys', () => {
+      const x=validSyntheticIntake('INT-patientrole1');
+      x.record.patient.staff_role='admin';
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
+    await check('client cannot inject privileged client keys', () => {
+      const x=validSyntheticIntake('INT-clientrole12');
+      x.record.client.access='admin';
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
+    await check('oversized free-text complaints rejected', () => {
+      const x=validSyntheticIntake('INT-hugereason12');
+      x.record.reason='x'.repeat(5001);
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
+    await check('envelope cannot exceed allowed text field bounds', () => {
+      const x=validSyntheticIntake('INT-longclient12');
+      x.record.client.first='a'.repeat(101);
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
+    await check('client intake document status cannot have short or malformed ID', () => {
+      const x=validSyntheticIntake('bad');
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
+    await check('client cannot exceed extra problem list budget', () => {
+      const x=validSyntheticIntake('INT-problemlist12');
+      x.record.additionalProblems=Array(26).fill('synthetic');
+      return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
+    });
     process.stdout.write('Passed ' + seen.length + ' emulator authorization tests.\n');
   } finally {
     await env.cleanup();
