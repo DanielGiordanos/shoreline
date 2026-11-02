@@ -148,8 +148,28 @@ match /client_intakes/{docId} {
     }
 
     // Oct 7 — family tracker feed. The document id IS the private tracker token: open by id, never listed by the public.
+    // A random tracker token is a bearer capability. Require an active visit
+    // or a short post-discharge grace window, and honor immediate revocation.
+    // Existing active tokens remain usable. Legacy closed tokens without an
+    // explicit expiry fail closed rather than remain readable indefinitely.
+    function familyFeedReadable(data) {
+      return data.get('tenant_id', '') == 'shoreline'
+        && data.get('capability_revoked', false) == false
+        && (
+          data.get('is_active', false) == true
+          || (data.get('access_expires_at', null) is timestamp
+              && data.access_expires_at > request.time)
+        );
+    }
+    function familyFeedPath(token) {
+      return /databases/$(database)/documents/pub/$(token);
+    }
+    function familyFeedTokenReadable(token) {
+      return exists(familyFeedPath(token))
+        && familyFeedReadable(get(familyFeedPath(token)).data);
+    }
     match /pub/{token} {
-      allow get: if true;
+      allow get: if staff() || (resource != null && familyFeedReadable(resource.data));
       allow list: if staff();
       allow create, delete: if staff();
       // A family may change only its CPR/DNR choice, only while the visit is open. Flow shows it to staff as
@@ -159,6 +179,7 @@ match /client_intakes/{docId} {
         || ( request.resource.data.diff(resource.data).affectedKeys()
                .hasOnly(['resus_pref','resus_status','resus_recorded_at'])
              && resource.data.is_active == true
+             && familyFeedReadable(resource.data)
              && resource.data.tenant_id == 'shoreline'
              && request.resource.data.resus_pref in ['CPR', 'DNR']
              && request.resource.data.resus_status == 'client_selected'
@@ -192,7 +213,7 @@ match /client_intakes/{docId} {
     // Oct 7 — family ↔ staff chat: readable only under a token you already have (pub can't be listed by the
     // public, and the collection-group read below is staff only); a family message must belong to a real tracker link.
     match /messages/{token}/items/{id} {
-      allow get, list: if true;
+      allow get, list: if staff() || familyFeedTokenReadable(token);
       allow create: if staff()
         || ( request.resource.data.sender == 'client'
              && request.resource.data.body is string
@@ -203,7 +224,8 @@ match /client_intakes/{docId} {
              && request.resource.data.created_at.size() <= 40
              && exists(/databases/$(database)/documents/pub/$(token))
              && get(/databases/$(database)/documents/pub/$(token)).data.tenant_id == 'shoreline'
-             && get(/databases/$(database)/documents/pub/$(token)).data.is_active == true );
+             && get(/databases/$(database)/documents/pub/$(token)).data.is_active == true
+             && familyFeedTokenReadable(token) );
       allow update, delete: if staff();
     }
     // Oct 7 — Flow's "new message from family" listener (collectionGroup('items')).
