@@ -3,7 +3,7 @@
 This migration restores access to two existing Firebase Authentication accounts **without**
 restoring the old "any authenticated user is staff" rule.
 
-**Status:** Requires Firestore rules deployment before the login activation can succeed.
+**Status:** The Firebase rules publication and GitHub Pages deployments completed successfully on 2026-11-02. Actual individual membership creation still requires each existing, verified account holder to sign in at `https://shoreline.pravix.app/`.
 **Window:** Through **2026-11-15** inclusive (rules deny creation starting 2026-11-16 UTC).
 
 ## Intended access
