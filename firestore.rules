@@ -123,19 +123,51 @@ service cloud.firestore {
       allow write: if sgvpAdmin();
     }
 match /client_intakes/{docId} {
-  // Client check-in creates a pending intake. Rate limits and bot verification
-  // must additionally be enforced at a trusted ingress, outside Firestore.
+  // Browser clients may only submit untrusted pending requests, never accepted
+  // clinical chart data. These checks reduce payload poisoning and cost, but
+  // cannot provide IP rate limiting or anti-bot guarantees in Firestore Rules.
+  // Deploy trusted App Check + challenge + rate-limited ingress before launch.
   allow create: if request.resource.data.tenant_id == 'shoreline'
                 && request.resource.data.keys().hasOnly(['tenant_id', 'id', 'submittedAt', 'record'])
                 && request.resource.data.keys().hasAll(['tenant_id', 'id', 'submittedAt', 'record'])
+                && docId.matches('^INT-[0-9A-Za-z-]{8,60}$')
                 && request.resource.data.id == docId
-                && docId.size() <= 100
                 && request.resource.data.submittedAt is string
                 && request.resource.data.submittedAt.size() <= 40
                 && request.resource.data.record is map
+                && request.resource.data.record.keys().hasAll([
+                     'id','submittedAt','status','patient','client','reason',
+                     'additionalProblems','priority','doctor','location'])
                 && request.resource.data.record.id == docId
+                && request.resource.data.record.submittedAt == request.resource.data.submittedAt
                 && request.resource.data.record.status == 'awaiting_csr_review'
-                && request.resource.size() < 200 * 1024;
+                && request.resource.data.record.priority == null
+                && request.resource.data.record.doctor == null
+                && request.resource.data.record.location == 'Lobby'
+                && request.resource.data.record.patient is map
+                && request.resource.data.record.patient.keys().hasOnly([
+                     'name','species','speciesDisplay','breed','breedId','age',
+                     'birthday','birthdayEstimated','approximateAge','sex',
+                     'sexDisplay','weight'])
+                && request.resource.data.record.patient.name is string
+                && request.resource.data.record.patient.name.size() > 0
+                && request.resource.data.record.patient.name.size() <= 120
+                && request.resource.data.record.client is map
+                && request.resource.data.record.client.keys().hasOnly([
+                     'first','last','phone','email'])
+                && request.resource.data.record.client.first is string
+                && request.resource.data.record.client.first.size() <= 100
+                && request.resource.data.record.client.last is string
+                && request.resource.data.record.client.last.size() <= 100
+                && request.resource.data.record.client.phone is string
+                && request.resource.data.record.client.phone.size() <= 40
+                && request.resource.data.record.client.email is string
+                && request.resource.data.record.client.email.size() <= 200
+                && request.resource.data.record.reason is string
+                && request.resource.data.record.reason.size() <= 5000
+                && request.resource.data.record.additionalProblems is list
+                && request.resource.data.record.additionalProblems.size() <= 25
+                && request.resource.size() < 128 * 1024;
   allow read, update, delete: if staff();
 }
     match /visits/{id} {
