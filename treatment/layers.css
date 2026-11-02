@@ -1,0 +1,454 @@
+/* Treatment Sheets — the HIG layers' styles that lived inline in index.html <body> (n133 … n297), folded out in n299 (Nov 1 2026).
+   Order matters: these come after app.css, anes.css and the styles the shared assets add to <head> at runtime. */
+
+/* ── style ── */
+.pvx-closed{visibility:hidden!important}
+
+/* ── style ── */
+/* PVX-TOPBAR n132 — the brand and the right-hand controls keep their width; the apps get what is left, overflowing into More */
+html body nav.topnav{grid-template-columns:max-content minmax(0,1fr) max-content!important;column-gap:12px}
+html body nav.topnav .brandwrap{flex:0 0 auto;min-width:0}
+html body nav.topnav .nav-center{min-width:0;max-width:100%;justify-self:center!important;overflow:visible!important;flex-wrap:nowrap;position:relative}
+html body nav.topnav .nav-right{flex:0 0 auto}
+@media(max-width:760px){ html body nav.topnav{grid-template-columns:max-content minmax(0,1fr)!important} html body nav.topnav .nav-center{margin:0!important;padding:0!important;justify-content:flex-start} }
+.pvx-more{position:relative;display:flex;flex:0 0 auto}
+.pvx-more[hidden]{display:none!important}
+.pvx-more-btn{font-family:inherit;cursor:pointer}
+.pvx-more-btn[aria-expanded=true]{background:rgba(255,255,255,0.10);color:rgba(255,255,255,.95)}
+body:not(.dark) .pvx-more-btn[aria-expanded=true]{background:#EBEBEB;color:#333}
+.pvx-more-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;min-width:200px;padding:6px;border-radius:14px;display:flex;flex-direction:column;gap:2px;
+  background:#101A32;border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 44px rgba(0,0,0,.4)}
+body:not(.dark) .pvx-more-menu{background:#fff;border-color:rgba(29,29,31,.1);box-shadow:0 18px 44px rgba(20,28,40,.18)}
+.pvx-more-menu[hidden]{display:none!important}
+html body nav.topnav .pvx-more-menu .nav-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 12px;font-size:13px!important;letter-spacing:0;white-space:nowrap;width:100%}
+html body nav.topnav .pvx-more-menu .nav-item svg{width:18px;height:18px}
+.nav-item:focus-visible,.pvx-more-btn:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+@media(forced-colors:active){.pvx-more-menu{border:1px solid CanvasText}}
+
+/* ── pvx-n149-ts-css ── */
+#pvxTsLobby{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(10,20,40,.55)}
+#pvxTsLobby .tg-card{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:400px;padding:28px;border-radius:24px;background:#fff;text-align:center;box-shadow:0 30px 80px rgba(10,20,40,.18);font:0.875rem -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;line-height:1.45;color:#6e6e73}
+body.dark #pvxTsLobby .tg-card{background:#121826;color:#aeb6c4}
+#pvxTsLobby .tg-card b{font-size:1.0625rem;color:#1d1d1f}
+body.dark #pvxTsLobby .tg-card b{color:#E6EEF6}
+#pvxTsLobby button{min-height:44px;padding:0 18px;border-radius:12px;border:0;background:#38BDD2;color:#04131B;font:inherit;font-size:0.9375rem;font-weight:600;cursor:pointer}
+#pvxTsLobby button:focus-visible{outline:2px solid #4DC8E0;outline-offset:2px}
+
+/* ── pvx-n189-topbar ── */
+/* PVX-N189 - the selected app in the shared top bar: fill variant on touch (iOS tab bar), outline with a mouse (Mac toolbar) */
+@media (hover:none) and (pointer:coarse){
+  .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ .topnav .nav-item.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
+
+/* ── pvx-n255-css ── */
+/* PVX-N255 · HIG Design principles, Accessibility, Color, Layout (see patch_n255.py) */
+/* 7. the overdue pill: a dark label on the amber */
+body{--od-ink:#2A1500}body.dark{--od-ink:#1F1200}
+@media (prefers-contrast:more){body:not(.dark){--od-ink:#000;--amber-txt:#5E3B00}body.dark{--od:#FFB340;--od-ink:#000;--amber-txt:#FFD786}body:not(.dark) .sn-n.late{color:#5E3B00}}
+.wc-der .k{color:var(--ink-500)}
+/* 6. focus ring */
+.pl-add input:focus-visible{outline:2px solid var(--accent-ink,#38BDD2);outline-offset:2px;border-radius:6px}
+/* 3. skip link + the grid hint */
+.pvx-skip{position:fixed;left:12px;top:-60px;z-index:10000;padding:10px 16px;border-radius:12px;background:var(--surface-0,#0f1a2b);color:var(--ink-900);font:600 0.875rem/1.2 var(--font,system-ui);box-shadow:0 0 0 2px var(--accent-ink,#38BDD2),0 10px 30px rgba(0,0,0,.35);text-decoration:none}
+.pvx-skip:focus{top:12px;outline:none}
+.pvx-vh{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+#sheetInner .rl-name[role=button]{cursor:pointer;border-radius:4px}
+#sheetInner .rl-name[role=button]:focus-visible{outline:2px solid var(--accent-ink,#38BDD2);outline-offset:2px}
+#sheetInner .rl .rl-meta .rl-off{display:inline-flex;align-items:center;height:20px;margin:0 0 0 6px;vertical-align:middle;position:relative}
+@media (pointer:coarse){#sheetInner .rl .rl-meta .rl-off::after{content:"";position:absolute;inset:-12px -4px}}
+/* 5. hit areas: Mac 28 pt, touch 44 pt */
+.ch-ck,.pl-plus{position:relative;z-index:1}
+.ch-ck::after,.pl-plus::after{content:"";position:absolute;inset:-5px}.ch-ck::after{inset:-7px}
+.tm-p.tm-tech{padding:5px 0;margin:-5px 0}
+#ctab-dash .c-alerts .pvx-alb{padding:7px 0;margin:-7px 0}
+.ch-price{padding:7px 4px;margin:-7px -4px}
+@media (pointer:coarse){
+  .ch-ck::after,.pl-plus::after{inset:-13px}.ch-ck::after{inset:-15px}
+  .tm-p.tm-tech{padding:13px 0;margin:-13px 0}
+  #ctab-dash .c-alerts .pvx-alb{padding:15px 0;margin:-15px 0}
+  .ch-price{padding:15px 4px;margin:-15px -4px}
+  #ctab-tasks .wl-done,#ctab-tasks .wl-val,#ctab-vitals .v-rec{min-height:44px}
+  .tsh-back{min-width:44px;min-height:44px}
+}
+/* 8. "N earlier" lives in the name area, never over a cell */
+#sheetInner .rl .rl-grip{order:0}#sheetInner .rl .rl-main{order:1;flex:1 1 auto;min-width:0}
+#sheetInner .rl .rl-off{position:static;left:auto;top:auto;transform:none;order:2;flex:none;align-self:center;margin:0 2px 0 0}
+#sheetInner .rl .rl-latest{order:3}
+#sheetInner .rl .rl-off::before{content:"‹";margin-right:3px;font-weight:700}
+#sheetInner .rl .rl-off .rl-off-w{display:none}
+#sheetInner .rl .rl-off{padding:0 7px 0 6px;font-variant-numeric:tabular-nums}
+/* 8. order names wrap between words; the switcher keeps the name at large text */
+#sheetInner .rl-name{overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
+#tsPatientChip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:699px){#sheetInner .grow.has-late>.rl[data-dc=""]>.rl-main{padding-right:4px}}
+/* 8. Share in the sheet toolbar */
+.treatment-toolbar #tsCopyBtn.ts-share-btn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;height:38px;min-height:0;padding:0 12px;box-sizing:border-box;flex:0 0 auto}
+.treatment-toolbar #tsCopyBtn.ts-share-btn>svg:not(.lg-chev){width:16px;height:16px;flex:none}
+html .treatment-toolbar #tsCopyBtn.ts-share-btn>svg:not(.lg-chev) :is(path,rect){stroke-width:1.75!important}
+.treatment-toolbar #tsCopyBtn.ts-share-btn .lg-chev{width:11px;height:11px;margin-left:-1px;opacity:.7;flex:none}
+@media (max-width:599px){.treatment-toolbar #tsCopyBtn.ts-share-btn{font-size:0;gap:2px;min-width:40px;justify-content:center;padding:0 8px}}
+/* 9. iPhone: the sheet toolbar in three rows (five before), and "N from last night" on screen (it ran off the edge) */
+@media (max-width:599px){
+  #ctab-sheet .treatment-toolbar{gap:8px 6px;padding-left:8px;padding-right:8px}
+  #ctab-sheet .treatment-toolbar .brief-toggle{font-size:0;gap:0;width:40px;min-width:40px;padding:0;justify-content:center}
+  #ctab-sheet .treatment-toolbar .order-search-wrapper{flex:1 1 calc(100% - 46px);min-width:0}
+  #ctab-sheet .treatment-toolbar .dn-mid .dn-d{display:none}
+  #ctab-sheet .treatment-toolbar>.dn-late{order:1;flex:1 1 100%;height:38px;margin:0;padding:0 12px;border-radius:19px;border:1px solid rgba(255,159,10,.55);background:rgba(255,159,10,.12);color:#c77700;font:inherit;font-weight:700;font-size:0.8125rem;cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center}
+  body.dark #ctab-sheet .treatment-toolbar>.dn-late{color:#ffb340}
+  #ctab-sheet .treatment-toolbar>:is(.ts-view-slot,.ts-audit-btn,#tsCopyBtn,.ts-expand-btn){order:2}
+  #ctab-sheet .treatment-toolbar #tsCopyBtn.ts-share-btn{flex:0 0 auto}
+}
+/* 11. Mac: a toolbar that doesn't fit gets shorter step by step — Share, then View, to their symbols — and only then wraps */
+#ctab-sheet .treatment-toolbar[data-fit] #tsCopyBtn.ts-share-btn{font-size:0!important;gap:2px!important;padding:0 8px!important}
+#ctab-sheet .treatment-toolbar:is([data-fit="2"],[data-fit="3"]) .ts-view-btn{font-size:0!important;gap:0!important;padding:0 11px!important}
+#ctab-sheet .treatment-toolbar[data-fit="3"]{flex-wrap:wrap!important;row-gap:8px}
+#ctab-sheet .treatment-toolbar[data-measure],#ctab-sheet .treatment-toolbar[data-measure] *{transition:none!important}
+/* 10. large text: when the switcher's name would be cut, the section tabs become symbols (their names stay for VoiceOver) */
+html.pvx-snav-icons #clinSwitcher .seg{font-size:0!important;gap:0!important;padding-inline:11px!important}
+html.pvx-snav-icons .subnav .seg svg{width:min(1.2rem,24px);height:min(1.2rem,24px)}
+html.pvx-snav-icons .subnav .seg .seg-badge{font-size:.6875rem;margin-left:4px}
+html.pvx-snav-icons #tsPatientChip{max-width:min(42vw,26rem)}
+
+/* ── pvx-n256-css ── */
+/* PVX-N256 · HIG Materials, Typography, Branding — Treatment only (see patch_n256.py) */
+/* 1. Share's menu: second lines strong enough on the glass */
+#tsCopyMenu small{color:var(--ink-700)}
+/* 2. the overdue clock grows with the sheet's text */
+.od{height:1.125rem;min-width:1.125rem;border-radius:.5625rem}
+.od .od-ic{width:1.125rem;height:1.125rem}
+/* 2. bar symbols grow with their labels to 1.5× and hold (--pvx-ik set by the script) */
+/* 3. touch: secondary lines at least 13 pt; allergies and CPR / DNR too */
+@media (pointer:coarse){
+  #sheetInner .rl-latest :is(small,b,.rl-none,.rl-due),#ctab-vitals small,#ctab-dash :is(.io-time,.al-empty,.sb-legend .li),#ctab-charges em{font-size:.8125rem!important}
+  .ts-al,.ts-resus .tr-lbl,#ctab-tasks .wl-dnr{font-size:.8125rem!important}
+}
+/* 4. Yakuri's notes are safety text */
+.pvx-yk-note{font-size:.9375rem;line-height:1.45}
+@media (pointer:coarse){.pvx-yk-note{font-size:1rem}}
+/* 5. every number keeps its width */
+#stage,#stage *{font-variant-numeric:tabular-nums!important}
+/* 7. no negative tracking at 12.5 pt or under */
+#sheetInner .ghead .hcell .hl,#sheetInner .hcell .hl,.wc-der small{letter-spacing:0}
+/* 9. large text: the section band sticks below the (taller) column header, and the sidebar's weight isn't cut off */
+html.pvx-bigtext #sheetInner .gband{top:calc(var(--pvx-ghh,41px) - 9px)}
+html.pvx-bigtext .wc-v{height:auto;min-height:1.75rem}
+/* 8. three lines or more get body leading */
+#toastWrap .ctoast,#ctab-charges .ch-lvnote{line-height:1.45}
+
+/* ── pvx-n257-css ── */
+/* PVX-N257 · HIG Accessibility, Color, Dark Mode, Icons — Treatment only (see patch_n257.py) */
+/* 5. the page's appearance reaches the browser: pickers, fields and scroll bars follow it */
+html,body{color-scheme:light}
+html:has(body.dark),body.dark{color-scheme:dark}
+/* 2. grips at least 3:1 at rest */
+html body #sheetInner .rl-grip:not(:hover):not(:active),html body .sb-row .pt-dots{color:#7E869C}
+html body.dark #sheetInner .rl-grip:not(:hover):not(:active),html body.dark .sb-row .pt-dots{color:#6A84A2}
+/* 6. one line weight in the sheet toolbar; one overdue clock */
+html .treatment-toolbar #tsCopyBtn.ts-share-btn>svg:not(.lg-chev) :is(path,rect){stroke-width:2.25!important}
+.treatment-toolbar .dr-cap svg,.treatment-toolbar .dr-cap svg path{stroke-width:2.25}
+#ctab-dash .sb-gl svg{stroke-width:2.3}
+/* 3. Increase Contrast in dark: small text at 7:1 */
+@media (prefers-contrast:more){
+  body.dark .subnav .seg:not(.active){color:rgba(255,255,255,.86)}
+  body.dark .subnav .seg.active{color:#9BEAF4}
+  body.dark .ts-resus.cpr .tr-lbl{color:#7EE3A6}
+  body.dark .ts-resus.dnr .tr-lbl{color:#D6B8F2}
+  html body.dark #sheetInner{--sec-ink:#9BEAF4}
+  body.dark #sheetInner .hcell .hl{color:#FFA48E}
+  body.dark #ctab-dash .sb-lg-done{color:#C2CDDC}
+  body.dark #ctab-vitals .due{color:#000}
+}
+
+/* ── pvx-n259-css ── */
+/* PVX-N259 · HIG Motion, SF Symbols, Typography — Treatment only (see patch_n259.py) */
+/* 1. no motion on a redraw: the cap and the drafts pill are simply there */
+.ts-seen.dr-cap,.ts-seen.dr-pill{animation:none}
+/* 2. Reduce Motion: menus and popovers only fade */
+@media (prefers-reduced-motion:reduce){
+  html :is(.ts-copymenu,.ts-menu,.fl-pop,.pt-pop,.pvx-tmenu,.order-search-dropdown,#tsCopyMenu,#tsPatientMenu,#flPop){animation-name:pvxFade!important;transform:none!important}
+}
+/* 4. Copy weight: Copy becomes a checkmark for a moment */
+.wc-cp .wc-ck{display:none}
+.wc-cp.done>svg:not(.wc-ck){display:none}
+.wc-cp.done .wc-ck{display:block;width:15px;height:15px;color:#17738a;animation:pvxSymIn .2s cubic-bezier(.32,.72,0,1)}
+body.dark .wc-cp.done .wc-ck{color:#38bdd2}
+@keyframes pvxSymIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.wc-cp .ok{transform:none!important;transition:opacity .2s}
+@media (prefers-reduced-motion:reduce){.wc-cp.done .wc-ck{animation:none}.wc-cp .ok{transition:none}}
+/* 5. order names may take three lines (C-II and the brand always show) */
+#sheetInner .rl .rl-name{-webkit-line-clamp:3;line-clamp:3}
+/* 6. the Latest column wraps rather than cutting a word */
+#sheetInner .rl-trend .rt-v{flex-wrap:wrap}
+#sheetInner .rl-trend .rt-v b{white-space:normal;overflow:visible;text-overflow:clip}
+/* 7. body leading for three lines or more */
+.ch-lvnow{line-height:1.45}
+html.pvx-bigtext #ctab-vitals .v-name{line-height:1.45}
+html.pvx-bigtext #ctab-tasks :is(p,span){line-height:1.45}
+/* 8. found while checking: Tasks drew DNR in red; DNR is purple everywhere else (red is for critical) */
+#ctab-tasks .wl-dnr{color:#8B4DB5;background:rgba(139,77,181,.12)}
+body.dark #ctab-tasks .wl-dnr{color:#C9A8F0;background:rgba(168,136,224,.16)}
+/* 9. Increase Contrast in dark: the two small texts n257 didn't reach (they show only at some hours) */
+@media (prefers-contrast:more){
+  body.dark #ctab-tasks .wl-dnr{color:#DCC2F5}
+  body.dark #tsSecNav .sn-n.due{color:#B5F0F8}
+}
+
+/* ── pvx-n260-css ── */
+/* PVX-N260 · HIG Writing, Charting data, Collaboration and sharing, Drag and drop — Treatment only (see patch_n260.py) */
+/* 9. Vitals: the Range and Alert range lines wrap inside their column, numbers kept together */
+#ctab-vitals .vx-now small:is(.vx-rng,.vx-alr){white-space:normal;overflow-wrap:normal}
+#ctab-vitals .vx-now .vx-nw{white-space:nowrap}
+
+/* ── pvx-n261-css ── */
+/* PVX-N261 · HIG Entering data, Feedback, Going full screen, Loading, Live-viewing apps — Treatment only (see patch_n261.py) */
+/* 2. dimmed (not disabled), so they keep their tooltip and say why when pressed */
+.ts-daynav .dn-next[aria-disabled="true"],.ts-zoom .zm-b[aria-disabled="true"]{opacity:.38;cursor:default}
+/* 3. a snippet's × is its own button beside the chip: shown on hover or focus with a mouse, always on touch (44 pt) */
+.sn-own{flex:none;display:inline-flex;align-items:center;border-radius:999px;background:var(--pvx-cm39)}
+.sn-own .sn-chip.own{background:transparent;padding-right:3px}
+.sn-bar .sn-x{all:unset;flex:none;cursor:pointer;position:relative;display:inline-grid;place-items:center;width:24px;height:26px;margin-right:2px;border-radius:999px;color:var(--accent-ink,var(--accent));opacity:0;transition:opacity .15s}
+.sn-bar .sn-x svg{width:12px;height:12px}
+.sn-own:hover .sn-x,.sn-bar .sn-x:focus-visible{opacity:.8}
+.sn-bar .sn-x:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+body.dark .sn-bar .sn-x{color:#5fd3e6}
+@media (hover:none){.sn-bar .sn-x{opacity:.75;width:30px}.sn-bar .sn-x::after{content:"";position:absolute;inset:-9px -4px}}
+@media (prefers-reduced-motion:reduce){.sn-bar .sn-x{transition:none}}
+
+/* ── pvx-n264-css ── */
+.pvx-tip{display:flex;align-items:center;gap:10px;margin:0 0 8px;padding:8px 8px 8px 14px;border-radius:12px;font-size:0.8125rem;line-height:1.4;background:rgba(56,189,210,.10);color:#D8E8F4;border:1px solid rgba(56,189,210,.22)}
+.pvx-tip span{flex:1;min-width:0}
+.pvx-tip-x{flex:0 0 auto;width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:#A7C2D8;cursor:pointer;position:relative}
+.pvx-tip-x svg{width:14px;height:14px}
+.pvx-tip-x:hover{background:rgba(150,185,220,.14)}
+.pvx-tip-x:focus-visible{outline:3px solid rgba(88,166,255,.55);outline-offset:1px}
+body:not(.dark) .pvx-tip{background:rgba(35,67,156,.06);color:#181A1F;border-color:rgba(35,67,156,.16)}
+body:not(.dark) .pvx-tip-x{color:#4A5268}
+body:not(.dark) .pvx-tip-x:hover{background:rgba(0,0,0,.055)}
+@media (hover:none){.pvx-tip{font-size:max(0.8125rem,13px)}.pvx-tip-x::after{content:"";position:absolute;inset:-8px}}
+@media (prefers-contrast:more){.pvx-tip{border-width:2px}}
+
+/* ── pvx-n265-css ── */
+#tsDtPrint .dp-tasks col.t{width:11%}#tsDtPrint .dp-tasks col.p{width:27%}#tsDtPrint .dp-tasks col.w{width:32%}#tsDtPrint .dp-tasks col.v{width:18%}#tsDtPrint .dp-tasks col.i{width:12%}
+#tsDtPrint .dp-tasks td{height:22px}
+#ctab-tasks .wl-top .wl-print{flex:0 0 auto;width:38px;height:38px;padding:0;display:inline-grid;place-items:center}
+#ctab-tasks .wl-top .wl-print svg{width:18px;height:18px;margin:0}
+#ctab-tasks .wl-top .wl-print[aria-disabled=true]{opacity:.45;cursor:default}
+@media (pointer:coarse){#ctab-tasks .wl-top .wl-print{width:44px;height:44px}}
+#tsFind .ts-fr-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#tsFind .ts-fr-clear{border:0;background:transparent;padding:2px 6px;margin:-2px -6px -2px 0;border-radius:6px;font:inherit;font-size:0.75rem;font-weight:600;letter-spacing:0;text-transform:none;color:#38BDD2;cursor:pointer;position:relative}
+body:not(.dark) #tsFind .ts-fr-clear{color:#0062CC}
+#tsFind .ts-fr-clear:hover{background:rgba(150,185,220,.14)}
+#tsFind .ts-fr-clear:focus-visible{outline:3px solid rgba(88,166,255,.55);outline-offset:1px}
+@media (pointer:coarse){#tsFind .ts-fr-clear::after{content:"";position:absolute;inset:-12px -8px}}
+
+/* ── pvx-n266-css ── */
+.pvx-ur{display:inline-flex;gap:4px;flex:0 0 auto;align-items:center}
+.pvx-ur[hidden]{display:none!important}
+.pvx-ur .btn{width:44px;height:44px;min-width:44px;padding:0;display:inline-grid;place-items:center}
+.pvx-ur .btn svg{width:20px;height:20px;margin:0}
+.pvx-ur .btn[aria-disabled=true]{opacity:.4;cursor:default}
+/* iPhone: in the order search's row (the toolbar orders its items; the search gives up the room) */
+@media (max-width:600px){.pvx-ur .btn[aria-disabled=true]{display:none}.treatment-toolbar .pvx-ur{order:-1}
+.treatment-toolbar:has(.pvx-ur:not([hidden])) .order-search-wrapper{flex-basis:calc(100% - 96px)!important}
+.treatment-toolbar:has(.pvx-ur:not([hidden]) .btn:not([aria-disabled=true])+.btn:not([aria-disabled=true])) .order-search-wrapper{flex-basis:calc(100% - 146px)!important}}
+
+/* ── pvx-n268-css ── */
+/* Lists and tables 1. on touch screens there's no pointer to light up a row, so long rows alternate a faint tint to
+   follow across the hours (HIG: alternating row colors in a wide multicolumn table). With a mouse, pointing still
+   lights the row and its hour; the rows stay plain. */
+@media (hover:none){
+  #sheetInner .grow.zb:not(.is-draft)>.hcells{background:var(--row-alt)!important}
+  #sheetInner .grow.zb>.rl{box-shadow:inset 0 0 0 999px var(--row-alt)!important}
+}
+@media (hover:none) and (prefers-contrast:more){
+  body.dark #sheetInner .grow.zb:not(.is-draft)>.hcells{background:rgba(150,185,220,.09)!important}
+  body.dark #sheetInner .grow.zb>.rl{box-shadow:inset 0 0 0 999px rgba(150,185,220,.09)!important}
+  body:not(.dark) #sheetInner .grow.zb:not(.is-draft)>.hcells{background:rgba(30,45,90,.05)!important}
+  body:not(.dark) #sheetInner .grow.zb>.rl{box-shadow:inset 0 0 0 999px rgba(30,45,90,.05)!important}
+}
+
+/* ── pvx-n269-css ── */
+/* Split views 3. the Patient info drawer (full view, narrow screens) is a solid panel floating 12 pt below the bars and from
+   the edges, with 20 pt corners, like every Pravix drawer (Brand §6). It was glass from the top of the window, under the
+   bars. */
+.clinical-sidebar.open{top:var(--pvx-brief-top,max(12px,env(safe-area-inset-top)))!important;left:max(12px,env(safe-area-inset-left))!important;height:calc(100vh - var(--pvx-brief-top,12px) - 12px - env(safe-area-inset-bottom))!important;height:calc(100dvh - var(--pvx-brief-top,12px) - 12px - env(safe-area-inset-bottom))!important;
+  border-radius:20px!important;background:#0E1628!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:1px solid rgba(150,185,220,.16)!important;max-width:calc(100vw - 24px)}
+body:not(.dark) .clinical-sidebar.open{background:#F2F4F8!important;border-color:rgba(0,0,0,.08)!important;box-shadow:0 24px 60px rgba(16,22,44,.18)!important}
+
+/* ── pvx-n270-css ── */
+/* n270 · HIG Buttons, Context menus, Activity views, Tab views (Treatment Sheets only)
+
+   1. Touch targets (HIG Buttons: "a hit region of at least 44x44 pt"; Brand §9.1). On iPad most of Treatment's
+      controls were 26–39 pt (the toolbar, sub-nav, section switcher, patient tabs, section chips and bands, and the
+      Vitals, Tasks, Timeline, Charges, Notes and board controls). Under pointer: coarse:
+      a. small controls keep their drawing and get an invisible 44 pt hit area (::after, centred);
+      b. controls inside a scrolling or clipping strip, or stacked edge to edge, are 44 pt tall. */
+@media (pointer: coarse) {
+  /* a. invisible 44 pt hit areas */
+  :is(.treatment-toolbar :is(.brief-toggle, .dn-prev, .today, .dn-next, .zm-b, .zm-mid, .ts-seen, .ts-view-btn, .ts-audit-btn, .lg-act, .ts-expand-btn),
+      .tsh-flags .ts-al, .pvx-hdr-more, #sheetInner .rl > .rl-off, #sheetInner .rl-trend, #sheetInner .gsection .sec-add,
+      #tsSecNav .sn-chip, .search-bar .ts-search-open,
+      #ctab-vitals :is(.v-header .btn, #vxTake, #vxWin button, .lb-seg button, .v-sw),
+      #ctab-tasks :is(.wl-seg button, .wl-chip), #ctab-timeline .tl-filters .chip,
+      #ctab-charges :is(.ch-acts .btn, .ch-lv), #ctab-notes .btn.primary,
+      #ctab-dash :is(.sb-segb, .sb-tvb, .sb-filters, .sb-sorth, .sb-blk),
+      #clinSidebar :is(.fin-link, .wc-cp), :is(#completionDrawer, #noteDrawer) .close, #completionDrawer .sn-bar .sn-chip,
+      .op-card :is(.op-x, .v-sw, .op-link), #tvPanel :is(.tv-x, .tv-mic, .btn), .fp-clear,
+      #tsModal :is(.ts-btn, .rx-chip, .of-more, .pvx-yk, .td-o button))::after {
+    content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px);
+    transform: translate(-50%, -50%); background: none; border: 0; box-shadow: none; pointer-events: auto;
+  }
+  :is(.treatment-toolbar :is(.brief-toggle, .dn-prev, .today, .dn-next, .zm-b, .zm-mid, .ts-seen, .ts-view-btn, .ts-audit-btn, .lg-act, .ts-expand-btn),
+      .tsh-flags .ts-al, .pvx-hdr-more, #sheetInner .rl > .rl-off, #sheetInner .rl-trend, #sheetInner .gsection .sec-add,
+      #tsSecNav .sn-chip,
+      #ctab-vitals :is(.v-header .btn, #vxTake, .lb-seg button),
+      #ctab-tasks :is(.wl-seg button, .wl-chip), #ctab-timeline .tl-filters .chip,
+      #ctab-charges :is(.ch-acts .btn, .ch-lv), #ctab-notes .btn.primary,
+      #ctab-dash :is(.sb-tvb, .sb-filters, .sb-sorth),
+      #clinSidebar .fin-link, #completionDrawer .sn-bar .sn-chip, .op-card :is(.op-x, .op-link), #tvPanel :is(.tv-x, .btn), .fp-clear,
+      #tsModal :is(.ts-btn, .rx-chip, .of-more, .pvx-yk, .td-o button)) { position: relative; }
+  /* the strips around them leave room for the hit areas */
+  #tsZoom { overflow: visible; }
+  .treatment-toolbar .zm-b { min-width: 44px; }
+  /* iPhone: the wider − and + still fit the first toolbar row */
+  @media (max-width: 600px) {
+    .treatment-toolbar #tsZoom { margin-left: 0; }
+    .treatment-toolbar .day-nav { gap: 4px; }
+    .treatment-toolbar :is(.dn-prev, .dn-next) { width: 36px; padding: 0; }
+    .treatment-toolbar .today { padding-inline: 6px; }
+    .treatment-toolbar .ts-seen { width: 32px; }
+  }
+  #ctab-vitals .lb-seg button { min-width: 44px; }
+  #tsSecNav, #completionDrawer .sn-bar { min-height: 48px; align-items: center; }
+  /* rows of wrapped buttons are 44 pt apart, so one row's hit areas don't cover the next */
+  #ctab-timeline .tl-filters, #ctab-vitals .v-header, #ctab-charges .ch-acts { row-gap: 10px; }
+  /* iPhone board card: Add alert's hit area covered the Tech name above it */
+  @media (max-width: 600px) {
+    #ctab-dash .sb-row .sbc.c-team { padding-bottom: 14px !important; }
+    #ctab-dash .sb-row .sbc.c-alerts { padding-top: 15px !important; padding-bottom: 15px !important; }
+  }
+  /* iPhone: “‹ 3” sits at the foot of the order's label, so its hit area rises from there and stays in its row */
+  #sheetInner .rl .rl-meta .rl-off::after { top: auto; bottom: -3px; height: 44px; }
+  @media (min-width: 700px) { #ctab-dash :is(#sbBoards, #sbView) { overflow: visible; } }
+
+  /* b. 44 pt tall where a strip clips or rows touch */
+  #clinSwitcher { height: auto; min-height: 44px; }
+  #clinSwitcher .seg { min-height: 44px; min-width: 44px; }
+  .subnav :is(.ts-chip, .ts-gear) { min-height: 44px; }
+  .subnav .ts-gear { min-width: 44px; }
+  .pt-row .pt-scroll { height: auto; min-height: 44px; }
+  .pt-row .pt-tab { height: 44px; }
+  .pt-row .pt-tab .pt-main { min-height: 44px; }
+  .pt-row :is(.pt-btn, .pt-cur, .pt-open) { min-height: 44px; }
+  .pt-row .pt-btn { min-width: 44px; }
+  #sheetInner .grow.gband { min-height: 46px; }
+  #sheetInner .grow.gband > .gsection { min-height: 44px; }
+  #ctab-charges .ch-day > summary { min-height: 44px; }
+  #ctab-dash .sb-sorth, #ctab-dash .ward-sel { min-height: 44px; }
+  .pt-pop .pt-mi { min-height: 44px; }
+  #tsModal .td-ok { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+  :is(#tsModal, #completionDrawer, #noteDrawer, #clinSidebar, .op-card) select { min-height: 44px; }
+}
+
+/* 2. A press state on every button (HIG Buttons; Brand §9.1: a darker fill, brightness 0.88, and a 0.97 scale;
+      with Reduce Motion only the fill). Buttons with their own press keep it (zero specificity here). Wide rows only
+      darken. The shared top bar keeps its own. */
+:where(button, summary, [role=button], [role=tab], [role=menuitem]):where(:not(:disabled, [aria-disabled="true"], .topnav *)):active { filter: brightness(.88); }
+@media (prefers-reduced-motion: no-preference) {
+  :where(button, [role=button], [role=tab], [role=menuitem]):where(:not(:disabled, [aria-disabled="true"], .topnav *, .gsection, .pt-main, .pt-cur, .rl-name, .mark, .ts-seen, .sn-chip, .sec-add, #vxTake, .wl-done, .ch-lv, .sb-segb, .btn.primary, [role=menuitem])):active { scale: .97; }
+}
+
+/* ── pvx-n288-css ── */
+/* n288 · HIG Scroll views, Popovers, Sheets (claude/hig-audit-treatment-popovers-scrollviews-sheets-windows.md) */
+@media (max-width:700px),(max-height:500px){
+  #ctab-sheet #sheetScroll{height:max(260px,var(--pvx-stage-h,calc(100dvh - 150px)))!important}
+}
+.pvx-grab{display:none}
+@media (max-width:599px){
+  /* View and Filters: a sheet, not a popover */
+  #flPop.pvx-as-sheet{left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-width:none!important;
+    max-height:min(80dvh,640px)!important;overflow:auto!important;z-index:9420!important;border-radius:20px 20px 0 0!important;
+    padding-bottom:env(safe-area-inset-bottom)!important;box-sizing:border-box;overscroll-behavior:contain;transform-origin:50% 100%!important}
+  #flPop.pvx-as-sheet>*{width:auto!important;max-width:none!important}
+  .pvx-pop-scrim{position:fixed;inset:0;z-index:9410;background:rgba(8,14,26,.42);opacity:0;transition:opacity .2s}
+  .pvx-pop-scrim.on{opacity:1}
+  /* a form: from the bottom, Cancel and its action at the top */
+  #tsModal:has(.tm-card.pvx-isheet){align-items:flex-end}
+  #tsModal .tm-card.pvx-isheet{width:100%;max-height:calc(100dvh - 44px - env(safe-area-inset-top));border-radius:20px 20px 0 0;
+    padding-bottom:calc(22px + env(safe-area-inset-bottom));overscroll-behavior:contain;display:flex;flex-direction:column}
+  #tsModal .tm-card.pvx-isheet>*{flex-shrink:0}
+  #tsModal .tm-card.pvx-isheet>.pvx-discard{order:-1}
+  #tsModal .tm-card.pvx-isheet>.tm-foot{position:sticky;top:-22px;bottom:auto;margin:-22px -22px 14px;padding:24px 16px 10px;
+    border-top:0;border-bottom:1px solid rgba(60,72,90,.12);justify-content:space-between;touch-action:none;order:-2}
+  body.dark #tsModal .tm-card.pvx-isheet>.tm-foot{border-bottom-color:rgba(150,185,220,.14)}
+  #tsModal .tm-card.pvx-isheet>.tm-foot::before,#flPop.pvx-as-sheet::before,#tsOrderSheet .op-card::before{content:"";position:absolute;
+    top:7px;left:50%;width:36px;height:5px;margin-left:-18px;border-radius:3px;background:rgba(120,120,128,.45);pointer-events:none}
+  #flPop.pvx-as-sheet{padding-top:18px!important}
+  #flPop.pvx-as-sheet::before{position:sticky;display:block;top:0;margin:-11px auto 6px;left:auto}
+  #tsOrderSheet .op-card{position:relative}
+  #tsOrderSheet .op-card::before{z-index:5}
+  .pvx-swiping{transition:none!important}
+}
+@media (max-width:599px) and (prefers-reduced-motion:reduce){ .pvx-pop-scrim{transition:none} }
+
+/* ── pvx-n289-css ── */
+/* n289 · HIG Combo boxes: a fixed list of values is a pop-up, not a text field */
+.v-input select.v-in.pvx-choice{width:118px;height:auto;padding:7px 26px 7px 9px;cursor:pointer;
+  -webkit-appearance:none;appearance:none;background-repeat:no-repeat;background-position:right 9px center;background-size:10px 10px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
+select.bt-val.pvx-choice{width:118px;text-align:left;padding:0 26px 0 9px;cursor:pointer;-webkit-appearance:none;appearance:none;
+  background-repeat:no-repeat;background-position:right 9px center;background-size:10px 10px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
+body.dark select.bt-val.pvx-choice{background-color:var(--surface-0,#0E1628)}
+select.pvx-choice:invalid,select.pvx-choice.pvx-none{color:var(--ink-500,#7A98B8)}
+select.pvx-choice option{color:var(--ink-900,#181A1F)}
+body.dark select.pvx-choice option{background:#121824;color:#D8E8F4}
+@media (pointer:coarse){ .v-input select.v-in.pvx-choice,select.bt-val.pvx-choice{min-height:44px} }
+
+/* ── pvx-n290-css ── */
+/* n290 · HIG Segmented controls: segments the same width */
+.wl-seg[role=radiogroup],.sb-seg[role=radiogroup]{display:inline-grid!important;grid-auto-flow:column;grid-auto-columns:1fr}
+.wl-seg[role=radiogroup]>button,.sb-seg[role=radiogroup]>button{justify-content:center}
+
+/* ── pvx-n291-css ── */
+/* n291 · HIG Steppers: the zoom shows its value */
+.ts-zoom .pvx-zv{font-variant-numeric:tabular-nums;white-space:nowrap}
+.treatment-toolbar .qadd>.pvx-sf-x{margin-right:2px}
+
+/* ── pvx-n292-css ── */
+/* n292 · HIG Progress indicators: the Pravix loader (n273's design) in the list area while it waits */
+.pvx-ld{padding:6px 0 14px;max-width:560px}
+.pvx-ld-line{display:flex;align-items:baseline;gap:12px;margin-bottom:11px}
+.pvx-ld-task{font-size:0.9375rem;font-weight:500;letter-spacing:-.01em;color:var(--ink-900,#1d1d1f)}
+body.dark .pvx-ld-task{color:#E6EEF6}
+.pvx-ld-task .s2,html.ts-load-slow .pvx-skel .pvx-ld-task .s1{display:none}
+html.ts-load-slow .pvx-skel .pvx-ld-task .s2{display:inline}
+.pvx-ld-track{position:relative;height:7px;border-radius:99px;background:rgba(127,127,127,.18);overflow:hidden}
+.pvx-ld-track i{position:absolute;left:0;top:0;height:100%;width:30%;border-radius:inherit;background:#23439C;animation:pvxLdInd 1.7s cubic-bezier(.45,.05,.35,1) infinite}
+body.dark .pvx-ld-track i{background:#63CDDD}
+.pvx-ld-track i::before{content:"";position:absolute;inset:1px 2px auto;height:1px;background:rgba(255,255,255,.22);border-radius:99px}
+@keyframes pvxLdInd{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+html.ts-load-slow .pvx-skel .pvx-ld-track i{opacity:.55}
+.pvx-skel .pvx-skel-slow{margin-top:10px;line-height:1.5}
+.pvx-sksheet .pvx-ld{margin-bottom:14px}
+@media (prefers-reduced-motion:reduce){.pvx-ld-track i{width:100%;animation:none;transform:none;opacity:.32}}
+/* n292 · HIG Gauges: the estimate bar names its ends */
+.est-card.fin2 .pvx-gends{position:relative;height:16px;margin-top:5px;font-size:0.6875rem;line-height:16px;color:var(--ink-500,#6e6e73);white-space:nowrap}
+body.dark .est-card.fin2 .pvx-gends{color:#A7B8CC}
+.est-card.fin2 .pvx-gends span{position:absolute;top:0}
+.est-card.fin2 .pvx-gends .lo{transform:translateX(-50%)}
+.est-card.fin2 .pvx-gends .lo.end{transform:translateX(-100%)}
+.est-card.fin2 .pvx-gends .hi{right:0}
+/* n292 · HIG Gauges: the workload bars */
+.ts-load-card .ts-lc-top{display:flex;align-items:center;gap:8px}
+.ts-load-card .ts-lc-lvl{margin-left:auto;font-size:0.6875rem;font-weight:600;color:var(--ink-500,#6e6e73)}
+.ts-load-card.mid .ts-lc-lvl,.ts-load-card.hi .ts-lc-lvl{color:#9A5B00}
+body.dark .ts-load-card .ts-lc-lvl{color:#A7B8CC}
+body.dark .ts-load-card.mid .ts-lc-lvl,body.dark .ts-load-card.hi .ts-lc-lvl{color:#F0B13C}
+.ts-lc-bar{background:rgba(127,127,127,.2)!important}
+
+/* ── pvx-n297-css ── */
+/* n297 · HIG Machine learning: where LUNA's speech goes, as a quiet last line of its help */
+.fv-help .fv-note{display:block!important;grid-column:1/-1;margin-top:8px;padding-top:8px;border-top:1px solid rgba(127,127,127,.18);font-size:0.75rem;line-height:1.45;color:var(--ink-500,#6e6e73)}
+body.dark .fv-help .fv-note{color:#A7B8CC}

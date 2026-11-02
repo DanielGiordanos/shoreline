@@ -314,7 +314,10 @@ async def s_n192(br):
       const ta=document.createElement('textarea');document.body.appendChild(ta);const c=__dv(ta,'dragover',mk());ta.remove();
       return {over:a.defaultPrevented,drop:b.defaultPrevented,text:c.defaultPrevented}})()""")
     ok('n192: a file dropped where nothing takes it does nothing — Flow stays open (text fields still take text)', g['over'] and g['drop'] and not g['text'], g)
-    guards = [open(os.path.join(BUILD, f), encoding='utf-8').read().count('pvx-n192-guard') for f in ('anesia/index.html', 'treatment/index.html', 'or/index.html')]
+    def _src(f):   # n299: Treatment's layers moved out of index.html into treatment/src/layers.js
+        s = open(os.path.join(BUILD, f), encoding='utf-8').read(); ex = os.path.join(BUILD, os.path.dirname(f), 'src', 'layers.js')
+        return s + (open(ex, encoding='utf-8').read() if os.path.exists(ex) else '')
+    guards = [_src(f).count('pvx-n192-guard') for f in ('anesia/index.html', 'treatment/index.html', 'or/index.html')]
     ok('n192: the same drop guard in Anesia, Treatment Sheets and the OR', guards == [1, 1, 1], guards)
     await pg.click('#switcher .seg[data-view="flow"]'); await pg.wait_for_timeout(600)
     b = await pg.evaluate("""(()=>{const c=[...document.querySelectorAll('#board .card')].find(x=>{const p=PATIENTS.find(q=>q.id===x.dataset.pid);return p&&p.name==='Dnd0'});const dt=new DataTransfer();

@@ -277,3 +277,1148 @@ body.dark .ts-pl-menu .ts-tm-sep{background:rgba(255,255,255,.10)}
 /* n287 · HIG Alerts: an alert with no default shows its focus quietly */
 #tsModal .tm-card[role=alertdialog]:focus{outline:none}
 #tsModal .tm-card[role=alertdialog]:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+
+/* ======== folded from treatment/index.html <head> in n299 (Nov 1 2026): the HIG layers n216 … n267, in their order ======== */
+
+/* ── pvx-n216-css ── */
+/* PVX-N216 - equal-width boards; iPhone: a bottom tab bar for the sections, and the boards as a pop-up */
+#sbBoards{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr}
+#sbBoards .sb-segb{justify-content:center}
+.pvx-sbpop{display:none}
+.pvx-tmore{display:none}
+.pvx-tmenu{position:fixed;z-index:60;right:8px;bottom:calc(66px + env(safe-area-inset-bottom,0px));min-width:13rem;padding:6px;border-radius:14px;
+  background:var(--surface-0,#fff);box-shadow:0 12px 32px rgba(0,0,0,.22),0 0 0 .5px rgba(0,0,0,.08)}
+body.dark .pvx-tmenu{background:#1d2840;box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.08)}
+.pvx-tmenu[hidden]{display:none}
+.pvx-tmenu button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 12px;border-radius:9px;font-size:.9375rem;font-weight:500;color:var(--ink-900);cursor:pointer}
+.pvx-tmenu button svg{width:20px;height:20px;flex:none}
+.pvx-tmenu button[aria-current]{color:var(--accent,#38BDD2);font-weight:600}
+.pvx-tmenu button:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:-2px}
+@media (max-width:700px){
+  html.pvx-ttab body{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
+  html.pvx-ttab #clinSwitcher{position:fixed!important;left:0;right:0;bottom:0;z-index:40;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;
+    max-width:none!important;width:100%;margin:0;padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));overflow:visible!important;
+    background:var(--surface-0,#fff);box-shadow:0 -1px 0 rgba(0,0,0,.08),0 -8px 24px rgba(0,0,0,.08);border:0;border-radius:0}
+  html.pvx-ttab body.dark #clinSwitcher{background:#172440;box-shadow:0 -1px 0 rgba(255,255,255,.08),0 -8px 24px rgba(0,0,0,.3)}
+  html.pvx-ttab #clinSwitcher .seg,html.pvx-ttab #clinSwitcher .pvx-tmore{display:flex!important;cursor:pointer;font-family:inherit;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;width:auto!important;min-height:50px!important;padding:4px 2px!important;
+    border:0!important;border-radius:12px;font-size:0!important;font-weight:600;line-height:1.1;white-space:nowrap;background:transparent!important;box-shadow:none!important;color:var(--ink-500)}
+  html.pvx-ttab #clinSwitcher .seg::after{content:attr(data-tab);font-size:.6875rem;display:block;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  html.pvx-ttab #clinSwitcher .pvx-tmore::after{content:"More";font-size:.6875rem;display:block}
+  html.pvx-ttab #clinSwitcher .seg > :not(svg){display:none!important}
+  html.pvx-ttab #clinSwitcher .seg svg,html.pvx-ttab #clinSwitcher .pvx-tmore svg{width:24px;height:24px;flex:0 0 auto}
+  html.pvx-ttab #clinSwitcher .seg.active,html.pvx-ttab #clinSwitcher .pvx-tmore.on{color:var(--accent,#38BDD2)!important}
+  html.pvx-ttab body:not(.dark) #clinSwitcher .seg.active,html.pvx-ttab body:not(.dark) #clinSwitcher .pvx-tmore.on{color:#1F8FA8!important}
+  html.pvx-ttab #clinSwitcher .seg[data-ctab=anes],html.pvx-ttab #clinSwitcher .seg[data-ctab=timeline],html.pvx-ttab #clinSwitcher .seg[data-ctab=charges],html.pvx-ttab #clinSwitcher .seg[data-ctab=notes]{display:none!important}
+  html.pvx-ttab #clinSwitcher .pvx-tmore{display:flex!important}
+  html.pvx-ttab .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  #sbBoards{display:none!important}
+  .pvx-sbpop{display:inline-block;max-width:100%;height:36px;padding:0 30px 0 12px;border-radius:10px;border:0;font:inherit;font-size:0.8125rem;font-weight:600;color:var(--ink-900);
+    background:var(--surface-0,#fff) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238A97AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='3 4.5 6 7.5 9 4.5'/></svg>") no-repeat right 10px center;
+    -webkit-appearance:none;appearance:none;box-shadow:0 0 0 .5px rgba(0,0,0,.1)}
+  body.dark .pvx-sbpop{background-color:#26314a;color:#EEF1F6}
+}
+@media (forced-colors:active){html.pvx-ttab #clinSwitcher{border-top:1px solid CanvasText}}
+
+/* ── pvx-n225-text-css ── */
+/* PVX-N225 - larger text: rows wrap, nothing is cut off */
+html.pvx-text-l :where(.pvx-actions,.filter-chips,.chips,.btn-row,.cc-btnrow2,.toolbar,.tb,.actions,.hdr-actions){flex-wrap:wrap;row-gap:8px}
+html.pvx-text-l :where(.version-bar,.vbar,.vb-right,.vbar-right){flex-wrap:wrap;row-gap:4px}
+html.pvx-text-l :where(.vb-div,.vbar-div){display:none}
+html.pvx-text-l .soon-card{height:auto;min-height:180px}
+:where(.hero-left,.hero-right,.hero-stat,.hero-inner>*){min-width:0}
+html.pvx-text-l :where(button,.btn,.cc-val,.emp-none,.emp-contact-item,.emp-contact-item *){white-space:normal;overflow-wrap:anywhere}
+html.pvx-text-l :where(.emp-contact-item){min-width:0;flex-wrap:wrap}
+html.pvx-text-l :where(.sb-tvb,.wd-balance){height:auto;min-height:2.25rem;white-space:normal}
+html.pvx-text-l :where(.vb-copy,.current-badge){white-space:normal}
+/* labels inside fixed tiles and avatars stay their size, as on the iPhone Home Screen */
+html.pvx-text-l .app-name{font-size:min(0.8125rem,13px)}
+html.pvx-text-l .qh-avatar .auto-editable{font-size:min(0.875rem,16px)}
+html.pvx-text-l .hero-stats{flex-wrap:wrap;row-gap:12px}
+html.pvx-text-l :where(h1,h2,h3,.page-title,.hero-title,.card-title,.cc-title,.tc-head,.sec-title){overflow-wrap:anywhere}
+
+/* ── pvx-n225-safe ── */
+/* PVX-N225 - safe areas (viewport-fit=cover): content stays inside the insets; the top bar and sub-nav reach the edges */
+body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.topnav,#pvxSubnav{margin-left:calc(-1 * env(safe-area-inset-left,0px));margin-right:calc(-1 * env(safe-area-inset-right,0px));
+  border-left:env(safe-area-inset-left,0px) solid transparent;border-right:env(safe-area-inset-right,0px) solid transparent}
+
+/* ── pvx-n226-glass ── */
+/* PVX-N226 - Treatment Sheets: one floating material (Anesia's n158 glass, as in Flow since n185). Content flat; drawers,
+   modals and sheets solid; scrims dim, never blur. Solid with Reduce Transparency, Increase Contrast, forced colours. */
+body{--pvx-glass:rgba(255,255,255,.72);--pvx-glass-strong:rgba(255,255,255,.86);--pvx-glass-edge:rgba(0,0,0,.06);--pvx-glass-hi:rgba(255,255,255,.7);--pvx-glass-shadow:0 8px 32px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.06);--pvx-glass-ink:#1D1D1F;--pvx-glass-solid:#FFFFFF;--pvx-glass-blur:blur(12px) saturate(160%);}
+body.dark{--pvx-glass:rgba(23,35,56,.70);--pvx-glass-strong:rgba(23,35,56,.86);--pvx-glass-edge:rgba(255,255,255,.08);--pvx-glass-hi:rgba(255,255,255,.08);--pvx-glass-shadow:0 8px 32px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.3);--pvx-glass-ink:#EEF1F6;--pvx-glass-solid:#172440;--pvx-glass-blur:blur(12px) saturate(160%);}
+html :is(#fvToast,#fvPanel,#fvTalk.fv-float,.sb-pop,.sb-head,.fl-pop){background:var(--pvx-glass-strong)!important;-webkit-backdrop-filter:var(--pvx-glass-blur)!important;backdrop-filter:var(--pvx-glass-blur)!important;box-shadow:var(--pvx-glass-shadow),inset 0 0 0 .5px var(--pvx-glass-edge),inset 0 1px 0 var(--pvx-glass-hi)!important;border-color:var(--pvx-glass-edge)!important}
+html :is(.drawer,.confirm,.patient-preview,.note,.clinical-sidebar,.clinical-patient-header){-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+html :is(.liaison-modal){-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--pvx-glass-solid)!important}
+html :is(.scrim,.scrim.show,.scrim.open,.brief-scrim,.brief-scrim.show,.modal-backdrop,#tsModal .tm-scrim,#tsGate,#tsOrderSheet,#tsOrderSheet.show){-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+html :is(.panel,.tablewrap,.k,.col,.room,thead th,.treatment-main,.search input){-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+html.pvx-noblur :is(#fvToast,#fvPanel,#fvTalk.fv-float,.sb-pop,.sb-head,.fl-pop){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){html :is(#fvToast,#fvPanel,#fvTalk.fv-float,.sb-pop,.sb-head,.fl-pop){background:var(--pvx-glass-solid)!important}}
+@media (prefers-reduced-transparency:reduce){html :is(#fvToast,#fvPanel,#fvTalk.fv-float,.sb-pop,.sb-head,.fl-pop){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}}
+@media (prefers-contrast:more){html :is(#fvToast,#fvPanel,#fvTalk.fv-float,.sb-pop,.sb-head,.fl-pop){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 0 0 1px var(--pvx-glass-ink),var(--pvx-glass-shadow)!important}}
+@media (forced-colors:active){html :is(#fvToast,#fvPanel,#fvTalk.fv-float,.sb-pop,.sb-head,.fl-pop){background:Canvas!important;color:CanvasText!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:1px solid CanvasText!important}}
+
+/* ── pvx-n227-tabfill ── */
+/* PVX-N227 - the selected tab in the iPhone tab bar uses the fill variant (iOS tab bar), like the shared top bar (n189) */
+@media (hover:none) and (pointer:coarse){
+  html.pvx-ttab #clinSwitcher .seg.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ html.pvx-ttab #clinSwitcher .seg.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
+
+/* ── pvx-n227-symbols ── */
+/* PVX-N227 - the chip chevron on the 24-pt grid keeps its label's weight (Semibold) */
+.ts-chip svg{stroke-width:2}
+/* the selected tab's symbol takes its label's colour in the iPhone tab bar (it was white on the white bar: invisible) */
+html.pvx-ttab #clinSwitcher .seg.active svg{color:inherit!important}
+html.pvx-ttab #clinSwitcher .seg.active svg :is(path,rect,circle,ellipse,polygon,line,polyline){stroke:currentColor!important}
+
+/* ── pvx-n228-motion ── */
+/* PVX-N228 - HIG Motion: hover lifts stay still with Reduce Motion */
+@media (prefers-reduced-motion:reduce){
+  .chip:hover{transform:none!important}
+  .pill:hover{transform:none!important}
+  .card:hover{transform:none!important}
+  .room:hover{transform:none!important}
+  .btn.danger:hover{transform:none!important}
+  .loc-pt:hover{transform:none!important}
+  .btn.primary:hover{transform:none!important}
+  .mark:hover{transform:none!important}
+  .luna-search-orb:hover{transform:none!important}
+  .rl .dose-clock:hover{transform:none!important}
+  #sheetInner .cell:hover>.mark.scheduled .mk-ring{transform:none!important}
+  .sb-blk:hover{transform:none!important}
+  #sheetInner .rl-name[data-ins]:hover .rl-idot::before{transform:none!important}
+}
+
+/* ── pvx-n229-type ── */
+/* PVX-N229 - HIG Typography: SF sets its own tracking at every size, so the page isn't tightened (the shared top bar keeps
+   what it had); controls use the page's font; iPhone Safari doesn't enlarge text by itself in landscape */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:where(button,input,select,textarea):not(:where(#pvxTopnav *,nav.topnav *)){font-family:inherit}
+body{letter-spacing:normal}
+#pvxTopnav,nav.topnav{letter-spacing:-0.16px}
+
+/* ── pvx-n230-ts ── */
+/* PVX-N230 - Treatment Sheets: HIG Color, Layout and Materials (claude/hig-audit-treatment-color-layout-materials.md) */
+body{--pvx-due-ink:#FFFFFF;--pvx-sched-bg:#E3E8F0;--pvx-sched-ink:#3A4157;--pvx-od-ink:#3D2A00;--pvx-head:#566078;--pvx-crit:#C42B22;--pvx-warn-ink:#7A4E00}
+body.dark{--pvx-due-ink:#03242C;--pvx-sched-bg:#22314D;--pvx-sched-ink:#C9D6E4;--pvx-head:#9AB3CC;--pvx-crit:#FF6B57;--pvx-warn-ink:#F2C065}
+
+/* 1. the board speaks the sheet's colours: overdue amber with the clock, due now the accent, scheduled neutral */
+html #ctab-dash .sb-blk.overdue{background:var(--st-late)!important;color:var(--pvx-od-ink)!important}
+html #ctab-dash .sb-blk.due{background:var(--st-due)!important;color:var(--pvx-due-ink)!important}
+html #ctab-dash .sb-blk.scheduled{background:var(--pvx-sched-bg)!important;color:var(--pvx-sched-ink)!important}
+html #ctab-dash .sb-blk.due::after{box-shadow:0 0 8px 1px rgba(56,189,210,.5)}
+body:not(.dark) #ctab-dash .sb-blk.due::after{box-shadow:0 0 8px 1px rgba(35,67,156,.35)}
+body:not(.dark) #ctab-dash .sb-blk.overdue{box-shadow:0 6px 14px -6px rgba(232,168,48,.6)!important}
+body:not(.dark) #ctab-dash .sb-blk.due{box-shadow:0 6px 14px -6px rgba(35,67,156,.45)!important}
+body:not(.dark) #ctab-dash .sb-blk.scheduled{box-shadow:none!important}
+html .sb-lg.overdue{background:var(--st-late)!important}
+html .sb-lg.due{background:var(--st-due)!important}
+html .sb-lg.scheduled{background:var(--pvx-sched-bg)!important;box-shadow:inset 0 0 0 1px var(--pvx-sched-ink)}
+.sb-blk .sb-gl{display:grid;place-items:center;line-height:0}
+.sb-blk .sb-gl svg{width:14px;height:14px}
+.sb-blk .sb-hl{display:none}
+/* late is the overdue colour everywhere (workload, Vitals) */
+html .ts-lc-nums .late,html .ts-lc-nums .late b{color:var(--pvx-warn-ink)!important}
+html .ts-load-card.hi{border-color:rgba(232,168,48,.55)!important;background:rgba(232,168,48,.06)!important}
+html .ts-load-card.hi .ts-lc-bar i{background:var(--st-late)!important}
+html #ctab-vitals .vx-due.late{color:var(--pvx-warn-ink)!important;font-weight:700}
+/* toasts: guidance amber, failures red, success green */
+.ctoast.warn .tk{background:var(--st-late)!important}
+.ctoast.warn .tk svg{color:#3D2A00!important}
+.ctoast.err .tk{background:#E4342B!important}
+
+/* 2. teal is for things you can press: plain headings are neutral secondary text */
+html :is(.clinical-sidebar .panel>h4,#ctab-vitals .v-sec-h>span,.ch-kicker,.ch-group>h4,#ctab-charges .panel>h4,.order-search-dropdown .ts-cat,.ch-code){color:var(--pvx-head)!important}
+
+/* 3. abnormal vitals say so; overdue counts carry the clock; the tech is labelled */
+.pvx-sev{display:inline-flex;align-items:center;gap:3px;font-size:.6875rem;font-weight:700;letter-spacing:0;text-transform:none;white-space:nowrap}
+.pvx-sev svg{width:11px;height:11px;flex:none}
+.pvx-sev.crit{color:var(--pvx-crit)}
+.pvx-sev.warn{color:var(--pvx-warn-ink)}
+.tsh-vit .pvx-sev{display:flex;justify-content:center;margin-top:2px}
+.vx-now .pvx-sev{margin-left:6px}
+.tsh .tsh-mini :is(.crit,.warn)::before{content:"";display:inline-block;width:10px;height:10px;margin-right:3px;vertical-align:-1px;background:currentColor;
+  -webkit-mask:var(--pvx-sev-ic) center/contain no-repeat;mask:var(--pvx-sev-ic) center/contain no-repeat}
+body{--pvx-sev-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.8 1.6 20.6h20.8z' fill='%23000'/%3E%3C/svg%3E")}
+:is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.completed.abn .mk-val::after{content:"!";margin-left:1px;font-weight:800}
+.pt-n.late::before,#clinSwitcher .seg-badge.over::before{content:"";width:9px;height:9px;margin-right:2px;flex:none;background:currentColor;
+  -webkit-mask:var(--pvx-clock-ic) center/contain no-repeat;mask:var(--pvx-clock-ic) center/contain no-repeat}
+#clinSwitcher .seg-badge.over{display:inline-flex!important;align-items:center}
+body{--pvx-clock-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 7.5V12l3 2'/%3E%3C/svg%3E")}
+.tm-tech:not(.none)::before{content:"Tech";order:-1;margin-right:5px;font-size:.6875rem;font-weight:600;color:var(--pvx-head)}
+
+/* 4. Increase Contrast: stronger text, lines and status colours (light and dark) */
+@media (prefers-contrast:more){
+  body:not(.dark){--ink-900:#0B0E18;--ink-700:#1F2536;--ink-500:#2E3548;--ink-400:#3A4157;--st-meta:#3A4157;--muted:#3A3C40;--ctl-border:rgba(0,0,0,.38);
+    --accent:#1A3380;--accent-ink:#1A3380;--st-due:#1A3380;--st-late-ic:#5E3B00;--pvx-head:#2E3548;--pvx-sched-bg:#D3DAE6;--pvx-sched-ink:#1F2536;--pvx-warn-ink:#5E3B00;--pvx-crit:#A11D16}
+  body.dark{--ink-900:#F4F8FC;--ink-700:#D6E3EF;--ink-500:#C3D3E4;--ink-400:#B8CBDF;--st-meta:#C9D6E4;--muted:#B8CBDF;--ctl-border:rgba(190,215,240,.62);
+    --accent-ink:#8FE6F3;--st-late:#FFB938;--st-late-ic:#FFD786;--pvx-head:#C3D3E4;--pvx-sched-bg:#2E4066;--pvx-sched-ink:#F4F8FC;--pvx-warn-ink:#FFD786;--pvx-crit:#FF8A7A}
+  html body:is(.dark,:not(.dark)) #ctab-dash .sb-blk:is(.overdue,.due,.scheduled,.completed){box-shadow:inset 0 0 0 2px currentColor!important}
+  :is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark:is(.due,.overdue){outline:1.5px solid currentColor;outline-offset:-1.5px}
+  .v-rec,.btn.ghost,.ts-chip,.sb-segb,.zm-b,.zm-mid{box-shadow:inset 0 0 0 1px var(--ctl-border)!important}
+}
+
+/* 4. colours under 4.5:1 */
+body:not(.dark) #tsOrderSheet :is(.op-kind,.op-lead,.op-x,small,label,.ch-plan-out,.ch-empty){color:#4A5268!important}
+body:not(.dark) #tsOrderSheet input{color:var(--ink-900)!important}
+body:not(.dark) .dn-late{color:#7A4E00!important}
+body:not(.dark) .sb-head .sb-hcell.now{color:#B42318!important}
+body:not(.dark) .ts-menu :is(.mh,small){color:#4A5268!important}
+body:not(.dark) .ts-menu .mi.act:not(.danger){color:#1B3480!important}
+body:not(.dark) .pm-sp{color:#4A5268!important}
+body.dark #tsModal :is(p,label){color:#A7B8CC!important}
+body.dark .ts-menu small{color:#A7B8CC!important}
+body.dark .ts-menu .mh{color:#A7B8CC!important}
+body.dark .ts-menu .mi.act{color:#6FD3E4!important}
+body.dark .ts-menu .mi.act.danger{color:#FF8A7A!important}
+html body.dark #tsAlMenu #alAdd{background:#38BDD2!important;color:#04252E!important}
+body.dark #ctab-sheet :is(input,textarea)::placeholder,body.dark #tsOrderSheet :is(input,textarea)::placeholder,body.dark #ctab-vitals :is(input,textarea)::placeholder,
+body.dark .drawer :is(input,textarea)::placeholder,body.dark #tsModal :is(input,textarea)::placeholder,body.dark .ts-menu :is(input,textarea)::placeholder,body.dark #tvPanel :is(input,textarea)::placeholder,body.dark #ctab-tasks input::placeholder{color:#8B9DB5!important;opacity:1}
+body:not(.dark) #ctab-sheet :is(input,textarea)::placeholder,body:not(.dark) #tsOrderSheet :is(input,textarea)::placeholder,body:not(.dark) #ctab-vitals :is(input,textarea)::placeholder,
+body:not(.dark) .drawer :is(input,textarea)::placeholder,body:not(.dark) #tsModal :is(input,textarea)::placeholder,body:not(.dark) .ts-menu :is(input,textarea)::placeholder,body:not(.dark) #tvPanel :is(input,textarea)::placeholder,body:not(.dark) #ctab-tasks input::placeholder{color:#656D80!important;opacity:1}
+
+/* 7. one filled colour button on Vitals: each row's Record is tinted */
+html #ctab-vitals .v-rec{background:rgba(35,67,156,.10)!important;color:#23439C!important}
+html #ctab-vitals .v-rec:hover{background:rgba(35,67,156,.18)!important}
+body.dark #ctab-vitals .v-rec{background:rgba(56,189,210,.16)!important;color:#8FE6F3!important}
+body.dark #ctab-vitals .v-rec:hover{background:rgba(56,189,210,.26)!important}
+
+/* 8. layout — one-row sub-nav on Mac and iPad (the shared top bar above already names the app) */
+@media (min-width:701px){
+  .subnav{flex-wrap:nowrap!important}
+  .subnav>#clinSwitcher{min-width:0;flex:0 1 auto;overflow-x:auto;scrollbar-width:none}
+  .subnav>#clinSwitcher::-webkit-scrollbar{display:none}
+  .subnav>.spacer{flex:1 1 0;min-width:8px}
+  .subnav>#tsPatientChip{min-width:0;max-width:240px;flex:0 1 auto}
+  .subnav>#tsPatientChip .nm{overflow:hidden;text-overflow:ellipsis}
+  .subnav>:is(.ts-gear,#tsSettingsBtn,.search){flex:none}
+}
+@media (min-width:701px) and (max-width:1599px){ .subnav>.subnav-title{display:none!important} #clinSwitcher .seg{padding-inline:11px!important} .subnav .ts-alert-pill{padding:0 10px!important;margin-right:0!important} }
+@media (min-width:701px) and (max-width:1279px){ .subnav{gap:10px!important;padding-inline:20px!important} #clinSwitcher .seg{padding-inline:10px!important} }
+
+/* the patient header: tighter on short windows */
+@media (min-width:701px) and (max-height:960px){
+  .clinical-patient-header.tsh:not(.is-compact){padding-top:10px!important;padding-bottom:8px!important}
+  .tsh:not(.is-compact) .tsh-id{display:flex;flex-wrap:wrap;align-items:center;column-gap:12px;row-gap:2px}
+  .tsh:not(.is-compact) .tsh-name{flex:1 0 100%}
+  .tsh:not(.is-compact) .tsh-flags{margin-top:0!important}
+  .tsh:not(.is-compact) .tsh-info{margin-top:6px!important}
+  .tsh:not(.is-compact) .tsh-item{padding-top:4px!important;padding-bottom:4px!important;min-height:0!important}
+}
+/* compact on iPhone and short iPhone landscape: name, allergies, weight, code, location and vitals in one line; Details for the rest */
+.pvx-hdr-more{display:none}
+@media (max-width:700px),(max-height:500px){
+  .clinical-patient-header.tsh:not(.pvx-open){padding:8px 14px!important}
+  .tsh:not(.pvx-open) .tsh-name{font-size:1.0625rem}
+  .tsh:not(.pvx-open) :is(.tsh-sig,.tsh-info,.tsh-vitals,.tsh-novit){display:none!important}
+  .tsh:not(.pvx-open) .tsh-mini{display:flex!important;flex-wrap:wrap;white-space:normal;row-gap:4px}
+  .tsh:not(.pvx-open):has(.tsh-flags .ts-al) .tsh-mini .ts-al{display:none}
+  .tsh .tsh-top{flex-wrap:wrap;row-gap:6px}
+  .tsh .tsh-id{min-width:0;flex:1 1 auto;max-width:calc(100% - 52px)}
+  .tsh .tsh-name{flex-wrap:wrap;row-gap:0}
+  .tsh .tsh-info{flex-wrap:wrap}
+  .tsh .tsh-v{flex-wrap:wrap;white-space:normal}
+  .tsh .tsh-vitals{flex:1 0 100%;justify-content:flex-start}
+  .pvx-hdr-more{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 10px;margin-left:auto;border-radius:9px;border:1px solid var(--ctl-border);background:transparent;
+    color:var(--accent-ink);font:600 .8125rem var(--font,inherit);cursor:pointer;flex:none}
+  .pvx-hdr-more svg{width:12px;height:12px;transition:transform .2s}
+  .tsh.pvx-open .pvx-hdr-more svg{transform:rotate(180deg)}
+}
+body.dark .pvx-hdr-more{color:#8FE6F3}
+
+/* the grid toolbar: one row on Mac with a wider search; on iPad and iPhone the search gets its own row */
+.order-search-dropdown{min-width:min(340px,calc(100vw - 32px))}
+@media (min-width:1181px){
+  #ctab-sheet .treatment-toolbar{flex-wrap:nowrap!important}
+  #ctab-sheet .treatment-toolbar>.order-search-wrapper{flex:1 1 220px;min-width:200px;max-width:460px}
+  #ctab-sheet .treatment-toolbar>.order-search-wrapper .qadd{width:100%!important}
+  #ctab-sheet .treatment-toolbar>.spacer{flex:0 0 0!important;width:0!important;margin:0!important}
+}
+#ctab-sheet .treatment-toolbar .ts-daynav{flex:none}
+#ctab-sheet .treatment-toolbar .dn-mid{white-space:nowrap}
+@media (max-width:1599px){
+  #ctab-sheet .treatment-toolbar .ts-audit-btn{width:38px!important;padding:0!important;justify-content:center}
+  #ctab-sheet .treatment-toolbar .ts-audit-btn .ts-audit-l{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+/* iPhone, split view and short landscape: the sheet scrolls as a page and the grid keeps at least a screen (it was 0 pt tall) */
+@media (max-width:700px),(max-height:500px){
+  .stage.sheet-active{overflow-y:auto!important;overflow-x:hidden!important}
+  .stage.sheet-active>#view-clinical{height:auto!important;overflow:visible!important}
+  .stage.sheet-active :is(#ctab-sheet,#ctab-vitals){overflow:visible!important;flex:none!important}
+  #ctab-sheet .clinical-workspace,#ctab-sheet main.treatment-main{height:auto!important;max-height:none!important;overflow:visible!important;min-height:0}
+  #ctab-sheet #sheetScroll{flex:none!important;height:max(260px,calc(100dvh - 150px))!important}
+}
+@media (max-width:1180px){
+  #ctab-sheet .treatment-toolbar{flex-wrap:wrap!important}
+  #ctab-sheet .treatment-toolbar>.order-search-wrapper{order:-1;flex:1 1 100%;min-width:0;max-width:none}
+  #ctab-sheet .treatment-toolbar>.order-search-wrapper .qadd{width:100%!important}
+  #ctab-sheet .treatment-toolbar>.brief-toggle{order:-2}
+}
+/* the legend: one row on Mac, wraps elsewhere; never clipped */
+html .treatment-legend#legend{flex-wrap:wrap!important;overflow:visible!important;row-gap:6px;column-gap:12px!important}
+html .treatment-legend#legend .lg-w{overflow:visible!important;text-overflow:clip;white-space:nowrap}
+html .treatment-legend#legend>div[style*="flex:1"]{flex:1 1 0!important;min-width:0}
+
+html.pvx-ngrid #sheetInner .rl{width:236px!important}
+html.pvx-ngrid #sheetInner .rl-latest{flex:0 0 84px!important;width:84px!important}
+html.pvx-ngrid #sheetInner .ghead .gh-latest{flex:0 0 84px!important}
+/* the iPhone board: one card per patient (no sideways table) */
+@media (max-width:600px){
+  #ctab-dash .sb-toolbar,#ctab-dash .sb-tool-r{flex-wrap:wrap;row-gap:8px}
+  #ctab-dash .sb-tool-r{margin-left:0;max-width:100%}
+  #ctab-dash .sb-scroll{overflow:visible!important}
+  #ctab-dash .sb-inner{width:auto!important;min-width:0!important}
+  #ctab-dash .sb-row.sb-head,#ctab-dash .sb-nowline{display:none!important}
+  #ctab-dash .sb-row:not(.sb-head){flex-direction:column;align-items:stretch;padding:4px 0 12px}
+  #ctab-dash .sb-row .sb-left{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);position:static!important;
+    border-right:0!important;box-shadow:none!important;background:transparent!important;width:auto!important}
+  #ctab-dash .sb-row .sb-left::before{top:8px;bottom:8px}
+  #ctab-dash .sb-row .sbc{width:auto!important;min-width:0!important;height:auto!important;min-height:0!important;padding:6px 14px!important}
+  #ctab-dash .sb-row .sbc:is(.c-pt,.c-team,.c-alerts){grid-column:1/-1}
+  #ctab-dash .sb-row .sbc:is(.c-ward,.c-io,.c-team){padding-top:0!important}
+  #ctab-dash .sb-row .sbc.c-team .tm-p{white-space:normal}
+  #ctab-dash .sb-row .sb-hours{flex-wrap:wrap;gap:6px;padding:0 14px}
+  #ctab-dash .sb-row .sb-hcell{width:auto!important;min-height:0!important;padding:0!important;border:0!important;animation:none!important}
+  #ctab-dash .sb-row .sb-hcell:not(:has(.sb-blk)){display:none!important}
+  #ctab-dash .sb-row .sb-blk{width:58px;min-height:50px;gap:2px;padding:6px 0}
+  #ctab-dash .sb-row .sb-blk .sb-hl{display:block;font:600 .6875rem/1 var(--font,inherit);opacity:.9}
+  #ctab-dash .sb-row .sb-blk .sb-gl svg{width:12px;height:12px}
+}
+
+/* nothing clipped: Charges names and Tasks rows wrap on iPhone and at large text; toolbars wrap at large text */
+@media (max-width:700px){
+  #ctab-charges :is(.ch-row b,.ch-row small){white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+}
+html.pvx-text-l #ctab-tasks :is(b,.wl-brand){white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+html.pvx-text-l :is(.v-header,.v-input,.treatment-toolbar,.ts-daynav){flex-wrap:wrap!important;row-gap:8px}
+html.pvx-text-l #ctab-sheet .treatment-toolbar{flex-wrap:wrap!important}
+html.pvx-text-l #ctab-sheet .treatment-toolbar>.order-search-wrapper{order:-1;flex:1 1 100%;max-width:none}
+html.pvx-text-l #ctab-sheet .treatment-toolbar .ts-daynav{flex:1 1 auto;flex-wrap:wrap;max-width:100%}
+html.pvx-text-l #ctab-vitals #vxTake{white-space:normal;height:auto;min-height:34px;flex-wrap:wrap;max-width:100%}
+:is(html.pvx-ngrid,html.pvx-text-l) #sheetInner .rl-latest b{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.15}
+html.pvx-text-l .subnav>#clinSwitcher{overflow-x:auto}
+html.pvx-text-l .tsh :is(.tsh-info,.tsh-v,.tsh-top){flex-wrap:wrap!important}
+html.pvx-text-l .tsh .tsh-item{min-width:0;max-width:100%}
+html.pvx-text-l .tsh .tsh-v b{white-space:normal}
+
+/* Vitals: history is in the toolbar (no bar at the bottom of the window); the schedule line fits */
+#ctab-vitals .v-header .pvx-vhist{height:34px}
+@media (min-width:1024px){ html #ctab-vitals .v-row.vx-r{grid-template-columns:224px minmax(160px,1fr) 104px 408px} }
+#ctab-vitals .v-header .pvx-vhist{width:auto!important;flex:none!important;padding:0 14px!important}
+
+/* 9. one scrim strength (Brand: about 42 % dark, never a blur); drawers float like Take vitals */
+html :is(.scrim.show,.scrim.open,#tsOrderSheet.show,#tvScrim.show,#tsModal .tm-scrim,.brief-scrim.show){background:rgba(8,14,26,.42)!important}
+@media (min-width:701px){
+  html .drawer{top:12px!important;right:12px!important;bottom:12px!important;height:auto!important;border-radius:20px!important;overflow:hidden}
+  html .drawer:not(.open){transform:translateX(calc(100% + 24px))}
+}
+/* 9. one material for every floating control in Treatment: Anesia's glass (n226 tokens), as in Flow */
+html :is(.pt-pop,.ts-menu,.ts-copymenu,.order-search-dropdown,.pvx-tmenu,.ctoast,html.pvx-ttab #clinSwitcher){background:var(--pvx-glass-strong)!important;-webkit-backdrop-filter:var(--pvx-glass-blur)!important;backdrop-filter:var(--pvx-glass-blur)!important;box-shadow:var(--pvx-glass-shadow),inset 0 0 0 .5px var(--pvx-glass-edge),inset 0 1px 0 var(--pvx-glass-hi)!important;border-color:var(--pvx-glass-edge)!important}
+html.pvx-ttab #clinSwitcher{box-shadow:0 -1px 0 var(--pvx-glass-edge)!important;border-radius:0!important}
+html .ctoast{color:var(--pvx-glass-ink)!important}
+html.pvx-noblur :is(.pt-pop,.ts-menu,.ts-copymenu,.order-search-dropdown,.pvx-tmenu,.ctoast,html.pvx-ttab #clinSwitcher){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){html :is(.pt-pop,.ts-menu,.ts-copymenu,.order-search-dropdown,.pvx-tmenu,.ctoast,html.pvx-ttab #clinSwitcher){background:var(--pvx-glass-solid)!important}}
+@media (prefers-reduced-transparency:reduce){html :is(.pt-pop,.ts-menu,.ts-copymenu,.order-search-dropdown,.pvx-tmenu,.ctoast,html.pvx-ttab #clinSwitcher){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}}
+@media (prefers-contrast:more){html :is(.pt-pop,.ts-menu,.ts-copymenu,.order-search-dropdown,.pvx-tmenu,.ctoast,html.pvx-ttab #clinSwitcher){background:var(--pvx-glass-solid)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 0 0 1px var(--pvx-glass-ink),var(--pvx-glass-shadow)!important}}
+@media (forced-colors:active){html :is(.pt-pop,.ts-menu,.ts-copymenu,.order-search-dropdown,.pvx-tmenu,.ctoast,html.pvx-ttab #clinSwitcher){background:Canvas!important;color:CanvasText!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:1px solid CanvasText!important}}
+
+/* ── pvx-n231-ts ── */
+/* PVX-N231 - Treatment Sheets: HIG Typography (legibility), Branding, Icons (claude/hig-audit-treatment-legibility-branding-icons.md) */
+/* 3. numbers that change keep their width (the shared top bar keeps its own setting) */
+body{font-variant-numeric:tabular-nums}
+#pvxTopnav,nav.topnav{font-variant-numeric:normal}
+
+/* 1. iPhone and iPad: reading text a step up (the Mac keeps its sizes) */
+@media (hover:none) and (pointer:coarse){
+  #sheetInner .rl-name{font-size:1rem!important}
+  #sheetInner .rl-meta{font-size:.8125rem!important}
+  #ctab-dash .sb-row .pt-sig2{font-size:.8125rem!important}
+  #ctab-dash .sb-row .pt-nm{font-size:1.0625rem!important}
+  #ctab-tasks :is(.wl-row,.wl-item) b{font-size:1rem!important}
+  #ctab-tasks :is(.wl-row,.wl-item) small{font-size:.8125rem!important}
+  #legend .li{font-size:.8125rem!important}
+  #ctab-vitals .v-name{font-size:1rem!important}
+  #ctab-vitals .v-name small{font-size:.8125rem!important}
+  #ctab-charges .ch-row b{font-size:.9375rem!important}
+  #ctab-charges .ch-row small{font-size:.8125rem!important}
+  .tsh .tsh-v b{font-size:1rem!important}
+}
+
+/* 6. symbols, not characters */
+.pvx-ic{width:1.2em;height:1.2em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.22em}
+:is(button,.btn,.mi) .pvx-ic{stroke-width:2.25}
+:is(.dn-prev,.dn-next) .pvx-ic{width:16px;height:16px;vertical-align:middle}
+:is(.op-x,.tv-x) .pvx-ic{width:14px;height:14px;vertical-align:middle;stroke-width:2.25}
+.al-empty .pvx-ic,.mi.act .pvx-ic{width:1.1em;height:1.1em;margin-right:4px}
+#ctab-notes .btn .pvx-ic{margin-right:6px}
+#ctab-vitals .v-header .btn .pvx-ic{width:14px;height:14px;margin-right:2px}
+.lg-arr .pvx-ic{width:13px;height:13px;stroke-width:2.2;vertical-align:-2px}
+.rl-off{display:inline-flex;align-items:center;gap:2px}
+.rl-off::before{content:"";width:.95em;height:.95em;flex:none;background:currentColor;
+  -webkit-mask:var(--pvx-chev-l) center/contain no-repeat;mask:var(--pvx-chev-l) center/contain no-repeat}
+body{--pvx-chev-l:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 18l-6-6 6-6'/%3E%3C/svg%3E")}
+
+/* 8. stroke matched to the label (Brand Identity table: 600 → 2.0, 700 → 2.25 on the 24-pt grid) */
+html :is(.sb-filters,.sb-tvb,#ctab-sheet .treatment-toolbar .btn,#vxTake,.pt-open) svg :is(path,circle,rect,line,polyline,polygon,ellipse){stroke-width:2.25!important}
+html #legend .lg-act>svg:not(.lg-chev) :is(path,rect){stroke-width:2!important}
+html .vit-ic :is(path,polyline){stroke-width:2.5!important}
+
+/* 2 + 5. the lobby TV: sized for the room, sentence case, the one status colour map, real cards only */
+#tsTv .tv-ward p,#tsTv .tv-date{font-size:clamp(16px,1.2vw,26px)!important;text-transform:none!important;letter-spacing:0!important}
+#tsTv .tv-alert-t{font-size:clamp(20px,1.5vw,32px)!important;text-transform:none!important;letter-spacing:0!important}
+#tsTv .tv-alert-m,#tsTv .tv-live,#tsTv .tv-meta,#tsTv .tv-step b,#tsTv .tv-when,#tsTv .tv-more,#tsTv .tv-badge,#tsTv .tv-done,#tsTv .tv-who,
+#tsTv .tv-stat-l,#tsTv .tv-nx-t,#tsTv .tv-nx-n b,#tsTv .tv-nx-n small,#tsTv .tv-nx-more,#tsTv .tv-nx-none,#tsTv .tv-foot,#tsTv .tv-foot button,#tsTv .tv-code{font-size:clamp(16px,1.2vw,26px)!important}
+#tsTv .tv-sectitle,#tsTv .tv-sidetitle{font-size:clamp(18px,1.5vw,32px)!important;text-transform:none!important;letter-spacing:-.01em!important}
+#tsTv .tv-card h2{font-size:clamp(22px,1.6vw,36px)!important}
+#tsTv .tv-rail{--row:clamp(32px,2.4vw,52px);--nd:clamp(20px,1.5vw,32px)}
+#tsTv .tv-node svg{width:62%;height:62%}
+#tsTv .tv-step.late .tv-node{background:#E8A830!important;border-color:#E8A830!important;color:#3D2A00}
+#tsTv .tv-step.late .tv-when,#tsTv .tv-more{color:#F2C065!important}
+#tsTv .tv-step.due .tv-node{background:#38BDD2!important;border-color:#38BDD2!important;box-shadow:0 0 0 3px rgba(56,189,210,.3)!important}
+#tsTv .tv-step.due .tv-when{color:#6FD3E4!important}
+#tsTv .tv-alert.late{border-color:rgba(232,168,48,.65)!important;background:linear-gradient(180deg,rgba(150,96,16,.34),rgba(78,50,8,.46))!important;box-shadow:0 0 0 1px rgba(232,168,48,.1),0 14px 42px -14px rgba(150,100,20,.45)!important}
+#tsTv .tv-alert.late .tv-alert-ic{background:rgba(232,168,48,.22)!important;color:#F2C065!important}
+#tsTv .tv-alert.due{border-color:rgba(56,189,210,.55)!important;background:linear-gradient(180deg,rgba(18,80,96,.32),rgba(8,40,52,.44))!important;box-shadow:0 0 0 1px rgba(56,189,210,.1),0 14px 42px -14px rgba(20,90,110,.4)!important}
+#tsTv .tv-alert.due .tv-alert-ic{background:rgba(56,189,210,.2)!important;color:#6FD3E4!important}
+#tsTv .tv-medal{width:clamp(48px,3.2vw,64px)!important;height:clamp(48px,3.2vw,64px)!important}
+#tsTv .tv-medal svg{width:64%;height:64%;color:#E6EEF6}
+#tsTv .tv-medal svg use{fill:currentColor}
+#tsTv .tv-foot-l svg{width:1.1em!important;height:1.1em!important}
+@media (min-width:1200px){
+  #tsTv .tv-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important;grid-auto-rows:auto!important;overflow:hidden!important}
+  #tsTv .tv-grid:not(:has(>.tv-card:nth-child(3))){grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #tsTv .tv-card{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto minmax(0,1fr) auto auto;column-gap:clamp(12px,1vw,20px);row-gap:4px}
+  #tsTv .tv-card>header{display:contents}
+  #tsTv .tv-card>header>.tv-medal{grid-column:1;grid-row:1/3;align-self:center}
+  #tsTv .tv-card>header>.tv-code{grid-column:3;grid-row:1;align-self:start}
+  #tsTv .tv-card>h2{grid-column:2;grid-row:1;margin:0!important;align-self:end}
+  #tsTv .tv-card>.tv-meta{grid-column:2/4;grid-row:2;margin:0!important}
+  #tsTv .tv-card>.tv-rail{grid-column:1/-1;grid-row:3}
+  #tsTv .tv-card>.tv-more{grid-column:1/-1;grid-row:4;margin:2px 0 0!important}
+  #tsTv .tv-card>.tv-badgerow{grid-column:1/-1;grid-row:5;margin-top:6px!important;padding-top:8px!important}
+  #tsTv .tv-badge{padding:3px 10px!important}
+}
+
+/* ── pvx-n232-ts ── */
+/* PVX-N232 - Treatment Sheets: HIG Motion, SF Symbols, Charting data (claude/hig-audit-treatment-motion-symbols-charts.md) */
+/* 0b. an uncharted header vital keeps its line (it took the timeline's .empty padding) */
+.tsh .tsh-vit.empty{padding:0!important;text-align:right!important;animation:none!important;opacity:1!important;transform:none!important}
+
+/* 1. nothing loops at rest: due-now tiles, the board's due glow and the "next due" rings are still */
+html :is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark.due{animation:none!important}
+html .sb-blk.due::after{animation:none!important}
+html #ctab-vitals .vx-next{animation:none!important}
+
+/* 2. frequent actions: a short cross-fade, not a rise */
+@keyframes pvxFade{from{opacity:0}to{opacity:1}}
+html .view{animation:pvxFade .15s ease both!important}
+html .ctab{animation:pvxFade .15s ease both!important}
+html body .drawer{transition:transform .3s cubic-bezier(.32,.72,0,1)!important}
+html #ctab-vitals svg .v-dot.fresh{animation-duration:.4s!important}
+html .vx-ln.draw{animation-duration:.4s!important}
+
+/* 4. transitions at 0.4 s or less */
+html .sb-cnt i{transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .3s!important}
+html .sb-ind,html .vx-seg .ind{transition-duration:.3s!important}
+html .ts-lc-bar i{transition:width .3s!important}
+html #fvToast{transition:opacity .25s,transform .3s cubic-bezier(.32,.72,0,1)!important}
+html .ts-seen{animation-duration:.25s!important}
+html .tl-item{animation-duration:.3s!important}
+html #tsOrderSheet .ot-trend span{transition-duration:.3s!important}
+
+/* 3. Reduce Motion: change without moving */
+@media (prefers-reduced-motion:reduce){
+  html .view,html .ctab,html .ts-seen,html .ctoast,html [class*="ctoast"],html .tl-item,html .empty{animation:none!important;opacity:1!important;transform:none!important}
+  html body .drawer,html .ts-lc-bar i,html .sb-cnt i,html .tsh,html .tsh .tsh-name,html .clinical-patient-header.tsh{transition:none!important}
+  html #fvToast{transition:opacity .15s!important}
+  html :is(#ctab-sheet,#completionDrawer,#tsOrderSheet) .mark,html .sb-blk::after{animation:none!important}
+}
+html.pvx-rm :is(.view,.ctab){animation:none!important}
+
+/* 6-7. arrow symbols; the tab close and ••• about the size of their text */
+.rl-trend i .tr-ic,.lt-ch i .tr-ic{width:.95em;height:.95em;stroke-width:2.6;vertical-align:-.1em}
+.pt-x svg{width:13px!important;height:13px!important}
+.pt-dots{width:16px!important;height:16px!important;flex:0 0 16px!important}
+.rl .rl-grip svg{width:12px!important;height:14px!important}
+#sheetInner .sec-add svg,.sec-add svg{width:14px!important;height:14px!important}
+.pl-plus svg{width:13px!important;height:13px!important}
+
+/* 10. the range in view beside the latest value */
+#ctab-vitals .vx-now .vx-rng{display:block;margin-top:1px;font-size:.6875rem;font-weight:500;color:var(--ink-400);white-space:nowrap;font-variant-numeric:tabular-nums}
+#ctab-vitals .v-chart.vx:focus-visible{outline:2px solid var(--vx-cyan);outline-offset:2px;border-radius:6px}
+.pvx-sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* 12. one chart style: the weight chart draws like the Vitals trends (neutral line and points; the accent is for buttons) */
+.wc-chart{--wc-line:#8E97A6;--wc-dot:#7A8494}
+body.dark .wc-chart{--wc-line:#B9C4D6;--wc-dot:#B9C4D6}
+html .wc-chart .wc-ln,html body.dark .wc-chart .wc-ln{stroke:var(--wc-line)!important;stroke-width:2.1!important}
+html .wc-chart :is(.wc-tail,.wc-ring),html body.dark .wc-chart :is(.wc-tail,.wc-ring){stroke:var(--wc-line)!important}
+html .wc-chart .wc-dot,html body.dark .wc-chart .wc-dot{fill:var(--wc-dot)!important;stroke:var(--surface-0,#fff)!important;stroke-width:2!important}
+body.dark .wc-chart .wc-dot{stroke:#161b26!important}
+html .wc-chart .wc-dot.last,html body.dark .wc-chart .wc-dot.last{fill:var(--wc-line)!important}
+html .wc-chart :is(.wc-g0,.wc-g1),html body.dark .wc-chart :is(.wc-g0,.wc-g1){stop-color:var(--wc-line)!important}
+html .wc-chart .wc-g0{stop-opacity:.16!important}
+html #ctab-vitals .vx-t.now{letter-spacing:0!important}
+
+/* 14. the on-time report: status colours, a gap between segments, a hatch on missed, a legend, the peak's number */
+#tsOrderSheet .ot-bar i{box-sizing:border-box}
+#tsOrderSheet .ot-bar i+i{border-left:2px solid #fff}
+body.dark #tsOrderSheet .ot-bar i+i{border-left-color:#161b26}
+#tsOrderSheet .ot-bar i:is([style^="width:0%"],[style^="width:0.0%"]){display:none}
+#tsOrderSheet :is(.ot-bar,.ot-key) i.miss{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.34) 0 2px,transparent 2px 5px)}
+#tsOrderSheet .ot-key{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;font-size:.75rem;font-weight:600;color:var(--ot-t3)}
+#tsOrderSheet .ot-key span{display:inline-flex;align-items:center;gap:6px}
+#tsOrderSheet .ot-key i{display:inline-block;width:14px;height:10px;border-radius:3px}
+#tsOrderSheet .ot-key i.on{background-color:var(--ot-on)}
+#tsOrderSheet .ot-key i.late{background-color:var(--ot-late)}
+#tsOrderSheet .ot-key i.miss{background-color:var(--ot-miss)}
+#tsOrderSheet .ot-hours{padding-top:18px!important;height:86px!important}
+#tsOrderSheet .ot-hours span{position:relative}
+#tsOrderSheet .ot-hours span b{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;font-size:.6875rem;font-weight:700;color:var(--ot-miss);font-variant-numeric:tabular-nums}
+
+/* 15. the patient menu explains the tab ring */
+.mi-note{margin:6px 12px 4px;font-size:.75rem;line-height:1.35;color:var(--ink-400);max-width:260px}
+
+/* ── pvx-n233-ts ── */
+/* PVX-N233 - Treatment Sheets: HIG Collaboration and sharing, Drag and drop, Entering data (claude/hig-audit-treatment-collab-dnd-entry.md) */
+/* a field's problem, said in place under it */
+.pvx-fmsg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0 2px;font-size:.8125rem;font-weight:600;line-height:1.35;color:#C2410C}
+body.dark .pvx-fmsg{color:#FFB37A}
+.pvx-fmsg button{border:0;border-radius:8px;padding:5px 10px;font:inherit;font-weight:700;cursor:pointer;background:rgba(194,65,12,.12);color:inherit}
+body.dark .pvx-fmsg button{background:rgba(255,179,122,.16)}
+:is(input,textarea,select)[aria-invalid="true"]{border-color:#E8590C!important;box-shadow:0 0 0 3px rgba(232,89,12,.18)!important}
+.vx-r .vx-warn:not([hidden])>span:only-child{color:#C2410C;font-weight:600}
+body.dark .vx-r .vx-warn:not([hidden])>span:only-child{color:#FFB37A}
+/* the main button waits for what's required */
+button.pvx-dim{opacity:.45!important;cursor:not-allowed!important}
+/* dose and volume: a number with its unit beside it */
+.pvx-unitwrap{position:relative;display:block}
+.pvx-unitwrap>input{padding-right:3.2em!important;width:100%}
+.pvx-unitwrap>.cd-u{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.8125rem;font-weight:600;color:var(--ink-400);pointer-events:none}
+/* move a dose from its drawer */
+.cd-move{display:flex;align-items:center;gap:10px;margin:14px 0 4px;padding:10px 12px;border-radius:12px;background:var(--pvx-cm124,rgba(127,127,127,.08))}
+.cd-move label{font-size:.8125rem;font-weight:600;color:var(--ink-500);white-space:nowrap}
+.cd-move select{flex:1;min-width:0;height:36px;padding:0 10px;border-radius:9px;font:inherit;font-size:.875rem;color:inherit;background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.28)}
+body.dark .cd-move select{color-scheme:dark}
+label>.pvx-fmsg,.field>.pvx-fmsg{grid-column:1/-1;width:100%}
+/* the reorder grip on touch: visible, a bigger target */
+@media (hover:none) and (pointer:coarse){
+  #sheetInner .rl .rl-grip{opacity:.7!important;width:30px!important}
+  #sheetInner .rl .rl-grip::before{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+  #sheetInner .rl:has(>.rl-grip){padding-left:30px!important}
+  #tsProblems .pl-grip{opacity:.7!important;min-width:30px;min-height:44px}
+}
+/* view only, said up front */
+.pvx-vo{display:inline-flex;align-items:center;gap:5px;margin-left:10px;padding:3px 9px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:0;vertical-align:middle;color:var(--ink-600,#4a5568);background:rgba(127,127,127,.14)}
+.pvx-vo svg{width:13px;height:13px}
+body.dark .pvx-vo{color:#D5DCE6;background:rgba(255,255,255,.1)}
+body:not(.dark) .pvx-vo{color:#3F4A5A;background:rgba(60,72,90,.1)}
+/* the medal is the species glyph */
+.pvx-med.pm-g{display:inline-grid;place-items:center}
+.pvx-med.pm-g svg{width:64%;height:64%;fill:currentColor}
+/* the patient menu's explanation sits under the new-sheet item */
+
+/* ── pvx-n234-ts ── */
+/* n234: offline, toasts that wait, the TV in full screen, the reopen list, the import */
+.pvx-off{display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:0;vertical-align:middle;white-space:nowrap}
+.pvx-off svg{width:13px;height:13px;flex:0 0 13px}
+body.dark .pvx-off,.pvx-off{color:#FFD08A;background:rgba(255,159,10,.16)}
+body:not(.dark) .pvx-off{color:#7A4A00;background:rgba(255,159,10,.18)}
+@media (max-width:900px){.pvx-off .pvx-off-x{display:none}}
+#tsTv .tv-live.off{color:#FFB340}
+#tsTv .tv-live.off i{background:#FFB340;box-shadow:none;animation:none}
+#tsTv.tv-stale .tv-alert,#tsTv.tv-stale .tv-stats,#tsTv.tv-stale .tv-grid,#tsTv.tv-stale .tv-next{opacity:.5;transition:opacity .3s}
+#tsTv .tv-foot button{transition:opacity .3s}
+#tsTv.tv-fs.tv-idle{cursor:none}
+#tsTv.tv-fs.tv-idle .tv-foot button{opacity:0;pointer-events:none}
+#tsTv .tv-foot button[hidden]{display:none}
+#toastWrap .ctoast.pvx-tclose{pointer-events:auto;padding-right:8px}
+.ctoast .pvx-tx{all:unset;cursor:pointer;display:grid;place-items:center;width:28px;height:28px;margin-left:4px;border-radius:9px;background:rgba(255,255,255,.12);flex:0 0 28px}
+.ctoast .pvx-tx:hover{background:rgba(255,255,255,.22)}
+.ctoast .pvx-tx:focus-visible{outline:2px solid #6FD3E4;outline-offset:1px}
+.ctoast .pvx-tx svg{width:13px;height:13px}
+/* light theme: Undo, Dismiss and the timer bar were white on the white toast (found while building) */
+body:not(.dark) .ctoast.ts-undo button,body:not(.dark) .ctoast.ts-clash button:not([data-a=ok]){color:#1d1d1f;background:rgba(0,0,0,.07)}
+body:not(.dark) .ctoast.ts-undo button:hover,body:not(.dark) .ctoast.ts-clash button:not([data-a=ok]):hover{background:rgba(0,0,0,.13)}
+body:not(.dark) .ctoast.ts-undo .tu-bar{background:rgba(0,0,0,.28)}
+body:not(.dark) .ctoast .pvx-tx{background:rgba(0,0,0,.06)}
+body:not(.dark) .ctoast .pvx-tx:hover{background:rgba(0,0,0,.12)}
+.pvx-ro-list{display:flex;flex-direction:column;gap:8px;margin:12px 0 4px;max-height:50vh;overflow:auto}
+.pvx-ro-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.1)}
+.pvx-ro-row b{display:block;font-size:.9375rem}
+.pvx-ro-row small{display:block;font-size:.75rem;opacity:.75;margin-top:2px}
+/* a confirmation asked from inside a sheet (Settings, the downtime copy) sits above it */
+#tsModal.show{z-index:9600}
+#stgImpBtn.busy{opacity:.6;pointer-events:none}
+#stgImpBtn:focus-visible{outline:2px solid #6FD3E4;outline-offset:2px}
+
+/* ── pvx-n235-ts ── */
+/* n235: placeholders while loading, the opening sheet, progress, the sign-in card */
+.pvx-skel{padding:14px 18px 18px}
+.pvx-sk-row{display:flex;align-items:center;gap:16px;height:44px;border-bottom:1px solid rgba(127,127,127,.12)}
+.pvx-sk-row i,.pvx-sk-bar{display:block;height:10px;border-radius:5px;background:rgba(127,127,127,.16)}
+.pvx-skel-slow{display:none;margin-top:14px;font-size:.8125rem;color:var(--ink-500,#6e6e73)}
+html.ts-load-slow .pvx-skel-slow{display:block}
+html.ts-loading .sb-cnt,html.ts-loading .sb-gn,html.ts-loading .ts-load,html.ts-loading .pt-empty,html.ts-loading .sb-legend{visibility:hidden}
+.pvx-sksheet{padding:18px 24px}
+.pvx-sk-name{font-size:1.75rem;font-weight:600;letter-spacing:-.025em;line-height:1.1;color:var(--ink-900,#1d1d1f)}
+body.dark .pvx-sk-name{color:#fff}
+.pvx-sk-sig{margin-top:6px;font-size:.875rem;color:var(--ink-500,#6e6e73)}
+.pvx-sk-facts{display:flex;flex-wrap:wrap;gap:22px;margin-top:14px;font-size:.8125rem}
+.pvx-sk-facts small{display:block;font-size:.6875rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-500,#6e6e73)}
+.pvx-sk-facts b{font-weight:600}
+.pvx-sk-grid{margin-top:22px;border-radius:16px;border:1px solid rgba(127,127,127,.16);overflow:hidden}
+.pvx-sk-sec{padding:10px 16px;font-size:.8125rem;font-weight:700;color:var(--accent-ink,#1F8FA8);background:rgba(127,127,127,.06)}
+.pvx-sk-or{display:grid;grid-template-columns:minmax(140px,22%) 1fr;align-items:center;gap:16px;height:39px;padding:0 16px;border-top:1px solid rgba(127,127,127,.1);font-size:.875rem}
+.pvx-sk-or .pvx-sk-bar{height:12px;background:rgba(127,127,127,.12)}
+.pvx-busy{display:flex;align-items:center;gap:9px}
+.pvx-spin{flex:0 0 14px;width:14px;height:14px;border-radius:50%;border:2px solid rgba(127,127,127,.3);border-top-color:currentColor;animation:pvxSpin .9s linear infinite}
+@keyframes pvxSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.pvx-spin{animation:pvxSpinFade 1.6s ease-in-out infinite;border-top-color:rgba(127,127,127,.3)}@keyframes pvxSpinFade{50%{opacity:.35}}}
+/* the sign-in card is Flow's own (#sbLogin, its styles copied from Flow at build time) */
+#tsGate.pvx-flow-login{background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+/* Treatment's own field focus ring and accent mustn't leak into Flow's card */
+#sbLogin .field input,#sbLogin .field input:focus,#sbLogin .field input:focus-visible{box-shadow:none!important;outline:none!important;border:0!important}
+#sbLogin #sbForgot{color:#38BDD2!important}
+#sbLogin .field{margin:0!important}
+
+/* ── sbLoginStyles ── */
+/* n235: Flow's sign-in styles, copied from Flow at build time so the two stay the same */
+#sbLogin{
+--bg:#050a13;
+--navy:#091326;
+--navy-2:#0d1930;
+--glass:rgba(13,24,43,.72);
+--glass-hi:rgba(255,255,255,.055);
+--line:rgba(158,206,231,.16);
+--text:#f4f8fc;
+--muted:#93a6bd;
+--muted-2:#647990;
+--cyan:#4dc8e0;
+--cyan-2:#38bdd2;
+--violet:#8d72d8;
+--coral:#e8646a;
+--danger:#ff6b6b;
+--radius:34px;
+}#sbLogin *{box-sizing:border-box}#sbLogin button,#sbLogin input{font:inherit}#sbLogin{
+position:fixed;inset:0;z-index:100000;display:grid;place-items:center;
+background:
+radial-gradient(ellipse 620px 500px at 50% 48%,rgba(49,164,203,.15),transparent 70%),
+radial-gradient(ellipse 900px 620px at 50% 48%,rgba(12,41,82,.11),transparent 74%),
+linear-gradient(90deg,rgba(0,4,10,.14),transparent 28%,transparent 72%,rgba(0,4,10,.14)),
+linear-gradient(rgba(2,7,16,.70),rgba(2,7,16,.84));
+
+}#sbLogin:before{
+content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;
+background-image:
+radial-gradient(circle at 24% 30%,rgba(255,255,255,.4) 0 1px,transparent 1.2px),
+radial-gradient(circle at 72% 58%,rgba(255,255,255,.25) 0 1px,transparent 1.2px),
+radial-gradient(circle at 56% 20%,rgba(77,200,224,.28) 0 1px,transparent 1.2px),
+radial-gradient(circle at 84% 31%,rgba(141,114,216,.28) 0 1px,transparent 1.2px);
+background-size:230px 230px,310px 310px,270px 270px,350px 350px;
+animation:sb_drift 38s linear infinite;
+}@keyframes sb_drift{to{transform:translate3d(24px,-18px,0)}}#sbLogin .login-wrap{width:min(92vw,438px);position:relative}#sbLogin .card{
+position:relative;overflow:hidden;
+border:1px solid rgba(255,255,255,.42);
+border-radius:var(--radius);
+background:
+radial-gradient(120% 80% at 8% 0%,rgba(255,255,255,.98) 0%,rgba(255,255,255,.36) 38%,transparent 68%),
+linear-gradient(145deg,rgba(252,254,255,.95) 0%,rgba(244,249,253,.88) 48%,rgba(228,238,246,.84) 100%),
+rgba(245,249,253,.88);
+box-shadow:
+0 42px 110px rgba(0,0,0,.36),
+0 14px 42px rgba(0,0,0,.16),
+0 0 70px rgba(56,189,210,.045),
+inset 0 1px 0 rgba(255,255,255,.98);
+
+padding:28px 34px 18px;
+}#sbLogin .card:after{
+content:"";position:absolute;left:9%;right:9%;top:-1px;height:1px;
+background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);
+opacity:.9;
+}#sbLogin .brand{text-align:center;position:relative;z-index:1}#sbLogin .pravix-logo-img{
+display:block;
+width:178px;
+max-width:66%;
+height:auto;
+margin:0 auto 9px;
+object-fit:contain;
+filter:drop-shadow(0 10px 26px rgba(16,122,255,.12));
+}#sbLogin .pravix{font-size:1.25rem;font-weight:800;letter-spacing:.18em;margin-left:.18em}#sbLogin .product{margin-top:5px;color:#71859a;font-size:0.6875rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase}#sbLogin .secure-line{
+display:inline-flex;
+align-items:center;
+gap:6px;
+margin-top:9px;
+color:rgba(102,128,150,.78);
+font-size:0.6875rem;
+font-weight:600;
+letter-spacing:.01em;
+}#sbLogin .secure-line svg{
+width:min(0.6875rem,16.5px);
+height:min(0.6875rem,16.5px);
+stroke:rgba(111,141,161,.78);
+}#sbLogin .heading{text-align:center;margin:20px 0 16px}#sbLogin .heading h1{font-size:1.5rem;letter-spacing:-.035em;margin:0 0 8px;font-weight:600;color:#0b1b30}#sbLogin .heading p{margin:0;color:#63778d;font-size:0.8125rem;line-height:1.45}#sbLogin .field-label{display:block;color:#44596f;font-size:0.6875rem;font-weight:600;margin:0 0 7px 3px;letter-spacing:0}#sbLogin .field{
+position:relative;display:flex;align-items:center;
+height:54px;border-radius:19px;
+border:1px solid rgba(17,49,80,.085);
+background:rgba(247,250,253,.90);
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.96),
+inset 0 6px 16px rgba(20,50,80,.025),
+0 1px 2px rgba(20,50,80,.03);
+transition:.22s ease;
+}#sbLogin .field:focus-within{
+border-color:rgba(56,189,210,.34);
+background:rgba(253,254,255,.99);
+box-shadow:
+0 0 0 2px rgba(56,189,210,.040),
+0 7px 20px rgba(19,131,160,.035),
+inset 0 1px 0 rgba(255,255,255,.98);
+}#sbLogin .lock-icon{width:17px;height:17px;margin-left:17px;opacity:.68}#sbLogin .lock-icon svg{width:100%;height:100%;stroke:#61788e}#sbLogin .field input{
+flex:1;height:100%;border:0;outline:0;background:transparent;color:#0b1f33;padding:0 12px;
+font-size:0.9375rem;letter-spacing:.03em;min-width:0;
+}#sbLogin .field input::placeholder{color:#8294a6}#sbLogin .reveal{
+width:43px;height:43px;margin-right:5px;border:0;border-radius:13px;background:transparent;color:rgba(74,98,120,.52);cursor:pointer;
+display:grid;place-items:center;transition:.2s ease;
+}#sbLogin .reveal:hover{background:rgba(12,41,82,.045);color:#18334d}#sbLogin .reveal svg{width:min(1.0625rem,25.5px);height:min(1.0625rem,25.5px);stroke:currentColor}#sbLogin .error{height:23px;padding:7px 3px 0;color:var(--danger);font-size:0.75rem;letter-spacing:0}#sbLogin .continue{
+position:relative;
+margin-top:2px;
+width:100%;
+height:54px;
+border:1px solid rgba(255,255,255,.96);
+border-radius:999px;
+cursor:pointer;
+overflow:hidden;
+
+color:#16324b;
+font-weight:700;
+font-size:0.9375rem;
+letter-spacing:-.015em;
+
+background:
+linear-gradient(180deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.52) 46%,rgba(229,236,242,.52) 100%);
+
+box-shadow:
+0 12px 24px rgba(24,50,75,.10),
+0 2px 6px rgba(24,50,75,.06),
+inset 0 1px 0 rgba(255,255,255,1),
+inset 0 -1px 0 rgba(121,145,166,.13);
+
+transition:
+transform .18s ease,
+box-shadow .18s ease,
+background .18s ease,
+color .18s ease;
+}#sbLogin .continue::before{
+content:"";
+position:absolute;
+inset:1px 8% auto;
+height:34%;
+border-radius:999px;
+background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));
+opacity:.78;
+pointer-events:none;
+}#sbLogin .continue::after{
+content:"";
+position:absolute;
+left:13%;
+right:13%;
+bottom:-13px;
+height:20px;
+border-radius:50%;
+background:rgba(56,189,210,.12);
+filter:blur(12px);
+pointer-events:none;
+}#sbLogin .continue:hover{
+color:#0e2941;
+background:
+linear-gradient(180deg,rgba(255,255,255,.86) 0%,rgba(255,255,255,.48) 48%,rgba(226,235,242,.60) 100%);
+box-shadow:
+0 16px 32px rgba(24,50,75,.16),
+0 4px 10px rgba(24,50,75,.09),
+inset 0 1px 0 rgba(255,255,255,1),
+inset 0 -1px 0 rgba(121,145,166,.12);
+}#sbLogin .continue:active{
+transform:scale(.989) translateY(1px);
+box-shadow:
+0 8px 18px rgba(24,50,75,.12),
+inset 0 1px 0 rgba(255,255,255,.96),
+inset 0 2px 5px rgba(51,78,101,.08);
+}#sbLogin .continue:disabled{opacity:.62;cursor:default}#sbLogin .page-foot{
+text-align:center;margin-top:6px;color:rgba(118,143,165,.72);font-size:0.6875rem;line-height:1.45;letter-spacing:.01em;
+}#sbLogin .page-foot b{color:rgba(131,154,174,.78);font-weight:600}@keyframes sb_cardIn{
+from{opacity:0;transform:translateY(7px) scale(.992)}
+to{opacity:1;transform:translateY(0) scale(1)}
+}@keyframes sb_brandIn{
+from{opacity:0;transform:translateY(4px)}
+to{opacity:1;transform:translateY(0)}
+}#sbLogin .card{
+animation:sb_cardIn .42s cubic-bezier(.2,.8,.2,1) both;
+}#sbLogin .brand{
+animation:sb_brandIn .38s .08s cubic-bezier(.2,.8,.2,1) both;
+}#sbLogin .card::before{
+content:"";
+position:absolute;
+inset:0;
+pointer-events:none;
+border-radius:inherit;
+background:
+radial-gradient(
+220px circle at var(--mx,50%) var(--my,18%),
+rgba(255,255,255,.20),
+rgba(255,255,255,0) 72%
+);
+opacity:.62;
+transition:opacity .2s ease;
+}#sbLogin .field input:-webkit-autofill,#sbLogin .field input:-webkit-autofill:hover,#sbLogin .field input:-webkit-autofill:focus{
+-webkit-text-fill-color:#0b1f33;
+-webkit-box-shadow:0 0 0 1000px rgba(255,255,255,.92) inset;
+transition:background-color 9999s ease-out 0s;
+caret-color:#0b1f33;
+}#sbLogin .continue.is-inactive{
+opacity:1;
+color:#6f8192;
+background:
+linear-gradient(180deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.54) 46%,rgba(229,236,242,.54) 100%);
+box-shadow:
+0 7px 16px rgba(24,50,75,.055),
+inset 0 1px 0 rgba(255,255,255,.99),
+inset 0 -1px 0 rgba(121,145,166,.08);
+}#sbLogin .continue:not(.is-inactive){
+opacity:1;
+}#sbLogin .caps-hint{
+min-height:18px;
+margin:-4px 3px 0;
+padding-top:4px;
+color:#708399;
+font-size:0.6875rem;
+opacity:0;
+transform:translateY(-1px);
+transition:opacity .16s ease;letter-spacing:0}#sbLogin .caps-hint.show{opacity:.9}#sbLogin .continue.signed{
+color:#103149;
+}#sbLogin .continue .checkmark{
+display:inline-block;
+width:14px;
+height:8px;
+margin-left:8px;
+border-left:2px solid currentColor;
+border-bottom:2px solid currentColor;
+transform:rotate(-45deg) translateY(-1px);
+}#sbLogin .form-stack{transform:translateY(-4px);}#sbLogin .field.error-shake{
+border-color:rgba(222,88,88,.38)!important;
+animation:sb_fieldShake .24s ease;
+}@keyframes sb_fieldShake{
+0%,100%{transform:translateX(0)}
+25%{transform:translateX(-2px)}
+50%{transform:translateX(2px)}
+75%{transform:translateX(-1px)}
+}#sbLogin .signin-progress{
+display:inline-block;
+width:12px;height:12px;margin-left:8px;vertical-align:-1px;
+border:1.5px solid rgba(22,50,75,.24);
+border-top-color:rgba(22,50,75,.78);
+border-radius:50%;
+animation:sb_signinSpin .7s linear infinite;
+}@keyframes sb_signinSpin{to{transform:rotate(360deg)}}@media(max-width:700px){#sbLogin .card{padding:31px 24px 27px;border-radius:26px}#sbLogin .login-wrap{width:min(91vw,468px)}}#sbLogin .login-wrap.success .card{
+opacity:0;
+transform:translateY(-4px) scale(.992);
+filter:blur(8px);
+transition:opacity .38s ease,transform .38s ease,filter .38s ease;
+}#sbLogin .login-wrap.success .page-foot{
+opacity:0;
+transition:opacity .28s ease;
+}#sbLogin .login-wrap.success + *{}@media(prefers-reduced-motion:reduce){#sbLogin:before{animation:none}#sbLogin *{scroll-behavior:auto}}
+body.dark #sbLogin{
+--dark-page:#080E1A;
+--dark-surface-0:#0E1628;
+--dark-surface-1:#131E34;
+--dark-surface-2:#192540;
+--dark-ink:#D8E8F4;
+--dark-secondary:#A7C2D8;
+--dark-muted:#7A98B8;
+--dark-subtle:#5E7C9C;
+--dark-border:rgba(77,200,224,.10);
+--dark-border-strong:rgba(77,200,224,.20);
+--dark-glass:rgba(14,22,40,.58);
+--dark-glass-strong:rgba(18,28,48,.76);
+--dark-cyan:#38BDD2;
+--dark-cyan-2:#4DC8E0;
+}body.dark #sbLogin{
+background:
+radial-gradient(ellipse 650px 520px at 50% 47%,rgba(56,189,210,.12),transparent 68%),
+radial-gradient(ellipse 980px 720px at 50% 50%,rgba(12,41,82,.20),transparent 74%),
+linear-gradient(180deg,rgba(8,14,26,.58),rgba(5,10,20,.82));
+
+}body.dark #sbLogin:before{opacity:.24;}body.dark #sbLogin .card{
+border:1px solid rgba(77,200,224,.16);
+background:
+radial-gradient(130% 90% at 5% 0%,rgba(255,255,255,.075) 0%,rgba(255,255,255,.018) 38%,transparent 66%),
+linear-gradient(145deg,rgba(20,32,55,.88) 0%,rgba(14,24,43,.84) 52%,rgba(10,18,34,.90) 100%),
+var(--dark-glass-strong);
+box-shadow:
+0 42px 110px rgba(0,0,0,.64),
+0 14px 42px rgba(0,0,0,.38),
+0 0 90px rgba(56,189,210,.065),
+inset 0 1px 0 rgba(255,255,255,.085),
+inset 0 -1px 0 rgba(0,0,0,.22);
+
+}body.dark #sbLogin .card:after{
+background:linear-gradient(90deg,transparent,rgba(126,222,241,.34),transparent);
+opacity:.72;
+}body.dark #sbLogin .card::before{
+background:radial-gradient(230px circle at var(--mx,50%) var(--my,18%),rgba(77,200,224,.065),rgba(255,255,255,0) 72%);
+opacity:.72;
+}body.dark #sbLogin .pravix-logo-img{
+filter:drop-shadow(0 12px 30px rgba(16,122,255,.18));
+}body.dark #sbLogin .product{color:var(--dark-muted);}body.dark #sbLogin .secure-line{color:rgba(167,194,216,.72);}body.dark #sbLogin .secure-line svg{stroke:rgba(122,152,184,.82);}body.dark #sbLogin .heading h1{color:var(--dark-ink);}body.dark #sbLogin .heading p{color:var(--dark-secondary);}body.dark #sbLogin .field-label{color:rgba(167,194,216,.88);}body.dark #sbLogin .field{
+border:1px solid rgba(150,185,220,.18);
+background:rgba(19,30,52,.78);
+box-shadow:
+inset 0 1px 0 rgba(255,255,255,.038),
+inset 0 8px 20px rgba(0,0,0,.10),
+0 1px 0 rgba(255,255,255,.012);
+}body.dark #sbLogin .field:focus-within{
+border-color:rgba(77,200,224,.48);
+background:rgba(25,37,64,.94);
+box-shadow:
+0 0 0 3px rgba(56,189,210,.085),
+0 10px 24px rgba(0,0,0,.16),
+0 0 28px rgba(56,189,210,.06),
+inset 0 1px 0 rgba(255,255,255,.045);
+}body.dark #sbLogin .lock-icon svg{stroke:#7A98B8;}body.dark #sbLogin .field input{color:var(--dark-ink);caret-color:var(--dark-cyan-2);}body.dark #sbLogin .field input::placeholder{color:#5E7C9C;}body.dark #sbLogin .reveal{color:rgba(122,152,184,.62);}body.dark #sbLogin .reveal:hover{background:rgba(150,185,220,.08);color:#A7C2D8;}body.dark #sbLogin .field input:-webkit-autofill,body.dark #sbLogin .field input:-webkit-autofill:hover,body.dark #sbLogin .field input:-webkit-autofill:focus{
+-webkit-text-fill-color:var(--dark-ink);
+-webkit-box-shadow:0 0 0 1000px #182640 inset;
+caret-color:var(--dark-cyan-2);
+}body.dark #sbLogin .continue{
+color:#D8E8F4;
+border:1px solid rgba(150,185,220,.20);
+background:
+linear-gradient(180deg,rgba(39,55,86,.92) 0%,rgba(27,41,67,.94) 100%);
+box-shadow:
+0 10px 24px rgba(0,0,0,.24),
+inset 0 1px 0 rgba(255,255,255,.07),
+inset 0 -1px 0 rgba(0,0,0,.20);
+
+}body.dark #sbLogin .continue::before{
+background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0));
+opacity:.28;
+inset:1px 14% auto;
+height:24%;
+}body.dark #sbLogin .continue::after{
+background:rgba(56,189,210,.08);
+left:18%;
+right:18%;
+bottom:-15px;
+height:16px;
+filter:blur(14px);
+}body.dark #sbLogin .continue:hover{
+color:#F2FAFF;
+border-color:rgba(77,200,224,.34);
+background:
+linear-gradient(180deg,rgba(46,64,99,.96) 0%,rgba(31,47,77,.98) 100%);
+box-shadow:
+0 12px 28px rgba(0,0,0,.28),
+0 0 18px rgba(56,189,210,.045),
+inset 0 1px 0 rgba(255,255,255,.09);
+}body.dark #sbLogin .continue:active{
+box-shadow:
+0 9px 20px rgba(0,0,0,.26),
+inset 0 1px 0 rgba(255,255,255,.10),
+inset 0 2px 6px rgba(0,0,0,.16);
+}body.dark #sbLogin .continue.is-inactive{
+opacity:1;
+color:#7A98B8;
+background:
+linear-gradient(180deg,rgba(30,44,70,.82),rgba(22,34,57,.88));
+border-color:rgba(150,185,220,.11);
+box-shadow:
+0 6px 16px rgba(0,0,0,.14),
+inset 0 1px 0 rgba(255,255,255,.045);
+}body.dark #sbLogin .continue:not(.is-inactive){
+border-color:rgba(77,200,224,.25);
+box-shadow:
+0 10px 24px rgba(0,0,0,.24),
+0 0 14px rgba(56,189,210,.035),
+inset 0 1px 0 rgba(255,255,255,.08);
+}body.dark #sbLogin .signin-progress{border-color:rgba(216,232,244,.22);border-top-color:#D8E8F4;}body.dark #sbLogin .continue .checkmark{border-color:currentColor;}body.dark #sbLogin .caps-hint{color:#7A98B8;}body.dark #sbLogin .error{color:#E07060;}body.dark #sbLogin .field.error-shake{border-color:rgba(224,112,96,.52)!important;}body.dark #sbLogin .page-foot{color:rgba(94,124,156,.72);}body.dark #sbLogin .page-foot b{color:rgba(122,152,184,.82);}
+#sbLogin{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,sans-serif;}
+#sbLogin .logo-drk{display:none;}
+body.dark #sbLogin .logo-lite{display:none;}
+body.dark #sbLogin .logo-drk{display:block;width:139px;}
+body.sb-locked{overflow:hidden!important;}
+
+/* ── pvx-n236-ts ── */
+/* n236: the doctor's alert by urgency, discard prompts, sticky modal buttons, close, back to Settings, drafts */
+.ts-doc-alert.crit{border:1px solid rgba(228,52,43,.55);box-shadow:0 0 0 1px rgba(228,52,43,.18),0 18px 48px rgba(0,0,0,.22)}
+.ts-doc-alert.crit>svg{color:#E4342B}
+.ts-doc-alert.warn{border:1px solid rgba(255,159,10,.5)}
+.ts-doc-alert.warn>svg{color:#C77700}
+body.dark .ts-doc-alert.warn>svg{color:#FFB340}
+.ts-doc-alert .x{display:grid;place-items:center}
+.ts-doc-alert .x svg{width:13px;height:13px}
+#tsModal .tm-card{scroll-padding-bottom:84px}
+#tsModal .tm-card .tm-foot{position:sticky;bottom:-22px;margin:18px -22px -22px;padding:14px 22px 20px;background:#fff;border-top:1px solid rgba(60,72,90,.12);z-index:3}
+body.dark #tsModal .tm-card .tm-foot{background:#121824;border-top-color:rgba(255,255,255,.08)}
+.pvx-discard{position:sticky;bottom:-22px;margin:14px -22px -22px;padding:14px 22px 18px;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#FFF6E8;border-top:1px solid rgba(199,119,0,.35)}
+body.dark .pvx-discard{background:#2A2112;border-top-color:rgba(255,179,64,.35)}
+.pvx-discard b{flex:1 1 200px;font-size:.875rem}
+.pvx-discard button{height:34px;padding:0 14px;border-radius:999px;border:0;font:inherit;font-size:.8125rem;font-weight:700;cursor:pointer;background:rgba(60,72,90,.1);color:inherit}
+.pvx-discard button.danger{background:#E4342B;color:#fff}
+.drawer .pvx-discard{position:static;margin:12px 0 0;border-radius:14px;border:1px solid rgba(199,119,0,.35)}
+.op-back{display:inline-flex;align-items:center;gap:4px;margin:0 0 6px -6px;padding:4px 8px;border:0;border-radius:8px;background:none;color:var(--accent-ink,#1F8FA8);font:inherit;font-size:.8125rem;font-weight:600;cursor:pointer}
+.op-back svg{width:14px;height:14px}
+.ts-am-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 4px 0;padding:10px 6px 4px;border-top:1px solid var(--border,rgba(0,0,0,.1));font-size:.8125rem;color:var(--ink-400)}
+.ts-am-foot b{font-weight:600;color:inherit}
+.op-back:hover{background:rgba(31,143,168,.1)}
+
+/* ── pvx-n237-ts ── */
+/* n237: printing, the finder, Settings groups and switches, the Reports menu */
+.dp-band.live{letter-spacing:.04em}
+@media print{html.dt-printing #tsDtPrint thead th{background:#fff!important;color:#000!important}html.dt-printing #tsDtPrint thead tr.pt th{background:#ececec!important}}
+#tsDtPrint .dp-none{font-size:.75rem;margin:12px 0}
+.ts-cm-sep{height:1px;margin:4px 8px;background:var(--border,rgba(0,0,0,.1))}
+#tsCopyMenu [data-c][disabled]{opacity:.45;cursor:default}
+/* the finder */
+#globalSearch{-webkit-appearance:none;appearance:none}
+#globalSearch::-webkit-search-cancel-button,#globalSearch::-webkit-search-decoration{-webkit-appearance:none;display:none}
+.subnav .search .ts-sclear{display:none;flex:none;width:22px;height:22px;margin:0 2px 0 4px;border:0;border-radius:50%;place-items:center;background:rgba(60,72,90,.14);color:inherit;cursor:pointer;padding:0}
+body.dark .subnav .search .ts-sclear{background:rgba(255,255,255,.14)}
+.subnav .search .ts-sclear svg{position:static!important;inset:auto!important;transform:none!important;margin:0!important;width:12px!important;height:12px!important;color:inherit!important;stroke:currentColor!important;opacity:.85}
+.subnav .search.has-q .ts-sclear{display:grid}
+/* the sub-nav's tabs never scroll sideways: icons only up to 1179 pt (was 1100), tighter tabs to 1439, and the patient chip gives way first */
+@media (min-width:1101px) and (max-width:1179px){#clinSwitcher .seg{font-size:0!important;gap:0!important;padding-inline:11px!important}.subnav .seg svg{width:19px;height:19px}.subnav .seg .seg-badge{font-size:.6875rem}}
+@media (min-width:1180px) and (max-width:1439px){#clinSwitcher .seg{padding-inline:6px!important;gap:4px!important}}
+@media (min-width:701px){.subnav .switcher{flex-shrink:1!important}.subnav .ts-chip{flex-shrink:1000!important;min-width:72px!important;overflow:hidden}}
+.subnav .search .ts-skey{flex:none;margin:0 4px;padding:2px 6px;border-radius:6px;border:1px solid var(--border,rgba(0,0,0,.12));font:600 .6875rem/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;color:var(--ink-400);letter-spacing:.02em}
+.subnav .search.is-focus .ts-skey,.subnav .search.has-q .ts-skey,.subnav .search:not(.is-open):not(.is-focus) .ts-skey{display:none}
+@media (hover:none),(pointer:coarse){.subnav .search .ts-skey{display:none}}
+@media (max-width:1680px){
+  .subnav .search.is-open,.subnav .search.is-focus{width:46px!important;min-width:46px!important;flex:0 0 46px!important;position:relative;z-index:30}
+  .subnav .search.is-open .search-bar,.subnav .search.is-focus .search-bar{position:absolute;right:0;top:50%;transform:translateY(-50%);width:min(340px,calc(100vw - 24px))!important;background:#fff!important}
+  body.dark .subnav .search.is-open .search-bar,body.dark .subnav .search.is-focus .search-bar{background:#121824!important}
+}
+#tsFind .mi.ord .tx small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tsFind .mi .ts-fo-ic{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:rgba(31,143,168,.12);color:var(--accent-ink,#1F8FA8)}
+#tsFind .mi .ts-fo-ic svg{width:16px;height:16px}
+#tsFind .mh + .mh{margin-top:0}
+.ts-order-hl{animation:tsOrdHl 1.6s ease-out 1}
+@keyframes tsOrdHl{0%,40%{background:rgba(31,143,168,.22)}100%{background:transparent}}
+@media (prefers-reduced-motion:reduce){.ts-order-hl{animation:none;outline:2px solid var(--accent-ink,#1F8FA8);outline-offset:-2px}}
+/* Settings */
+#tsOrderSheet .stg-grp{margin:0 0 14px}
+#tsOrderSheet .stg-grp > h4{margin:12px 2px 6px;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-400)}
+#tsOrderSheet .stg-grp > h4 small{text-transform:none;letter-spacing:0;font-weight:500;margin-left:6px}
+#tsOrderSheet .stg-ctl .v-sw{margin-left:auto}
+#tsOrderSheet .stg-state{font-size:.8125rem;color:var(--ink-400)}
+.ts-am-foot .v-sw{flex:none}
+/* the board's Print and Reports */
+.sb-tvb.ts-sbprint{padding-left:10px;padding-right:10px}
+#tsReportsMenu{width:min(360px,calc(100vw - 16px))}
+.sb-tvb .ts-rep-chev{width:11px;height:11px;margin-left:1px;opacity:.7}
+
+/* ── pvx-n238-ts ── */
+/* n238: the alert range label and legend, the choice lane, notes keep their lines, note boxes grow, the live announcer */
+.vx-lane{fill:var(--vx-grid)}
+.vx-now small.vx-alr{color:var(--ink-400);opacity:.85}
+.vx-key{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;color:var(--ink-400);white-space:nowrap}
+.vx-key i{width:18px;height:10px;border-radius:3px;background:var(--vx-band);box-shadow:inset 0 0 0 1px rgba(76,195,138,.35)}
+.cnote .nbody{white-space:pre-line}
+#note-body{min-height:132px}
+#note-body,#cd-notes,#hoNotes,#hoHow,#ccAnyWhy{overflow-y:auto}
+.ts-hl-row{animation:tsOrdHl 1.6s ease-out 1}
+@media (prefers-reduced-motion:reduce){.ts-hl-row{animation:none;outline:2px solid var(--accent-ink,#1F8FA8);outline-offset:-2px}}
+.pvx-sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ── pvx-n239-ts ── */
+/* n239: one box for Vitals; a lighter order box (only warnings keep a tint) */
+#tsVitalsCard .wc{background:none!important;border-radius:0!important;margin:2px 15px 0!important;padding:4px 1px 12px!important;border-bottom:1px solid var(--glass-hairline,rgba(120,120,128,.18))}
+#tsVitalsCard .vit-grid{gap:0 18px!important;padding-top:4px!important}
+#tsVitalsCard .vit-grid .vit{background:none!important;border-radius:0!important;padding:8px 1px!important}
+#tsVitalsCard .vit-grid .vit:nth-child(n+3){border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18))}
+#tsModal .rx-refs{gap:0!important;padding:0!important;border:1px solid var(--border,rgba(0,0,0,.1));border-radius:14px;background:var(--surface-0,#fff)}
+body.dark #tsModal .rx-refs{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.03)}
+#tsModal .rx-ref{border:0!important;border-radius:0!important;background:none!important;padding:10px 12px 10px 38px!important}
+#tsModal .rx-ref:not(.rx-house){box-shadow:none!important}
+#tsModal .rx-ref+.rx-ref{border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18))!important}
+#tsModal .rx-ref:first-child{border-radius:14px 14px 0 0!important}
+#tsModal .rx-ref:last-child{border-radius:0 0 14px 14px!important}
+#tsModal .rx-ref:only-child{border-radius:14px!important}
+#tsModal .rx-ref:hover{background:rgba(120,120,128,.07)!important}
+#tsModal .rx-ref::before{content:"";position:absolute;left:13px;top:13px;width:14px;height:14px}
+#tsModal .rx-ref.on::before{background:var(--accent-ink,#1F8FA8);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+body.dark #tsModal .rx-ref.on::before{background:#38BDD2}
+#tsModal .rx-ref.on b{color:var(--accent-ink,#1F8FA8)}
+body.dark #tsModal .rx-ref.on b{color:#7FD8E6}
+body.dark #tsModal .rx-ref span{color:#B4C2D3}
+#tsModal .rx-ref:focus-visible{outline:2px solid var(--accent-ink,#1F8FA8);outline-offset:-2px}
+#tsModal .rx-other{margin:0!important;border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18))}
+#tsModal .rx-refs>.rx-other:first-child{border-top:0}
+#tsModal .rx-other summary{padding:10px 12px!important}
+#tsModal .rx-other .rx-ref{margin-top:0!important;width:100%;box-sizing:border-box;border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18))!important;border-radius:0!important}
+#tsModal .of-more{background:none!important;border-radius:0!important;padding-left:2px!important;padding-right:2px!important;border-top:1px solid var(--glass-hairline,rgba(120,120,128,.18));border-bottom:1px solid var(--glass-hairline,rgba(120,120,128,.18))}
+#tsModal .oc-price.none{background:none!important;padding-left:2px!important;padding-right:2px!important;border-radius:0!important}
+#tsModal .ms-bar:not(.warn):not(.crit){background:none!important;padding-left:2px!important;padding-right:2px!important}
+#tsModal .ms-line:not(.warn):not(.crit){background:none!important;padding-left:2px!important;padding-right:2px!important}
+
+/* ── pvx-n240-ts ── */
+/* n240: the section's disclosure chevron leads, like Charges' days and Finder */
+.gband .gsection .sec-chev{order:-1;margin-left:-3px;margin-right:-1px}
+/* n240: label colours, every one at least 4.5:1 (Increase Contrast keeps its own, stronger values) */
+@media not (prefers-contrast:more){
+  body.dark{--accent-ink:#38BDD2}
+  body:not(.dark) .vx-alr{color:#4B5468}
+}
+/* fixed colours that Increase Contrast doesn't strengthen: darker in both */
+body:not(.dark) .tsh-age.old{color:#9A5B00}
+body:not(.dark) .tsh .tsh-age{opacity:1}
+body:not(.dark) .ts-dup .td-h{color:#9A5000}
+body:not(.dark) .wl-dnr{color:#B3141A}
+body:not(.dark) .wl-more{color:#0062CC}
+body:not(.dark) .ms-bar.ok .ms-say b{color:#0F7A55}
+body.dark .wl-sec.due h3 span{color:#7FD8E6}
+/* white text sits on the deeper teal and red, never on the bright ones */
+body.dark .est-marklabel{background:#38BDD2!important;color:#03242C!important}
+body.dark .al-type button{background:#38BDD2;color:#03242C}
+body.dark #tsModal .ts-btn.primary.danger{background:#D12E26;border-color:#D12E26}
+#tsOrderSheet .op-btn.danger.solid{background:#D12E26}
+#tsOrderSheet .op-btn.danger.solid:hover{background:#B8241D}
+
+/* ── pvx-n241-ts ── */
+/* n241: a board row is one keyboard stop; its ring follows the highlight */
+#ctab-dash .sb-row[role=row]:focus{outline:none}
+#ctab-dash .sb-row[role=row]:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:-2px;border-radius:12px}
+/* the sticky patient column sits over the row's ring: it draws its own part */
+#ctab-dash .sb-row[role=row]:focus-visible>.sb-left{box-shadow:inset 2px 0 0 var(--accent,#38BDD2),inset 0 2px 0 var(--accent,#38BDD2),inset 0 -2px 0 var(--accent,#38BDD2);border-radius:12px 0 0 12px}
+#ctab-dash .c-alerts .pvx-alb{display:inline-flex;align-items:center;gap:inherit;max-width:100%;border-radius:8px}
+#ctab-dash .c-alerts .pvx-alb:focus{outline:none}
+#ctab-dash .c-alerts .pvx-alb:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:3px}
+.pvx-sr{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ── pvx-n245-ts ── */
+/* n245 (Oct 26 2026): light mode never had the infusion greens — the rate was black, the running line, now dot and drip invisible,
+   the bars solid navy. Light gets the same greens in its deeper shades (rate text 5.3:1 on white). Dark is unchanged. */
+body:not(.dark) #sheetInner{--ib-run:#1A9E6E;--ib-ink:#0F7A55;--pvx-cm90:rgba(26,158,110,.28);--pvx-cm91:rgba(26,158,110,.06)}
+/* the order panel's text buttons (Pin to the top of …, Unpin, Which interns need approval…) are plain buttons in the accent ink,
+   never the browser's black; only Stop infusion is red, and only it gets the red hover */
+#tsOrderSheet .op-link:not(.danger){color:var(--accent-ink,#23439C)}
+body.dark #tsOrderSheet .op-link:not(.danger){color:#38BDD2}
+body:not(.dark) #tsOrderSheet .op-link.danger{color:#B3141A}
+#tsOrderSheet .op-link:not(.danger):hover{background:rgba(35,67,156,.08)}
+body.dark #tsOrderSheet .op-link:not(.danger):hover{background:rgba(56,189,210,.12)}
+/* the Chart microphone, the Vitals IV fluid rate chip and the board's Filters count: a white icon or number on cobalt (was #04252e, 1.8:1) */
+body:not(.dark) #tsOrderSheet .bt-mic:not(.on),body:not(.dark) .v-chip.cur.cyan,body:not(.dark) .sb-fb{color:#fff}
+
+/* ── pvx-n246-ts ── */
+/* n246: one line per medication product — each dose on its own line under the drug, two doses in one hour side by side */
+#sheetInner .rl-line .rl-dose{cursor:pointer;border-radius:6px;margin-left:-4px;padding:1px 4px}
+#sheetInner .rl-line .rl-dose:hover{background:rgba(120,120,128,.12)}
+#sheetInner .rl-line .rl-dose:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#sheetInner .rl-str{font-weight:500;color:var(--ink-500,#8a8f98)}
+#sheetInner .cell .mk-pair{display:flex;gap:3px;align-items:center;justify-content:center;width:100%}
+#sheetInner .cell .mk-pair>.mark{flex:0 1 auto;min-width:0}
+#tsModal .ts-join{margin:8px 0 0;font-size:.8125rem;color:var(--ink-500,#5C5E62)}
+
+/* ── pvx-n267-css ── */
+/* Boxes 1. one level deep: the hospitalization level's summary is a plain line under the choice, not a box in a box */
+.ch-lvnow{background:none!important;border-radius:0!important;padding:10px 0 0!important;margin:12px 15px 0!important;border-top:1px solid var(--glass-hairline,rgba(150,185,220,.14))}

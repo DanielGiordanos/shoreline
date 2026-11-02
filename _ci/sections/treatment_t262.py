@@ -45,7 +45,7 @@ async def s_t262(br):
     ok('Notifications: on reopening, an alert not seen before still sounds', res['new'][0] and 880 in res['new'][1], res['new'])
 
     # ── Managing accounts 3. a turned-off account says what to do ──
-    src = open(os.path.join(SITE, 'treatment', 'index.html'), encoding='utf-8').read()
+    src = open(os.path.join(SITE, 'treatment', 'index.html'), encoding='utf-8').read() + open(os.path.join(SITE, 'treatment', 'src', 'layers.js'), encoding='utf-8').read()   # n299: the layers live in src/layers.js
     ok('Accounts: a turned-off account says what to do — “Ask an admin to turn it back on.” (read from the sign-in code; Firebase gives that answer only for a real turned-off account)',
        "'This account is turned off. Ask an admin to turn it back on.'" in src, '')
     ctx, pg, e = await ts(br, PORT, view=None, sheet=None, user='null', wait=3000)

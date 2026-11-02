@@ -936,7 +936,7 @@ async def s_n235(br):
     gt = await pg.evaluate("""(()=>{const o=document.querySelector('#tsGate.show #sbLogin');if(!o)return null;const c=o.querySelector('.card');const cs=getComputedStyle(c);
       return {h:o.querySelector('h1').textContent,lead:o.querySelector('#sbLead').textContent,prod:o.querySelector('.product').textContent,e:[o.querySelector('#sbEmail').type,o.querySelector('#sbEmail').autocomplete],
         p:[o.querySelector('#sbPass').type,o.querySelector('#sbPass').autocomplete],go:o.querySelector('#sbBtn').textContent,inactive:o.querySelector('#sbBtn').classList.contains('is-inactive'),
-        radius:cs.borderRadius,fieldH:getComputedStyle(o.querySelector('.field')).height,pos:getComputedStyle(o).position,styles:!!document.getElementById('sbLoginStyles'),
+        radius:cs.borderRadius,fieldH:getComputedStyle(o.querySelector('.field')).height,pos:getComputedStyle(o).position,styles:!!document.getElementById('sbLoginStyles')||[...document.styleSheets].some(s=>{try{return [...s.cssRules].some(r=>r.selectorText&&r.selectorText.indexOf('#sbLogin')===0)}catch(e){return false}}),   /* n299: Flow's sign-in rules live in app.css */
         logo:[...o.querySelectorAll('.pravix-logo-img')].filter(i=>i.getBoundingClientRect().width>0&&i.naturalWidth>0).length,locked:document.body.classList.contains('sb-locked'),
         flow:!!o.querySelector('a[href="https://shoreline.pravix.app/"]'),focus:document.activeElement&&document.activeElement.id}})()""")
     ok('n235: signed out, Treatment shows Flow’s own sign-in card — same markup, styles (copied from Flow at build time), logo, fields and button — with “Shoreline Treatment Sheets” and why: “Hospital staff only…”',
@@ -1163,7 +1163,7 @@ async def s_n236(br):
     vc = await pg.evaluate("(()=>{let called=0;const b=document.createElement('button');b.id='btMic';b.className='on';document.body.appendChild(b);const o=window.tsBtMic;window.tsBtMic=()=>{called++};Object.defineProperty(document,'visibilityState',{get:()=>'hidden',configurable:true});document.dispatchEvent(new Event('visibilitychange'));delete document.visibilityState;window.tsBtMic=o;b.remove();return called})()")
     vj = open(f'{BUILD}/treatment/voice.js').read()
     ok('n236: switching away stops Treatment’s microphones — “Say the readings” and voice entry (they kept listening)', vc == 1 and '"hidden"===document.visibilityState&&(flush(),h&&stop())' in vj, vc)
-    ok('n236: signing out forgets drafts on this computer', await pg.evaluate("(()=>{localStorage.setItem('pvxDraft:x','{}');pvxDraftsClear();return Object.keys(localStorage).filter(k=>k.startsWith('pvxDraft:')).length})()") == 0 and 'pvxDraftsClear();' in open(f'{BUILD}/treatment/index.html').read())
+    ok('n236: signing out forgets drafts on this computer', await pg.evaluate("(()=>{localStorage.setItem('pvxDraft:x','{}');pvxDraftsClear();return Object.keys(localStorage).filter(k=>k.startsWith('pvxDraft:')).length})()") == 0 and 'pvxDraftsClear();' in (open(f'{BUILD}/treatment/index.html').read() + open(f'{BUILD}/treatment/src/layers.js').read()))   # n299: the layers live in src/layers.js
     ok('n236: no page errors', not errs, errs[:3])
     await ctx.close()
     # the sticky footer has the card's own colour, in light and dark
