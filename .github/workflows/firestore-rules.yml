@@ -1,12 +1,16 @@
 # Publishes firestore.rules to the shoreline-flow Firebase project.
-# Two verified-account access bootstrap rules published by PR #37.
-# Production Firestore changes now require an explicit manual action.
-# Temporary owner/director bootstrap expires on 2026-11-16 UTC.
+# One-time authorized release for Heather's existing password-based login.
+# Publish reviewed Firestore rules when merged to main, then restore
+# manual-only publishing immediately after successful live verification.
+# Heather's scoped onboarding exception expires on 2026-11-16 UTC.
 # Needs one repository secret, FIREBASE_SERVICE_ACCOUNT: the JSON key of a service account with the
 # "Firebase Rules Admin" role (created by Daniel). Without it the run says so and does nothing.
 # firebase-tools compiles the rules first: a rules error fails the run and nothing is published.
 name: Publish Firestore rules
 on:
+  push:
+    branches: [main]
+    paths: ['firestore.rules']
   workflow_dispatch:
 permissions:
   contents: read
