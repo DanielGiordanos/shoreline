@@ -384,6 +384,22 @@ async function main() {
     const verifiedOther = env.authenticatedContext('pilot-outsider-uid', {
       email: 'unknown@example.test', email_verified: true,
     }).firestore();
+    const unverifiedPasswordHeather = env.authenticatedContext('heather-password-uid', {
+      email: 'heather.galano@vca.com', email_verified: false,
+      firebase: {sign_in_provider: 'password'},
+    }).firestore();
+    const unverifiedGoogleHeather = env.authenticatedContext('heather-google-uid', {
+      email: 'heather.galano@vca.com', email_verified: false,
+      firebase: {sign_in_provider: 'google.com'},
+    }).firestore();
+    const unverifiedPasswordOther = env.authenticatedContext('outsider-password-uid', {
+      email: 'other@example.test', email_verified: false,
+      firebase: {sign_in_provider: 'password'},
+    }).firestore();
+    const unverifiedPasswordDaniel = env.authenticatedContext('daniel-password-uid', {
+      email: 'daniel.giordano@pravix.app', email_verified: false,
+      firebase: {sign_in_provider: 'password'},
+    }).firestore();
     const ownerPayload = {
       active: true, tenant_id: 'shoreline', role: 'owner',
       kura_owner: true, review_manager: true,
@@ -408,6 +424,20 @@ async function main() {
       assertSucceeds(setDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'), ownerPayload)));
     await check('verified Heather may create her exact UID-bound management membership', () =>
       assertSucceeds(setDoc(doc(verifiedHeather, 'staff_members', 'pilot-heather-uid'), directorPayload)));
+    await check('unverified Heather with existing Firebase password session can activate', () =>
+      assertSucceeds(setDoc(doc(unverifiedPasswordHeather, 'staff_members', 'heather-password-uid'), directorPayload)));
+    await check('activated password Heather can read SGVP review rounds', () =>
+      assertSucceeds(getDocs(collection(unverifiedPasswordHeather, 'sgvp_review_rounds'))));
+    await check('unverified Heather Google session cannot bypass verification', () =>
+      assertFails(setDoc(doc(unverifiedGoogleHeather, 'staff_members', 'heather-google-uid'), directorPayload)));
+    await check('unverified password outsider cannot self-provision', () =>
+      assertFails(setDoc(doc(unverifiedPasswordOther, 'staff_members', 'outsider-password-uid'), directorPayload)));
+    await check('unverified Daniel password still cannot self-provision', () =>
+      assertFails(setDoc(doc(unverifiedPasswordDaniel, 'staff_members', 'daniel-password-uid'), ownerPayload)));
+    await check('unverified Heather password cannot claim owner role', () =>
+      assertFails(setDoc(doc(unverifiedPasswordHeather, 'staff_members', 'owner-forbidden'), ownerPayload)));
+    await check('Heather membership cannot be elevated after onboarding', () =>
+      assertFails(updateDoc(doc(unverifiedPasswordHeather, 'staff_members', 'heather-password-uid'), {role:'owner'})));
     await check('pilot member can read their own membership', () =>
       assertSucceeds(getDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'))));
     await check('pilot management can read Shoreline visits after activation', () =>
