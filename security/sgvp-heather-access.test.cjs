@@ -8,6 +8,7 @@ const assert=require('node:assert/strict');
 const helper=fs.readFileSync('sgvp/assessment/reviewer-access.js','utf8');
 const page=fs.readFileSync('sgvp/assessment/index.html','utf8');
 const rules=fs.readFileSync('firestore.rules','utf8');
+const flow=fs.readFileSync('index.html','utf8');
 const HEATHER='heather.galano@vca.com';
 const expected={
   active:true,tenant_id:'shoreline',role:'management',
@@ -25,6 +26,7 @@ function make(options={}) {
   const user={
     email:options.email||HEATHER,uid:options.uid||'synthetic-heather-uid',
     emailVerified:options.verified!==false,
+    providerData: [{providerId: options.provider||'password'}],
     async reload(){counters.reload++;},
     async getIdToken(){counters.tokens++;}
   };
@@ -63,8 +65,12 @@ async function main() {
   });
   await check('helper is valid JavaScript and matches the current server-side enrollment values',async()=>{
     new Function(helper);
-    assert.ok(rules.includes("verifiedPilot(uid, 'heather.galano@vca.com')"));
+    assert.ok(rules.includes("heatherPasswordPilot(uid)"));
     assert.ok(rules.includes("validPilotMembership('management', false)"));
+    assert.ok(rules.includes("request.auth.token.get('email', '').lower() == 'heather.galano@vca.com'"));
+    assert.ok(rules.includes("get('sign_in_provider', '') == 'password'"));
+    assert.ok(flow.includes("const heatherPasswordLogin = email==='heather.galano@vca.com'"));
+    assert.ok(flow.includes("if(!user.emailVerified && !heatherPasswordLogin)"));
     assert.ok(rules.includes('timestamp.date(2026, 11, 16)'));
   });
   await check('verified Heather can activate her missing UID membership',async()=>{
@@ -106,8 +112,15 @@ async function main() {
     assert.equal((await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db)).ok,false);
     assert.equal(f.counters.writes,0);
   });
-  await check('unverified email cannot create membership',async()=>{
-    const f=make({verified:false});
+  await check('unverified Heather with password login does not receive verification prompt',async()=>{
+    const f=make({verified:false,provider:'password'});
+    const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+    assert.equal(r.ok,true);
+    assert.equal(r.activated,true);
+    assert.equal(f.counters.writes,1);
+  });
+  await check('unverified Heather using non-password provider still needs verification',async()=>{
+    const f=make({verified:false,provider:'google.com'});
     const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
     assert.equal(r.ok,false);
     assert.equal(r.reason,'email-unverified');
