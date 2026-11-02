@@ -262,7 +262,8 @@ async def s_n225(br):
     for path in ['treatment/', 'or/', 'checkin/', 'forms/', 'directory/', 'scheduling/', 'grid/']:
         s = open(os.path.join(BUILD, path, 'index.html'), encoding='utf-8').read()
         vpm = re.search(r'<meta name="viewport" content="([^"]*)"', s).group(1)
-        if 'viewport-fit=cover' not in vpm or 'pvx-n225-safe' not in s or 'env(safe-area-inset-left' not in s: sa[path] = vpm
+        ac = os.path.join(BUILD, path, 'app.css'); css = s + (open(ac, encoding='utf-8').read() if os.path.exists(ac) else '')   # n299: Treatment's head layers live in app.css
+        if 'viewport-fit=cover' not in vpm or 'pvx-n225-safe' not in css or 'env(safe-area-inset-left' not in css: sa[path] = vpm
     ok('n225: Treatment, OR, Check-In, Forms, Directory, Scheduling and Grid use the whole screen and keep content inside the safe areas (viewport-fit=cover + insets)', not sa, sa)
     # Directory's menus open inside the window
     dm = {}
