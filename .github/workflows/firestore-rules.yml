@@ -1,12 +1,15 @@
 # Publishes firestore.rules to the shoreline-flow Firebase project.
-# Heather's scoped existing-account onboarding exception was published via PR #40.
-# Production Firestore rule publication is manual-only again.
-# The temporary exception expires on 2026-11-16 UTC.
+# One-time approved prelaunch tracker/privacy and intake validation rollout.
+# Publish security-reviewed rules when merged to main, then restore manual-only
+# operation immediately after verifying Firebase publication success.
 # Needs one repository secret, FIREBASE_SERVICE_ACCOUNT: the JSON key of a service account with the
 # "Firebase Rules Admin" role (created by Daniel). Without it the run says so and does nothing.
 # firebase-tools compiles the rules first: a rules error fails the run and nothing is published.
 name: Publish Firestore rules
 on:
+  push:
+    branches: [main]
+    paths: ['firestore.rules']
   workflow_dispatch:
 permissions:
   contents: read
