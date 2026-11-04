@@ -3437,10 +3437,6 @@ background:radial-gradient(760px 300px at 40% -6%,rgba(56,189,210,.09),transpare
 .rdx-app>*:not(.rd-glow){position:relative;z-index:1;}
 
 .rd-subright{display:flex;align-items:center;gap:12px;}
-.rd-actor{font-size:0.75rem;color:var(--ink-500);background:var(--rslate);border:1px solid transparent;border-radius:10px;
-padding:7px 12px;cursor:pointer;transition:border-color .2s var(--ease);white-space:nowrap;letter-spacing:0}
-.rd-actor b{color:var(--ink-900);font-weight:700;}
-.rd-actor:hover{border-color:var(--rc-line);}
 .rd-save{font-size:0.75rem;font-weight:600;color:var(--ink-400);opacity:0;transition:opacity .3s var(--ease);min-width:52px;text-align:right;letter-spacing:0}
 .rd-save.on{opacity:1;}
 

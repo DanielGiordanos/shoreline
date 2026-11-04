@@ -29,10 +29,56 @@
   ],
   "shortcuts": [
     {
+      "name": "Start rounds",
+      "short_name": "Start rounds",
+      "description": "Go through the census one patient at a time",
+      "url": "/rounds/#start",
+      "icons": [
+        {
+          "src": "/assets/img/sc-rounds-start.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Find a patient",
+      "short_name": "Find",
+      "description": "Search the census by name, ID or problem",
+      "url": "/rounds/#find",
+      "icons": [
+        {
+          "src": "/assets/img/sc-rounds-find.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Not reviewed",
+      "short_name": "Not reviewed",
+      "description": "The patients not yet reviewed on this shift",
+      "url": "/rounds/#review",
+      "icons": [
+        {
+          "src": "/assets/img/sc-rounds-review.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
       "name": "Archive",
       "short_name": "Archive",
-      "description": "Admissions that have ended",
-      "url": "/rounds/#archive"
+      "description": "Each day’s census, as it was",
+      "url": "/rounds/#archive",
+      "icons": [
+        {
+          "src": "/assets/img/sc-rounds-archive.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
