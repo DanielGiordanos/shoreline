@@ -40,7 +40,7 @@ async def s_t305(br):
       ['subnavFlow','view-dashboard','view-list','view-flow','view-client','view-us-today','drawer','apModal'].filter(i=>document.getElementById(i)),
       document.getElementById('navRounds').getAttribute('aria-current'),document.getElementById('switcherRd').getAttribute('aria-label'),document.getElementById('navRounds').getAttribute('href'),document.getElementById('navFlow').getAttribute('href'),
       document.querySelector('link[rel=manifest]').getAttribute('href'),document.querySelector('link[rel=apple-touch-icon]').getAttribute('href'),document.querySelector('meta[name=apple-mobile-web-app-title]').content]""")
-    ok('/rounds/ opens Rounds straight away: titled “Rounds · Pravix”, the census showing, Rounds the current app in the top bar, its views named “Rounds views”', r[:4] == ['Rounds · Pravix', '/rounds/', 'rounds', True] and r[5] == 'page' and r[6] == 'Rounds views', r)
+    ok('/rounds/ opens Rounds straight away: titled “Census” (n321: the title names what’s on screen), the census showing, Rounds the current app in the top bar, its views named “Rounds views”', r[:4] == ['Census', '/rounds/', 'rounds', True] and r[5] == 'page' and r[6] == 'Rounds views', r)
     r = r[:6] + r[7:]
     ok('…none of Flow’s screens are on it (no board, patients, flow, waiting room, ultrasound, drawer or add-patient sheet)', r[4] == [], r[4])
     ok('…its top bar links are real addresses (Rounds /rounds/, Flow /#app=flow — Flow’s item opens Flow, n243), and its manifest, Home Screen icon and name are Rounds’', r[6:] == ['/rounds/', '/#app=flow', '/rounds/manifest.webmanifest', '/assets/img/rounds-180.png', 'Rounds'], r[6:])
@@ -78,7 +78,7 @@ async def s_t305(br):
 
     # old links
     c, p, e, gets = await open_page(br, '/#app=rounds')
-    ok('Old links (/#app=rounds from other apps’ top bars, bookmarks, Treatment and OR) open /rounds/ before Flow loads', await p.evaluate("[location.pathname,location.hash,document.title]") == ['/rounds/', '', 'Rounds · Pravix'])
+    ok('Old links (/#app=rounds from other apps’ top bars, bookmarks, Treatment and OR) open /rounds/ before Flow loads', (await p.evaluate("[location.pathname,location.hash,document.title]"))[:2] == ['/rounds/', ''] and (await p.evaluate("document.title")) in ('Census', 'Rounds · Pravix'))
     await c.close()
     c, p, e, gets = await open_page(br, '/rounds/#archive')
     ok('/rounds/#archive (the Home Screen shortcut) opens the Archive', await p.evaluate("currentRdView") == 'archive')

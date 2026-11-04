@@ -113,10 +113,10 @@ async def s_t311(br):
     await p.click('#rdMode [data-a=next]'); await p.keyboard.press('Escape'); await p.wait_for_timeout(300)
     await p.evaluate("logout()"); await p.wait_for_timeout(1200)
     s = await p.evaluate("""(()=>{const vis=id=>{const el=document.getElementById(id);return !!el&&getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0};
-      return {drafts:window.rdDrafts.size, census:vis('view-rd-census'), actor:vis('rdActor')&&/Rounds Tester/.test(document.getElementById('rdActor').textContent),
+      return {drafts:window.rdDrafts.size, census:vis('view-rd-census'), actor:typeof rdActor==='function'&&!!rdActor(),
         state:localStorage.getItem('pvx:rounds:state'), resume:localStorage.getItem('pvx:rounds:resume'), queue:JSON.stringify(rdQueues).includes('Violet')}})()""")
     ok('Managing accounts · after Log out, what the last person typed is gone (a half-typed problem waited for the next person)', s['drafts'] == 0, s)
-    ok('…the census, Tomorrow list and “Rounding as” name don’t show behind the sign-in card (they were readable through it)', not s['census'] and not s['actor'] and not s['queue'], s)
+    ok('…the census and Tomorrow list don’t show behind the sign-in card (they were readable through it), and Rounds no longer rounds as anyone', not s['census'] and not s['actor'] and not s['queue'], s)
     ok('…and Rounds won’t reopen at their patient or resume their rounds for someone else', s['state'] is None and s['resume'] is None, s)
     t = await p.evaluate("(document.querySelector('#sbLogin .product')||{}).textContent")
     ok('…the sign-in card on Rounds says Rounds (it said “Shoreline Patient Flow”)', t == 'Shoreline Rounds', t)

@@ -95,5 +95,5 @@ async def s_t314(br):
     # ---- Image views and Settings
     im = await p.evaluate("[...document.querySelectorAll('img')].filter(i=>i.getBoundingClientRect().width>0).every(i=>i.hasAttribute('alt')&&(!i.closest('[onclick]')||i.closest('button')))")
     ok('Image views · every image has alt text (or is marked decorative), and a clickable image is a button', im)
-    ok('Settings · Rounds keeps its options where they apply: shift, filters, Display and “Rounding as” are on the census, with no settings screen', await p.evaluate("!!document.getElementById('rdShiftSeg')&&!!document.getElementById('rdActor')&&!!document.getElementById('rdDisplayBtn')"))
+    ok('Settings · Rounds keeps its options where they apply: shift, filters and Display are on the census, with no settings screen', await p.evaluate("!!document.getElementById('rdShiftSeg')&&!!document.getElementById('rdDisplayBtn')"))
     ok('no page errors', not newerr(e), e[:3]); await c.close()

@@ -55,8 +55,8 @@ async def s_t308(br):
     await p.keyboard.press('Escape'); await p.wait_for_timeout(300)
 
     # ---- Typography · one typeface; one style for small capital labels; no tight leading on three lines
-    ff = await p.evaluate("""(()=>{const base=getComputedStyle(document.body).fontFamily;return [...document.querySelectorAll('.rd-actor,.start-rounds,.rd-attn-toggle,.rd-discharge-toggle')].filter(x=>x.getClientRects().length).map(x=>getComputedStyle(x).fontFamily===base)})()""")
-    ok('Typography · “Rounding as”, Start rounds, Needs Attention and Discharge Readiness use Rounds’ typeface (they drew in the browser’s button font, Arial on Windows)', ff and all(ff), ff)
+    ff = await p.evaluate("""(()=>{const base=getComputedStyle(document.body).fontFamily;return [...document.querySelectorAll('.start-rounds,.rd-attn-toggle,.rd-discharge-toggle')].filter(x=>x.getClientRects().length).map(x=>getComputedStyle(x).fontFamily===base)})()""")
+    ok('Typography · Start rounds, Needs Attention and Discharge Readiness use Rounds’ typeface (they drew in the browser’s button font, Arial on Windows)', ff and all(ff), ff)
     tr = await p.evaluate("""(()=>{const s=new Set();document.querySelectorAll('#view-rd-census :is(.rd-handoff .lbl,.rd-finrow .lbl,.rd-locblk .lbl,.rd-svcchip,.rd-sec-h,.rd-extend-label,.rd-team-g .g,.rd-sec .k)').forEach(e=>{if(!e.getClientRects().length)return;const c=getComputedStyle(e);s.add((parseFloat(c.letterSpacing)/parseFloat(c.fontSize)).toFixed(2))});return [...s]})()""")
     ok('…Rounds’ small capital labels share one tracking, 0.08 em (they had five, 0.06–0.10)', tr == ['0.08'], tr)
     ld = await p.evaluate("""[...document.querySelectorAll('.rd-tmr-i .t')].filter(e=>e.getClientRects().length).map(e=>{const c=getComputedStyle(e);return +(parseFloat(c.lineHeight)/parseFloat(c.fontSize)).toFixed(2)})""")
