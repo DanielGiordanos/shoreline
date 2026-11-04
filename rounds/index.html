@@ -20,7 +20,7 @@ function rdN248Paint(list,html){ var S=window.rdN248||(window.rdN248={seen:{},wo
   list.querySelectorAll('.rd-work[data-pid]').forEach(function(w){ var id=w.getAttribute('data-pid'); work[id]=1; if(!S.work[id]) w.classList.add('rd-in'); });
   S.work=work; }
 </script>
-<link rel="stylesheet" href="/rounds/rounds.css?v=a36ee3632f">
+<link rel="stylesheet" href="/rounds/rounds.css?v=6690b5a35e">
 <script id="pvx-n252-keep">/* PVX-N252 - unsaved changes survive a board refresh (see patch_n252.py) */
 try{(function(){
   function J(x){ return JSON.stringify(x===undefined?null:x); }
@@ -455,7 +455,6 @@ try{(function(){
     <div class="spacer"></div>
     <div class="rd-subright">
       <span class="rd-save" id="rdSaveState">Saved</span>
-      <button class="rd-actor" id="rdActor">Rounding as <b>Care Team</b></button>
       <div class="search rd-search">
         <div class="search-wrap">
           <div class="search-bar">
@@ -527,7 +526,7 @@ try{(function(){
           <button class="rd-headbtn" id="rdPrintBtn" type="button" title="Print the rounds sheet" aria-label="Print the rounds sheet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg><span class="rd-pl">Print</span></button>
           <button class="rd-headbtn" id="rdDisplayBtn" title="Large display for the rounds room" aria-pressed="false" aria-label="Rounds display">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            Display
+            <span class="rd-pl">Display</span>
           </button>
           <button class="start-rounds" id="rdStartBtn" type="button" aria-pressed="false">
             <span class="start-content">
@@ -879,7 +878,7 @@ if (real(theme.accent2)) s.setProperty('--accent-2',   theme.accent2);
 </script>
 
 <script src="assets/data/breeds.js"></script>
-<link rel="stylesheet" href="/rounds/rounds-page.css?v=6f93746fa9"><script src="/rounds/app.js?v=c1d7dcdd42"></script>
+<link rel="stylesheet" href="/rounds/rounds-page.css?v=f6d4e91e23"><script src="/rounds/app.js?v=53ef9acd1f"></script>
 
 <!-- PVX-N134: layout repairs — FL-06 drawer overflow, RX-02 Rounds sub-nav at ≤1024, FL-03 lobby cards below 1700 px -->
 
@@ -888,7 +887,7 @@ if (real(theme.accent2)) s.setProperty('--accent-2',   theme.accent2);
 <!-- PVX-N136: Rounds row toggle + keyboard for Rounds' role=button controls (RD-02); ultrasound queue keyboard reorder (US-03) -->
 
 <div id="pvxN136Live" class="pvx-sr" role="status" aria-live="polite"></div>
-<script src="/rounds/app-extras.js?v=1da5ad5be6"></script>
+<script src="/rounds/app-extras.js?v=e3649fbaa0"></script>
 
 <script src="assets/pvx-yakuri.js?v=77dffe7ef6"></script>
 <script id="pvx-n254-yakuri">/* PVX-N254 - Flow and Rounds read Yakuri: Rounds medications link to it; the drawer lists the owner's medications from intake as
@@ -935,7 +934,7 @@ try{(function(){ if(!window.PvxYakuri) return;
   /* n243: Flow's address opened by itself reopens Rounds if that's where you were (Flow's early redirect reads this) */
   try{ var K='pvx:flow:where', o=JSON.parse(localStorage.getItem(K)||'null')||{}; o.app='rounds'; o.view='rounds'; o.at=Date.now(); localStorage.setItem(K,JSON.stringify(o)); }catch(e){}
   /* the hospital's branding names the tab after Flow; this page is Rounds */
-  var T='Rounds · Pravix'; document.title=T; new MutationObserver(function(){ if(document.title!==T) document.title=T; }).observe(document.querySelector('title'),{childList:true}); })();
+  var T='Rounds · Pravix'; document.title=T; new MutationObserver(function(){ if(typeof window.rdTitle==='function') window.rdTitle(); else if(document.title!==T) document.title=T; }).observe(document.querySelector('title'),{childList:true}); })();
 </script>
 </body>
 </html>

@@ -27,7 +27,6 @@ async def page(br, user=('u1', 'rounds.tester@vca.com', 'Rounds Tester'), store=
     if seed: await p.evaluate("rdSeedDemo()"); await p.wait_for_timeout(1200)
     return c, p, e
 
-LABEL = "document.getElementById('rdActor').textContent.replace(/\\s+/g,' ').trim()"
 
 
 @section(id='t307', title='n307 · Rounds follows the HIG Materials, Motion, Privacy and SF Symbols pages',
@@ -37,28 +36,22 @@ async def s_t307(br):
     src = open(__import__('core').BUILD + '/rounds/app.js', encoding='utf-8').read()
     ok('Privacy · Rounds doesn’t start out as anyone (it began as “Daniel Giordano” until sign-in finished)', "let CURRENT_USER='Daniel Giordano'" not in src and "let CURRENT_USER=''" in src)
     c, p, e = await page(br)
-    lab = await p.evaluate(LABEL)
-    ok('…once signed in, “Rounding as” names the person signed in (it kept saying Daniel Giordano)', lab == 'Rounding as Rounds Tester', lab)
-    ok('…and says it opens a menu', await p.evaluate("document.getElementById('rdActor').getAttribute('aria-haspopup')") == 'menu')
-    docs = await p.evaluate("rdAllDoctors().slice(0,2).map(d=>[d.id,drName(d.name)])")
-    # choose a doctor: it's saved with this account and comes back for this account
-    await p.evaluate("document.getElementById('rdActor').click()"); await p.wait_for_timeout(300)
-    await p.evaluate("(id=>{const b=[...document.querySelectorAll('.rd-menu button')].find(b=>b.dataset.v===id);b&&b.click()})(%s)" % json.dumps(docs[0][0])); await p.wait_for_timeout(300)
-    saved = await p.evaluate("localStorage.getItem(%s)" % json.dumps(KEY))
-    lab = await p.evaluate(LABEL)
-    ok('…choosing who you round as saves it with your account, not just this computer', json.loads(saved) == {'id': docs[0][0], 'uid': 'u1'} and lab == 'Rounding as ' + docs[0][1], (saved, lab))
-    ok('no page errors (choosing)', not newerr(e), e[:3]); await c.close()
-
-    c, p, e = await page(br, store=saved, seed=False)
-    ok('…the same person signing in again is still rounding as that doctor', await p.evaluate(LABEL) == 'Rounding as ' + docs[0][1], await p.evaluate(LABEL))
+    r = await p.evaluate("[rdActorId,rdActorName(),!!document.getElementById('rdActor')]")
+    ok('…once signed in, Rounds signs edits with the person signed in (it kept saying Daniel Giordano), and there’s no “Rounding as” to choose (n320)', r == [None, 'Rounds Tester', False], r)
     await c.close()
+    # n320: a doctor's account rounds as that doctor, with nothing to choose
+    c, p, e = await page(br, user=('u3', 'sarah.schiff@vca.com', 'Sarah Schiff'), seed=False)
+    r = await p.evaluate("[rdActorId,rdActorName()]")
+    ok('…a doctor who signs in rounds as that doctor, with nothing to choose (n320)', r == ['sarah-schiff', 'Dr. Schiff'], r)
+    await c.close()
+    saved = json.dumps({'id': 'sarah-schiff', 'uid': 'u1'})
     c, p, e = await page(br, user=('u2', 'other.doctor@vca.com', 'Other Doctor'), store=saved, seed=False)
-    r = await p.evaluate("[" + LABEL + ",rdActorId,localStorage.getItem(%s)]" % json.dumps(KEY))
-    ok('…someone else signing in on that computer is not (their edits would have been signed with the first doctor’s name)', r == ['Rounding as Other Doctor', None, None], r)
+    r = await p.evaluate("[rdActorName(),rdActorId,localStorage.getItem(%s)]" % json.dumps(KEY))
+    ok('…someone else signing in on that computer never rounds as a doctor saved there before (their edits would have been signed with that doctor’s name)', r == ['Other Doctor', None, None], r)
     await c.close()
-    c, p, e = await page(br, store=docs[1][0], seed=False)
-    r = await p.evaluate("[" + LABEL + ",rdActorId]")
-    ok('…a choice saved before n307 (no owner) is set aside once', r == ['Rounding as Rounds Tester', None], r)
+    c, p, e = await page(br, store='sarah-schiff', seed=False)
+    r = await p.evaluate("[rdActorName(),rdActorId]")
+    ok('…a choice saved before n307 (no owner) is set aside', r == ['Rounds Tester', None], r)
     ok('no page errors (signing in)', not newerr(e), e[:3]); await c.close()
 
     # ---- Materials · Pravix is flat: no blur in the content layer; the census, a patient and Rounds mode are opaque

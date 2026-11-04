@@ -1302,3 +1302,35 @@ body.sb-locked #view-rd-census, body.sb-locked #view-rd-archive, body.sb-locked 
 /* Activity views · the Share symbol beside Share… */
 .rd-link[data-act=share]{display:inline-flex;align-items:center;gap:5px}
 .rd-link[data-act=share] .pvx-sym{width:14px;height:14px;flex:none}
+
+/* ===== n319 · Buttons, Context menus, Dock menus (Nov 4 2026) ===== */
+/* Buttons · Tomorrow's remove ✕ shows on touch screens and on keyboard focus (it showed only on hover, so on iPad it was invisible),
+   and it reaches 28 pt for a mouse (it was 24×14), as does the rounds-order grip (11 pt wide; it reaches 28 pt into the row,
+   since the row's edge clips anything outside it). The done box keeps n304's area, now above the item's text. */
+@media (hover:none),(pointer:coarse){ .rd-tmr-i .x{opacity:1} }
+.rd-tmr-i .x:focus-visible,.rd-tmr-i:focus-within .x{opacity:1}
+.rd-tmr-i .ck,.rd-tmr-i .x{position:relative;z-index:1}
+.rd-tmr-i .x::after{content:"";position:absolute;left:calc(min(0px,(100% - 28px)/2));right:calc(min(0px,(100% - 28px)/2));top:calc(min(0px,(100% - 28px)/2));bottom:calc(min(0px,(100% - 28px)/2))}
+.rd-grip{z-index:2}
+.rd-grip::before{content:"";position:absolute;top:0;bottom:0;left:0;right:-17px}
+/* …and a dimmed button looks unavailable */
+#rdPrintBtn[aria-disabled=true],#rdList button[aria-disabled=true][data-act=prob-up]{opacity:.45;cursor:default}
+
+/* ===== n322 · Toolbars, Search fields (Nov 4 2026) ===== */
+/* Toolbars · labels give way to symbols, one at a time, before the census toolbar wraps */
+.rd-headr.rd-f1 #rdDisplayBtn .rd-pl,.rd-headr.rd-f2 #rdPrintBtn .rd-pl,.rd-headr.rd-f3 #rdSideBtn .rd-pl{display:none}
+.rd-headr.rd-f1 #rdDisplayBtn,.rd-headr.rd-f2 #rdPrintBtn,.rd-headr.rd-f3 #rdSideBtn{padding-left:15px;padding-right:15px}
+/* …and once the side panel's label goes too (an iPhone), the shift choice takes its own row so the three symbols stay together */
+.rd-headr.rd-f3 .rd-shiftseg{flex:1 1 100%;display:flex}
+.rd-headr.rd-f3 .rd-shiftseg button{flex:1 1 0}
+.rd-headr.rd-f4{gap:8px}
+.rd-headr.rd-f4 .start-rounds{width:176px;min-width:176px}
+/* Search fields · close matches for a misspelt name */
+.rd-emptystate .rd-close{margin:2px 0 12px;font-size:.8125rem;color:var(--ink-500)}
+.rd-emptystate .rd-close .rd-link{font-weight:600}
+
+/* ===== n323 · Token fields (Nov 4 2026) ===== */
+/* a problem's name is a token you can focus and edit in place */
+#rdList .rd-probs > li > .t[role=button]{cursor:text;border-radius:6px;outline-offset:2px}
+#rdList .rd-probs > li > .t[role=button]:hover{text-decoration:underline;text-decoration-color:var(--rc-line);text-underline-offset:3px}
+#rdList .rd-probs .rd-pedit{flex:1;min-width:0;font:inherit;color:inherit;background:var(--rslate);border:1px solid var(--rc-line);border-radius:8px;padding:3px 8px}

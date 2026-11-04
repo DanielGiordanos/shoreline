@@ -115,8 +115,8 @@ async def s_t304(br):
     async with p.expect_navigation(): await p.evaluate("switchApp('flow')")
     await p.wait_for_selector('#subnavFlow .switcher.pvx-sw', state='attached'); await p.wait_for_timeout(800)
     f = await p.evaluate("[document.title,location.pathname,document.querySelector('link[rel=apple-touch-icon]').getAttribute('href'),document.querySelector('meta[name=apple-mobile-web-app-title]').content,document.querySelector('link[rel=manifest]').getAttribute('href')]")
-    ok('In Rounds the tab and VoiceOver say “Rounds · Pravix”, the address is /rounds/, and Add to Home Screen / Install get the name Rounds, its icon and its manifest',
-       r[:5] == ['Rounds · Pravix', '/rounds/', '/assets/img/rounds-180.png', 'Rounds', '/rounds/manifest.webmanifest'], r)
+    ok('In Rounds the tab names what’s on screen (“Census”, n321), the address is /rounds/, and Add to Home Screen / Install get the name Rounds, its icon and its manifest',
+       r[:5] == ['Census', '/rounds/', '/assets/img/rounds-180.png', 'Rounds', '/rounds/manifest.webmanifest'], r)
     ok('Flow keeps Flow’s title, address, name, icon and manifest', f == ['Pravix Flow | Veterinary Patient Flow Software', '/', '/assets/img/apple-touch-icon.png', 'Flow', '/manifest.webmanifest'], f)
     ok('The header names the page (“Inpatient census”), not the brand the top bar already shows', r[5].strip() == 'INPATIENT CENSUS', r[5])
     await c.close()

@@ -38,7 +38,7 @@ async def s_t313(br):
     # ---- Printing: a rounds sheet, from a Print button or ⌘P
     c = await ctx(br); p, e = await open_(c)
     b = await p.evaluate("(()=>{const b=document.getElementById('rdPrintBtn'),d=document.getElementById('rdDisplayBtn');return b&&[b.disabled,b.getAttribute('aria-label'),b.nextElementSibling===d,b.innerText.trim()]})()")
-    ok('Printing · a Print button sits beside Display (there was no way to print the census)', b and b[0] is False and b[1] == 'Print the rounds sheet' and b[2] and b[3] == 'Print', b)
+    ok('Printing · a Print button sits beside Display (there was no way to print the census)', b and b[0] is False and b[1] == 'Print the rounds sheet' and b[2] and b[3] in ('Print', 'Print…'), b)
     await p.evaluate("window.__printed=0; window.print=()=>{window.__printed++}; 0")
     await p.click('#rdPrintBtn'); await p.wait_for_timeout(300)
     s = await p.evaluate("""(()=>{const r=document.getElementById('rdPrint');return {n:window.__printed,cls:document.body.classList.contains('rd-printing'),blocks:r?r.querySelectorAll('.rp-pt').length:0,
@@ -60,7 +60,7 @@ async def s_t313(br):
     ok('…⌘P prints the same sheet, for what the filters show (Internal Medicine · 2 patients)', s[0] == 2 and 'Internal Medicine · 2 patients' in s[1] and s[2], s)
     await p.evaluate("window.dispatchEvent(new Event('afterprint'))")
     await p.fill('#rdSearch', 'zzzz'); await p.wait_for_timeout(400)
-    ok('…and Print is dimmed when there’s nothing to print', await p.evaluate("document.getElementById('rdPrintBtn').disabled"))
+    ok('…and Print is dimmed when there’s nothing to print', await p.evaluate("(b=>b.disabled||b.getAttribute('aria-disabled')==='true')(document.getElementById('rdPrintBtn'))"))
     await p.fill('#rdSearch', ''); await p.evaluate("document.querySelector('[data-act=svc-filter][data-key=all]').click()"); await p.wait_for_timeout(300)
     await p.evaluate("switchRdView('archive')"); await p.wait_for_timeout(500)
     await p.evaluate("window.dispatchEvent(new Event('beforeprint'))"); await p.wait_for_timeout(100)

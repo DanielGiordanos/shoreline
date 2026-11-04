@@ -70,7 +70,11 @@ async def s_t309(br):
     grp = "document.querySelectorAll('#rdList .rd-secgroup.by-svc')[0]"
     before = await p.evaluate(f"[...{grp}.querySelectorAll(':scope > .rd-row')].map(r=>r.dataset.pid)")
     items = await p.evaluate(HOLD + f"({grp}.querySelector('.rd-row .rd-l2'))")
-    ok('Drag and drop · rows you can drag into the rounds order can also be moved from the touch-and-hold menu: Move up, Move down (and Share…)', all(x in items for x in ['Move up', 'Move down', 'Share…', 'Show in Flow']), items)
+    items2 = await p.evaluate(HOLD + f"({grp}.querySelectorAll(':scope > .rd-row')[1].querySelector('.rd-l2'))")
+    await p.keyboard.press('Escape'); await p.wait_for_timeout(200)
+    items = await p.evaluate(HOLD + f"({grp}.querySelector('.rd-row .rd-l2'))")
+    ok('Drag and drop · rows you can drag into the rounds order can also be moved from the touch-and-hold menu: Move down on the first, Move up on the next (and Share…; n319 hides the move that would do nothing)',
+       all(x in items for x in ['Move down', 'Share…', 'Show in Flow']) and 'Move up' in items2, (items, items2))
     await p.evaluate("[...document.querySelectorAll('[role=menuitem]')].find(x=>x.textContent.trim()==='Move down').click()"); await p.wait_for_timeout(600)
     after = await p.evaluate(f"[...{grp}.querySelectorAll(':scope > .rd-row')].map(r=>r.dataset.pid)")
     ok('…Move down moves it one place, like dragging it', len(before) >= 2 and after[:2] == [before[1], before[0]], (before, after))

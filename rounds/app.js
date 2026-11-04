@@ -5979,14 +5979,14 @@ return bits.join(' · ');
 
 
 const RD_ACTOR_KEY='pravix:'+TENANT_ID+':rounds:actor:v1';
-let rdActorOwner=''; let rdActorId=null; try{try{ rdActorId=rdActorRead(); }catch(e){}
+let rdActorOwner=''; let rdActorId=null; try{try{ localStorage.removeItem(RD_ACTOR_KEY); }catch(e){}   /* n320: the doctor isn't chosen or saved any more */
 }catch(__e){window.__n305Skip&&__n305Skip(__e,13817)}
 function rdAllDoctors(){
 const seen={}, out=[];
 DOCTORS.concat(IM_DOCTORS).forEach(d=>{ if(!seen[d.id]){ seen[d.id]=1; out.push(d); } });
 return out;
 }
-function rdActor(){ return rdAllDoctors().find(d=>d.id===rdActorId)||null; }
+function rdActor(){ if(!rdActorId||rdActorOwner!==rdUid()) return null; return rdAllDoctors().find(d=>d.id===rdActorId)||null; }   /* n320: only for the account it was found for */
 function rdActorName(){ const d=rdActor(); return d? drName(d.name) : CURRENT_USER; }
 
 
@@ -6340,6 +6340,7 @@ if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p, (type==='Eu
 }
 function rdSetLocation(p,loc){
 const old=p.rounds.location;
+if(rdNormLoc(old)===loc) return;   /* n321 */
 p.rounds.location=loc;
 p.room=loc; 
 rdTouch(p,'Location '+(old||'—')+' → '+loc);
@@ -7055,7 +7056,7 @@ return`<div class="rd-work" data-pid="${pid}">
         <div class="rd-sec-h">Active Problems</div>
         <ol class="rd-probs">${probs.filter(x=>x.active!==false).map((x,i)=>`
           <li><span class="i">${i+1}</span><span class="t">${rdEsc(x.label)}</span>
-            <span class="ops"><button data-act="prob-up" data-pid="${pid}" data-id="${x.id}" title="Move up" aria-label="${rdEsc('Move up: '+x.label)}"${i===0?' disabled':''}>${RD_UP}</button><button data-act="prob-resolve" data-pid="${pid}" data-id="${x.id}" title="Mark resolved" aria-label="${rdEsc('Mark resolved: '+x.label)}"><span aria-hidden="true">${PVX_GI.check}</span></button><button data-act="prob-del" data-pid="${pid}" data-id="${x.id}" title="Remove" aria-label="${rdEsc('Remove problem: '+x.label)}"><span aria-hidden="true">${PVX_GI.xmark}</span></button></span></li>`).join('')}
+            <span class="ops"><button data-act="prob-up" data-pid="${pid}" data-id="${x.id}" title="${i===0?'Already at the top':'Move up'}" aria-label="${rdEsc('Move up: '+x.label)}"${i===0?' aria-disabled="true"':''}>${RD_UP}</button><button data-act="prob-resolve" data-pid="${pid}" data-id="${x.id}" title="Mark resolved" aria-label="${rdEsc('Mark resolved: '+x.label)}"><span aria-hidden="true">${PVX_GI.check}</span></button><button data-act="prob-del" data-pid="${pid}" data-id="${x.id}" title="Remove" aria-label="${rdEsc('Remove problem: '+x.label)}"><span aria-hidden="true">${PVX_GI.xmark}</span></button></span></li>`).join('')}
         </ol>
         ${probs.some(x=>x.active===false)?`<div class="rd-resolved">${probs.filter(x=>x.active===false).map(x=>`<button class="rd-resolved-chip" data-act="prob-restore" data-pid="${pid}" data-id="${x.id}" title="Reactivate" aria-label="${rdEsc('Reactivate problem: '+x.label)}">${rdEsc(x.label)} · resolved</button>`).join('')}</div>`:''}
         ${rdSecAdd(pid,'prob','+ Add problem')}
@@ -7129,6 +7130,7 @@ return`<div class="rd-work" data-pid="${pid}">
           <button class="rd-link" data-act="timeline-toggle" data-pid="${pid}">${rdUI.timeline[pid]?'Hide timeline':'View timeline'}</button>
           <button class="rd-link" data-act="history-toggle" data-pid="${pid}">${rdUI.history[pid]?'Hide history':'View history'}</button>
           <button class="rd-link" data-act="share" data-pid="${pid}">Share…</button>
+          <button class="rd-link" data-act="show-flow" data-pid="${pid}">Show in Flow</button>
           <span class="sp"></span>
           <button class="rd-link end" data-act="outcome-menu" data-pid="${pid}" aria-haspopup="menu" aria-expanded="false">End admission…</button>
         </div>
@@ -7501,11 +7503,11 @@ case'diag-discuss':{ const d=r.diagnostics.find(x=>x.id===id); if(d){ d.discusse
  
 case'care-menu':
 case'cur-menu':{ const cur=rdCurrentDocId(p);
-rdMenu(el,rdAllDoctors().map(d=>({value:d.id,label:drName(d.name)+(rdActorId===d.id?' (you)':''),on:cur===d.id})),v=>rdTakeCase(p,v)); break; }
+rdMenu(el,rdCurOffList(p,rdDocMenuItems(p,d=>({value:d.id,label:drName(d.name)+(d._team?' · on service':'')+(rdActorId===d.id?' (you)':''),on:cur===d.id}))||rdAllDoctors().map(d=>({value:d.id,label:drName(d.name)+(rdActorId===d.id?' (you)':''),on:cur===d.id}))),v=>{ if(v!=='__cur') rdTakeCase(p,v); }); break; }   /* n320, n321 */
  
 case'next-menu':{ const nx=rdNextDocId(p), cur=rdCurrentDocId(p);
-const items=rdAllDoctors().map(d=>({value:d.id,label:drName(d.name)+(d.id===cur?' — continuing':'')+(rdActorId===d.id?' (you)':''),on:nx===d.id}));
-items.unshift({value:'__none',label:'None',on:!nx});   /* PVX-N205: a pop-up holds choices only */
+const items=rdDocMenuItems(p,d=>({value:d.id,label:drName(d.name)+(d.id===cur?' — continuing':'')+(d._team?' · on service':'')+(rdActorId===d.id?' (you)':''),on:nx===d.id}),true)||rdAllDoctors().map(d=>({value:d.id,label:drName(d.name)+(d.id===cur?' — continuing':'')+(rdActorId===d.id?' (you)':''),on:nx===d.id}));   /* n320 */
+if(!items.some(i=>i.value==='__none')) items.unshift({value:'__none',label:'None',on:!nx});   /* PVX-N205: a pop-up holds choices only; n320 adds it with a separator */
 rdMenu(el,items,v=>{ if(v==='__none'){ if(nx) rdClearNext(p); } else rdSetNext(p,v); }); break; }
 case'handoff-now': rdHandoffNow(p); break;
 case'type-menu': rdMenu(el,Object.keys(RD_ADMIT_TYPES).map(k=>({value:k,label:RD_ADMIT_TYPES[k],on:r.admitType===k})),v=>{
@@ -7529,7 +7531,7 @@ const p=rdFind(pid); if(!p) return;
 const r=p.rounds, v=inp.value.trim();
 switch(kind){
 case'quick':{ const parsed=rdParseQuick(p,v); if(parsed){ parsed.apply(); } break; }
-case'prob': if(v){ r.problems.push({id:rdId(),label:rdCap(v),active:true,resolvedAt:null}); rdTouch(p,'Problem added · '+rdCap(v)); } break;
+case'prob':{ const L=rdProbSplit(v); L.forEach(l=>r.problems.push({id:rdId(),label:l,active:true,resolvedAt:null})); if(L.length) rdTouch(p,'Problem added · '+L.join(', ')); break; }   /* n323 */
 case'event':{ if(!v) break; const pt=rdParseTime(v); const at=pt.at||new Date();
 r.events.push({id:rdId(),at:rdIso(at),text:rdCap(pt.rest||v),by:rdActorName(),kind:'clinical'}); rdTouch(p,'Event · '+rdCap(pt.rest||v)); break; }
 case'diag':{ if(!v) break; const parts=v.split(/\s+[-—–]\s+|\s+·\s+/);
@@ -7638,11 +7640,7 @@ q.addEventListener('keydown',e=>{ if(e.key==='Escape'){ q.value=''; rdQuery=''; 
 document.querySelectorAll('#rdShiftSeg button').forEach(b=>b.addEventListener('click',()=>{ rdShift=b.dataset.shift; renderRdCensus(true); }));
 const sb=document.getElementById('rdStartBtn'); if(sb) sb.addEventListener('click',rdStartMode);
 const db=document.getElementById('rdDisplayBtn'); if(db) db.addEventListener('click',rdToggleDisplay);
-const actor=document.getElementById('rdActor');
-if(actor){ actor.addEventListener('click',()=>{
-rdMenu(actor,[{value:'',label:'Care Team',on:!rdActorId}].concat(rdAllDoctors().map(d=>({value:d.id,label:drName(d.name),on:rdActorId===d.id}))),v=>{
-rdActorId=v||null; rdActorOwner=v?rdUid():''; try{ v?localStorage.setItem(RD_ACTOR_KEY,JSON.stringify({id:v,uid:rdActorOwner})):localStorage.removeItem(RD_ACTOR_KEY); }catch(e){}
-rdActorLabel(); }); }); }
+/* n320: no "Rounding as" menu: Rounds rounds as the doctor who is signed in (rdActorSignedIn) */
 rdActorLabel();
  
 document.addEventListener('keydown',e=>{
@@ -7667,9 +7665,18 @@ function rdUid(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.uid)||''
 function rdActorRead(){ let v=null; try{ v=localStorage.getItem(RD_ACTOR_KEY); }catch(e){} if(!v) return null;
   try{ const o=JSON.parse(v); if(o&&typeof o==='object'&&o.id){ rdActorOwner=String(o.uid||''); return String(o.id); } }catch(e){}
   rdActorOwner=''; return v; }
-function rdActorSignedIn(user){ const uid=(user&&user.uid)||'';
-  if(rdActorId&&(!uid||rdActorOwner!==uid)){ rdActorId=null; rdActorOwner=''; try{ localStorage.removeItem(RD_ACTOR_KEY); }catch(e){} }
-  rdActorLabel(); }
+function rdActorSignedIn(user){ const d=rdDoctorFor(user); rdActorId=d?d.id:null; rdActorOwner=d?String(user.uid||''):'';   /* n320 */
+  try{ localStorage.removeItem(RD_ACTOR_KEY); }catch(e){} rdActorLabel(); }
+/* n320 · the doctor an account belongs to: by its name ("Sarah Schiff", "Dr. Sarah Schiff", "Schiff, Sarah") or its email (sarah.schiff@,
+   sschiff@, sarahschiff@). Only one doctor may match; otherwise the account isn't a doctor's and signs with its own name. */
+function rdDoctorFor(user){ if(!user) return null;
+  const tok=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]+/g,' ').split(' ').filter(w=>w&&w!=='dr'&&w!=='dvm');
+  let dn=String(user.displayName||''); const cm=dn.split(','); if(cm.length===2) dn=cm[1]+' '+cm[0];
+  const local=String(user.email||'').split('@')[0].toLowerCase(), nameT=tok(dn), mailT=tok(local), flat=local.replace(/[^a-z]/g,'');
+  const hit=rdAllDoctors().filter(d=>{ const t=tok(d.name); if(t.length<2) return false; const f=t[0], l=t[t.length-1];
+    const has=T=>T.indexOf(l)>=0&&T.some(x=>x===f||x===f[0]);
+    return has(nameT)||has(mailT)||flat===f+l||flat===f[0]+l; });
+  return hit.length===1?hit[0]:null; }
 
  
 function rdModeList(){ return rdGroupsOf(rdFiltered()).reduce((a,g)=>a.concat(g.list),[]); }
@@ -11421,9 +11428,9 @@ try{(function(){
       /* the Archive (or an empty census) prints as it looks, but on paper: light colours, no top bar, every card */
       wasDark=document.body.classList.contains('dark'); document.body.classList.remove('dark'); document.body.classList.add('rd-print-screen'); }catch(e){} });
   window.addEventListener('afterprint',()=>{ document.body.classList.remove('rd-printing','rd-print-screen'); if(wasDark){ document.body.classList.add('dark'); wasDark=false; } });
-  document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('#rdPrintBtn')){ e.preventDefault(); rdPrint(); } });
+  document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('#rdPrintBtn')){ e.preventDefault(); const pb=document.getElementById('rdPrintBtn'); if(pb&&pb.getAttribute('aria-disabled')==='true'){ try{ toast('Nothing to print: no patients are shown'); }catch(x){} return; } rdPrint(); } });   /* n319 */
   /* Printing · the button is there only when there's something to print */
-  const paint=()=>{ const b=document.getElementById('rdPrintBtn'); if(!b) return; const ok=rdPrintable(); b.disabled=!ok; b.title=ok?'Print the rounds sheet':'Nothing to print: no patients are shown'; };
+  const paint=()=>{ const b=document.getElementById('rdPrintBtn'); if(!b) return; const ok=rdPrintable(); b.disabled=false; b.setAttribute('aria-disabled',String(!ok)); b.title=ok?'Print the rounds sheet':'Nothing to print: no patients are shown'; };   /* n319 */
   /* Searching · the field says what it searches, the Archive follows it, and VoiceOver hears how many match */
   const live=(()=>{ let l=document.getElementById('rdSearchLive'); if(!l){ l=document.createElement('span'); l.id='rdSearchLive'; l.className='rd-vh'; l.setAttribute('role','status'); l.setAttribute('aria-live','polite'); document.body.appendChild(l); } return l; })();
   const scope=()=>{ const q=document.getElementById('rdSearch'); if(!q) return; const a=currentRdView==='archive'; const t=a?'Search the archive':'Search patients on rounds';
@@ -11677,3 +11684,206 @@ try{(function(){
   ensure(); segs(); share();
 })();
 }catch(__e){ console.warn('[n318]',__e); }
+
+/* ===== n319 · Buttons, Context menus, Dock menus (Nov 4 2026) ===== */
+try{(function(){
+  /* Buttons · a command that opens the print dialog ends in "…", and a menu button says it's collapsed before it's first opened */
+  const tidy=()=>{ const pl=document.querySelector('#rdPrintBtn .rd-pl'); if(pl&&pl.textContent.trim()==='Print') pl.textContent='Print…';
+    document.querySelectorAll('#view-rd-census [aria-haspopup]:not([aria-expanded])').forEach(b=>b.setAttribute('aria-expanded','false'));
+ };
+  document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#rdList button[aria-disabled=true][data-act=prob-up]'); if(!b) return;
+    e.preventDefault(); e.stopImmediatePropagation(); try{ toast('Already at the top of the list'); }catch(x){} },true);
+
+  /* Context menus · Show in Flow, now also in the patient's actions (it was only in the touch-and-hold menu) */
+  document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#rdList [data-act=show-flow]'); if(!b) return;
+    e.preventDefault(); e.stopImmediatePropagation(); try{ sessionStorage.setItem('pvx:open-patient',String(b.dataset.pid)); }catch(x){} location.href='/#app=flow'; },true);
+
+  /* Dock menus · the Dock menu (and Android's long press) offers Start rounds, Find a patient and Not reviewed as well as the Archive.
+     Each opens Rounds and does it once Rounds is signed in and the census is in; the address is tidied at once. */
+  const m=/^#(start|find|review)\b/.exec(location.hash||''); const want=m&&m[1];
+  if(want){ try{ history.replaceState(history.state,'',location.pathname+location.search); }catch(e){}
+    let n=0; (function go(){ let ready=false; try{ ready=!!rdUid()&&!rdLoading()&&!document.body.classList.contains('sb-locked'); }catch(e){}
+      if(!ready){ if(++n<2400) setTimeout(go,250); return; }
+      try{ if(typeof currentRdView!=='undefined'&&currentRdView!=='census') switchRdView('census'); }catch(e){}
+      if(want==='find'){ const s=document.getElementById('rdSearch'); if(s) try{ s.focus(); }catch(e){} }
+      else if(want==='review'){ try{ rdKpiFilter='review'; renderRdCensus(true); }catch(e){} }
+      else if(want==='start'){ setTimeout(()=>{ const b=document.getElementById('rdStartBtn'); if(b) b.click(); },300); } })(); }
+
+  /* Buttons (found while checking) · a section or patient you open or close keeps the focus through every redraw that follows,
+     not just the first: a save coming back from the database redrew the census again and dropped the focus (n317 kept it for 80 ms;
+     on GitHub's slower machines, and with the sample census, the second redraw came later) */
+  let keepSel=null;
+  const selFor=el=>{ if(el.matches('#rdList .rd-sechead[data-act]')) return el.dataset.key?'#rdList .rd-sechead[data-key="'+el.dataset.key+'"]':'#rdList .rd-sechead[data-act=ended-toggle]';
+    const row=el.closest('.rd-row'); if(row&&el.matches('#rdList .rd-row button[data-act=toggle]')) return '#rdList .rd-row[data-pid="'+row.dataset.pid+'"] button[data-act=toggle]'; return null; };
+  document.addEventListener('focusin',e=>{ const t=e.target; keepSel=(t&&t.matches)?selFor(t):null; },true);
+  document.addEventListener('pointerdown',e=>{ if(!(e.target&&e.target.closest&&e.target.closest('#rdList'))) keepSel=null; },true);
+  const keep=()=>{ if(!keepSel) return; const a=document.activeElement; if(a&&a!==document.body) return; const el=document.querySelector(keepSel); if(el) try{ el.focus({preventScroll:true}); }catch(e){} };
+  const rc=renderRdCensus; renderRdCensus=function(){ const r=rc.apply(this,arguments); try{ tidy(); keep(); setTimeout(keep,0); }catch(e){} return r; };
+  tidy();
+})();
+}catch(__e){ console.warn('[n319]',__e); }
+
+/* ===== n320 · Edit menus, Home Screen quick actions, Menus (Nov 4 2026) ===== */
+/* Menus · one order for the doctor lists: the patient's service team on today's shift board first, then everyone else A–Z */
+function rdDocSurname(d){ return String(d&&d.name||'').trim().split(/\s+/).slice(-1)[0].toLowerCase(); }
+function rdDocsAZ(){ return rdAllDoctors().slice().sort((a,b)=>rdDocSurname(a).localeCompare(rdDocSurname(b))); }
+function rdDocsOrdered(p){ let team=[]; try{ team=rdServiceTeam((p&&p.rounds&&p.rounds.service)||'ecc')||[]; }catch(e){}
+  const az=rdDocsAZ(), inT=d=>team.indexOf(drName(d.name))>=0;
+  const A=az.filter(inT).map(d=>Object.assign({},d,{_team:1})), B=az.filter(d=>!inT(d));
+  return A.length&&B.length?A.concat([{sep:1}],B):A.concat(B); }
+function rdDocMenuItems(p,fn,none){ try{ const o=rdDocsOrdered(p).map(d=>d.sep?{sep:1}:fn(d)); if(none){ const nx=rdNextDocId(p); o.unshift({value:'__none',label:'None',on:!nx},{sep:1}); } return o; }catch(e){ return null; } }
+try{(function(){
+  /* the doctor Rounds rounds as goes with the account: Log out forgets it */
+  const lo=logout; logout=function(){ rdActorId=null; rdActorOwner=''; return lo.apply(this,arguments); };
+})();
+}catch(__e){ console.warn('[n320]',__e); }
+
+/* ===== n321 · Ornaments, Pop-up buttons, Pull-down buttons, The menu bar (Nov 4 2026) ===== */
+/* Pop-up buttons · a current doctor who isn't on the ER or IM lists leads the menu, checked (choosing it changes nothing) */
+function rdCurOffList(p,items){ try{ const id=rdCurrentDocId(p); if(id&&rdAllDoctors().some(d=>d.id===id)) return items;
+    const n=rdCurrentDocName(p); if(!n||!items) return items;
+    let team=[]; try{ team=rdServiceTeam((p.rounds&&p.rounds.service)||'ecc')||[]; }catch(e){}
+    return [{value:'__cur',label:n+(team.indexOf(n)>=0?' · on service':''),on:true},{sep:1}].concat(items); }catch(e){ return items; } }
+try{(function(){
+  /* The menu bar · the window title names what's on screen, never the app (Brand §9.6, n284): "Census", "Benny Duarte · Census",
+     "Archive", "Benny Duarte · Rounds mode". Signed out it keeps the app's name, so no patient's name is left in the title bar,
+     the window list or the Dock. The printed sheet names its PDF "Rounds sheet · Wed, Nov 4". */
+  const APP_T='Rounds · Pravix';
+  let printing=false;
+  const signedIn=()=>{ try{ return !!rdUid()&&!document.body.classList.contains('sb-locked'); }catch(e){ return false; } };
+  const name=p=>{ try{ return rdFullName(p)||''; }catch(e){ return ''; } };
+  const want=()=>{ if(!signedIn()) return APP_T;
+    try{ if(typeof rdModeOpen!=='undefined'&&rdModeOpen){ const p=rdModeList()[rdModeIdx]; return (p?name(p)+' · ':'')+'Rounds mode'; } }catch(e){}
+    if(typeof currentRdView!=='undefined'&&currentRdView==='archive') return 'Archive';
+    try{ if(rdExpanded){ const p=rdFind(rdExpanded); if(p&&name(p)) return name(p)+' · Census'; } }catch(e){}
+    return 'Census'; };
+  const title=()=>{ if(printing) return; const t=want(); if(document.title!==t) document.title=t; };
+  window.rdTitle=title;
+  const wrap=f=>{ const o=window[f]; if(typeof o!=='function') return; window[f]=function(){ const r=o.apply(this,arguments); try{ title(); }catch(e){} return r; }; };
+  ['renderRdCensus','renderRdArchive','switchRdView','rdModeRender','rdExitMode','rdActorSignedIn'].forEach(wrap);
+  const lo=logout; logout=function(){ const r=lo.apply(this,arguments); try{ document.title=APP_T; }catch(e){} return r; };
+  try{ new MutationObserver(title).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+  window.addEventListener('beforeprint',()=>{ try{ printing=true; const d=new Date(); document.title='Rounds sheet · '+d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }catch(e){} });
+  window.addEventListener('afterprint',()=>{ printing=false; try{ title(); }catch(e){} });
+  title();
+
+  /* The menu bar · ⌘K (Ctrl+K) searches, as in Treatment; / still does, and ⌘F stays the browser's Find */
+  document.addEventListener('keydown',e=>{ if(!(e.metaKey||e.ctrlKey)||e.altKey||e.shiftKey||(e.key||'').toLowerCase()!=='k') return;
+    if(!signedIn()) return; try{ if(typeof rdModeOpen!=='undefined'&&rdModeOpen) return; }catch(x){}
+    if([...document.querySelectorAll('.rd-menu,.pvx-cx,[role=dialog][aria-modal=true]')].some(m=>m.getClientRects().length&&getComputedStyle(m).visibility!=='hidden')) return;
+    const s=document.getElementById('rdSearch'); if(!s||!s.getClientRects().length) return;
+    e.preventDefault(); try{ s.focus(); s.select(); }catch(x){} });
+  const sg=window.rdShortcutGroups; if(typeof sg==='function') window.rdShortcutGroups=function(){ const g=sg.apply(this,arguments);
+    try{ g.forEach(x=>{ const rows=x.items||x.rows; if(!rows) return; const i=rows.findIndex(r=>r.keys&&r.keys.length===1&&r.keys[0]==='/');
+      if(i>=0&&!rows.some(r=>r.keys&&r.keys.join()==='mod,K')) rows.splice(i+1,0,{keys:['mod','K'],label:rows[i].label}); }); }catch(e){} return g; };
+})();
+}catch(__e){ console.warn('[n321]',__e); }
+
+/* ===== n322 · Toolbars, Path controls, Search fields, Sidebars (Nov 4 2026) ===== */
+try{(function(){
+  /* Toolbars · when the census toolbar doesn't fit, its labels give way to their symbols one at a time (Display, then Print, then
+     the side panel), and on an iPhone Start rounds narrows, before anything wraps onto a row of its own. On an iPad in portrait
+     Start rounds sat alone on a second row, and on an iPhone the bar took three rows. Each button keeps its name and tooltip. */
+  const LV=['rd-f1','rd-f2','rd-f3','rd-f4'];
+  const rows=h=>{ let n=0, bottom=-1e9; [...h.children].filter(c=>c.getClientRects().length).map(c=>[c.offsetTop,c.offsetTop+c.offsetHeight]).sort((a,b)=>a[0]-b[0])
+    .forEach(([t,b])=>{ if(t>=bottom-1){ n++; bottom=b; } else bottom=Math.max(bottom,b); }); return n; };   /* a row: children whose heights overlap */
+  const fit=()=>{ const h=document.querySelector('#view-rd-census .rd-headr'); if(!h||!h.getClientRects().length) return;
+    const set=n=>LV.forEach((c,i)=>h.classList.toggle(c,i<n));
+    const r=[]; for(let n=0;n<=LV.length;n++){ set(n); r.push(rows(h)); }
+    const best=Math.min.apply(null,r); set(r.indexOf(best)); };
+  window.rdFitToolbar=fit;
+  let raf=0; const soon=()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(fit); };
+  try{ const hd=document.querySelector('#view-rd-census .rd-head'); if(hd&&window.ResizeObserver) new ResizeObserver(soon).observe(hd); }catch(e){}
+  window.addEventListener('resize',soon);
+  try{ document.fonts&&document.fonts.ready.then(soon); }catch(e){}
+  const rc=renderRdCensus; renderRdCensus=function(){ const r=rc.apply(this,arguments); try{ soon(); }catch(e){} return r; };
+  soon();
+
+  /* Search fields · a misspelt name gets close matches (as Treatment's search does, n265): "Bennny" offers Benny Duarte instead of
+     only "No matching patients". The empty state also says what was searched for. Names and owners are compared word by word,
+     allowing one slip in a short word and two in a longer one. */
+  const lev=(a,b)=>{ if(a===b) return 0; const m=a.length,n=b.length; if(!m) return n; if(!n) return m; let p=[...Array(n+1).keys()];
+    for(let i=1;i<=m;i++){ const c=[i]; for(let j=1;j<=n;j++) c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1)); p=c; } return p[n]; };
+  const close=q=>{ const W=rdFold(q).split(/\s+/).filter(w=>w.length>=3); if(!W.length) return [];
+    return rdCensus().map(p=>{ const T=rdFold([rdFullName(p),p.owner||''].join(' ')).split(/[^a-z0-9]+/).filter(Boolean); let s=0;
+        for(const w of W){ let b=99; for(const t of T){ const d=Math.min(lev(w,t),t.length>w.length?lev(w,t.slice(0,w.length)):99); if(d<b) b=d; } if(b>(w.length>=5?2:1)) return null; s+=b; }
+        return {p,s}; }).filter(Boolean).sort((a,b)=>a.s-b.s).slice(0,3).map(x=>x.p); };
+  window.rdCloseMatches=close;
+  const sh=rdSectionsHTML; rdSectionsHTML=function(){ let h=sh.apply(this,arguments); try{ const q=(rdQuery||'').trim();
+      if(q&&h.indexOf('No matching patients')>=0){
+        if(!rdKpiFilter&&(typeof rdSvcFilter==='undefined'||rdSvcFilter==='all')) h=h.replace('No one on the census matches the filters or search.','No one on the census matches “'+rdEsc(q)+'”.');
+        const c=close(q); if(c.length) h=h.replace('<button class="rd-btn" data-act="clear-filters">','<div class="rd-close"><span>Close matches:</span> '+c.map(p=>'<button type="button" class="rd-link" data-act="rd-close-match" data-q="'+rdEsc(rdFullName(p))+'">'+rdEsc(rdFullName(p))+'</button>').join(' ')+'</div><button class="rd-btn" data-act="clear-filters">'); } }catch(e){} return h; };
+  document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-act=rd-close-match]'); if(!b) return; e.preventDefault(); e.stopImmediatePropagation();
+    const s=document.getElementById('rdSearch'); if(!s) return; s.value=b.dataset.q; rdQuery=s.value; renderRdCensus(true);
+    try{ s.focus({preventScroll:true}); }catch(x){} },true);
+})();
+}catch(__e){ console.warn('[n322]',__e); }
+
+/* ===== n323 · Tab bars, Token fields, Action sheets (Nov 4 2026) ===== */
+/* Token fields · what was typed, split at ; and without a trailing , or ; */
+function rdProbSplit(v){ return String(v||'').split(';').map(s=>s.trim().replace(/^[\s,;]+|[\s,;]+$/g,'')).filter(Boolean).map(s=>rdCap(s)); }
+try{(function(){
+  const probIn=pid=>document.querySelector('#rdList input[data-input="prob"][data-pid="'+pid+'"]');
+  const tokens=pid=>[...document.querySelectorAll('#rdList .rd-row.open .rd-probs > li')].filter(li=>li.dataset.pid===pid);
+
+  /* every problem is a token: named for VoiceOver, reachable with ← from the field, and edited by clicking it (Brand §9.9) */
+  const tidy=()=>{ document.querySelectorAll('#rdList .rd-row.open .rd-probs > li').forEach(li=>{ const b=li.querySelector('[data-act=prob-up]'); if(!b) return;
+      li.dataset.pid=b.dataset.pid; li.dataset.id=b.dataset.id; const t=li.querySelector('.t'); if(!t||t.dataset.tok) return; t.dataset.tok='1';
+      t.tabIndex=0; t.setAttribute('role','button'); t.setAttribute('aria-label','Edit problem: '+t.textContent.trim()); t.title='Edit (right-click for more)'; });
+    document.querySelectorAll('#rdList input[data-input="prob"]').forEach(i=>{ if(!i.getAttribute('list')){ i.setAttribute('list','rdProbList'); i.setAttribute('enterkeyhint','enter'); } }); };
+  const rc=renderRdCensus; renderRdCensus=function(){ const r=rc.apply(this,arguments); try{ tidy(); }catch(e){} return r; };
+
+  /* suggestions as you type: the problems already used on the census, most used first (the browser shows them only after typing) */
+  let dl=document.getElementById('rdProbList'); if(!dl){ dl=document.createElement('datalist'); dl.id='rdProbList'; document.body.appendChild(dl); }
+  const fill=pid=>{ const n={}, mine=new Set(((rdFind(pid)||{}).rounds||{}).problems?(rdFind(pid).rounds.problems.filter(x=>x.active!==false).map(x=>rdFold(x.label))):[]);
+    rdCensus().forEach(p=>((p.rounds||{}).problems||[]).forEach(x=>{ const k=String(x.label||'').trim(); if(k&&!mine.has(rdFold(k))) n[k]=(n[k]||0)+1; }));
+    dl.innerHTML=Object.keys(n).sort((a,b)=>n[b]-n[a]||a.localeCompare(b)).slice(0,60).map(k=>'<option value="'+rdEsc(k)+'"></option>').join(''); };
+  document.addEventListener('focusin',e=>{ const i=e.target; if(i&&i.matches&&i.matches('#rdList input[data-input="prob"]')) try{ fill(i.dataset.pid); }catch(x){} });
+
+  /* ; adds the problem and keeps you in the field; ← at its start goes to the last problem */
+  document.addEventListener('keydown',e=>{ const i=e.target; if(!(i&&i.matches&&i.matches('#rdList input[data-input="prob"]'))) return;
+    if(e.key===';'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){ e.preventDefault(); e.stopPropagation(); if(!i.value.trim()) return; const pid=i.dataset.pid;
+      i.dataset.committed='1'; rdHandleInput(i); i.value=''; renderRdCensus(true); const n=probIn(pid); if(n) try{ n.focus({preventScroll:true}); }catch(x){} return; }
+    if(e.key==='ArrowLeft'&&i.selectionStart===0&&i.selectionEnd===0){ const T=tokens(i.dataset.pid); const t=T.length&&T[T.length-1].querySelector('.t'); if(t){ e.preventDefault(); t.focus(); } } },true);
+
+  /* editing a problem in place: click its name (or Return / Space on it); Return or leaving saves, Esc keeps it as it was */
+  const edit=li=>{ const t=li.querySelector('.t'); if(!t||li.querySelector('.rd-pedit')) return; const p=rdFind(li.dataset.pid), x=p&&(p.rounds.problems||[]).find(a=>a.id===li.dataset.id); if(!x) return;
+    const inp=document.createElement('input'); inp.className='rd-pedit'; inp.value=x.label; inp.setAttribute('aria-label','Problem name'); inp.setAttribute('enterkeyhint','done'); inp.autocomplete='off';
+    t.replaceWith(inp); try{ inp.focus(); inp.select(); }catch(e){}
+    let done=false; const end=save=>{ if(done) return; done=true; const v=rdProbSplit(inp.value).join('; ');
+      if(save&&v&&v!==x.label){ const old=x.label; x.label=v; rdTouch(p,'Problem renamed · '+old+' → '+v); } renderRdCensus(true);
+      let k=0; const back=()=>{ const n=tokens(li.dataset.pid).find(l=>l.dataset.id===x.id&&l!==li); const nt=n&&n.querySelector('.t');
+        if(nt){ try{ nt.focus({preventScroll:true}); }catch(e){} } else if(++k<20) setTimeout(back,50); }; setTimeout(back,0); };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); end(true); } else if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); end(false); } });
+    inp.addEventListener('blur',()=>end(true)); };
+  window.rdEditProblem=edit;
+  let held=0;
+  document.addEventListener('click',e=>{ const t=e.target.closest&&e.target.closest('#rdList .rd-probs > li > .t'); if(!t) return; if(Date.now()-held<700) return; edit(t.parentElement); });
+  document.addEventListener('keydown',e=>{ const t=e.target; if(!(t&&t.matches&&t.matches('#rdList .rd-probs > li > .t'))) return;
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); edit(t.parentElement); }
+    else if(e.key==='ArrowRight'||e.key==='ArrowLeft'){ const T=tokens(t.parentElement.dataset.pid), k=T.indexOf(t.parentElement);
+      const n=e.key==='ArrowRight'?(k+1<T.length?T[k+1].querySelector('.t'):probIn(t.parentElement.dataset.pid)):(k>0?T[k-1].querySelector('.t'):null);
+      if(n){ e.preventDefault(); n.focus(); } } });
+
+  /* a context menu on every token: each problem (Edit, Mark resolved, Move up, Move down, then Remove in red), each resolved
+     problem (Restore, then Remove), each safety flag (Remove). Every item is also on the token itself. */
+  const act=(a,pid,id)=>{ try{ rdHandleAct(a,{dataset:{pid:pid,id:id}}); }catch(e){ console.warn('[n323]',e); } };
+  const build=el=>{
+    if(el.matches('.rd-probs > li')){ const pid=el.dataset.pid, id=el.dataset.id; if(!pid) return null; const T=tokens(pid), k=T.indexOf(el), nm=(el.querySelector('.t')||{}).textContent||'';
+      return {label:'Actions for '+nm.trim(),lift:el,items:[{label:'Edit',act:()=>setTimeout(()=>{ const li=tokens(pid).find(l=>l.dataset.id===id); if(li) edit(li); },80)},{label:'Mark resolved',act:()=>act('prob-resolve',pid,id)},
+        k>0&&{label:'Move up',act:()=>act('prob-up',pid,id)}, k>=0&&k<T.length-1&&{label:'Move down',act:()=>act('prob-up',pid,T[k+1].dataset.id)},
+        {sep:1},{label:'Remove',danger:true,act:()=>act('prob-del',pid,id)}]}; }
+    if(el.matches('.rd-resolved-chip')){ const pid=el.dataset.pid, id=el.dataset.id;
+      return {label:'Actions for '+el.textContent.trim(),lift:el,items:[{label:'Restore',act:()=>act('prob-restore',pid,id)},{sep:1},{label:'Remove',danger:true,act:()=>act('prob-del',pid,id)}]}; }
+    if(el.matches('.rd-flag')){ const b=el.querySelector('[data-act=flag-del]'); if(!b) return null;
+      return {label:'Actions for '+el.textContent.trim(),lift:el,items:[{label:'Remove flag',danger:true,act:()=>act('flag-del',b.dataset.pid,b.dataset.id)}]}; }
+    return null; };
+  const SEL='#rdList .rd-row.open .rd-probs > li,#rdList .rd-row.open .rd-resolved-chip,#rdList .rd-row.open .rd-flag';
+  let tries=0; (function bind(){ if(!window.PvxCtx){ if(++tries<200) setTimeout(bind,50); return; }
+    PvxCtx.bind(SEL,build,{holdMs:500,
+      skip:(el,e)=>{ if(e.type==='contextmenu'){ try{ const s=getSelection(); if(s&&!s.isCollapsed&&String(s).trim()&&el.contains(s.anchorNode)) return true; }catch(x){} if(el.querySelector('.rd-pedit')) return true; }
+        return e.type==='pointerdown'&&!!(e.target.closest('button,input')&&e.target.closest('button,input')!==el); },
+      beforeHold:()=>{ held=Date.now(); }}); })();
+  tidy();
+})();
+}catch(__e){ console.warn('[n323]',__e); }
