@@ -559,6 +559,26 @@ async function main() {
       x.record.additionalProblems=Array(26).fill('synthetic');
       return assertFails(setDoc(doc(anon,'client_intakes',x.id),x));
     });
+    // Yakuri's library: staff read, the owner role publishes, nobody deletes
+    const ykStaff = staff.firestore ? staff.firestore() : staff;
+    await check('owner can publish Yakuri\'s current pointer and a release part', async () => {
+      await assertSucceeds(setDoc(doc(verifiedDaniel, 'yakuri', 'current'), {release: 'r1', sha: {core: 'x', detail: 'y'}}));
+      await assertSucceeds(setDoc(doc(verifiedDaniel, 'yakuri', 'r1', 'parts', 'core-00'), {data: 'abc'}));
+    });
+    await check('staff can read Yakuri\'s library', async () => {
+      await assertSucceeds(getDoc(doc(ykStaff, 'yakuri', 'current')));
+      await assertSucceeds(getDoc(doc(ykStaff, 'yakuri', 'r1', 'parts', 'core-00')));
+    });
+    await check('staff who are not the owner cannot publish to Yakuri', () =>
+      assertFails(setDoc(doc(ykStaff, 'yakuri', 'current'), {release: 'r2'})));
+    await check('management cannot publish to Yakuri', () =>
+      assertFails(setDoc(doc(verifiedHeather, 'yakuri', 'r1', 'parts', 'core-01'), {data: 'x'})));
+    await check('nobody deletes a Yakuri release, the owner included', () =>
+      assertFails(deleteDoc(doc(verifiedDaniel, 'yakuri', 'r1', 'parts', 'core-00'))));
+    for (const [nm, ctx] of [['signed-out', anon], ['unprovisioned', unlisted], ['other-hospital', otherHospital], ['disabled', disabled], ['lobby', lobby]]) {
+      const db = ctx.firestore ? ctx.firestore() : ctx;
+      await check(nm + ' account cannot read Yakuri\'s library', () => assertFails(getDoc(doc(db, 'yakuri', 'current'))));
+    }
     process.stdout.write('Passed ' + seen.length + ' emulator authorization tests.\n');
   } finally {
     await env.cleanup();
