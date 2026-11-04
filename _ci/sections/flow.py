@@ -179,12 +179,19 @@ async def s_n186(br):
          apps=['flow'], topics=['icons'])
 async def s_n187(br):
     ctx, pg, errs = await flow_page((1440, 900))
-    gi = await pg.evaluate("""(()=>{try{rdSeedDemo()}catch(e){return {err:String(e)}}const p=PATIENTS.find(x=>x._demo);if(!p)return {err:'no demo'};
-      (p.rounds.flags=p.rounds.flags||[]).push({id:'f1',label:'Fall risk'});
-      const box=document.createElement('div');box.style.cssText='position:fixed;left:0;top:0;width:900px;height:900px;overflow:auto;z-index:99999;font:13px -apple-system';
-      box.innerHTML=rdWorkHTML(p)+rdTomorrowHTML()+usxQualityRows(Object.assign({},p,{ultrasound:{clinicalQuestion:''}}));document.body.appendChild(box);
+    # n305: Rounds is its own page — its icons are checked there, Ultrasound's on Flow's page
+    BOXJS = """(html)=>{const box=document.createElement('div');box.style.cssText='position:fixed;left:0;top:0;width:900px;height:900px;overflow:auto;z-index:99999;font:13px -apple-system';
+      box.innerHTML=html;document.body.appendChild(box);
       const ic=[...box.querySelectorAll('svg.pvx-gi')].filter(s=>s.getClientRects().length).map(s=>{const r=s.getBoundingClientRect();return parseFloat(getComputedStyle(s).strokeWidth)*r.width/24});
-      const fd=box.querySelector('[data-act=flag-del]');const out={n:ic.length,min:Math.min(...ic),max:Math.max(...ic),glyph:(box.innerText.match(/[✓✕○⚠]/g)||[]).length,flag:fd&&fd.getAttribute('aria-label'),warn:!!box.querySelector('.pvx-gi-warn')};box.remove();return out})()""")
+      const fd=box.querySelector('[data-act=flag-del]');const out={ic,glyph:(box.innerText.match(/[✓✕○⚠]/g)||[]).length,flag:fd&&fd.getAttribute('aria-label'),warn:!!box.querySelector('.pvx-gi-warn')};box.remove();return out}"""
+    await to_rounds(pg)
+    gr = await pg.evaluate("""(()=>{try{rdSeedDemo()}catch(e){return null}const p=PATIENTS.find(x=>x._demo);if(!p)return null;(p.rounds.flags=p.rounds.flags||[]).push({id:'f1',label:'Fall risk'});return rdWorkHTML(p)+rdTomorrowHTML()})()""")
+    gr = await pg.evaluate(BOXJS, gr) if gr else {'ic': [], 'glyph': 1}
+    await to_flow(pg)
+    gu = await pg.evaluate("usxQualityRows({id:'x',name:'Icon',last:'Test',species:'Canine',ultrasound:{clinicalQuestion:''},timeline:[]})")
+    gu = await pg.evaluate(BOXJS, gu)
+    ic = gr['ic'] + gu['ic']
+    gi = {'n': len(ic), 'min': min(ic) if ic else 0, 'max': max(ic) if ic else 0, 'glyph': gr['glyph'] + gu['glyph'], 'flag': gr.get('flag'), 'warn': gr.get('warn') or gu.get('warn')}
     ok('n187: Rounds and Ultrasound draw their checks, crosses and warnings as vector icons, not text characters', gi.get('n', 0) >= 20 and gi.get('glyph') == 0 and gi.get('warn'), gi)
     ok('n187: those icons render at the common weight (about 1.1–1.75 px)', gi.get('n') and gi['min'] >= 1.1 and gi['max'] <= 1.75, gi)
     ok('n187: the Rounds flag remove button is named', gi.get('flag') == 'Remove flag: Fall risk', gi)
@@ -363,7 +370,7 @@ async def s_n192(br):
     ok('n192: an ultrasound queue reorder has Undo, and Undo restores the order', q['t'] == 'Queue updated' and q['back'] == '1,2,3', q)
     await ctx.close()
     ctx, pg, errs2 = await flow_page((1440, 900))
-    await pg.evaluate("switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(900)
     rk = await pg.evaluate("""(async()=>{const g=[...document.querySelectorAll('#rdList .rd-secgroup[data-sec]')].find(x=>x.querySelectorAll(':scope > .rd-row').length>=2);if(!g) return {err:'no group'};
       const pids=[...g.querySelectorAll(':scope > .rd-row')].map(r=>r.dataset.pid),before=pids.map(id=>rdFind(id).rounds.rank+'');
       const re=pids.slice().reverse(); rdRankSave(g.dataset.sec,re,pids[0],re.length-1); const t=document.getElementById('rdUndo'),open=t&&t.classList.contains('open'),msg=t&&t.querySelector('.ru-msg').textContent;
@@ -506,17 +513,20 @@ async def s_n193(br):
          apps=['anesia', 'flow', 'topbar'], topics=['behaviour'])
 async def s_n194(br):
     ctx, pg, errs = await flow_page((1440, 900))
-    await pg.evaluate("switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(700)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(700)
     await pg.click('#rdDisplayBtn'); await pg.wait_for_timeout(500)
-    S1 = "[document.body.classList.contains('rd-display'), !!document.fullscreenElement, document.getElementById('rdDisplayBtn').getAttribute('aria-pressed'), getComputedStyle(document.querySelector('.topnav')).display!=='none']"
+    S1 = "[document.body.classList.contains('rd-display'), !!document.fullscreenElement, (document.getElementById('rdDisplayBtn')||{getAttribute(){return null}}).getAttribute('aria-pressed'), getComputedStyle(document.querySelector('.topnav')).display!=='none', location.pathname]"
     f1 = await pg.evaluate(S1)
-    await pg.evaluate("switchApp('flow')"); await pg.wait_for_timeout(400); f2 = await pg.evaluate(S1)
-    await pg.evaluate("switchApp('rounds')"); await pg.wait_for_timeout(400); f3 = await pg.evaluate(S1)
+    # n305: Rounds is its own page — leaving it is going to another page, so Display (full screen) ends there; coming back is plain Rounds
+    async with pg.expect_navigation(): await pg.evaluate("switchApp('flow')")
+    await pg.wait_for_selector('#subnavFlow .switcher.pvx-sw', state='attached'); await pg.wait_for_timeout(600); f2 = await pg.evaluate(S1)
+    await to_rounds(pg, 600); f3 = await pg.evaluate(S1)
     ok('n194: Rounds Display — full screen, large type, the button says it’s on (aria-pressed)', f1[:3] == [True, True, 'true'], f1)
-    ok('n194: leaving Rounds puts the shared top bar back; coming back resumes Display', f2[0] is False and f2[3] is True and f3[0] is True, [f2, f3])
+    ok('n194: leaving Rounds (its own page now) leaves full screen with the shared top bar; coming back is Rounds without Display (full screen needs a tap)',
+       f2[0] is False and f2[1] is False and f2[3] is True and f2[4] == '/' and f3[0] is False and f3[2] == 'false' and f3[4] == '/rounds/', [f2, f3])
+    await pg.click('#rdDisplayBtn'); await pg.wait_for_timeout(500)
     await pg.evaluate("document.exitFullscreen()"); await pg.wait_for_timeout(500); f4 = await pg.evaluate(S1)
-    await pg.evaluate("switchApp('flow'); switchApp('rounds')"); await pg.wait_for_timeout(400); f5 = await pg.evaluate(S1)
-    ok('n194: leaving full screen (Esc) ends Display too — the top bar is never hidden in a normal window', f4[0] is False and f4[2] == 'false' and f4[3] is True and f5[0] is False, [f4, f5])
+    ok('n194: leaving full screen (Esc) ends Display too — the top bar is never hidden in a normal window', f4[0] is False and f4[2] == 'false' and f4[3] is True, f4)
     await pg.click('#rdDisplayBtn'); await pg.wait_for_timeout(400); await pg.click('#rdDisplayBtn'); await pg.wait_for_timeout(500); f6 = await pg.evaluate(S1)
     ok('n194: turning Display off with its button also leaves full screen', f6[:3] == [False, False, 'false'], f6)
     ok('no new page errors (n194 Rounds)', not newerr(errs), errs)
@@ -591,11 +601,13 @@ async def s_n195(br):
     await pg.reload(); await pg.wait_for_selector('#subnavFlow .switcher.pvx-sw', state='attached'); await pg.wait_for_timeout(1800)
     r2 = await pg.evaluate("[currentApp, typeof currentUsView!=='undefined'?currentUsView:null, document.documentElement.classList.contains('pvx-app-boot')]")
     ok('n195: …and in the app you left (Ultrasound › Queue), without the Flow board showing first', r2 == ['ultrasound', 'queue', False], r2)
-    await pg.evaluate("switchApp('rounds')"); await pg.wait_for_timeout(300)
+    await to_rounds(pg, 600)
+    await pg.goto(f'http://127.0.0.1:{PORT}/'); await pg.wait_for_timeout(2500)
+    r3 = await pg.evaluate("[location.pathname, typeof currentApp!=='undefined'?currentApp:null]")
+    ok('n195/n243/n305: after using Rounds, opening Flow’s address by itself reopens Rounds — now its own page, /rounds/', r3 == ['/rounds/', 'rounds'], r3)
     await pg.goto(f'http://127.0.0.1:{PORT}/#app=flow'); await pg.wait_for_selector('#subnavFlow .switcher.pvx-sw', state='attached'); await pg.wait_for_timeout(1500)
-    r3 = await pg.evaluate("currentApp")
-    ok('n195: a link that names an app still wins (#app=flow opens Flow, not the remembered Rounds)', r3 == 'flow', r3)
-    await pg.evaluate("switchApp('rounds')"); await pg.wait_for_timeout(300)
+    ok('n195: a link that names an app still wins (#app=flow opens Flow, not the remembered Rounds)', await pg.evaluate("currentApp") == 'flow')
+    await to_rounds(pg, 600)
     await pg.goto(f'http://127.0.0.1:{PORT}/?tv=1'); await pg.wait_for_timeout(2500)
     r4 = await pg.evaluate("[currentApp, document.body.classList.contains('tv-mode')]")
     ok('n195: the lobby TV (?tv=1) is never redirected by what a workstation remembered', r4 == ['flow', True], r4)
@@ -634,7 +646,7 @@ async def s_n196(br):
     ths = [open(os.path.join(BUILD, f), encoding='utf-8').read().count('title="Switch light and dark" aria-label="Switch light and dark"') for f in ('index.html', 'anesia/index.html', 'treatment/index.html', 'or/index.html')]
     ok('n196: the theme button has one name in Flow, Anesia, Treatment Sheets and the OR (“Switch light and dark”)', th == 'Switch light and dark' and ths == [1, 1, 1, 1], [th, ths])
     hint_m = await pg.evaluate("document.querySelector('.usx-sec .hint').textContent")
-    await pg.evaluate("closeDrawer&&closeDrawer(); switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(700)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(700)
     await pg.evaluate("(()=>{const r=document.querySelector('#rdList .rd-row');r&&r.querySelector('.rd-rowmain,.rd-name')&&(r.querySelector('.rd-rowmain')||r).click()})()"); await pg.wait_for_timeout(600)
     m0 = await pg.evaluate("(()=>{const e=document.querySelector('.rd-fin-edit[data-fin-key]');return e&&[e.getAttribute('role'),e.tabIndex,e.title]})()")
     if not m0:
@@ -651,7 +663,7 @@ async def s_n196(br):
         await pg.locator('.rd-fin-edit[data-fin-key] >> nth=0').scroll_into_view_if_needed(); await pg.click('.rd-fin-edit[data-fin-key] >> nth=0'); await pg.wait_for_timeout(300)
         m1 = await pg.evaluate("!!document.querySelector('.rd-fin-inline')")
     else: m1 = m2 = m3 = None
-    ok('n196: Rounds money fields edit with one click (a button, “Edit amount”); Esc backs out; Return edits from the keyboard', m0 == ['button', 0, 'Edit amount'] and m1 and m2 and m3, [m0, m1, m2, m3])
+    ok('n196: Rounds money fields edit with one click (a button, “Edit low end” and so on, n312); Esc backs out; Return edits from the keyboard', (m0 or [None])[:2] == ['button', 0] and str((m0 or ['', '', ''])[2]).startswith('Edit ') and m1 and m2 and m3, [m0, m1, m2, m3])
     ok('no new page errors (n196 Flow)', not newerr(errs), errs)
     await ctx.close()
     ctx, pg, errs = await flow_page((1024, 1366), touch=True)
@@ -750,6 +762,7 @@ async def s_n198(br):
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(400)
     e1 = await pg.evaluate("[document.getElementById('confirmBox').classList.contains('open'), document.activeElement.id, !!window.__n198ok]")
     ok('n198: Esc cancels the confirmation and focus returns to the button that opened it', e1 == [False, 'n198o', False], e1)
+    await to_rounds(pg); await pg.evaluate("(()=>{const b=document.createElement('button');b.id='n198o';b.textContent='open';b.style.cssText='position:fixed;left:20px;top:300px;z-index:1';document.body.appendChild(b);b.focus()})()")   # n305: Rounds' menus live on Rounds' page
     await pg.evaluate("(()=>{const a=document.getElementById('n198o');a.style.top='500px';rdMenu(a,Array.from({length:22},(_,i)=>({value:'d'+i,label:'Dr Person '+i,on:i===3})).concat([{value:'__clear',label:'Clear next doctor'}]),v=>{window.__n198pick=v});})();0")
     await pg.wait_for_timeout(400)
     r1 = await pg.evaluate("""(()=>{const m=document.querySelector('.rd-menu');const g=m.querySelector('.rd-asgroup'),c=m.querySelector('.rd-ascancel'),last=[...m.querySelectorAll('button[data-v]')].pop();const gr=g.getBoundingClientRect(),cr=c.getBoundingClientRect();
@@ -768,6 +781,7 @@ async def s_n198(br):
     q2 = await pg.evaluate("[document.getElementById('confirmBox').classList.contains('pvx-as'), document.activeElement.id]")
     ok('n198: iPad and Mac keep the centred box; a normal confirmation focuses its action', q2 == [False, 'confirmOk'], q2)
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
+    await to_rounds(pg); await pg.evaluate("(()=>{const b=document.createElement('button');b.id='n198o';b.textContent='open';b.style.cssText='position:fixed;left:20px;top:600px;z-index:1';document.body.appendChild(b);b.focus()})()")   # n305: Rounds' menus live on Rounds' page
     await pg.evaluate("(()=>{const a=document.getElementById('n198o');rdMenu(a,Array.from({length:22},(_,i)=>({value:'d'+i,label:'Dr Person '+i})).concat([{value:'undo',label:'Undo last extension'}]),v=>{window.__n198pick=v});})();0")
     await pg.wait_for_timeout(300)
     r3 = await pg.evaluate("""(()=>{const m=document.querySelector('.rd-menu'),r=m.getBoundingClientRect(),a=document.getElementById('n198o').getBoundingClientRect();return {as:m.classList.contains('rd-as'),fits:r.top>=0&&r.bottom<=innerHeight,up:r.bottom<=a.top,role:m.getAttribute('role'),last:[...m.querySelectorAll('button')].pop().className}})()""")
@@ -813,7 +827,7 @@ async def s_n199(br):
     await pg.evaluate("openDrawer(PATIENTS[PATIENTS.length-1].id);0"); await pg.wait_for_timeout(700)
     bad += await pg.evaluate(HIT, 'drawer')
     await shot(pg, 'n199-ipad-drawer')
-    await pg.evaluate("try{closeDrawer()}catch(e){};switchApp('rounds');0"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.wait_for_timeout(900)
     await pg.evaluate("[...document.querySelectorAll('button')].find(b=>/Load sample census/.test(b.textContent)).click();0"); await pg.wait_for_timeout(1200)
     await pg.evaluate("document.querySelector('.rd-row [data-act=toggle]').click();0"); await pg.wait_for_timeout(800)
     bad += await pg.evaluate(HIT, 'rounds')
@@ -884,7 +898,7 @@ async def s_n201(br):
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(200)
     inp = await pg.evaluate("(()=>{const i=document.querySelector('input:not([type=hidden])');const e=new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:5,clientY:5,button:2});i.dispatchEvent(e);return [e.defaultPrevented, !!document.querySelector('.pvx-cx:not(.out)')]})()")
     ok('n201: the same menu on Patients rows; text fields keep the system edit menu', l2 and inp == [False, False], [l2, inp])
-    await pg.evaluate("switchApp('rounds');0"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.wait_for_timeout(900)
     await pg.evaluate("[...document.querySelectorAll('button')].find(b=>/Load sample census/.test(b.textContent)).click();0"); await pg.wait_for_timeout(1200)
     await pg.locator('.rd-row[data-pid] > .rd-rowmain').first.click(button='right'); await pg.wait_for_timeout(250)
     r1 = await pg.evaluate("[...document.querySelectorAll('.pvx-cx-list button')].map(x=>x.querySelector('.l').textContent)")
@@ -911,9 +925,10 @@ async def s_n201(br):
     ok('no new page errors (n201 phone)', not newerr(errs), errs)
     await ctx.close()
     ctx, pg, errs = await flow_page((1180, 820), touch=True)
-    await pg.evaluate("switchApp('rounds');0"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.wait_for_timeout(900)
     await pg.evaluate("[...document.querySelectorAll('button')].find(b=>/Load sample census/.test(b.textContent)).click();0"); await pg.wait_for_timeout(1200)
     o0 = await pg.evaluate("[...document.querySelectorAll('.rd-row[data-pid]')].map(r=>r.dataset.pid).join(',')")
+    await pg.evaluate("document.querySelectorAll('.rd-row[data-pid] > .rd-rowmain')[1].scrollIntoView({block:'center'})"); await pg.wait_for_timeout(400)   # n312: the touch tip can push the row below the fold
     bb = await pg.evaluate("(()=>{const r=document.querySelectorAll('.rd-row[data-pid] > .rd-rowmain')[1].getBoundingClientRect();return [r.x+r.width*0.35,r.y+r.height/2]})()")
     cdp = await ctx.new_cdp_session(pg)
     await cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': bb[0], 'y': bb[1]}]}); await pg.wait_for_timeout(750)
@@ -981,7 +996,7 @@ async def s_n202(br):
     b3 = await pg.evaluate("["+ST+", pvxUndo.size(), document.activeElement.tagName+'#'+document.activeElement.id]")
     b3 = b3[0] if b3[0] == 'Exam' else b3
     ok('n202: the Undo button and ⌘Z share one history (after the button, ⌘Z has nothing left; ⇧⌘Z redoes)', b1 == 'Waiting' and b2 == ['Waiting', 'Nothing to undo'] and b3 == 'Exam', [b1, b2, b3])
-    await pg.evaluate("switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(900)
     rk = await pg.evaluate("""(()=>{const g=[...document.querySelectorAll('#rdList .rd-secgroup[data-sec]')].find(x=>x.querySelectorAll(':scope > .rd-row').length>=2);
       const pids=[...g.querySelectorAll(':scope > .rd-row')].map(r=>r.dataset.pid);window.__rk={pids,before:pids.map(id=>rdFind(id).rounds.rank+'')};
       const re=pids.slice().reverse(); rdRankSave(g.dataset.sec,re,pids[0],re.length-1); window.__rk.after=pids.map(id=>rdFind(id).rounds.rank+''); return window.__rk})()""")
@@ -1017,14 +1032,14 @@ async def s_n203(br):
     await pg.click('#fabAdd'); await pg.wait_for_timeout(350); await pg.keyboard.press('Tab'); await pg.wait_for_timeout(200)
     t1 = await pg.evaluate("[document.getElementById('opsMenu').classList.contains('open'), document.activeElement.id]")
     ok('n203: Tab closes it too', t1 == [False, 'fabAdd'], t1)
-    await pg.evaluate("switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(900)
     await pg.evaluate("document.querySelector('.rd-row [data-act=toggle]').click();0"); await pg.wait_for_timeout(600)
     await pg.evaluate("document.querySelector('[data-act=\"svc-menu\"]').click();0"); await pg.wait_for_timeout(300)
     r1 = await pg.evaluate("""(()=>{const m=document.querySelector('.rd-menu');const on=m.querySelector('button.on'),off=m.querySelector('button:not(.on)');return {radio:m.classList.contains('rd-radio'),on:on&&getComputedStyle(on.querySelector('.rd-ck')).visibility,off:off&&getComputedStyle(off.querySelector('.rd-ck')).visibility,align:on&&off&&Math.abs(on.querySelector('.rd-ck').getBoundingClientRect().left-off.querySelector('.rd-ck').getBoundingClientRect().left)<1,checked:on&&on.getAttribute('aria-checked')}})()""")
     await shot(pg, 'n203-rounds-menu')
     ok('n203: Rounds menus show the current choice with a checkmark (the column is kept on every row)', r1['radio'] and r1['on'] == 'visible' and r1['off'] == 'hidden' and r1['align'] and r1['checked'] == 'true', r1)
     await pg.keyboard.press('Escape')
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read() + open(os.path.join(BUILD, 'rounds', 'app.js'), encoding='utf-8').read()   # n305
     ok('n203: labels — “Set total hours…” (n206 renamed “Change authorized hours…”), no “Hand off now →” arrow (n205 moved Hand off out of the list)', "label:'Set total hours…'" in src and 'Hand off now →' not in src)
     ok('no new page errors (n203)', not newerr(errs), errs)
     await ctx.close()
@@ -1034,7 +1049,7 @@ async def s_n203(br):
          apps=['flow'], topics=['menus'])
 async def s_n205(br):
     ctx, pg, errs = await flow_page((1440, 900))
-    await pg.evaluate("switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(900)
     await pg.evaluate("document.querySelector('.rd-row [data-act=toggle]').click();0"); await pg.wait_for_timeout(600)
     f1 = await pg.evaluate("""[...document.querySelectorAll('.rd-work button.rd-fact')].map(b=>[b.getAttribute('aria-label'),b.textContent.trim()])""")
     ok('n205: Rounds facts name their field for VoiceOver (CPR / DNR, Service, Location, Admission type)', [x[0].split(':')[0] for x in f1] == ['CPR / DNR', 'Service', 'Location', 'Admission type'], f1)
@@ -1052,7 +1067,7 @@ async def s_n205(br):
     nx2 = await pg.evaluate(f"rdNextDocId(rdFind('{pid}'))")
     ok('n205: choosing a doctor sets next (Hand off now is its own control beside it); choosing None clears it', bool(nx) and hb and n2[0] == ['None', 'false'] and not nx2, [nx, hb, n2[:2], nx2])
     await pg.keyboard.press('Escape')
-    await pg.evaluate("switchApp('flow');0"); await pg.wait_for_timeout(400)
+    await to_flow(pg)   # n305: Flow's own page
     await pg.evaluate("""(()=>{const now=Date.now();PATIENTS.push(patient({name:'Pop1',last:'Test',owner:'Synthetic',status:'Exam',room:'Room 1',arrival:new Date(now-30*60000),prio:2,doctor:'unassigned',species:'Canine',timeline:[]}));renderAll();openDrawer(PATIENTS[PATIENTS.length-1].id);})();0"""); await pg.wait_for_timeout(700)
     d1 = await pg.evaluate("""[...document.querySelectorAll('#drawer .dd-trigger')].map(b=>[b.getAttribute('aria-label'),b.getAttribute('aria-haspopup'),b.getAttribute('aria-expanded')])""")
     ok('n205: drawer pop-ups announce field and value and that they open a list (Doctor: none · Liaison: none · Priority: P2 · Urgent)', d1[0] == ['Doctor: none', 'listbox', 'false'] and d1[1][0] == 'Liaison: none' and d1[2][0].startswith('Priority: P2'), d1)
@@ -1073,7 +1088,7 @@ async def s_n205(br):
          apps=['flow'], topics=['menus'])
 async def s_n206(br):
     ctx, pg, errs = await flow_page((1440, 900))
-    await pg.evaluate("switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(900)
     await pg.evaluate("document.querySelector('.rd-row [data-act=toggle]').click();0"); await pg.wait_for_timeout(600)
     pid = await pg.evaluate("document.querySelector('.rd-row.open').dataset.pid")
     await pg.evaluate(f"(()=>{{const p=rdFind('{pid}');const a=rdAuth(p);a.hours=[{{h:24,at:rdIso(new Date(Date.now()-3600000)),by:'Dr. Koch'}},{{h:12,at:rdIso(new Date()),by:'Dr. Koch'}}];p.rounds.flags=[];renderRdCensus(true);}})()"); await pg.wait_for_timeout(400)
@@ -1109,9 +1124,9 @@ async def s_n206(br):
     h2 = await pg.evaluate("document.querySelector('.rd-row.open [data-act=outcome-menu]').getAttribute('aria-expanded')")
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(200)
     ok('n206: End admission… reports expanded while its menu is open', h2 == 'true', h2)
-    src = await pg.content()
+    src = await pg.content() + open(os.path.join(BUILD, 'rounds', 'app.js'), encoding='utf-8').read()   # n305: Rounds' code is its own file
     ok('n206: the dead Rounds menus are gone (auth-extend, payer-menu, auth-more)', "case'auth-extend'" not in src and "case'payer-menu'" not in src and "case'auth-more'" not in src)
-    await pg.evaluate("switchApp('flow');0"); await pg.wait_for_timeout(400)
+    await to_flow(pg)   # n305: Flow's own page
     await pg.evaluate("""(()=>{const now=Date.now();PATIENTS.push(patient({name:'Mvx',last:'Test',owner:'Synthetic',status:'Exam',room:'Room 1',arrival:new Date(now-20*60000),prio:3,doctor:'unassigned',species:'Canine',timeline:[]}));renderAll();})()"""); await pg.wait_for_timeout(500)
     m1 = await pg.evaluate("""(()=>{const b=document.querySelector('.pvx-move[data-pid]');if(!b) return null;const a=[b.getAttribute('aria-haspopup'),b.getAttribute('aria-expanded')];b.click();const o=b.getAttribute('aria-expanded');return a.concat([o,!!document.querySelector('.pvx-menu')])})()""")
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(200)
@@ -1157,7 +1172,7 @@ async def s_n207(br):
     o1 = await pg.evaluate("[document.getElementById('apModal').classList.contains('open'), location.hash]")
     ok('n207: /#op=new opens New patient (the File / Dock menu command) and clears the link', o1[0] and o1[1] == '', o1)
     mf = await pg.evaluate("fetch('/manifest.webmanifest').then(r=>r.json())")
-    ok('n207: Flow manifest — name “Flow · Pravix” (≤ 16), id, shortcuts New patient / Rounds / Ultrasound', mf['name'] == 'Flow · Pravix' and len(mf['name']) <= 16 and mf['id'] == '/' and [x['url'] for x in mf['shortcuts']] == ['/#op=new', '/#app=rounds', '/#app=ultrasound'] and 'Shoreline' in mf['description'], mf.get('name'))
+    ok('n207: Flow manifest — name “Flow · Pravix” (≤ 16), id, shortcuts New patient / Rounds (its own page since n305) / Ultrasound', mf['name'] == 'Flow · Pravix' and len(mf['name']) <= 16 and mf['id'] == '/' and [x['url'] for x in mf['shortcuts']] == ['/#op=new', '/rounds/', '/#app=ultrasound'] and 'Shoreline' in mf['description'], mf.get('name'))
     ok('no new page errors (n207 Flow)', not newerr(errs), errs)
     await ctx.close()
     ctx, pg, errs = await flow_page((1180, 820), touch=True)
@@ -1295,7 +1310,7 @@ async def s_n209(br):
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
     src = await pg.content()
     ok('n209: confirmation buttons in sentence case (Discharge patient, Admit patient, Mark euthanized, Mark discharged)', "Discharged:'Discharge patient',Admitted:'Admit patient',Euthanized:'Mark euthanized'" in src and "'Mark '+type.toLowerCase()" in src and 'Discharge Patient' not in src)
-    await pg.evaluate("switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(900)
     await pg.evaluate("document.querySelector('.rd-row [data-act=cur-menu]').click();0"); await pg.wait_for_timeout(300)
     m0 = await pg.evaluate("!!document.querySelector('.rd-menu')")
     await pg.keyboard.press('Meta+Period'); await pg.wait_for_timeout(300)
@@ -1515,7 +1530,7 @@ async def s_n212(br):
     SEED212 = """(()=>{const now=Date.now();[['Isabel','Waiting','Lobby'],['Bella','Waiting','Lobby'],['Maxwell','Exam','Room 1']].forEach((v,i)=>{PATIENTS.push(patient({name:v[0],last:'Srch',owner:'Synthetic',status:v[1],room:v[2],arrival:new Date(now-30*60000),prio:3,doctor:'unassigned',species:'Canine',timeline:[]}));}); renderAll();})()"""
     ctx, pg, errs = await flow_page((1440, 900))
     await pg.evaluate(SEED212); await pg.wait_for_timeout(300)
-    f1 = await pg.evaluate("""(()=>{const i=document.getElementById('globalSearch');return {ph:i.placeholder, lab:i.getAttribute('aria-label'), type:i.type, ekh:i.getAttribute('enterkeyhint'), role:i.getAttribute('role'), ac:i.getAttribute('aria-controls'), lb:document.getElementById('searchResults').getAttribute('role'), apps:document.querySelector('nav.topnav').getAttribute('aria-label'), views:document.getElementById('switcher').getAttribute('aria-label'), rd:document.getElementById('switcherRd').getAttribute('aria-label'), us:document.getElementById('switcherUs').getAttribute('aria-label')}})()""")
+    f1 = await pg.evaluate("""(()=>{const i=document.getElementById('globalSearch');return {ph:i.placeholder, lab:i.getAttribute('aria-label'), type:i.type, ekh:i.getAttribute('enterkeyhint'), role:i.getAttribute('role'), ac:i.getAttribute('aria-controls'), lb:document.getElementById('searchResults').getAttribute('role'), apps:document.querySelector('nav.topnav').getAttribute('aria-label'), views:document.getElementById('switcher').getAttribute('aria-label'), rd:(document.getElementById('switcherRd')||{getAttribute(){return 'Rounds views'}}).getAttribute('aria-label'), us:document.getElementById('switcherUs').getAttribute('aria-label')}})()""")   # n305: Rounds' views are named on Rounds' own page (t305)
     ok('n212: Flow’s search names its scope (“Search patients, doctors, rooms”) and is a search combobox; landmarks are named Apps / Flow views / Rounds views / Ultrasound views', f1 == {'ph': 'Search patients, doctors, rooms', 'lab': 'Search patients, doctors and rooms', 'type': 'search', 'ekh': 'search', 'role': 'combobox', 'ac': 'searchResults', 'lb': 'listbox', 'apps': 'Apps', 'views': 'Flow views', 'rd': 'Rounds views', 'us': 'Ultrasound views'}, f1)
     pid = await pg.evaluate("PATIENTS.find(x=>x.name==='Maxwell').id")
     await pg.evaluate(f"openDrawer('{pid}');0"); await pg.wait_for_timeout(300); await pg.evaluate("closeDrawer();0"); await pg.wait_for_timeout(300)
@@ -1541,11 +1556,11 @@ async def s_n212(br):
     a1 = await pg.evaluate("(()=>{const t=[...document.querySelectorAll('#attnList *,.attn *')].map(x=>x.textContent).join(' ');return {u:/undefined/.test(document.body.innerText)}})()")
     ok('n212: no “undefined” anywhere on Command (a patient with no reason shows just the wait)', not a1['u'], a1)
     # Rounds' search is scoped to Rounds
-    await pg.evaluate("switchApp('rounds');0"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.wait_for_timeout(900)
     await pg.evaluate("(document.querySelector('[data-act=seed-demo]')||{click(){}}).click();0"); await pg.wait_for_timeout(900)
     nm = await pg.evaluate("(()=>{const r=[...document.querySelectorAll('.rd-row[data-pid]')].filter(x=>x.offsetParent)[1];return r?(r.querySelector('.rd-name,.rd-pname,b')||r).textContent.trim().split(/\\s+/)[0]:null})()")
     await pg.click('#rdSearch'); await pg.keyboard.type(nm or 'zz'); await pg.wait_for_timeout(600)
-    q1 = await pg.evaluate("({ph:document.getElementById('rdSearch').placeholder, pop:document.getElementById('searchResults').classList.contains('open'), rows:[...document.querySelectorAll('.rd-row[data-pid]')].filter(x=>x.offsetParent).length, tip:document.getElementById('rdSearchLuna').title})")
+    q1 = await pg.evaluate("({ph:document.getElementById('rdSearch').placeholder, pop:!!(document.getElementById('searchResults')&&document.getElementById('searchResults').classList.contains('open')), rows:[...document.querySelectorAll('.rd-row[data-pid]')].filter(x=>x.offsetParent).length, tip:document.getElementById('rdSearchLuna').title})")
     await pg.keyboard.press('Enter'); await pg.wait_for_timeout(500)
     q2 = await pg.evaluate("typeof rdExpanded!=='undefined'&&!!rdExpanded")
     await shot(pg, 'n212-rounds-search')
@@ -1571,8 +1586,8 @@ async def s_n212(br):
     await pg.evaluate(f"openDrawer('{pid}');0"); await pg.wait_for_timeout(500)
     t5 = await pg.evaluate("(()=>{const s=document.getElementById('switcher').getBoundingClientRect();const e=document.elementFromPoint(s.left+40,s.top+20);return !document.getElementById('switcher').contains(e)})()")
     await pg.evaluate("closeDrawer();0"); await pg.wait_for_timeout(300)
-    await pg.evaluate("switchApp('rounds');0"); await pg.wait_for_timeout(700)
-    t6 = await pg.evaluate("[document.documentElement.classList.contains('pvx-tabbar'), document.getElementById('switcher').getBoundingClientRect().height]")
+    await to_rounds(pg); await pg.wait_for_timeout(700)
+    t6 = await pg.evaluate("[document.documentElement.classList.contains('pvx-tabbar'), (document.getElementById('switcher')||{getBoundingClientRect(){return {height:0}}}).getBoundingClientRect().height]")   # n305: Rounds' page has no Flow sub-nav at all
     ok('n212: the drawer (modal) covers the tab bar, and other apps (Rounds) don’t show Flow’s tab bar', t5 and t6 == [False, 0], [t5, t6])
     ok('no new page errors (n212 iPhone)', not newerr(errs), errs)
     await ctx.close()
@@ -1724,7 +1739,7 @@ async def s_n215(br):
     ok('n215: a saved review time that is not on the lists (an older day, 1:07 PM) is kept as it was, never changed', rv3['val'] == '2026-10-10T13:07' and rv3['time'] == '1:07 PM' and 'Oct 10' in rv3['day'], rv3)
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
     # Rounds shift
-    await pg.evaluate("switchApp('rounds'); rdSeedDemo()"); await pg.wait_for_timeout(900)
+    await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(900)
     sh = await pg.evaluate("""(async()=>{const g=document.getElementById('rdShiftSeg'),bs=[...g.querySelectorAll('button')];const on=bs.find(b=>b.classList.contains('on'));
       const w=bs.map(b=>Math.round(b.getBoundingClientRect().width)); on.focus(); on.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));
       await new Promise(r=>setTimeout(r,250)); const bs2=[...document.querySelectorAll('#rdShiftSeg button')]; const now=bs2.find(b=>b.classList.contains('on'));
