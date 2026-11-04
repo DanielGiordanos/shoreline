@@ -372,6 +372,23 @@ match /client_intakes/{docId} {
     // Oct 9 2026 — Kura on shoreline.pravix.app/kura (kura/{space}). Only Daniel for now. The page runs Kura's engine on the
     // device; Firebase keeps the shared record: a head {seq}, one log entry per change (written once, never changed or
     // deleted, numbered with no gaps because the head moves with it), full copies in checkpoints/, settings in meta/.
+    // Yakuri (shoreline.pravix.app/yakuri/): the drug-reference library published from the Mac, read by Yakuri and by every app
+    // that shows doses (assets/pvx-yakuri.js). It was published from the console on Oct 24 and never added to this file, so the
+    // Nov 1 release replaced it and every read of yakuri/ fell to the final deny. Read: staff (an active Shoreline membership).
+    // Write: the owner role only (Daniel publishes from /yakuri/#publish). Nothing is ever deleted: releases are kept for the audit.
+    function yakuriOwner() {
+      return staff() && membership().get('role', '') == 'owner';
+    }
+    match /yakuri/{doc} {
+      allow read: if staff();
+      allow create, update: if yakuriOwner();
+      allow delete: if false;
+      match /parts/{part} {
+        allow read: if staff();
+        allow create, update: if yakuriOwner();
+        allow delete: if false;
+      }
+    }
     function kuraOwner() {
       return staff() && membership().get('kura_owner', false) == true;
     }
