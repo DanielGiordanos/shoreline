@@ -18,7 +18,11 @@ self.addEventListener('message',function(e){ var d=e.data||{}; if(d.type!=='dt-c
       return Promise.all(keys.map(function(k){ var path=new URL(k.url).pathname; if(!want[k.url]&&!/\/treatment\/(index\.html)?$/.test(path)) return c.delete(k); })); }); })); });
 function saved(r){ return caches.open(CACHE).then(function(c){ return c.match(r,{ignoreSearch:r.mode==='navigate'}).then(function(m){
   return m||(r.mode==='navigate'?c.match(new URL('./',self.registration.scope).href,{ignoreSearch:true}):null); }); }).catch(function(){ return null; }); }
+/* n300: a file whose address carries its hash (?v=…) can't change; the saved copy is served at once and the network only fills the copy.
+   Pages sends max-age=600, so without this every reopen after ten minutes revalidated 23 files. index.html and unhashed files stay network first. */
+function hashed(u){ return u.origin===self.location.origin&&/[?&]v=[0-9a-f]{6,}/.test(u.search); }
 self.addEventListener('fetch',function(e){ var r=e.request; if(r.method!=='GET') return; var u=new URL(r.url); if(!mine(u)) return;
+  if(hashed(u)){ e.respondWith(saved(r).then(function(m){ if(m) return m; return fetch(r).then(function(res){ e.waitUntil(keep(r,res)); return res; }); })); return; }
   var net=fetch(r).then(function(res){ e.waitUntil(keep(r,res)); return res; });
   e.respondWith(saved(r).then(function(m){
     if(!m) return net.catch(function(){ return Response.error(); });
