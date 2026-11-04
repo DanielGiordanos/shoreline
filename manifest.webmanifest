@@ -39,7 +39,14 @@
       "name": "Rounds",
       "short_name": "Rounds",
       "description": "Open inpatient rounds",
-      "url": "/#app=rounds"
+      "url": "/rounds/",
+      "icons": [
+        {
+          "src": "/assets/img/sc-rounds.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Ultrasound",

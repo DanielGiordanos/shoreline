@@ -140,7 +140,7 @@ html.pvx-bigtext .wc-v{height:auto;min-height:1.75rem}
 /* PVX-N257 · HIG Accessibility, Color, Dark Mode, Icons — Treatment only (see patch_n257.py) */
 /* 5. the page's appearance reaches the browser: pickers, fields and scroll bars follow it */
 html,body{color-scheme:light}
-html:has(body.dark),body.dark{color-scheme:dark}
+html.pvx-dark,body.dark{color-scheme:dark}
 /* 2. grips at least 3:1 at rest */
 html body #sheetInner .rl-grip:not(:hover):not(:active),html body .sb-row .pt-dots{color:#7E869C}
 html body.dark #sheetInner .rl-grip:not(:hover):not(:active),html body.dark .sb-row .pt-dots{color:#6A84A2}

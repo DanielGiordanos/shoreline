@@ -50,7 +50,10 @@ async function main(){
  await check('owner access script is included before Treatment store',()=>{
    assert.ok(html.indexOf('owner-access.js?v=')>=0);
    assert.ok(html.indexOf('<script defer src="owner-access.js?v=') < html.indexOf('<script defer src="store.js?v='));
-   assert.ok(html.includes('<link rel="preload" href="store.js?v=20261102-owner-bootstrap"'));
+   // The preload and the script name the same store.js version, so a page never preloads one build and runs another.
+   // (n300 hashes store.js by content: the owner-bootstrap build's tag was replaced by the hash of the file that contains it.)
+   const pre=(html.match(/<link rel="preload" href="store\.js\?v=([^"]+)"/)||[])[1], run=(html.match(/<script defer src="store\.js\?v=([^"]+)"/)||[])[1];
+   assert.ok(pre && run && pre===run);
  });
  await check('Treatment waits for verified membership before subscribing',()=>{
    assert.ok(store.includes('onAuthStateChanged(async function(e)'));

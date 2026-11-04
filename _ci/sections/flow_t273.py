@@ -3,7 +3,7 @@ The visits feed is simulated as a slow hospital network: an empty answer from th
 list from the server after its own delay; Flow's server reads wait, or fail."""
 from core import ok, section, until, PORT, INIT, FAKE, WRAP, SEED
 
-FU = '{"uid":"u1","email":"daniel.giordano@pravix.app","displayName":"Daniel Giordano"}'
+FU = '{"uid":"u1","email":"rounds.tester@vca.com","displayName":"Rounds Tester"}'   # not an account main enrols at sign-in
 QSIM = """window.__qlag=@@LAG@@;window.__qget=@@GET@@;window.__qfail=false;window.__gets=0;window.__refetch=0;
 (()=>{const t=setInterval(()=>{if(!window.firebase||!firebase.firestore)return;clearInterval(t);const db=firebase.firestore();const P=Object.getPrototypeOf(db.collection('visits'));
   const g=P.get;P.get=function(){if(!/^visits/.test(this.n))return g.apply(this,arguments);window.__gets++;const self=this,a=arguments;
@@ -38,8 +38,7 @@ async def page(br, lag='null', get=60000, vp=(1440, 900), dark=True, rm=False):
         elif u.startswith(f'http://127.0.0.1:{PORT}/'): await r.continue_()
         else: await r.fulfill(status=204, body='')
     await p.route('**/*', route)
-    await p.goto(f'http://127.0.0.1:{PORT}/'); await p.wait_for_selector('#subnavFlow .switcher.pvx-sw', state='attached')
-    await p.evaluate("switchApp('rounds')")
+    await p.goto(f'http://127.0.0.1:{PORT}/rounds/'); await p.wait_for_selector('#subnavRd', state='attached')   # n305: Rounds' own page
     return c, p, e
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]   # both from the fake Firestore
 
@@ -72,7 +71,7 @@ async def s_t273(br):
 
     # nothing answers: after 10 s it says so, with a working Try again (keyboard), which fails, then works
     c, p, e = await page(br, 'null', 60000)
-    await p.wait_for_timeout(10800); s2 = await p.evaluate(ST)
+    await p.wait_for_timeout(9000); await until(p, "(document.querySelector('#rdList .rd-loading')||{dataset:{}}).dataset.state==='slow'", 6000); s2 = await p.evaluate(ST)   # n310: the 10 s clock starts when the loader first draws, not at page load (it raced a slow start)
     ok('Delayed: after 10 s “Taking longer than expected”, why, and Try again (44 pt)', s2['task'] == 'Taking longer than expected' and 'hasn’t responded' in s2['help'] and s2['retry'] and s2['rh'] >= 44, s2)
     await p.evaluate("window.__qfail=true;window.__qget=2500")
     await p.focus('#rdList .rd-ld-retry'); await p.keyboard.press('Enter'); await p.wait_for_timeout(100)
@@ -91,7 +90,7 @@ async def s_t273(br):
     # normal: the census is already in, no loader at all
     c, p, e = await page(br, 0, 0)
     await p.wait_for_timeout(1500); s6 = await p.evaluate(ST)
-    ok('Normal: with the answer already in, Rounds never shows the loader', s6['st'] is None and s6['empty'] and s6['said'] == '', s6); await c.close()
+    ok('Normal: a quick answer — Rounds (its own page since n305) shows the census within moments, the loader gone', s6['st'] is None and s6['empty'], s6); await c.close()
 
     # themes, narrow, reduced motion
     res = {}
