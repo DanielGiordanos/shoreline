@@ -1,0 +1,69 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>firebase-lite conformance</title></head><body>
+<script>
+window.__log=[]; function log(step,v){ window.__log.push([step, v]); }
+function norm(v){ /* make values comparable across the two SDK flavours */
+  if(v==null) return v; if(Array.isArray(v)) return v.map(norm);
+  if(v && typeof v.toDate==='function' && typeof v.seconds==='number') return {ts:true, close:Math.abs(v.toMillis()-Date.now())<120000};
+  if(typeof v==='object'){ var o={}; Object.keys(v).sort().forEach(function(k){ o[k]=norm(v[k]); }); return o; }
+  return v; }
+</script>
+<script src="IMPL"></script>
+<script>
+(async function(){
+  var impl=new URLSearchParams(location.search).get('impl');
+  var P='demo-lite', run=new URLSearchParams(location.search).get('run')||String(Date.now());
+  try{
+    firebase.initializeApp({apiKey:'fake', authDomain:P+'.firebaseapp.com', projectId:P, appId:'1:1:web:1'});
+    log('apps', firebase.apps.length);
+    var db=firebase.firestore(), auth=firebase.auth(), FV=firebase.firestore.FieldValue;
+    db.useEmulator('127.0.0.1',8085); auth.useEmulator('http://127.0.0.1:9099',{disableWarnings:true});
+    /* ---- auth ---- */
+    var states=[]; var unsubA=auth.onAuthStateChanged(function(u){ states.push(u?u.email:null); });
+    await new Promise(function(r){ setTimeout(r,300); });
+    log('auth initial', states.slice());
+    var email='t'+run+'@x.test';
+    await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:'right-password',returnSecureToken:true})});
+    try{ await auth.signInWithEmailAndPassword(email,'wrong'); log('wrong pw','no error'); }catch(e){ log('wrong pw', e.code); }
+    var cred=await auth.signInWithEmailAndPassword(email,'right-password');
+    log('signin', [!!cred.user, cred.user.email, typeof cred.user.uid, typeof cred.user.getIdToken]);
+    log('currentUser', auth.currentUser&&auth.currentUser.email);
+    await new Promise(function(r){ setTimeout(r,200); }); log('auth states', states.slice());
+    try{ await auth.sendPasswordResetEmail(email); log('reset','ok'); }catch(e){ log('reset', e.code); }
+    /* ---- firestore ---- */
+    var col=db.collection('sheets_'+impl+'_'+run), d1=col.doc('a'), d2=col.doc('b'), d3=col.doc();
+    log('ref ids', [d1.id, d1.path, col.id, typeof d3.id, d3.id.length, d1.parent.id, d1.parent.path]);
+    var snap0=await d1.get(); log('missing', [snap0.exists, snap0.data(), snap0.id, snap0.ref.id, snap0.metadata.fromCache, snap0.metadata.hasPendingWrites]);
+    var seq=[]; var unsub=d1.onSnapshot({includeMetadataChanges:true},function(s){ seq.push([s.exists, s.metadata.fromCache, s.metadata.hasPendingWrites, s.exists?s.data().n:null]); });
+    await new Promise(function(r){ setTimeout(r,300); });
+    await d1.set({n:1, tags:['x'], at:FV.serverTimestamp(), nest:{a:1,b:2}});
+    await d1.set({m:2},{merge:true});
+    await d1.update({n:FV.increment(5), tags:FV.arrayUnion('y','x'), 'nest.b':FV.delete()});
+    await new Promise(function(r){ setTimeout(r,600); });
+    var s1=await d1.get(); log('after writes', [s1.exists, norm(s1.data()), s1.get('n'), s1.get('nest.a')]);
+    log('snapshot sequence', seq.filter(function(x,i){ return i===0||JSON.stringify(x)!==JSON.stringify(seq[i-1]); }));
+    unsub();
+    var seq2=[]; var unsub2=col.onSnapshot(function(s){ seq2.push([s.size, s.empty, s.docs.map(function(d){ return d.id; }).sort(), s.metadata.fromCache]); });
+    await d2.set({n:2, tenant_id:'t', status:'active'}); await d3.set({n:3, tenant_id:'t', status:'closed'});
+    var added=await col.add({n:4, tenant_id:'u', status:'active'}); log('add', [typeof added.id, added.path.indexOf(col.path)===0]);
+    await new Promise(function(r){ setTimeout(r,500); }); unsub2();
+    log('query snapshot sequence', seq2.map(function(x){ return [x[0],x[1],x[2].length,x[3]]; }));
+    var q=await col.where('tenant_id','==','t').where('status','==','active').get(); log('where ==', [q.size, q.empty, q.docs.map(function(d){ return d.data().n; })]);
+    var q2=await col.where('status','in',['active','closed']).get(); log('where in', [q2.size, q2.docs.map(function(d){ return d.data().n; }).sort()]);
+    var cnt=0; q2.forEach(function(d){ cnt+=d.data().n; }); log('forEach', cnt);
+    var qs=await col.get({source:'server'}); log('server get', [qs.size, qs.metadata.fromCache]);
+    var ds=await d1.get({source:'server'}); log('server doc get', [ds.exists, ds.metadata.fromCache]);
+    var b=db.batch(); b.set(col.doc('c'),{n:9}); b.update(d2,{n:22}); b.delete(d3); await b.commit();
+    var after=await col.get(); log('batch', after.docs.map(function(d){ return [d.id.length>12?'auto':d.id, d.data().n]; }).sort(function(a,b){ return String(a[0]).localeCompare(String(b[0])); }));
+    var tx=await db.runTransaction(async function(t){ var s=await t.get(d2); var n=s.data().n; t.update(d2,{n:n+1}); t.set(col.doc('d'),{n:n}); return n; });
+    var s2=await d2.get(); log('transaction', [tx, s2.data().n, (await col.doc('d').get()).data().n]);
+    await col.doc('d').delete(); log('delete', (await col.doc('d').get()).exists);
+    var sub=d1.collection('days'); await sub.doc('x').set({v:1}); log('subcollection', [sub.path, (await sub.doc('x').get()).data().v, sub.parent.id]);
+    var err=null; try{ await db.doc('nope').get(); }catch(e){ err=e.message.slice(0,40); } log('bad path', err!==null);
+    await auth.signOut(); await new Promise(function(r){ setTimeout(r,200); }); log('signed out', [auth.currentUser, states.slice(-1)[0]]);
+    unsubA();
+    /* the shapes the app relies on */
+    log('shapes', [typeof FV.serverTimestamp(), typeof FV.delete(), typeof FV.arrayUnion('a'), typeof db.collection, typeof d1.onSnapshot, typeof s1.exists, typeof firebase.firestore.FieldValue]);
+  }catch(e){ log('ERROR', String(e&&e.stack||e)); }
+  window.__done=true;
+})();
+</script></body></html>
