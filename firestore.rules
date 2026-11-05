@@ -63,6 +63,15 @@ service cloud.firestore {
         && request.auth.token.get('email', '').lower() == 'heather.galano@vca.com'
         && request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'password';
     }
+    // Identical sign-in exception for Sarah's existing Firebase email/password
+    // identity, but only for her fixed assessment-only reviewer membership.
+    // Other providers still require verified email.
+    function sarahPasswordPilot(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.get('email', '').lower() == 'sarah.schiff@vca.com'
+        && request.auth.token.get('firebase', {}).get('sign_in_provider', '') == 'password';
+    }
     function validPilotMembership(roleName, kuraOwner) {
       return request.resource.data.keys().hasOnly(
            ['active','tenant_id','role','kura_owner','review_manager'])
@@ -89,8 +98,8 @@ service cloud.firestore {
     }
     match /staff_members/{uid} {
       allow get: if (staff() || reviewOnly()) && uid == request.auth.uid;   // ro1: a reviewer reads her own record
-      // Create-only, UID-bound, fixed tenant/role. Daniel and Heather retain
-      // their existing narrow exceptions; Sarah requires verified email.
+      // Create-only, UID-bound, fixed tenant/role. Daniel retains verified
+      // ownership; Heather and Sarah may use existing password sign-in.
       // Existing records cannot self-update.
       // The temporary window ends automatically on 2026-11-16 UTC.
       allow create: if request.time < timestamp.date(2026, 11, 16)
@@ -102,7 +111,8 @@ service cloud.firestore {
               || heatherPasswordPilot(uid))
             && validPilotMembership('management', false))
           ||
-          (verifiedPilot(uid, 'sarah.schiff@vca.com')
+          ((verifiedPilot(uid, 'sarah.schiff@vca.com')
+              || sarahPasswordPilot(uid))
             && validReviewerPilotMembership())
         );
       allow list, update, delete: if false;
