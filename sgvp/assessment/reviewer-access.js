@@ -1,17 +1,27 @@
-/* Pravix SGVP Assessments — Heather reviewer membership activation.
-   Uses the existing Firebase sign-in, never handles passwords or signup.
-   Server rules require Heather's exact Firebase email + password provider
-   (or verified email), matching UID, fixed role and tenant, with expiry. */
+/* Pravix SGVP Assessments — narrowly approved reviewer memberships.
+   Uses existing Firebase sign-in; never handles passwords or signup.
+   Server rules enforce exact email, authenticated UID, fixed role and tenant,
+   and an expiring onboarding window. Sarah requires a verified email. */
 (function () {
   'use strict';
 
-  const APPROVED_EMAIL = 'heather.galano@vca.com';
-  const EXPECTED = Object.freeze({
-    active: true,
-    tenant_id: 'shoreline',
-    role: 'management',
-    kura_owner: false,
-    review_manager: true
+  const HEATHER_EMAIL = 'heather.galano@vca.com';
+  const SARAH_EMAIL = 'sarah.schiff@vca.com';
+  const APPROVED_MEMBERS = Object.freeze({
+    [HEATHER_EMAIL]: Object.freeze({
+      active: true,
+      tenant_id: 'shoreline',
+      role: 'management',
+      kura_owner: false,
+      review_manager: true
+    }),
+    [SARAH_EMAIL]: Object.freeze({
+      active: true,
+      tenant_id: 'shoreline',
+      role: 'reviewer',
+      kura_owner: false,
+      review_manager: false
+    })
   });
   const VALID_ROLES = [
     'owner', 'admin', 'management', 'doctor',
@@ -24,10 +34,11 @@
       return Promise.resolve({ ok: false, reason: 'authentication' });
     }
 
-    // All other evaluators use their normal membership and assignment
-    // permissions. No new privileges or roles are granted here.
+    // Only these two existing approved identities can self-activate. All
+    // others retain their normal membership and assignment permissions.
     const email = String(user.email || '').trim().toLowerCase();
-    if (email !== APPROVED_EMAIL) {
+    const expected = APPROVED_MEMBERS[email];
+    if (!expected) {
       return Promise.resolve({ ok: true, unchanged: true });
     }
 
@@ -39,16 +50,15 @@
         await user.reload();
         await user.getIdToken(true);
         // Avoid using a stale identity after an asynchronous refresh.
-        if (String(user.email || '').trim().toLowerCase() !== APPROVED_EMAIL ||
+        if (String(user.email || '').trim().toLowerCase() !== email ||
             user.uid !== uid) {
           return { ok: false, reason: 'identity-changed' };
         }
-        // An existing Firebase email/password sign-in is sufficient for this
-        // prelaunch Heather-only activation. Other providers still require
-        // verified email ownership; server-side rules independently enforce it.
+        // Only Heather retains the temporary password-login exception.
+        // Sarah must verify ownership of her VCA email; rules enforce this too.
         const signedInWithPassword = Array.isArray(user.providerData) &&
           user.providerData.some(p => p && p.providerId === 'password');
-        if (!user.emailVerified && !signedInWithPassword) {
+        if (!user.emailVerified && !(email === HEATHER_EMAIL && signedInWithPassword)) {
           return { ok: false, reason: 'email-unverified' };
         }
 
@@ -66,23 +76,26 @@
           const member = existing.data() || {};
           if (member.active !== true ||
               member.tenant_id !== 'shoreline' ||
-              VALID_ROLES.indexOf(member.role) < 0) {
+              (VALID_ROLES.indexOf(member.role) < 0 &&
+               !(email === SARAH_EMAIL && member.role === 'reviewer'))) {
             return { ok: false, reason: 'membership-restricted' };
           }
-          if (!(['owner', 'admin'].includes(member.role) ||
+          // Heather requires management review authority. Sarah needs only
+          // normal evaluator access and may retain an existing staff role.
+          if (email === HEATHER_EMAIL &&
+              !(['owner', 'admin'].includes(member.role) ||
                 member.review_manager === true)) {
             return { ok: false, reason: 'review-role-missing' };
           }
           return { ok: true, alreadyActive: true };
         }
 
-        // Only a new document with this exact UID and immutable values
-        // satisfies the temporary policy. A disabled/existing membership
-        // cannot be overwritten or elevated by this code.
-        await ref.set(EXPECTED);
+        // Only a new UID-keyed record with the exact approved role can be
+        // created. Disabled/existing memberships cannot be overwritten.
+        await ref.set(expected);
         const confirmed = await ref.get({ source: 'server' });
         const member = confirmed && confirmed.exists && confirmed.data();
-        if (!member || Object.keys(EXPECTED).some(k => member[k] !== EXPECTED[k])) {
+        if (!member || Object.keys(expected).some(k => member[k] !== expected[k])) {
           return { ok: false, reason: 'membership-unconfirmed' };
         }
         return { ok: true, activated: true };
