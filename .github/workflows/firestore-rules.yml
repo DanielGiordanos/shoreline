@@ -1,16 +1,12 @@
 # Publishes firestore.rules to the shoreline-flow Firebase project.
-# Tracker privacy and client-intake validation rules published via PR #42.
-# One-time owner-authorized release of the nine additional assessment reviewers.
-# Only the release note added by this change triggers a push deployment.
-# Restore manual-only after verifying publication.
+# Nine additional assessment reviewers published via PR #47 on Nov 5, 2026.
+# Production Firestore rule publication is manual-only again.
+# Do not re-enable automatic publishing without release approval.
 # Needs one repository secret, FIREBASE_SERVICE_ACCOUNT: the JSON key of a service account with the
 # "Firebase Rules Admin" role (created by Daniel). Without it the run says so and does nothing.
 # firebase-tools compiles the rules first: a rules error fails the run and nothing is published.
 name: Publish Firestore rules
 on:
-  push:
-    branches: [main]
-    paths: ['security/REVIEWER_ACCESS_2026-11-05.md']
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,4 +37,3 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
           npx -y firebase-tools@13.29.1 deploy --only firestore:rules --project shoreline-flow --non-interactive
           rm -f "$RUNNER_TEMP/sa.json"
-
