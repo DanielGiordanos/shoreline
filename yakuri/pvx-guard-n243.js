@@ -104,3 +104,5 @@
     if (++tries < 60) setTimeout(poll, 250);
   })();
 })();
+/* ro1 · review-only accounts (assets/pvx-scope.js): a 'reviewer' account opens Intern reviews and is shown the way there everywhere else */
+(function () { if (window.pvxScope || document.getElementById('pvx-scope-js')) return; var s = document.createElement('script'); s.id = 'pvx-scope-js'; s.src = '/assets/pvx-scope.js?v=0a7f8dc5d3'; s.defer = true; (document.head || document.documentElement).appendChild(s); })();

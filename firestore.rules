@@ -6,6 +6,9 @@
 // Oct 28 2026 (assessment) — SGVP intern reviews: sgvp_review_rounds, sgvp_review_assign, sgvp_reviews (the block marked
 //   "SGVP intern reviews"; nothing else changed).
 rules_version = '2';
+// Nov 4 2026 (ro1) — review-only accounts: a staff_members record with role 'reviewer' opens Intern reviews
+//   (sgvp_review_rounds, her own sgvp_review_assign and sgvp_reviews) and its own staff_members record, nothing else.
+//   It is deliberately not in staff()'s role list. The changes are marked "ro1".
 // Oct 13 2026 (n127) — On the way: incoming and eta_log (the two blocks marked "Oct 13 (n127)").
 // Oct 13 2026 (n126) — verify codes: doc_verify (the block marked "Oct 13 (n126)"; nothing else changed).
 // Oct 13 2026 — Pravix Forms (forms/ page + Flow n122): form_templates, visit_docs, form_requests (the three blocks marked "Oct 13"; nothing else changed).
@@ -72,7 +75,7 @@ service cloud.firestore {
         && request.resource.data.review_manager == true;
     }
     match /staff_members/{uid} {
-      allow get: if staff() && uid == request.auth.uid;
+      allow get: if (staff() || reviewOnly()) && uid == request.auth.uid;   // ro1: a reviewer reads her own record
       // Self-creation only; signed Firebase Auth, approved fixed role/tenant
       // fields, verified Daniel or password-authenticated Heather. Existing
       // records cannot self-update.
@@ -87,6 +90,14 @@ service cloud.firestore {
             && validPilotMembership('management', false))
         );
       allow list, update, delete: if false;
+    }
+    // ro1 (Nov 4 2026): an evaluator who may open Intern reviews and nothing else in Pravix (Daniel creates the record)
+    function reviewOnly() {
+      return request.auth != null && !lobbyAccount()
+        && exists(membershipPath())
+        && membership().get('active', false) == true
+        && membership().get('tenant_id', '') == 'shoreline'
+        && membership().get('role', '') == 'reviewer';
     }
     function sgvpAdmin() {
       return staff() && membership().get('role', '') in ['owner', 'admin'];
@@ -616,12 +627,14 @@ match /client_intakes/{docId} {
     // review and may reopen a submitted one; nobody can change a submitted review's ratings or text, and nothing
     // is ever deleted. Interns and the managers' account have no assignments, so they can read nothing here.
     function myEmail() { return request.auth.token.get('email', '').lower(); }
+    // ro1: who may work as an evaluator here: staff, or a review-only account
+    function evaluator() { return staff() || reviewOnly(); }
     function reviewReader() {
       return staff()
         && (sgvpAdmin() || membership().get('review_manager', false) == true);
     }
     match /sgvp_review_rounds/{roundId} {
-      allow read: if staff();
+      allow read: if evaluator();
       allow create, update: if reviewReader()
         && request.resource.data.keys().hasOnly(['name', 'kind', 'period', 'year', 'interns', 'status', 'due',
                                                   'created_at', 'created_by', 'updated_at'])
@@ -633,7 +646,7 @@ match /client_intakes/{docId} {
       allow delete: if reviewReader();
     }
     match /sgvp_review_assign/{aid} {
-      allow read: if reviewReader() || (staff() && resource.data.email == myEmail());
+      allow read: if reviewReader() || (evaluator() && resource.data.email == myEmail());
       allow create: if reviewReader()
         && request.resource.data.keys().hasOnly(['round', 'intern', 'email', 'evaluator_name', 'record_id',
                                                   'created_at', 'created_by'])
@@ -656,9 +669,9 @@ match /client_intakes/{docId} {
       // an evaluator may also read her review before it exists (opening an intern she hasn't started yet):
       // a missing document is readable only by the evaluator it's assigned to
       allow read: if reviewReader()
-        || (staff() && resource != null && resource.data.email == myEmail())
-        || (staff() && resource == null && exists(/databases/$(database)/documents/sgvp_review_assign/$(aid)) && asg().email == myEmail());
-      allow create: if staff()
+        || (evaluator() && resource != null && resource.data.email == myEmail())
+        || (evaluator() && resource == null && exists(/databases/$(database)/documents/sgvp_review_assign/$(aid)) && asg().email == myEmail());
+      allow create: if evaluator()
         && exists(/databases/$(database)/documents/sgvp_review_assign/$(aid))
         && asg().email == myEmail()
         && roundOpen(asg().round)
@@ -676,7 +689,7 @@ match /client_intakes/{docId} {
         && request.resource.data.updated_at == request.time;
       allow update: if
         // the evaluator, while it is her draft and the round is open
-        ( staff()
+        ( evaluator()
           && resource.data.email == myEmail()
           && resource.data.status == 'draft'
           && roundOpen(resource.data.round)
