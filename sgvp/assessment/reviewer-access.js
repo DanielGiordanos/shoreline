@@ -1,7 +1,8 @@
 /* Pravix SGVP Assessments — narrowly approved reviewer memberships.
    Uses existing Firebase sign-in; never handles passwords or signup.
    Server rules enforce exact email, authenticated UID, fixed role and tenant,
-   and an expiring onboarding window. Sarah requires a verified email. */
+   and an expiring onboarding window. Password sign-in is accepted for
+   the two named reviewers without a separate email verification step. */
 (function () {
   'use strict';
 
@@ -54,11 +55,12 @@
             user.uid !== uid) {
           return { ok: false, reason: 'identity-changed' };
         }
-        // Only Heather retains the temporary password-login exception.
-        // Sarah must verify ownership of her VCA email; rules enforce this too.
+        // Like Heather, Sarah can activate with her existing Firebase email/
+        // password sign-in, without an additional email verification step.
+        // Other providers still require verified email ownership.
         const signedInWithPassword = Array.isArray(user.providerData) &&
           user.providerData.some(p => p && p.providerId === 'password');
-        if (!user.emailVerified && !(email === HEATHER_EMAIL && signedInWithPassword)) {
+        if (!user.emailVerified && !signedInWithPassword) {
           return { ok: false, reason: 'email-unverified' };
         }
 
