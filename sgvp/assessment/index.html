@@ -906,6 +906,21 @@ body:not(.dark) .a-sheet{background:#fff;--a-sbg:#fff}
 @media (max-width:1180px){.a-guidebtn{display:inline-flex}}
 .a-guide-in .a-lvl:first-child{border-top:0}
 .a-due.late{color:var(--a-warn-ink);font-weight:600}
+/* due1 (Nov 5 2026): the due date, said plainly. Amber from 3 days out and once it has passed. */
+.a-duecard{display:flex;align-items:center;gap:14px;margin:0 0 14px;padding:12px 16px 12px 12px;border-radius:16px;background:var(--a-card);border:1px solid var(--a-line)}
+.a-duecard .cal{flex:none;width:48px;border-radius:11px;overflow:hidden;text-align:center;background:var(--a-card-2);border:1px solid var(--a-line)}
+.a-duecard .cal .m{display:block;padding:2px 0 1px;font-size:.625rem;font-weight:700;letter-spacing:.09em;line-height:1.4;color:var(--a-card);background:var(--a-acc-ink)}
+.a-duecard .cal .d{display:block;font-size:1.3125rem;font-weight:700;line-height:1.55;color:var(--a-ink);font-variant-numeric:tabular-nums}
+.a-duecard .h{font-size:1rem;font-weight:700;line-height:1.3;color:var(--a-ink)}
+.a-duecard .s{margin-top:2px;font-size:.875rem;line-height:1.4;color:var(--a-ink-2);font-variant-numeric:tabular-nums}
+.a-duecard .s b{font-weight:600;color:var(--a-acc-ink)}
+.a-duecard.soon .cal .m,.a-duecard.late .cal .m{background:var(--a-warn-ink)}
+.a-duecard.soon .s b,.a-duecard.late .s b,.a-duecard.late .h{color:var(--a-warn-ink)}
+.a-duecard.late{background:rgba(232,168,48,.08);border-color:rgba(232,168,48,.4)}
+.a-kdue{margin-top:6px;font-size:.8125rem;font-weight:600;line-height:1.35;color:var(--a-acc-ink);font-variant-numeric:tabular-nums}
+.a-kdue.soon,.a-kdue.late,.a-kpiline .a-due.soon,.a-kpiline .a-due.late{color:var(--a-warn-ink)}
+.a-kpiline .a-due{font-weight:600;color:var(--a-acc-ink)}
+@media (forced-colors:active){.a-duecard .cal .m{forced-color-adjust:none;background:CanvasText;color:Canvas}}
 .a-discard{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(232,168,48,.10);border:1px solid rgba(232,168,48,.35);font-size:.9375rem;font-weight:600}
 .a-discard .b{display:flex;gap:8px;flex-wrap:wrap}
 /* loading placeholders (static: nothing moves, so nothing to turn off for Reduce Motion) */
@@ -2284,6 +2299,21 @@ function buildPrintRecord(r) {
   const fmtDue = d => { const x = dueDate(d); return x && !isNaN(x) ? x.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''; };
   const pastDue = d => { const x = dueDate(d); if (!x) return false; const t = new Date(); t.setHours(0, 0, 0, 0); x.setHours(0, 0, 0, 0); return t > x; };
   const dueLine = (r, left) => !r.due ? '' : (pastDue(r.due) && left ? `<span class="a-due late">Was due ${esc(fmtDue(r.due))}</span>` : `<span class="a-due">Due ${esc(fmtDue(r.due))}</span>`);
+  /* due1 (Nov 5 2026): how far off a round's due date is, in words */
+  const dueDays = d => { const x = dueDate(d); if (!x || isNaN(x)) return null; const t = new Date(); t.setHours(0, 0, 0, 0); x.setHours(0, 0, 0, 0); return Math.round((x - t) / 864e5); };
+  const fmtDueLong = d => { const x = dueDate(d); return x && !isNaN(x) ? x.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : ''; };
+  const dueTone = n => n === null ? '' : n < 0 ? 'late' : n <= 3 ? 'soon' : '';
+  const dueLeft = n => n > 1 ? n + ' days left' : n === 1 ? 'Due tomorrow' : n === 0 ? 'Due today' : (-n) + (n === -1 ? ' day' : ' days') + ' overdue';
+  /* My reviews: one card under an open round that still has reviews to submit */
+  const dueCard = (r, left, total) => {
+    const n = r && r.status === 'open' && left > 0 ? dueDays(r.due) : null; if (n === null) return '';
+    const x = dueDate(r.due), togo = total === 1 ? '1 review to submit' : `${left} of ${total} reviews to submit`;
+    return `<div class="a-duecard ${dueTone(n)}" role="note"><div class="cal" aria-hidden="true"><span class="m">${esc(x.toLocaleDateString('en-US', { month: 'short' }).toUpperCase())}</span><span class="d">${x.getDate()}</span></div>`
+      + `<div><div class="h">${n < 0 ? 'Was due' : 'Due'} ${esc(fmtDueLong(r.due))}</div><div class="s"><b>${n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : dueLeft(n)}</b> · ${togo}</div></div></div>`;
+  };
+  /* a review in draft: the due date under Status, and in the iPhone summary line */
+  const dueKpi = o => { const n = o.round && o.round.status === 'open' && o.rev.status !== 'submitted' ? dueDays(o.round.due) : null; return n === null ? '' : `<div class="a-kdue ${dueTone(n)}">${n < 0 ? 'Was due ' + esc(fmtDue(o.round.due)) + ' · ' + dueLeft(n) : n <= 1 ? dueLeft(n) + ', ' + esc(fmtDue(o.round.due)) : 'Due ' + esc(fmtDue(o.round.due)) + ' · ' + dueLeft(n)}</div>`; };
+  const dueShort = o => { const n = o.round && o.round.status === 'open' && o.rev.status !== 'submitted' ? dueDays(o.round.due) : null; return n === null ? '' : `<span class="a-due ${dueTone(n)}">${n > 1 ? 'Due ' + esc(fmtDue(o.round.due)) : dueLeft(n)}</span>`; };
   const fmtDate = ts => { const d = toDate(ts); return d && !isNaN(d) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''; };
   const ICON = {
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
@@ -2706,7 +2736,7 @@ function buildPrintRecord(r) {
     rounds.forEach(r => {
       const list = M.assigns.filter(a => a.round === r.id).sort((a, b) => intern(a.intern).num.localeCompare(intern(b.intern).num));
       const done = list.filter(a => (M.reviews[a.id] || {}).status === 'submitted').length;
-      html += `<div class="a-sec"><h2>${esc(r.name)}${r.status === 'closed' ? ' ' + pill('closed') : ''}</h2><p>${[r.period ? esc(r.period) : '', dueLine(r, done < list.length), `${done} of ${list.length} submitted`].filter(Boolean).join(' · ')}</p></div><div class="a-grid">`;
+      html += `<div class="a-sec"><h2>${esc(r.name)}${r.status === 'closed' ? ' ' + pill('closed') : ''}</h2><p>${[r.period ? esc(r.period) : '', dueCard(r, list.length - done, list.length) ? '' : dueLine(r, done < list.length), `${done} of ${list.length} submitted`].filter(Boolean).join(' · ')}</p></div>${dueCard(r, list.length - done, list.length)}<div class="a-grid">`;
       list.forEach(a => {
         const i = intern(a.intern), rev = M.reviews[a.id], p = progressOf(rev), pct = Math.round(100 * p.rated / p.total);
         const st = rev ? rev.status : 'ns';
@@ -3094,7 +3124,7 @@ function buildPrintRecord(r) {
           <div class="a-kpi"><div class="l">Completion</div><div class="v">${pct}<small>%</small></div><div class="a-bar"><i style="width:${pct}%"></i></div><div class="s">${p.rated} of ${p.total} items</div></div>
           <div class="a-kpi"><div class="l">Domains complete</div><div class="v">${doneN}<small> of 10</small></div><div class="s">${doneN === 10 ? (r.status === 'submitted' ? 'Every domain complete' : 'Ready to submit') : r.status === 'submitted' ? 'Blank items print as Not rated' : 'Rate every item to complete a domain'}</div></div>
           <div class="a-kpi"><div class="l">Not observed</div><div class="v">${noN}</div><div class="s">${o.mine ? 'Items you didn’t see' : `Items ${esc(dr(o.a.evaluator_name))} didn’t see`}</div></div>
-          <div class="a-kpi"><div class="l">Status</div><div class="v" style="font-size:1rem;margin-top:10px">${pill(o.exists ? r.status : 'ns')}</div><div class="s">${r.status === 'submitted' ? 'Locked' : ed ? 'Saves as you go' : 'Read only'}</div></div>
+          <div class="a-kpi"><div class="l">Status</div><div class="v" style="font-size:1rem;margin-top:10px">${pill(o.exists ? r.status : 'ns')}</div><div class="s">${r.status === 'submitted' ? 'Locked' : ed ? 'Saves as you go' : 'Read only'}</div>${o.mine ? dueKpi(o) : ''}</div>
         </div>`
       + `<div class="a-work"><nav class="a-rail" aria-label="Domains">${DOMAINS.map((x, k) => {
           const n = rated(r, x), t = x.overall ? 1 : x.questions.length, ok = domainDone(r, x);
@@ -3308,7 +3338,7 @@ function buildPrintRecord(r) {
     const r = o.rev, p = computeProgress(r), doneN = DOMAINS.filter(x => domainDone(r, x)).length;
     const noN = DOMAINS.reduce((n, x) => n + Object.values(domainAnswers(r, x)).filter(v => v === NOT_OBSERVED).length, 0);
     const tail = r.status === 'submitted' ? 'Locked' : editable() ? 'Saves as you go' : 'Read only';
-    return `${pill(status)}<span><b>${p.rated} of ${p.total}</b> rated · <b>${doneN} of 10</b> domains${noN ? ` · ${noN} not observed` : ''} · ${tail}</span>`;
+    return `${pill(status)}<span><b>${p.rated} of ${p.total}</b> rated · <b>${doneN} of 10</b> domains${noN ? ` · ${noN} not observed` : ''}${o.mine && dueShort(o) ? ' · ' + dueShort(o) : ''} · ${tail}</span>`;
   }
   function refreshChrome() {
     /* repaint progress, rail and tags without re-rendering text areas the evaluator is typing in */

@@ -946,6 +946,7 @@ try{(function(){
     var r=p.rounds||{}, ended=!!r.outcome, open=row.classList.contains('open');
     var cur=typeof rdCurrentDocId==='function'?rdCurrentDocId(p):null;
     return [{label:open?'Close':'Open',act:function(){ rdHandleAct('toggle',row.querySelector('.rd-rowmain')||row); }},
+      (typeof window.rdWinOK==='function'&&rdWinOK()&&typeof rdOpenInWindow==='function')&&{label:'Open in new window',act:function(){ rdOpenInWindow(p.id); }},   /* n326 */
       !ended&&typeof RD_ACUITY!=='undefined'&&{label:'Status',sub:Object.keys(RD_ACUITY).filter(function(k){ return k!==r.acuity; }).map(function(k){ return {label:RD_ACUITY[k].label,act:function(){ rdSetAcuity(p,k); }}; })},
       !ended&&typeof rdAllDoctors==='function'&&{label:'Take case',sub:(typeof rdDocsOrdered==='function'?rdDocsOrdered(p):rdAllDoctors()).filter(function(d){ return d.id!==cur; }).map(function(d){ return d.sep?d:{label:drName(d.name)+(d._team?' · on service':'')+(typeof rdActorId!=='undefined'&&rdActorId===d.id?' (you)':''),act:function(){ rdTakeCase(p,d.id); }}; })},   /* n320 */
       (typeof rdCanRank==='function'&&rdCanRank()&&!open&&!ended&&rdMovable(row,-1))&&{label:'Move up',act:function(){ rdRankMove(p.id,-1); }},
@@ -1093,7 +1094,8 @@ try{(function () {
   }
   /* n209: Command-Period cancels wherever Esc does (HIG Alerts) - it is passed on as an Esc press */
   window.addEventListener('keydown', function (e) {
-    if (!(e.metaKey && !e.ctrlKey && !e.altKey && (e.key === '.' || e.code === 'Period'))) return;
+    var MACP = /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent || '');   /* n325 */
+    if (!(((e.metaKey && !e.ctrlKey) || (e.ctrlKey && !e.metaKey && !MACP)) && !e.altKey && (e.key === '.' || e.code === 'Period'))) return;
     e.preventDefault(); e.stopPropagation();
     var t = document.activeElement && document.activeElement !== document.body ? document.activeElement : document;
     var ev = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true });
@@ -1669,3 +1671,58 @@ try{(function(){
   if(typeof moveStatus==='function'){ var ms=moveStatus; window.moveStatus=moveStatus=function(p,st){ if(st==='Admitted'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ renderAll(); }catch(e){} return; } return ms.apply(this,arguments); }; }
 })();
 }catch(__e){window.__n305Skip&&__n305Skip(__e,22416)}
+/* ===== n326 · Sheets: Set total hours… on iPhone is an iPhone sheet (Nov 4 2026) ===== */
+/* HIG Sheets (Mar 24 2026) and Brand Identity §9.5: on iPhone a form rises from the bottom with Cancel at the leading edge of its
+   top bar and its action at the trailing edge, a grabber, and a swipe down to dismiss that asks first when the number was changed.
+   The Mac and iPad keep the centred dialog. */
+try{(function(){
+  var box=document.getElementById('confirmBox'); if(!box||typeof window.pvxHoursSheet!=='function') return;
+  var RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
+  function phone(){ return window.innerWidth<600; }
+  var start='', grab=null, disc=null, S=null;
+  function inp(){ return document.getElementById('pvxHours'); }
+  function changed(){ var i=inp(); return !!i&&i.value.trim()!==start; }
+  function cancel(){ var c=document.getElementById('confirmCancel'); if(c) c.click(); }
+  function keep(){ if(!disc) return; disc.remove(); disc=null; box.classList.remove('pvx-hasking'); var i=inp(); if(i) try{ i.focus(); }catch(e){} }
+  function ask(){
+    if(disc) return; var w=box.querySelector('.pvx-hwrap'); if(!w) return cancel();
+    disc=document.createElement('div'); disc.className='pvx-hdisc'; disc.setAttribute('role','group'); disc.setAttribute('aria-labelledby','pvxHdT');
+    disc.innerHTML='<p id="pvxHdT">Discard this change?</p><button type="button" class="pvx-hd-discard" data-pvx-esc>Discard</button><button type="button" class="pvx-hd-keep" data-pvx-esc>Keep editing</button>';   /* data-pvx-esc: Esc is this prompt's (Keep editing), not the sheet's */
+    w.after(disc); box.classList.add('pvx-hasking');
+    disc.querySelector('.pvx-hd-keep').onclick=keep; disc.querySelector('.pvx-hd-discard').onclick=cancel;
+    setTimeout(function(){ if(disc) try{ disc.querySelector('.pvx-hd-keep').focus(); }catch(e){} },30);
+    try{ if(window.pvxSay) pvxSay('Discard this change?'); }catch(e){}
+  }
+  function dismiss(){ if(changed()) ask(); else cancel(); }
+  function setup(){
+    if(!phone()||!box.querySelector('.pvx-hwrap')) return;
+    box.classList.add('pvx-hsheet'); var i=inp(); start=i?i.value.trim():'';
+    if(!grab){ grab=document.createElement('button'); grab.type='button'; grab.className='pvx-hgrab'; grab.setAttribute('aria-label','Close'); grab.onclick=dismiss; }
+    box.insertBefore(grab,box.firstChild);
+    var sc=document.getElementById('confirmScrim'); if(sc) sc.onclick=dismiss;   /* a tap outside asks first too, as Cancel's swipe does */
+  }
+  var orig=window.pvxHoursSheet;
+  window.pvxHoursSheet=function(){ var r=orig.apply(this,arguments); setup(); return r; };
+  new MutationObserver(function(){ if(box.classList.contains('open')) return;
+    ['pvx-hsheet','pvx-hasking','pvx-swiping'].forEach(function(c){ if(box.classList.contains(c)) box.classList.remove(c); }); if(grab&&grab.parentNode) grab.remove(); if(disc){ disc.remove(); disc=null; } box.style.transform=''; box.style.transition=''; S=null;
+  }).observe(box,{attributes:true,attributeFilter:['class']});
+  /* while it asks, Esc and ⌘. mean Keep editing (Brand §9.4) */
+  window.addEventListener('keydown',function(e){ if(!disc||!box.classList.contains('open')) return;
+    if(e.key==='Escape'||((e.metaKey||e.ctrlKey)&&e.key==='.')){ e.preventDefault(); e.stopPropagation(); keep(); } },true);
+  /* swipe down: from the grabber, the bar or the sheet's empty space (not the stepper or the field) */
+  box.addEventListener('touchstart',function(e){ if(!box.classList.contains('pvx-hsheet')||e.touches.length!==1) return;
+    if(e.target.closest&&e.target.closest('input,.pvx-hours button,.pvx-hdisc')) return;
+    S={y:e.touches[0].clientY,x:e.touches[0].clientX,t0:Date.now(),dy:0,on:false}; },{passive:true});
+  box.addEventListener('touchmove',function(e){ if(!S) return; var dy=e.touches[0].clientY-S.y, dx=e.touches[0].clientX-S.x;
+    if(!S.on){ if(dy>8&&Math.abs(dx)<dy){ S.on=true; box.classList.add('pvx-swiping'); } else if(dy<-4||Math.abs(dx)>12){ S=null; return; } else return; }
+    e.preventDefault(); S.dy=Math.max(0,dy); box.style.transform='translateY('+S.dy+'px)'; },{passive:false});
+  function end(){ if(!S) return; var s=S; S=null; if(!s.on) return; var v=s.dy/Math.max(1,Date.now()-s.t0); box.classList.remove('pvx-swiping');
+    var go=s.dy>90||(s.dy>40&&v>0.5);
+    if(go&&!changed()){ box.style.transition=RM.matches?'none':'transform .18s ease-in'; box.style.transform='translateY(110%)'; setTimeout(cancel,RM.matches?0:170); return; }
+    box.style.transition=RM.matches?'none':'transform .2s cubic-bezier(.2,.8,.2,1)'; box.style.transform='';
+    setTimeout(function(){ box.style.transition=''; },220);
+    if(go) ask(); }
+  box.addEventListener('touchend',end); box.addEventListener('touchcancel',end);
+  window.addEventListener('resize',function(){ if(box.classList.contains('open')&&box.querySelector('.pvx-hwrap')&&!phone()&&box.classList.contains('pvx-hsheet')){ box.classList.remove('pvx-hsheet'); if(grab&&grab.parentNode) grab.remove(); } });
+})();
+}catch(__e){ console.warn('[n326]',__e); }

@@ -60,9 +60,9 @@ async def s_t318(br):
        b[0] == 'Tomorrow' and 'Tomorrow' in b[1] and b[2] is None and b[3] > 1500 and 0 <= t[0] < 400 and t[1] == 'On Service' and t[2] != 'none', (b, t))
     # ---- Tab views → segmented controls: Status says which one is chosen
     await p.evaluate("(()=>{const x=rdCensus().find(p=>rdFullName(p)==='Benny Duarte'); rdExpanded=x.id; renderRdCensus(true);})(); 0"); await p.wait_for_timeout(500)
-    g = await p.evaluate("[...document.querySelectorAll('#rdList .rd-row.open .rd-acuity-seg')].map(g=>[g.getAttribute('role'),g.getAttribute('aria-label'),[...g.children].map(b=>b.getAttribute('aria-pressed')+(b.classList.contains('on')?'*':''))])")
+    g = await p.evaluate("[...document.querySelectorAll('#rdList .rd-row.open .rd-acuity-seg')].map(g=>[g.getAttribute('role'),g.getAttribute('aria-label'),[...g.children].map(b=>(b.getAttribute('aria-checked')||b.getAttribute('aria-pressed'))+(b.classList.contains('on')?'*':''))])")   # n328: a radio group (aria-checked)
     ok('Tab views (segmented controls on iPad and iPhone) · a patient’s Status says which one is chosen, like the shift picker (only its colour showed it)',
-       g and g[0][0] == 'group' and g[0][1] == 'Status' and g[0][2].count('true*') == 1 and all(x in ('true*', 'false') for x in g[0][2]), g)
+       g and g[0][0] in ('group', 'radiogroup') and g[0][1] == 'Status' and g[0][2].count('true*') == 1 and all(x in ('true*', 'false') for x in g[0][2]), g)
     # ---- Activity views: Share… carries the Share symbol
     s = await p.evaluate("(()=>{const b=document.querySelector('#rdList .rd-row.open [data-act=share]');const v=b&&b.querySelector('svg');return b&&[b.textContent.trim(), !!v, v&&v.getAttribute('aria-hidden')]})()")
     ok('Activity views · Share… (the share sheet on iPhone and iPad) carries the Share symbol people look for', s == ['Share…', True, 'true'], s)
