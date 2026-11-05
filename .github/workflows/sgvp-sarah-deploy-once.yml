@@ -1,0 +1,40 @@
+# One-time release authorized by the repository owner on 2026-11-04.
+# Publishes the already-reviewed Sarah Schiff SGVP reviewer rules.
+# Remove this file after confirming the deployment.
+name: One-time SGVP reviewer rules publication
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/sgvp-sarah-deploy-once.yml']
+permissions:
+  contents: read
+concurrency:
+  group: firestore-rules
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.event.head_commit.message == 'One-time deploy SGVP Sarah reviewer rules'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify intended Sarah reviewer rules are present
+        run: |
+          grep -Fq "function sarahPasswordPilot(uid)" firestore.rules
+          grep -Fq "validReviewerPilotMembership()" firestore.rules
+          grep -Fq "request.resource.data.role == 'reviewer'" firestore.rules
+          grep -Fq "request.resource.data.review_manager == false" firestore.rules
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Publish firestore.rules to shoreline-flow
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is missing; cannot publish."
+            exit 1
+          fi
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          trap 'rm -f "$RUNNER_TEMP/sa.json"' EXIT
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx -y firebase-tools@13.29.1 deploy --only firestore:rules --project shoreline-flow --non-interactive
