@@ -81,6 +81,8 @@ async function main() {
     assert.ok(rules.includes('timestamp.date(2026, 11, 16)'));
     assert.ok(rules.includes("verifiedPilot(uid, 'sarah.schiff@vca.com')"));
     assert.ok(rules.includes("validReviewerPilotMembership()"));
+    assert.ok(rules.includes("sarahPasswordPilot(uid)"));
+    assert.ok(rules.includes("request.auth.token.get('email', '').lower() == 'sarah.schiff@vca.com'"));
     assert.ok(rules.includes("request.resource.data.role == 'reviewer'"));
     assert.ok(rules.includes("request.resource.data.review_manager == false"));
   });
@@ -127,8 +129,17 @@ async function main() {
     assert.equal(r.alreadyActive,true);
     assert.equal(f.counters.writes,0);
   });
-  await check('unverified Sarah cannot self-activate even with password sign-in',async()=>{
+  await check('unverified Sarah with existing password sign-in activates without mailbox verification',async()=>{
     const f=make({email:SARAH,verified:false,provider:'password'});
+    const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+    assert.equal(r.ok,true);
+    assert.equal(r.activated,true);
+    assert.equal(f.counters.writes,1);
+    assert.equal(f.doc.role,'reviewer');
+    assert.equal(f.doc.review_manager,false);
+  });
+  await check('unverified Sarah using Google sign-in still requires verification',async()=>{
+    const f=make({email:SARAH,verified:false,provider:'google.com'});
     const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
     assert.equal(r.ok,false);
     assert.equal(r.reason,'email-unverified');
