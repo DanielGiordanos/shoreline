@@ -528,6 +528,41 @@ async function main() {
       assertFails(setDoc(doc(env.authenticatedContext('staff-disabled', {
         email:'daniel.giordano@pravix.app', email_verified:true,
       }).firestore(), 'staff_members', 'staff-disabled'), ownerPayload)));
+
+    // Each owner-approved evaluator receives Sarah's exact reviewer-only scope.
+    const addedReviewers = ["jessica.giannetto@vca.com", "kelley.harpin@vca.com", "amber.koch@vca.com", "marissa.marinaccio@vca.com", "dianne.kittrell@vca.com", "dawn.nolte@vca.com", "kate.taikowski@vca.com", "shaylan.meyer@vca.com", "michael.mccann@vca.com"];
+    for (const [i,email] of addedReviewers.entries()) {
+      const uid='approved-reviewer-'+i;
+      const db=env.authenticatedContext(uid, {email,email_verified:false,
+        firebase:{sign_in_provider:'password'}}).firestore();
+      await check(email+' cannot enroll as management',()=>assertFails(
+        setDoc(doc(db,'staff_members',uid),directorPayload)));
+      await check(email+' cannot enroll another UID',()=>assertFails(
+        setDoc(doc(db,'staff_members','wrong-'+uid),reviewerPayload)));
+      await check(email+' cannot add administrative flags',()=>assertFails(
+        setDoc(doc(db,'staff_members',uid),{...reviewerPayload,review_manager:true})));
+      await check(email+' can enroll as reviewer with password login',()=>assertSucceeds(
+        setDoc(doc(db,'staff_members',uid),reviewerPayload)));
+      await check(email+' can read own membership',()=>assertSucceeds(
+        getDoc(doc(db,'staff_members',uid))));
+      await check(email+' can read review rounds',()=>assertSucceeds(
+        getDocs(collection(db,'sgvp_review_rounds'))));
+      await check(email+' can query own assignments',()=>assertSucceeds(
+        getDocs(query(collection(db,'sgvp_review_assign'),where('email','==',email)))));
+      await check(email+' cannot query other assignments',()=>assertFails(
+        getDocs(collection(db,'sgvp_review_assign'))));
+      await check(email+' cannot access treatment sheets',()=>assertFails(
+        getDoc(doc(db,'sheets','sheet-a'))));
+      await check(email+' cannot access clinical visits',()=>assertFails(
+        getDoc(doc(db,'visits','visit-a'))));
+      await check(email+' cannot elevate an existing membership',()=>assertFails(
+        updateDoc(doc(db,'staff_members',uid),{role:'owner'})));
+      const googleUid='reviewer-google-'+i;
+      const google=env.authenticatedContext(googleUid,{email,email_verified:false,
+        firebase:{sign_in_provider:'google.com'}}).firestore();
+      await check(email+' unverified Google login cannot enroll',()=>assertFails(
+        setDoc(doc(google,'staff_members',googleUid),reviewerPayload)));
+    }
     // Tracker bearer tokens: public access is bounded by revocation and expiry.
     await check('active tracker remains readable without sign-in', () =>
       assertSucceeds(getDoc(doc(anon, 'pub', 'tracker-open'))));
@@ -635,3 +670,4 @@ main().catch(err => {
   console.error('Firestore rules regression failure:', err);
   process.exitCode = 1;
 });
+

@@ -1242,7 +1242,7 @@ html.pvx-signed-out body{overflow:hidden}
   .pr-item,.pr-obs,.pr-narr,.pr-sign,.pr-attest{break-inside:avoid;page-break-inside:avoid;}
 }
 </style>
-<script defer src="reviewer-access.js?v=20261104-sarah-reviewer"></script>
+<script defer src="reviewer-access.js?v=20261105-approved-reviewers"></script>
 </head>
 <body>
 <script>/* Pravix shared theme — carries across every pravix.app page via a domain cookie (default dark). Reads the cookie (mirrors it into localStorage so this page's own theme init agrees), applies before first paint, and persists ANY dark-class change back to the cookie via an observer, covering every toggle path. */
@@ -3575,7 +3575,8 @@ function buildPrintRecord(r) {
       // Activate only approved reviewer accounts with missing membership.
       // Heather is a review manager; Sarah is an assigned-evaluations-only
       // reviewer. Server-side Firestore rules enforce both roles.
-      if (S.email === 'heather.galano@vca.com' || S.email === 'sarah.schiff@vca.com') {
+      if (S.email === 'heather.galano@vca.com' ||
+          (window.pvxAssessmentApprovedReviewer && window.pvxAssessmentApprovedReviewer(S.email))) {
         if (typeof window.pvxAssessmentEnsureReviewer !== 'function') {
           reviewerAccessProblem('connection');
           return;
