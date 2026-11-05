@@ -1334,3 +1334,98 @@ body.sb-locked #view-rd-census, body.sb-locked #view-rd-archive, body.sb-locked 
 #rdList .rd-probs > li > .t[role=button]{cursor:text;border-radius:6px;outline-offset:2px}
 #rdList .rd-probs > li > .t[role=button]:hover{text-decoration:underline;text-decoration-color:var(--rc-line);text-underline-offset:3px}
 #rdList .rd-probs .rd-pedit{flex:1;min-width:0;font:inherit;color:inherit;background:var(--rslate);border:1px solid var(--rc-line);border-radius:8px;padding:3px 8px}
+
+/* ===== n324 · Census and Archive as a bottom tab bar on iPhone (Nov 4 2026) ===== */
+@media (max-width:700px){
+  html.rd-tabbar body{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
+  html.rd-tabbar #subnavRd #switcherRd{position:fixed!important;left:0;right:0;bottom:0;z-index:30;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;
+    max-width:none!important;width:100%;margin:0;padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));overflow:visible!important;
+    background:var(--pvx-glass-strong,rgba(23,35,56,.86));-webkit-backdrop-filter:var(--pvx-glass-blur,blur(12px) saturate(160%));backdrop-filter:var(--pvx-glass-blur,blur(12px) saturate(160%));
+    box-shadow:0 -1px 0 var(--pvx-glass-edge,rgba(255,255,255,.08)),0 -8px 24px rgba(0,0,0,.18);border:0;border-radius:0}
+  html.rd-tabbar body:not(.dark) #subnavRd #switcherRd{background:var(--pvx-glass-strong-light,rgba(255,255,255,.86));box-shadow:0 -1px 0 rgba(0,0,0,.08),0 -8px 24px rgba(0,0,0,.08)}
+  html.rd-tabbar #subnavRd #switcherRd .seg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;min-height:50px!important;padding:4px 2px;border:0!important;border-radius:12px;
+    font-size:.6875rem;font-weight:600;letter-spacing:-.01em;line-height:1.1;white-space:nowrap;position:relative;background:transparent!important;box-shadow:none!important}
+  html.rd-tabbar #subnavRd #switcherRd .seg svg{width:24px;height:24px;flex:0 0 auto}
+  html.rd-tabbar #subnavRd #switcherRd .seg.active{color:var(--accent,#38BDD2)!important}
+  html.rd-tabbar body:not(.dark) #subnavRd #switcherRd .seg.active{color:var(--accent-ink,#1F8FA8)!important}
+  /* the sub-nav keeps one row: the search, with Saved beside it (it sat on a line of its own above the search) */
+  html.rd-tabbar #subnavRd .rd-subright{flex-wrap:nowrap}
+  html.rd-tabbar #subnavRd .rd-search{flex:1 1 0;min-width:0}
+  html.rd-tabbar #subnavRd #rdSaveState{order:2;text-align:left;min-width:44px}
+  html.rd-tabbar .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  html.rd-tabbar .rd-undo{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  html.rd-tabbar #flowNet{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+}
+/* the selected tab uses the fill variant on touch, as Flow's and Treatment's do (n227) */
+@media (hover:none) and (pointer:coarse){
+  html.rd-tabbar #switcherRd .seg.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ html.rd-tabbar #switcherRd .seg.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
+html.pvx-noblur.rd-tabbar #subnavRd #switcherRd{background:var(--pvx-glass-solid,#172440)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+@media (prefers-reduced-transparency:reduce){html.rd-tabbar #subnavRd #switcherRd{background:var(--pvx-glass-solid,#172440)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  html.rd-tabbar body:not(.dark) #subnavRd #switcherRd{background:#fff!important}}
+@media (forced-colors:active){html.rd-tabbar #subnavRd #switcherRd{border-top:1px solid CanvasText}}
+
+/* ===== n326 · Scroll views, Sheets, Windows (Nov 4 2026) ===== */
+/* Rounds mode keeps its bars: the patient scrolls between them */
+#rdMode{--rdm-px:clamp(20px,4vw,64px);padding-top:0!important;padding-bottom:0!important}
+#rdMode>.rdm-top{position:sticky;top:0;z-index:3;background:var(--page-bg);margin:0 calc(-1*var(--rdm-px)) 10px;
+  padding:max(26px,env(safe-area-inset-top,0px)) var(--rdm-px) 12px}
+#rdMode>.rdm-foot{position:sticky;bottom:0;z-index:3;background:var(--page-bg);margin:8px calc(-1*var(--rdm-px)) 0;
+  padding:14px var(--rdm-px) max(26px,calc(12px + env(safe-area-inset-bottom,0px)))}
+#rdMode>.rdm-top::after,#rdMode>.rdm-foot::before{content:"";position:absolute;left:0;right:0;height:16px;pointer-events:none;opacity:0;transition:opacity .15s}
+#rdMode>.rdm-top::after{top:100%;background:linear-gradient(var(--page-bg),transparent)}
+#rdMode>.rdm-foot::before{bottom:100%;background:linear-gradient(transparent,var(--page-bg))}
+#rdMode.rdm-sc-top>.rdm-top::after,#rdMode.rdm-sc-bot>.rdm-foot::before{opacity:1}
+.rdm-mini{display:none}
+#rdMode.rdm-stuck .rdm-mini{display:block;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:0.9375rem;font-weight:700;color:var(--ink-900)}
+#rdMode.rdm-stuck .rdm-prog .rdm-what{display:none}
+#rdMode>.rdm-title.rdm-out{display:block;margin:0 0 22px}
+@media (prefers-reduced-motion:reduce){#rdMode>.rdm-top::after,#rdMode>.rdm-foot::before{transition:none}}
+@media (forced-colors:active){#rdMode>.rdm-top::after,#rdMode>.rdm-foot::before{display:none}
+  #rdMode.rdm-sc-top>.rdm-top{border-bottom:1px solid CanvasText}#rdMode.rdm-sc-bot>.rdm-foot{border-top:1px solid CanvasText}}
+@media print{#rdMode>.rdm-top,#rdMode>.rdm-foot{position:static}}
+@media (max-width:600px){#rdMode>.rdm-foot{gap:8px}#rdMode>.rdm-foot .rdm-btn{padding:12px 12px;white-space:nowrap}#rdMode>.rdm-foot .rdm-rev{min-width:0;flex:1 1 auto}}
+
+/* Set total hours… on iPhone: a sheet from the bottom — grabber, Cancel · Authorized hours · Save — that swipes down */
+#confirmBox.pvx-as.pvx-hsheet{left:0;right:0;bottom:0;max-width:none;border-radius:20px 20px 0 0;padding:0 8px calc(20px + env(safe-area-inset-bottom,0px));
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:4px}
+#confirmBox.pvx-hsheet.pvx-swiping{transition:none!important}
+#confirmBox.pvx-hsheet .pvx-hgrab{grid-column:1/-1;grid-row:1;justify-self:center;position:relative;width:64px;height:22px;margin:0;padding:0;border:0;background:transparent;cursor:grab}
+#confirmBox.pvx-hsheet .pvx-hgrab::before{content:"";position:absolute;left:50%;top:7px;width:36px;height:5px;margin-left:-18px;border-radius:3px;background:rgba(255,255,255,.3)}
+body:not(.dark) #confirmBox.pvx-hsheet .pvx-hgrab::before{background:rgba(14,26,43,.22)}
+#confirmBox.pvx-hsheet .pvx-hgrab:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px;border-radius:8px}
+#confirmBox.pvx-hsheet .confirm-title{grid-column:2;grid-row:2;margin:0!important;text-align:center;font-size:1.0625rem!important;font-weight:600;white-space:nowrap}
+#confirmBox.pvx-hsheet #confirmSub{grid-column:1/-1}
+#confirmBox.pvx-as.pvx-hsheet .confirm-actions{display:contents!important}
+#confirmBox.pvx-as.pvx-hsheet .confirm-actions .btn{grid-row:2;width:auto!important;min-width:44px;height:44px!important;margin:0!important;padding:0 10px!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;font-size:1.0625rem!important}
+#confirmBox.pvx-hsheet #confirmCancel{grid-column:1;justify-self:start;font-weight:400!important;color:var(--ink-700,#C9D6E6)!important}
+#confirmBox.pvx-hsheet #confirmOk{grid-column:3;justify-self:end;font-weight:700!important;color:var(--accent,#38BDD2)!important}
+body:not(.dark) #confirmBox.pvx-hsheet #confirmOk{color:var(--accent-ink,#1F8FA8)!important}
+#confirmBox.pvx-hsheet .pvx-hwrap{grid-column:1/-1;grid-row:3;margin-top:18px}
+#confirmBox.pvx-hsheet.pvx-hasking .pvx-hwrap{opacity:.4;pointer-events:none}
+#confirmBox.pvx-hsheet .pvx-hdisc{grid-column:1/-1;grid-row:4;display:flex;flex-direction:column;gap:8px;margin-top:16px}
+#confirmBox.pvx-hsheet .pvx-hdisc p{margin:0 0 2px;text-align:center;font-weight:600;font-size:0.9375rem}
+#confirmBox.pvx-hsheet .pvx-hdisc button{height:48px;border-radius:14px;border:1px solid var(--ctl-border,rgba(255,255,255,.14));background:var(--rslate,rgba(255,255,255,.06));
+  color:var(--ink-900,#fff);font:inherit;font-size:1.0625rem;font-weight:600}
+#confirmBox.pvx-hsheet .pvx-hdisc .pvx-hd-discard{color:#FF6B6E}
+body:not(.dark) #confirmBox.pvx-hsheet .pvx-hdisc .pvx-hd-discard{color:var(--red-ink,#B3141A)}
+@media (forced-colors:active){#confirmBox.pvx-hsheet .pvx-hgrab::before{background:CanvasText}}
+
+/* ===== n328 · Pickers, Segmented controls, Sliders, Steppers (Nov 5 2026) ===== */
+/* a patient's Status and Discharge today: segments of equal width (they were 76–130 pt); two rows of two on iPhone */
+#rdList .rd-acuity-seg,#rdList .rd-dis-seg{display:grid;grid-template-columns:repeat(var(--rd-n,4),minmax(0,1fr));gap:5px}
+#rdList .rd-acuity-seg>button,#rdList .rd-dis-seg>button{min-width:0;justify-content:center;text-align:center}
+@media (max-width:600px){#rdList .rd-acuity-seg{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* the chosen Status reads in its own colour, like its border and its shape (a contrast rule had made every choice amber) */
+#rdList .rd-acuity-seg>button.on[data-key=critical]{color:#FF8A8C!important}
+#rdList .rd-acuity-seg>button.on[data-key=attention]{color:var(--ra,#F7DA7E)!important}
+#rdList .rd-acuity-seg>button.on[data-key=stable]{color:#8CC2EE!important}
+#rdList .rd-acuity-seg>button.on[data-key=discharge]{color:var(--rg,#7FE0B4)!important}
+body:not(.dark) #rdList .rd-acuity-seg>button.on[data-key=critical]{color:var(--red-ink,#B3141A)!important}
+body:not(.dark) #rdList .rd-acuity-seg>button.on[data-key=attention]{color:var(--amber-ink,#875C00)!important}
+body:not(.dark) #rdList .rd-acuity-seg>button.on[data-key=stable]{color:#2462A0!important}
+body:not(.dark) #rdList .rd-acuity-seg>button.on[data-key=discharge]{color:var(--green-ink,#1B7A4A)!important}
+@media (forced-colors:active){#rdList .rd-acuity-seg>button.on,#rdList .rd-dis-seg>button.on{color:Highlight!important;border-color:Highlight}}

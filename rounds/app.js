@@ -7485,7 +7485,7 @@ case'auth-custom': rdMenu(el,[{value:'6',label:'+6 hours'},{value:'12',label:'+1
   a.hours.push({h:+v,at:rdIso(new Date()),by:rdActorName()}); p.timeline.push({label:'Care authorized +'+v+'h',at:new Date(),meta:rdActorName()}); rdTouch(p,'Authorization +'+v+'h ('+rdAuthHours(p)+'h total)'); }); break;
 case'auth-undo':{ const a=rdAuth(p); if(!a.hours.length) break; const x=a.hours[a.hours.length-1], before=rdAuthHours(p), after=Math.max(0,before-x.h);
   showConfirm('Remove the +'+x.h+' hours extension?','Remove',()=>{ const i=a.hours.indexOf(x); if(i>=0){ a.hours.splice(i,1); rdTouch(p,'Authorization extension removed · '+x.h+'h'); } },
-    {danger:true, sub:a.hours.length>1?('Authorized hours go from '+before+'h to '+after+'h.'):'This was the only authorization, so none will be set.'}); break; }
+    {noDefault:true, sub:a.hours.length>1?('Authorized hours go from '+before+'h to '+after+'h.'):'This was the only authorization, so none will be set.'}); break; }   /* n325 */
 case'auth-toggle-perm': rdUI['authPerm'+pid]=!rdUI['authPerm'+pid]; renderRdCensus(true); break;
 case'auth-toggle-hist': rdUI['authHist'+pid]=!rdUI['authHist'+pid]; renderRdCensus(true); break;
  
@@ -11887,3 +11887,153 @@ try{(function(){
   tidy();
 })();
 }catch(__e){ console.warn('[n323]',__e); }
+
+/* ===== n324 · Census and Archive as a bottom tab bar on iPhone (Nov 4 2026) ===== */
+/* As Flow (n212) and Treatment (n216) do in compact width (700 pt and under): the app's sections sit in a bar at the bottom,
+   on the floating glass, under every modal. It shows only while Rounds' sub-nav does (not behind the sign-in card). */
+try{(function(){
+  const CW=window.matchMedia?matchMedia('(max-width:700px)'):{matches:false};
+  const on=()=>{ const sub=document.getElementById('subnavRd'); if(!sub||!CW.matches) return false;
+    if(sub.classList.contains('hidden')||getComputedStyle(sub).display==='none') return false;
+    return !document.body.classList.contains('sb-locked'); };
+  const sync=()=>{ const t=on(); if(document.documentElement.classList.contains('rd-tabbar')!==t) document.documentElement.classList.toggle('rd-tabbar',t); };
+  window.rdTabbarSync=sync;
+  if(CW.addEventListener) CW.addEventListener('change',sync);
+  try{ const sub=document.getElementById('subnavRd'); if(sub) new MutationObserver(sync).observe(sub,{attributes:true,attributeFilter:['class','style']});
+    new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+  window.addEventListener('resize',sync); sync(); setTimeout(sync,500);
+})();
+}catch(__e){ console.warn('[n324]',__e); }
+
+/* ===== n325 · Alerts, Page controls, Panels, Popovers (Nov 4 2026) ===== */
+try{(function(){
+  const box=document.getElementById('confirmBox'), ok=document.getElementById('confirmOk'); if(!box||!ok) return;
+  /* Alerts · an alert with no default draws its action plain, like Cancel, so it doesn't look like the default (Brand §9.4, n287):
+     End admission's "Mark discharged" was a filled button that Return didn't press */
+  const sc=showConfirm; showConfirm=function(title,okLabel,onOk,opts){ const r=sc.apply(this,arguments);
+    try{ const plain=!!(opts&&opts.noDefault&&!opts.danger); ok.classList.toggle('primary',!plain); ok.classList.toggle('ghost',plain); ok.classList.toggle('rd-nodef',plain); }catch(e){} return r; };
+  /* Popovers / Alerts · "Set total hours…" asks for a value, so VoiceOver hears a dialog, not an alert */
+  const role=()=>{ const want=box.querySelector('.pvx-hwrap')?'dialog':'alertdialog'; if(box.getAttribute('role')!==want) box.setAttribute('role',want); };
+  try{ new MutationObserver(role).observe(box,{childList:true,subtree:true}); }catch(e){}
+  role();
+  /* …and the shortcuts sheet lists ⌘. (Ctrl+.) beside Esc */
+  const sg=window.rdShortcutGroups; if(typeof sg==='function') window.rdShortcutGroups=function(){ const g=sg.apply(this,arguments);
+    try{ g.forEach(x=>{ const rows=x.items||x.rows; if(!rows) return; const i=rows.findIndex(r=>r.keys&&r.keys.join()==='esc'&&/menu or sheet/i.test(r.label||''));
+      if(i>=0&&!rows.some(r=>r.keys&&r.keys.join()==='mod,.')) rows.splice(i+1,0,{keys:['mod','.'],label:'Close the menu or sheet, as Esc does'}); }); }catch(e){} return g; };
+})();
+}catch(__e){ console.warn('[n325]',__e); }
+
+/* ===== n326 · Scroll views, Sheets, Windows (Nov 4 2026) ===== */
+try{(function(){
+  /* Windows · a patient opens in a window of its own: ⌘-click (Ctrl-click on Windows and Linux) or a middle click on the patient's
+     row, or "Open in new window" in the patient's menu (with a mouse or trackpad). The new window opens on that patient (n309's
+     link, which waits for sign-in); this one stays where it was. As Treatment's sheets do (n288). */
+  const MAC=/Mac|iPhone|iPad/.test(navigator.platform||'')||/Mac OS X/.test(navigator.userAgent);
+  const FINE=window.matchMedia?matchMedia('(hover:hover) and (pointer:fine)'):{matches:true};
+  window.rdWinOK=()=>!!FINE.matches;
+  window.rdOpenInWindow=pid=>{ if(!pid) return; try{ window.open(rdPatientUrl(pid),'_blank'); }catch(e){} try{ window.pvxSay&&pvxSay('Opened in a new window'); }catch(e){} };
+  const pidOf=t=>{ if(!t||!t.closest) return null; const m=t.closest('#rdList .rd-row[data-pid] > .rd-rowmain'); if(!m) return null;
+    const c=t.closest('button,a[href],input,select,textarea,[role=button],[contenteditable=true]'); if(c&&c!==m&&m.contains(c)) return null;
+    return m.parentElement.getAttribute('data-pid'); };
+  const mod=e=>(MAC?e.metaKey:e.ctrlKey)&&!e.altKey&&!e.shiftKey;
+  document.addEventListener('mousedown',e=>{ if(e.button===1&&pidOf(e.target)) e.preventDefault(); },true);   /* no autoscroll */
+  document.addEventListener('click',e=>{ if(!mod(e)) return; const id=pidOf(e.target); if(!id) return; e.preventDefault(); e.stopImmediatePropagation(); rdOpenInWindow(id); },true);
+  /* a middle click: auxclick where the browser sends it, else the button's release (one window either way) */
+  let mid=null;
+  document.addEventListener('mouseup',e=>{ if(e.button!==1) return; const id=pidOf(e.target); if(!id) return; mid=id; setTimeout(()=>{ if(mid){ const x=mid; mid=null; rdOpenInWindow(x); } },0); },true);
+  document.addEventListener('auxclick',e=>{ if(e.button!==1) return; const id=pidOf(e.target); if(!id) return; e.preventDefault(); e.stopImmediatePropagation(); mid=null; rdOpenInWindow(id); },true);
+
+  /* Scroll views · Rounds mode keeps its bars: the patient scrolls between "Rounds · 2 of 8 … Done" and Previous · Mark reviewed ·
+     Next, which stay put at every size (on iPhone they sat below the screen, 300–750 pt down). On iPhone the name sits under the
+     bar, and once it scrolls away the bar names the patient. Content fades under a bar only while it's beneath it. A new patient
+     starts at the top, and the scroll keys page by the part between the bars. */
+  const CMP=window.matchMedia?matchMedia('(max-width:600px)'):{matches:false};
+  const edge=()=>{ const ov=document.getElementById('rdMode'); if(!ov) return; const st=ov.scrollTop, end=ov.scrollHeight-ov.clientHeight;
+    ov.classList.toggle('rdm-sc-top',st>2); ov.classList.toggle('rdm-sc-bot',end-st>2);
+    const ttl=ov.querySelector('.rdm-title.rdm-out'), top=ov.querySelector('.rdm-top');
+    ov.classList.toggle('rdm-stuck',!!(ttl&&top&&ttl.getBoundingClientRect().bottom<=top.getBoundingClientRect().bottom+2)); };
+  const lay=()=>{ const ov=document.getElementById('rdMode'); if(!ov) return; const top=ov.querySelector('.rdm-top'), ttl=ov.querySelector('.rdm-title'); if(!top||!ttl) return;
+    const pr=top.querySelector('.rdm-prog'), nm=document.getElementById('rdmName');
+    let mini=top.querySelector('.rdm-mini'); if(!mini){ mini=document.createElement('span'); mini.className='rdm-mini'; mini.setAttribute('aria-hidden','true'); if(pr) pr.after(mini); else top.prepend(mini); }
+    mini.textContent=nm?nm.textContent:'';
+    if(CMP.matches&&ttl.parentElement===top){ ttl.classList.add('rdm-out'); top.after(ttl); }
+    else if(!CMP.matches&&ttl.parentElement!==top){ ttl.classList.remove('rdm-out'); mini.after(ttl); }
+    pad(); edge(); };
+  /* Page Down, Space and the rest page by the part between the bars, keeping a line of the last page */
+  const pad=()=>{ const ov=document.getElementById('rdMode'); if(!ov) return; const top=ov.querySelector('.rdm-top'), ft=ov.querySelector('.rdm-foot');
+    ov.style.scrollPaddingTop=(top?top.offsetHeight:0)+'px'; ov.style.scrollPaddingBottom=(ft?ft.offsetHeight:0)+'px'; };
+  window.rdModeLayout=lay;
+  if(typeof rdModeRender==='function'){ const base=rdModeRender; let seen=null;
+    rdModeRender=function(){ const r=base.apply(this,arguments); const ov=document.getElementById('rdMode');
+      if(ov){ if(!ov.__n326){ ov.__n326=1; ov.addEventListener('scroll',edge,{passive:true}); seen=null; }
+        const key=(typeof rdModeIdx!=='undefined'?rdModeIdx:0)+'|'+((document.getElementById('rdmName')||{}).textContent||'');
+        if(seen!==key){ seen=key; ov.scrollTop=0; } lay(); }
+      return r; }; }
+  if(CMP.addEventListener) CMP.addEventListener('change',lay);
+  window.addEventListener('resize',()=>{ pad(); edge(); });
+})();
+}catch(__e){ console.warn('[n326]',__e); }
+
+/* ===== n327 · Color wells, Combo boxes, Digit entry views (Nov 5 2026) ===== */
+/* Combo boxes · "+ Add diagnostic" offers the tests already on the census (NOVA, CBC, UA…), most used first, as "+ Add problem"
+   does (n323): you can still type any test, and add " — result" when it's back. Names only, never a result. Treatments get no
+   list: a suggestion would carry another patient's dose. */
+try{(function(){
+  let dl=document.getElementById('rdDiagList'); if(!dl){ dl=document.createElement('datalist'); dl.id='rdDiagList'; document.body.appendChild(dl); }
+  const fold=s=>typeof rdFold==='function'?rdFold(s):String(s).toLowerCase().trim();
+  const esc=s=>typeof rdEsc==='function'?rdEsc(s):String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const fill=()=>{ const n={}, show={};
+    rdCensus().forEach(p=>((p.rounds||{}).diagnostics||[]).forEach(d=>{ const k=String(d.name||'').trim(); if(!k) return; const f=fold(k); n[f]=(n[f]||0)+1; if(!show[f]) show[f]=k; }));
+    dl.innerHTML=Object.keys(n).sort((a,b)=>n[b]-n[a]||show[a].localeCompare(show[b])).slice(0,60).map(f=>'<option value="'+esc(show[f])+'"></option>').join(''); };
+  const tidy=()=>document.querySelectorAll('#rdList input[data-input="diag"]').forEach(i=>{ if(!i.getAttribute('list')){ i.setAttribute('list','rdDiagList'); i.setAttribute('autocomplete','off'); } });
+  document.addEventListener('focusin',e=>{ const i=e.target; if(i&&i.matches&&i.matches('#rdList input[data-input="diag"]')) try{ fill(); }catch(x){} });
+  if(typeof renderRdCensus==='function'){ const base=renderRdCensus; renderRdCensus=function(){ const r=base.apply(this,arguments); try{ tidy(); }catch(e){} return r; }; }
+  tidy();
+})();
+}catch(__e){ console.warn('[n327]',__e); }
+
+/* ===== n328 · Pickers, Segmented controls, Sliders, Steppers (Nov 5 2026) ===== */
+/* Segmented controls · a patient's Status (Critical · Attention · Stable · Discharge ready) and Discharge today (Likely · Possible ·
+   Not today) are one choice each, like the shift picker: a named radio group with the choice checked, one Tab stop, and ← → ↑ ↓
+   Home End to choose. They were four and three separate toggle buttons, each a Tab stop, that the arrow keys didn't move.
+   Arrowing through shows the choice at once and records it when you stop (0.6 s), so Critical → Stable is one change in the
+   history, not two; Space, Return, a click, or leaving the control records it straight away. Segments are of equal width. */
+try{(function(){
+  const SEL='#rdList .rd-acuity-seg, #rdList .rd-dis-seg';
+  const BTN='#rdList .rd-acuity-seg > button, #rdList .rd-dis-seg > button';
+  let T=0, P=null;   /* the choice being arrowed to, by what it is (a redraw from elsewhere may replace the buttons meanwhile) */
+  const q=x=>document.querySelector('#rdList [data-act="'+x.act+'"][data-pid="'+x.pid+'"][data-key="'+x.key+'"]');
+  const paint=(g,j)=>{ const bs=[...g.querySelectorAll(':scope > button')]; bs.forEach((b,i)=>{ b.setAttribute('role','radio'); b.removeAttribute('aria-pressed');
+      b.setAttribute('aria-checked',String(i===j)); b.tabIndex=(j<0?i===0:i===j)?0:-1; if(P&&b.dataset.act===P.act&&b.dataset.pid===P.pid) b.classList.toggle('on',i===j); });
+    g.style.setProperty('--rd-n',String(bs.length)); };
+  const tidy=()=>{ document.querySelectorAll(SEL).forEach(g=>{ g.setAttribute('role','radiogroup');
+      g.setAttribute('aria-label',g.classList.contains('rd-acuity-seg')?'Status':'Discharge today');
+      const bs=[...g.querySelectorAll(':scope > button')], f=bs[0];
+      const pend=P&&f&&f.dataset.act===P.act&&f.dataset.pid===P.pid?bs.findIndex(b=>b.dataset.key===P.key):-1;
+      paint(g,pend>=0?pend:bs.findIndex(b=>b.classList.contains('on'))); }); };
+  window.rdSegTidy=tidy;
+  const back=(find,ok)=>{ let k=0; (function go(){ const n=find(), a=document.activeElement;   /* the redraw keeps your place */
+      if(n&&a!==n&&ok(a)) try{ n.focus({preventScroll:true}); }catch(x){} if(++k<30) setTimeout(go,40); })(); };
+  const fire=()=>{ clearTimeout(T); const x=P; if(!x) return; const b=q(x); const a=document.activeElement, keep=!a||a===document.body||!a.isConnected||(a.matches&&a.matches(BTN)&&a.dataset.act===x.act&&a.dataset.pid===x.pid);
+    P=null; if(!b) return; b.__n328=1; b.click();
+    if(keep) back(()=>q(x),a=>!a||a===document.body||!a.isConnected);
+    else if(a&&a!==document.body){ const ds=a.dataset||{}, css=window.CSS&&CSS.escape?CSS.escape:(s=>s);
+      const s=a.id?'#'+css(a.id):ds.input&&ds.pid?'[data-input="'+ds.input+'"][data-pid="'+ds.pid+'"]':ds.act&&ds.pid?'[data-act="'+ds.act+'"][data-pid="'+ds.pid+'"]'+(ds.key?'[data-key="'+ds.key+'"]':''):a.getAttribute('aria-label')?a.tagName+'[aria-label="'+a.getAttribute('aria-label').replace(/"/g,'\\"')+'"]':'';
+      if(s) back(()=>document.querySelector(s),z=>!z||z===document.body||!z.isConnected); } };
+  document.addEventListener('keydown',e=>{ const b=e.target; if(!(b&&b.matches&&b.matches(BTN))) return;
+    const k=e.key; if(!['ArrowRight','ArrowLeft','ArrowUp','ArrowDown','Home','End'].includes(k)||e.metaKey||e.ctrlKey||e.altKey) return;
+    e.preventDefault(); e.stopPropagation();
+    const g=b.parentElement, bs=[...g.querySelectorAll(':scope > button')], i=bs.indexOf(b);
+    const j=k==='Home'?0:k==='End'?bs.length-1:(k==='ArrowRight'||k==='ArrowDown')?(i+1)%bs.length:(i-1+bs.length)%bs.length;
+    P={act:bs[j].dataset.act,pid:bs[j].dataset.pid,key:bs[j].dataset.key}; paint(g,j); bs[j].focus();
+    clearTimeout(T); T=setTimeout(fire,600); },true);
+  document.addEventListener('click',e=>{ const b=e.target&&e.target.closest&&e.target.closest(BTN); if(!b) return;
+    if(b.__n328) b.__n328=0; else { clearTimeout(T); P=null; }
+    const g=b.parentElement, bs=[...g.querySelectorAll(':scope > button')];   /* the choice shows at once, even while a redraw waits for a field you're typing in */
+    bs.forEach(x=>x.classList.toggle('on',x===b)); paint(g,bs.indexOf(b)); },true);
+  document.addEventListener('focusout',e=>{ if(!P) return; const g=e.target&&e.target.closest&&e.target.closest(SEL); if(!g) return;
+    const to=e.relatedTarget; if(to&&g.contains(to)) return; setTimeout(fire,0); },true);   /* after the next control has focus, so the redraw keeps it there */
+  if(typeof renderRdCensus==='function'){ const base=renderRdCensus; renderRdCensus=function(){ const r=base.apply(this,arguments); try{ tidy(); }catch(x){} return r; }; }
+  tidy(); setTimeout(tidy,0);
+})();
+}catch(__e){ console.warn('[n328]',__e); }
