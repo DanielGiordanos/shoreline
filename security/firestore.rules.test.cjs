@@ -409,6 +409,12 @@ async function main() {
     const verifiedHeather = env.authenticatedContext('pilot-heather-uid', {
       email: 'heather.galano@vca.com', email_verified: true,
     }).firestore();
+    const verifiedSarah = env.authenticatedContext('pilot-sarah-uid', {
+      email: 'sarah.schiff@vca.com', email_verified: true,
+    }).firestore();
+    const sarahPrivilegeAttempt = env.authenticatedContext('sarah-attempt-uid', {
+      email: 'sarah.schiff@vca.com', email_verified: true,
+    }).firestore();
     const unverifiedDaniel = env.authenticatedContext('pilot-unverified-uid', {
       email: 'daniel.giordano@pravix.app', email_verified: false,
     }).firestore();
@@ -421,6 +427,14 @@ async function main() {
     }).firestore();
     const unverifiedGoogleHeather = env.authenticatedContext('heather-google-uid', {
       email: 'heather.galano@vca.com', email_verified: false,
+      firebase: {sign_in_provider: 'google.com'},
+    }).firestore();
+    const unverifiedPasswordSarah = env.authenticatedContext('sarah-password-uid', {
+      email: 'sarah.schiff@vca.com', email_verified: false,
+      firebase: {sign_in_provider: 'password'},
+    }).firestore();
+    const unverifiedGoogleSarah = env.authenticatedContext('sarah-google-uid', {
+      email: 'sarah.schiff@vca.com', email_verified: false,
       firebase: {sign_in_provider: 'google.com'},
     }).firestore();
     const unverifiedPasswordOther = env.authenticatedContext('outsider-password-uid', {
@@ -438,6 +452,10 @@ async function main() {
     const directorPayload = {
       active: true, tenant_id: 'shoreline', role: 'management',
       kura_owner: false, review_manager: true,
+    };
+    const reviewerPayload = {
+      active: true, tenant_id: 'shoreline', role: 'reviewer',
+      kura_owner: false, review_manager: false,
     };
     await check('unverified email cannot self-provision owner', () =>
       assertFails(setDoc(doc(unverifiedDaniel, 'staff_members', 'pilot-unverified-uid'), ownerPayload)));
@@ -459,6 +477,35 @@ async function main() {
       assertSucceeds(setDoc(doc(unverifiedPasswordHeather, 'staff_members', 'heather-password-uid'), directorPayload)));
     await check('activated password Heather can read SGVP review rounds', () =>
       assertSucceeds(getDocs(collection(unverifiedPasswordHeather, 'sgvp_review_rounds'))));
+    await check('verified Sarah may self-provision only reviewer membership', () =>
+      assertSucceeds(setDoc(doc(verifiedSarah, 'staff_members', 'pilot-sarah-uid'), reviewerPayload)));
+    await check('existing password Sarah may activate without email verification', () =>
+      assertSucceeds(setDoc(doc(unverifiedPasswordSarah, 'staff_members', 'sarah-password-uid'), reviewerPayload)));
+    await check('activated Sarah may read her own membership', () =>
+      assertSucceeds(getDoc(doc(unverifiedPasswordSarah, 'staff_members', 'sarah-password-uid'))));
+    await check('activated Sarah may read open SGVP rounds', () =>
+      assertSucceeds(getDocs(collection(unverifiedPasswordSarah, 'sgvp_review_rounds'))));
+    await check('activated Sarah may query only her assigned reviews', () =>
+      assertSucceeds(getDocs(query(collection(unverifiedPasswordSarah, 'sgvp_review_assign'),
+        where('email', '==', 'sarah.schiff@vca.com')))));
+    await check('Sarah cannot list every evaluator assignment', () =>
+      assertFails(getDocs(collection(unverifiedPasswordSarah, 'sgvp_review_assign'))));
+    await check('Sarah may not open unrelated clinical visits', () =>
+      assertFails(getDoc(doc(unverifiedPasswordSarah, 'visits', 'visit-a'))));
+    await check('Sarah may not read another membership', () =>
+      assertFails(getDoc(doc(unverifiedPasswordSarah, 'staff_members', 'pilot-heather-uid'))));
+    await check('Sarah may not make herself management after joining', () =>
+      assertFails(updateDoc(doc(unverifiedPasswordSarah, 'staff_members', 'sarah-password-uid'), {role:'management'})));
+    await check('unverified Sarah using Google sign-in cannot self-activate', () =>
+      assertFails(setDoc(doc(unverifiedGoogleSarah, 'staff_members', 'sarah-google-uid'), reviewerPayload)));
+    await check('verified Sarah cannot create a management membership', () =>
+      assertFails(setDoc(doc(sarahPrivilegeAttempt, 'staff_members', 'sarah-attempt-uid'), directorPayload)));
+    await check('verified Sarah cannot claim review manager role', () =>
+      assertFails(setDoc(doc(sarahPrivilegeAttempt, 'staff_members', 'sarah-attempt-uid'), {
+        ...reviewerPayload, review_manager:true,
+      })));
+    await check('Sarah cannot create membership for another UID', () =>
+      assertFails(setDoc(doc(sarahPrivilegeAttempt, 'staff_members', 'not-sarah-uid'), reviewerPayload)));
     await check('unverified Heather Google session cannot bypass verification', () =>
       assertFails(setDoc(doc(unverifiedGoogleHeather, 'staff_members', 'heather-google-uid'), directorPayload)));
     await check('unverified password outsider cannot self-provision', () =>
