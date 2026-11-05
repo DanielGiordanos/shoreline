@@ -42,8 +42,8 @@ service cloud.firestore {
         && membership().get('role', '') in
           ['owner', 'admin', 'management', 'doctor', 'technician', 'liaison', 'intern', 'staff'];
     }
-    // Temporary, email-verified bootstrap for exactly two existing Shoreline
-    // accounts. This is not a general signup or admin provisioning endpoint.
+    // Temporary, exact-email bootstrap for two privileged accounts and one
+    // review-only account. This is not general signup or admin provisioning.
     // Remove the exception after these UID memberships have been created.
     function verifiedPilot(uid, approvedEmail) {
       return request.auth != null
@@ -74,11 +74,24 @@ service cloud.firestore {
         && request.resource.data.kura_owner == kuraOwner
         && request.resource.data.review_manager == true;
     }
+    // Sarah can enroll only as an assessment evaluator, never a Shoreline
+    // staff member, review manager, or Kura owner.
+    function validReviewerPilotMembership() {
+      return request.resource.data.keys().hasOnly(
+           ['active','tenant_id','role','kura_owner','review_manager'])
+        && request.resource.data.keys().hasAll(
+           ['active','tenant_id','role','kura_owner','review_manager'])
+        && request.resource.data.active == true
+        && request.resource.data.tenant_id == 'shoreline'
+        && request.resource.data.role == 'reviewer'
+        && request.resource.data.kura_owner == false
+        && request.resource.data.review_manager == false;
+    }
     match /staff_members/{uid} {
       allow get: if (staff() || reviewOnly()) && uid == request.auth.uid;   // ro1: a reviewer reads her own record
-      // Self-creation only; signed Firebase Auth, approved fixed role/tenant
-      // fields, verified Daniel or password-authenticated Heather. Existing
-      // records cannot self-update.
+      // Create-only, UID-bound, fixed tenant/role. Daniel and Heather retain
+      // their existing narrow exceptions; Sarah requires verified email.
+      // Existing records cannot self-update.
       // The temporary window ends automatically on 2026-11-16 UTC.
       allow create: if request.time < timestamp.date(2026, 11, 16)
         && (
@@ -88,6 +101,9 @@ service cloud.firestore {
           ((verifiedPilot(uid, 'heather.galano@vca.com')
               || heatherPasswordPilot(uid))
             && validPilotMembership('management', false))
+          ||
+          (verifiedPilot(uid, 'sarah.schiff@vca.com')
+            && validReviewerPilotMembership())
         );
       allow list, update, delete: if false;
     }
