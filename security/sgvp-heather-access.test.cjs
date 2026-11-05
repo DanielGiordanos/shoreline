@@ -1,5 +1,5 @@
 'use strict';
-// Synthetic client tests for the two narrowly approved assessment identities.
+// Synthetic client tests for the narrowly approved assessment identities.
 // No account secrets, production writes, or clinical data.
 const fs=require('node:fs');
 const vm=require('node:vm');
@@ -67,8 +67,8 @@ async function main() {
     assert.ok(page.indexOf('await window.pvxAssessmentEnsureReviewer(u, db)') <
       page.lastIndexOf('      route();'));
     assert.ok(page.includes('reviewerAccessProblem(access.reason)'));
-    assert.ok(page.includes("|| S.email === 'sarah.schiff@vca.com'"));
-    assert.ok(page.includes("reviewer-access.js?v=20261104-sarah-reviewer"));
+    assert.ok(page.includes("window.pvxAssessmentApprovedReviewer(S.email)"));
+    assert.ok(page.includes("reviewer-access.js?v=20261105-approved-reviewers"));
   });
   await check('helper is valid JavaScript and matches the current server-side enrollment values',async()=>{
     new Function(helper);
@@ -79,10 +79,9 @@ async function main() {
     assert.ok(flow.includes("const heatherPasswordLogin = email==='heather.galano@vca.com'"));
     assert.ok(flow.includes("if(!user.emailVerified && !heatherPasswordLogin)"));
     assert.ok(rules.includes('timestamp.date(2026, 11, 16)'));
-    assert.ok(rules.includes("verifiedPilot(uid, 'sarah.schiff@vca.com')"));
+    assert.ok(rules.includes("approvedReviewerPilot(uid)"));
     assert.ok(rules.includes("validReviewerPilotMembership()"));
-    assert.ok(rules.includes("sarahPasswordPilot(uid)"));
-    assert.ok(rules.includes("request.auth.token.get('email', '').lower() == 'sarah.schiff@vca.com'"));
+    assert.ok(rules.includes("'sarah.schiff@vca.com'"));
     assert.ok(rules.includes("request.resource.data.role == 'reviewer'"));
     assert.ok(rules.includes("request.resource.data.review_manager == false"));
   });
@@ -222,6 +221,34 @@ async function main() {
     assert.equal(results[0].ok,true);assert.equal(results[1].ok,true);
     assert.equal(f.counters.writes,1);
   });
+
+  const addedReviewers = ["jessica.giannetto@vca.com", "kelley.harpin@vca.com", "amber.koch@vca.com", "marissa.marinaccio@vca.com", "dianne.kittrell@vca.com", "dawn.nolte@vca.com", "kate.taikowski@vca.com", "shaylan.meyer@vca.com", "michael.mccann@vca.com"];
+  for (const email of addedReviewers) {
+    await check(email + ' password sign-in activates reviewer-only access', async()=>{
+      const f=make({email,uid:'synthetic-'+email,verified:false,provider:'password'});
+      const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+      assert.equal(r.ok,true);assert.equal(r.activated,true);
+      assert.equal(f.counters.writes,1);
+      assert.deepEqual(JSON.parse(JSON.stringify(f.doc)),sarahExpected);
+      assert.equal(f.scope.pvxAssessmentApprovedReviewer(email.toUpperCase()),true);
+    });
+    await check(email + ' existing reviewer membership is reused', async()=>{
+      const f=make({email,doc:{...sarahExpected,custom:'preserve'}});
+      assert.equal((await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db)).alreadyActive,true);
+      assert.equal(f.counters.writes,0);assert.equal(f.doc.custom,'preserve');
+    });
+    await check(email + ' unverified Google sign-in cannot enroll', async()=>{
+      const f=make({email,verified:false,provider:'google.com'});
+      assert.equal((await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db)).reason,'email-unverified');
+      assert.equal(f.counters.writes,0);
+    });
+    await check(email + ' disabled membership is preserved', async()=>{
+      const f=make({email,doc:{...sarahExpected,active:false}});
+      assert.equal((await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db)).ok,false);
+      assert.equal(f.counters.writes,0);
+    });
+  }
   console.log('SGVP assessment reviewer access:',passed,'checks passed.');
 }
 main().catch(error=>{console.error('FAIL',error);process.exitCode=1});
+

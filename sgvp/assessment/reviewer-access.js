@@ -2,12 +2,25 @@
    Uses existing Firebase sign-in; never handles passwords or signup.
    Server rules enforce exact email, authenticated UID, fixed role and tenant,
    and an expiring onboarding window. Password sign-in is accepted for
-   the two named reviewers without a separate email verification step. */
+   the named approved accounts without a separate email verification step. */
 (function () {
   'use strict';
 
   const HEATHER_EMAIL = 'heather.galano@vca.com';
-  const SARAH_EMAIL = 'sarah.schiff@vca.com';
+  const APPROVED_REVIEWERS = Object.freeze([
+    "sarah.schiff@vca.com",
+    "jessica.giannetto@vca.com",
+    "kelley.harpin@vca.com",
+    "amber.koch@vca.com",
+    "marissa.marinaccio@vca.com",
+    "dianne.kittrell@vca.com",
+    "dawn.nolte@vca.com",
+    "kate.taikowski@vca.com",
+    "shaylan.meyer@vca.com",
+    "michael.mccann@vca.com"
+]);
+  window.pvxAssessmentApprovedReviewer = email =>
+    APPROVED_REVIEWERS.includes(String(email || '').trim().toLowerCase());
   const APPROVED_MEMBERS = Object.freeze({
     [HEATHER_EMAIL]: Object.freeze({
       active: true,
@@ -16,13 +29,13 @@
       kura_owner: false,
       review_manager: true
     }),
-    [SARAH_EMAIL]: Object.freeze({
+    ...Object.fromEntries(APPROVED_REVIEWERS.map(email => [email, Object.freeze({
       active: true,
       tenant_id: 'shoreline',
       role: 'reviewer',
       kura_owner: false,
       review_manager: false
-    })
+    })]))
   });
   const VALID_ROLES = [
     'owner', 'admin', 'management', 'doctor',
@@ -35,7 +48,7 @@
       return Promise.resolve({ ok: false, reason: 'authentication' });
     }
 
-    // Only these two existing approved identities can self-activate. All
+    // Only these existing approved identities can self-activate. All
     // others retain their normal membership and assignment permissions.
     const email = String(user.email || '').trim().toLowerCase();
     const expected = APPROVED_MEMBERS[email];
@@ -55,7 +68,7 @@
             user.uid !== uid) {
           return { ok: false, reason: 'identity-changed' };
         }
-        // Like Heather, Sarah can activate with her existing Firebase email/
+        // Like Heather, approved reviewers can activate with her existing Firebase email/
         // password sign-in, without an additional email verification step.
         // Other providers still require verified email ownership.
         const signedInWithPassword = Array.isArray(user.providerData) &&
@@ -79,10 +92,10 @@
           if (member.active !== true ||
               member.tenant_id !== 'shoreline' ||
               (VALID_ROLES.indexOf(member.role) < 0 &&
-               !(email === SARAH_EMAIL && member.role === 'reviewer'))) {
+               !(APPROVED_REVIEWERS.includes(email) && member.role === 'reviewer'))) {
             return { ok: false, reason: 'membership-restricted' };
           }
-          // Heather requires management review authority. Sarah needs only
+          // Heather requires management review authority. Other reviewers need only
           // normal evaluator access and may retain an existing staff role.
           if (email === HEATHER_EMAIL &&
               !(['owner', 'admin'].includes(member.role) ||
@@ -117,3 +130,4 @@
     return work;
   };
 })();
+
