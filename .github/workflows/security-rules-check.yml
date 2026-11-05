@@ -61,8 +61,9 @@ jobs:
         run: node security/tracker-intake-source.test.cjs
       - name: Check browser privacy meta and staged hosting edge
         run: node security/browser-policy-source.test.cjs
+      # ro1 (Nov 4 2026): review-only accounts are checked in the same emulator run
       - name: Run Firestore rule tests in local emulator
         run: >
           npx --yes firebase-tools@13.29.1 emulators:exec
           --only firestore --project demo-pravix-security
-          "node security/firestore.rules.test.cjs"
+          "node security/firestore.rules.test.cjs && node security/sgvp-review-only.test.cjs"
