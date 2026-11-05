@@ -1,5 +1,5 @@
 'use strict';
-// Synthetic client tests for Dr. Galano's existing Firebase Auth identity.
+// Synthetic client tests for the two narrowly approved assessment identities.
 // No account secrets, production writes, or clinical data.
 const fs=require('node:fs');
 const vm=require('node:vm');
@@ -10,9 +10,14 @@ const page=fs.readFileSync('sgvp/assessment/index.html','utf8');
 const rules=fs.readFileSync('firestore.rules','utf8');
 const flow=fs.readFileSync('index.html','utf8');
 const HEATHER='heather.galano@vca.com';
+const SARAH='sarah.schiff@vca.com';
 const expected={
   active:true,tenant_id:'shoreline',role:'management',
   kura_owner:false,review_manager:true
+};
+const sarahExpected={
+  active:true,tenant_id:'shoreline',role:'reviewer',
+  kura_owner:false,review_manager:false
 };
 let passed=0;
 async function check(title, fn) {
@@ -62,6 +67,8 @@ async function main() {
     assert.ok(page.indexOf('await window.pvxAssessmentEnsureReviewer(u, db)') <
       page.lastIndexOf('      route();'));
     assert.ok(page.includes('reviewerAccessProblem(access.reason)'));
+    assert.ok(page.includes("|| S.email === 'sarah.schiff@vca.com'"));
+    assert.ok(page.includes("reviewer-access.js?v=20261104-sarah-reviewer"));
   });
   await check('helper is valid JavaScript and matches the current server-side enrollment values',async()=>{
     new Function(helper);
@@ -72,6 +79,12 @@ async function main() {
     assert.ok(flow.includes("const heatherPasswordLogin = email==='heather.galano@vca.com'"));
     assert.ok(flow.includes("if(!user.emailVerified && !heatherPasswordLogin)"));
     assert.ok(rules.includes('timestamp.date(2026, 11, 16)'));
+    assert.ok(rules.includes("verifiedPilot(uid, 'sarah.schiff@vca.com')"));
+    assert.ok(rules.includes("validReviewerPilotMembership()"));
+    assert.ok(rules.includes("sarahPasswordPilot(uid)"));
+    assert.ok(rules.includes("request.auth.token.get('email', '').lower() == 'sarah.schiff@vca.com'"));
+    assert.ok(rules.includes("request.resource.data.role == 'reviewer'"));
+    assert.ok(rules.includes("request.resource.data.review_manager == false"));
   });
   await check('verified Heather can activate her missing UID membership',async()=>{
     const f=make();
@@ -88,6 +101,60 @@ async function main() {
     const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
     assert.equal(r.ok,true);
     assert.equal(r.alreadyActive,true);
+    assert.equal(f.counters.writes,0);
+  });
+  await check('verified Sarah can activate reviewer-only membership',async()=>{
+    const f=make({email:SARAH,uid:'synthetic-sarah-uid'});
+    const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+    assert.equal(r.ok,true);
+    assert.equal(r.activated,true);
+    assert.equal(f.counters.writes,1);
+    assert.deepEqual(Object.keys(f.doc).sort(),Object.keys(sarahExpected).sort());
+    for(const [key,value] of Object.entries(sarahExpected))assert.equal(f.doc[key],value);
+  });
+  await check('existing Sarah reviewer membership is not overwritten',async()=>{
+    const f=make({email:SARAH,doc:{...sarahExpected}});
+    const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+    assert.equal(r.ok,true);
+    assert.equal(r.alreadyActive,true);
+    assert.equal(f.counters.writes,0);
+  });
+  await check('existing Sarah doctor membership is not demoted or elevated',async()=>{
+    const f=make({email:SARAH,doc:{
+      active:true,tenant_id:'shoreline',role:'doctor',
+      kura_owner:false,review_manager:false
+    }});
+    const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+    assert.equal(r.ok,true);
+    assert.equal(r.alreadyActive,true);
+    assert.equal(f.counters.writes,0);
+  });
+  await check('unverified Sarah with existing password sign-in activates without mailbox verification',async()=>{
+    const f=make({email:SARAH,verified:false,provider:'password'});
+    const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+    assert.equal(r.ok,true);
+    assert.equal(r.activated,true);
+    assert.equal(f.counters.writes,1);
+    assert.equal(f.doc.role,'reviewer');
+    assert.equal(f.doc.review_manager,false);
+  });
+  await check('unverified Sarah using Google sign-in still requires verification',async()=>{
+    const f=make({email:SARAH,verified:false,provider:'google.com'});
+    const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+    assert.equal(r.ok,false);
+    assert.equal(r.reason,'email-unverified');
+    assert.equal(f.counters.writes,0);
+  });
+  await check('inactive Sarah membership cannot be reactivated by client',async()=>{
+    const f=make({email:SARAH,doc:{...sarahExpected,active:false}});
+    const r=await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db);
+    assert.equal(r.ok,false);
+    assert.equal(r.reason,'membership-restricted');
+    assert.equal(f.counters.writes,0);
+  });
+  await check('Sarah on another tenant is not reassigned by client',async()=>{
+    const f=make({email:SARAH,doc:{...sarahExpected,tenant_id:'other'}});
+    assert.equal((await f.scope.pvxAssessmentEnsureReviewer(f.user,f.db)).ok,false);
     assert.equal(f.counters.writes,0);
   });
   await check('verified administrator Heather can use her existing review authority',async()=>{
@@ -155,6 +222,6 @@ async function main() {
     assert.equal(results[0].ok,true);assert.equal(results[1].ok,true);
     assert.equal(f.counters.writes,1);
   });
-  console.log('SGVP Heather assessment access:',passed,'checks passed.');
+  console.log('SGVP assessment reviewer access:',passed,'checks passed.');
 }
 main().catch(error=>{console.error('FAIL',error);process.exitCode=1});
