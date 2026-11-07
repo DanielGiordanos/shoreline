@@ -135,6 +135,10 @@ async def to_rounds(pg, wait=1500):
     await pg.goto(f'http://127.0.0.1:{PORT}/rounds/')
     await pg.wait_for_selector('#view-rd-census:not(.hidden)', state='attached', timeout=15000); await pg.wait_for_timeout(wait)
 
+async def to_ultrasound(pg, wait=1500):
+    await pg.goto(f'http://127.0.0.1:{PORT}/ultrasound/')
+    await pg.wait_for_selector('#subnavUs', state='attached', timeout=15000); await pg.wait_for_timeout(wait)
+
 async def to_flow(pg, wait=1200):
     await pg.goto(f'http://127.0.0.1:{PORT}/#app=flow')
     await pg.wait_for_selector('#subnavFlow .switcher.pvx-sw', state='attached', timeout=15000); await pg.wait_for_timeout(wait)
