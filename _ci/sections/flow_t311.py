@@ -48,7 +48,7 @@ async def s_t311(br):
     await p.evaluate("window.__rel=null; window.fvVisitHistory=()=>new Promise((res,rej)=>{window.__rel={res,rej};}); rdOld=null; rdOldLoading=false; rdOldFailed=false; Backend._visitsMode='recent'; switchRdView('archive')")
     await p.wait_for_timeout(400)
     t = await p.evaluate("document.getElementById('rdArchiveBody').innerText")
-    ok('Loading · while earlier days load, the Archive says so (it said “No rounds history yet”)', 'Loading earlier days' in t and 'No rounds history yet' not in t, t[:80])
+    ok('Loading · while earlier days load, the Archive says so (it said “No rounds history yet”; since n330 “Retrieving earlier days”)', ('Loading earlier days' in t or 'Retrieving earlier days' in t) and 'No rounds history yet' not in t, t[:80])
     await p.evaluate("window.__rel.rej(new Error('offline'))"); await p.wait_for_timeout(400)
     t = await p.evaluate("[document.getElementById('rdArchiveBody').innerText, !!document.querySelector('#rdArchiveBody [data-act=arc-retry]')]")
     ok('…if they can’t be loaded it says that, with Try again (it said “No rounds history yet”)', 'Couldn’t load earlier days' in t[0] and t[1], t)

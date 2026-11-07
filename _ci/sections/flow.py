@@ -179,7 +179,7 @@ async def s_n186(br):
          apps=['flow'], topics=['icons'])
 async def s_n187(br):
     ctx, pg, errs = await flow_page((1440, 900))
-    # n305: Rounds is its own page — its icons are checked there, Ultrasound's on Flow's page
+    # n305 / n333: Rounds and Ultrasound are their own pages — their icons are checked there
     BOXJS = """(html)=>{const box=document.createElement('div');box.style.cssText='position:fixed;left:0;top:0;width:900px;height:900px;overflow:auto;z-index:99999;font:13px -apple-system';
       box.innerHTML=html;document.body.appendChild(box);
       const ic=[...box.querySelectorAll('svg.pvx-gi')].filter(s=>s.getClientRects().length).map(s=>{const r=s.getBoundingClientRect();return parseFloat(getComputedStyle(s).strokeWidth)*r.width/24});
@@ -187,9 +187,10 @@ async def s_n187(br):
     await to_rounds(pg)
     gr = await pg.evaluate("""(()=>{try{rdSeedDemo()}catch(e){return null}const p=PATIENTS.find(x=>x._demo);if(!p)return null;(p.rounds.flags=p.rounds.flags||[]).push({id:'f1',label:'Fall risk'});return rdWorkHTML(p)+rdTomorrowHTML()})()""")
     gr = await pg.evaluate(BOXJS, gr) if gr else {'ic': [], 'glyph': 1}
-    await to_flow(pg)
+    await to_ultrasound(pg)   # n333: Ultrasound is its own page
     gu = await pg.evaluate("usxQualityRows({id:'x',name:'Icon',last:'Test',species:'Canine',ultrasound:{clinicalQuestion:''},timeline:[]})")
     gu = await pg.evaluate(BOXJS, gu)
+    await to_flow(pg)   # back to Flow for the checks below
     ic = gr['ic'] + gu['ic']
     gi = {'n': len(ic), 'min': min(ic) if ic else 0, 'max': max(ic) if ic else 0, 'glyph': gr['glyph'] + gu['glyph'], 'flag': gr.get('flag'), 'warn': gr.get('warn') or gu.get('warn')}
     ok('n187: Rounds and Ultrasound draw their checks, crosses and warnings as vector icons, not text characters', gi.get('n', 0) >= 20 and gi.get('glyph') == 0 and gi.get('warn'), gi)
@@ -364,6 +365,8 @@ async def s_n192(br):
       return {fx,ring,said,fx2,room,undo:!!note,back:(PATIENTS.find(x=>x.id===p.id)||p).room,occ}})()""")
     ok('n192: an occupied room refuses before release — red ring, “not allowed”, and VoiceOver hears “Room 2 is occupied”', rm['fx'] == 'none' and rm['ring'] and rm['said'] == 'Room 2 is occupied', rm)
     ok('n192: a room move has Undo, and Undo puts the patient back in the room they came from', rm['fx2'] == 'move' and rm['room'] == 'Room 3' and rm['undo'] and rm['back'] == rm['occ'], rm)
+    await to_ultrasound(pg, 800)   # n333: the queue is on Ultrasound's own page
+    await pg.evaluate("(()=>{const now=Date.now();[0,1,2].forEach(i=>PATIENTS.push(patient({name:'Dnd'+i,last:'Test',owner:'Synthetic',status:'Waiting',room:'Lobby',arrival:new Date(now-30*60000),prio:3,doctor:'unassigned',species:'Canine',timeline:[]})));renderAll();})()")
     q = await pg.evaluate("""(async()=>{const ps=PATIENTS.filter(x=>/^Dnd/.test(x.name));ps.forEach((p,i)=>{p.ultrasound={status:'requested',queuePosition:i+1}});const s0=pvxQueueSnap();
       ps.forEach((p,i)=>{p.ultrasound.queuePosition=ps.length-i}); pvxQueueUndo(s0); const n=[...document.querySelectorAll('#notes .note')].pop(); const t=n.querySelector('.n-title').textContent;
       n.querySelector('.n-act').click(); await new Promise(r=>setTimeout(r,100)); const back=ps.map(p=>p.ultrasound.queuePosition).join(','); ps.forEach(p=>delete p.ultrasound); return {t,back}})()""")
@@ -597,10 +600,10 @@ async def s_n195(br):
     r1 = await pg.evaluate("[(document.querySelector('#switcher .seg.active')||{dataset:{}}).dataset.view, location.hash, document.getElementById('stage').scrollTop]")
     ok('n195: Flow reopens on the view you left (Patients), with no #app left in the address', r1[0] == 'list' and r1[1] == '', r1)
     ok('n195: …and at the scroll position you left', y0 > 300 and abs(r1[2] - y0) < 40, [y0, r1[2]])
-    await pg.evaluate("switchApp('ultrasound'); switchUsView('queue')"); await pg.wait_for_timeout(400)
-    await pg.reload(); await pg.wait_for_selector('#subnavFlow .switcher.pvx-sw', state='attached'); await pg.wait_for_timeout(1800)
-    r2 = await pg.evaluate("[currentApp, typeof currentUsView!=='undefined'?currentUsView:null, document.documentElement.classList.contains('pvx-app-boot')]")
-    ok('n195: …and in the app you left (Ultrasound › Queue), without the Flow board showing first', r2 == ['ultrasound', 'queue', False], r2)
+    await to_ultrasound(pg, 600); await pg.evaluate("switchUsView('queue')"); await pg.wait_for_timeout(400)
+    await pg.goto(f'http://127.0.0.1:{PORT}/'); await pg.wait_for_selector('#subnavUs', state='attached', timeout=15000); await pg.wait_for_timeout(1500)
+    r2 = await pg.evaluate("[currentApp, typeof currentUsView!=='undefined'?currentUsView:null, location.pathname]")
+    ok('n195: …and in the app you left (Ultrasound › Queue, its own page since n333), without the Flow board showing first', r2 == ['ultrasound', 'queue', '/ultrasound/'], r2)
     await to_rounds(pg, 600)
     await pg.goto(f'http://127.0.0.1:{PORT}/'); await pg.wait_for_timeout(2500)
     r3 = await pg.evaluate("[location.pathname, typeof currentApp!=='undefined'?currentApp:null]")
@@ -638,14 +641,17 @@ async def s_n196(br):
     await pg.click('#switcher .seg[data-view="flow"]'); await pg.wait_for_timeout(400)
     h1 = await pg.evaluate("""(()=>{const t=s=>{const e=document.querySelector(s);return e&&e.getAttribute('title')};
       openDrawer(PATIENTS.find(x=>x.name==='Help0').id);
-      return {luna:t('#searchLuna'),move:t('#board .pvx-move[data-kind=stage]'),talk:t('#fvTalk'),role:t('#usxRole'),name:(document.querySelector('.editable-hint')||{}).title}})()""")
-    ok('n196: tooltips say what the control does (search, Move to another stage, Edit name, talk, role view)', h1['luna'] == 'Search patients, rooms and commands' and h1['move'] == 'Move to another stage' and h1['name'] == 'Edit name' and h1['talk'] in ('Click, or hold Space, to talk', 'Voice needs internet. Typing commands in the search bar still works.') and h1['role'] == 'Choose your view: Internal Medicine controls, or view only', h1)
+      return {luna:t('#searchLuna'),move:t('#board .pvx-move[data-kind=stage]'),talk:t('#fvTalk'),name:(document.querySelector('.editable-hint')||{}).title}})()""")
+    ok('n196: tooltips say what the control does (search, Move to another stage, Edit name, talk, role view)', h1['luna'] == 'Search patients, rooms and commands' and h1['move'] == 'Move to another stage' and h1['name'] == 'Edit name' and h1['talk'] in ('Click, or hold Space, to talk', 'Voice needs internet. Typing commands in the search bar still works.'), h1)
     bad = await pg.evaluate("[...document.querySelectorAll('[title]')].map(e=>e.title).filter(t=>/L\\.U\\.N\\.A\\.|per-user enforcement|click to |Click to |Low end −|^Move…$|Double-click/.test(t))")
     ok('n196: no tooltip names the thing or uses developer wording any more', not bad, bad)
     th = await pg.evaluate("(document.querySelector('.theme-toggle')||{}).title")
     ths = [open(os.path.join(BUILD, f), encoding='utf-8').read().count('title="Switch light and dark" aria-label="Switch light and dark"') for f in ('index.html', 'anesia/index.html', 'treatment/index.html', 'or/index.html')]
     ok('n196: the theme button has one name in Flow, Anesia, Treatment Sheets and the OR (“Switch light and dark”)', th == 'Switch light and dark' and ths == [1, 1, 1, 1], [th, ths])
-    hint_m = await pg.evaluate("document.querySelector('.usx-sec .hint').textContent")
+    await to_ultrasound(pg, 800)   # n333
+    role = await pg.evaluate("(document.getElementById('usxRole')||{getAttribute:()=>null}).getAttribute('title')")
+    ok('n196: …and Ultrasound’s role view says what it does (on its own page since n333)', role == 'Choose your view: Internal Medicine controls, or view only', role)
+    hint_m = await pg.evaluate("switchUsView('completed'), document.querySelector('.usx-sec .hint').textContent")
     await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(700)
     await pg.evaluate("(()=>{const r=document.querySelector('#rdList .rd-row');r&&r.querySelector('.rd-rowmain,.rd-name')&&(r.querySelector('.rd-rowmain')||r).click()})()"); await pg.wait_for_timeout(600)
     m0 = await pg.evaluate("(()=>{const e=document.querySelector('.rd-fin-edit[data-fin-key]');return e&&[e.getAttribute('role'),e.tabIndex,e.title]})()")
@@ -667,7 +673,8 @@ async def s_n196(br):
     ok('no new page errors (n196 Flow)', not newerr(errs), errs)
     await ctx.close()
     ctx, pg, errs = await flow_page((1024, 1366), touch=True)
-    hint_t = await pg.evaluate("document.querySelector('.usx-sec .hint').textContent")
+    await to_ultrasound(pg, 800)   # n333
+    hint_t = await pg.evaluate("switchUsView('completed'), document.querySelector('.usx-sec .hint').textContent")
     ok('n196: help text says Tap on a touch screen, Click with a mouse (“… a row to review the case”)', hint_m == 'Click a row to review the case' and hint_t == 'Tap a row to review the case', [hint_m, hint_t])
     await ctx.close()
     # Anesia
@@ -718,13 +725,13 @@ async def s_n197(br):
     await pg.wait_for_timeout(5000)
     m2 = await pg.evaluate("!![...document.querySelectorAll('#notes .note')].find(x=>/Critical ultrasound finding/.test(x.textContent)&&!x.classList.contains('hide'))")
     ok('n197: when one arrives, other staff screens get a message with Open that stays and is read aloud', m1 and m1['sticky'] and m1['role'] == 'alert' and m1['open'] and 'Critical ultrasound finding: Crit2' in (m1['said'] or '') and m2, [m1, m2])
-    await pg.evaluate("switchApp('ultrasound')"); await pg.wait_for_timeout(300)
+    await to_ultrasound(pg, 8600)   # n333: Ultrasound's own page; past the 8 s start-up quiet
     n0 = await pg.evaluate("[...document.querySelectorAll('#notes .note')].filter(x=>/Critical ultrasound finding/.test(x.textContent)).length")
-    await pg.evaluate(MK, ['Crit3', True]); await pg.wait_for_timeout(800)
+    await pg.evaluate(MK, ['Crit3', True]); await pg.wait_for_timeout(3800)
     n1 = await pg.evaluate("[...document.querySelectorAll('#notes .note')].filter(x=>/Critical ultrasound finding/.test(x.textContent)).length")
     ok('n197: …but not on Ultrasound’s own screens (the person who flagged it)', n1 == n0, [n0, n1])
-    await pg.evaluate("switchApp('flow')"); await pg.wait_for_timeout(300)
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    await to_flow(pg, 600)
+    src = open(os.path.join(BUILD, 'ultrasound', 'app.js'), encoding='utf-8').read()   # n333: the IM screens' code is Ultrasound's own
     ok('n197: the IM screen gets one plain confirmation, not a second toast about its own action', "notify('Critical finding'" not in src and "critical finding flagged" in src)
     f = await pg.evaluate("""(async()=>{document.querySelectorAll('#notes .note').forEach(n=>n.remove());notify('Not saved','The form changed on another screen',{icon:'info'});notify('Patient moved','Help · Room 1',{icon:'move'});
       await new Promise(r=>setTimeout(r,5200)); const ns=[...document.querySelectorAll('#notes .note:not(.hide)')].map(n=>n.querySelector('.n-title').textContent);
@@ -1172,7 +1179,7 @@ async def s_n207(br):
     o1 = await pg.evaluate("[document.getElementById('apModal').classList.contains('open'), location.hash]")
     ok('n207: /#op=new opens New patient (the File / Dock menu command) and clears the link', o1[0] and o1[1] == '', o1)
     mf = await pg.evaluate("fetch('/manifest.webmanifest').then(r=>r.json())")
-    ok('n207: Flow manifest — name “Flow · Pravix” (≤ 16), id, shortcuts New patient / Rounds (its own page since n305) / Ultrasound', mf['name'] == 'Flow · Pravix' and len(mf['name']) <= 16 and mf['id'] == '/' and [x['url'] for x in mf['shortcuts']] == ['/#op=new', '/rounds/', '/#app=ultrasound'] and 'Shoreline' in mf['description'], mf.get('name'))
+    ok('n207: Flow manifest — name “Flow · Pravix” (≤ 16), id, shortcuts New patient / Rounds (its own page since n305) / Ultrasound (its own page since n333)', mf['name'] == 'Flow · Pravix' and len(mf['name']) <= 16 and mf['id'] == '/' and [x['url'] for x in mf['shortcuts']] == ['/#op=new', '/rounds/', '/ultrasound/'] and 'Shoreline' in mf['description'], mf.get('name'))
     ok('no new page errors (n207 Flow)', not newerr(errs), errs)
     await ctx.close()
     ctx, pg, errs = await flow_page((1180, 820), touch=True)
@@ -1530,7 +1537,7 @@ async def s_n212(br):
     SEED212 = """(()=>{const now=Date.now();[['Isabel','Waiting','Lobby'],['Bella','Waiting','Lobby'],['Maxwell','Exam','Room 1']].forEach((v,i)=>{PATIENTS.push(patient({name:v[0],last:'Srch',owner:'Synthetic',status:v[1],room:v[2],arrival:new Date(now-30*60000),prio:3,doctor:'unassigned',species:'Canine',timeline:[]}));}); renderAll();})()"""
     ctx, pg, errs = await flow_page((1440, 900))
     await pg.evaluate(SEED212); await pg.wait_for_timeout(300)
-    f1 = await pg.evaluate("""(()=>{const i=document.getElementById('globalSearch');return {ph:i.placeholder, lab:i.getAttribute('aria-label'), type:i.type, ekh:i.getAttribute('enterkeyhint'), role:i.getAttribute('role'), ac:i.getAttribute('aria-controls'), lb:document.getElementById('searchResults').getAttribute('role'), apps:document.querySelector('nav.topnav').getAttribute('aria-label'), views:document.getElementById('switcher').getAttribute('aria-label'), rd:(document.getElementById('switcherRd')||{getAttribute(){return 'Rounds views'}}).getAttribute('aria-label'), us:document.getElementById('switcherUs').getAttribute('aria-label')}})()""")   # n305: Rounds' views are named on Rounds' own page (t305)
+    f1 = await pg.evaluate("""(()=>{const i=document.getElementById('globalSearch');return {ph:i.placeholder, lab:i.getAttribute('aria-label'), type:i.type, ekh:i.getAttribute('enterkeyhint'), role:i.getAttribute('role'), ac:i.getAttribute('aria-controls'), lb:document.getElementById('searchResults').getAttribute('role'), apps:document.querySelector('nav.topnav').getAttribute('aria-label'), views:document.getElementById('switcher').getAttribute('aria-label'), rd:(document.getElementById('switcherRd')||{getAttribute(){return 'Rounds views'}}).getAttribute('aria-label'), us:(document.getElementById('switcherUs')||{getAttribute(){return 'Ultrasound views'}}).getAttribute('aria-label')}})()""")   # n305 / n333: Rounds' and Ultrasound's views are named on their own pages (t305, t333)
     ok('n212: Flow’s search names its scope (“Search patients, doctors, rooms”) and is a search combobox; landmarks are named Apps / Flow views / Rounds views / Ultrasound views', f1 == {'ph': 'Search patients, doctors, rooms', 'lab': 'Search patients, doctors and rooms', 'type': 'search', 'ekh': 'search', 'role': 'combobox', 'ac': 'searchResults', 'lb': 'listbox', 'apps': 'Apps', 'views': 'Flow views', 'rd': 'Rounds views', 'us': 'Ultrasound views'}, f1)
     pid = await pg.evaluate("PATIENTS.find(x=>x.name==='Maxwell').id")
     await pg.evaluate(f"openDrawer('{pid}');0"); await pg.wait_for_timeout(300); await pg.evaluate("closeDrawer();0"); await pg.wait_for_timeout(300)
