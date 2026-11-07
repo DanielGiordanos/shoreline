@@ -1429,3 +1429,63 @@ body:not(.dark) #rdList .rd-acuity-seg>button.on[data-key=attention]{color:var(-
 body:not(.dark) #rdList .rd-acuity-seg>button.on[data-key=stable]{color:#2462A0!important}
 body:not(.dark) #rdList .rd-acuity-seg>button.on[data-key=discharge]{color:var(--green-ink,#1B7A4A)!important}
 @media (forced-colors:active){#rdList .rd-acuity-seg>button.on,#rdList .rd-dis-seg>button.on{color:Highlight!important;border-color:Highlight}}
+
+/* ===== n329 · Text fields, Toggles, Virtual keyboards (Nov 5 2026) ===== */
+/* the Clear button at a field's trailing end (the browser's own ✕ is hidden so there's one) */
+.rd-clear{position:fixed;z-index:10060;width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:50%;padding:0;margin:0;
+  background:transparent;color:var(--ink-400,#7A98B8);cursor:pointer}
+.rd-clear[hidden]{display:none}
+.rd-clear svg{width:16px;height:16px;padding:3px;border-radius:50%;background:rgba(150,185,220,.22);box-sizing:content-box}
+body:not(.dark) .rd-clear svg{background:rgba(12,41,82,.12)}
+.rd-clear::before{content:"";position:absolute;inset:-8px}
+.rd-clear:hover svg{background:rgba(150,185,220,.36)}
+input.rd-has-clear,#rdSearch.rd-has-clear{padding-inline-end:34px!important}
+#rdSearch::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
+/* a field too short for its value ends in … until it's edited (an iPhone has no pointer to show the rest) */
+#view-rd-census input[data-input],#rdMode input[data-input]{text-overflow:ellipsis}
+/* an ID that isn't a number says so under its field */
+.rd-id-msg{flex-basis:100%;text-align:right;font-size:0.75rem;font-weight:600;line-height:1.35;color:#F0BC55}
+.rd-id-msg:empty{display:none}
+body:not(.dark) .rd-id-msg{color:var(--amber-ink,#875C00)}
+.rd-id-field:has(input[aria-invalid=true]){border-color:rgba(232,168,48,.7)}
+/* Timeline and History keep their names; the chevron turns when they're open */
+.rd-link.rd-disc{display:inline-flex;align-items:center;gap:3px}
+.rd-disc-chev{width:12px;height:12px;flex:none;transition:transform .16s cubic-bezier(.2,.8,.2,1)}
+.rd-link.rd-disc[aria-expanded=true] .rd-disc-chev{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.rd-disc-chev{transition:none}}
+/* while the touch keyboard is up, the bottom bars step aside */
+html.rd-kb.rd-tabbar #subnavRd #switcherRd{display:none!important}
+html.rd-kb.rd-tabbar body{padding-bottom:env(safe-area-inset-bottom,0px)}
+html.rd-kb #rdMode .rdm-foot{display:none!important}
+
+/* ===== n330 · Activity rings, Gauges, Progress indicators (Nov 5 2026) ===== */
+/* the hours authorized, as a gauge */
+.rd-auth-gauge{margin:2px 0 14px}
+.rd-auth-track{position:relative;height:6px;border-radius:99px;background:rgba(150,185,220,.16);overflow:hidden}
+body:not(.dark) .rd-auth-track{background:rgba(12,41,82,.09)}
+.rd-auth-fill{position:absolute;left:0;top:0;bottom:0;border-radius:inherit;background:var(--rg,#48B888)}
+.rd-auth-gauge.soon .rd-auth-fill{background:var(--ra,#E8A830)}
+.rd-auth-gauge.over .rd-auth-fill{background:var(--rr,#FF6B6B)}
+body:not(.dark) .rd-auth-gauge.ok .rd-auth-fill{background:#1A9E6E}
+body:not(.dark) .rd-auth-gauge.soon .rd-auth-fill{background:#E08A00}
+body:not(.dark) .rd-auth-gauge.over .rd-auth-fill{background:#D12E26}
+.rd-auth-ends{display:flex;justify-content:space-between;margin-top:5px;font-size:0.6875rem;font-weight:600;color:var(--ink-400,#7A98B8);font-variant-numeric:tabular-nums}
+@media (prefers-contrast:more){.rd-auth-track{outline:1px solid currentColor;outline-offset:0}}
+@media (forced-colors:active){.rd-auth-track{border:1px solid CanvasText}.rd-auth-fill{forced-color-adjust:none;background:Highlight!important}}
+/* the Archive's loader takes the census loader's colours */
+#rdArchiveBody{--rd-ld-accent:#23439C;--rd-ld-track:#E3E8EE;--rd-ld-ink:#202A38;--rd-ld-muted:#637084;--rd-ld-edge:#E2E7EF;--rd-ld-tint:#EDF1F6}
+body.dark #rdArchiveBody{--rd-ld-accent:#63CDDD;--rd-ld-track:#25354A;--rd-ld-ink:#E5EDF6;--rd-ld-muted:#9AAEC3;--rd-ld-edge:#223044;--rd-ld-tint:#182638}
+/* with Reduce Motion a wait never stands still: the bar and the spinner fade in and out instead of moving */
+@keyframes rdLdPulse{0%,100%{opacity:.22}50%{opacity:.6}}
+@media (prefers-reduced-motion:reduce){
+  .rd-ld-track.ind .rd-ld-fill{animation:rdLdPulse 1.6s ease-in-out infinite!important}
+  .rd-arc-spin{animation:rdLdPulse 1.6s ease-in-out infinite!important}
+}
+
+/* ===== n331 · Notifications (Nov 5 2026) ===== */
+/* on a phone banners sit across the top, inside the 16 px margins, and can be swiped up */
+@media (max-width:600px){ .notes{left:16px;right:16px;width:auto;max-width:none;top:calc(env(safe-area-inset-top,0px) + 10px)} }
+@media (pointer:coarse){ #notes .note{touch-action:none} }
+
+/* n333: while the More menu is open the critical-patient banner steps aside (it covered the menu; the page is its own layer, so the menu cannot rise above it) */
+body:has(.pvx-more-menu:not([hidden])) #critIsland{opacity:0!important;pointer-events:none!important}

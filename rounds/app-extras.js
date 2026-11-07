@@ -113,6 +113,7 @@ function rdSaveState(st){ var el=document.getElementById('rdSaveState'); if(!el)
       if(off){ el.textContent='Offline · saves when connected'; el.classList.add('warn'); live.textContent='Offline. Rounds changes will save when the connection is back.'; } },4000); return; }
   if(st==='saved'){ el.textContent='Saved'; el.classList.add('on'); live.textContent=''; _rdSS.t=setTimeout(function(){ el.classList.remove('on'); },1400); return; }
   if(st==='error'){ el.textContent='Not saved · retrying'; el.classList.add('on','warn'); live.textContent='Rounds change not saved yet. Retrying.'; return; }
+  if(st==='failed'){ el.textContent='Not saved'; el.classList.add('on','warn'); live.textContent=''; return; }   /* n331: the banner says why */
   if(st==='off'){ el.textContent='Not saved · not connected'; el.classList.add('on','warn'); live.textContent='Not connected. Rounds changes are not being saved.'; return; } }
 try{window.addEventListener('pvx:persist',function(e){ var d=e.detail||{}; if(!window.__rdWaitSince) return;
   if((d.state==='saved'||d.state==='idle')&&d.at>=window.__rdWaitSince){ window.__rdWaitSince=0; rdSaveState('saved'); return; }
@@ -126,7 +127,7 @@ function rdQDb(){ try{ return (typeof Backend!=='undefined'&&Backend.mode==='sta
 function rdQWho(){ try{ return rdActorName()||null; }catch(e){ return null; } }
 function rdQWrite(p){ var d=rdQDb(); if(!d||!p){ return; } rdQ.pend++; window.__rdQWait=true; rdSaveState('saving');
   p.then(function(){ rdQ.pend--; if(!rdQ.pend){ window.__rdQWait=false; if(!window.__rdWaitSince) rdSaveState('saved'); } })
-   .catch(function(e){ rdQ.pend--; console.warn('[rounds] tomorrow list',e); rdSaveState('error'); try{ toast('Tomorrow list not saved — check your connection'); }catch(x){} }); }
+   .catch(function(e){ rdQ.pend--; console.warn('[rounds] tomorrow list',e); rdSaveState('failed'); try{ notify('Tomorrow list not saved','Your last change didn’t reach the server. Make it again.',{icon:'info',color:'var(--priority-p1)',sticky:true}); }catch(x){} }); }
 function rdQRef(id){ return rdQDb().collection('rounds_queue').doc(String(id)); }
 function rdQAdd(key,x){ var d=rdQDb(); if(!d) return; var now=new Date().toISOString();
   rdQWrite(rdQRef(x.id).set({tenant_id:TENANT_ID,key:key,text:String(x.text).slice(0,200),done:!!x.done,done_at:x.doneAt||null,created_at:x.at||now,created_by:rdQWho(),updated_at:now,updated_by:rdQWho()})); }
@@ -487,7 +488,7 @@ try{(function(){
     showConfirm('Authorized hours','Save',function(){},{});
     var box=$('confirmBox'), ok=$('confirmOk'), sub=$('confirmSub'), old=box.querySelector('.pvx-hwrap'); if(old) old.remove();
     var w=document.createElement('div'); w.className='pvx-hwrap';
-    w.innerHTML='<div class="pvx-hours"><button type="button" data-h="-1" aria-label="12 hours fewer">−</button><input id="pvxHours" inputmode="numeric" autocomplete="off" aria-label="Total authorized hours" aria-describedby="pvxHoursErr"><span class="pvx-hours-u">hours</span><button type="button" data-h="1" aria-label="12 hours more">+</button></div><div class="pvx-hours-err" id="pvxHoursErr" aria-live="polite"></div>';
+    w.innerHTML='<div class="pvx-hours"><button type="button" data-h="-1" aria-label="12 hours fewer">−</button><input id="pvxHours" inputmode="numeric" enterkeyhint="done" autocomplete="off" aria-label="Total authorized hours" aria-describedby="pvxHoursErr"><span class="pvx-hours-u">hours</span><button type="button" data-h="1" aria-label="12 hours more">+</button></div><div class="pvx-hours-err" id="pvxHoursErr" aria-live="polite"></div>';
     sub.insertAdjacentElement('afterend',w); box.setAttribute('aria-labelledby','confirmTitle');
     var inp=w.querySelector('input'), err=w.querySelector('.pvx-hours-err'); inp.value=String(Math.max(0,Math.round(+cur||0)));
     function read(){ var v=inp.value.trim(); return /^\d{1,3}$/.test(v)?+v:null; }
@@ -1608,9 +1609,10 @@ try{(function(){
       if(q.rounds&&t0&&t0<Date.now()) q.rounds.admittedAt=rdIso(new Date(t0));
       try{ rdAudit(q,'Added to Rounds — '+why); }catch(e){}
       console.info('[flow-n252] added',q.name,'to Rounds —',why);
+      try{ var fb=document.querySelector('#notes .note[data-fail="add:'+String(q.id).replace(/"/g,'')+'"]'); if(fb){ fb.classList.add('hide'); setTimeout(function(){ fb.remove(); },480); } failed[q.id]=0; }catch(_){}   /* n331: a failure that fixed itself doesn't stay on screen */
       try{ renderAll(); }catch(e){}
     }catch(e){ console.warn('[flow-n252] couldn’t add',q&&q.name,'to Rounds',e);
-      if(!failed[q.id]){ failed[q.id]=1; try{ notify('Couldn’t add '+bcEsc(q.name||'a patient')+' to Rounds','Open Rounds and add them from the census',{icon:'info',color:'var(--priority-p1)',dur:9000}); }catch(_){} } } }
+      if(!failed[q.id]){ failed[q.id]=1; try{ notify('Couldn’t add '+bcEsc(q.name||'a patient')+' to Rounds','Rounds tries again in 5 minutes',{icon:'info',color:'var(--priority-p1)',dur:9000}); var nw=document.getElementById('notes'), nl=nw&&nw.lastElementChild; if(nl) nl.setAttribute('data-fail','add:'+q.id); }catch(_){} } } }
   function sweep(){
     var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){}
     if(!u||typeof PATIENTS==='undefined'||!PATIENTS.length||typeof DB==='undefined'||!DB||(typeof Backend!=='undefined'&&Backend.mode!=='staff')) return;
