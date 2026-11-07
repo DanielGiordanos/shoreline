@@ -1,0 +1,44 @@
+{
+  "name": "Ultrasound · Pravix",
+  "short_name": "Ultrasound",
+  "description": "The Internal Medicine ultrasound queue for VCA Shoreline",
+  "id": "/ultrasound/",
+  "start_url": "/ultrasound/",
+  "scope": "/ultrasound/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A1222",
+  "theme_color": "#0A1222",
+  "icons": [
+    {
+      "src": "/assets/img/ultrasound-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/img/ultrasound-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/img/ultrasound-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Queue",
+      "short_name": "Queue",
+      "description": "Patients waiting for an ultrasound",
+      "url": "/ultrasound/#queue"
+    },
+    {
+      "name": "Completed",
+      "short_name": "Completed",
+      "description": "Today's completed ultrasounds",
+      "url": "/ultrasound/#completed"
+    }
+  ]
+}

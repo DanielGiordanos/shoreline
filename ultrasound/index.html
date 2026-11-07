@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="/">
+<script>window.__n333Skipped=[];window.__n333Skip=function(e,l){__n333Skipped.push([l,String(e&&e.message||e)]);}</script>
+<script id="n305-rounds-moved">/* n305: Rounds is its own app at /rounds/. Old #app=rounds links go there, and (n243) opening Flow's address by itself
+   still reopens Rounds if that's where you were: both before Flow loads anything */
+try{(function(){ try{ var h=String(location.hash||''), go=null;
+  if(/(^#|&)app=rounds\b/.test(h)){ var rest=h.replace(/^#/,'').split('&').filter(function(x){ return x&&!/^app=rounds$/.test(x); }).join('&'); go='/rounds/'+(rest?'#'+rest:''); }
+  else if(!h&&!/[?&](tv|display|lobby|visit|patient|next)=/.test(location.search)){ var W=JSON.parse(localStorage.getItem('pvx:flow:where')||'null'); /* n333: this page is Ultrasound; only Flow's address reopens the app you were last in */ }
+  if(go) location.replace(go); }catch(e){} })();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,6)}</script>
+<meta name="referrer" content="no-referrer">
+<meta name="flow-build" content="20261027-1915-89d324de">
+<script src="/assets/pvx-appearance.js?v=110011ea35"></script>
+<script id="pvx-n248-rounds">/* PVX-N248 - Rounds never blinks: rewrite only what changed, animate only what is new (patch_n248.py) */
+
+
+</script>
+<link rel="stylesheet" href="/ultrasound/ultrasound.css?v=8bb757c06f">
+<script id="pvx-n252-keep">/* PVX-N252 - unsaved changes survive a board refresh (see patch_n252.py) */
+try{(function(){
+  function J(x){ return JSON.stringify(x===undefined?null:x); }
+  window.fvUnsavedTake=function(){ try{
+    if(typeof Backend==='undefined'||Backend.mode!=='staff'||typeof PATIENTS==='undefined') return null;
+    var prev={}; (Backend._lastRows||[]).forEach(function(r){ if(r&&r.id!=null) prev[String(r.id)]=r; });
+    var out={}, n=0;
+    PATIENTS.forEach(function(p){ if(!p||p._demo||p.id==null) return; var id=String(p.id), o=prev[id], mine;
+      try{ mine=JSON.parse(J(mapToDb(p))); }catch(e){ return; }
+      if(!o){ out[id]={obj:p}; n++; return; }                         /* added on this screen, not saved yet */
+      var keys=Object.keys(mine).filter(function(k){ return J(mine[k])!==J(o[k]); });
+      if(keys.length){ out[id]={keys:keys,mine:mine,base:o}; n++; } });
+    return n?out:null; }catch(e){ console.warn('[flow-n252] keep',e); return null; } };
+  window.fvUnsavedPut=function(saved){ if(!saved) return 0; var n=0, seen={};
+    try{
+      PATIENTS=PATIENTS.map(function(p){ var id=p&&p.id!=null?String(p.id):null; if(id) seen[id]=1; var k=id&&saved[id]; if(!k||k.obj) return p;
+        var row; try{ row=JSON.parse(J(mapToDb(p))); }catch(e){ return p; }
+        k.keys.forEach(function(f){
+          if(f==='rounds'&&typeof window.rdmMerge==='function'&&k.base.rounds&&row.rounds&&k.mine.rounds) row.rounds=window.rdmMerge(k.base.rounds,k.mine.rounds,row.rounds);
+          else row[f]=k.mine[f]; });
+        try{ n++; return mapToApp(Object.assign({id:p.id},row)); }catch(e){ n--; return p; } });
+      Object.keys(saved).forEach(function(id){ var k=saved[id]; if(k.obj&&!seen[id]){ PATIENTS.push(k.obj); n++; } });
+      if(n) console.info('[flow-n252] kept this screen’s unsaved changes on '+n+' patient'+(n>1?'s':'')+' across a board refresh');
+    }catch(e){ console.warn('[flow-n252] keep',e); }
+    return n; };
+  window.fvCurPatient=function(p){ try{ if(!p||typeof PATIENTS==='undefined') return p; var c=PATIENTS.find(function(x){ return x&&String(x.id)===String(p.id); }); return c||p; }catch(e){ return p; } };
+})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,19)}</script>
+<script src="assets/pvx-admit.js?v=def8bccfa5"></script>
+<script id="pvx-n249-fs">/* PVX-N249 - Safari: the board recovers when Firestore's local database stops answering (see patch_n249.py) */
+try{(function(){ var MEM='pvx_fs_mem', TRIED='pvx_fs_recover';
+  function get(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+  function set(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+  window.pvxFsMem=function(){ return get(MEM)==='1'; };
+  window.pvxFsRecover=function(why){
+    if(window.pvxFsMem()&&get(TRIED)) { console.warn('[flow-n249] still no answer without the offline copy —',why); return false; }
+    if(get(TRIED)&&Date.now()-Number(get(TRIED))<60000) return false;   /* one recovery a minute at most */
+    console.warn('[flow-n249] recovering —',why,'— reloading once and running without the offline copy for this session');
+    set(MEM,'1'); set(TRIED,String(Date.now()));
+    try{ location.reload(); }catch(e){} return true; };
+  var BAD=/Indexed ?Database server lost|IndexedDB.*(lost|closed|aborted)|AsyncQueue is already failed|INTERNAL ASSERTION FAILED/i;
+  function look(args){ try{ var t=[].map.call(args,function(a){ return a&&(a.message||a.stack)?String(a.message||'')+' '+String(a.stack||''):String(a); }).join(' ');
+    if(BAD.test(t)) setTimeout(function(){ window.pvxFsRecover(t.slice(0,160)); },300); }catch(e){} }
+  ['error','warn'].forEach(function(k){ var f=console[k]; if(typeof f!=='function') return; console[k]=function(){ look(arguments); return f.apply(console,arguments); }; });
+  window.addEventListener('unhandledrejection',function(e){ look([e&&e.reason]); });
+  window.addEventListener('error',function(e){ look([e&&(e.error||e.message)]); });
+})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,47)}</script>
+
+<script id="pvx-n223-guard-js">
+/* PVX-N223: the managers' shared account (au733@vca.com) can open https://shoreline.pravix.app/sgvp/ only.
+   On every other Pravix page it sees the shared top bar and "Unauthorized" - nothing else, nothing to use.
+   Runs first in <head>. It reads who is signed in from Firebase's own storage (works on pages without Firebase)
+   and follows sign-in changes where Firebase is loaded. */
+try{(function () {
+  'use strict';
+  var AU = 'au733@vca.com', KEY = 'pvx_acct', d = document.documentElement, on = false, box = null, mo = null;
+  var css = document.createElement('style'); css.id = 'pvx-n223-guard';
+  css.textContent = 'html.pvx-ua-wait body{visibility:hidden!important}'
+    + 'html.pvx-ua body{overflow:hidden!important}html.pvx-ua [data-pvx-ua]{visibility:hidden!important}'
+    + '.pvx-ua-box{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;'
+    + 'background:#0A1222;color:#E6EEF6;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif}'
+    + 'html.pvx-ua-light .pvx-ua-box{background:#F2F4F8;color:#0E1A2B}'
+    + '.pvx-ua-box h1{margin:0;font-size:1.75rem;font-weight:700;letter-spacing:0}'
+    + '.pvx-ua-box p{margin:0;font-size:.9375rem;line-height:1.45;color:#A7C2D8}html.pvx-ua-light .pvx-ua-box p{color:#52698A}'
+    + '.pvx-ua-box a{margin-top:6px;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;background:linear-gradient(150deg,#38BDD2,#2C7FB8);color:#fff;font-weight:600;font-size:.9375rem;text-decoration:none}'
+    + '.pvx-ua-box a:focus-visible{outline:2px solid #38BDD2;outline-offset:3px}';
+  (document.head || d).appendChild(css);
+  try { if (localStorage.getItem(KEY) === 'au733') d.classList.add('pvx-ua-wait'); } catch (e) {}
+  var waitT = setTimeout(function () { d.classList.remove('pvx-ua-wait'); }, 4000);   /* never leave anyone with a blank page */
+  function ready(f) { if (document.body && document.readyState !== 'loading') f(); else document.addEventListener('DOMContentLoaded', f); }
+  function top() { return document.querySelector('#pvxTopnav') || document.querySelector('nav.topnav') || document.querySelector('.topnav'); }
+  function freeTop() {   /* some apps lock their own page for this account (inert on the wrapper that holds the top bar) */
+    var t = top(); if (!t) return;
+    for (var x = t; x && x !== document.body; x = x.parentElement) if (x.hasAttribute('inert')) { x.removeAttribute('inert'); x.setAttribute('data-pvx-ua-freed', ''); }
+  }
+  function setInert(v) {
+    if (v) freeTop();
+    var keep = [box, top()].filter(Boolean);
+    function walk(parent) {
+      [].forEach.call(parent.children, function (c) {
+        if (keep.indexOf(c) >= 0 || c.tagName === 'SCRIPT' || c.tagName === 'STYLE') return;
+        if (keep.some(function (k) { return c.contains(k); })) { walk(c); return; }
+        if (v) { if (!c.hasAttribute('data-pvx-ua')) { c.setAttribute('data-pvx-ua', c.hasAttribute('inert') ? '1' : '0'); c.setAttribute('inert', ''); } }
+        else if (c.hasAttribute('data-pvx-ua')) { if (c.getAttribute('data-pvx-ua') === '0') c.removeAttribute('inert'); c.removeAttribute('data-pvx-ua'); }
+      });
+    }
+    walk(document.body);
+  }
+  function place() { if (!box) return; var t = top(), b = t ? Math.max(0, Math.round(t.getBoundingClientRect().bottom)) : 0; box.style.top = b + 'px'; }
+  function show() {
+    ready(function () {
+      if (!on) return;
+      d.classList.add('pvx-ua');
+      var light = /(?:^|;\s*)pvx_theme=light/.test(document.cookie);
+      if (!/(?:^|;\s*)pvx_theme=/.test(document.cookie)) { try { var m = getComputedStyle(document.body).backgroundColor.match(/\d+/g); if (m && (+m[0] + +m[1] + +m[2]) / 3 > 140) light = true; } catch (e) {} }
+      if (light) d.classList.add('pvx-ua-light');
+      if (!box) {
+        box = document.createElement('main'); box.className = 'pvx-ua-box'; box.setAttribute('aria-labelledby', 'pvxUaT');
+        box.innerHTML = '<h1 id="pvxUaT">Unauthorized</h1><p>This account can only open the intern curriculum.</p><a href="https://shoreline.pravix.app/sgvp/">Open the curriculum</a>';
+        document.body.appendChild(box);
+      }
+      place(); setInert(true);
+      d.classList.remove('pvx-ua-wait'); clearTimeout(waitT);
+      if (!mo) {   /* the page keeps adding things (its own sign-in cards, banners): keep them out of reach */
+        var busy = false;
+        mo = new MutationObserver(function () { if (!on || busy) return; busy = true; setTimeout(function () { busy = false; if (on) { setInert(true); place(); } }, 60); });
+        mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['inert'] });
+      }
+      window.addEventListener('resize', place);
+      setTimeout(place, 300); setTimeout(place, 1500);
+    });
+  }
+  function hide() {
+    if (mo) { mo.disconnect(); mo = null; }
+    if (box) { box.remove(); box = null; }
+    d.classList.remove('pvx-ua', 'pvx-ua-wait'); clearTimeout(waitT);
+    if (document.body) setInert(false);
+  }
+  function decide(email) {
+    var au = String(email || '').toLowerCase() === AU;
+    try { if (au) localStorage.setItem(KEY, 'au733'); else localStorage.removeItem(KEY); } catch (e) {}
+    if (au) { if (!on) { on = true; show(); } }
+    else { on = false; hide(); }
+  }
+  window.pvxGuardDecide = decide;
+  /* 1. who is signed in, from Firebase's own storage (any page) */
+  try {
+    var req = indexedDB.open('firebaseLocalStorageDb');
+    req.onupgradeneeded = function () { try { req.transaction.abort(); } catch (e) {} };   /* no database: nobody signed in */
+    req.onerror = function () { decide(null); };
+    req.onsuccess = function () {
+      var db = req.result;
+      if (!db.objectStoreNames.contains('firebaseLocalStorage')) { db.close(); decide(null); return; }
+      var g = db.transaction('firebaseLocalStorage', 'readonly').objectStore('firebaseLocalStorage').getAll();
+      g.onsuccess = function () {
+        var em = null;
+        (g.result || []).forEach(function (x) { var v = x && x.value; if (v && v.email && String(x.fbase_key || '').indexOf('firebase:authUser:') === 0 && String(v.email).toLowerCase() === AU) em = AU; });
+        db.close(); if (!fbSeen) decide(em);
+      };
+      g.onerror = function () { db.close(); };
+    };
+  } catch (e) {}
+  /* 2. sign-in changes on pages that load Firebase */
+  var fbSeen = false, tries = 0;
+  (function poll() {
+    try {
+      if (window.firebase && firebase.apps && firebase.apps.length && firebase.auth) {
+        firebase.auth().onAuthStateChanged(function (u) { fbSeen = true; decide(u && u.email); });
+        return;
+      }
+    } catch (e) {}
+    if (++tries < 60) setTimeout(poll, 250);
+  })();
+})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,70)}
+</script>
+<script id="pvx-n195-boot">/* PVX-N195 - launch: the first frame is already the first screen's colour */
+try{(function(){try{var d=document.documentElement,m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/),t=(m&&m[1])||'dark';
+d.classList.add('pvx-boot',t==='dark'?'pvx-pre-dark':'pvx-pre-light');d.style.background=t==='dark'?'#080E1A':'#F2F4F8';d.style.colorScheme=t;}catch(e){}})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,173)}</script>
+
+<script id="pvx-n187-gi">/* PVX-N187 - glyph icons: one vector set instead of text characters (24-pt grid, round caps, 1em) */
+try{window.PVX_GI=(function(){function g(n,d){return '<svg class="pvx-gi pvx-gi-'+n+'" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+d+'</svg>';}
+return {check:g('check','<path d="M5 12.5l4.5 4.5L19 7"/>'),xmark:g('xmark','<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
+circle:g('circle','<circle cx="12" cy="12" r="7"/>'),
+warn:g('warn','<path class="s" d="M10.3 4.2L2.6 17.6A2 2 0 0 0 4.3 20.6h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><path d="M12 17h.01"/>'),
+bang:g('bang','<path d="M12 5.5v8.5"/><path d="M12 18.5h.01"/>'),circlecheck:g('circlecheck','<circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.2"/>')};})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,178)}</script>
+
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Ultrasound · Pravix</title>
+<link rel="preload" href="assets/data/breeds.js" as="script">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
+<link rel="preload" href="assets/img/logo-dark.png" as="image">
+<link rel="preload" href="assets/img/logo-light.png" as="image">
+<link rel="icon" type="image/png" href="assets/img/favicon.png">
+<link rel="manifest" href="/ultrasound/manifest.webmanifest">
+<meta name="theme-color" content="#0A1222">
+<link rel="apple-touch-icon" href="/assets/img/ultrasound-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ultrasound">
+<!-- Inter, variable axis: ONE file covering 400-900, including the 450/530/650/750
+     weights this design actually uses (the old static 300;400;...;900 request had to
+     round those to the nearest hundred). Loaded non-render-blocking via the media
+     swap so text paints immediately in the fallback stack instead of waiting on two
+     round trips through the hospital proxy. This was a CSS @import inside <style>,
+which is the one form that blocks first paint AND serialises the two fetches. -->
+<noscript></noscript>
+
+
+<script>
+
+
+ 
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- PVX-N205: pop-up buttons -->
+<!-- PVX-N206: pull-down buttons -->
+<!-- PVX-N208: toolbars -->
+<!-- PVX-N210: panels and page controls -->
+<!-- PVX-N211: iPhone sheets -->
+<!-- PVX-N212: search and tab bars -->
+<!-- PVX-N213: tokens -->
+
+
+
+<script id="pvx-n273-rd">
+/* n273 · Rounds loading — the approved Pravix loading design (Daniel, Oct 30), on real work only.
+   Progress = the census lists Flow's visits feed has actually answered (fvVisitsListen: in hospital, active, recent),
+   counted only when the answer comes from the server or brings patients (an empty answer from the local cache isn't
+   one). Before the feed starts, or with one list (the full-list fallback), it is indeterminate: no percentage.
+   Ready = Backend._gotVisits. Silent: no sound, no toast. */
+
+</script>
+</head>
+<body>
+<script id="n305-rounds-stubs">/* n305: names Flow still mentions from Rounds, now on its own page */ var __rdDisplayWant; var currentRdView="census"; function rdCloseMenus(){} function rdDisplayState(){} var rdExpanded=null; function rdHandleAct(){} function rdHideAllViews(){} var rdLoadFeed; var rdLoadPart; function rdModeRender(){} var rdQ=null; function rdRankEnd(){} var rdRk; function rdSaveState(){} function rdTakeCase(){} function rdToggleDisplay(){} function renderRdCensus(){} function renderRounds(){} function switchRdView(){}</script>
+<script> try{(function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#F2F4F8';}catch(e){}}window.__pvxPaintCanvas=paint;try{var W=JSON.parse(localStorage.getItem('pvx:flow:where')||'null');var FL=/^#app=flow$/.test(location.hash);if(FL&&!(W&&W.app==='flow'))history.replaceState(null,'',location.pathname+location.search);if(false&&W&&W.app&&Date.now()-W.at<432e5&&(FL?W.app==='flow':!location.hash)&&!/[?&](tv|visit|patient)=/.test(location.search)&&(W.app!=='flow'||(W.view&&W.view!=='dashboard'))){history.replaceState(null,'',location.pathname+location.search+'#app='+W.app);window.__pvxRestore=W;document.documentElement.classList.add('pvx-app-boot');}}catch(e){}try{if(/[#&]app=(rounds|ultrasound)\b/.test(location.hash))document.documentElement.classList.add('pvx-app-boot');}catch(e){}try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,5864)}</script>
+
+
+<div class="app">
+  <!-- ═══ GLOBAL PORTAL NAV (identical to Profile Dashboard.html) ═══ -->
+  <nav class="topnav" aria-label="Apps">
+    <div class="brandwrap">
+      <img class="logo logo-dark"  src="assets/img/logo-dark.png" alt="VCA Shoreline">
+      <img class="logo logo-light" src="assets/img/logo-light.png" alt="VCA Shoreline">
+      <span class="cobrand-div" aria-hidden="true"></span>
+      <span class="pvx-lockup">
+        <img class="pvx-icon plogo-dark"  src="assets/img/pvx-icon-dark.png" alt="">
+        <img class="pvx-icon plogo-light" src="assets/img/pvx-icon-light.png" alt="">
+        <span class="pvx-word">
+          <span class="pvx-powered">Powered by</span>
+          <img class="pvx-mark plogo-dark"  src="assets/img/pvx-mark-dark.png" alt="Pravix">
+          <img class="pvx-mark plogo-light" src="assets/img/pvx-mark-light.png" alt="Pravix">
+        </span>
+      </span>
+    </div>
+    <div class="nav-center">
+      <a class="nav-item" href="https://shoreline.pravix.app/directory/" id="navDirectory" title="Directory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Directory</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/sgvp/assets/" id="navAssets" title="Assets"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Assets</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/sgvp/" id="navCurriculum" title="Curriculum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Curriculum</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/scheduling/" id="navSchedule" title="Schedule"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a>
+      <a class="nav-item active" href="/#app=flow" id="navFlow" title="Flow" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="10.5" y="3" width="6" height="12" rx="1.5"/><rect x="18" y="3" width="3" height="8" rx="1.5"/></svg>Flow</a>
+      <a class="nav-item" href="/ultrasound/" id="navUltrasound" title="Ultrasound"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="15" r="1.6"/><path d="M8.6 11.4a4.8 4.8 0 0 1 6.8 0"/><path d="M5.8 8.6a8.8 8.8 0 0 1 12.4 0"/></svg>Ultrasound</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/treatment/" id="navTreatment" title="Treatment"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17.5" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><path d="M8.5 10.5h3M8.5 14h3M8.5 17.5h3"/><path d="M14 10.5h1.5M14 14h1.5M14 17.5h1.5"/></svg>Treatment</a>
+      <a class="nav-item" href="/rounds/" id="navRounds" title="Rounds"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5h6"/><rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 10h6"/><path d="M9 14h6"/><path d="M9 18h3.5"/></svg>Rounds</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/or/" id="navOR" title="OR"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>OR</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/anesia/" id="navAnesia" title="Anesia"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5l3.2-3.2"/><path d="M9.5 3h5"/><path d="M12 3v3"/></svg>Anesia</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/yakuri/" id="navYakuri" title="Yakuri"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="4" rx="1.2"/><path d="M7.5 6.5h9v12.5a2.5 2.5 0 01-2.5 2.5h-4a2.5 2.5 0 01-2.5-2.5z"/><path d="M12 10.5v6M9 13.5h6"/></svg>Yakuri</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/grid/" id="navGrid" title="Grid" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M3.5 14.75h17M9.5 9.5V20"/></svg>Grid</a>
+      <a class="nav-item" href="https://shoreline.pravix.app/forms/" id="navForms" title="Forms" style="display:none"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>Forms</a>
+    </div>
+    <div class="nav-right">      <button class="logout-button" id="logoutBtn" type="button" onclick="logout()" aria-label="Log out"><span class="logout-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><g class="door-glyph"><path d="M10.2 5.3H7.1A2.1 2.1 0 0 0 5 7.4v9.2a2.1 2.1 0 0 0 2.1 2.1h3.1"/></g><g class="exit-arrow"><path d="M12.6 8.7 16 12l-3.4 3.3"/><path d="M8.9 12H16"/></g></svg></span><span class="logout-label">Logout</span><span class="logout-chevron" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m7.5 5 5 5-5 5"/></svg></span></button>
+      <button class="theme-toggle" onclick="toggleDark()" title="Switch light and dark" aria-label="Switch light and dark">
+        <img class="img-light" src="assets/img/theme-light.png" alt="Light">
+        <img class="img-dark"  src="assets/img/theme-dark.png"  alt="Dark">
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══ MODULE SUB-NAV — Flow's own views + universal search ═══ -->
+  
+
+  <!-- ═══ ULTRASOUND SUB-NAV — the Pravix Ultrasound application shell ═══ -->
+  <div class="subnav subnav-us hidden" id="subnavUs">
+    <nav class="switcher" id="switcherUs" aria-label="Ultrasound views">
+      <button class="seg active" data-usview="today">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Today
+      </button>
+      <button class="seg" data-usview="queue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18a2 2 0 1 0-2-2"/></svg>
+        Queue
+      </button>
+      <button class="seg" data-usview="completed">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        Completed
+      </button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="usx-role" id="usxRole" title="Choose your view: Internal Medicine controls, or view only">
+      <button data-role="im" class="on">IM controls</button>
+      <button data-role="view">View only</button>
+    </div>
+  </div>
+
+  <!-- ═══ ROUNDS SUB-NAV — the Pravix Rounds application shell ═══ -->
+  
+
+  <div class="alert-strip" id="alertStrip"></div>
+
+  <!-- STAGE -->
+  <main class="stage" id="stage">
+    <!-- DASHBOARD -->
+    
+
+    <!-- PATIENT LIST -->
+    
+
+    <!-- FLOW BOARD -->
+    
+
+    <!-- ROOMS -->
+    
+
+    <!-- ═══ ULTRASOUND — the Internal Medicine ultrasound application ═══ -->
+    <!-- Pravix Ultrasound is a SIBLING APPLICATION to Flow: launched from the
+         primary Pravix nav, with its own sub-nav (Today | Queue | Completed).
+         It shares only the patient data layer with Flow. -->
+
+    <!-- TODAY — the Internal Medicine clinical mosaic -->
+    <section class="view usx-app hidden" id="view-us-today">
+      <div class="ust-glow" aria-hidden="true"></div>
+
+      <div class="ust-mosaic">
+        <div class="um um-next" id="umNext"></div>
+        <div class="um um-scan" id="umScan"></div>
+        <div class="um um-road" id="umRoad"></div>
+        <div class="um-side">
+          <div class="um um-need" id="umNeed"></div>
+          <div class="um um-avg" id="umAvg"></div>
+        </div>
+        <div class="um um-team" id="umTeam"></div>
+        <div class="um um-ctrl" id="umCtrl"></div>
+      </div>
+    </section>
+
+    <!-- QUEUE — the live Internal Medicine ultrasound command board -->
+    <section class="view usx-app hidden" id="view-us-queue">
+      <div class="view-head">
+        <div>
+          <div class="usx-eyebrow"><svg viewBox="0 0 24 24"><circle cx="12" cy="15" r="1.6"/><path d="M8.6 11.4a4.8 4.8 0 0 1 6.8 0"/><path d="M5.8 8.6a8.8 8.8 0 0 1 12.4 0"/></svg>Pravix Ultrasound</div>
+          <h1>Queue</h1>
+        </div>
+        <span class="usx-orderhint" id="usxQHint2">Queue order is set by Internal Medicine</span>
+      </div>
+
+      <div class="kpis" id="usxKpisQ"></div>
+
+      <div class="usb-board">
+        <div class="usb-zone">
+          <div class="usb-head"><h3>Waiting <span class="n" id="usbWCount">(0)</span></h3></div>
+          <div class="usb-grid" id="usbWaiting"></div>
+        </div>
+        <div class="usb-zone">
+          <div class="usb-head"><h3>In Progress <span class="n" id="usbSCount">(0)</span></h3></div>
+          <div class="usb-grid one" id="usbScanning"></div>
+        </div>
+        <div class="usb-support">
+          <div class="usb-zone">
+            <div class="usb-head"><h3>Queue At A Glance</h3></div>
+            <div class="usb-sidebox" id="usbGlance"></div>
+          </div>
+          <div class="usb-zone">
+            <div class="usb-head amber"><h3>Needs Information <span class="n" id="usbNCount">(0)</span></h3></div>
+            <div class="usb-grid one" id="usbNeeds"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPLETED — clinical activity log -->
+    <section class="view usx-app hidden" id="view-us-completed">
+      <div class="view-head">
+        <div>
+          <div class="usx-eyebrow"><svg viewBox="0 0 24 24"><circle cx="12" cy="15" r="1.6"/><path d="M8.6 11.4a4.8 4.8 0 0 1 6.8 0"/><path d="M5.8 8.6a8.8 8.8 0 0 1 12.4 0"/></svg>Pravix Ultrasound</div>
+          <h1>Completed</h1>
+        </div>
+      </div>
+      <div class="kpis" id="usxCompStats"></div>
+      <div class="usx-ctable">
+        <div class="usx-sec"><h3>Completed Today</h3><span class="cnt" id="usxCCount2">0</span><span class="hint"><span class="pvx-tapclick">Click</span> a row to review the case</span></div>
+        <div id="usxCompleted2"></div>
+      </div>
+    </section>
+
+    <!-- ═══ ROUNDS — the inpatient clinical census application ═══ -->
+    <!-- Pravix Rounds is a SIBLING APPLICATION to Flow and Ultrasound. It is
+         the inpatient view of the SAME admission object: dragging a patient
+         into ADMITTED in Flow enrolls them here automatically. -->
+
+    
+
+    
+
+    <!-- ═══ CLIENT DISPLAY — lobby / waiting-room TV ═══ -->
+    
+
+    <!-- ═══ FOOTER — identical to Profile Dashboard.html ═══ -->
+    <div class="footer-bar"><div class="fb1"></div><div class="fb2"></div><div class="fb3"></div><div class="fb4"></div></div>
+    <footer class="site-footer">
+      <div class="footer-text"><strong>VCA Shoreline Veterinary Referral &amp; Emergency Center</strong><br>895 Bridgeport Avenue, Shelton, CT 06484 &nbsp;·&nbsp; Managed by Daniel Giordano</div>
+      <div style="font-size:0.6875rem;color:rgba(255,255,255,0.25);">All program data is confidential</div>
+    </footer>
+    <div class="version-bar">
+      <div class="vb-left">
+        <img src="assets/img/footer-logo.png" loading="lazy" decoding="async" alt="VCA">
+        <span class="vb-prog">VCA Shoreline Patient Flow</span>
+      </div>
+      <div class="vb-right">
+        <span class="vb-brand">Pravix Flow</span>
+        <div class="vb-div"></div>
+        <span class="vb-v" id="versionLabel">Flow v1.0</span>
+        <div class="vb-div"></div>
+        <span class="vb-copy">Pravix, LLC © 2026</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- DETAIL DRAWER -->
+
+
+
+<!-- Location panel (Lobby / Treatment) — same glass drawer, no blocking scrim so rooms stay droppable -->
+
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastMsg">Saved</span></div>
+<div class="notes" id="notes" aria-live="polite" aria-relevant="additions"></div>
+<!-- Patient hover synopsis (floating, non-blocking) -->
+
+
+<!-- Subtle confirmation dialog (no browser popups) -->
+<div class="confirm-scrim" id="confirmScrim"></div>
+<div class="confirm" id="confirmBox" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" tabindex="-1">
+  <div class="confirm-title" id="confirmTitle">Move patient to Comfort Room?</div>
+  <div class="confirm-sub" id="confirmSub" style="display:none"></div>
+  <div class="confirm-actions">
+    <button class="btn ghost" id="confirmCancel">Cancel</button>
+    <button class="btn primary" id="confirmOk">Move patient</button>
+  </div>
+</div>
+
+<!-- Triage Intake workspace (centered glass modal) -->
+
+
+
+<!-- Assign Doctor workspace (centered glass modal) — reuses intake modal shell -->
+
+
+
+<!-- OPERATIONS MENU -->
+
+
+
+<!-- SHIFT SETUP MODAL -->
+<div class="addpt-scrim" id="shiftScrim"></div>
+<div class="addpt-modal shift-modal" id="shiftModal" role="dialog" aria-modal="true" aria-label="Today's shift assignments">
+  <div class="addpt-head">
+    <div class="aph-title">
+      <span class="aph-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><path d="M12 12v3a2 2 0 0 0 4 0v-1"/><circle cx="16" cy="12.5" r="1"/></svg></span>
+      <div><div class="aph-t">Today's shift assignments</div></div>
+    </div>
+    <button class="close" id="shiftClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="addpt-body"><div id="shiftGrid"></div></div>
+  <div class="addpt-foot">
+    <button class="btn ghost" id="shiftCancel">Cancel</button>
+    <button class="btn primary" id="shiftSave">Save assignments</button>
+  </div>
+</div>
+
+<!-- HOSPITAL ALERT MODAL -->
+
+
+
+<!-- CARE TEAM PANEL -->
+<div class="addpt-scrim" id="ctScrim" onclick="closeCareTeam()"></div>
+<div class="addpt-modal" id="ctModal" role="dialog" aria-modal="true" aria-labelledby="ctTitle" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeCareTeam();}">
+  <div class="addpt-head">
+    <div class="aph-title">
+      <span class="aph-ic" style="background:rgba(56,189,210,.14);color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <div><div class="aph-t" id="ctTitle">Care team</div><div class="aph-sub" id="ctSub">Who is responsible for this patient right now.</div></div>
+    </div>
+    <button class="close" id="ctClose" aria-label="Close care team" onclick="closeCareTeam()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="addpt-body" id="ctBody"></div>
+  <div class="addpt-foot" id="ctFoot"></div>
+</div>
+
+<!-- EDIT TRIAGE MODAL -->
+
+
+
+<!-- ADD PATIENT MODAL -->
+
+
+
+<!-- ═══ Pravix multi-tenant foundation — active hospital resolves before the app boots ═══ -->
+<!-- Firebase (Firestore + Auth) — served from Google's gstatic.com, which
+     hospital SSL-inspection proxies already trust, so it loads fast on-site. -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<!-- defer: qrcode() is only ever called from render code (makeQR), never at parse
+     time, so this no longer blocks the parser for every view. -->
+<script defer src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+ 
+
+
+try{(function () {
+window.PravixHospitals = window.PravixHospitals || {};
+
+window.PravixHospitals.shoreline = {
+ 
+id:'shoreline',
+subdomain:'shoreline',
+name:'VCA Shoreline Veterinary Referral & Emergency Center',
+shortName:'VCA Shoreline',
+productName:'VCA Shoreline Patient Flow',
+appTitle:'Pravix Flow | Veterinary Patient Flow Software',
+managedBy:'Daniel Giordano',
+
+ 
+address:'895 Bridgeport Avenue, Shelton, CT 06484',
+phone:'(203) 555-0100',
+timezone:'America/New_York',
+
+ 
+theme: {
+mode:'dark',
+primary:'#0C2952'
+},
+
+ 
+branding: {
+logo:'assets/img/logo-dark.png',
+logoLight:'assets/img/logo-light.png',
+footerLogo:'assets/img/footer-logo.png',
+favicon:'assets/img/favicon.png',
+qrCode:'assets/hospitals/shoreline/qr-code.png'
+},
+
+ 
+clientDisplay: {
+qrUrl:'https://shoreline.pravix.app/updates',
+qrText:'Scan to receive live updates about your pet.',
+heroTitle:"We're here for them. You're in good hands.",
+heroSub:'Thank you for trusting us with your pet’s care.'
+},
+
+ 
+footer: {
+line1:'VCA Shoreline Veterinary Referral &amp; Emergency Center',
+line2:'895 Bridgeport Avenue, Shelton, CT 06484 &nbsp;·&nbsp; Managed by Daniel Giordano',
+note:'All program data is confidential',
+portalLabel:'SGVP Portal',
+versionLabel:'Flow v1.0',
+programLine:'Patient Flow · Emergency · 2026–2027'
+},
+
+
+
+doctors: [
+'Annie Downes','Kelley Harpin','Amber Koch','Mara Kraenzlin','Marissa Marinaccio',
+'Michael McCann','Shaylan Meyer','Sarah Schiff','Klaudia Polak','Morgan Vrana'
+],
+doctorPalette: ['var(--accent)','var(--purple)','#E8644A','var(--amber)','var(--s-admitted)','#3E7CB1','#2C7FB8','#C0568E','#5EA9A0','#9B7BD4'],
+
+liaisons: [
+'Melissa Hamilton','Jamie Cisneros','Tammy Guinto','Nyla Chase','Daniel Giordano',
+'Alexa Marucci','Liz DeLauri','Alexandra Rimkus','Stephanie Bamford','Sara DeVitto','Rhiannon Cappannelli'
+],
+liaisonPalette: ['var(--purple)','var(--s-admitted)','var(--amber)','var(--accent)','#E8644A','#9B7BD4','#3E7CB1','#5EA9A0','#C0568E','#A888E0','#2C7FB8'],
+
+workflow: {
+rooms: ['Lobby','Room 1','Room 2','Room 3','Room 4','Room 5','Room 6','Room 7','Comfort Room'],
+roomSpec: {'Room 2':'Oncology','Room 4':'Neurology','Comfort Room':'End-of-life'},
+shifts: [
+{ key:'morning',   label:'Morning ER',  color:'#283f7a'},
+{ key:'critical',  label:'Criticalist', color:'#a05c9e'},
+{ key:'swing',     label:'Swing',       color:'#e17355'},
+{ key:'overnight', label:'Overnight',   color:'#68c1e0'}
+]
+}
+};
+})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,6595)}
+
+</script>
+<!-- Add more tenants here (or let the build bundle every config/hospitals/*.config.js):
+     <script src="config/hospitals/norwalk.config.js"></script> -->
+<script>
+ 
+
+
+try{(function () {
+window.Pravix = window.Pravix || {};
+
+var DEFAULT_TENANT ='shoreline';
+var PLATFORM_DOMAIN ='pravix.app';
+
+function detectTenantSlug() {
+try {
+
+var q = new URLSearchParams(window.location.search).get('tenant');
+if (q) return q.toLowerCase();
+
+
+var host = (window.location.hostname ||'').toLowerCase();
+var re = new RegExp('^([a-z0-9-]+)\\.'+ PLATFORM_DOMAIN.replace('.','\\.') +'$');
+var m = host.match(re);
+if (m && m[1] && m[1] !=='www') return m[1];
+} catch (e) { }
+
+
+return DEFAULT_TENANT;
+}
+
+Pravix.PLATFORM_DOMAIN = PLATFORM_DOMAIN;
+Pravix.DEFAULT_TENANT = DEFAULT_TENANT;
+Pravix.tenantSlug = detectTenantSlug();
+
+Pravix.getCurrentHospital = function () {
+var registry = window.PravixHospitals || {};
+return registry[Pravix.tenantSlug] || registry[DEFAULT_TENANT] || null;
+};
+
+Pravix.listTenants = function () {
+return Object.keys(window.PravixHospitals || {});
+};
+})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,6680)}
+
+</script>
+<script>
+ 
+
+
+try{(function () {
+window.Pravix = window.Pravix || {};
+
+function H() {
+var h = Pravix.getCurrentHospital && Pravix.getCurrentHospital();
+if (!h) throw new Error('[Pravix] No active hospital resolved. Is a hospital config loaded before the service?');
+return h;
+}
+
+ 
+Pravix.getHospitalBranding = function () {
+var h = H();
+return {
+name: h.name,
+shortName: h.shortName,
+productName: h.productName,
+appTitle: h.appTitle,
+managedBy: h.managedBy,
+logo: h.branding.logo,
+logoLight: h.branding.logoLight,
+footerLogo: h.branding.footerLogo,
+favicon: h.branding.favicon,
+qrCode: h.branding.qrCode,
+theme: Object.assign({}, h.theme),
+footer: Object.assign({}, h.footer),
+clientDisplay: Object.assign({}, h.clientDisplay)
+};
+};
+
+ 
+Pravix.getHospitalSettings = function () {
+var h = H();
+return {
+timezone: h.timezone,
+address: h.address,
+phone: h.phone,
+workflow: JSON.parse(JSON.stringify(h.workflow))
+};
+};
+
+ 
+Pravix.getDoctors = function () { return H().doctors.slice(); };
+Pravix.getDoctorPalette = function () { return H().doctorPalette.slice(); };
+Pravix.getLiaisons = function () { return H().liaisons.slice(); };
+Pravix.getLiaisonPalette = function () { return H().liaisonPalette.slice(); };
+Pravix.getRooms = function () { return H().workflow.rooms.slice(); };
+Pravix.getRoomSpec = function () { return Object.assign({}, H().workflow.roomSpec); };
+Pravix.getShifts = function () { return H().workflow.shifts.map(function (s) { return Object.assign({}, s); }); };
+})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,6722)}
+
+</script>
+<script>
+ 
+
+
+try{(function () {
+window.Pravix = window.Pravix || {};
+
+Pravix.applyTheme = function (theme) {
+if (!theme || !document) return;
+var el = document.body || document.documentElement;
+if (!el) return;
+var s = el.style;
+if (theme.primary) s.setProperty('--brand-navy', theme.primary);
+var real=function(v){ return v&&!/^\s*var\(/.test(String(v)); };   /* var(--accent) on --accent = invalid everywhere */
+if (real(theme.accent))  s.setProperty('--accent',     theme.accent);
+if (real(theme.accent2)) s.setProperty('--accent-2',   theme.accent2);
+};
+})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,6777)}
+
+</script>
+
+<script src="assets/data/breeds.js"></script>
+<link rel="stylesheet" href="/ultrasound/ultrasound-page.css?v=6bbb52820a"><script src="/ultrasound/app.js?v=2a487f5ecc"></script>
+
+<!-- PVX-N134: layout repairs — FL-06 drawer overflow, RX-02 Rounds sub-nav at ≤1024, FL-03 lobby cards below 1700 px -->
+
+
+
+<!-- PVX-N136: Rounds row toggle + keyboard for Rounds' role=button controls (RD-02); ultrasound queue keyboard reorder (US-03) -->
+
+<div id="pvxN136Live" class="pvx-sr" role="status" aria-live="polite"></div>
+<script src="/ultrasound/app-extras.js?v=89c6f6b6a8"></script>
+
+<script src="assets/pvx-yakuri.js?v=77dffe7ef6"></script>
+<script id="pvx-n254-yakuri">/* PVX-N254 - Flow and Rounds read Yakuri: Rounds medications link to it; the drawer lists the owner's medications from intake as
+   Yakuri drugs and runs Yakuri's own interaction check (see patch_n254.py) */
+try{(function(){ if(!window.PvxYakuri) return;
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  window.pvxYkLink=function(name,html){ return PvxYakuri.ready()?PvxYakuri.link(name,html):html; };
+  function tokens(text){ return String(text||'').split(/[,;\n\/+]|\band\b|\bwith\b/i).map(function(x){ return x.trim(); }).filter(Boolean); }
+  function panel(p){
+    var mount=document.getElementById('intakeCardMount'); if(!mount) return; var old=document.getElementById('pvxYkMeds');
+    var meds=p&&p.intake&&p.intake.medications&&String(p.intake.medications).trim();
+    if(!meds||!PvxYakuri.ready()){ if(old) old.remove(); return; }
+    var ds=PvxYakuri.matchAll(meds), miss=tokens(meds).filter(function(x){ return !PvxYakuri.match(x) && !/^(none|no|n\/a|na)$/i.test(x); });
+    if(!ds.length&&!miss.length){ if(old) old.remove(); return; }
+    var h='<div class="t">Owner’s medications · Yakuri</div><div class="l">'+(ds.length?ds.map(function(d){ return PvxYakuri.link(d); }).join(' · '):'')
+      +(miss.length?'<span class="u">Not found in Yakuri: '+esc(miss.join(', '))+'</span>':'')+'</div>'
+      +(ds.length>=2?'<button type="button" data-ykint>Check interactions</button><div class="r" hidden></div>':'');
+    var el=old||document.createElement('div'); el.id='pvxYkMeds'; el.className='pvx-ykmeds'; el.setAttribute('data-pid',String(p.id)); el.innerHTML=h;
+    if(!old) mount.parentNode.insertBefore(el,mount.nextSibling);
+    var b=el.querySelector('[data-ykint]'); if(b) b.onclick=function(){ check(p,ds,el); };
+  }
+  function check(p,ds,el){ var r=el.querySelector('.r'), sp=PvxYakuri.species(p.species);
+    r.hidden=false; if(!sp){ r.innerHTML='<div class="sc">Yakuri’s interaction check covers dogs and cats.</div>'; return; }
+    r.innerHTML='<div class="sc">Checking in Yakuri…</div>';
+    PvxYakuri.interactions(ds,sp).then(function(x){
+      r.innerHTML=(x.pairs||[]).map(function(q){ return '<div class="pr"><b>'+esc(q.names.join(' + '))+'</b> · '+esc(q.classification)+'<br><i>'+esc(q.summary)+'</i></div>'; }).join('')
+        +'<div class="sc">'+esc(x.scope||'')+' Yakuri has no clinical approval yet.</div>';
+    }).catch(function(e){ r.innerHTML='<div class="sc">'+esc((e&&e.message)||'Yakuri’s check didn’t run.')+'</div>'; });
+  }
+  if(typeof fillDrawer==='function'){ var fd=fillDrawer; window.fillDrawer=fillDrawer=function(p){ var r=fd.apply(this,arguments); try{ panel(p); }catch(e){ console.warn('[yakuri meds]',e); } return r; }; }
+  PvxYakuri.onReady(function(){ try{ renderAll(); }catch(e){} try{ if(activePatient){ var p=PATIENTS.find(function(x){ return x.id===activePatient; }); if(p) fillDrawer(p); } }catch(e){} });
+  function start(){ try{ if(typeof LOBBY!=='undefined'&&LOBBY) return; if(typeof Backend!=='undefined'&&Backend.mode&&Backend.mode!=='staff') return; }catch(e){} PvxYakuri.load().catch(function(){}); }
+  setTimeout(start,6000);
+})();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,20975)}</script>
+
+
+<script id="n305-flow-js">
+/* n305: anything in Flow that still asks for Rounds opens Rounds' own page */
+try{(function(){ var sa=window.switchApp; if(typeof sa!=='function') return;
+  window.switchApp=function(app){ if(app==='rounds'){ location.href='/rounds/'; return; } return sa.apply(this,arguments); }; })();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,21084)}
+</script>
+<script id="n309-open-patient">/* n309: Rounds' "Show in Flow" opens that patient's drawer here (Flow is its own page since n305) */
+try{(function(){ var id; try{ id=sessionStorage.getItem('pvx:open-patient'); sessionStorage.removeItem('pvx:open-patient'); }catch(e){} if(!id) return; var n=0;
+  (function t(){ try{ if(typeof PATIENTS!=='undefined'&&PATIENTS.some(function(p){ return String(p.id)===id; })&&typeof openDrawer==='function'){ openDrawer(id); return; } }catch(e){} if(++n<80) setTimeout(t,250); })(); })();
+}catch(__e){window.__n333Skip&&__n333Skip(__e,21088)}
+</script>
+
+
+<script id="pvx-n332-js">
+/* ===== n332 · Flow: Design principles, Accessibility, Color (Nov 6 2026) ===== */
+try{try{(function(){
+  if(typeof LOBBY!=='undefined'&&LOBBY) return;   /* the lobby TV stays as it is */
+  const $=s=>document.querySelector(s);
+  /* a long wait says so to VoiceOver too, not only in colour */
+  const WAITS='.wait.warn,.wait.crit,.wd-wait.warn,.wd-wait.crit,.r-timer.warn,.r-timer.crit';
+  function sayWaits(root){ (root||document).querySelectorAll(WAITS).forEach(el=>{ if(el.closest('#view-client')) return;
+    const crit=el.classList.contains('crit'), txt=crit?' (over 2 hours)':(el.classList.contains('r-timer')||el.classList.contains('wd-wait')?' (over an hour)':' (long wait)');
+    let s=el.querySelector(':scope > .pvx-sr332'); if(!s){ s=document.createElement('span'); s.className='pvx-sr332'; el.appendChild(s); } if(s.textContent!==txt) s.textContent=txt;
+    if(!el.title) el.title=crit?'Waiting over 2 hours':'Long wait'; }); }
+  /* the Attention Center: each alert is a button you can reach with Tab, named by what it says */
+  function attn(){ document.querySelectorAll('.attn-item').forEach(n=>{ if(n.getAttribute('role')==='button') return;
+    n.setAttribute('role','button'); n.tabIndex=0;
+    const pt=n.querySelector('.patient'), is=n.querySelector('.issue'), sec=n.querySelector('.secondary'), badge=n.querySelector('.overdue-text,.high-text');
+    const head=[pt&&pt.textContent.trim(),is&&is.textContent.trim()].filter(Boolean).join(' ');
+    n.setAttribute('aria-label',[head,sec&&sec.textContent.trim(),badge&&badge.textContent.trim().toLowerCase()].filter(Boolean).join(', '));
+    n.addEventListener('keydown',e=>{ if(e.target!==n) return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); n.click(); } }); }); }
+  /* the critical banner and an open patient: beside it when there's room, above it when there isn't */
+  function island(){ const isl=$('#critIsland'), dr=$('#drawer'); if(!isl) return;
+    const on=isl.classList.contains('on'), open=!!(dr&&dr.classList.contains('open'));
+    if(!on||!open){ isl.style.removeProperty('left'); if(dr){ dr.classList.remove('pvx-ci-pad'); dr.style.removeProperty('--pvx-ci-pad'); } }
+    else{ const dw=dr.getBoundingClientRect().width, free=innerWidth-dw, need=(parseFloat(getComputedStyle(isl).getPropertyValue('--ci-w'))||640)+32;
+      if(free>=need){ isl.style.left=(free/2)+'px'; dr.classList.remove('pvx-ci-pad'); dr.style.removeProperty('--pvx-ci-pad'); }
+      else{ isl.style.removeProperty('left'); const r=isl.getBoundingClientRect(); dr.style.setProperty('--pvx-ci-pad',Math.ceil(r.bottom+10)+'px'); dr.classList.add('pvx-ci-pad'); } }
+    /* Ultrasound Today has no page title for the banner to sit beside, so it makes room above Next Up */
+    const ut=$('#view-us-today'); if(ut){ if(on&&!open&&ut.offsetParent){ if(scrollY<4){ const r=isl.getBoundingClientRect(); ut.style.paddingTop='';
+          const f=[...ut.children].find(c=>c.offsetHeight>40&&!/absolute|fixed/.test(getComputedStyle(c).position));
+          if(f){ const base=parseFloat(getComputedStyle(ut).paddingTop)||0, pad=Math.max(0,Math.ceil(r.bottom+14-f.getBoundingClientRect().top)); if(pad) ut.style.paddingTop=(base+pad)+'px'; } } }
+      else ut.style.paddingTop=''; } }
+  let t=0; const soon=()=>{ if(t) return; t=requestAnimationFrame(()=>{ t=0; try{ sayWaits(); attn(); island(); }catch(e){} }); };
+  try{ new MutationObserver(soon).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); }catch(e){}
+  addEventListener('resize',soon); soon();
+  window.pvxN332={sayWaits,attn,island};
+})();}catch(__e){ console.warn('[n332]',__e); }
+}catch(__e){window.__n333Skip&&__n333Skip(__e,21149)}
+</script>
+<script id="n333-us-boot">
+/* n333: this page is Ultrasound. Other apps are their own pages. */
+(function(){ var sa=window.switchApp;
+  window.switchApp=function(app){ if(app&&app!=='ultrasound'){ location.href=(app==='rounds'?'/rounds/':'/#app='+app); return; } return sa.apply(this,arguments); };
+  try{ var m=/^#(today|queue|completed)$/.exec(location.hash||''); if(m) currentUsView=m[1];   /* #queue, #completed: the Home Screen shortcuts */
+    else if(!location.hash){ var W2=JSON.parse(localStorage.getItem('pvx:ultrasound:where')||'null'); if(W2&&/^(today|queue|completed)$/.test(W2.usView||'')&&Date.now()-W2.at<432e5) currentUsView=W2.usView; }   /* n195: back where you were */
+    sa('ultrasound'); }catch(e){ console.warn('[ultrasound] boot',e); }
+  try{ var c=/^#case=(.+)$/.exec(location.hash||''); if(c){ var id=decodeURIComponent(c[1]), n=0;   /* #case=ID opens that case once the list is in */
+    (function t(){ if(PATIENTS.some(function(p){ return String(p.id)===id&&p.ultrasound; })) openUsxCase(id); else if(++n<40) setTimeout(t,250); })(); } }catch(e){}
+  /* n243: Flow's address opened by itself reopens Ultrasound if that's where you were (Flow's early redirect reads this) */
+  try{ var K='pvx:flow:where', o=JSON.parse(localStorage.getItem(K)||'null')||{}; o.app='ultrasound'; o.view=currentUsView||'today'; o.at=Date.now(); localStorage.setItem(K,JSON.stringify(o)); }catch(e){}
+  /* messages with an action (Undo after a queue reorder): Flow gets this from its consent-forms module, which isn't on this page */
+  if(typeof window.fvNotifyAct!=='function') window.fvNotifyAct=function(title,sub,act,fn,opts){ try{ notify(title,sub,Object.assign({icon:'info',color:'#8A82A8',dur:12000},opts||{})); var w=document.getElementById('notes'), n=w&&w.lastElementChild; if(!n||!act) return;
+    var b=document.createElement('button'); b.type='button'; b.className='n-act'; b.textContent=act;
+    b.onclick=function(){ try{ fn(); }catch(e){} n.classList.add('hide'); setTimeout(function(){ n.remove(); },480); };
+    var body=n.querySelector('.n-body')||n; body.appendChild(b); }catch(e){} };
+  /* the hospital's branding names the tab after Flow; this page is Ultrasound */
+  var T='Ultrasound · Pravix'; document.title=T; new MutationObserver(function(){ if(document.title!==T) document.title=T; }).observe(document.querySelector('title'),{childList:true}); })();
+</script>
+</body>
+</html>

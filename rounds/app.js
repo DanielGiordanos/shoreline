@@ -588,7 +588,7 @@ if(!_commOpen) _unreadMsgs.add(p.id);
 loadThread(p); return;
 }
 if(p){ _unreadMsgs.add(p.id);
-try{ notify('New message from family', bcEsc((p.name+' '+(p.last||'')).trim())+' · open to reply', {icon:'info', color:'#0A84FF'}); }catch(e){}
+try{ notify('New message from family', bcEsc((p.name+' '+(p.last||'')).trim())+' · reply in Flow', {icon:'info', color:'#0A84FF'}); }catch(e){}
 try{ renderTable(); renderBoard(); }catch(e){} }
 });
 Backend._msgWarm = false;
@@ -6685,7 +6685,7 @@ function rdTomorrowHTML(){
 return`<div class="rd-tmr"><div class="rd-sec-h">Tomorrow</div>
     ${RD_QUEUE_DEFS.map(d=>`<div class="rd-tmr-g"><div class="g">${d.label}</div>
       ${rdQueues[d.key].map(x=>`<div class="rd-tmr-i ${x.done?'done':''}">
-        <button class="ck" data-act="q-toggle" data-key="${d.key}" data-id="${x.id}" aria-pressed="${!!x.done}" aria-label="${rdEsc((x.done?'Reopen':'Mark done')+' — '+x.text)}">${x.done?PVX_GI.check:''}</button>
+        <button class="ck" data-act="q-toggle" data-key="${d.key}" data-id="${x.id}" aria-pressed="${!!x.done}" aria-label="${rdEsc('Done: '+x.text)}" title="${x.done?'Reopen':'Mark done'}">${x.done?PVX_GI.check:''}</button>
         <span class="t">${rdEsc(x.text)}</span>
         <button class="x" data-act="q-del" data-key="${d.key}" data-id="${x.id}" aria-label="${rdEsc('Remove: '+x.text)}">${PVX_GI.xmark}</button></div>`).join('')}
       <div class="rd-add slim"><input data-input="queue" data-key="${d.key}" placeholder="+ Add" aria-label="${rdEsc('Add to '+d.label)}" autocomplete="off"></div>
@@ -6712,8 +6712,7 @@ return`<div class="rd-row rd-hold ${open?'open':''}" data-pid="${p.id}">
  
 function rdAuthChip(p){
 const a=rdAuthState(p); if(!a||a.status==='ok') return'';
-if(a.status==='over') return`<span class="rd-chip authover">AUTH EXCEEDED · ${Math.round(a.elapsed)}h / ${a.total}h</span>`;
-return`<span class="rd-chip authwarn">AUTH ${Math.round(a.elapsed)}h / ${a.total}h</span>`;
+const w=Math.round(a.elapsed)+' of '+a.total+' hours used'; if(a.status==='over') return`<span class="rd-chip authover" role="img" aria-label="Care authorization exceeded: ${w}" title="Care authorization exceeded: ${w}">AUTH EXCEEDED · ${Math.round(a.elapsed)}h / ${a.total}h</span>`; return`<span class="rd-chip authwarn" role="img" aria-label="Care authorization: ${w}" title="Care authorization: ${w}">AUTH ${Math.round(a.elapsed)}h / ${a.total}h</span>`;
 }
 function rdFlagChips(p){
 return (p.rounds.flags||[]).slice(0,3).map(f=>`<span class="rd-chip flagc">${rdEsc(f.label.toUpperCase())}</span>`).join('');
@@ -6891,7 +6890,7 @@ if(low!=null&&low>0&&charges!=null&&!(high!=null&&charges>high)&&charges>=low*.8
   ?{red:false,title:'Current charges are '+rdMoney(charges-low)+' past the low end',detail:'Low end '+rdMoney(low)+' · Current charges '+rdMoney(charges)+' · update the owner.'}
   :{red:false,title:'Current charges are at '+Math.round(charges/low*100)+'% of the low end',detail:rdMoney(low-charges)+' left before the low end '+rdMoney(low)+'.'});
 if(high!=null&&charges!=null&&charges>high) attention.push({red:true,title:'Current charges are '+rdMoney(charges-high)+' above estimate',detail:'Approved high end '+rdMoney(high)+' · Current charges '+rdMoney(charges)+'.'});
-if(depositRequired!=null&&depositShortfall>0) attention.push({red:false,title:'Deposit is '+rdMoney(depositShortfall)+' below the 75% minimum',detail:'75% of the Low End is '+rdMoney(depositRequired)+' · Current deposit '+rdMoney(deposit||0)+'.'});
+if(depositRequired!=null&&depositShortfall>0) attention.push({red:false,title:'Deposit is '+rdMoney(depositShortfall)+' below the 75% minimum',detail:'75% of the low end is '+rdMoney(depositRequired)+' · Current deposit '+rdMoney(deposit||0)+'.'});
 if(st&&remain<=RD_AUTH_SOON_H) attention.push({red:remain<=0,title:remain<=0?'Care authorization has expired':'Care authorization expires in '+fmtWait(Math.max(0,Math.round(remain*60))),detail:remain<=0?'Updated authorization is needed before continued care.':'Renew before the approved care window ends.'});
 
 return`<div class="rd-auth-stack">
@@ -6901,8 +6900,8 @@ return`<div class="rd-auth-stack">
         <div class="rd-authpro-head"><span>Estimate Range</span>${high!=null?'<span class="rd-approved">'+PVX_GI.check+' Approved</span>':''}</div>
         <div class="rd-estimate-range">${low!=null&&high!=null?(rdMoney(low)+' — '+rdMoney(high)):'—'}</div>
         <div class="rd-finlines">
-          <div><span>Low End</span>${rdFinEditable(pid,'estimateLow',low)}</div>
-          <div><span>High End</span>${rdFinEditable(pid,'estimate',high)}</div>
+          <div><span>Low end</span>${rdFinEditable(pid,'estimateLow',low)}</div>
+          <div><span>High end</span>${rdFinEditable(pid,'estimate',high)}</div>
           <div><span>Deposit</span>${rdFinEditable(pid,'deposited',deposit)}</div>
           <div><span>Current charges</span><b class="rd-fin-computed">${charges!=null?rdMoney(charges):'—'}</b></div>
           <div><span>To low end</span><b class="rd-fin-computed" title="Low end minus deposit">${rdRemain(balance)}</b></div>
@@ -6915,9 +6914,9 @@ return`<div class="rd-auth-stack">
       </div>
 
       <div class="rd-careauth-pane">
-        <div class="rd-authpro-head"><span>Care Authorization</span><span class="rd-carestatus s-${status}">${statusLabel}${remain!=null&&status!=='authorized'?' · '+fmtWait(Math.max(0,Math.round(remain*60))):''}</span></div>
-        <div class="rd-careauth-title">${st?(Math.round(used)+' of '+total+' hours used'):'No care authorization set'}</div>
-        ${st?`<div class="rd-caremetrics"><div><b>${total}h</b><span>Total Authorized</span></div><div><b>${Math.floor(Math.round(used*60)/60)}h ${Math.round(used*60)%60}m</b><span>Used</span></div><div><b>${remain>=0?fmtWait(Math.round(remain*60)):'Expired'}</b><span>Remaining</span></div></div>`:''}
+        <div class="rd-authpro-head"><span>Care Authorization</span><span class="rd-carestatus s-${status}">${statusLabel}${remain!=null&&remain>0&&status!=='authorized'?' · '+fmtWait(Math.max(0,Math.round(remain*60))):''}</span></div>
+        <div class="rd-careauth-title">${st?(Math.round(used)+' of '+total+' hours used'):'No care authorization set'}</div>${st&&typeof rdAuthGauge==='function'?rdAuthGauge(used,total,status):''}
+        ${st?`<div class="rd-caremetrics"><div><b>${total}h</b><span>Total authorized</span></div><div><b>${Math.floor(Math.round(used*60)/60)}h ${Math.round(used*60)%60}m</b><span>Used</span></div><div><b>${remain>=0?fmtWait(Math.round(remain*60)):'Expired'}</b><span>Remaining</span></div></div>`:''}
         <div class="rd-extend-label">Extend care authorization</div>
         <div class="rd-extend-group">
           <button class="rd-btn slim" data-act="auth-add" data-key="24" data-pid="${pid}">+24 hours</button>
@@ -7073,7 +7072,7 @@ return`<div class="rd-work" data-pid="${pid}">
         <div class="rd-sec-h">Diagnostics</div>
         ${(r.diagnostics||[]).length?`<div class="rd-diags">${r.diagnostics.map(d=>`
           <div class="rd-diag ${d.status}">
-            <button class="st" data-act="diag-toggle" data-pid="${pid}" data-id="${d.id}" title="${d.status==='completed'?'Mark pending':'Mark completed'}" aria-label="${rdEsc((d.status==='completed'?'Completed — mark pending: ':'Pending — mark completed: ')+d.name)}">${d.status==='completed'?PVX_GI.check:PVX_GI.circle}</button>
+            <button class="st" data-act="diag-toggle" data-pid="${pid}" data-id="${d.id}" title="${d.status==='completed'?'Mark pending':'Mark completed'}" aria-pressed="${d.status==='completed'}" aria-label="${rdEsc('Completed: '+d.name)}">${d.status==='completed'?PVX_GI.check:PVX_GI.circle}</button>
             <div class="b"><span class="n">${rdEsc(d.name)}</span>
               <textarea class="res rd-grow" rows="1" data-input="diag-res" data-pid="${pid}" data-id="${d.id}" placeholder="${d.status==='pending'?'Pending…':'Result'}" aria-label="${rdEsc('Result for '+d.name)}" autocomplete="off" enterkeyhint="done">${rdEsc(d.result||'')}</textarea>
             </div><span class="w">${d.status==='completed'?rdT(d.at):(d.due?rdEsc(d.due):'Pending')}</span>
@@ -7127,8 +7126,8 @@ return`<div class="rd-work" data-pid="${pid}">
         ${rev?`<div class="rd-rev-line">Reviewed <span>· ${rdEsc(rev.by)} · ${rdT(rev.at)}</span></div>`
              :`<button class="rd-btn review" data-act="review-mark" data-pid="${pid}">Mark reviewed</button>`}
         <div class="rd-btnrow">
-          <button class="rd-link" data-act="timeline-toggle" data-pid="${pid}">${rdUI.timeline[pid]?'Hide timeline':'View timeline'}</button>
-          <button class="rd-link" data-act="history-toggle" data-pid="${pid}">${rdUI.history[pid]?'Hide history':'View history'}</button>
+          <button class="rd-link rd-disc" data-act="timeline-toggle" data-pid="${pid}" aria-expanded="${!!rdUI.timeline[pid]}">Timeline<svg class="rd-disc-chev" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+          <button class="rd-link rd-disc" data-act="history-toggle" data-pid="${pid}" aria-expanded="${!!rdUI.history[pid]}">History<svg class="rd-disc-chev" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
           <button class="rd-link" data-act="share" data-pid="${pid}">Share…</button>
           <button class="rd-link" data-act="show-flow" data-pid="${pid}">Show in Flow</button>
           <span class="sp"></span>
@@ -7591,7 +7590,7 @@ const a=rdAuth(p);
 let cur=a[key];
 if(key==='estimateLow'&& cur==null && a.estimate!=null) cur=Math.round((+a.estimate)*.8);
 const input=document.createElement('input');
-input.className='rd-fin-inline'; input.type='text'; input.inputMode='decimal';
+input.className='rd-fin-inline'; input.type='text'; input.inputMode='decimal'; input.enterKeyHint='done';
 input.value=cur==null?'':Number(cur).toLocaleString('en-US',{maximumFractionDigits:2});
 let done=false;
 const NAME=({estimateLow:'Low end',estimate:'High end',deposited:'Deposit'}[key]||'Amount'); input.setAttribute('aria-label',NAME);
@@ -8704,7 +8703,7 @@ function sheetHTML(p){ var have={}; L(p).forEach(function(f){ have[f.t.toLowerCa
   var opts=ORDER.map(function(k){ var items=CAT[k].filter(function(t){ return !q||t.toLowerCase().indexOf(q)>-1; }); if(!items.length) return ''; any=true;
     return '<div class="fg-sh">'+FK[k]+'</div>'+items.map(function(t){ return '<button type="button" class="fg-opt'+(have[t.toLowerCase()]?' on':'')+'" data-fg="opt" data-k="'+k+'" data-t="'+E(t)+'">'+tile(k)+'<span class="fg-lb">'+E(t)+'</span>'+CK+'</button>'; }).join(''); }).join('');
   var custom=q&&!CAT.safe.concat(CAT.hand,CAT.med,CAT.iso,CAT.own).some(function(t){ return t.toLowerCase()===q; });
-  return '<div class="fg-sheet" role="dialog" aria-label="Add flag"><label class="fg-search">'+MAG+'<input id="fgQ" placeholder="Search or new flag" value="'+E(ST.q)+'" autocomplete="off" aria-label="Search or new flag"></label>'
+  return '<div class="fg-sheet" role="dialog" aria-label="Add flag"><label class="fg-search">'+MAG+'<input id="fgQ" placeholder="Search or new flag" value="'+E(ST.q)+'" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Search or new flag"></label>'
    +'<div class="fg-seg" role="group" aria-label="Keep the flag"><button type="button" data-fg="scope" data-s="always" class="'+(ST.scope==='always'?'on':'')+'">Always</button><button type="button" data-fg="scope" data-s="visit" class="'+(ST.scope==='visit'?'on':'')+'">This visit</button></div>'
    +'<div class="fg-opts">'+opts+(custom?'<div class="fg-new-as">Add “'+E(ST.q.trim())+'” as'+ORDER.map(function(k){ return '<button type="button" data-fg="new" data-k="'+k+'">'+tile(k,'s')+FK[k]+'</button>'; }).join('')+'</div>':'')
    +(!any&&!custom?'<div class="fg-new-as">No matches</div>':'')+'</div>'
@@ -10994,7 +10993,7 @@ try{(function(){
   /* ---------- the Rounds row chip (admitted patients are on Rounds, not on the Flow board) ---------- */
   window.fvDisRowChip=function(p){ var r=p&&p.rounds, d=r&&r.discharge; if(!r||r.outcome||!d||d.likely!=='likely') return '';
     var L=Array.isArray(d.checklist)?d.checklist:[], n=L.filter(function(c){ return c&&c.done; }).length;
-    return '<span class="rd-chip home" title="Discharge planned · discharged on the treatment sheet">GOING HOME TODAY'+(L.length?' · '+n+'/'+L.length:'')+'</span>'; };
+    return '<span class="rd-chip home" role="img" aria-label="Going home today'+(L.length?': '+n+' of '+L.length+' discharge steps done':'')+'" title="Discharge planned · discharged on the treatment sheet'+(L.length?' · '+n+' of '+L.length+' discharge steps done':'')+'">GOING HOME TODAY'+(L.length?' · '+n+'/'+L.length:'')+'</span>'; };
   window.fvDischarge={syncPlan:syncPlan,planFor:planFor,onClosed:onClosed,endAdmission:endAdmission,outcomeOf:outcomeOf,listen:listen};
 })();
 }catch(__e){window.__n305Skip&&__n305Skip(__e,20067)}
@@ -11295,7 +11294,8 @@ try{(function(){
 /* Loading · the Archive while earlier days are on their way, or when they couldn't be loaded */
 function rdArcWaitHTML(empty){
   if(rdOldFailed) return `<div class="${empty?'rd-emptystate':'rd-arc-status'}" role="status"><b>Couldn’t load earlier days</b>${empty?'<p>Check the connection, then try again.</p>':' · '}<button class="rd-link" data-act="arc-retry">Try again</button></div>`;
-  return `<div class="${empty?'rd-emptystate':'rd-arc-status'}" role="status" aria-busy="true"><span class="rd-arc-spin" aria-hidden="true"></span><b>Loading earlier days…</b>${empty?'<p>Rounds history appears here in a moment.</p>':''}</div>`; }
+  if(empty&&typeof rdArcLoaderHTML==='function') return rdArcLoaderHTML();
+  return `<div class="rd-arc-status" role="status" aria-busy="true"><span class="rd-arc-spin" aria-hidden="true"></span><b>Retrieving earlier days…</b></div>`; }
 try{(function(){
   const ra=renderRdArchive; renderRdArchive=function(){ const r=ra.apply(this,arguments);
     try{ const host=document.getElementById('rdArchiveBody'); if(host&&!host.querySelector('.rd-emptystate')&&(rdOldLoading||rdOldFailed)&&!host.querySelector('.rd-arc-status')) host.insertAdjacentHTML('afterbegin',rdArcWaitHTML(false)); }catch(e){}
@@ -12037,3 +12037,141 @@ try{(function(){
   tidy(); setTimeout(tidy,0);
 })();
 }catch(__e){ console.warn('[n328]',__e); }
+
+/* ===== n329 · Text fields, Toggles, Virtual keyboards (Nov 5 2026) ===== */
+try{(function(){
+  const ADD=['quick','prob','event','diag','series','tx','cont','appr','task','queue'];   /* Return adds what was typed */
+  const CLIN=ADD.concat(['tx-edit','diag-res','assess']);
+  const RAW=['series','tx','tx-edit','cont'];   /* values and drug names */
+  const set=(e,k,v)=>{ if(e.getAttribute(k)!==v) e.setAttribute(k,v); };
+  const XM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 8l8 8M16 8l-8 8"/></svg>';
+
+  /* Virtual keyboards · a keyboard that fits the text (Brand §9.10a): autocorrect never changes a drug, a value or an abbreviation
+     (“pcv”, “q8h”, “maropitant”), values and drug names get no automatic capital, and Return says Done wherever it records */
+  const keys=()=>{ document.querySelectorAll('#view-rd-census [data-input], #rdMode [data-input]').forEach(i=>{ const k=i.dataset.input;
+      if(CLIN.indexOf(k)>=0){ set(i,'autocorrect','off'); set(i,'spellcheck','false'); }
+      if(RAW.indexOf(k)>=0) set(i,'autocapitalize','off');
+      if(ADD.indexOf(k)>=0) set(i,'enterkeyhint','done');
+      if(k==='client-id'||k==='pet-id'){ set(i,'autocorrect','off'); set(i,'spellcheck','false'); set(i,'pattern','[0-9]*'); } });
+    const s=document.getElementById('rdSearch'); if(s){ set(s,'autocapitalize','off'); set(s,'autocorrect','off'); } };
+
+  /* Toggles · Start rounds opens Rounds mode; it isn't an on/off control, and VoiceOver hears only the label on screen
+     (it heard “Start rounds Rounds in progress”) */
+  const startBtn=()=>{ const b=document.getElementById('rdStartBtn'); if(!b) return; if(b.hasAttribute('aria-pressed')) b.removeAttribute('aria-pressed');
+    const run=b.classList.contains('is-running'), t=b.querySelector('.start-title'), l=b.querySelector('.start-running-label');
+    if(t) set(t,'aria-hidden',String(run)); if(l) set(l,'aria-hidden',String(!run)); };
+  if(typeof rdSetStartBtn==='function'){ const base=rdSetStartBtn; rdSetStartBtn=function(){ const r=base.apply(this,arguments); startBtn(); return r; }; }
+
+  /* Toggles · focus stays on the control you used while the patient redraws (it fell to the page) */
+  let want=null;
+  document.addEventListener('click',e=>{ const b=e.target&&e.target.closest&&e.target.closest('#view-rd-census button[data-act]');
+    want=b&&document.activeElement===b&&!/menu$/.test(b.dataset.act)?{act:b.dataset.act,pid:b.dataset.pid||'',id:b.dataset.id||'',key:b.dataset.key||'',at:Date.now()}:null; },true);
+  const find=w=>document.querySelector('#view-rd-census [data-act="'+w.act+'"]'+(w.pid?'[data-pid="'+w.pid+'"]':'')+(w.id?'[data-id="'+w.id+'"]':'')+(w.key?'[data-key="'+w.key+'"]':''));
+  const restore=()=>{ const w=want; if(!w) return; if(Date.now()-w.at>1500){ want=null; return; } const a=document.activeElement;
+    if(a&&a!==document.body&&a.isConnected) return; const n=find(w); if(n) try{ n.focus({preventScroll:true}); }catch(x){} };
+
+  const after=()=>{ try{ keys(); startBtn(); restore(); }catch(e){} };
+  if(typeof renderRdCensus==='function'){ const rc=renderRdCensus; renderRdCensus=function(){ const r=rc.apply(this,arguments); after(); requestAnimationFrame(after); return r; }; }
+  if(typeof rdModeRender==='function'){ const mr=rdModeRender; rdModeRender=function(){ const r=mr.apply(this,arguments); try{ keys(); }catch(e){} return r; }; }
+  after();
+
+  /* Text fields · a Clear button at the trailing end of the search and of every Add field while it has text, so an iPhone or iPad
+     can empty it without holding Delete (a keyboard still has Esc) */
+  let cb=null, cur=null;
+  const clearable=i=>i&&i.matches&&(i.id==='rdSearch'||(i.matches('#view-rd-census input[data-input], #rdMode input[data-input]')&&ADD.indexOf(i.dataset.input)>=0));
+  const place=()=>{ const i=cur, show=!!(i&&i.isConnected&&i.value&&document.activeElement===i);
+    if(!show){ if(cb) cb.hidden=true; if(i) i.classList.remove('rd-has-clear'); return; }
+    if(!cb){ cb=document.createElement('button'); cb.type='button'; cb.className='rd-clear'; cb.tabIndex=-1; cb.title='Clear'; cb.setAttribute('aria-label','Clear'); cb.innerHTML=XM;
+      cb.addEventListener('pointerdown',e=>e.preventDefault()); cb.addEventListener('mousedown',e=>e.preventDefault());
+      cb.addEventListener('click',()=>{ const t=cur; if(!t) return; t.value=''; t.dispatchEvent(new Event('input',{bubbles:true})); try{ t.focus({preventScroll:true}); }catch(x){} place(); }); }
+    const host=i.closest('#rdMode')||document.body; if(cb.parentNode!==host) host.appendChild(cb);
+    const r=i.getBoundingClientRect(); i.classList.add('rd-has-clear'); cb.hidden=false;
+    const w=cb.offsetWidth||28, h=cb.offsetHeight||28;   /* 44 pt on touch */
+    cb.style.left=Math.round(r.right-18-w/2)+'px'; cb.style.top=Math.round(r.top+r.height/2-h/2)+'px'; };
+  const later=()=>requestAnimationFrame(()=>requestAnimationFrame(place));   /* after the layout settles (a bar stepping aside moves the field) */
+  document.addEventListener('focusin',e=>{ if(clearable(e.target)){ if(cur&&cur!==e.target) cur.classList.remove('rd-has-clear'); cur=e.target; } place(); later(); });
+  document.addEventListener('focusout',()=>setTimeout(place,0));
+  document.addEventListener('input',e=>{ if(e.target===cur) place(); });
+  document.addEventListener('scroll',()=>{ if(cur) place(); },{capture:true,passive:true});
+  window.addEventListener('resize',()=>{ if(cur) place(); });
+
+  /* Text fields · WoofWare's client and pet IDs are numbers: anything else is said under the field and isn't saved until it's
+     fixed (“12ab” was saved as typed) */
+  const IDS='input[data-input="client-id"], input[data-input="pet-id"]';
+  const bad=v=>!!v.trim()&&!/^\d+$/.test(v.trim());
+  const say=i=>{ const lab=i.closest('label')||i, b=bad(i.value), id='rdIdMsg-'+i.dataset.input+'-'+(i.dataset.pid||''); let m=document.getElementById(id);
+    if(b&&!m){ m=document.createElement('span'); m.id=id; m.className='rd-id-msg'; m.setAttribute('role','status'); lab.after(m); }
+    if(m) m.textContent=b?'Numbers only, like 102345':'';
+    set(i,'aria-invalid',String(b)); if(b) set(i,'aria-describedby',id); else i.removeAttribute('aria-describedby'); return b; };
+  document.addEventListener('input',e=>{ const i=e.target; if(i&&i.matches&&i.matches(IDS)) say(i); },true);
+  document.addEventListener('focusout',e=>{ const i=e.target; if(i&&i.matches&&i.matches(IDS)&&say(i)) e.stopImmediatePropagation(); },true);
+  document.addEventListener('keydown',e=>{ const i=e.target; if(e.key==='Enter'&&i&&i.matches&&i.matches(IDS)&&say(i)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
+
+  /* Text fields · a clipped value shows in full when the pointer rests on it */
+  document.addEventListener('mouseover',e=>{ const i=e.target; if(!(i&&i.matches&&i.matches('#view-rd-census input[data-input], #rdMode input[data-input]'))) return;
+    if(i.value&&i.scrollWidth>i.clientWidth+1){ if(i.title!==i.value) i.title=i.value; } else if(i.title&&i.title===i.value) i.removeAttribute('title'); },{passive:true});
+
+  /* Virtual keyboards · while the iPhone or iPad keyboard is up, the bottom tab bar and Rounds mode's Previous · Mark reviewed ·
+     Next step aside (in Safari they'd ride above the keyboard, over what's being typed), and the field stays in view above it */
+  const COARSE=window.matchMedia?matchMedia('(hover:none) and (pointer:coarse)'):{matches:false};
+  const TXT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]), textarea, [contenteditable="true"]';
+  const kb=on=>{ const h=document.documentElement; if(h.classList.contains('rd-kb')!==on){ h.classList.toggle('rd-kb',on); later(); } };
+  document.addEventListener('focusin',e=>{ const t=e.target; if(COARSE.matches&&t&&t.matches&&t.matches(TXT)) kb(true); });
+  document.addEventListener('focusout',()=>setTimeout(()=>{ const a=document.activeElement; if(!(a&&a.matches&&a.matches(TXT))) kb(false); },80));
+  if(window.visualViewport) visualViewport.addEventListener('scroll',()=>{ if(cur) place(); },{passive:true});
+  if(window.visualViewport) visualViewport.addEventListener('resize',()=>{ const a=document.activeElement; if(!document.documentElement.classList.contains('rd-kb')||!a||!a.getBoundingClientRect) return;
+    const r=a.getBoundingClientRect(); if(r.bottom>visualViewport.height-8||r.top<0) try{ a.scrollIntoView({block:'center'}); }catch(x){} place(); });
+})();
+}catch(__e){ console.warn('[n329]',__e); }
+
+/* ===== n330 · Activity rings, Gauges, Progress indicators (Nov 5 2026) ===== */
+try{(function(){
+  /* Gauges · the hours authorized: a capacity gauge under "26 of 24 hours used", both ends labelled, its fill green while
+     authorized, amber when it's running out and red once exceeded, and its value in words for VoiceOver */
+  const hrs=h=>{ const m=Math.round(Math.max(0,h)*60), H=Math.floor(m/60), M=m%60;
+    return (H||!M?H+(H===1?' hour':' hours'):'')+(H&&M?' ':'')+(M?M+(M===1?' minute':' minutes'):''); };
+  window.rdAuthGauge=function(used,total,status){ if(!(total>0)) return ''; const u=Math.max(0,+used||0), over=u>total, pct=Math.min(100,u/total*100);
+    const tone=over||status==='expired'?'over':status==='expiring'?'soon':'ok';
+    const say=Math.round(u)+' of '+total+' hours used, '+(over?hrs(u-total)+' past the authorization':hrs(total-u)+' left');
+    return `<div class="rd-auth-gauge ${tone}"><div class="rd-auth-track" role="img" aria-label="${rdEsc('Care authorization: '+say)}" title="${rdEsc(say)}">`
+      + `<span class="rd-auth-fill" style="width:${pct.toFixed(1)}%"></span></div>`
+      + `<div class="rd-auth-ends" aria-hidden="true"><span>0h</span><span>${total}h authorized</span></div></div>`; };
+
+  /* Progress indicators · the Archive waits with the same loader as the census (it showed a lone spinner and "Loading earlier
+     days…" for as long as the read took); after 10 s it says so and offers Try again */
+  let t0=null, tm=0;
+  window.rdArcLoaderHTML=function(){ if(t0==null) t0=Date.now(); const slow=Date.now()-t0>10000;
+    if(!slow&&!tm) tm=setTimeout(()=>{ tm=0; try{ if(rdOldLoading) renderRdArchive(); }catch(e){} },10100);
+    return `<div class="rd-loading rd-arc-loading" data-state="${slow?'slow':'wait'}" role="status" aria-busy="true">`
+      + `<div class="rd-ld-line"><span class="rd-ld-task">${slow?'Taking longer than expected':'Retrieving earlier days'}</span></div>`
+      + `<div class="rd-ld-track ind" role="progressbar" aria-label="Earlier days"><div class="rd-ld-fill"></div></div>`
+      + `<div class="rd-ld-msg"><span class="rd-ld-help">${slow?'Earlier days haven’t arrived yet. Check the connection.':'Rounds history appears here in a moment.'}</span>`
+      + `${slow?'<button type="button" class="rd-ld-retry" data-act="arc-retry">Try again</button>':''}</div></div>`; };
+  document.addEventListener('click',e=>{ if(e.target&&e.target.closest&&e.target.closest('[data-act="arc-retry"]')){ t0=null; clearTimeout(tm); tm=0; } },true);
+  if(typeof renderRdArchive==='function'){ const ra=renderRdArchive; renderRdArchive=function(){ const r=ra.apply(this,arguments); try{ if(!rdOldLoading){ t0=null; clearTimeout(tm); tm=0; } }catch(e){} return r; }; }
+})();
+}catch(__e){ console.warn('[n330]',__e); }
+
+/* ===== n331 · Notifications (Nov 5 2026) ===== */
+try{(function(){
+  /* a banner says how long ago it arrived ("now", "4 min ago", then the time), so one left on screen doesn't keep saying "now";
+     the time is for the eye only, so VoiceOver doesn't hear it again each minute */
+  const ago=t=>{ const s=(Date.now()-t)/1000; if(s<60) return 'now'; if(s<3600) return Math.floor(s/60)+' min ago';
+    return new Date(t).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); };
+  const stamp=n=>{ if(!n||n.dataset.at) return; n.dataset.at=String(Date.now()); const tm=n.querySelector('.n-time'); if(tm) tm.setAttribute('aria-hidden','true'); };
+  const tick=()=>{ document.querySelectorAll('#notes .note[data-at]').forEach(n=>{ const tm=n.querySelector('.n-time'); if(tm){ const v=ago(+n.dataset.at); if(tm.textContent!==v) tm.textContent=v; } }); };
+  window.rdNoteAgo=ago;
+  const w=document.getElementById('notes');
+  if(w){ w.querySelectorAll('.note').forEach(stamp); try{ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{ if(n.nodeType===1&&n.classList.contains('note')) stamp(n); }))).observe(w,{childList:true}); }catch(e){} }
+  setInterval(tick,20000);
+
+  /* on a touch screen a banner can be swiped up out of the way, as on iPhone (it sat over the top bar and the search until it timed out) */
+  let drag=null;
+  const gone=n=>{ n.style.transform=''; n.style.transition=''; n.classList.add('hide'); setTimeout(()=>{ try{ n.remove(); }catch(e){} },480); };
+  document.addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse') return; const n=e.target.closest&&e.target.closest('#notes .note'); if(!n||e.target.closest('button')) return;
+    drag={n,y:e.clientY,dy:0}; n.style.transition='none'; },true);
+  document.addEventListener('pointermove',e=>{ if(!drag) return; drag.dy=Math.min(0,e.clientY-drag.y); drag.n.style.transform='translateY('+drag.dy+'px)'; },true);
+  const end=()=>{ if(!drag) return; const d=drag; drag=null; if(d.dy<-28) gone(d.n); else { d.n.style.transition=''; d.n.style.transform=''; } };
+  document.addEventListener('pointerup',end,true); document.addEventListener('pointercancel',end,true);
+})();
+}catch(__e){ console.warn('[n331]',__e); }

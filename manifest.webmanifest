@@ -52,7 +52,14 @@
       "name": "Ultrasound",
       "short_name": "Ultrasound",
       "description": "Open the ultrasound list",
-      "url": "/#app=ultrasound"
+      "url": "/ultrasound/",
+      "icons": [
+        {
+          "src": "/assets/img/sc-ultrasound.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
