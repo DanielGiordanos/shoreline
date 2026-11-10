@@ -5381,7 +5381,7 @@ body.dark .fg-seg button.on{background:#2a3958}
 .fg-opt:hover{background:var(--fg-fill)}
 .fg-opt .fg-lb{flex:1}
 .fg-opt svg.fg-ck{width:min(1rem,24px);height:min(1rem,24px);flex:0 0 auto}
-.fg-opt svg.fg-ck path{stroke-dasharray:16;stroke-dashoffset:16;transition:stroke-dashoffset .28s var(--fg-ease)}
+.fg-opt svg.fg-ck path{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .28s var(--fg-ease)}
 .fg-opt.on svg.fg-ck path{stroke-dashoffset:0;transition:stroke-dashoffset .32s var(--fg-ease) .04s}
 .fg-opt.on .fg-t{animation:fgBump .45s var(--fg-spring) 1}
 .fg-new-as{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 6px;font-size:0.8125rem;color:var(--fg-l2)}
@@ -5713,6 +5713,22 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
 </script>
 </head>
 <body>
+<script id="pvx-n346-esc">
+/* PVX-N346 - HIG Modality: Esc cancels only the topmost thing. With "Discharge Rocky?" (or any ending) asked inside the drawer,
+   Esc closed the question and the drawer together and dropped focus on the page; now it cancels the question, keeps the drawer
+   open and puts focus back on the card that asked. Registered first, so it runs before the drawer's own Esc. */
+window.addEventListener('keydown',function(e){
+  if(e.key!=='Escape'||e.defaultPrevented) return;
+  var conf=document.getElementById('dispConfirm'), q=conf&&conf.querySelector('.confirmation'); if(!q) return;
+  var dr=document.getElementById('drawer'); if(!dr||!dr.classList.contains('open')) return;
+  var m=/from-(\w+)/.exec(q.className||''), kind=m?m[1]:'';
+  e.preventDefault(); e.stopImmediatePropagation();
+  try{ closeDispConfirm(); }catch(x){ conf.className='disp-confirm'; conf.innerHTML=''; }
+  var card=dr.querySelector('.disposition-card'+(kind?'.'+kind:''))||dr.querySelector('.disposition-card:not([disabled])');
+  if(card) try{ card.focus({preventScroll:true}); }catch(x){ card.focus(); }
+  try{ if(window.pvxSay) pvxSay('Cancelled'); }catch(x){}
+},true);
+</script>
 <script id="n333-us-stubs">/* n333: names Flow still mentions from Ultrasound, now on its own page */ function fillUsxCase(){} function renderUltrasound(){} function switchUsView(){} function usxEnsureDrawer(){} function usxHideAllViews(){}</script>
 <script id="n305-rounds-stubs">/* n305: names Flow still mentions from Rounds, now on its own page */ var __rdDisplayWant; var currentRdView="census"; function rdCloseMenus(){} function rdDisplayState(){} var rdExpanded=null; function rdHandleAct(){} function rdHideAllViews(){} var rdLoadFeed; var rdLoadPart; function rdModeRender(){} var rdQ=null; function rdRankEnd(){} var rdRk; function rdSaveState(){} function rdTakeCase(){} function rdToggleDisplay(){} function renderRdCensus(){} function renderRounds(){} function switchRdView(){}</script>
 <script> (function(){function paint(t){try{document.documentElement.style.background=(t==='dark')?'#080E1A':'#F2F4F8';}catch(e){}}window.__pvxPaintCanvas=paint;try{var W=JSON.parse(localStorage.getItem('pvx:flow:where')||'null');var FL=/^#app=flow$/.test(location.hash);if(FL&&!(W&&W.app==='flow'))history.replaceState(null,'',location.pathname+location.search);if(W&&W.app&&Date.now()-W.at<432e5&&(FL?W.app==='flow':!location.hash)&&!/[?&](tv|visit|patient)=/.test(location.search)&&(W.app!=='flow'||(W.view&&W.view!=='dashboard'))){history.replaceState(null,'',location.pathname+location.search+'#app='+W.app);window.__pvxRestore=W;document.documentElement.classList.add('pvx-app-boot');}}catch(e){}try{if(/[#&]app=(rounds|ultrasound)\b/.test(location.hash))document.documentElement.classList.add('pvx-app-boot');}catch(e){}try{var m=document.cookie.match(/(?:^|;\s*)pvx_theme=(dark|light)/);var t=(m&&m[1])||'dark';document.body.classList.toggle('dark',t==='dark');paint(t);}catch(e){document.body.classList.add('dark');paint('dark');}})();</script>
@@ -5865,8 +5881,8 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <div class="tablewrap">
         <table aria-label="Patients">
           <thead><tr>
-            <th>Patient</th><th>Reason</th><th>Doctor</th><th>Location</th>
-            <th>Status</th><th>Priority</th><th>Arrival</th><th>Wait</th>
+            <th scope="col" data-sort="patient">Patient</th><th scope="col" data-sort="reason">Reason</th><th scope="col" data-sort="doctor">Doctor</th><th scope="col" data-sort="location">Location</th>
+            <th scope="col" data-sort="status">Status</th><th scope="col" data-sort="priority">Priority</th><th scope="col" data-sort="arrival">Arrival</th><th scope="col" data-sort="wait">Wait</th>
           </tr></thead>
           <tbody id="tableBody"></tbody>
         </table>
@@ -6031,7 +6047,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer">
   <div class="drawer-head">
-    <button class="close" id="drawerClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="drawerClose" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="dh-top">
       <div class="pt-emoji" id="dEmoji"></div>
       <div class="d-name-wrap"><div class="d-name-row"><h2 id="dName">—</h2><span id="dResus"></span></div><div class="sub" id="dSub">—</div></div>
@@ -6080,7 +6096,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
 <!-- Location panel (Lobby / Treatment) — same glass drawer, no blocking scrim so rooms stay droppable -->
 <aside class="drawer loc-drawer" id="locDrawer">
   <div class="drawer-head">
-    <button class="close" id="locClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="locClose" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="dh-top">
       <div class="pt-emoji" id="locIcon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg></div>
       <div><h2 id="locTitle">Lobby</h2><div class="sub" id="locSub">—</div></div>
@@ -6114,7 +6130,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <span class="ih-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M10 12a4 4 0 0 0 8 0v-1"/><circle cx="18" cy="9" r="2"/></svg></span>
       <div><div class="ih-t">Triage intake</div><div class="ih-sub" id="intakePt">—</div></div>
     </div>
-    <button class="close" id="intakeClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="intakeClose" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="intake-body" id="intakeBody"></div>
   <div class="intake-foot">
@@ -6132,7 +6148,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <span class="ih-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>
       <div><div class="ih-t">Assign to <span id="assignDocName">Doctor</span></div><div class="ih-sub" id="assignSub">Select an unassigned patient</div></div>
     </div>
-    <button class="close" id="assignClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="assignClose" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="intake-body" id="assignBody"></div>
   <div class="intake-foot"><button class="btn ghost" id="assignCancel">Cancel</button></div>
@@ -6153,10 +6169,18 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
     <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
     <span class="ops-txt"><span class="ops-t">Hospital alert…</span><span class="ops-s">Send announcement</span></span>
   </button>
+  <button class="ops-item" data-op="print" role="menuitem" id="opsPrint">
+    <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9V3.5h11V9"/><rect x="2.5" y="9" width="19" height="8.5" rx="2"/><rect x="6.5" y="14" width="11" height="7" rx="1"/><path d="M17.5 12.5h.01"/></svg></span>
+    <span class="ops-txt"><span class="ops-t">Print…</span><span class="ops-s" id="opsPrintS">This view</span></span>
+  </button>
   <div class="ops-sep" role="separator"></div>
   <button class="ops-item" data-op="chime" role="menuitemcheckbox" aria-checked="true" id="opsChime">
     <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
     <span class="ops-txt"><span class="ops-t">Reminder chime</span><span class="ops-s" id="opsChimeS">On · this screen</span></span><svg class="ops-ck" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+  </button>
+  <button class="ops-item" data-op="voice" role="menuitemcheckbox" aria-checked="true" id="opsVoice" hidden>
+    <span class="ops-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span>
+    <span class="ops-txt"><span class="ops-t">Talk to Flow</span><span class="ops-s" id="opsVoiceS">On · this screen</span></span><svg class="ops-ck" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
   </button>
 </div>
 
@@ -6168,7 +6192,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <span class="aph-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><path d="M12 12v3a2 2 0 0 0 4 0v-1"/><circle cx="16" cy="12.5" r="1"/></svg></span>
       <div><div class="aph-t">Today's shift assignments</div></div>
     </div>
-    <button class="close" id="shiftClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="shiftClose" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="addpt-body"><div id="shiftGrid"></div></div>
   <div class="addpt-foot">
@@ -6185,7 +6209,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <span class="aph-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
       <div><div class="aph-t">Hospital alert</div><div class="aph-sub" id="alertSub"></div></div>
     </div>
-    <button class="close" id="alertClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="alertClose" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="addpt-body" id="alertBody"></div>
   <div class="addpt-foot" id="alertFoot"></div>
@@ -6199,7 +6223,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <span class="aph-ic" style="background:rgba(56,189,210,.14);color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
       <div><div class="aph-t" id="ctTitle">Care team</div><div class="aph-sub" id="ctSub">Who is responsible for this patient right now.</div></div>
     </div>
-    <button class="close" id="ctClose" aria-label="Close care team" onclick="closeCareTeam()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="ctClose" aria-label="Close care team" title="Close (Esc)" onclick="closeCareTeam()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="addpt-body" id="ctBody"></div>
   <div class="addpt-foot" id="ctFoot"></div>
@@ -6213,7 +6237,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <span class="aph-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M10 12a4 4 0 0 0 8 0v-1"/><circle cx="18" cy="9" r="2"/></svg></span>
       <div><div class="aph-t">Edit triage</div><div class="aph-sub" id="triEditSub">—</div></div>
     </div>
-    <button class="close" id="triEditClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="triEditClose" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="addpt-body"><div id="triEditBody"></div></div>
   <div class="addpt-foot">
@@ -6230,7 +6254,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <span class="aph-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M3 21v-1a6 6 0 0 1 12 0v1"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg></span>
       <div><div class="aph-t">Add new patient</div><div class="aph-sub"></div></div>
     </div>
-    <button class="close" id="apClose"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="close" id="apClose" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="addpt-body">
     <div class="ap-sect">
@@ -6259,7 +6283,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
     <div class="ap-sect">
       <h4>Patient Information</h4>
       <div class="ap-grid c2" style="margin-bottom:13px">
-        <div class="ap-field"><label>Patient name <span class="pvx-req" aria-hidden="true">*</span></label><input class="ap-input" id="apName" placeholder="e.g. Cookie" aria-required="true"></div>
+        <div class="ap-field"><label>Patient name <span class="pvx-req" aria-hidden="true">*</span></label><input class="ap-input" id="apName" placeholder="e.g. Cookie" aria-required="true" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="next"></div>
         <div class="ap-field"><label>Species <span class="pvx-req" aria-hidden="true">*</span></label>
           <select class="ap-input ap-select" id="apSpecies" required aria-describedby="apSpeciesHint">
             <option value="" selected hidden>Select species</option>
@@ -6270,7 +6294,7 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
       <div class="ap-grid c2" style="margin-bottom:13px">
         <div class="ap-field"><label>Breed</label>
           <div class="bc-wrap">
-            <input class="ap-input" id="apBreed" placeholder="e.g. Turkish Van" autocomplete="off">
+            <input class="ap-input" id="apBreed" placeholder="e.g. Turkish Van" autocomplete="off" autocapitalize="words" enterkeyhint="next">
             <div class="bc-panel" id="apBreedPanel"></div>
           </div></div>
         <div class="ap-field"><label>Age</label><div class="pvx-uwrap"><input class="ap-input" id="apAge" inputmode="numeric" autocomplete="off" placeholder="e.g. 4" aria-describedby="apAgeHint"><div class="pvx-unit" role="radiogroup" aria-label="Age unit" data-unit-for="apAge"><button type="button" role="radio" aria-checked="true" data-u="y" aria-label="Years">y</button><button type="button" role="radio" aria-checked="false" data-u="mo" aria-label="Months">mo</button></div></div><div class="ap-hint" id="apAgeHint" aria-live="polite"></div></div>
@@ -6294,8 +6318,8 @@ html.pvx-text-l :where(h1, h2, h3, .page-title, .hero-title, .card-title, .cc-ti
     <div class="ap-sect">
       <h4>Owner Information</h4>
       <div class="ap-grid c2">
-        <div class="ap-field"><label>Owner name</label><input class="ap-input" id="apOwner" placeholder="e.g. Daniel Giordano"></div>
-        <div class="ap-field"><label>Phone number</label><input class="ap-input" id="apPhone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="14" placeholder="(203) 555-0134" aria-describedby="apPhoneHint"><div class="ap-hint" id="apPhoneHint" aria-live="polite"></div></div>
+        <div class="ap-field"><label>Owner name</label><input class="ap-input" id="apOwner" placeholder="e.g. Jordan Lee" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="next"></div>
+        <div class="ap-field"><label>Phone number</label><input class="ap-input" id="apPhone" type="tel" inputmode="tel" autocomplete="off" enterkeyhint="next" maxlength="14" placeholder="(203) 555-0134" aria-describedby="apPhoneHint"><div class="ap-hint" id="apPhoneHint" aria-live="polite"></div></div>
       </div>
     </div>
 
@@ -6755,7 +6779,7 @@ _writeMirror(arr); _emit();
 }catch(e){}
 }
 function _push(id, rec, extra){
-function warn(error){ console.warn('[intake-sync] write failed',error&&error.code||'connection'); try{window.dispatchEvent(new CustomEvent('pvx:intake-sync-error',{detail:{source:'write',id:id}}))}catch(_){} try{if(typeof toast==='function')toast('Client intake failed to sync. Check your connection.')}catch(_){} return false; }
+function warn(error){ console.warn('[intake-sync] write failed',error&&error.code||'connection'); try{window.dispatchEvent(new CustomEvent('pvx:intake-sync-error',{detail:{source:'write',id:id}}))}catch(_){} try{if(typeof toast==='function')toast('Couldn’t save the check-in — check the connection and try again')}catch(_){} return false; }
 if(!_db) return Promise.resolve(warn(null));
 try{ return _db.collection(COL).doc(id).set(Object.assign({ tenant_id:TENANT_ID, id:id, record:rec }, extra||{}), {merge:true}).then(function(){return true}).catch(warn); }catch(e){return Promise.resolve(warn(e))}
 }
@@ -6850,7 +6874,7 @@ async function pvxActivateApprovedStaffMember(user){
         || verified.data().tenant_id!=='shoreline'){
       throw new Error('Membership confirmation failed');
     }
-    try{ if(typeof toast==='function') toast('Your Pravix access is now active'); }catch(_){}
+    try{ if(typeof toast==='function') toast('Pravix access is active'); }catch(_){}
     return true;
   }catch(_){
     window.alert('Pravix could not activate this account. Confirm email verification and contact the project administrator if the problem continues.');
@@ -7436,6 +7460,8 @@ const pc=PRIO_CLR[p.prio]||PRIO_CLR[3];
 return`<div class="pt-emoji ${variant} priority-p${p.prio} ${spCls(p)}" style="${css?css+';':''}--gc:${pc.c};--gcrgb:${pc.rgb}">${monoInner(p)}</div>`;
 }
 function waitMinutes(p){return Math.round((now - p.arrival)/60000);}
+/* n336: the most urgent first, as the Client Display and the Attention center already do: priority (P1 first), then the longest wait, then the name */
+function pvxByUrgency(a,b){ const pa=Number(a&&a.prio)||9, pb=Number(b&&b.prio)||9; if(pa!==pb) return pa-pb; const wa=+(a&&a.arrival)||0, wb=+(b&&b.arrival)||0; if(wa!==wb) return wa-wb; return String(a&&a.name||'').localeCompare(String(b&&b.name||'')); }
 
 function roomSince(p){
 if(p.roomSince) return p.roomSince;
@@ -7648,7 +7674,7 @@ a.status='ended'; a.endAt=new Date().toISOString(); a.endedBy=CURRENT_USER; a.en
 function ctAssign(p, roleId, staff, opts){
 opts=opts||{}; const role=ctRole(roleId);
 if(role.mirror && !opts.pending){
-if(staff.kind!=='doctor'){ toast('Primary clinician must be one of Flow\'s emergency doctors'); return null; }
+if(staff.kind!=='doctor'){ toast('Choose one of Flow\'s emergency doctors as primary clinician'); return null; }
 assignDoctor(p, staff.id); return ctCurrent(p,'primary')[0]||null;
 }
 const now=new Date().toISOString();
@@ -7664,7 +7690,7 @@ return a;
 function ctConfirm(p, aid){
 const a=ctList(p).find(x=>x.id===aid); if(!a||a.status!=='pending') return;
 const role=ctRole(a.role);
-if(role.mirror){ if(a.staffKind!=='doctor'){ toast('Primary clinician must be an emergency doctor'); return; } a.status='ended'; a.endReason='confirmed-into-primary'; a.confirmedBy=CURRENT_USER; a.confirmedAt=new Date().toISOString(); ctTouch(a); assignDoctor(p, a.staffId); const c=ctCurrent(p,'primary')[0]; if(c){ c.confirmedBy=CURRENT_USER; c.confirmedAt=a.confirmedAt; c.proposedBy=a.proposedBy; } renderAll(); if(activePatient===p.id) fillDrawer(p); return; }
+if(role.mirror){ if(a.staffKind!=='doctor'){ toast('Choose an emergency doctor as primary clinician'); return; } a.status='ended'; a.endReason='confirmed-into-primary'; a.confirmedBy=CURRENT_USER; a.confirmedAt=new Date().toISOString(); ctTouch(a); assignDoctor(p, a.staffId); const c=ctCurrent(p,'primary')[0]; if(c){ c.confirmedBy=CURRENT_USER; c.confirmedAt=a.confirmedAt; c.proposedBy=a.proposedBy; } renderAll(); if(activePatient===p.id) fillDrawer(p); return; }
 if(!role.multi) ctCurrent(p,a.role).forEach(x=>ctEndAssignment(p,x,'handed off'));
 a.status='current'; a.startAt=new Date().toISOString(); a.confirmedBy=CURRENT_USER; a.confirmedAt=a.startAt; ctTouch(a);
 p.timeline.push({ label:'Handoff confirmed · '+role.label, at:new Date(), meta:a.staffName+' · confirmed by '+CURRENT_USER });
@@ -7782,7 +7808,7 @@ function ctRowHTML(p, a, history){
 const s=ctStaff(a.staffId,a.staffName,a.staffKind), r=ctRole(a.role), url=ctProfileUrl(a);
 const im=(a.staffKind==='im'&& typeof imContact==='function') ? imContact({id:a.staffId}) : null;
 let sub='';
-if(a._legacy) sub='Assigned doctor (set before care-team history began — no timestamp recorded)';
+if(a._legacy) sub='Assigned doctor · time not recorded (assigned before Care team history started)';
 else if(a.status==='current') sub=`Since ${ctEsc(ctFmt(a.startAt))}${a.confirmedBy?` · handoff confirmed by ${ctEsc(a.confirmedBy)}`:''}${a.updatedBy?` · updated ${ctEsc(ctFmt(a.updatedAt))} by ${ctEsc(a.updatedBy)}`:''}`;
 else if(a.status==='pending') sub=`Proposed by ${ctEsc(a.proposedBy||a.updatedBy||'—')} at ${ctEsc(ctFmt(a.updatedAt))} · waiting for ${ctEsc(s.name)} to confirm`;
 else sub=`${ctEsc(r.label)} · ${ctEsc(ctFmt(a.startAt)||'proposed')} → ${ctEsc(ctFmt(a.endAt))} · ${ctEsc(a.endReason||'ended')} by ${ctEsc(a.endedBy||a.updatedBy||'—')}`;
@@ -7878,7 +7904,7 @@ if(filters.doctor && p.doctor!==filters.doctor) return false;
 if(filters.liaison){ if(filters.liaison==='none'){ if(p.liaison) return false; } else if(p.liaison!==filters.liaison) return false; }
 if(searchQ){
 const l=liaison(p.liaison);
-const hay=[p.name,p.last,p.species,p.reason,doc(p.doctor).name,l?l.name:'',p.room,p.owner,p.status].join(' ').toLowerCase();
+const hay=[p.name,p.last,p.species,p.reason,doc(p.doctor).name,l?l.name:'',p.room,p.owner,p.status,p.hid].join(' ').toLowerCase();
 if(!hay.includes(searchQ.toLowerCase())) return false;
 }
 return true;
@@ -7970,6 +7996,16 @@ const CKPI_META=[
 
 /* PVX-N191: sparklines keep the last hour (one sample a minute) on this device, and describe themselves */
 const CKPI_HIST=(function(){ try{ const o=JSON.parse(localStorage.getItem('pvx:kpi:v1')||'{}'); return (o&&typeof o==='object')?o:{}; }catch(e){ return {}; } })(); const _ckpiMin={};
+
+/* PVX-N341 - share the visit tracker link: the system share sheet on iPhone and iPad (Messages, Mail, AirDrop…), Copy with a mouse.
+   "Copied" shows only after the copy really happened; a refused copy says so and shows the link. */
+function pvxCanShare(){ try{ return !!(navigator.share&&matchMedia('(pointer:coarse)').matches); }catch(e){ return false; } }
+function pvxShareTracker(u, name){
+  function say(t){ if(typeof toast==='function') toast(t); }
+  function copy(){ try{ navigator.clipboard.writeText(u).then(function(){ say('Tracker link copied'); }, function(){ say('Couldn’t copy the link — '+u); }); }catch(e){ say('Couldn’t copy the link — '+u); } }
+  if(pvxCanShare()){ navigator.share({title:'Visit tracker'+(name?' · '+name:''), url:u}).catch(function(e){ if(!e||e.name!=='AbortError') copy(); }); return; }
+  copy();
+}
 function ckpiSave(){ try{ localStorage.setItem('pvx:kpi:v1', JSON.stringify(CKPI_HIST)); }catch(e){} }
 function ckpiSample(group,cards){
 const m=Math.floor(Date.now()/60000);
@@ -7981,6 +8017,12 @@ if(typeof c.raw==='number'&&isFinite(c.raw)) a.push({t:Date.now(),v:c.raw});
 CKPI_HIST[k]=a.slice(-60); });
 ckpiSave();
 }
+/* PVX-N341 - a chart's words: the card's name in sentence case, and minutes where the values are minutes */
+function pvxChartName(lab){ var s=String(lab||'').replace(/^Avg\b/,'Average'); return s.charAt(0)+s.slice(1).toLowerCase(); }
+function pvxChartUnit(lab){ return /^(avg wait|longest)$/i.test(String(lab))?' min':''; }
+function pvxSpoken(m){ m=Math.round(Math.abs(+m)||0); var h=Math.floor(m/60), r=m%60, w=function(n,u){ return n+' '+u+(n===1?'':'s'); };   /* PVX-N350: VoiceOver hears “1 hour 20 minutes”, not “1h 20m” */
+  return h?(w(h,'hour')+(r?' '+w(r,'minute'):'')):w(r,'minute'); }
+function pvxDur(m){ return (typeof fmtWait==='function')?fmtWait(m):(m+'m'); }   /* a trend reads like the wait beside it: 5h 30m, not 330m */
 function ckpiSpark(group,lab){
 const cut=Date.now()-60*60000, a=(Array.isArray(CKPI_HIST[group+'|'+lab])?CKPI_HIST[group+'|'+lab]:[]).filter(x=>x&&x.t>=cut), X0=2, X1=62, Y0=5, Y1=26;
 if(a.length<2) return'<svg class="command-kpi__spark is-empty" viewBox="0 0 64 31" aria-hidden="true"></svg>';
@@ -7991,7 +8033,8 @@ const pts=a.map(x=>[ Math.round((X0+(X1-X0)*((x.t-t0)/Math.max(1,t1-t0)))*10)/10
 const d='M'+pts.map(q=>q[0]+' '+q[1]).join(' L'), last=pts[pts.length-1];
 const f=vs[0], l=vs[vs.length-1], diff=l-f, fmtT=new Date(t0).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
 const r1=v=>Math.round(v*10)/10;
-const say=lab+' since '+fmtT+': '+r1(f)+' to '+r1(l)+(diff>0?', up '+r1(diff):diff<0?', down '+r1(-diff):', no change');
+const nm=pvxChartName(lab), u=pvxChartUnit(lab), q=v=>u?pvxSpoken(r1(v)):String(r1(v));
+const say=nm+' since '+fmtT+': '+q(f)+' to '+q(l)+(diff>0?', up '+q(diff):diff<0?', down '+q(-diff):', no change');
 const esc=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 return'<svg class="command-kpi__spark" viewBox="0 0 64 31" role="img" aria-label="'+esc(say)+'"><title>'+esc(say)+'</title>'+
 '<path class="line" d="'+d+'"/><circle cx="'+last[0]+'" cy="'+last[1]+'" r="2"/></svg>';
@@ -8106,7 +8149,7 @@ const nm=it.p?it.p.name:''; let rest=it.t; if(nm && rest.indexOf(nm)===0) rest=r
 const patient=nm||it.t; const issue=nm?rest:'';
 const parts=String(it.s||'').split(' \u00b7 ');
 const secHTML=parts.length>1 ?`<strong>${bcEsc(parts[0])}</strong> \u00b7 ${bcEsc(parts.slice(1).join(' \u00b7 '))}`: bcEsc(it.s||'');
-return`<div class="attn-item${i===0?' primary':''}" data-pid="${it.p?it.p.id:''}" data-room="${it.room||''}" data-intake="${bcEsc(it.intakeId||'')}" data-key="${bcEsc(it.key)}" style="--accent:${accent};animation-delay:${i*40}ms"><div class="copy"><div class="primary-line"><span class="patient">${bcEsc(patient)}</span>${issue?`<span class="issue">${bcEsc(issue)}</span>`:''}</div><div class="secondary">${secHTML}</div></div>${sev==='red'?`<div class="overdue-badge" role="status" aria-label="Overdue"><span class="overdue-icon" aria-hidden="true">!</span><span class="overdue-text">OVERDUE</span></div>`:sev==='orange'?`<div class="high-badge" role="status" aria-label="High priority"><span class="high-icon" aria-hidden="true">!</span><span class="high-text">HIGH</span></div>`:sev==='blue'?`<div class="review-badge" role="status" aria-label="Diagnostics ready for review"><span class="review-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5 2.5h6"/><path d="M6 2.5v3.1L3.8 10a2.4 2.4 0 0 0 2.1 3.5h4.2a2.4 2.4 0 0 0 2.1-3.5L10 5.6V2.5"/><path d="M5 9h6"/></svg></span><span class="review-text">REVIEW</span></div>`:sev==='green'?`<div class="ready-badge" role="status" aria-label="Ready"><span class="ready-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8.2 6.4 11.5 13 4.8"/></svg></span><span class="ready-text">READY</span></div>`:sev==='warn'?`<div class="room-open-badge" role="status" aria-label="Room open"><span class="room-open-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.5 13.5V2.5h7v11"/><path d="M10.5 3.5 7 4.5v8l3.5 1"/><circle cx="8.7" cy="8.7" r="0.45" fill="currentColor" stroke="none"/><path d="M2.5 13.5h11"/></svg></span><span class="room-open-text">OPEN</span></div>`:sev==='yellow'?`<div class="watch-badge" role="status" aria-label="Watch"><span class="watch-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M1.8 8s2.3-4 6.2-4 6.2 4 6.2 4-2.3 4-6.2 4S1.8 8 1.8 8Z"/><circle cx="8" cy="8" r="1.8"/></svg></span><span class="watch-text">WATCH</span></div>`:`<div class="severity">${SEV_LABEL[sev]||''}</div>`}<div class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div><button class="attn-clear" title="Clear this alert" aria-label="Clear alert: ${bcEsc(patient)}${issue?' '+bcEsc(issue):''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+return`<div class="attn-item${i===0?' primary':''}" data-pid="${it.p?it.p.id:''}" data-room="${it.room||''}" data-intake="${bcEsc(it.intakeId||'')}" data-key="${bcEsc(it.key)}" style="--accent:${accent};animation-delay:${i*40}ms"><div class="copy"><div class="primary-line"><span class="patient">${bcEsc(patient)}</span>${issue?`<span class="issue">${bcEsc(issue)}</span>`:''}</div><div class="secondary">${secHTML}</div></div>${sev==='red'?`<div class="overdue-badge" role="status" aria-label="Overdue"><span class="overdue-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5.5v8.5"/><path d="M12 18.6v.01"/></svg></span><span class="overdue-text">OVERDUE</span></div>`:sev==='orange'?`<div class="high-badge" role="status" aria-label="High priority"><span class="high-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5.5v8.5"/><path d="M12 18.6v.01"/></svg></span><span class="high-text">HIGH</span></div>`:sev==='blue'?`<div class="review-badge" role="status" aria-label="Diagnostics ready for review"><span class="review-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7.5 3.75h9"/><path d="M9 3.75v4.65L5.7 15a3.6 3.6 0 0 0 3.15 5.25h6.3a3.6 3.6 0 0 0 3.15 -5.25L15 8.4V3.75"/><path d="M7.5 13.5h9"/></svg></span><span class="review-text">REVIEW</span></div>`:sev==='green'?`<div class="ready-badge" role="status" aria-label="Ready"><span class="ready-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.3 9.6 17.25 19.5 7.2"/></svg></span><span class="ready-text">READY</span></div>`:sev==='warn'?`<div class="room-open-badge" role="status" aria-label="Room open"><span class="room-open-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5.25 20.25V3.75h10.5v16.5"/><path d="M15.75 5.25 10.5 6.75v12l5.25 1.5"/><circle cx="13.05" cy="13.05" r="0.68" fill="currentColor" stroke="none"/><path d="M3.75 20.25h16.5"/></svg></span><span class="room-open-text">OPEN</span></div>`:sev==='yellow'?`<div class="watch-badge" role="status" aria-label="Watch"><span class="watch-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2.7 12s3.45 -6 9.3 -6 9.3 6 9.3 6 -3.45 6 -9.3 6S2.7 12 2.7 12Z"/><circle cx="12" cy="12" r="2.7"/></svg></span><span class="watch-text">WATCH</span></div>`:`<div class="severity">${SEV_LABEL[sev]||''}</div>`}<div class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div><button class="attn-clear" title="Clear this alert" aria-label="Clear alert: ${bcEsc(patient)}${issue?' '+bcEsc(issue):''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
 }).join('');
 el.querySelectorAll('.attn-item').forEach(n=>n.onclick=()=>{ if(n.dataset.intake) openIntakeReview(n.dataset.intake); else if(n.dataset.pid) openDrawer(n.dataset.pid); else if(n.dataset.room) switchView('rooms'); });
 el.querySelectorAll('.attn-clear').forEach(btn=>btn.onclick=(e)=>{ e.stopPropagation(); dismissAlert(btn.closest('.attn-item').dataset.key); });
@@ -8202,9 +8245,9 @@ const e=store[id];
 if(!e){ store[id]={base:avg,ts:now}; changed=true; out[id]={cls:'',text:'—'}; return; }
 const delta=avg-e.base;
 if(now-e.ts>WD_TREND_WINDOW){ store[id]={base:avg,ts:now}; changed=true; }
-out[id]= delta>=1 ? {cls:'up',text:'↑ '+delta+'m'}
-: delta<=-1 ? {cls:'down',text:'↓ '+Math.abs(delta)+'m'}
-: {cls:'',text:'—'};
+out[id]= delta>=1 ? {cls:'up',text:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>'+pvxDur(delta),say:'Average wait up '+pvxSpoken(delta)+' in the last '+Math.round(WD_TREND_WINDOW/60000)+' minutes'}
+: delta<=-1 ? {cls:'down',text:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg>'+pvxDur(-delta),say:'Average wait down '+pvxSpoken(-delta)+' in the last '+Math.round(WD_TREND_WINDOW/60000)+' minutes'}
+: {cls:'',text:'—',say:'Average wait unchanged in the last '+Math.round(WD_TREND_WINDOW/60000)+' minutes'};
 });
 if(changed){ try{localStorage.setItem(WD_TREND_KEY,JSON.stringify(store)); }catch(e){} }
 return out;
@@ -8290,12 +8333,12 @@ return`<div class="wd-row ${x.load===0?'is-idle':''}" data-doctor="${x.d.id}" ti
         </div>
       </div>
       <div class="wd-metrics">
-        <span class="wd-trend ${wdTrends[x.d.id].cls}">${wdTrends[x.d.id].text}</span>
+        <span class="wd-trend ${wdTrends[x.d.id].cls}" ${wdTrends[x.d.id].say?'role="img" aria-label="'+wdTrends[x.d.id].say+'"':'aria-hidden="true"'}>${wdTrends[x.d.id].text}</span>
         <span class="wd-wait-stack">
           <span class="wd-wait ${waitCls}">${has?fmtWait(x.avg):'—'}</span>
           <span class="wd-wait-label">Avg wait</span>
         </span>
-        <span class="wd-action" aria-hidden="true">›</span>
+        <span class="wd-action" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></span>
       </div>
     </div>`;
 }).join('') :`<div class="empty-mini"><div class="ico">${EMPTY_ICON}</div><b>No doctors on service</b></div>`;
@@ -8407,7 +8450,7 @@ onSelect: id => { filters.liaison = (id==='all'? null : id); renderFilterBar(); 
 }
 
 function renderTable(){
-const rows=filtered().filter(isActive);
+const rows=filtered().filter(isActive).sort(pvxByUrgency);
 const rc=document.getElementById('resCount'); if(rc) rc.textContent=rows.length+' Patients';
 const body=document.getElementById('tableBody');
 document.getElementById('tableEmpty').classList.toggle('hidden',rows.length>0);
@@ -8421,7 +8464,7 @@ body.innerHTML=rows.map(p=>{
 const w=waitMinutes(p);const wc=w>120?'crit':w>45?'warn':'';
 return`<tr data-pid="${p.id}">
       <td><div class="pt-cell">${mono(p,'patient-medallion patient-medallion--compact')}
-        <div class="nm"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)}">${bcEsc(p.name)} ${bcEsc(p.last)}</button>${resusBadge(p)}${recBadge(p)}${msgBadge(p)}${typeof fgInline==='function'?fgInline(p):''}</b><span>${bcEsc(p.species)} · ${formatPatientAge(p)}</span></div></div></td>
+        <div class="nm"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)}">${bcEsc(p.name)} ${bcEsc(p.last)}</button>${resusBadge(p)}${recBadge(p)}${msgBadge(p)}${typeof fgInline==='function'?fgInline(p):''}</b><span>${pvxDot(bcEsc(p.species),formatPatientAge(p))}</span></div></div></td>
       <td><div class="reason" title="${bcEsc((p.reasonProblems&&p.reasonProblems.length)?problemsToString(p.reasonProblems):(p.reason||''))}">${bcEsc(compactProblems(p))}</div></td>
       <td>${p.doctor==='unassigned'?'<span class="muted">Unassigned</span>':`<span class="doctag">${docAv(p.doctor)}${doc(p.doctor).name}</span>`}</td>
       <td><span class="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${p.room}</span></td>
@@ -8447,9 +8490,9 @@ return;
 }
 board.classList.remove('board-empty');
 board.innerHTML=FLOW_COLS.map(s=>{
-const list=filtered().filter(p=>p.status===s);
+const list=filtered().filter(p=>p.status===s).sort(pvxByUrgency);
 const cards=list.map(p=>cardHTML(p)).join('') ||
-`<div class="empty-mini empty-mini--stage"><div class="ico">${EMPTY_ICON}</div><b>${COL_EMPTY[s]||'Nothing here'}</b></div>`;
+`<div class="empty-mini empty-mini--stage"><div class="ico">${EMPTY_ICON}</div><b>${(typeof searchQ!=='undefined'&&String(searchQ).trim())?'No matches here':(COL_EMPTY[s]||'Nothing here')}</b></div>`;
 return`<div class="col" data-status="${s}">
       <div class="col-head"><span class="cd" style="background:${STATUSES[s].color}"></span><h4>${s}</h4><span class="cc">${list.length}</span></div>
       <div class="col-body" data-status="${s}">${cards}</div>
@@ -8518,7 +8561,7 @@ if(newStatus==='Ultrasound'&& !p.ultrasound){
 p.ultrasound = { study:'Abdominal Ultrasound', clinicalQuestion:'', status:'incomplete', requestStatus:'incomplete', requestedAt:null, createdAt:at };
 }
 const done = ['Diagnostics','Ultrasound','Procedure'].includes(old) ?`${old} completed`:`Moved to ${newStatus}`;
-notify(done,`${bcEsc(p.name)} · now in ${p.room}`, {icon:'move', color:STATUSES[newStatus].color});
+notify(done,`${bcEsc(p.name)} · in ${p.room}`, {icon:'move', color:STATUSES[newStatus].color});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 
 if(newStatus==='Ultrasound'&& (!p.ultrasound || p.ultrasound.status!=='requested')){
@@ -8574,13 +8617,13 @@ modal.innerHTML =
 '<div class="us-head"><div><div class="us-h-t" id="usHT">Ultrasound Request</div>'
 +'<div class="us-h-name" id="usHN">'+bcEsc((p.name+' '+(p.last||'')).trim())+'</div>'
 +'<div class="us-h-sub">'+bcEsc(sub)+'</div></div>'
-+'<button class="us-x" id="usX" type="button" aria-label="Close">&times;</button></div>'
++'<button class="us-x" id="usX" type="button" aria-label="Close" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'
 +'<div class="us-body">'
 +'<div class="us-sect"><div class="us-lab">Study</div><div class="us-static">Abdominal Ultrasound</div></div>'
-+'<div class="us-sect"><label class="us-lab" for="usCQ">Clinical Question<span class="req" aria-hidden="true">*</span></label>'
++'<div class="us-sect"><label class="us-lab" for="usCQ">Clinical question<span class="req" aria-hidden="true">*</span></label>'
 +'<textarea class="us-input" id="usCQ" required aria-required="true" placeholder="What do you want Internal Medicine to evaluate?">'+bcEsc(u.clinicalQuestion||'')+'</textarea></div>'
-+'<div class="us-sect"><div class="us-lab">Relevant History</div>'+hist+'</div>'
-+'<div class="us-sect"><label class="us-lab" for="usDx">Relevant Diagnostics</label>'+dxAuto
++'<div class="us-sect"><div class="us-lab">Relevant history</div>'+hist+'</div>'
++'<div class="us-sect"><label class="us-lab" for="usDx">Relevant diagnostics</label>'+dxAuto
 +'<textarea class="us-input" id="usDx" placeholder="Add pertinent lab results, imaging findings, or other diagnostic information…">'+bcEsc(u.diagnosticsNotes||'')+'</textarea></div>'
 +'</div>'
 +'<div class="us-foot"><button class="us-send" id="usSend" type="button">Send to Ultrasound</button></div>';
@@ -9070,7 +9113,7 @@ if(opts.fancyConfirm){
 
 box.classList.add('confirm-fancy');
 ok.innerHTML='<span class="success-ring" aria-hidden="true"></span>'
-+'<span class="confirm-content"><svg class="confirm-icon" viewBox="0 0 18 18" aria-hidden="true"><path d="M3.7 9.2 7.1 12.4 14.1 5.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="confirm-label"></span></span>'
++'<span class="confirm-content"><svg class="confirm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.933 12.267 9.467 16.533 18.8 7.467" fill="none" stroke="currentColor" stroke-width="2.533" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="confirm-label"></span></span>'
 +'<span class="shortcut" aria-hidden="true">↵</span>';
 ok.querySelector('.confirm-label').textContent=okLabel;
 const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -9101,7 +9144,7 @@ const occ=PATIENTS.filter(p=>isActive(p)).length;
 document.getElementById('roomLive').textContent=`${PATIENTS.filter(p=>isActive(p)&&p.room!=='Lobby').length} rooms in use`;
 const grid=document.getElementById('roomGrid');
 const cards=ROOMS.map(rm=>{
-const occupants=PATIENTS.filter(p=>isActive(p)&&p.room===rm);
+const occupants=PATIENTS.filter(p=>isActive(p)&&p.room===rm).sort(pvxByUrgency);
 const spec=ROOM_SPEC[rm];
 if(rm==='Lobby'){
 const waiting=occupants.length;
@@ -9122,7 +9165,7 @@ return`<div class="room" data-room="${rm}" data-room-name="${rm}">
 }
 const rmin=roomMinutes(p); const rcls=rmin>120?'crit':rmin>60?'warn':'';
 return`<div class="room occupied r-drag" draggable="true" data-pid="${p.id}" data-room-name="${rm}"> <div class="room-accent" style="background:${STATUSES[p.status].color}"></div> <div class="r-top"><div><div class="r-name">${rm}</div>${spec?`<div class="r-spec">${spec}</div>`:'<div class="r-spec">&nbsp;</div>'}</div> <span class="r-state busy">In use</span><button type="button" class="pvx-move" aria-haspopup="menu" aria-expanded="false" data-pid="${p.id}" data-kind="room" aria-label="Move ${bcEsc(p.name)} to another room" title="Move to another room">${PVX_MOVE_ICON}</button></div>
-      <div class="r-pt">${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)} · ${rm}">${bcEsc(p.name)} ${bcEsc(p.last)}</button></b><span>${bcEsc(p.species)} · ${bcEsc(compactProblems(p).slice(0,26))}${compactProblems(p).length>26?'…':''}</span></div></div>
+      <div class="r-pt">${mono(p,'patient-medallion patient-medallion--compact')}<div class="info"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)} · ${rm}">${bcEsc(p.name)} ${bcEsc(p.last)}</button></b><span>${pvxDot(bcEsc(p.species),bcEsc(compactProblems(p).slice(0,26))+(compactProblems(p).length>26?'…':''))}</span></div></div>
       ${typeof fgRoom==='function'?fgRoom(p):''}
       <div class="r-foot"><div class="dctr">${p.doctor==='unassigned'?'<span class="muted">No doctor</span>':docAv(p.doctor)+doc(p.doctor).name}</div>
         <div class="r-right"><span class="r-timer ${rcls}" title="Time in ${rm}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${fmtWait(rmin)}</span>${statusPill(p.status)}</div></div>
@@ -9199,7 +9242,7 @@ e.preventDefault();
 room.classList.remove('room-drop','room-nodrop'); room._pvxN=0;
 const p=PATIENTS.find(x=>x.id===roomDragId);
 if(!p || p.room===target) return;
-if(!canDropRoom(p,target)){ toast('Room already occupied'); return; }
+if(!canDropRoom(p,target)){ toast('That room is in use — choose another room'); return; }
 if(target==='Comfort Room'){ showConfirm('Move patient to Comfort Room?','Move patient',()=>moveRoom(p,target)); }
 else moveRoom(p,target);
 });
@@ -9268,7 +9311,7 @@ return`<div class="loc-pt r-drag" draggable="true" data-pid="${p.id}">
       ${mono(p,'patient-medallion patient-medallion--compact')}
       <div class="lp-main">
         <div class="lp-name">${bcEsc(p.name)} ${bcEsc(p.last)}</div>
-        <div class="lp-reason">${bcEsc(p.species)} · ${bcEsc(p.reason)}</div>
+        <div class="lp-reason">${pvxDot(bcEsc(p.species),bcEsc(p.reason))}</div>
         <div class="lp-tags"><span class="prio prio-${p.prio}" style="width:22px;height:22px;font-size:0.625rem">${PRIO[p.prio].l}</span>${statusPill(p.status)}
           ${p.doctor==='unassigned'?'<span class="muted" style="font-size:0.75rem">No doctor assigned</span>':`<span class="lp-doc">${docAv(p.doctor)}${doc(p.doctor).name}</span>`}</div>
         <div class="lp-meta"><span>${loc}: <b>${fmtWait(inLoc)}</b></span><span>Hospital: <b>${fmtWait(total)}</b></span></div>
@@ -9571,7 +9614,7 @@ const assessFields=TRIAGE_ASSESS.map(c=>{ const cur=a[c.key]==null?'':String(a[c
 document.getElementById('triEditBody').innerHTML=`
     <div class="ap-sect"><h4>Vitals</h4><div class="ap-grid c2">${vitalFields}</div></div>
     <div class="ap-sect"><h4>Assessment</h4><div class="ap-grid c2">${assessFields}</div></div>
-    <div class="ap-sect"><h4>Chief Complaint</h4>
+    <div class="ap-sect"><h4>Chief complaint</h4>
       <div class="ap-field"><input class="ap-input" id="triEditChief" value="${esc((t.chief||[]).join(', '))}" placeholder="e.g. Vomiting, Lethargy"></div></div>
     <div class="ap-sect"><h4>History</h4>
       <div class="ap-field"><input class="ap-input" id="triEditHistory" value="${esc(t.history)}" placeholder="Owner history"></div></div>
@@ -9693,13 +9736,14 @@ document.getElementById('triEdit').onclick=(e)=>{ e.stopPropagation(); openTriag
 const im=document.getElementById('intakeCardMount');
 const kk=p.intake, ist=kk?kk.status:'not_started';
 const isub = (kk && ist!=='not_started') ? summarizeIntake(kk) :'Owner history • Medications • Symptoms • Notes';
-im.innerHTML=`<div class="triage-card" id="intakeCard">
+im.innerHTML=`<div class="triage-card" id="intakeCard" role="button" tabindex="0" aria-label="Triage intake — ${bcEsc(TRIAGE_STATUS[ist]||'')}. ${bcEsc(String(isub).replace(/ • /g,', '))}">
     <div class="tc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M10 12a4 4 0 0 0 8 0v-1"/><circle cx="18" cy="9" r="2"/></svg></div>
     <div class="tc-main"><div class="tc-title">Triage intake</div><div class="tc-sub">${isub}</div>
       <span class="tc-status tc-${ist}">${TRIAGE_STATUS[ist]}</span></div>
     <div class="tc-chev"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
   </div>`;
 document.getElementById('intakeCard').onclick=()=>openIntake(p);
+document.getElementById('intakeCard').onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openIntake(p); } };   /* PVX-N352 */
 try{ renderMessages(p); }catch(e){}
 
 document.getElementById('dAdv').innerHTML=STAGE_ORDER.filter(s=>s!==p.status && s!=='Admitted'&& s!=='Discharged').map(s=>
@@ -9793,22 +9837,22 @@ return`<div class="tq-row" data-qkey="${q.key}">
       </div>${note}</div>`;
 }).join('');
 document.getElementById('intakeBody').innerHTML=`
-    <div class="ik-sect"><h4>Presenting Complaint</h4>
+    <div class="ik-sect"><h4>Presenting complaint</h4>
       <div class="ik-grid2">
-        <div class="ik-field"><label>Presenting Complaint</label>${inp('complaint','e.g. Vomiting, lethargy')}</div>
-        <div class="ik-field"><label>Duration of Signs</label>${inp('duration','e.g. 2 days')}</div>
+        <div class="ik-field"><label>Presenting complaint</label>${inp('complaint','e.g. Vomiting, lethargy')}</div>
+        <div class="ik-field"><label>Duration of signs</label>${inp('duration','e.g. 2 days')}</div>
       </div>
-      <div class="ik-field"><label>History from Owner</label>${ta('history','What did the owner observe? Onset, changes, context…')}</div>
+      <div class="ik-field"><label>History from owner</label>${ta('history','What did the owner observe? Onset, changes, context…')}</div>
     </div>
-    <div class="ik-sect"><h4>Medical History</h4>
-      <div class="ik-field"><label>Current Medications</label>${inp('medications','List medications, or leave blank')}</div>
+    <div class="ik-sect"><h4>Medical history</h4>
+      <div class="ik-field"><label>Current medications</label>${inp('medications','List medications, or leave blank')}</div>
       <div class="ik-grid2">
-        <div class="ik-field"><label>Known Allergies</label>${inp('allergies','e.g. None known')}</div>
-        <div class="ik-field"><label>Previous Medical Conditions</label>${inp('conditions','e.g. Prior pancreatitis')}</div>
+        <div class="ik-field"><label>Known allergies</label>${inp('allergies','e.g. None known')}</div>
+        <div class="ik-field"><label>Previous medical conditions</label>${inp('conditions','e.g. Prior pancreatitis')}</div>
       </div>
     </div>
-    <div class="ik-sect"><h4>Clinical Questions</h4>${qRows}</div>
-    <div class="ik-sect"><h4>Additional Notes</h4>
+    <div class="ik-sect"><h4>Clinical questions</h4>${qRows}</div>
+    <div class="ik-sect"><h4>Additional notes</h4>
       <div class="ik-field">${ta('notes','Anything else the care team should know…','tall')}</div>
     </div>`;
 
@@ -11100,6 +11144,7 @@ if(/^\d{4}-\d{1,2}-\d{1,2}/.test(s)){ const a=calculateAgeFromDOB(s); if(a.displ
 return s.replace(/\s*[,·•]\s*/g,' ').replace(/\s+/g,' ').trim();
 }
  
+function pvxDot(){ return [].slice.call(arguments).map(function(x){ return String(x==null?'':x).trim(); }).filter(Boolean).join(' · '); }   /* PVX-N353 */
 function formatPatientAge(p){
 if(!p) return'';
 if(p.birthday && !p.ageEstimated){ const a=calculateAgeFromDOB(p.birthday); if(a.display) return a.display; }
@@ -11172,15 +11217,15 @@ apFormatFields();
 const val=id=>{const el=document.getElementById(id); return el?el.value.trim():'';};
 const name=val('apName');
 if(!name){ toast('Enter a patient name'); return; }
-if(!val('apSpecies')){ toast('Select a species'); return; }
+if(!val('apSpecies')){ toast('Choose a species'); return; }
 if(!val('apBreed')){ toast('Enter a breed'); return; }
-if(!val('apAge')){ toast('Enter a DOB or approximate age'); return; }
-if(!val('apSex')){ toast('Enter sex'); return; }
+if(!val('apAge')){ toast('Enter a date of birth or an approximate age'); return; }
+if(!val('apSex')){ toast('Choose the sex'); return; }
 if(!val('apOwner')){ toast('Enter the owner name'); return; }
 if(val('apPhone').replace(/\D/g,'').length<10){ toast('Enter a full phone number'); return; }
 { const rin=document.getElementById('apReason'); if(rin && rin.value.trim()){ splitComplaints(rin.value.trim()).forEach(seg=>apProblems.push(parseProblem(seg))); rin.value=''; } }
 if(!apProblems.length){ toast('Enter a reason for visit'); return; }
-if(apPrio==null){ toast('Select a medical priority (P1 / P2 / P3)'); return; }
+if(apPrio==null){ toast('Choose a priority: P1, P2 or P3'); return; }
 const id=apReviewIntakeId;
 const r=FlowIntakeStore.getIntake(id)||{};
 const parts=name.split(/\s+/); const first=parts.shift(); const last=parts.join(' ');
@@ -11545,8 +11590,8 @@ form ='<div class="alert-field" style="color:var(--ink-400);font-size:0.8125rem;
 } else {
 form ='<div class="alert-field"><label>Public headline</label><input type="text" id="alertHeadline" value="'+bcEsc((pre&&pre.headline)||t.headline||"")+'" /></div>'
 +'<div class="alert-field"><label>Public message</label><textarea id="alertMessage">'+bcEsc((pre&&pre.message)||t.message||"")+'</textarea></div>'
-+'<div class="alert-field"><label>Internal staff note (never shown publicly)</label><textarea id="alertNote">'+bcEsc((pre&&pre.internal_note)||"")+'</textarea></div>'
-+'<div class="alert-field"><label>Expected review time (optional)</label><input type="datetime-local" id="alertReview" value="'+((pre&&pre.review_at)?toLocalInput(pre.review_at):"")+'" /></div>'
++'<div class="alert-field"><label>Internal staff note · never shown publicly</label><textarea id="alertNote">'+bcEsc((pre&&pre.internal_note)||"")+'</textarea></div>'
++'<div class="alert-field"><label>Expected review time · optional</label><input type="datetime-local" id="alertReview" value="'+((pre&&pre.review_at)?toLocalInput(pre.review_at):"")+'" /></div>'
 +'<div class="alert-toggles"><label class="alert-toggle"><input type="checkbox" id="alertShowClient" '+((!pre||pre.show_client!==false)?"checked":"")+' /> Show on Client Display</label>'
 +'<label class="alert-toggle"><input type="checkbox" id="alertShowStaff" '+((!pre||pre.show_staff!==false)?"checked":"")+' /> Show on staff pages</label></div>';
 }
@@ -11599,7 +11644,7 @@ if(DB && Backend.mode==="staff"){
 try{
 await DB.collection("alerts").doc(TENANT_ID).set(payload);
 currentAlert = payload;
-}catch(e){ toast("Could not activate alert — check connection"); return; }
+}catch(e){ toast("Couldn’t activate the alert — check the connection and try again"); return; }
 } else { currentAlert = payload; }
 renderAlert();
 closeAlertModal();
@@ -11691,7 +11736,7 @@ mount.innerHTML =
 +'<div class="mt-main"><div class="mt-code">Check-in code<b>'+bcEsc(p.trackCode||'—')+'</b></div>'
 +'<button class="mt-copy" id="msgCopyLink">Copy tracker link</button></div></div>'
 +'<div class="msg-thread" id="msgThread"><div class="msg-empty">Loading…</div></div>'
-+'<div class="msg-compose"><textarea id="msgBox" rows="1" placeholder="Message"></textarea>'
++'<div class="msg-compose"><textarea id="msgBox" rows="1" placeholder="Message" aria-label="Message to the family" enterkeyhint="send" autocapitalize="sentences"></textarea>'
 +'<button class="msg-send" id="msgSendBtn" disabled aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></svg></button></div>'
 +'</div></div>';
 const commHead=document.getElementById('commHead'), commBody=document.getElementById('commBody');
@@ -11703,7 +11748,7 @@ if(_commOpen && _unreadMsgs.has(p.id)){ _unreadMsgs.delete(p.id); updateCommMeta
 };
 updateCommMeta(p);
 const copyBtn=document.getElementById('msgCopyLink');
-copyBtn.onclick=function(){ try{ navigator.clipboard.writeText(url); toast('Tracker link copied'); }catch(e){ toast('Link: '+url); } };
+copyBtn.textContent=pvxCanShare()?'Share tracker link…':'Copy tracker link'; copyBtn.onclick=function(){ pvxShareTracker(url, (p.name||'')+(p.last?' '+p.last:'')); };
 const box=document.getElementById('msgBox'), sbtn=document.getElementById('msgSendBtn');
 box.addEventListener('input',function(){ box.style.height='auto'; box.style.height=Math.min(box.scrollHeight,110)+'px'; sbtn.disabled=!box.value.trim(); });
 box.addEventListener('keydown',function(e){ if(e.key==='Enter'&& !e.shiftKey){ e.preventDefault(); if(box.value.trim()) sendStaffMsg(p, box.value.trim()); } });
@@ -11732,7 +11777,7 @@ if(DB && Backend.mode==='staff'){
 if(!p.publicToken){ p.publicToken=genToken(); if(!p.trackCode) p.trackCode=genTrackCode(); persist(); }
 try{
 await DB.collection('messages').doc(p.publicToken).collection('items').add({ tenant_id:TENANT_ID, visit_id:String(p.id), sender:'staff', body:body, staff_name:CURRENT_USER, created_at:new Date().toISOString() });
-}catch(e){ toast('Could not send message'); if(sbtn) sbtn.disabled=false; return; }
+}catch(e){ toast('Couldn’t send the message — check the connection and try again'); if(sbtn) sbtn.disabled=false; return; }
 }
 loadThread(p);
 }
@@ -11742,6 +11787,7 @@ opsMenuClose();
 if(op==='new') setTimeout(openAddPatient,120);
 else if(op==='shift') setTimeout(openShiftSetup,120);
 else if(op==='alert') setTimeout(openAlertModal,120);
+else if(op==='print') setTimeout(function(){ if(window.pvxPrintView) pvxPrintView(); },160);
 }
 
 
@@ -11806,7 +11852,7 @@ if(DB && Backend.mode==='staff'){
 try{
 await DB.collection('shifts').doc(TENANT_ID).set(
 { tenant_id: TENANT_ID, assignments: draft, updated_at: new Date().toISOString() }, { merge:true });
-}catch(e){ if(btn) btn.disabled=false; toast('Could not save shift assignments — check connection'); return; }
+}catch(e){ if(btn) btn.disabled=false; toast('Couldn’t save the shift assignments — check the connection and try again'); return; }
 }
 shiftAssign = draft;
 applyShiftColors();
@@ -12129,6 +12175,8 @@ try{ renderAll(); }catch(_){}
 if(activePatient===p.id) fillDrawer(p);
 notify('Reverted', nm+' · disposition undone', {icon:'move', color:'var(--accent)'});
 };
+try{ if(window.pvxUndo&&undoBtn){ var __uo=undoBtn.onclick, __e=pvxUndo.push({label:nm+' '+verb, pid:p.id, undo:function(){ if(!t.classList.contains('open')||!undoBtn.isConnected){ notify('Can’t undo',bcEsc(nm)+' '+verb+' · Undo is offered for 5 seconds after',{icon:'info',color:'var(--accent)'}); if(window.pvxSay) pvxSay('Can’t undo: '+nm+' '+verb); return false; } __uo.call(undoBtn); }});
+  undoBtn.onclick=function(){ if(!pvxUndo.undoEntry(__e)) __uo.call(undoBtn); }; } }catch(_){}   /* PVX-N350 */
 _dispUndoTimer=setTimeout(function(){ hideUndo(); }, 5000);
 }
 function hideUndo(){ const t=document.getElementById('undoToast'); if(!t) return; t.classList.remove('open');
@@ -12209,14 +12257,14 @@ if(!q.trim()){ closeSearch(); return; }
 const all=searchIndex(q);
 if(!all.length){ box.innerHTML=`<div class="sr-inner"><div class="sr-none">No matches for “${bcEsc(q)}”</div></div>`; box.classList.add('open'); positionSearchResults(); searchFlat=[]; return; }
 const ql=q.trim().toLowerCase();
-let kinds=['Patient','Doctor','Liaison','Room'];
-if(/^(room|lobby|comfort)/.test(ql) || ROOMS.some(r=>r.toLowerCase()===ql)) kinds=['Room','Patient','Doctor','Liaison'];
+let kinds=['Filter','Patient','Doctor','Liaison','Room','Help'];
+if(/^(room|lobby|comfort)/.test(ql) || ROOMS.some(r=>r.toLowerCase()===ql)) kinds=['Room','Filter','Patient','Doctor','Liaison','Help'];
 let html=''; searchFlat=[]; let idx=0;
 kinds.forEach(k=>{
 const g=all.filter(r=>r.kind===k).slice(0,4); if(!g.length) return;
 html+=`<div class="sr-group"><div class="sr-label">${k}${g.length>1?'s':''}</div>`;
 g.forEach(r=>{ searchFlat.push(r);
-const av = r.icon ?`<span class="sr-ic" style="background:${r.color}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ATTN_ICONS.room}</svg></span>`
+const av = r.icon ?`<span class="sr-ic" style="background:${r.color}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${r.svg||ATTN_ICONS.room}</svg></span>`
 :`<span class="sr-ic" style="background:${r.color}">${r.initials}</span>`;
 html+=`<div class="sr-item" data-i="${idx}">${av}<div class="sr-main"><div class="sr-t">${bcEsc(r.title)}</div><div class="sr-s">${bcEsc(r.sub)}</div></div><div class="sr-kind">${r.kind}</div></div>`; idx++;
 });
@@ -13204,7 +13252,7 @@ root.PravixActivity={day,bounds,match,rows,summary,aliases,positionRole};
 if(typeof module!=='undefined')module.exports=root.PravixActivity;
 })(typeof window==='undefined'?globalThis:window);
 </script><script>(function(){
-const X=window.PV3,A=PravixActivity;let roster=X.roster,rosterStatus='Bundled Directory snapshot — shared updates not connected',stopRoster=null,stopHistory=null,sharedHistory=[],historyLive=false;
+const X=window.PV3,A=PravixActivity;let roster=X.roster,rosterStatus='Showing the saved Directory list — live updates aren’t connected',stopRoster=null,stopHistory=null,sharedHistory=[],historyLive=false;
 const q=new URLSearchParams(location.search);let staffFilter=q.get('staff')||'',period=q.get('period')||'active',roleFilter=q.get('role')||'';
 if(!['active','today','week','month','all'].includes(period))period='active';
 CT_ROLES.splice(2,0,{id:'intern',label:'Intern',missing:'No intern assigned'});CT_KIND_LABEL.directory='Directory staff';CT_KIND_LABEL.intern='Intern';
@@ -13215,12 +13263,12 @@ function currentStaff(p,r){return ctCurrent(p,r)[0]?.staffId||'';}
 function canAssign(p){return (typeof Backend!=='undefined'&&Backend.mode==='staff')||(q.get('fixtures')==='1'&&p?._demo===true);}
 function isSupervisor(e){const title=e.title||'';return e.dept!=='Interns'&&!/coordinator|technician|liaison|assistant|manager|administrat|client/i.test(title)&&/veterinarian|surgeon|internist|neurologist|oncologist|criticalist|\bDVM\b|\bVMD\b/i.test(title);}
 function options(p,r){const chosen=currentStaff(p,r);const entries=roster.filter(e=>e.active!==false&&(r==='intern'?e.dept==='Interns':isSupervisor(e)));return'<option value="">'+(r==='intern'?'No intern assigned':'No supervising doctor assigned')+'</option>'+entries.map(e=>`<option value="${ctEsc(e.staffId)}" ${chosen===e.staffId?'selected':''}>${ctEsc(e.name)} · ${ctEsc(e.dept)}</option>`).join('')+(chosen&&!entries.some(e=>e.staffId===chosen)?`<option value="${ctEsc(chosen)}" selected>Current: ${ctEsc(ctCurrent(p,r)[0].staffName)} (not in active roster)</option>`:'');}
-function mount(p){let el=document.getElementById('pv-intern');if(!el){el=document.createElement('section');el.id='pv-intern';el.className='pv-assignment';document.getElementById('careTeamMount')?.before(el);}const disabled=!canAssign(p);el.innerHTML=`<label for="pv-intern-select">Intern</label><select class="pv-input" id="pv-intern-select" ${disabled?'disabled':''}>${options(p,'intern')}</select><label for="pv-supervisor-select">Supervising doctor</label><select class="pv-input" id="pv-supervisor-select" ${disabled?'disabled':''}>${options(p,'supervising')}</select><p class="pv-note">${ctEsc(rosterStatus)}. Supervisor is assigned explicitly, not inferred from manager or shift.</p>${currentStaff(p,'intern')&&!currentStaff(p,'supervising')?'<p role="status">Supervisor assignment needed for this intern’s case.</p>':''}<button class="pv-btn" type="button" id="pv-history">View assignment history / propose handoff</button>`;el.querySelector('#pv-intern-select').onchange=e=>assign(p,'intern',e.target.value);el.querySelector('#pv-supervisor-select').onchange=e=>assign(p,'supervising',e.target.value);el.querySelector('#pv-history').onclick=()=>openCareTeam(p.id);}
+function mount(p){let el=document.getElementById('pv-intern');if(!el){el=document.createElement('section');el.id='pv-intern';el.className='pv-assignment';document.getElementById('careTeamMount')?.before(el);}const disabled=!canAssign(p);el.innerHTML=`<label for="pv-intern-select">Intern</label><select class="pv-input" id="pv-intern-select" ${disabled?'disabled':''}>${options(p,'intern')}</select><label for="pv-supervisor-select">Supervising doctor</label><select class="pv-input" id="pv-supervisor-select" ${disabled?'disabled':''}>${options(p,'supervising')}</select><p class="pv-note">${ctEsc(rosterStatus)}. Choose the supervisor here; it isn’t taken from the manager or the shift.</p>${currentStaff(p,'intern')&&!currentStaff(p,'supervising')?'<p role="status">Supervisor assignment needed for this intern’s case.</p>':''}<button class="pv-btn" type="button" id="pv-history">See history or hand off…</button>`;el.querySelector('#pv-intern-select').onchange=e=>assign(p,'intern',e.target.value);el.querySelector('#pv-supervisor-select').onchange=e=>assign(p,'supervising',e.target.value);el.querySelector('#pv-history').onclick=()=>openCareTeam(p.id);}
 function assign(p,r,id){if(!canAssign(p))return;if(id===currentStaff(p,r))return;if(!id){ctCurrent(p,r).slice().forEach(a=>ctEnd(p,a.id));mount(p);return;}const e=roster.find(e=>e.staffId===id&&e.active!==false);if(!e)return;if(r==='intern'&&e.dept!=='Interns')return;if(r==='supervising'&&!isSupervisor(e))return;ctAssign(p,r,ctStaff(id),{});}
 const oldFill=fillDrawer;fillDrawer=function(p){oldFill(p);mount(p);};
 
 const oldTouch=ctTouch;ctTouch=function(a){oldTouch(a);if(typeof AUTH!=='undefined'&&AUTH?.currentUser)a.actorUid=AUTH.currentUser.uid;};
-const oldAssign=ctAssign;ctAssign=function(p,r,s,o){if(r==='intern'&&!roster.some(e=>e.staffId===s.id&&e.dept==='Interns'&&e.active!==false)){toast('Choose an active intern from Directory.');return null;}const a=oldAssign(p,r,s,o);if(a&&AUTH?.currentUser){a.actorUid=AUTH.currentUser.uid;renderAll();}return a;};
+const oldAssign=ctAssign;ctAssign=function(p,r,s,o){if(r==='intern'&&!roster.some(e=>e.staffId===s.id&&e.dept==='Interns'&&e.active!==false)){toast('Choose an active intern from Directory');return null;}const a=oldAssign(p,r,s,o);if(a&&AUTH?.currentUser){a.actorUid=AUTH.currentUser.uid;renderAll();}return a;};
 
 const oldForm=ctFormHTML;ctFormHTML=function(p,r){let html=oldForm(p,r);if(r==='intern'){html=html.replace(/<select id="ctFormWho"[^>]*>[\s\S]*?<\/select>/,`<select id="ctFormWho">${roster.filter(e=>e.dept==='Interns'&&e.active!==false).map(e=>`<option value="${ctEsc(e.staffId)}">${ctEsc(e.name)}</option>`).join('')}</select>`);}return html;};
 function asVisit(p){return {...mapToDb(p),_demo:!!p._demo};}
@@ -13229,7 +13277,7 @@ const oldFiltered=filtered;filtered=function(){const all=oldFiltered();if(!staff
 const banner=document.createElement('section');banner.className='pv-connect';banner.id='pv-flow-filter';banner.hidden=!staffFilter;(document.querySelector('.subnav')||document.querySelector('.topnav'))?.after(banner);
 function drawFilter(){banner.hidden=!staffFilter;if(!staffFilter)return;const e=selected();const history=e&&historyLive?A.rows(sharedHistory,e,period,roleFilter):[];banner.innerHTML=`<strong>${e?ctEsc(e.name):'Unknown staff profile'} · ${ctEsc(period)} assignments ${roleFilter?'· '+ctEsc(roleFilter):''}</strong><p class="pv-note">Active board filtered by explicit assignment. ${historyLive?'Retained encounter history loaded.':'Historical log unavailable until connected.'} Counts describe assignments, not care intensity.</p><button class="pv-btn" id="pv-clear">Clear staff filter</button><div class="pv-log">${history.map(v=>`<button class="pv-btn" data-visit="${ctEsc(v.id)}">${ctEsc(v.patient_name||'Patient')} · ${ctEsc(v.visit_code||v.id)}</button>`).join('')}</div>`;banner.querySelector('#pv-clear').onclick=()=>{staffFilter='';const u=new URL(location.href);['staff','period','role','patient'].forEach(k=>u.searchParams.delete(k));window.history.replaceState({},'',u);banner.hidden=true;renderAll();};banner.querySelectorAll('[data-visit]').forEach(b=>b.onclick=()=>openEncounter(b.dataset.visit));}
 function openEncounter(id){const existing=PATIENTS.find(p=>String(p.id)===String(id));if(existing){openDrawer(existing.id);return;}const v=sharedHistory.find(v=>String(v.id)===String(id));if(!v)return;let log=document.getElementById('pv-history-detail');if(!log){log=document.createElement('details');log.id='pv-history-detail';log.className='pv-assignment';banner.appendChild(log);}log.open=true;log.innerHTML=`<summary>${ctEsc(v.patient_name||'Patient')} · Historical assignment log</summary><p class="pv-note">Read-only retained encounter. Not added to the active census.</p>`+(v.care_team?.assignments||[]).map(a=>`<p>${ctEsc(a.staff_name)} · ${ctEsc(a.role)} · ${ctEsc(a.status)}<br><small>${ctEsc(a.start_at||'Start unknown')} → ${ctEsc(a.end_at||'No end recorded')} · ${ctEsc(a.updated_by||'Actor unknown')}</small></p>`).join('');}
-if(AUTH)AUTH.onAuthStateChanged(async user=>{if(stopRoster)stopRoster();if(stopHistory)stopHistory();sharedHistory=[];historyLive=false;roster=X.roster;rosterStatus='Bundled Directory snapshot — shared updates not connected';drawFilter();if(!user)return;try{const token=await user.getIdTokenResult();if(AUTH.currentUser?.uid!==user.uid)return;if(token.claims.tenant_id!=='shoreline'){rosterStatus='Shared roster requires Shoreline access';return;}}catch(e){return;}stopRoster=DB.doc('tenants/shoreline/directory/roster').onSnapshot({includeMetadataChanges:true},s=>{if(s.exists){roster=s.data().records;rosterStatus=s.metadata.fromCache?'Cached shared roster — may be stale':'Shared Directory roster connected';}else rosterStatus='Shared roster not initialized; using bundled Directory snapshot';drawFilter();renderAll();if(activePatient){const p=PATIENTS.find(p=>p.id===activePatient);if(p)mount(p);}},()=>{rosterStatus='Shared roster permission/configuration required; using bundled snapshot';if(activePatient){const p=PATIENTS.find(p=>p.id===activePatient);if(p)mount(p);}});if(staffFilter)stopHistory=DB.collection('visits').where('tenant_id','==','shoreline').onSnapshot({includeMetadataChanges:true},s=>{sharedHistory=s.docs.map(d=>({...d.data(),id:d.id}));historyLive=!s.metadata.fromCache;drawFilter();if(q.get('patient'))openEncounter(q.get('patient'));},()=>{historyLive=false;drawFilter();});});
+if(AUTH)AUTH.onAuthStateChanged(async user=>{if(stopRoster)stopRoster();if(stopHistory)stopHistory();sharedHistory=[];historyLive=false;roster=X.roster;rosterStatus='Showing the saved Directory list — live updates aren’t connected';drawFilter();if(!user)return;try{const token=await user.getIdTokenResult();if(AUTH.currentUser?.uid!==user.uid)return;if(token.claims.tenant_id!=='shoreline'){rosterStatus='The shared Directory list needs Shoreline access';return;}}catch(e){return;}stopRoster=DB.doc('tenants/shoreline/directory/roster').onSnapshot({includeMetadataChanges:true},s=>{if(s.exists){roster=s.data().records;rosterStatus=s.metadata.fromCache?'Showing the last saved Directory list — it may be out of date':'Directory list is up to date';}else rosterStatus='Showing the saved Directory list — the shared list isn’t set up yet';drawFilter();renderAll();if(activePatient){const p=PATIENTS.find(p=>p.id===activePatient);if(p)mount(p);}},()=>{rosterStatus='Showing the saved Directory list — the shared list needs access set up';if(activePatient){const p=PATIENTS.find(p=>p.id===activePatient);if(p)mount(p);}});if(staffFilter)stopHistory=DB.collection('visits').where('tenant_id','==','shoreline').onSnapshot({includeMetadataChanges:true},s=>{sharedHistory=s.docs.map(d=>({...d.data(),id:d.id}));historyLive=!s.metadata.fromCache;drawFilter();if(q.get('patient'))openEncounter(q.get('patient'));},()=>{historyLive=false;drawFilter();});});
 drawFilter();window.PVFlow={getRoster:()=>roster,mount,assign,openEncounter};
 })();
 </script><script id="luna-alert-bundled">
@@ -13293,14 +13341,14 @@ try {
 await DB.collection('alerts').doc(TENANT_ID).update({ announcement_request: request });
 } catch {
 button.disabled = false;
-toast('Could not reach the Client Display. Please try again.');
+toast('Couldn’t reach the Client Display — try again');
 return;
 }
 } else if (channel) {
 channel.postMessage(request);
 } else {
 button.disabled = false;
-toast('Client Display connection unavailable.');
+toast('Can’t reach the Client Display — check the connection');
 return;
 }
 closeAlertModal();
@@ -13838,7 +13886,7 @@ function build(){
   bar=actions?actions.closest('.search-bar'):null;
   inner=panel.querySelector('.fv-in');
   window.addEventListener('resize',function(){ place(); if(listening) placeLive(); });
-  if(!ENABLED) return;
+  if(!SR) return;
   window.addEventListener('online',netState); window.addEventListener('offline',netState); setTimeout(netState,0);
   talk=document.createElement('button'); talk.id='fvTalk'; talk.type='button';
   talk.setAttribute('aria-label','Talk to Flow'); talk.title='Click, or hold Space, to talk';
@@ -14276,10 +14324,22 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&panel&&panel.classList.contains('show')){ hide(); }
 },true);
 document.addEventListener('keyup',function(e){ if(e.code==='Space'&&listening&&!tapMode){ e.preventDefault(); stop(); } },true);
+/* PVX-N348 - HIG Playing audio, handling interruptions: when Flow goes to the background, or the window loses focus while Space is held,
+   the microphone closes and nothing half-heard is acted on (before, it stayed open for up to 15 s and then ran what it heard). */
+function interrupted(why){ if(!listening) return; if(why==='blur'&&tapMode) return; sessionId++; stop(); hide(); try{ if(window.pvxSay) pvxSay('Stopped listening'); }catch(e){} }
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') interrupted('hidden'); });
+window.addEventListener('pagehide',function(){ interrupted('hidden'); }); window.addEventListener('blur',function(){ interrupted('blur'); });
+window.__pvxVoiceInterrupted=interrupted;
 document.addEventListener('pointerdown',function(e){ if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&(!talk||(e.target!==talk&&!talk.contains(e.target)))&&!(pending&&pending.steps)) hide(); },true);
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',build); else build();
 window.__flowVoice={understand:understand, findPatients:findPatients, handle:handle, confirm:confirm, stats:stats};
+/* PVX-N349 - HIG Settings: Talk to Flow on or off for this screen, from the + menu */
+function voiceSync(){ if(talk) talk.hidden=!ENABLED; }
+window.pvxVoice={can:function(){ return !!SR&&!LOBBY; }, on:function(){ return !!ENABLED; },
+  set:function(v){ ENABLED=!!v&&!!SR; try{ if(ENABLED) localStorage.removeItem(KEY); else localStorage.setItem(KEY,'off'); }catch(e){}
+    if(!ENABLED&&listening){ sessionId++; stop(); hide(); } voiceSync(); return ENABLED; }};
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){ setTimeout(voiceSync,0); }); else setTimeout(voiceSync,0);
 })();
 </script>
 
@@ -14436,15 +14496,15 @@ var FK={safe:'Safety',hand:'Handling',med:'Medical',iso:'Isolation',own:'Owner'}
 var CAT={safe:['Bites','Muzzle','Dog aggressive','Scratches'],hand:['Fear Free','Hard stick','Sedate','E-collar'],
   med:['MDR1','No hydromorphone','Diabetic','Seizures'],iso:['Parvo','Ringworm','Kennel cough'],own:['Call first','Spanish','Approve estimate']};
 var G={
- safe:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.13 1.9a1 1 0 0 1 1.74 0l6.02 10.6A1 1 0 0 1 14.02 14H1.98a1 1 0 0 1-.87-1.5zM8 5.2a.85.85 0 0 0-.85.9l.2 3.6a.65.65 0 0 0 1.3 0l.2-3.6A.85.85 0 0 0 8 5.2zm0 6.1a.85.85 0 1 0 0 1.7.85.85 0 0 0 0-1.7z"/></svg>',
- hand:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.4 1.3c.55 0 1 .45 1 1v4.3h.5V3c0-.55.45-1 1-1s1 .45 1 1v4.3h.4V4.4c0-.5.4-.9.9-.9s.9.4.9.9v5.1c0 3-2.2 5.2-5 5.2-1.9 0-3.1-.8-4.2-2.3L2 9.4c-.4-.5-.3-1.1.2-1.4.45-.3 1-.2 1.4.2l1.3 1.4V3c0-.55.45-1 1-1s1 .45 1 1v3.6h.5V2.3c0-.55.45-1 1-1z" transform="translate(-.6 0)"/></svg>',
- med:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M6.9 1.6h2.2v4.1l3.55-2.05 1.1 1.9L10.2 7.6l3.55 2.05-1.1 1.9L9.1 9.5v4.1H6.9V9.5l-3.55 2.05-1.1-1.9L5.8 7.6 2.25 5.55l1.1-1.9L6.9 5.7z"/></svg>',
- iso:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.2l5.4 2v4.3c0 3.3-2.3 5.8-5.4 6.9C4.9 13.3 2.6 10.8 2.6 7.5V3.2z"/></svg>',
- own:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.2 1.6c.5-.1 1 .2 1.2.7l.9 2.3c.2.45 0 1-.4 1.25l-1 .65a8.6 8.6 0 0 0 4.6 4.6l.65-1c.25-.4.8-.6 1.25-.4l2.3.9c.5.2.8.7.7 1.2l-.3 1.6c-.1.6-.7 1-1.3 1C6.6 14.3 1.7 9.4 1.6 3.2c0-.6.4-1.2 1-1.3z"/></svg>'};
-var MINUS='<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="11" fill="var(--fg-red)"/><rect x="5.5" y="10" width="11" height="2" rx="1" fill="#fff"/></svg>';
-var PLUS='<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="11" fill="var(--fg-green)"/><rect x="5.5" y="10" width="11" height="2" rx="1" fill="#fff"/><rect x="10" y="5.5" width="2" height="11" rx="1" fill="#fff"/></svg>';
-var MAG='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="m10.4 10.4 3.4 3.4"/></svg>';
-var CK='<svg class="fg-ck" viewBox="0 0 16 16" fill="none" stroke="var(--fg-blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+ safe:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.695 2.85a1.5 1.5 0 0 1 2.61 0l9.03 15.9A1.5 1.5 0 0 1 21.03 21H2.97a1.5 1.5 0 0 1 -1.305 -2.25zM12 7.8a1.275 1.275 0 0 0 -1.275 1.35l0.3 5.4a0.975 0.975 0 0 0 1.95 0l0.3 -5.4A1.275 1.275 0 0 0 12 7.8zm0 9.15a1.275 1.275 0 1 0 0 2.55 1.275 1.275 0 0 0 0 -2.55z"/></svg>',
+ hand:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.1 1.95c0.825 0 1.5 0.675 1.5 1.5v6.45h0.75V4.5c0 -0.825 0.675 -1.5 1.5 -1.5s1.5 0.675 1.5 1.5v6.45h0.6V6.6c0 -0.75 0.6 -1.35 1.35 -1.35s1.35 0.6 1.35 1.35v7.65c0 4.5 -3.3 7.8 -7.5 7.8 -2.85 0 -4.65 -1.2 -6.3 -3.45L3 14.1c-0.6 -0.75 -0.45 -1.65 0.3 -2.1 0.675 -0.45 1.5 -0.3 2.1 0.3l1.95 2.1V4.5c0 -0.825 0.675 -1.5 1.5 -1.5s1.5 0.675 1.5 1.5v5.4h0.75V3.45c0 -0.825 0.675 -1.5 1.5 -1.5z" transform="translate(-0.9 0)"/></svg>',
+ med:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.35 2.4h3.3v6.15l5.325 -3.075 1.65 2.85L15.3 11.4l5.325 3.075 -1.65 2.85L13.65 14.25v6.15H10.35V14.25l-5.325 3.075 -1.65 -2.85L8.7 11.4 3.375 8.325l1.65 -2.85L10.35 8.55z"/></svg>',
+ iso:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1.8l8.1 3v6.45c0 4.95 -3.45 8.7 -8.1 10.35C7.35 19.95 3.9 16.2 3.9 11.25V4.8z"/></svg>',
+ own:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.3 2.4c0.75 -0.15 1.5 0.3 1.8 1.05l1.35 3.45c0.3 0.675 0 1.5 -0.6 1.875l-1.5 0.975a12.9 12.9 0 0 0 6.9 6.9l0.975 -1.5c0.375 -0.6 1.2 -0.9 1.875 -0.6l3.45 1.35c0.75 0.3 1.2 1.05 1.05 1.8l-0.45 2.4c-0.15 0.9 -1.05 1.5 -1.95 1.5C9.9 21.45 2.55 14.1 2.4 4.8c0 -0.9 0.6 -1.8 1.5 -1.95z"/></svg>'};
+var MINUS='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="var(--fg-red)"/><rect x="6" y="10.909" width="12" height="2.182" rx="1.091" fill="#fff"/></svg>';
+var PLUS='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="var(--fg-green)"/><rect x="6" y="10.909" width="12" height="2.182" rx="1.091" fill="#fff"/><rect x="10.909" y="6" width="2.182" height="12" rx="1.091" fill="#fff"/></svg>';
+var MAG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.9"/><path d="m15.6 15.6 5.1 5.1"/></svg>';
+var CK='<svg class="fg-ck" viewBox="0 0 24 24" fill="none" stroke="var(--fg-blue)" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.25 12.75l4.5 4.5 9 -10.5"/></svg>';
 var APP='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h7.2a5.2 5.2 0 0 1 0 10.4H9.6V20H6zm3.6 3.3v3.8h3.4a1.9 1.9 0 0 0 0-3.8z"/></svg>';
 function E(s){ return (typeof bcEsc==='function')?bcEsc(s):String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function C(s){ return (typeof fxClean==='function')?fxClean(s):s; }
@@ -15716,7 +15776,7 @@ body:not(.dark) .pill.st-deceased:hover{box-shadow:0 3px 8px rgba(17,24,39,.07),
   /* cancel straight away, with Undo (no "are you sure") */
   function cancel(p){ var f=p&&p.consentForm; if(!active(f)) return; var before=JSON.parse(JSON.stringify(f));
     var g=Object.assign({},f,{status:'cancelled',cancelled:{at:new Date().toISOString(),by:who()}}); write(p,g);
-    notifyAct('Form cancelled',esc(pet(p))+'’s '+(f.kind==='died'?'aftercare':'consent')+' form','Undo',function(){ var q=byId(p.id); if(q&&q.consentForm&&q.consentForm.id===before.id&&q.consentForm.status==='cancelled') write(q,before,true); },{dur:8000}); }
+    (window.fvNotifyAct||notifyAct)('Form cancelled',esc(pet(p))+'’s '+(f.kind==='died'?'aftercare':'consent')+' form','Undo',function(){ var q=byId(p.id); if(q&&q.consentForm&&q.consentForm.id===before.id&&q.consentForm.status==='cancelled') write(q,before,true); },{dur:8000}); }
 
   /* ---------- Flow › Consent forms ---------- */
   function seg(){ var sw=document.getElementById('switcher'); if(!sw||document.querySelector('#switcher .seg[data-view="consent"]')) return;
@@ -18362,7 +18422,7 @@ svg .s:not(text){opacity:.45}
    i.e. the same stroke-to-text ratio as Anesia's 1.2 em symbols */
 (function(){
   var W={100:1.2,200:1.3,300:1.45,400:1.6,500:1.8,600:2,700:2.25,800:2.5,900:2.7};
-  var SKIP='.topnav,.cpr-pill,.dnr-pill,.spark,.us-spark-area,.kpi .spark,.command-kpi__spark,.fab-add,.aph-ic,.empty,.board-empty-state,.an-chart,.cl-vnode,.nextup-rail';
+  var SKIP='.fg-ck,.fg-search,.confirm-icon,.topnav,.cpr-pill,.dnr-pill,.spark,.us-spark-area,.kpi .spark,.command-kpi__spark,.fab-add,.aph-ic,.empty,.board-empty-state,.an-chart,.cl-vnode,.nextup-rail';
   function host(svg){ var h=svg.parentElement; while(h&&h!==document.body){ if(/^(BUTTON|A|LABEL|LI|H\d|P|TD|TH)$/.test(h.tagName)||h.getAttribute('role')==='button') return h; if(h.childNodes.length>1&&[].some.call(h.childNodes,function(n){return n.nodeType===3&&n.textContent.trim();})) return h; h=h.parentElement; } return svg.parentElement; }
   function label(h){ var w=document.createTreeWalker(h,NodeFilter.SHOW_TEXT,{acceptNode:function(n){ return n.textContent.trim()&&!(n.parentElement&&n.parentElement.closest('svg'))?1:3; }}); var n=w.nextNode(); return n&&n.parentElement; }
   function one(svg){
@@ -18407,7 +18467,7 @@ svg .s:not(text){opacity:.45}
   function all(){
     document.querySelectorAll('.command-kpi__rail').forEach(function(r){ var c=r.closest('.command-kpi'); if(!c) return;
       var v=txt(c.querySelector('.command-kpi__value')).replace(/\s*\/\s*/,' of '), sub=txt(c.querySelector('.command-kpi__sub'));
-      set(r, txt(c.querySelector('.command-kpi__label')), pct(r.querySelector('i')), v+(sub?' · '+sub:'')); });
+      set(r, (window.pvxChartName?pvxChartName(txt(c.querySelector('.command-kpi__label'))):txt(c.querySelector('.command-kpi__label'))), pct(r.querySelector('i')), v+(sub?' · '+sub:'')); });
     document.querySelectorAll('.status-row .track').forEach(function(t){ var row=t.closest('.status-row'), f=t.querySelector('.fill');
       var n=txt(row.querySelector('.count')), p=f?parseFloat(f.dataset.w)||0:0; set(t, txt(row.querySelector('.status-label')), Math.round(p), n+' patients, '+Math.round(p)+' %'); });
     document.querySelectorAll('.util-fill').forEach(function(f){ var tr=f.parentElement; if(!tr) return; var box=tr.closest('[class*="util"],.panel,.card')||tr.parentElement;
@@ -18435,12 +18495,12 @@ svg .s:not(text){opacity:.45}
   window.pvxUndo=window.pvxUndo||(function(){ var U=[],R=[],busy=0;
     function info(t){ notify(t,'',{icon:'info',color:'var(--accent)'}); say(t); }
     function push(e){ U.push(e); if(U.length>25) U.shift(); if(!busy) R.length=0; return e; }
-    function undoEntry(e){ var i=U.indexOf(e); if(i<0) return false; U.splice(i,1); var ok; busy++; try{ ok=e.undo(); } finally { busy--; } if(ok!==false&&e.redo) R.push(e); return ok!==false; }
+    function undoEntry(e){ var i=U.indexOf(e); if(i<0) return false; U.splice(i,1); var ok; busy++; try{ ok=e.undo(); } finally { busy--; } if(ok!==false&&e.redo) R.push(e); if(ok!==false&&e.pid&&window.pvxTouch) setTimeout(function(){ pvxTouch(e.pid); },160); return ok!==false; }
     function undo(){ var e=U[U.length-1]; if(!e){ info('Nothing to undo'); return; } undoEntry(e); }
-    function redo(){ var e=R.pop(); if(!e){ info('Nothing to redo'); return; } busy++; try{ e.redo(); } finally { busy--; } }
-    return {push:push,undo:undo,redo:redo,undoEntry:undoEntry,size:function(){ return [U.length,R.length]; }}; })();
-  function act(title,sub,fn,opts,redo){
-    var e=pvxUndo.push({label:title,undo:fn,redo:redo}), go=function(){ pvxUndo.undoEntry(e); };
+    function redo(){ var e=R.pop(); if(!e){ info('Nothing to redo'); return; } busy++; try{ e.redo(); } finally { busy--; } if(e.pid&&window.pvxTouch) setTimeout(function(){ pvxTouch(e.pid); },160); }
+    return {push:push,undo:undo,redo:redo,undoEntry:undoEntry,remove:function(e){ var i=U.indexOf(e); if(i>-1) U.splice(i,1); },top:function(){ return U[U.length-1]||null; },size:function(){ return [U.length,R.length]; }}; })();
+  function act(title,sub,fn,opts,redo,pid){
+    var e=pvxUndo.push({label:title,undo:fn,redo:redo,pid:pid}), go=function(){ pvxUndo.undoEntry(e); }; go.__pvxU=1;
     if(typeof window.fvNotifyAct==='function') window.fvNotifyAct(title,sub,'Undo',go,Object.assign({dur:8000},opts||{})); else notify(title,sub,opts); }
 
   /* ---- stage and room moves ---- */
@@ -18468,7 +18528,7 @@ svg .s:not(text){opacity:.45}
       var after={status:p.status,room:p.room};
       if(after.status===o.status&&after.room===o.room){ if(cap) real.apply(null,cap); return r; }
       var args=[].slice.call(arguments,1);
-      act(cap?cap[0]:'Moved',cap?cap[1]:'',function(){ return undo(p.id,o,after); },cap&&cap[2],function(){ var q=PATIENTS.find(function(x){ return x.id===p.id; }); if(q) window[name].apply(null,[q].concat(args)); });
+      act(cap?cap[0]:'Moved',cap?cap[1]:'',function(){ return undo(p.id,o,after); },cap&&cap[2],function(){ var q=PATIENTS.find(function(x){ return x.id===p.id; }); if(q) window[name].apply(null,[q].concat(args)); },p.id);
       return r; };
   }
   undoable('moveStatus',function(p,ns){ return ns!=='Discharged'&&ns!=='Admitted'&&p.status!==ns; });   /* completions keep their own Undo */
@@ -19065,8 +19125,7 @@ svg .s:not(text){opacity:.45}
   function shown(){ var b=document.body.classList; return !(b.contains('tv-mode')||b.contains('client-mode')); }
   function nm(p){ return ((p.name||'')+' '+(p.last||'')).trim(); }
   function call(name){ var f=window[name]; return typeof f==='function'?f:null; }
-  function copyLink(p){ var u=trackUrlFor(p); function said(t){ if(typeof toast==='function') toast(t); }
-    try{ navigator.clipboard.writeText(u).then(function(){ said('Tracker link copied'); },function(){ said('Link: '+u); }); }catch(e){ said('Link: '+u); } }
+  function copyLink(p){ pvxShareTracker(trackUrlFor(p), nm(p)); }
   function flowItems(p){
     var done=typeof isCompleted==='function'&&isCompleted(p);
     var stages=done?[]:STAGE_ORDER.filter(function(st){ return st!==p.status; }).map(function(st){ return {label:st,act:function(){ call('moveStatus')(p,st); }}; });
@@ -19076,7 +19135,7 @@ svg .s:not(text){opacity:.45}
     return [{label:'Open',act:function(){ openDrawer(p.id); }}, {sep:1},
       stages.length&&{label:'Move to',sub:stages}, rooms.length&&{label:'Room',sub:rooms}, docs.length&&{label:'Assign doctor',sub:docs}, {sep:1},
       (!done&&window.fvDocs&&fvDocs.openSend)&&{label:'Send a form…',act:function(){ fvDocs.openSend(p); }},
-      (p.publicToken&&typeof trackUrlFor==='function')&&{label:'Copy tracker link',act:function(){ copyLink(p); }}];
+      (p.publicToken&&typeof trackUrlFor==='function')&&{label:(typeof pvxCanShare==='function'&&pvxCanShare())?'Share tracker link…':'Copy tracker link',act:function(){ copyLink(p); }}];
   }
   function rdItems(p,row){
     var r=p.rounds||{}, ended=!!r.outcome, open=row.classList.contains('open');
@@ -19287,7 +19346,7 @@ body:not(.dark) .search-bar .pvx-skey{border-color:rgba(15,23,42,.14);background
   function groups(){
     return [
       {title:'Views', items:views().map(function(v,i){ return {keys:['alt',String(i+1)], label:v[1]}; })},
-      {title:'Patients', items:[{keys:['mod','K'],label:'Search patients, rooms and commands'},{keys:['mod','Z'],label:'Undo the last move'},{keys:['shift','mod','Z'],label:'Redo'}]},
+      {title:'Patients', items:[{keys:['mod','K'],label:'Search patients, rooms and commands'},{keys:['mod','P'],label:'Print this view'},{keys:['mod','Z'],label:'Undo the last change'},{keys:['shift','mod','Z'],label:'Redo'},{keys:['alt','↓'],label:'Next patient, with one open'},{keys:['alt','↑'],label:'Previous patient, with one open'}]},
       {title:'Menus and sheets', items:[{keys:['esc'],label:'Close the menu or sheet'},{keys:['↑','↓'],label:'Move through a menu'},{keys:['return'],label:'Choose'}]},
       {title:'Help', items:[{keys:['?'],label:'Show keyboard shortcuts'}]}
     ];
@@ -19443,6 +19502,7 @@ body:not(.dark) .search-bar .pvx-skey{border-color:rgba(15,23,42,.14);background
     return r.map(function(x,i){ return {x:x,i:i,k:rank(x)}; }).sort(function(a,b){ return a.k-b.k||a.i-b.i; }).map(function(o){ return o.x; }); }; }
   /* 3. recent patients, in memory only (this tab), never stored */
   var RECENT=[];
+  window.pvxRecent={clear:function(){ RECENT=[]; }, list:function(){ return RECENT.slice(); }};   /* PVX-N349 */
   if(typeof openDrawer==='function'){ var od=openDrawer; openDrawer=function(pid){ var r=od.apply(this,arguments); try{ RECENT=[pid].concat(RECENT.filter(function(x){ return x!==pid; })).slice(0,5); }catch(e){} return r; }; }
   function showRecent(){ if(document.activeElement!==inp||inp.value.trim()) return;
     var ps=RECENT.map(function(id){ return PATIENTS.find(function(p){ return p.id===id; }); }).filter(Boolean);
@@ -20141,5 +20201,739 @@ body{font-variant-numeric:tabular-nums}
 #view-client .patient-medallion .pm-init{font-weight:720}
 @media (pointer:coarse){ :where(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea){font-size:max(16px,1rem)!important} }
 </style>
+<style id="pvx-n337">
+/* PVX-N337 - HIG Dark Mode and Icons (Flow) */
+/* Icons: one 24-unit grid; badge symbols at one weight (the badges' 11 pt / 800 labels) */
+:is(.watch-icon,.ready-icon,.room-open-icon,.review-icon,.overdue-icon,.high-icon) svg{width:min(0.5625rem,13.5px);height:min(0.5625rem,13.5px);display:block;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+:is(.overdue-icon,.high-icon) svg{stroke-width:3.2}
+/* symbols on a light status colour are dark, as text is (Brand §11): white on amber, green and teal was 2.2-2.9 : 1 */
+.watch-icon,.ready-icon,.room-open-icon{color:#0B1B2A!important}
+/* symbols at 3 : 1 or more against what's behind them (Brand §3; they were 1.5-2.3 : 1) */
+.triage-card .tc-chev,.tri-chev{color:var(--ink-500)}
+.disposition-card:not(.locked):not([aria-disabled="true"]) .dc-arrow{color:var(--ink-500);opacity:1}
+.empty-mini .ico,.empty-mini--stage .ico{color:var(--ink-500)}
+body:not(.dark) .cz-target .cz-ic.admit{color:#0F6B82} body:not(.dark) .cz-target .cz-ic.disch{color:#12623F} body:not(.dark) .cz-target .cz-ic.euth{color:#6B3FA0}
+body:not(.dark) .ops-item[data-op="new"] .ops-ic,body:not(.dark) .aph-ic{color:#0F6B82}
+body:not(.dark) .ops-item[data-op="alert"] .ops-ic{color:#875C00}
+/* Add patient: the chosen arrival type and priority read at 4.5 : 1 in both appearances (2.0-3.3 : 1) */
+body:not(.dark) .ap-seg-btn.active{color:#0F6B82}
+body:not(.dark) .ap-prio-btn[data-prio="1"] b{color:#B3141A} body:not(.dark) .ap-prio-btn[data-prio="2"] b{color:#875C00} body:not(.dark) .ap-prio-btn[data-prio="3"] b{color:#12623F}
+body.dark .ap-prio-btn[data-prio="1"] b{color:#FF8A82} body.dark .ap-prio-btn[data-prio="2"] b{color:#F2C744} body.dark .ap-prio-btn[data-prio="3"] b{color:#7DDB9A}
+.ap-prio-btn span{color:var(--ink-700)}
+body:not(.dark) .pvx-req{color:#B3141A}
+/* light: the drawer's disposition symbols (2.3 : 1, #8FB0C4 on white) and Command's KPI chips (2.9-3.9 : 1) */
+body:not(.dark) :is(.disposition-card,.disp-terminal) .dc-ic{color:#4F6B80}
+body:not(.dark) .command-kpi__chip{color:color-mix(in srgb,var(--kaccent) 45%,#0B1B2A)}
+body:not(.dark) .command-kpi__chip.is-warn{color:#B3141A}
+/* Dark Mode: with Increase Contrast, small text reaches 7 : 1 (HIG Dark Mode; Treatment n257) */
+@media (prefers-contrast: more){
+  body.dark{--ink-500:#C9D8E6;--ink-700:#DCE8F3}
+  body.dark #view-client{--ink-500:#7A98B8;--ink-700:#A7C2D8}   /* the Client Display (lobby TV) keeps its colours exactly */
+  body.dark .subnav .seg.active{color:#9BE7F2}
+  body.dark :is(#filterBar .chip,#tableBody .reason,.attn .issue,span.issue,.ap-prio-btn span){color:#D3E0EE}
+  body.dark :is(.prio.prio-1,#critIsland .ci-take,.badge-text){background:#A3161C!important;color:#fff!important}
+  body.dark .prio.prio-3{color:#021508!important}
+  body.dark .ap-prio-btn[data-prio="1"] b{color:#FFB3AD}
+  body.dark .pvx-req{color:#FF9A90}
+  body.dark :is(.rec-req,.ap-seg-btn.active){color:#9BE7F2}
+  body.dark :is(.disp-other,.disp-other span){color:var(--ink-700);opacity:1}
+  body.dark .card .wait.warn{color:#FBE29A}
+  body.dark .us-flag.req{color:#A6EAF5}
+  body.dark span.dd-md{color:#A9CFFF}
+  body.dark .ap-prio-btn[data-prio="2"] b{color:#FFE08A}
+}
+</style>
+<style id="pvx-n338">
+/* PVX-N338 - HIG Layout recheck (Flow) */
+/* 1. iPhone tab bar: labels keep the tab bar's size at larger text, as iOS tab bars do (at 200 % they were 22 pt and ran into each other: "CommanPatients") */
+@media (max-width:700px){
+  html.pvx-tabbar #subnavFlow #switcher .seg{font-size:min(.6875rem,11px)}
+  html.pvx-tabbar #subnavFlow #switcher .seg svg{width:min(1.5rem,28px);height:min(1.5rem,28px)}
+}
+/* 2. the patient drawer's header keeps clear of its Close button (on iPhone the Resuscitation button ran 7 pt under it) */
+#drawer .drawer-head .d-name-row{flex-wrap:wrap;row-gap:6px;padding-right:52px;box-sizing:border-box}
+/* 3. the critical banner's wait and reason wrap at larger text instead of being cut off ("Waitin…" on iPhone at 200 %) */
+html.pvx-text-l #critIsland .ci-meta{white-space:normal;overflow:visible;text-overflow:clip}
+</style>
+<style id="pvx-n339">
+/* PVX-N339 - HIG Motion and SF Symbols (Flow) */
+/* SF Symbols: the redrawn Close and chevron sit like their neighbours */
+.us-x{display:grid;place-items:center;width:32px;height:32px;padding:0}
+.us-x svg{width:min(1rem,24px);height:min(1rem,24px)}
+@media (pointer:coarse){.us-x{width:44px;height:44px}}
+.wd-action svg{width:min(.875rem,21px);height:min(.875rem,21px)}
+/* Motion: brief on what people do all day (Brand 8): the drawer opens in 0.3 s (was 0.5 s); sheets fade in and grow from 98 % in 0.2 s (were a 0.42 s spring from 97 % and 4 % lower) */
+.drawer{transition-duration:.3s}
+@media (max-width:700px) and (prefers-reduced-motion:no-preference){ body .addpt-modal.pvx-ps.open{transition:transform .3s cubic-bezier(.32,.72,0,1),opacity 0s} }   /* iPhone sheets rise in 0.3 s (were 0.42 s) */
+:is(.addpt-modal,.intake-modal,.us-modal){transform:translate(-50%,-50%) scale(.98);transition:opacity .2s var(--ease),transform .2s var(--ease)}
+:is(.addpt-modal,.intake-modal,.us-modal).open{transform:translate(-50%,-50%) scale(1)}
+/* Motion: no decorative loops (Brand 8). The search field's colour glow holds still while you type (it breathed every 2.8 s);
+   the critical banner's red edge holds still (it breathed every 2.6 s); the banner's pulsing symbol stays the one live signal */
+.search .search-wrap:focus-within::before{animation:none!important}
+body.crit-active::after{animation:none!important;opacity:.85}
+/* Reduce Motion: only fades remain (HIG Motion; Brand 8). The drawer, sheets, the add menu, search results and messages no longer slide, zoom or spin */
+@media (prefers-reduced-motion:reduce){
+  .drawer{opacity:0;transition:opacity .15s ease,transform 0s linear .15s!important}
+  .drawer.open{opacity:1;transition:opacity .2s ease,transform 0s!important}
+  :is(.addpt-modal,.intake-modal,.us-modal):not(.pvx-ps),:is(.addpt-modal,.intake-modal,.us-modal).open:not(.pvx-ps){transform:translate(-50%,-50%)!important;transition:opacity .2s ease!important}
+  .ops-menu,.ops-menu.open,.search-results,.search-results.open{transform:none!important;transition:opacity .16s ease!important}
+  .ops-item{animation:none!important}
+  .fab-add svg{transition:none!important}
+  .toast,.toast.show{transform:translateX(-50%)!important;transition:opacity .2s ease!important}
+}
+</style>
+<!-- pvx-n340: HIG Writing -->
+<style id="pvx-n341">
+/* PVX-N341 - the wait trend symbol sits with its number */
+.wd-trend{display:inline-flex;align-items:center;justify-content:flex-end;gap:2px}
+.wd-trend svg{width:min(.75rem,18px);height:min(.75rem,18px);flex:none}
+.wd-trend{white-space:nowrap}
+/* the average wait keeps to one line ("1h 10m" broke inside its pill) */
+.wd-wait{white-space:nowrap}
+</style>
+<script id="pvx-n342-js">
+/* PVX-N342 - HIG Entering data: every field in Triage intake and Edit triage has a name, so VoiceOver and Voice Control can reach it
+   (the labels sat beside the fields without being tied to them, and three Edit triage fields had only a heading) */
+(function(){
+  var n=0;
+  function tie(root){ if(!root) return;
+    root.querySelectorAll('.ik-field, .ap-field').forEach(function(f){
+      var c=f.querySelectorAll('input,select,textarea'); if(c.length!==1) return; c=c[0];
+      if((c.labels&&c.labels.length)||c.getAttribute('aria-label')||c.getAttribute('aria-labelledby')) return;
+      var l=f.querySelector('label');
+      if(l&&!l.htmlFor){ if(!c.id) c.id='pvxik'+(++n); l.htmlFor=c.id; return; }
+      var s=f.closest('.ap-sect,.ik-sect'), h=s&&s.querySelector('h4'); if(h) c.setAttribute('aria-label', h.textContent.replace(/\s+/g,' ').trim());
+    }); }
+  function watch(id){ var el=document.getElementById(id); if(!el) return; tie(el); try{ new MutationObserver(function(){ tie(el); }).observe(el,{childList:true,subtree:true}); }catch(e){} }
+  function go(){ watch('intakeBody'); watch('triEditBody'); }
+  /* Return on a field whose keyboard says Next moves to the next field of Add patient */
+  document.addEventListener('keydown',function(e){ var t=e.target; if(e.key!=='Enter'||e.isComposing||!t||t.getAttribute('enterkeyhint')!=='next') return; var m=t.closest('#apModal'); if(!m) return;
+    var f=[].filter.call(m.querySelectorAll('input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled])'),function(x){ return x.getClientRects().length; });
+    var i=f.indexOf(t); if(i>-1&&f[i+1]){ e.preventDefault(); f[i+1].focus(); } },true);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+</script>
+<style id="pvx-n342">
+/* PVX-N342 - HIG Drag and drop: a card being dragged keeps its size (its hover details opened and pushed the column around mid-drag) */
+.card.dragging .card-expand{max-height:0!important;opacity:0!important;margin-top:0!important;transition:none!important}
+.card.dragging:hover{transform:scale(.97) rotate(1.5deg)}
+</style>
+<script id="pvx-n343-js">
+/* PVX-N343 - HIG Feedback: on a Mac or iPad, messages appear under the top bar and Flow's sub-nav, clear of the critical banner,
+   so they no longer cover search, Log out and the light/dark switch for the seconds after every move; on iPhone they stay at the top but never cover the critical banner */
+(function(){
+  var N=null, t=0;
+  function place(){ t=0; N=N||document.getElementById('notes'); if(!N) return; var b=document.body.classList;
+    if(b.contains('tv-mode')||b.contains('client-mode')){ N.style.removeProperty('top'); return; }
+    var top=14, sn=document.getElementById('subnavFlow'); if(sn&&sn.getClientRects().length){ var r=sn.getBoundingClientRect(); if(r.bottom>0&&r.bottom<innerHeight/2) top=Math.round(r.bottom)+8; }
+    var ci=document.getElementById('critIsland'); if(ci&&ci.classList.contains('on')&&+getComputedStyle(ci).opacity>.1){
+      var c=ci.getBoundingClientRect(), left=innerWidth-16-Math.min(320,innerWidth-32); if(c.right>left&&c.bottom>top-8&&c.top<top+120) top=Math.round(c.bottom)+8; }
+    N.style.top=top+'px'; }
+  function soon(){ if(!t) t=requestAnimationFrame(place); }
+  function go(){ place(); addEventListener('resize',soon);
+    try{ new MutationObserver(soon).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+    var ci=document.getElementById('critIsland'); if(ci) try{ new MutationObserver(soon).observe(ci,{attributes:true,attributeFilter:['class','style']}); }catch(e){}
+    var n=document.getElementById('notes'); if(n) try{ new MutationObserver(soon).observe(n,{childList:true}); }catch(e){} }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+</script>
+<script id="pvx-n344-js">
+/* PVX-N344 - HIG Loading: until the patient list has really arrived (Backend._gotVisits, n273), Flow shows that it is loading
+   instead of saying the hospital is empty ("0 patients", "No attention items · All current patients are clear", "8 rooms available").
+   After 12 s it says it's still loading and to check the connection. The lobby TV and the Client Display are untouched. */
+(function(){
+  var H=document.documentElement;
+  if(/[?&](display|tv|lobby)=?/.test(location.search)) return;
+  H.classList.add('pvx-flow-loading');
+  var t0=Date.now(), st=null;
+  function say(t){ if(!st){ st=document.createElement('div'); st.id='pvxLoadSay'; st.setAttribute('role','status'); st.className='pvx-sr'; (document.body||H).appendChild(st); } if(st.textContent!==t) st.textContent=t; }
+  function tick(){
+    var b=document.body; if(b&&(b.classList.contains('tv-mode'))){ H.classList.remove('pvx-flow-loading','pvx-flow-slow'); return; }
+    if(typeof Backend!=='undefined'&&Backend._gotVisits){ H.classList.remove('pvx-flow-loading','pvx-flow-slow'); if(st) st.textContent=''; return; }
+    if(b) say(Date.now()-t0>12000?'Still loading patients — check the connection':'Loading patients…');
+    if(Date.now()-t0>12000) H.classList.add('pvx-flow-slow');
+    setTimeout(tick,150); }
+  tick();
+  window.pvxFlowLoading=function(elapsed){ H.classList.add('pvx-flow-loading'); H.classList.remove('pvx-flow-slow'); t0=Date.now()-(elapsed||0); tick(); };   /* for checks */
+})();
+</script>
+<style id="pvx-n344">
+/* PVX-N344 - while loading: numbers are placeholders and empty states say "Loading patients…" (Brand 8; Treatment n235) */
+.pvx-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html.pvx-flow-loading :is(#view-dashboard,#view-list,#view-flow,#view-rooms) :is(.empty,.empty-mini,#tableEmpty,.board-empty-state,.r-empty){position:relative}
+html.pvx-flow-loading :is(#view-dashboard,#view-list,#view-flow,#view-rooms) :is(.empty,.empty-mini,#tableEmpty,.board-empty-state,.r-empty){color:transparent!important}
+html.pvx-flow-loading :is(#view-dashboard,#view-list,#view-flow,#view-rooms) :is(.empty,.empty-mini,#tableEmpty,.board-empty-state,.r-empty) > *{visibility:hidden}
+html.pvx-flow-loading :is(#view-dashboard,#view-list,#view-flow,#view-rooms) :is(.empty,.empty-mini,#tableEmpty,.board-empty-state,.r-empty)::after{
+  content:"Loading patients…";visibility:visible;position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:0 12px;color:var(--ink-500)!important;font-size:0.8125rem;font-weight:500;text-transform:none;letter-spacing:normal}
+html.pvx-flow-slow :is(#view-dashboard,#view-list,#view-flow,#view-rooms) :is(.empty,.empty-mini,#tableEmpty,.board-empty-state,.r-empty)::after{content:"Still loading patients — check the connection"}
+html.pvx-flow-loading #view-dashboard .command-kpi{position:relative}
+html.pvx-flow-loading #view-dashboard .command-kpi :is(.command-kpi__value,.command-kpi__sub,.command-kpi__chip,.command-kpi__spark,.command-kpi__rail){visibility:hidden}
+html.pvx-flow-loading #view-dashboard .command-kpi::after{content:"";position:absolute;left:16px;top:58px;width:48px;height:22px;border-radius:7px;background:currentColor;opacity:.10;pointer-events:none}
+html.pvx-flow-loading :is(#view-dashboard .badge-text,#view-dashboard .notification-badge,#filterBar .chip .cnt,#view-flow .cz-total,#view-flow .cz-count,#view-rooms .livepill,#view-rooms .r-state){visibility:hidden}
+</style>
+<script id="pvx-n345-js">
+/* PVX-N345 - HIG Managing notifications: a badge for what's waiting, so it reaches you when Flow isn't the tab or app in front.
+   The tab's title starts with the number of unread family messages and says when a critical patient is waiting
+   ("(2) Critical patient waiting · Pravix Flow…"); Flow installed on a Home Screen or Dock shows the same count on its icon.
+   It clears as messages are read and the case is taken. The lobby TV keeps its own title. */
+(function(){
+  var BASE=null, last='';
+  function upd(){ var b=document.body; if(!b) return; if(BASE===null) BASE=document.title;
+    if(b.classList.contains('tv-mode')) return;
+    if(/[?&](display|tv|lobby)=?/.test(location.search)) return;
+    var n=0; try{ n=(typeof _unreadMsgs!=='undefined'&&_unreadMsgs)?_unreadMsgs.size:0; }catch(e){}
+    var crit=b.classList.contains('crit-active'), signedIn=!(document.getElementById('sbLogin')&&getComputedStyle(document.getElementById('sbLogin')).display!=='none');
+    if(!signedIn){ n=0; crit=false; }
+    var t=(n?'('+n+') ':'')+(crit?'Critical patient waiting · ':'')+BASE;
+    if(t!==last){ last=t; if(document.title!==t&&(document.title===BASE||/^(\(\d+\) )?(Critical patient waiting · )?/.test(document.title))) document.title=t;
+      try{ if(navigator.setAppBadge){ if(n||crit) navigator.setAppBadge(n+(crit?1:0)); else if(navigator.clearAppBadge) navigator.clearAppBadge(); } }catch(e){} } }
+  function go(){ upd(); setInterval(upd,1000); try{ new MutationObserver(upd).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){} }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+  window.pvxBadgeNow=upd;   /* for checks */
+})();
+</script>
+<script id="pvx-n346-js">
+/* PVX-N346 - HIG Modality: a sheet over the patient drawer (Care team, Ultrasound request, Edit triage, Triage intake, Send a form…)
+   keeps Tab inside it; the drawer behind is out of reach until the sheet closes (Tab wandered into the drawer 17 times in 25) */
+(function(){
+  var IDS=['ctModal','usModal','triEditModal','intakeModal','assignModal','apModal','alertModal','shiftModal','confirmBox'];
+  function sheetOpen(){ return IDS.some(function(id){ var m=document.getElementById(id); return m&&m.classList.contains('open'); })
+    || [].some.call(document.querySelectorAll('.cf-sheet.open,.fv-sheet.open,.sf-sheet.open'),function(x){ return x.getClientRects().length; }); }
+  var on=false, back=null;
+  function sync(){ var dr=document.getElementById('drawer'); if(!dr) return; var want=dr.classList.contains('open')&&sheetOpen();
+    if(want===on) return; on=want;
+    if(want){ var a=document.activeElement; back=(a&&dr.contains(a))?a:back; dr.inert=true; dr.setAttribute('data-pvx-inert','1'); }
+    else if(dr.getAttribute('data-pvx-inert')){ dr.inert=false; dr.removeAttribute('data-pvx-inert');
+      /* the sheet tried to put focus back while the drawer was still out of reach: finish the job */
+      var f=document.activeElement, lost=!f||f===document.body||f.id==='stage'||IDS.some(function(id){ var m=document.getElementById(id); return m&&!m.classList.contains('open')&&m.contains(f); }); if(lost&&back&&back.isConnected&&dr.classList.contains('open')) try{ back.focus({preventScroll:true}); }catch(e){}
+      back=null; } }
+  function go(){ IDS.concat(['drawer']).forEach(function(id){ var m=document.getElementById(id); if(m) try{ new MutationObserver(sync).observe(m,{attributes:true,attributeFilter:['class']}); }catch(e){} });
+    try{ new MutationObserver(sync).observe(document.body,{childList:true}); }catch(e){} sync(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+</script>
+<script id="pvx-n347-js">
+/* PVX-N347 - HIG Offering help: Flow's help is findable. Typing "help", "shortcuts" or "keyboard" in search offers Keyboard shortcuts
+   (before, only the ? key opened it, and search said "No matches"). */
+(function(){
+  if(typeof searchIndex!=='function') return;
+  var KEYS='<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/>';
+  var _si=searchIndex;
+  searchIndex=function(q){ var r=_si.apply(this,arguments); var t=String(q||'').trim().toLowerCase();
+    if(t.length>=2&&/^(help|hel|he|short|shortc|shortcu|shortcut|shortcuts|keyb|keyboard|keys|key|hotkey|\?)/.test(t)||t==='?'){
+      r.push({kind:'Help',icon:true,svg:KEYS,color:'var(--ink-500)',title:'Keyboard shortcuts',sub:'Or press ? anytime',
+        act:function(){ try{ closeSearch(); }catch(e){} var s=document.getElementById('globalSearch'); if(s) s.blur();
+          setTimeout(function(){ document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'?',bubbles:true})); },30); }}); }
+    return r; };
+})();
+</script>
+<style id="pvx-n348">
+/* PVX-N348 - HIG Printing: a staff view prints as the work itself, on white, whatever the screen's theme.
+   Only Command, Patients, the board and Rooms; the lobby TV, the body tag and the consent copy keep their own print rules. */
+#pvxPrintHead{display:none;}
+.ops-item[data-op="print"] .ops-ic{background:rgba(120,140,165,.14);color:#9FB2C8;}
+body:not(.dark) .ops-item[data-op="print"] .ops-ic{color:#52677C;}
+.ops-item[data-op="print"] .ops-ic svg path:first-child{opacity:.45}
+@media (prefers-contrast:more),(forced-colors:active){ .ops-item[data-op="print"] .ops-ic svg *{opacity:1!important} }
+@media print{
+  @page{margin:0.45in 0.45in 0.5in;}
+  html:has(body.pvx-printing),body.pvx-printing{height:auto!important;min-height:0!important;overflow:visible!important;background:#fff!important;color-scheme:light!important;}
+  body.pvx-printing{padding:0!important;color:#0B1B2A;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body.pvx-printing > *:not(.app):not(#pvxPrintHead){display:none!important;}
+  body.pvx-printing .app{display:block!important;height:auto!important;overflow:visible!important;}
+  body.pvx-printing .app > *:not(#stage){display:none!important;}
+  body.pvx-printing #stage{display:block!important;overflow:visible!important;height:auto!important;padding:0!important;}
+  body.pvx-printing #stage > .view.hidden,body.pvx-printing #view-client{display:none!important;}
+  body.pvx-printing #stage *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important;text-shadow:none!important;transition:none!important;}
+  body.pvx-printing::before,body.pvx-printing::after{display:none!important;content:none!important;}
+  body.pvx-printing #board{display:block!important;overflow:visible!important;height:auto!important;}
+  body.pvx-printing #board > .col{width:auto!important;min-width:0!important;max-width:none!important;height:auto!important;max-height:none!important;margin:0 0 12pt!important;overflow:visible!important;break-inside:avoid-page;}
+  body.pvx-printing #board > .col .col-body{overflow:visible!important;height:auto!important;display:grid!important;grid-template-columns:1fr 1fr;gap:8pt 10pt;align-items:start;}
+  body.pvx-printing #board > .col > :first-child{break-after:avoid;}
+  body.pvx-printing #stage :is(.footer-bar,.site-footer,.version-bar),body.pvx-printing #stage :is(.footer-bar,.site-footer,.version-bar) *{background:transparent!important;color:#52677C!important;}
+  body.pvx-printing #stage :is(.footer-bar,.site-footer,.version-bar){border-top:.75pt solid #9AAABB!important;break-inside:avoid;}
+  body.pvx-printing #pvxPrintHead{display:flex!important;justify-content:space-between;align-items:baseline;gap:16px;font:600 9pt/1.3 -apple-system,"SF Pro Text","Helvetica Neue",Arial,sans-serif;color:#33475B;border-bottom:.75pt solid #9AAABB;padding:0 0 5pt;margin:0 0 10pt;}
+  body.pvx-printing #pvxPrintHead span:last-child{font-weight:500;color:#52677C;}
+  body.pvx-printing #stage :is(.card,.kpi,.p-row,tr,.rm-card,.room-card,.attn-item,.wd-row,.col-head,.column-head){break-inside:avoid;}
+  body.pvx-printing #stage :is(h1,h2,h3,.sec-title,.col-title){break-after:avoid;}
+  body.pvx-printing #stage thead{display:table-header-group;}
+  body.pvx-printing #stage :is(button.seg,.fab-add,.pvx-skey,.r-cta,.attn-clear,.dd-btn,.filter-dd){box-shadow:none!important;}
+}
+</style>
+<script id="pvx-n348-js">
+/* PVX-N348 - HIG Printing.
+   1. Command, Patients, the board and Rooms print on white with the screen's controls, banners and sheets left off, and a line saying when it was printed.
+      Before, the dark screen printed as it looked (top bar, search, the critical banner on every page), and the list stopped after the first page.
+   2. Print is in the + menu (with the view's name) and in the keyboard shortcuts; search answers "print". It's offered only where there's a view to print. */
+(function(){
+  var NAMES={dashboard:'Command',list:'Patients',flow:'Flow board',rooms:'Rooms'};
+  function view(){ try{ return currentView; }catch(e){ return ''; } }
+  function can(){ var b=document.body; return !!NAMES[view()]&&!b.classList.contains('client-mode')&&!b.classList.contains('tv-mode')&&!b.classList.contains('fs-mode')&&!b.classList.contains('app-ultrasound')&&!b.classList.contains('app-rounds'); }
+  var head=document.createElement('div'); head.id='pvxPrintHead'; head.setAttribute('aria-hidden','true'); document.body.insertBefore(head,document.body.firstChild);
+  var wasDark=false, on=false;
+  function begin(){ var b=document.body; if(on||b.classList.contains('end-tagging')||b.classList.contains('cf-printing')||!can()) return; on=true;
+    var d=new Date(), when=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})+', '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    head.innerHTML='<span>VCA Shoreline · Pravix Flow · '+NAMES[view()]+'</span><span>Printed '+when+'</span>';
+    wasDark=b.classList.contains('dark'); if(wasDark) b.classList.remove('dark'); b.classList.add('pvx-printing'); }
+  function end(){ if(!on) return; on=false; var b=document.body; b.classList.remove('pvx-printing'); if(wasDark) b.classList.add('dark'); wasDark=false; }
+  window.addEventListener('beforeprint',begin); window.addEventListener('afterprint',end);
+  try{ var mq=matchMedia('print'), f=function(e){ if(e.matches) begin(); else end(); }; if(mq.addEventListener) mq.addEventListener('change',f); else if(mq.addListener) mq.addListener(f); }catch(e){}
+  window.pvxPrintView=function(){ if(!can()) return false; begin(); try{ window.print(); }catch(e){} setTimeout(end,0); return true; };
+  window.pvxPrintBegin=begin; window.pvxPrintEnd=end;
+  /* the + menu item: named for the view, offered only where printing makes sense */
+  function paint(){ var it=document.getElementById('opsPrint'), s=document.getElementById('opsPrintS'); if(!it) return; var ok=can(); it.hidden=!ok;
+    if(s) s.textContent=(NAMES[view()]||'This view')+' · '+((window.PvxKeys&&PvxKeys.mac===false)?'Ctrl P':'⌘P'); }
+  var fab=document.getElementById('fabAdd'); if(fab) fab.addEventListener('click',paint,true); paint();
+  /* search: "print" offers Print this view */
+  if(typeof searchIndex==='function'){
+    var IC='<path d="M6.5 9V3.5h11V9"/><rect x="2.5" y="9" width="19" height="8.5" rx="2"/><rect x="6.5" y="14" width="11" height="7" rx="1"/>';
+    var _si=searchIndex;
+    searchIndex=function(q){ var r=_si.apply(this,arguments); var t=String(q||'').trim().toLowerCase();
+      if(/^prin(t|ti|tin|ting)?$/.test(t)&&can()) r.push({kind:'Help',icon:true,svg:IC,color:'var(--ink-500)',title:'Print '+(view()==='flow'?'the board':NAMES[view()]),sub:((window.PvxKeys&&PvxKeys.mac===false)?'Ctrl P':'⌘P'),
+        act:function(){ try{ closeSearch(); }catch(e){} var s=document.getElementById('globalSearch'); if(s) s.blur(); setTimeout(function(){ pvxPrintView(); },60); }});
+      return r; };
+  }
+})();
+</script>
+<style id="pvx-n349">
+/* PVX-N349 - HIG Searching + Settings */
+#fvTalk[hidden]{display:none!important}
+.ops-item[data-op="voice"] .ops-ic{background:rgba(120,140,165,.14);color:#9FB2C8}
+body:not(.dark) .ops-item[data-op="voice"] .ops-ic{color:#52677C}
+.ops-item[hidden]{display:none!important}
+.pvx-scope{display:none;margin:4px 0 0;font-size:.8125rem;line-height:1.3;color:var(--ink-500)}
+.pvx-scope.on{display:block}
+.pvx-scope b{color:var(--ink-800,#0B1B2A);font-weight:600}
+body.dark .pvx-scope b{color:#E6EEF6}
+.pvx-scope button{margin-left:8px;vertical-align:baseline;appearance:none;border:0;background:var(--fill-soft,rgba(120,140,165,.14));color:inherit;font:inherit;font-weight:600;font-size:.75rem;padding:4px 10px;border-radius:999px;cursor:pointer;min-height:24px}
+.pvx-scope button:hover{color:var(--ink-800,#0B1B2A)}
+body.dark .pvx-scope button:hover{color:#fff}
+.pvx-scope button:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+@media (pointer:coarse){ .pvx-scope button{min-height:32px;padding:6px 12px} }
+#searchResults .pvx-dym b{color:var(--sr-t,inherit)}
+#searchResults .sr-group:has(> .pvx-rclear){position:relative}
+#searchResults .pvx-rclear{position:absolute;top:9px;right:12px;appearance:none;border:0;background:none;color:var(--accent,#38BDD2);font-size:.75rem;font-weight:600;cursor:pointer;padding:2px 4px;border-radius:4px}
+body:not(.dark) #searchResults .pvx-rclear{color:#0F6B82}
+#searchResults .pvx-rclear:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+@media print{ .pvx-scope.on{display:block!important} .pvx-scope button{display:none!important} }
+</style>
+<script id="pvx-n349-js">
+/* PVX-N349 - HIG Searching + Settings.
+   Searching: say what the list and board are filtered by, and let it be cleared there; suggest the closest name for a typo;
+   show why a patient matched (owner, reason); a typed ID filters the list too; "p1", "critical" or a stage name offers that filter; Recent can be cleared.
+   Settings: Talk to Flow on or off per screen in the + menu, beside Reminder chime. */
+(function(){
+  var inp=document.getElementById('globalSearch'); if(!inp) return;
+  function q(){ try{ return String(searchQ||''); }catch(e){ return ''; } }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function clearSearch(){ inp.value=''; inp.dispatchEvent(new Event('input',{bubbles:true})); try{ closeSearch(); }catch(e){} }
+  /* 1. the scope: "Matching “mil” · 1 of 9 · Clear search" under the Patients and Flow titles */
+  function scopeEl(view){ var h=document.querySelector('#view-'+view+' .view-head > div'); if(!h) return null; var s=h.querySelector('.pvx-scope');
+    if(!s){ s=document.createElement('div'); s.className='pvx-scope'; s.setAttribute('role','status'); h.appendChild(s);
+      s.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return;
+        if(b.dataset.fix){ inp.value=b.dataset.fix; inp.dispatchEvent(new Event('input',{bubbles:true})); try{ closeSearch(); }catch(x){} var nb=s.querySelector('button'); if(nb) nb.focus(); return; }
+        clearSearch(); try{ var h1=document.querySelector('#view-'+view+' h1'); if(h1){ h1.tabIndex=-1; h1.focus(); } }catch(x){} }); }
+    return s; }
+  function scope(){ var t=q().trim(); var all=0; try{ all=PATIENTS.filter(isActive).length; }catch(e){}
+    var n=0; try{ n=filtered().filter(isActive).length; }catch(e){}
+    ['list','flow'].forEach(function(v){ var s=scopeEl(v); if(!s) return; s.classList.toggle('on',!!t);
+      var fix=(t&&!n)?correct(t):'';
+      var html=t?'Matching <b>“'+esc(t)+'”</b>'+(v==='flow'?' · '+n+' of '+all:'')+(fix?'<button type="button" data-fix="'+esc(fix)+'">Search “'+esc(fix)+'”</button>':'')+'<button type="button" data-clear="1">Clear search</button>':'';
+      if(s.__h!==html){ s.__h=html; s.innerHTML=html; } }); }
+  if(typeof renderTable==='function'){ var rt=renderTable; renderTable=function(){ var r=rt.apply(this,arguments);
+    try{ var rc=document.getElementById('resCount'); if(rc){ var m=/^(\d+)/.exec(rc.textContent); if(m) rc.textContent=m[1]+(+m[1]===1?' patient':' patients'); } }catch(e){}
+    scope(); return r; }; }
+  if(typeof renderBoard==='function'){ var rb=renderBoard; renderBoard=function(){ var r=rb.apply(this,arguments); scope(); return r; }; }
+  /* 2. why it matched, and filters, in search */
+  var STAGES=(typeof FLOW_COLS!=='undefined'?FLOW_COLS:[]);
+  function lc(s){ return String(s||'').toLowerCase(); }
+  if(typeof searchIndex==='function'){
+    var si=searchIndex;
+    searchIndex=function(qq){ var r=si.apply(this,arguments), t=lc(qq).trim(); if(!t) return r;
+      try{ r.forEach(function(x){ if(x.kind!=='Patient'||x.__why) return; var p=PATIENTS.find(function(pp){ return (pp.name+' '+pp.last)===x.title; }); if(!p) return;
+          var named=lc([p.name,p.last,p.room,p.status].join(' ')).indexOf(t)>-1; if(named) return;
+          var why=lc(p.owner).indexOf(t)>-1?'Owner '+p.owner:lc(p.reason).indexOf(t)>-1?p.reason:'';
+          if(why){ x.sub=why+' · '+x.sub; x.__why=1; } }); }catch(e){}
+      try{ var act=PATIENTS.filter(isActive);
+        var pm=/^(?:p\s?([123])|priority\s?([123])|(crit(?:i(?:c(?:a(?:l)?)?)?)?)|(urgent|urge|urg)|(stable|stab|sta))$/.exec(t);
+        if(pm){ var lv=+(pm[1]||pm[2]||(pm[3]?1:pm[4]?2:3)); var n=act.filter(function(p){ return Number(p.prio)===lv; }).length;
+          r.unshift({kind:'Filter',icon:true,color:'var(--priority-p'+lv+')',svg:'<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',title:'P'+lv+' · '+PRIO_LABEL[lv]+' patients',sub:(n===1?'1 patient':n+' patients')+' · Patients list',
+            act:function(){ try{ closeSearch(); }catch(e){} clearSearch(); filters={status:null,prio:lv,doctor:null,liaison:null}; switchView('list'); renderFilterBar(); renderTable(); }}); }
+        if(t.length>=3) STAGES.forEach(function(s){ if(lc(s).indexOf(t)!==0) return; var n=act.filter(function(p){ return p.status===s; }).length;
+          r.unshift({kind:'Filter',icon:true,color:(STATUSES[s]&&STATUSES[s].color)||'var(--accent)',svg:'<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',title:'All patients in '+s,sub:(n===1?'1 patient':n+' patients')+' · Patients list',
+            act:function(){ try{ closeSearch(); }catch(e){} clearSearch(); filters={status:s,prio:null,doctor:null,liaison:null}; switchView('list'); renderFilterBar(); renderTable(); }}); }); }catch(e){}
+      return r; };
+  }
+  /* 3. a typo: show the closest name ("No matches for “Bela”. Showing Bella.") */
+  function dl(a,b){ var m=a.length,n=b.length,d=[],i,j; for(i=0;i<=m;i++){ d[i]=[i]; } for(j=0;j<=n;j++) d[0][j]=j;
+    for(i=1;i<=m;i++) for(j=1;j<=n;j++){ var c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c); if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]) d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1); }
+    return d[m][n]; }
+  function correct(t){ t=lc(t).trim(); if(t.length<3||/\s/.test(t)||/^\d/.test(t)) return '';
+    var words=[]; try{ PATIENTS.filter(isActive).forEach(function(p){ words.push(p.name,p.last); }); DOCTORS.forEach(function(d){ String(d.name).replace(/^Dr\.?\s*/,'').split(/\s+/).forEach(function(w){ words.push(w); }); }); }catch(e){}
+    var best='', bd=9, lim=t.length>=6?2:1;
+    words.forEach(function(w){ var lw=lc(w); if(!lw||lw.length<3) return; var d=Math.min(dl(t,lw), lw.length>t.length?dl(t,lw.slice(0,t.length)):9, lw.length>t.length?dl(t,lw.slice(0,t.length+1)):9);
+      if(d<=lim&&d<bd){ bd=d; best=w; } });
+    return best; }
+  if(typeof renderSearch==='function'){
+    var rs=renderSearch;
+    renderSearch=function(qq){ var t=String(qq||'').trim();
+      if(t&&!searchIndex(t).length){ var c=correct(t); if(c&&searchIndex(c).length){ var r=rs.call(this,c);
+          var box=document.getElementById('searchResults'), inr=box&&box.querySelector('.sr-inner');
+          if(inr){ inr.insertAdjacentHTML('afterbegin','<div class="sr-hint pvx-dym" role="status">No matches for “'+esc(t)+'”. Showing <b>'+esc(c)+'</b>.</div>'); }
+          return r; } }
+      return rs.apply(this,arguments); };
+  }
+  /* 4. Recent can be cleared (it lives only in this tab, and goes when someone signs out) */
+  var box=document.getElementById('searchResults');
+  if(box){
+    new MutationObserver(function(){ var lab=[].slice.call(box.querySelectorAll('.sr-label')).filter(function(l){ return l.textContent==='Recent'; })[0];
+      if(lab&&!(lab.nextElementSibling&&lab.nextElementSibling.classList.contains('pvx-rclear'))){ var b=document.createElement('button'); b.type='button'; b.className='pvx-rclear'; b.textContent='Clear'; b.setAttribute('aria-label','Clear recent patients'); lab.insertAdjacentElement('afterend',b); } })
+      .observe(box,{childList:true,subtree:true});
+    box.addEventListener('mousedown',function(e){ if(e.target.closest('.pvx-rclear')) e.preventDefault(); },true);
+    box.addEventListener('click',function(e){ if(!e.target.closest('.pvx-rclear')) return; e.preventDefault(); e.stopPropagation();
+      window.__pvxRecentClear=(window.__pvxRecentClear||0)+1; try{ if(window.pvxRecent) pvxRecent.clear(); }catch(x){}
+      var g=e.target.closest('.sr-group'); if(g) g.remove(); try{ searchFlat=[]; searchHl=-1; }catch(x){} try{ inp.focus(); }catch(x){}
+      try{ if(window.pvxSay) pvxSay('Recent patients cleared'); }catch(x){} },true);
+  }
+  if(typeof logout==='function'){ var lo=logout; logout=function(){ try{ if(window.pvxRecent) pvxRecent.clear(); }catch(e){} return lo.apply(this,arguments); }; }
+  /* 5. Settings: Talk to Flow on this screen */
+  function vpaint(){ var b=document.getElementById('opsVoice'), s=document.getElementById('opsVoiceS'); if(!b) return; var V=window.pvxVoice;
+    var can=!!(V&&V.can())&&!document.body.classList.contains('client-mode'); b.hidden=!can; if(!can) return; var on=V.on();
+    b.setAttribute('aria-checked',String(on)); if(s) s.textContent=(on?'On':'Off')+' · this screen'; }
+  document.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('#opsVoice'); if(!b||!window.pvxVoice) return; e.preventDefault(); e.stopPropagation();
+    var on=pvxVoice.set(!pvxVoice.on()); vpaint(); try{ if(window.pvxSay) pvxSay('Talk to Flow '+(on?'on':'off')+' on this screen.'); }catch(x){} },true);
+  var fab=document.getElementById('fabAdd'); if(fab) fab.addEventListener('click',vpaint,true); setTimeout(vpaint,0);
+})();
+</script>
+<style id="pvx-n350">
+/* PVX-N350 - HIG Undo and redo: what an undo or redo changed is shown where it happened */
+.pvx-touched{outline:2px solid var(--accent,#38BDD2)!important;outline-offset:2px;animation:pvxTouch 1.6s ease-out forwards}
+tr.pvx-touched{outline-offset:-2px}
+@keyframes pvxTouch{0%{outline-color:var(--accent,#38BDD2)}70%{outline-color:var(--accent,#38BDD2)}100%{outline-color:transparent}}
+@media (prefers-reduced-motion:reduce){ .pvx-touched{animation:none} }
+</style>
+<script id="pvx-n350-js">
+/* PVX-N350 - HIG Undo and redo.
+   1. Priority, doctor and liaison changes can be undone (their note's Undo button, Cmd-Z) and redone (Shift-Cmd-Z); before, only moves could.
+   2. Every Undo button belongs to the one history Cmd-Z uses (a discharge or admit, taking a critical case, a cancelled form, On the way),
+      so Cmd-Z right after one of them undoes it, not something older.
+   3. After an undo or redo, the patient's row or card is outlined for a moment and scrolled into view, so the change can be seen. */
+(function(){
+  if(!window.pvxUndo) return;
+  function find(id){ try{ return PATIENTS.find(function(x){ return x.id===id; }); }catch(e){ return null; } }
+  /* 3. show the result */
+  var TT={}, mo=null;
+  function el(id){ try{ var v=document.getElementById('view-'+currentView); var x=v&&v.querySelector('[data-pid="'+id+'"]'); return x&&x.offsetParent?x:null; }catch(e){ return null; } }
+  function paint(){ var now=Date.now(), left=0; Object.keys(TT).forEach(function(id){ var age=now-TT[id]; if(age>1700){ delete TT[id]; return; } left++; var x=el(id);
+      if(x&&!x.classList.contains('pvx-touched')){ x.style.animationDelay=(-age)+'ms'; x.classList.add('pvx-touched'); setTimeout(function(){ x.classList.remove('pvx-touched'); x.style.animationDelay=''; },1700-age); } });
+    if(!left&&mo){ mo.disconnect(); mo=null; } }
+  window.pvxTouch=function(id){ var x=el(id); TT[id]=Date.now(); if(x){ x.classList.remove('pvx-touched'); }
+    if(!mo){ var st=document.getElementById('stage'); if(st){ mo=new MutationObserver(function(){ paint(); }); mo.observe(st,{childList:true,subtree:true}); } }
+    paint(); x=el(id); if(x){ try{ x.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(e){} }
+    setTimeout(paint,1750); return !!x; };
+  /* 2. a note's own Undo button joins the history */
+  if(typeof window.fvNotifyAct==='function'){ var na=window.fvNotifyAct;
+    window.fvNotifyAct=function(title,sub,act,fn,opts){ if(act!=='Undo'||typeof fn!=='function') return na.apply(this,arguments);
+      var e, go=fn;
+      if(!fn.__pvxU){ e=pvxUndo.push({label:String(title).replace(/<[^>]*>/g,''),undo:fn}); go=function(){ if(!pvxUndo.undoEntry(e)) fn(); }; go.__pvxU=1; } else e=pvxUndo.top();
+      var r=na.call(this,title,sub,act,go,opts); try{ var w=document.getElementById('notes'); if(e&&w) e.__note=w.lastElementChild; }catch(x){} return r; }; }
+  /* nested changes (a move that assigns a doctor, taking a case) belong to the outer change */
+  var nest=0;
+  ['moveStatus','moveRoom','completePatient'].forEach(function(n){ var f=window[n]; if(typeof f!=='function') return; window[n]=function(){ nest++; try{ return f.apply(this,arguments); } finally { nest--; } }; });
+  if(typeof window.critTakeCase==='function'){ var tk=window.critTakeCase;
+    window.critTakeCase=function(id){ var r; nest++; try{ r=tk.apply(this,arguments); } finally { nest--; } var p=find(id); if(!p||!p.critTakenAt) return r;
+      var nm=p.name||'Patient', e=pvxUndo.push({label:'Case taken',pid:id,undo:function(){ var q=find(id); if(!q||!q.critTakenAt) return false; window.critUndoTake(); q=find(id);
+          if(q&&q.critTakenAt){ notify('Can’t undo',bcEsc(nm)+' · taking a case can be undone for 9 seconds',{icon:'info',color:'var(--accent)'}); if(window.pvxSay) pvxSay('Can’t undo taking the case'); return false; }
+          notify('Take undone',bcEsc(nm)+' · back to waiting for a doctor',{icon:'move',color:'var(--accent)'}); }});
+      window.__pvxTakeEntry=e; return r; };
+    if(typeof window.critUndoTake==='function'){ var ut=window.critUndoTake; window.critUndoTake=function(){ var e=window.__pvxTakeEntry; if(e&&pvxUndo.top()===e&&!pvxUndo.__inUndo) pvxUndo.remove(e); return ut.apply(this,arguments); }; }
+  }
+  /* 1. priority, doctor and liaison */
+  function label(field,p){ try{ if(field==='prio') return 'P'+p.prio+' · '+PRIO_LABEL[p.prio]; if(field==='doctor') return (p.doctor&&p.doctor!=='unassigned')?doc(p.doctor).name:'no doctor'; if(field==='liaison'){ var l=p.liaison&&liaison(p.liaison); return l?l.name:'no liaison'; } }catch(e){} return ''; }
+  function fieldUndo(name,field,word,extra){
+    var f=window[name]; if(typeof f!=='function') return;
+    window[name]=function(p,v){
+      if(nest||!p||p[field]===v) return f.apply(this,arguments);
+      var before=p[field], keep={}; (extra||[]).forEach(function(k){ keep[k]=p[k]; });
+      var tl=(p.timeline||[]).length, real=window.notify, cap=null, r; nest++;
+      window.notify=function(t,s,o){ if(!cap){ cap=[t,s,o]; return; } return real.apply(this,arguments); };
+      try{ r=f.apply(this,arguments); } finally { window.notify=real; nest--; }
+      if(p[field]===before){ if(cap) real.apply(null,cap); return r; }
+      var after=p[field], added=(p.timeline||[]).slice(tl).map(function(x){ return x&&(x.label+'|'+(x.at&&+new Date(x.at))); }), id=p.id, args=[].slice.call(arguments,1);
+      var e=pvxUndo.push({label:cap?cap[0]:word, pid:id,
+        undo:function(){ var q=find(id); if(!q||q.completed||q[field]!==after){ notify('Can’t undo',(q?bcEsc(q.name||'')+' · ':'')+'this has changed since',{icon:'info',color:'var(--accent)'}); if(window.pvxSay) pvxSay('Can’t undo: this has changed since'); return false; }
+          q[field]=before; Object.keys(keep).forEach(function(k){ if(keep[k]===undefined) delete q[k]; else q[k]=keep[k]; });
+          if(field==='doctor'){ try{ ctSyncPrimary(q); }catch(x){} }
+          q.timeline=(q.timeline||[]).filter(function(x){ return added.indexOf(x&&(x.label+'|'+(x.at&&+new Date(x.at))))<0; });
+          scheduleRender(function(){ try{ if(activePatient===q.id) fillDrawer(q); }catch(x){} });
+          notify(word+' undone',bcEsc(q.name||'')+' · back to '+bcEsc(label(field,q)),{icon:'move',color:'var(--accent)'}); if(window.pvxSay) pvxSay(word+' undone: '+(q.name||'')+', back to '+label(field,q)); },
+        redo:function(){ var q=find(id); if(q) window[name].apply(null,[q].concat(args)); }});
+      var go=function(){ pvxUndo.undoEntry(e); }; go.__pvxU=1;
+      if(cap&&typeof window.fvNotifyAct==='function') window.fvNotifyAct(cap[0],cap[1],'Undo',go,Object.assign({dur:8000},cap[2]||{})); else if(cap) real.apply(null,cap);
+      return r; };
+  }
+  fieldUndo('setPriority','prio','Priority change');
+  fieldUndo('assignDoctor','doctor','Doctor change',['msDoctorAt']);
+  fieldUndo('assignLiaison','liaison','Liaison change');
+  /* undo through the history marks itself, so a button press and Cmd-Z don't both run */
+  var u0=pvxUndo.undo, ue0=pvxUndo.undoEntry;
+  pvxUndo.undo=function(){ pvxUndo.__inUndo=1; try{ return u0.apply(this,arguments); } finally { pvxUndo.__inUndo=0; } };
+  pvxUndo.undoEntry=function(){ pvxUndo.__inUndo=1; try{ return ue0.apply(this,arguments); } finally { pvxUndo.__inUndo=0; } };
+  /* once a change is undone, its note no longer offers Undo */
+  var push0=pvxUndo.push; pvxUndo.push=function(e){ var r=push0.apply(this,arguments); if(e&&!e.__wrapped){ e.__wrapped=1; var u=e.undo; e.undo=function(){ var ok=u.apply(this,arguments);
+      if(ok!==false&&e.__note){ [].forEach.call(e.__note.querySelectorAll('button'),function(b){ if(/^\s*Undo\s*$/.test(b.textContent)) b.remove(); }); } return ok; }; } return r; };
+})();
+</script>
+<style id="pvx-n351">
+/* PVX-N351 - HIG Text views: longer texts grow with what's typed, up to 40% of the window, then scroll */
+:is(#alertMessage,#alertNote,#intakeModal .ik-area,#usCQ,#usDx).pvx-grow{resize:none;overflow-y:hidden}
+:is(#alertMessage,#alertNote,#intakeModal .ik-area,#usCQ,#usDx).pvx-grow.pvx-grow-max{overflow-y:auto}
+</style>
+<script id="pvx-n351-js">
+/* PVX-N351 - HIG Text views + Web views.
+   1. The hospital alert's public message and staff note, the triage intake's history and notes, and the ultrasound request's question and
+      findings grow to show everything typed (they were fixed 2-line or short boxes that scrolled inside), up to 40% of the window.
+   2. Back and Forward: opening a patient or a room is a step. The browser's Back (or Android's back gesture in the Home Screen app)
+      closes it instead of leaving Flow, and Forward opens it again. Closing it with ✕ or Esc takes the step away. */
+(function(){
+  /* 1. text views that grow */
+  var SEL='#alertMessage,#alertNote,#intakeModal .ik-area,#usCQ,#usDx';
+  function fit(t){ if(!t||!t.isConnected||!t.offsetParent) return; t.classList.add('pvx-grow');
+    var cs=getComputedStyle(t), b=(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0), max=Math.round((window.innerHeight||800)*0.4);
+    t.style.height='auto'; var need=t.scrollHeight+b, h=Math.min(need,max); t.style.height=h+'px'; t.classList.toggle('pvx-grow-max',need>max); }
+  function fitAll(){ [].forEach.call(document.querySelectorAll(SEL),fit); }
+  window.pvxFitText=fitAll;
+  document.addEventListener('input',function(e){ if(e.target&&e.target.matches&&e.target.matches(SEL)) fit(e.target); },true);
+  document.addEventListener('focusin',function(e){ if(e.target&&e.target.matches&&e.target.matches(SEL)) fit(e.target); },true);
+  window.addEventListener('resize',function(){ fitAll(); });
+  ['openAlertModal','openIntake','openUltrasoundRequest','openTriageEdit'].forEach(function(n){ var f=window[n]; if(typeof f!=='function') return;
+    window[n]=function(){ var r=f.apply(this,arguments); requestAnimationFrame(fitAll); setTimeout(fitAll,350); return r; }; });
+
+  /* 2. Back and Forward */
+  if(!window.history||!history.pushState) return;
+  var PANELS={drawer:{el:'drawer',id:function(){ try{ return activePatient; }catch(e){ return null; } },open:function(id){ openDrawer(id); },close:function(){ closeDrawer(); }},
+              loc:{el:'locDrawer',id:function(){ try{ return activeLoc; }catch(e){ return null; } },open:function(id){ openLocDrawer(id); },close:function(){ closeLocDrawer(); }}};
+  var fromPop=0, pend=null;
+  function isOpen(k){ var e=document.getElementById(PANELS[k].el); return !!(e&&e.classList.contains('open')); }
+  function lobby(){ var b=document.body.classList; return b.contains('tv-mode')||b.contains('client-mode')||/[?&](tv|display|lobby)=?/.test(location.search); }
+  function st(){ return history.state&&history.state.pvxPanel?history.state:null; }
+  function opened(k){ if(fromPop||lobby()) return; var id=PANELS[k].id(); if(id==null) return;
+    var s={pvxPanel:k,id:id};
+    if(pend){ clearTimeout(pend); pend=null; }
+    var cur=st(); if(cur){ history.replaceState(s,''); } else history.pushState(s,''); }
+  function closed(k){ if(fromPop) return; var cur=st(); if(!cur||cur.pvxPanel!==k) return;
+    clearTimeout(pend); pend=setTimeout(function(){ pend=null; var c=st(); if(c&&c.pvxPanel===k&&!isOpen(k)) history.back(); },80); }
+  Object.keys(PANELS).forEach(function(k){ var el=document.getElementById(PANELS[k].el); if(!el) return; var was=el.classList.contains('open');
+    new MutationObserver(function(){ var now=el.classList.contains('open'); if(now===was){ if(now){ var c=st(); var id=PANELS[k].id(); if(c&&c.pvxPanel===k&&id!=null&&c.id!==id&&!fromPop) history.replaceState({pvxPanel:k,id:id},''); } return; }
+      was=now; if(now) opened(k); else closed(k); }).observe(el,{attributes:true,attributeFilter:['class']});
+    if(was) opened(k); });
+  /* a different patient in the open drawer updates the step */
+  if(typeof window.openDrawer==='function'){ var od=window.openDrawer; window.openDrawer=function(pid){ var r=od.apply(this,arguments); try{ var c=st(); if(!fromPop&&c&&c.pvxPanel==='drawer'&&c.id!==pid&&isOpen('drawer')) history.replaceState({pvxPanel:'drawer',id:pid},''); }catch(e){} return r; }; }
+  window.addEventListener('popstate',function(e){ var s=e.state&&e.state.pvxPanel?e.state:null; if(pend){ clearTimeout(pend); pend=null; }
+    fromPop++; try{
+      Object.keys(PANELS).forEach(function(k){ if(isOpen(k)&&(!s||s.pvxPanel!==k)) PANELS[k].close(); });
+      if(s&&PANELS[s.pvxPanel]&&!isOpen(s.pvxPanel)){ var ok=true; if(s.pvxPanel==='drawer'){ try{ ok=!!PATIENTS.find(function(x){ return x.id===s.id; }); }catch(x){ ok=false; } }
+        if(ok) PANELS[s.pvxPanel].open(s.id); }
+    } finally { setTimeout(function(){ fromPop--; },0); } });
+})();
+</script>
+<style id="pvx-n352">
+/* PVX-N352 - HIG Boxes: the intern supervision box gets a title, styled like the drawer's other section titles */
+#pv-intern > .pvx-box-t{margin:0 0 10px}
+</style>
+<script id="pvx-n352-js">
+/* PVX-N352 - HIG Boxes: each box says what it holds, for VoiceOver too.
+   - The patient drawer's section titles (Flags, Assigned doctor, Liaison, Documents, Move to stage, Timeline) and its boxes'
+     titles (pDVM records, Surgery, Triage, Care team, Triage intake, Family messages) are headings, so VoiceOver can move
+     section to section; there was one heading, the patient's name.
+   - Each box is a group named by its title: the drawer's boxes, Command's panels (Attention center, Client queue,
+     Current wait by doctor) and its number tiles (On floor, Waiting…).
+   - The intern supervision box had no title; it now reads "Intern supervision". */
+(function(){
+  function nm(s){ s=String(s||'').replace(/\s+/g,' ').trim(); return s; }
+  function sentence(s){ s=nm(s); return (window.pvxChartName?pvxChartName(s):s); }
+  var n=0; function idFor(el){ if(!el.id) el.id='pvxBoxT'+(++n); return el.id; }
+  function head(el,level){ if(!el||el.getAttribute('role')==='heading'||/^H[1-6]$/.test(el.tagName)||el.closest('button,[role=button]')) return;   /* a title inside a button stays the button's name */ el.setAttribute('role','heading'); el.setAttribute('aria-level',String(level||3)); }
+  function group(box,title){ if(!box||!title) return; if(box.matches('button,[role=button]')) return;
+    if(!box.getAttribute('role')||box.getAttribute('role')==='group'){ box.setAttribute('role','group'); box.setAttribute('aria-labelledby',idFor(title)); } }
+  function drawer(){ var d=document.getElementById('drawer'); if(!d) return;
+    d.querySelectorAll('.sect-title,.timeline-title').forEach(function(t){ head(t,3); });
+    d.querySelectorAll('.rec-card').forEach(function(b){ var t=b.querySelector('.rec-title'); if(t){ head(t,3); group(b,t); } });
+    d.querySelectorAll('.triage-card:not([role=button]):not(button) .tc-title').forEach(function(t){ head(t,3); });
+    var tri=d.querySelector('#triCard'); if(tri){ var tt=tri.querySelector('.tri-hmain b, .tri-hmain .tri-title, .tri-hmain > div:first-child'); if(tt){ head(tt,3); group(tri,tt); } }
+    var ms=d.querySelector('.msg-sect'), mh=ms&&ms.querySelector('#commHead .comm-title, #commHead b, #commHead .comm-headwrap > :first-child'); if(ms&&mh){ head(mh,3); group(ms,mh); }
+    d.querySelectorAll('.fg-sec,.fvd').forEach(function(b){ var t=b.querySelector('.sect-title'); if(t) group(b,t); });
+    var pi=document.getElementById('pv-intern');
+    if(pi){ var h=pi.querySelector(':scope > .pvx-box-t'); if(!h){ h=document.createElement('p'); h.className='sect-title pvx-box-t'; h.textContent='Intern supervision'; pi.insertBefore(h,pi.firstChild); }
+      head(h,3); pi.setAttribute('aria-labelledby',idFor(h)); }
+  }
+  function command(){ var v=document.getElementById('view-dashboard'); if(!v) return;
+    v.querySelectorAll('.panel').forEach(function(b){ var t=b.querySelector('h3,h2'); if(t) group(b,t); });
+    v.querySelectorAll('.command-kpi').forEach(function(k){ var l=k.querySelector('.command-kpi__label'); if(!l) return; var s=sentence(l.textContent);
+      if(k.getAttribute('aria-label')!==s){ k.setAttribute('role','group'); k.setAttribute('aria-label',s); } });
+  }
+  var t=0; function soon(){ if(t) return; t=requestAnimationFrame(function(){ t=0; try{ drawer(); command(); }catch(e){} }); }
+  ['drawer','view-dashboard'].forEach(function(id){ var el=document.getElementById(id); if(el) new MutationObserver(soon).observe(el,{childList:true,subtree:true}); });
+  soon();
+})();
+</script>
+<style id="pvx-n353">
+/* PVX-N353 - HIG Disclosure controls: the drawer's three in-place reveals (Triage details, Messages, Timeline) are one kind of
+   control, a disclosure triangle at the leading edge: pointing in when closed, down when open (as in Rounds). Before, Triage and
+   Messages were disclosure buttons (trailing, down then up) and Timeline a trailing arrow, so one drawer had three styles. */
+.tri-head .tri-chev{order:-1;margin-right:-4px}
+.tri-card .tri-chev{transform:rotate(-90deg)}
+.tri-card.open .tri-chev{transform:none}
+.tri-chev[role=button]{border-radius:6px;cursor:pointer}
+.tri-chev[role=button]:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+.tri-card:not(.open) .tri-detail{visibility:hidden;transition:max-height .42s var(--ease),opacity .3s var(--ease),visibility 0s linear .42s}
+.tri-card.open .tri-detail{visibility:visible;transition:max-height .42s var(--ease),opacity .3s var(--ease),visibility 0s}
+#commHead .comm-chev{order:-1;transform:rotate(90deg)}
+#commHead[aria-expanded="true"] .comm-chev{transform:rotate(180deg)}
+#commHead{justify-content:flex-start;gap:8px}
+#commHead .comm-headwrap{flex:1;min-width:0}
+#dTimelineHead{justify-content:flex-start;gap:8px}
+#dTimelineHead .tl-head-right{display:contents}
+#dTimelineHead .tl-chevron{order:-1}
+#dTimelineHead .timeline-today{margin-left:auto}
+[dir=rtl] .tri-card .tri-chev{transform:rotate(90deg)} [dir=rtl] .tri-card.open .tri-chev{transform:none}
+[dir=rtl] #commHead .comm-chev{transform:rotate(-90deg)} [dir=rtl] #commHead[aria-expanded="true"] .comm-chev{transform:rotate(180deg)}
+[dir=rtl] #dTimelineHead .tl-chevron{transform:scaleX(-1)} [dir=rtl] #dTimelineHead[aria-expanded="true"] .tl-chevron{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){ .tri-card .tri-chev,#commHead .comm-chev,#dTimelineHead .tl-chevron{transition:none} }
+</style>
+<script id="pvx-n353-js">
+/* PVX-N353 - HIG Disclosure controls: Triage details open and close from the keyboard and tell VoiceOver whether they're open
+   (the row only answered a click; its details were read out even when closed). */
+(function(){
+  function wire(){ var card=document.getElementById('triCard'), head=document.getElementById('triHead'); if(!card||!head) return;
+    var ch=head.querySelector('.tri-chev'), det=card.querySelector('.tri-detail'); if(!ch) return;
+    if(det&&!det.id) det.id='triDetail';
+    if(!ch.__pvx){ ch.__pvx=1; ch.setAttribute('role','button'); ch.setAttribute('tabindex','0'); ch.setAttribute('aria-label','Triage details'); if(det) ch.setAttribute('aria-controls',det.id);
+      ch.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); head.click(); setTimeout(sync,0); } }); }
+    sync();
+    if(!card.__pvxMo){ card.__pvxMo=new MutationObserver(sync); card.__pvxMo.observe(card,{attributes:true,attributeFilter:['class']}); } }
+  function sync(){ var card=document.getElementById('triCard'), ch=card&&card.querySelector('.tri-chev'); if(!ch) return; var open=card.classList.contains('open');
+    if(ch.getAttribute('aria-expanded')!==String(open)) ch.setAttribute('aria-expanded',String(open));
+    var det=card.querySelector('.tri-detail'); if(det){ if(open) det.removeAttribute('aria-hidden'); else { if(det.contains(document.activeElement)) ch.focus(); det.setAttribute('aria-hidden','true'); } } }
+  var m=document.getElementById('triageMount'); if(m) new MutationObserver(wire).observe(m,{childList:true,subtree:false});
+  wire();
+})();
+</script>
+<style id="pvx-n354">
+/* PVX-N354 - HIG Lists and tables */
+/* 1. the open patient's row (Patients) and card (the board) stay highlighted while the drawer is open */
+#tableBody tr.pvx-current > td{background:rgba(56,189,210,.10)}
+#tableBody tr.pvx-current > td:first-child{box-shadow:inset 3px 0 0 var(--accent,#38BDD2)}
+body:not(.dark) #tableBody tr.pvx-current > td{background:rgba(15,107,130,.08)}
+body:not(.dark) #tableBody tr.pvx-current > td:first-child{box-shadow:inset 3px 0 0 #0F6B82}
+#board .card.pvx-current{outline:2px solid var(--accent,#38BDD2);outline-offset:1px}
+body:not(.dark) #board .card.pvx-current{outline-color:#0F6B82}
+@media (forced-colors:active){ #tableBody tr.pvx-current > td{background:Highlight;color:HighlightText} #board .card.pvx-current{outline-color:Highlight} }
+/* 2. column headings sort the list */
+thead th[data-sort] .pvx-th{appearance:none;border:0;background:none;padding:0;margin:0;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:4px;border-radius:4px}
+thead th[data-sort] .pvx-th:hover{color:var(--ink-700)}
+thead th[data-sort] .pvx-th:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+thead th[aria-sort] .pvx-th{color:var(--ink-800,#0B1B2A)} body.dark thead th[aria-sort] .pvx-th{color:#E6EEF6}
+thead th .pvx-sort{width:10px;height:10px;display:inline-block}
+thead th .pvx-sort svg{width:10px;height:10px;display:block}
+thead th:not([aria-sort]) .pvx-sort{visibility:hidden}
+thead th[aria-sort=descending] .pvx-sort svg{transform:rotate(180deg)}
+#pvxSortReset{appearance:none;border:0;background:none;font:inherit;font-weight:600;color:var(--accent,#38BDD2);cursor:pointer;padding:0 0 0 6px}
+body:not(.dark) #pvxSortReset{color:#0F6B82}
+#pvxSortReset[hidden]{display:none}
+@media print{ #pvxSortReset{display:none!important} }
+</style>
+<script id="pvx-n354-js">
+/* PVX-N354 - HIG Lists and tables.
+   1. Selection feedback: while a patient is open, their row on Patients and their card on the board stay highlighted
+      (aria-current), so it's clear whose drawer it is. Nothing marked the row before.
+   2. Column headings sort Patients (macOS: "let people click a column heading to sort"). The first click sorts the natural way
+      for that column (names A to Z, P1 first, longest wait first, earliest arrival first), the second reverses it, the third goes
+      back to most urgent first, Flow's own order. "Most urgent first" beside the count does the same. */
+(function(){
+  /* 1. the open patient */
+  function cur(){ try{ return document.getElementById('drawer').classList.contains('open')?activePatient:null; }catch(e){ return null; } }
+  function mark(){ var id=cur(); ['#tableBody tr[data-pid]','#board .card[data-pid]'].forEach(function(sel){ [].forEach.call(document.querySelectorAll(sel),function(el){
+      var on=id!=null&&el.getAttribute('data-pid')===String(id); el.classList.toggle('pvx-current',on); if(on) el.setAttribute('aria-current','true'); else el.removeAttribute('aria-current'); }); }); }
+  var mt=0; function soon(){ if(mt) return; mt=setTimeout(function(){ mt=0; mark(); },0); }   /* a timer, not the next frame: a page in the background gets no frames */
+  ['tableBody','board'].forEach(function(id){ var el=document.getElementById(id); if(el) new MutationObserver(soon).observe(el,{childList:true,subtree:true}); });
+  var dr=document.getElementById('drawer'); if(dr) new MutationObserver(soon).observe(dr,{attributes:true,attributeFilter:['class']});
+  if(typeof window.openDrawer==='function'){ var od=window.openDrawer; window.openDrawer=function(){ var r=od.apply(this,arguments); try{ mark(); }catch(e){} soon(); return r; }; }
+
+  /* 2. sorting */
+  var KEY=null, DIR=1;
+  var NAT={patient:1,reason:1,doctor:1,location:1,status:1,priority:1,arrival:1,wait:-1};
+  var WORD={patient:'patient',reason:'reason',doctor:'doctor',location:'location',status:'status',priority:'priority',arrival:'arrival',wait:'wait'};
+  var DIRW={patient:['A to Z','Z to A'],reason:['A to Z','Z to A'],doctor:['A to Z','Z to A'],location:['A to Z','Z to A'],status:['in stage order','in reverse stage order'],priority:['P1 first','P3 first'],arrival:['earliest first','latest first'],wait:['shortest first','longest first']};
+  var ARROW='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function val(p,k){ try{ switch(k){
+      case 'patient': return ((p.name||'')+' '+(p.last||'')).toLowerCase();
+      case 'reason': return String((typeof compactProblems==='function'?compactProblems(p):'')||p.reason||'').toLowerCase()||'\uffff';
+      case 'doctor': return (!p.doctor||p.doctor==='unassigned')?'\uffff':String(doc(p.doctor).name||'').replace(/^Dr\.?\s*/,'').toLowerCase();
+      case 'location': return String(p.room||'').toLowerCase().replace(/\d+/g,function(n){ return ('000'+n).slice(-4); });
+      case 'status': var i=(typeof FLOW_COLS!=='undefined'?FLOW_COLS:[]).indexOf(p.status); return i<0?99:i;
+      case 'priority': return Number(p.prio)||9;
+      case 'arrival': return +new Date(p.arrival)||0;
+      case 'wait': return (typeof waitMinutes==='function')?waitMinutes(p):0; } }catch(e){} return ''; }
+  function find(id){ try{ return PATIENTS.find(function(x){ return String(x.id)===String(id); }); }catch(e){ return null; } }
+  function apply(){ var tb=document.getElementById('tableBody'); if(!tb) return; var rows=[].slice.call(tb.querySelectorAll(':scope > tr[data-pid]')); if(!rows.length) return;
+    var base=rows.map(function(r,i){ return {r:r,i:i,p:find(r.getAttribute('data-pid'))}; });
+    if(KEY){ base.sort(function(a,b){ if(!a.p||!b.p) return a.i-b.i; var x=val(a.p,KEY), y=val(b.p,KEY); if(x<y) return -DIR; if(x>y) return DIR; return (typeof pvxByUrgency==='function')?pvxByUrgency(a.p,b.p):a.i-b.i; }); }
+    else if(typeof pvxByUrgency==='function'){ base.sort(function(a,b){ if(!a.p||!b.p) return a.i-b.i; return pvxByUrgency(a.p,b.p)||a.i-b.i; }); }
+    var changed=base.some(function(o,j){ return o.r!==rows[j]; }); if(changed) base.forEach(function(o){ tb.appendChild(o.r); });
+    paint(); }
+  function paint(){ [].forEach.call(document.querySelectorAll('#view-list thead th[data-sort]'),function(th){ var k=th.getAttribute('data-sort');
+      if(!th.querySelector('.pvx-th')){ var t=th.textContent.trim(); th.textContent=''; var b=document.createElement('button'); b.type='button'; b.className='pvx-th'; b.innerHTML='<span class="pvx-th-t"></span><span class="pvx-sort" aria-hidden="true">'+ARROW+'</span>'; b.firstChild.textContent=t; th.appendChild(b);
+        b.addEventListener('click',function(){ choose(k); }); }
+      var b2=th.querySelector('.pvx-th'), name=b2.querySelector('.pvx-th-t').textContent;
+      if(KEY===k){ th.setAttribute('aria-sort',DIR===1?'ascending':'descending'); var d=DIRW[k][DIR===1?0:1], nd=DIR===NAT[k]?DIRW[k][DIR===1?1:0]:'most urgent first'; b2.title='Sorted by '+WORD[k]+', '+d+'. Click for '+nd+'.'; b2.setAttribute('aria-label',name+', sorted '+d); }
+      else { th.removeAttribute('aria-sort'); b2.title='Sort by '+WORD[k]; b2.setAttribute('aria-label','Sort by '+WORD[k]); } });
+    var rc=document.getElementById('resCount'), rs=document.getElementById('pvxSortReset');
+    if(rc&&!rs){ rs=document.createElement('button'); rs.type='button'; rs.id='pvxSortReset'; rs.textContent='Most urgent first'; rs.title='Back to Flow’s order: P1 first, then the longest wait'; rs.addEventListener('click',function(){ choose(null); }); rc.insertAdjacentElement('afterend',rs); }
+    if(rs){ rs.hidden=!KEY; if(rc){ var cs=getComputedStyle(rc); rs.style.fontSize=cs.fontSize; rs.style.lineHeight=cs.lineHeight; } } }
+  function choose(k){
+    if(k===null){ KEY=null; DIR=1; }
+    else if(KEY!==k){ KEY=k; DIR=NAT[k]; }
+    else if(DIR===NAT[k]){ DIR=-DIR; }
+    else { KEY=null; DIR=1; }
+    apply();
+    try{ if(window.pvxSay) pvxSay(KEY?('Sorted by '+WORD[KEY]+', '+DIRW[KEY][DIR===1?0:1]):'Sorted most urgent first'); }catch(e){}
+    var th=KEY&&document.querySelector('#view-list thead th[data-sort="'+KEY+'"] .pvx-th'); if(th&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('thead')) th.focus(); }
+  window.pvxListSort=function(k){ choose(k); return {key:KEY,dir:DIR}; };
+  if(typeof renderTable==='function'){ var rt=renderTable; renderTable=function(){ var r=rt.apply(this,arguments); try{ apply(); }catch(e){} return r; }; }
+  paint();
+})();
+</script>
+<script id="pvx-n355-js">
+/* PVX-N355 - HIG Split views: with a patient open, ⌥↓ and ⌥↑ move to the next or previous patient in the order the view shows
+   (Patients as sorted, the board stage by stage, Rooms room by room; from Command, most urgent first), the way Mail moves through
+   a list with its message open. The drawer follows, the row or card stays highlighted (n354), and VoiceOver hears where it is
+   ("Milo Chen, 3 of 9"). It stops at either end and says so. Text fields, menus and sheets keep their own arrow keys. */
+(function(){
+  function view(){ try{ return currentView; }catch(e){ return ''; } }
+  function seq(){ var sel={list:'#tableBody tr[data-pid]',flow:'#board .card[data-pid]',rooms:'#view-rooms [data-pid]'}[view()], ids=[];
+    if(sel){ [].forEach.call(document.querySelectorAll(sel),function(el){ if(!el.offsetParent) return; var id=el.getAttribute('data-pid'); if(id&&ids.indexOf(id)<0) ids.push(id); }); }
+    if(!ids.length){ try{ ids=PATIENTS.filter(isActive).slice().sort(pvxByUrgency).map(function(p){ return String(p.id); }); }catch(e){} }
+    return ids; }
+  function name(id){ try{ var p=PATIENTS.find(function(x){ return String(x.id)===String(id); }); return p?((p.name||'')+(p.last?' '+p.last:'')):''; }catch(e){ return ''; } }
+  function say(t){ try{ if(window.pvxSay) pvxSay(t); }catch(e){} }
+  function step(d){ var cur; try{ cur=String(activePatient); }catch(e){ return false; } var ids=seq(), i=ids.indexOf(cur);
+    if(i<0){ if(!ids.length) return false; i=d>0?-1:ids.length; }
+    var j=i+d; if(j<0||j>=ids.length){ say(d>0?'Last patient':'First patient'); return true; }
+    openDrawer(ids[j]); say(name(ids[j])+', '+(j+1)+' of '+ids.length);
+    var dr=document.getElementById('drawer'); if(dr&&!dr.contains(document.activeElement)){ var h=dr.querySelector('h2'); if(h){ h.tabIndex=-1; try{ h.focus({preventScroll:true}); }catch(e){ h.focus(); } } }
+    try{ var row=document.querySelector('#view-'+view()+' [data-pid="'+ids[j]+'"]'); if(row) row.scrollIntoView({block:'nearest'}); }catch(e){}
+    return true; }
+  window.pvxStepPatient=step;
+  function typing(){ var a=document.activeElement; return !!(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable)); }
+  function covered(){ return [].some.call(document.querySelectorAll('.addpt-modal.open,.intake-modal.open,.us-modal.open,.confirm.open,#fvStale.show,.ops-menu.open,.dd-panel.open,[role=menu]:not([hidden])'),function(m){ return !!m.offsetParent; }); }
+  document.addEventListener('keydown',function(e){
+    if(!e.altKey||e.metaKey||e.ctrlKey||e.shiftKey||(e.key!=='ArrowDown'&&e.key!=='ArrowUp')) return;
+    var dr=document.getElementById('drawer'); if(!dr||!dr.classList.contains('open')) return;
+    if(typing()||covered()) return;
+    if(step(e.key==='ArrowDown'?1:-1)){ e.preventDefault(); e.stopPropagation(); }
+  },true);
+})();
+</script>
 </body>
 </html>
