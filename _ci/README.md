@@ -52,3 +52,6 @@ async def s_t260(br):
 - **`local_staff.py`** uses staff-only data in `private/`, such as who is off on each holiday. It covers n221 and n223.
 - **Elsewhere, both are skipped and listed as skipped.** Without `YK_SEED`, every page gets `fixtures/yk_standin.json` instead: one drug name and no doses.
 - **`mkci.py` builds `_ci/` without them.** It stops if anything licensed or staff-only would be copied.
+
+## Notes
+- **Nov 11 2026:** a note added to start a fresh GitHub Pages build. The build for the n356–n361 merge (ce6ce4e) failed to start during a GitHub Actions and Pages incident, and re-runs of it kept failing.
