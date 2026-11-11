@@ -1181,7 +1181,7 @@ async def s_n207(br):
     o1 = await pg.evaluate("[document.getElementById('apModal').classList.contains('open'), location.hash]")
     ok('n207: /#op=new opens New patient (the File / Dock menu command) and clears the link', o1[0] and o1[1] == '', o1)
     mf = await pg.evaluate("fetch('/manifest.webmanifest').then(r=>r.json())")
-    ok('n207: Flow manifest — name “Flow · Pravix” (≤ 16), id, shortcuts New patient / Rounds (its own page since n305) / Ultrasound (its own page since n333)', mf['name'] == 'Flow · Pravix' and len(mf['name']) <= 16 and mf['id'] == '/' and [x['url'] for x in mf['shortcuts']] == ['/#op=new', '/rounds/', '/ultrasound/'] and 'Shoreline' in mf['description'], mf.get('name'))
+    ok('n207: Flow manifest — name “Flow · Pravix” (≤ 16), id, shortcuts New patient / Find a patient / Patients / Client Display (n358; Rounds and Ultrasound have their own)', mf['name'] == 'Flow · Pravix' and len(mf['name']) <= 16 and mf['id'] == '/' and [x['url'] for x in mf['shortcuts']] == ['/#op=new', '/#find', '/#view=list', '/#view=client'] and 'Shoreline' in mf['description'], mf.get('name'))
     ok('no new page errors (n207 Flow)', not newerr(errs), errs)
     await ctx.close()
     ctx, pg, errs = await flow_page((1180, 820), touch=True)
@@ -1581,7 +1581,7 @@ async def s_n212(br):
     await pg.evaluate(SEED212); await pg.wait_for_timeout(400)
     t1 = await pg.evaluate("""(()=>{const s=document.getElementById('switcher'),r=s.getBoundingClientRect();return {on:document.documentElement.classList.contains('pvx-tabbar'), bottom:Math.round(innerHeight-r.bottom), w:Math.round(r.width), tabs:[...s.querySelectorAll('.seg')].filter(b=>b.offsetParent).map(b=>b.dataset.view), fit:[...s.querySelectorAll('.seg')].filter(b=>b.offsetParent).every(b=>b.scrollWidth<=b.clientWidth+1), stacked:(()=>{const b=s.querySelector('.seg[data-view=list]'),i=b.querySelector('svg').getBoundingClientRect(),t=b.getBoundingClientRect();return i.bottom<=t.top+t.height*0.7})(), minh:Math.round(s.querySelector('.seg').getBoundingClientRect().height), ph:document.getElementById('globalSearch').placeholder, pad:parseInt(getComputedStyle(document.body).paddingBottom)}})()""")
     await shot(pg, 'n212-flow-tabbar-phone')
-    ok('n212: iPhone — Flow’s sections are a bottom tab bar (Command, Patients, Flow, Rooms, Consent forms), icons above labels, 44 pt+ tabs, the page keeps room for it', t1['on'] and t1['bottom'] == 0 and t1['w'] == 390 and t1['tabs'] == ['dashboard', 'list', 'flow', 'rooms', 'consent'] and t1['stacked'] and t1['fit'] and t1['minh'] >= 44 and t1['pad'] >= 58 and t1['ph'] == 'Search patients', t1)
+    ok('n212: iPhone — Flow’s sections are a bottom tab bar (Command, Patients, Flow, Rooms, Consent forms), icons above labels, 44 pt+ tabs, the page keeps room for it', t1['on'] and t1['bottom'] == 0 and t1['w'] == 390 and t1['tabs'] == ['dashboard', 'list', 'flow', 'rooms', 'consent'] and t1['stacked'] and t1['fit'] and t1['minh'] >= 44 and t1['pad'] >= 58 and t1['ph'] in ('Search patients', 'Search'), t1)   # n361: the longest whole placeholder that fits
     await pg.click('#switcher .seg[data-view=rooms]'); await pg.wait_for_timeout(500)
     t2 = await pg.evaluate("[document.querySelector('#switcher .seg[data-view=rooms]').classList.contains('active'), !document.getElementById('view-rooms')||!document.getElementById('view-rooms').classList.contains('hidden')]")
     await pg.click('#switcher .seg[data-view=dashboard]'); await pg.wait_for_timeout(400)

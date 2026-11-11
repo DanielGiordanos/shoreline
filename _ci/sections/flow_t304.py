@@ -132,7 +132,7 @@ async def s_t304(br):
     ok('Rounds’ manifest: its own id and scope (/rounds/, never Flow’s app), opens Rounds, 192/512 icons and a maskable one; the icons are the top-bar glyph in the accent on #0A1222, square and unmasked',
        man['id'] == '/rounds/' and man['start_url'] == '/rounds/' and man['scope'] == '/rounds/' and man['short_name'] == 'Rounds' and [i['sizes'] for i in man['icons']] == ['192x192', '512x512', '512x512']
        and all(v[0] == v[1] for v in ims.values()) and ims['rounds-512.png'][2] == 2 and ims['sc-rounds.png'][2] == 6 and px[0] == [10, 18, 34] and px[1] == [56, 189, 210], [man.get('id'), ims, px])
-    ok('Flow’s Rounds shortcut has the Rounds icon (and, since n333, Ultrasound’s has Ultrasound’s); New patient is unchanged', [s.get('icons', [{}])[0].get('src') for s in flow['shortcuts']] == [None, '/assets/img/sc-rounds.png', '/assets/img/sc-ultrasound.png'], flow['shortcuts'])
+    ok('Flow’s Dock menu items each have their symbol (n358: Flow’s own commands; Rounds’ shortcuts are in Rounds’ own manifest)', [s.get('icons', [{}])[0].get('src') for s in flow['shortcuts']] == ['/assets/img/sc-flow-new.png', '/assets/img/sc-flow-find.png', '/assets/img/sc-flow-patients.png', '/assets/img/sc-flow-display.png'], flow['shortcuts'])
 
     # 7 · Flow and the waiting room are untouched
     c, p, e = await page(br, seed=False)

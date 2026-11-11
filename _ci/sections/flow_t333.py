@@ -92,8 +92,8 @@ async def s_t333(br):
     ok('…and none of Ultrasound’s screen styles', f[11] == 0, f[11])
     ok('…and it is lighter than before (Ultrasound’s code and styles left)', len(flow) < 1733000, len(flow))   # n348: the bar is the page before n333 (1,733,139); 1,660,000 left no room for later Flow work
     mf = json.load(open(os.path.join(BUILD, 'manifest.webmanifest'), encoding='utf-8'))
-    sc = [x for x in mf['shortcuts'] if x['name'] == 'Ultrasound']
-    ok('…Flow’s Home Screen shortcut to Ultrasound opens /ultrasound/, with its icon', sc and sc[0]['url'] == '/ultrasound/' and sc[0].get('icons'), sc)
+    sc = [x for x in mf['shortcuts'] if '/ultrasound' in x['url']]
+    ok('…Ultrasound’s shortcuts live in its own manifest; Flow’s Dock menu keeps Flow’s own commands (n358)', not sc, sc)
     # sending a request in Flow writes the visit record, and Ultrasound's page shows it
     sent = await p.evaluate("""(async()=>{const x=patient({name:'Mochi',last:'Separate',owner:'Synthetic',status:'Exam',room:'Room 1',arrival:new Date(Date.now()-40*60000),prio:2,doctor:DOCTORS[0].id,species:'Feline',timeline:[]});
       PATIENTS.push(x); renderAll(); await new Promise(r=>setTimeout(r,300)); openUltrasoundRequest(x.id); await new Promise(r=>setTimeout(r,300));
