@@ -1,5 +1,6 @@
 # Pravix tests. Every push to a branch other than main runs every test in _ci/ (see _ci/README.md):
-# Chromium in six even parts, and the sections written for both engines again in WebKit (Safari's engine).
+# Chromium in six even parts, and the sections written for both engines again in WebKit (Safari's engine), in three
+# parts (n362: one WebKit job ran past its 45-minute limit once the Flow builds n336–n361 were added).
 # A build goes to its branch, these run, and merging it into main is the deploy.
 #
 # Licensed drug data and staff-only data never come here; their sections run on the build machine before each merge.
@@ -50,9 +51,13 @@ jobs:
           retention-days: 7
 
   webkit:
-    name: WebKit
+    name: WebKit ${{ matrix.shard }}/3
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -68,10 +73,10 @@ jobs:
           pip install -q "playwright==$PLAYWRIGHT_VERSION"
           python -m playwright install --with-deps webkit > /dev/null
       - name: Tests
-        run: python _ci/run.py . --shots shots --engine webkit
+        run: python _ci/run.py . --shots shots --engine webkit --shard ${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: webkit
+          name: webkit-${{ matrix.shard }}
           path: shots/
           retention-days: 7

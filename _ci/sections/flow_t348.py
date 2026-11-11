@@ -51,7 +51,7 @@ async def s_t348(br):
     await p.evaluate("switchView('flow')"); await p.wait_for_timeout(700)
     await p.evaluate("window.dispatchEvent(new Event('beforeprint'))"); await p.emulate_media(media='print'); await p.wait_for_timeout(300)
     f = await p.evaluate(PRINT_ST)
-    ok('Printing · the board prints every stage, one under the other at full width (only the first column fit the page)', f['board'] == 'block' and len(f['cols']) >= 4 and all(w > f['bw'] - 4 for w in f['cols']) and 'Flow board' in f['headT'], f)
+    ok('Printing · the board prints every stage, one under the other at full width (only the first column fit the page)', f['board'] == 'block' and len(f['cols']) >= 4 and all(w > f['bw'] - 4 for w in f['cols']) and 'Pravix Flow · Board' in f['headT'], f)
     await p.emulate_media(media='screen'); await p.evaluate("window.dispatchEvent(new Event('afterprint'))"); await p.wait_for_timeout(200)
     # the body tag keeps its own print
     t = await p.evaluate("(()=>{document.body.classList.add('end-tagging'); window.dispatchEvent(new Event('beforeprint')); const r=document.body.classList.contains('pvx-printing'); window.dispatchEvent(new Event('afterprint')); document.body.classList.remove('end-tagging'); return r})()")

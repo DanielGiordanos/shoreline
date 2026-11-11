@@ -5787,7 +5787,7 @@ window.addEventListener('keydown',function(e){
       </button>
       <button class="seg" data-view="flow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1.5"/><rect x="10.5" y="3" width="6" height="12" rx="1.5"/><rect x="18" y="3" width="3" height="8" rx="1.5"/></svg>
-        Flow
+        Board
       </button>
       <button class="seg" data-view="rooms">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg>
@@ -5896,7 +5896,7 @@ window.addEventListener('keydown',function(e){
     <!-- FLOW BOARD -->
     <section class="view hidden" id="view-flow">
       <div class="view-head">
-        <div><h1>Flow</h1></div>      </div>
+        <div><h1>Board</h1></div>      </div>
       <div class="board" id="board"></div>
 
       <!-- Completion drop zones + Completed Today archive -->
@@ -20489,7 +20489,7 @@ body:not(.dark) .ops-item[data-op="print"] .ops-ic{color:#52677C;}
       Before, the dark screen printed as it looked (top bar, search, the critical banner on every page), and the list stopped after the first page.
    2. Print is in the + menu (with the view's name) and in the keyboard shortcuts; search answers "print". It's offered only where there's a view to print. */
 (function(){
-  var NAMES={dashboard:'Command',list:'Patients',flow:'Flow board',rooms:'Rooms'};
+  var NAMES={dashboard:'Command',list:'Patients',flow:'Board',rooms:'Rooms'};
   function view(){ try{ return currentView; }catch(e){ return ''; } }
   function can(){ var b=document.body; return !!NAMES[view()]&&!b.classList.contains('client-mode')&&!b.classList.contains('tv-mode')&&!b.classList.contains('fs-mode')&&!b.classList.contains('app-ultrasound')&&!b.classList.contains('app-rounds'); }
   var head=document.createElement('div'); head.id='pvxPrintHead'; head.setAttribute('aria-hidden','true'); document.body.insertBefore(head,document.body.firstChild);
@@ -21094,6 +21094,10 @@ body:not(.dark) #tableBody tr[data-pid]:active > td{background:rgba(15,23,42,.07
    4. a pop-up choice shows its whole name and load, wrapping when long, instead of ending in "…";
    5. Esc in a pop-up or in Add flag closes only that, not the drawer behind it.
    Path controls are a Mac file-system control; Flow has no files or folders to show a path for. */
+</script>
+<script id="pvx-n362-js">
+/* PVX-N362 - the board view is "Board" (the sub-nav, the iPhone tab bar, its heading, ⌥3's name, Print and the keyboard
+   shortcuts). Flow is the app's name only. The view id stays `flow`. */
 </script>
 </body>
 </html>
