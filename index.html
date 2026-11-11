@@ -5807,7 +5807,7 @@ window.addEventListener('keydown',function(e){
       <div class="search-wrap">
         <div class="search-bar">
           <span class="search-icon" aria-hidden="true"></span>
-          <input id="globalSearch" class="search-input" type="search" enterkeyhint="search" placeholder="Search patients, doctors, rooms" aria-label="Search patients, doctors and rooms" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchResults" aria-keyshortcuts="Meta+K Control+K"/>
+          <input id="globalSearch" class="search-input" type="search" enterkeyhint="search" placeholder="Search patients, doctors, rooms" aria-label="Search patients, doctors and rooms" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchResults" aria-keyshortcuts="Meta+K Control+K"/>
           <span class="premium-search-caret" aria-hidden="true"></span>
           <div class="actions"><kbd class="pvx-skey" id="globalSearchKey" aria-hidden="true">⌘K</kbd><button class="luna-search-orb" id="searchLuna" type="button" title="Search patients, rooms and commands" aria-label="Focus search"><img src="assets/img/luna-orb.webp" alt="" aria-hidden="true"></button></div>
         </div>
@@ -7523,18 +7523,21 @@ root.className='dd'+(variant==='compact'?' dd-compact':'');
 let sel=selectedId, hl=-1, q='';
 const chev='<span class="chev"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>';
 const searchIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
-const avatar=d=> d.badge ? d.badge
-: d.initials ?`<span class="dd-av">${d.initials}</span>`
-:`<span class="dd-av dd-av-dot" style="background:${d.color}"></span>`;
+const avatar=d=> d.badge ? '<span class="dd-badge" aria-hidden="true">'+d.badge+'</span>'
+: d.initials ?`<span class="dd-av" aria-hidden="true">${d.initials}</span>`
+:`<span class="dd-av dd-av-dot" aria-hidden="true" style="background:${d.color}"></span>`;
+const parts=h=>{ const x=document.createElement('div'); x.innerHTML=String(h==null?'':h); return [...x.childNodes].map(n=>(n.textContent||'').trim()).filter(Boolean); };   /* PVX-N360: words, not run together */
+const said=d=>parts(d.name).join(', ');
 root.innerHTML=`
     <button type="button" class="dd-trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="${lid}"></button>
     <div class="dd-panel" role="presentation">
-      <div class="dd-search">${searchIcon}<input type="text" placeholder="${searchPlaceholder}" aria-label="${String(searchPlaceholder||'Search').replace(/…$/,'')}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="${lid}"/></div>
+      <div class="dd-search">${searchIcon}<input type="text" placeholder="${searchPlaceholder}" aria-label="${String(searchPlaceholder||'Search').replace(/…$/,'')}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="${lid}"/><button type="button" class="dd-clear" aria-label="Clear search" title="Clear" tabindex="-1" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".32"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button></div>
       <div class="dd-list" role="listbox" id="${lid}" aria-label="${field}"></div>
     </div>`;
 const trigger=root.querySelector('.dd-trigger');
 const panel=root.querySelector('.dd-panel');
 const input=root.querySelector('.dd-search input');
+if(items.length<=6){ panel.classList.add('dd-short'); input.setAttribute('aria-label', field); input.removeAttribute('placeholder'); }   /* PVX-N360 */
 const list=root.querySelector('.dd-list');
 const selItem=()=>items.find(i=>i.id===sel);
 function renderTrigger(){
@@ -7542,14 +7545,14 @@ const d=selItem();
 trigger.innerHTML = d
 ?`${avatar(d)}<span class="dd-name">${d.name}</span>${chev}`
 :`<span class="dd-placeholder">${placeholder}</span>${chev}`;
-trigger.setAttribute('aria-label', field+': '+(d?String(d.name).replace(/<[^>]*>/g,''):'none'));
+trigger.setAttribute('aria-label', field+': '+(d?(parts(d.name)[0]||'none'):'none'));
 }
 const matches=()=>{const t=q.trim().toLowerCase();return t?items.filter(i=>i.name.toLowerCase().includes(t)):items;};
 function renderList(){
 const ms=matches();
-if(!ms.length){list.innerHTML='<div class="dd-empty">No doctors found</div>';return;}
+if(!ms.length){list.innerHTML='<div class="dd-empty" role="status">No matches for “'+bcEsc(q.trim())+'”</div>';return;}
 list.innerHTML=ms.map((i,idx)=>`
-      <div class="dd-opt ${i.id===sel?'sel':''} ${idx===hl?'hl':''}" data-id="${i.id}" role="option" id="${lid}-o${idx}" aria-selected="${i.id===sel}">
+      <div class="dd-opt ${i.id===sel?'sel':''} ${idx===hl?'hl':''}${i.none?' dd-none':''}" data-id="${i.id}" role="option" id="${lid}-o${idx}" aria-selected="${i.id===sel}" aria-label="${said(i).replace(/"/g,'&quot;')}">
         ${avatar(i)}<span class="dd-name">${i.name}</span>
         <span class="dd-check"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="19 7 9.5 17 5 12.5"/></svg></span>
       </div>`).join('');
@@ -7572,7 +7575,7 @@ function open(){
 if(ddOpen && ddOpen.close!==close) ddOpen.close();
 document.body.appendChild(panel);
 root.classList.add('open'); panel.classList.add('open'); trigger.setAttribute('aria-expanded','true');
-q='';input.value='';hl=-1;renderList();
+q='';input.value='';hl=-1;if(clr) clr.hidden=true;renderList();
 reposition();
 window.addEventListener('scroll', reposition, true);
 window.addEventListener('resize', reposition);
@@ -7585,10 +7588,13 @@ window.removeEventListener('resize', reposition);
 panel.classList.remove('open'); root.classList.remove('open'); trigger.setAttribute('aria-expanded','false');
 panel.style.position=panel.style.top=panel.style.left=panel.style.right=panel.style.width=panel.style.zIndex='';
 if(panel.parentNode!==root) root.appendChild(panel);
-if(ddOpen && ddOpen.close===close) ddOpen=null;
+if(ddOpen && ddOpen.close===close){ ddOpen=null; if(window.__pvxDdClosed) setTimeout(window.__pvxDdClosed,0); }   /* PVX-N360 */
 }
 trigger.onclick=e=>{e.stopPropagation();root.classList.contains('open')?close():open();};
-input.addEventListener('input',()=>{q=input.value;hl=-1;renderList();});
+const clr=root.querySelector('.dd-clear'), syncClr=()=>{ if(clr) clr.hidden=!input.value; };   /* PVX-N361 */
+if(clr){ clr.addEventListener('mousedown',e=>e.preventDefault()); clr.addEventListener('click',e=>{ e.stopPropagation(); input.value=''; q=''; hl=-1; syncClr(); renderList(); input.focus(); }); }
+input.addEventListener('input',syncClr);
+input.addEventListener('input',()=>{ if(panel.classList.contains('dd-short')){ const t=input.value.trim().toLowerCase(); input.value=''; q=''; const k=t?items.findIndex(i=>said(i).toLowerCase().split(/[^a-z0-9]+/).some(w=>w&&w.startsWith(t))):-1; if(k>=0) hl=k; renderList(); scrollHl(); return; } q=input.value;hl=-1;renderList();});
 input.addEventListener('keydown',e=>{
 const ms=matches();
 if(e.key==='ArrowDown'){e.preventDefault();hl=Math.min(ms.length-1,hl+1);renderList();scrollHl();}
@@ -7598,7 +7604,7 @@ else if(e.key==='PageUp'){e.preventDefault();hl=Math.max(0,(hl<0?0:hl)-6);render
 else if(e.key==='Home'){e.preventDefault();hl=0;renderList();scrollHl();}
 else if(e.key==='End'){e.preventDefault();hl=ms.length-1;renderList();scrollHl();}
 else if(e.key==='Enter'){e.preventDefault();if(ms[hl])choose(ms[hl].id);else if(ms.length===1)choose(ms[0].id);}
-else if(e.key==='Escape'){e.preventDefault();close();}
+else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();try{trigger.focus({preventScroll:true});}catch(x){}}   /* PVX-N361 */
 else if(e.key==='Tab'){e.preventDefault();}
 });
 
@@ -7858,9 +7864,9 @@ function assignDoctor(p,id){
 if(p.doctor===id) return;
 p.doctor=id;
 try{ ctSyncPrimary(p); }catch(e){}
-const d=doc(id);
-p.timeline.push({label:'Doctor assigned', at:new Date(), meta:d.name});
-notify('Doctor assigned',`${d.name} → ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--accent)'});
+const d=doc(id), off=(id==='unassigned');   /* PVX-N360: removing says so */
+p.timeline.push({label:off?'Doctor removed':'Doctor assigned', at:new Date(), meta:off?'':d.name});
+notify(off?'Doctor removed':'Doctor assigned', off?bcEsc(p.name):`${d.name} → ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--accent)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function assignLiaison(p,id){
@@ -7896,6 +7902,7 @@ commit(v);
 };
 }
 
+function pvxBoardFiltered(){ var f=filters; filters={status:null,prio:null,doctor:null,liaison:null}; try{ return filtered(); } finally { filters=f; } }   /* PVX-N356: the board takes search, not the Patients filters */
 function filtered(){
 return PATIENTS.filter(p=>{
 if(filters.status && p.status!==filters.status) return false;
@@ -7999,7 +8006,9 @@ const CKPI_HIST=(function(){ try{ const o=JSON.parse(localStorage.getItem('pvx:k
 
 /* PVX-N341 - share the visit tracker link: the system share sheet on iPhone and iPad (Messages, Mail, AirDrop…), Copy with a mouse.
    "Copied" shows only after the copy really happened; a refused copy says so and shows the link. */
-function pvxCanShare(){ try{ return !!(navigator.share&&matchMedia('(pointer:coarse)').matches); }catch(e){ return false; } }
+function pvxCanShare(){ try{ return typeof navigator.share==='function'; }catch(e){ return false; } }   /* PVX-N356: wherever the browser has a share sheet, a Mac's Safari too */
+function pvxCopyTracker(u){ function say(t){ if(typeof toast==='function') toast(t); }
+  try{ navigator.clipboard.writeText(u).then(function(){ say('Tracker link copied'); }, function(){ say('Couldn’t copy the link — '+u); }); }catch(e){ say('Couldn’t copy the link — '+u); } }
 function pvxShareTracker(u, name){
   function say(t){ if(typeof toast==='function') toast(t); }
   function copy(){ try{ navigator.clipboard.writeText(u).then(function(){ say('Tracker link copied'); }, function(){ say('Couldn’t copy the link — '+u); }); }catch(e){ say('Couldn’t copy the link — '+u); } }
@@ -8490,7 +8499,7 @@ return;
 }
 board.classList.remove('board-empty');
 board.innerHTML=FLOW_COLS.map(s=>{
-const list=filtered().filter(p=>p.status===s).sort(pvxByUrgency);
+const list=pvxBoardFiltered().filter(p=>p.status===s).sort(pvxByUrgency);
 const cards=list.map(p=>cardHTML(p)).join('') ||
 `<div class="empty-mini empty-mini--stage"><div class="ico">${EMPTY_ICON}</div><b>${(typeof searchQ!=='undefined'&&String(searchQ).trim())?'No matches here':(COL_EMPTY[s]||'Nothing here')}</b></div>`;
 return`<div class="col" data-status="${s}">
@@ -9686,7 +9695,7 @@ const prMount=document.getElementById('prioMount');
 prMount.appendChild(createDropdown({ label:'Priority',
 items: [1,2,3].map(n=>({id:String(n), name:`P${n} · ${PRIO_LABEL[n]}`, badge:`<span class="prio prio-${n}" style="width:24px;height:24px;font-size:0.6875rem;flex:0 0 auto">${PRIO[n].l}</span>`, color:PRIO[n].c, textColor:PRIO[n].t})),
 selectedId: String(p.prio), variant:'compact', placeholder:'Set priority', searchPlaceholder:'Priority…',
-onSelect: id => setPriority(p, +id)
+onSelect: id => setPriority(PATIENTS.find(x=>x.id===p.id)||p, +id)
 }));
 
 makeEditable(document.getElementById('dReason'), val=>{
@@ -9707,10 +9716,10 @@ p.owner=val; renderAll(); if(activePatient===p.id) fillDrawer(p);
 const dMount=document.getElementById('docAssignMount');
 dMount.innerHTML='';
 dMount.appendChild(createDropdown({
-items: (typeof fvDoctorItems==='function'?fvDoctorItems():DOCTORS),
+items: (p.doctor&&p.doctor!=='unassigned'?[{id:'__none', name:'No doctor', initials:'—', color:'#A9C0D4', none:true}]:[]).concat(typeof fvDoctorItems==='function'?fvDoctorItems():DOCTORS),
 selectedId: p.doctor==='unassigned'? null : p.doctor,
 placeholder:'Assign a doctor', searchPlaceholder:'Search doctors…',
-onSelect: id => assignDoctor(p, id)
+onSelect: id => assignDoctor(PATIENTS.find(x=>x.id===p.id)||p, id==='__none'?'unassigned':id)
 }));
 
 const lMount=document.getElementById('liaAssignMount');
@@ -9719,7 +9728,7 @@ lMount.appendChild(createDropdown({
 items: [NO_LIAISON, ...LIAISONS],
 selectedId: p.liaison || null,
 placeholder:'Add a liaison', searchPlaceholder:'Search liaisons…',
-onSelect: id => assignLiaison(p, id==='none'? null : id)
+onSelect: id => assignLiaison(PATIENTS.find(x=>x.id===p.id)||p, id==='none'? null : id)
 }));
 
 try{ renderCareTeamCard(p); }catch(e){}
@@ -11734,7 +11743,7 @@ mount.innerHTML =
 +'<div class="comm-body'+(_commOpen?'':' collapsed')+'" id="commBody">'
 +'<div class="msg-track"><div class="mqr">'+(p.publicToken?makeQR(url):'')+'</div>'
 +'<div class="mt-main"><div class="mt-code">Check-in code<b>'+bcEsc(p.trackCode||'—')+'</b></div>'
-+'<button class="mt-copy" id="msgCopyLink">Copy tracker link</button></div></div>'
++'<div class="mt-acts"><button type="button" class="mt-copy" id="msgCopyLink" title="Copy the family’s tracker link"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7h6.5L19 10.5V19a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><path d="M5 16V5a2 2 0 0 1 2-2h6"/></svg><span>Copy tracker link</span></button>'+'<button type="button" class="mt-copy mt-share" id="msgShareLink" aria-label="Share tracker link…" title="Share the tracker link: Messages, Mail, AirDrop…" hidden><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M8 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg><span>Share…</span></button></div>'+'</div></div>'
 +'<div class="msg-thread" id="msgThread"><div class="msg-empty">Loading…</div></div>'
 +'<div class="msg-compose"><textarea id="msgBox" rows="1" placeholder="Message" aria-label="Message to the family" enterkeyhint="send" autocapitalize="sentences"></textarea>'
 +'<button class="msg-send" id="msgSendBtn" disabled aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></svg></button></div>'
@@ -11748,7 +11757,8 @@ if(_commOpen && _unreadMsgs.has(p.id)){ _unreadMsgs.delete(p.id); updateCommMeta
 };
 updateCommMeta(p);
 const copyBtn=document.getElementById('msgCopyLink');
-copyBtn.textContent=pvxCanShare()?'Share tracker link…':'Copy tracker link'; copyBtn.onclick=function(){ pvxShareTracker(url, (p.name||'')+(p.last?' '+p.last:'')); };
+copyBtn.onclick=function(){ pvxCopyTracker(url); };   /* PVX-N356: Copy copies; Share opens the share sheet */
+const shareBtn=document.getElementById('msgShareLink'); if(shareBtn){ shareBtn.hidden=!pvxCanShare(); shareBtn.onclick=function(){ pvxShareTracker(url, (p.name||'')+(p.last?' '+p.last:'')); }; }
 const box=document.getElementById('msgBox'), sbtn=document.getElementById('msgSendBtn');
 box.addEventListener('input',function(){ box.style.height='auto'; box.style.height=Math.min(box.scrollHeight,110)+'px'; sbtn.disabled=!box.value.trim(); });
 box.addEventListener('keydown',function(e){ if(e.key==='Enter'&& !e.shiftKey){ e.preventDefault(); if(box.value.trim()) sendStaffMsg(p, box.value.trim()); } });
@@ -12300,7 +12310,7 @@ if(e.key==='Enter'&&!e.isComposing){ var row=[].slice.call(document.querySelecto
 })();
 document.addEventListener('keydown',e=>{
 if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();searchEl.focus();}
-if(e.key==='Escape'&& document.activeElement!==searchEl){ if(document.getElementById('opsMenu').classList.contains('open')){ opsMenuClose(); return; } if(document.getElementById('triEditModal').classList.contains('open')){ closeTriageEdit(); return; } if(document.getElementById('shiftModal').classList.contains('open')){ closeShiftSetup(); return; } if(document.getElementById('apModal').classList.contains('open')){ closeAddPatient(); return; } if(document.getElementById('intakeModal').classList.contains('open')){ closeIntake(); return; } closeDrawer(); closeLocDrawer(); }
+if(e.key==='Escape'&& !e.defaultPrevented && document.activeElement!==searchEl){ if(document.getElementById('opsMenu').classList.contains('open')){ opsMenuClose(); return; } if(document.getElementById('triEditModal').classList.contains('open')){ closeTriageEdit(); return; } if(document.getElementById('shiftModal').classList.contains('open')){ closeShiftSetup(); return; } if(document.getElementById('apModal').classList.contains('open')){ closeAddPatient(); return; } if(document.getElementById('intakeModal').classList.contains('open')){ closeIntake(); return; } closeDrawer(); closeLocDrawer(); }
 });
 
  
@@ -14132,7 +14142,7 @@ function snapshot(p){ return {prio:p.prio, waitingOn:p.waitingOn||null, status:p
 function restore(p,s){ p.prio=s.prio; p.waitingOn=s.waitingOn; p.status=s.status; p.room=s.room; p.roomSince=s.roomSince; var docChanged=p.doctor!==s.doctor; p.doctor=s.doctor; p.examStartedAt=s.examStartedAt; p.examStartedByDoctorId=s.examStartedByDoctorId; p.examWaitMinutes=s.examWaitMinutes; p.ultrasound=s.ultrasound;
   if(p.timeline&&p.timeline.length>s.tl) p.timeline.length=s.tl; if(docChanged){ try{ ctSyncPrimary(p); }catch(e){} }
   try{ scheduleRender(); }catch(e){ try{ renderAll(); }catch(_){} } }
-function rollback(snaps){ for(var i=snaps.length-1;i>=0;i--) restore(snaps[i][0],snaps[i][1]); }
+function rollback(snaps){ for(var i=snaps.length-1;i>=0;i--){ var o=snaps[i][0], cur=null; try{ cur=PATIENTS.find(function(x){ return x.id===o.id; }); }catch(e){} restore(cur||o,snaps[i][1]); } }   /* PVX-N357: the patient as the board has it now */
 function prioName(l){ try{ return 'P'+l+' · '+PRIO_LABEL[l]; }catch(e){ return 'P'+l; } }
 function destLabel(s){ if(s.op==='prio') return prioName(s.level); if(s.op==='wait') return s.text?'Waiting on '+s.text:'No flag'; return s.op==='assign'?s.doc.name:s.dest.v; }
 function fromLabel(s){ if(s.op==='prio') return prioName(s.p.prio); if(s.op==='wait') return s.p.waitingOn&&s.p.waitingOn.text?'Waiting on '+s.p.waitingOn.text:'No flag';
@@ -14200,7 +14210,8 @@ function setWaiting(p,text){ var at=new Date(); p.waitingOn=text?{text:String(te
   try{ scheduleRender(function(){ try{ if(activePatient===p.id) fillDrawer(p); }catch(e){} }); }catch(e){ try{ renderAll(); }catch(_){} } }
 /* Small chip on the Flow card; click it to clear (with Undo). */
 window.fvWaitChip=function(p){ var w=p&&p.waitingOn; if(!w||!w.text) return ''; var mins=Math.max(0,Math.round((Date.now()-new Date(w.at).getTime())/60000));
-  return '<div class="fv-wait-chip" data-fvwait="'+esc(p.id)+'" title="Click to clear"><i></i>Waiting on '+esc(w.text)+'<small>'+(isNaN(mins)?'':(mins<1?'now':mins<60?mins+'m':Math.floor(mins/60)+'h'))+'</small></div>'; };
+  var ago=isNaN(mins)?'':(mins<1?'now':mins<60?mins+'m':Math.floor(mins/60)+'h'), said=isNaN(mins)?'':(mins<1?', just now':', '+(typeof pvxSpoken==='function'?pvxSpoken(mins):mins+' minutes'));   /* PVX-N357: a real button that says what it does */
+  return '<button type="button" class="fv-wait-chip" data-fvwait="'+esc(p.id)+'" title="Clear “Waiting on '+esc(w.text)+'”" aria-label="Waiting on '+esc(w.text)+said+'. Clear"><i></i><span class="fvw-t">Waiting on '+esc(w.text)+'</span><small>'+ago+'</small><svg class="fvw-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>'; };
 document.addEventListener('click',function(e){ var c=e.target&&e.target.closest&&e.target.closest('[data-fvwait]'); if(!c) return; e.preventDefault(); e.stopPropagation();
   var p=active().find(function(x){ return String(x.id)===c.getAttribute('data-fvwait'); }); if(!p) return; via='board'; run([{op:'wait',p:p,text:'',conf:1}],'',true); },true);
 function run(steps,raw,instant){
@@ -14571,7 +14582,7 @@ function sheetHTML(p){ var have={}; L(p).forEach(function(f){ have[f.t.toLowerCa
   var opts=ORDER.map(function(k){ var items=CAT[k].filter(function(t){ return !q||t.toLowerCase().indexOf(q)>-1; }); if(!items.length) return ''; any=true;
     return '<div class="fg-sh">'+FK[k]+'</div>'+items.map(function(t){ return '<button type="button" class="fg-opt'+(have[t.toLowerCase()]?' on':'')+'" data-fg="opt" data-k="'+k+'" data-t="'+E(t)+'">'+tile(k)+'<span class="fg-lb">'+E(t)+'</span>'+CK+'</button>'; }).join(''); }).join('');
   var custom=q&&!CAT.safe.concat(CAT.hand,CAT.med,CAT.iso,CAT.own).some(function(t){ return t.toLowerCase()===q; });
-  return '<div class="fg-sheet" role="dialog" aria-label="Add flag"><label class="fg-search">'+MAG+'<input id="fgQ" placeholder="Search or new flag" value="'+E(ST.q)+'" autocomplete="off" aria-label="Search or new flag"></label>'
+  return '<div class="fg-sheet" role="dialog" aria-label="Add flag"><label class="fg-search">'+MAG+'<input id="fgQ" type="search" enterkeyhint="search" placeholder="Search or new flag" value="'+E(ST.q)+'" autocomplete="off" aria-label="Search or new flag">'+(ST.q?'<button type="button" class="fg-x" data-fg="clearq" aria-label="Clear search" title="Clear"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".32"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>':'')+'</label>'
    +'<div class="fg-seg" role="group" aria-label="Keep the flag"><button type="button" data-fg="scope" data-s="always" class="'+(ST.scope==='always'?'on':'')+'">Always</button><button type="button" data-fg="scope" data-s="visit" class="'+(ST.scope==='visit'?'on':'')+'">This visit</button></div>'
    +'<div class="fg-opts">'+opts+(custom?'<div class="fg-new-as">Add “'+E(ST.q.trim())+'” as'+ORDER.map(function(k){ return '<button type="button" data-fg="new" data-k="'+k+'">'+tile(k,'s')+FK[k]+'</button>'; }).join('')+'</div>':'')
    +(!any&&!custom?'<div class="fg-new-as">No matches</div>':'')+'</div>'
@@ -14581,12 +14592,14 @@ function mountFor(p){ var m=document.getElementById('flagsMount'); if(!m||!p) re
   m.innerHTML=sectionHTML(p);
   var ns=m.querySelector('.fg-opts'); if(ns) ns.scrollTop=top;
   var qi=m.querySelector('#fgQ'); if(qi){ qi.oninput=function(){ ST.q=qi.value; mountFor(p); };
-    qi.onkeydown=function(e){ if(e.key==='Escape'){ ST.sheet=false; ST.q=''; mountFor(p); m.querySelector('[data-fg="add"]').focus(); }
+    qi.onkeydown=function(e){ if(e.key==='Escape'&&ST.q){ e.preventDefault(); e.stopPropagation(); ST.q=''; mountFor(p); var qe=document.getElementById('fgQ'); if(qe) qe.focus(); return; }   /* PVX-N361 */
+      if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); ST.sheet=false; ST.q=''; mountFor(p); m.querySelector('[data-fg="add"]').focus(); }
       if(e.key==='Enter'&&ST.q.trim()){ var first=m.querySelector('.fg-opt:not(.on)'); if(first) first.click(); else { var nb=m.querySelector('[data-fg="new"][data-k="own"]'); if(nb) nb.click(); } } };
     if(hadFocus){ qi.focus(); try{ qi.setSelectionRange(pos,pos); }catch(e){} } } }
 window.fgMount=function(p){ try{ mountFor(p); }catch(e){} };
 document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#flagsMount [data-fg]'); if(!b) return;
   var p=PATIENTS.find(function(x){ return x.id===ST.pid; }); if(!p) return; var act=b.dataset.fg, row=b.closest('.fg-row');
+  if(act==='clearq'){ ST.q=''; mountFor(p); var qc=document.getElementById('fgQ'); if(qc) qc.focus(); return; }   /* PVX-N361 */
   if(act==='edit'){ ST.edit=!ST.edit; if(!ST.edit) document.querySelectorAll('#flagsMount .fg-row.arm').forEach(function(r){ r.classList.remove('arm'); }); var sec=document.getElementById('fgSec'); sec.classList.toggle('edit',ST.edit); b.textContent=ST.edit?'Done':'Edit'; return; }
   if(act==='arm'){ var was=row.classList.contains('arm'); document.querySelectorAll('#flagsMount .fg-row.arm').forEach(function(r){ r.classList.remove('arm'); }); if(!was) row.classList.add('arm'); return; }
   if(act==='del'){ var id=row.dataset.id; row.style.maxHeight=row.offsetHeight+'px'; void row.offsetWidth; row.classList.add('gone');
@@ -17389,7 +17402,7 @@ body:not(.dark) .fvv-more{color:#1F7F96;}body:not(.dark) .fvv-check.ok b{color:#
   var SG_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg>';
   function card(p){ var s=p.orStatus, booked=s&&s.case&&s.status!=='cancelled';
     var head='<div class="rec-ic">'+SG_IC+'</div><div class="rec-title">Surgery</div>';
-    if(!booked||(!open(s)&&!today(s))) return '<div class="rec-card fv-or-card"><div class="rec-head">'+head+'<button class="rec-req" type="button" data-fvor="book">Book surgery</button></div></div>';
+    if(!booked||(!open(s)&&!today(s))) return '<div class="rec-card fv-or-card"><div class="rec-head">'+head+'<button class="rec-req" type="button" data-fvor="book">Book surgery…</button></div></div>';
     var st=LIVE_ST.indexOf(s.status)>-1?'live':REC_ST.indexOf(s.status)>-1?'rec':DONE_ST.indexOf(s.status)>-1?'done':'sched';
     var chip='<span class="rec-chip fv-or-st '+st+'">'+esc(st==='done'?(s.dest?'Done · '+s.dest:'Done'):s.label||'Scheduled')+'</span>';
     var when=(today(s)?'':String(s.date||'').slice(5).replace('-','/')+' ')+clock(s.sched);
@@ -19022,11 +19035,11 @@ svg .s:not(text){opacity:.45}
     var c = { root: root, panel: panel, list: list, anchor: o.anchor || null, onClose: o.onClose, lift: o.lift || null, liftCls: o.liftClass || 'pvx-cx-lift', stack: [] };
     function draw(level, title) {
       var h = '';
-      if (title) h += '<button type="button" role="menuitem" class="back" data-back="1"><span class="c" aria-hidden="true">‹</span><span class="l">' + esc(title) + '</span></button><div role="separator"></div>';
+      if (title) h += '<button type="button" role="menuitem" class="back" data-back="1"><span class="c" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></span><span class="l">' + esc(title) + '</span></button><div role="separator"></div>';
       level.forEach(function (it, i) {
         if (it.sep) { h += '<div role="separator"></div>'; return; }
         var ck = it.checked !== undefined;   /* n204: an option can show a checkmark (the current choice) */
-        h += '<button type="button" role="' + (ck ? 'menuitemradio' : 'menuitem') + '"' + (ck ? ' aria-checked="' + !!it.checked + '"' : '') + ' data-i="' + i + '"' + ((it.danger || it.disabled) ? ' class="' + (it.danger ? 'danger' : '') + (it.disabled ? ' off' : '') + '"' : '') + (it.disabled ? ' aria-disabled="true"' : '') + (it.sub ? ' aria-haspopup="menu"' : '') + '>' + (ck ? '<svg class="k" viewBox="0 0 24 24" aria-hidden="true"' + (it.checked ? '' : ' style="visibility:hidden"') + '><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '') + '<span class="l">' + esc(it.label) + '</span>' + (it.sub ? '<span class="c" aria-hidden="true">›</span>' : '') + '</button>';
+        h += '<button type="button" role="' + (ck ? 'menuitemradio' : 'menuitem') + '"' + (ck ? ' aria-checked="' + !!it.checked + '"' : '') + ' data-i="' + i + '"' + ((it.danger || it.disabled) ? ' class="' + (it.danger ? 'danger' : '') + (it.disabled ? ' off' : '') + '"' : '') + (it.disabled ? ' aria-disabled="true"' : '') + (it.sub ? ' aria-haspopup="menu"' : '') + '>' + (ck ? '<svg class="k" viewBox="0 0 24 24" aria-hidden="true"' + (it.checked ? '' : ' style="visibility:hidden"') + '><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '') + (it.icon ? '<span class="i" aria-hidden="true">' + it.icon + '</span>' : '') + '<span class="l">' + esc(it.label) + '</span>' + (it.sub ? '<span class="c" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></span>' : '') + '</button>';
       });
       list.innerHTML = h; list.scrollTop = 0; c.level = level;
       focusEl(list.querySelector('button[data-i]:not([aria-disabled])') || list.querySelector('button'));
@@ -19092,6 +19105,7 @@ svg .s:not(text){opacity:.45}
     }
     document.addEventListener('contextmenu', function (e) {
       if (editable(e.target)) return;
+      if (e.clientX || e.clientY) { try { var s = window.getSelection && getSelection(); if (s && !s.isCollapsed && String(s).trim()) { for (var k = 0; k < s.rangeCount; k++) { if (s.getRangeAt(k).intersectsNode(e.target)) return; } } } catch (x) {} }   /* n358: on selected text, the browser's Copy and Look Up */
       var el = e.target.closest && e.target.closest(sel); if (!el) return;
       if (opt.skip && opt.skip(el, e)) return;
       if (Date.now() - lastOpen < 700 && cur) { e.preventDefault(); return; }   /* a touch hold already opened it */
@@ -19133,9 +19147,11 @@ svg .s:not(text){opacity:.45}
       if(rm==='Comfort Room') showConfirm('Move patient to Comfort Room?','Move patient',function(){ call('moveRoom')(p,rm); }); else call('moveRoom')(p,rm); }}; });
     var docs=done?[]:DOCTORS.filter(function(d){ return d.id!==p.doctor; }).map(function(d){ return {label:d.name,act:function(){ call('assignDoctor')(p,d.id); try{ renderAll(); }catch(e){} }}; });
     return [{label:'Open',act:function(){ openDrawer(p.id); }}, {sep:1},
-      stages.length&&{label:'Move to',sub:stages}, rooms.length&&{label:'Room',sub:rooms}, docs.length&&{label:'Assign doctor',sub:docs}, {sep:1},
-      (!done&&window.fvDocs&&fvDocs.openSend)&&{label:'Send a form…',act:function(){ fvDocs.openSend(p); }},
-      (p.publicToken&&typeof trackUrlFor==='function')&&{label:(typeof pvxCanShare==='function'&&pvxCanShare())?'Share tracker link…':'Copy tracker link',act:function(){ copyLink(p); }}];
+      stages.length&&{label:'Move to',sub:stages}, rooms.length&&{label:'Room',sub:rooms}, docs.length&&{label:'Assign doctor',sub:docs},
+      (!done&&p.waitingOn&&p.waitingOn.text)&&{label:'Clear “Waiting on '+p.waitingOn.text+'”',act:function(){ var t=document.createElement('button'); t.type='button'; t.hidden=true; t.setAttribute('data-fvwait',p.id); document.body.appendChild(t); t.click(); t.remove(); }}, {sep:1},
+      (!done&&window.fvDocs&&fvDocs.openSend)&&{label:'Send a form…',icon:'<svg viewBox="0 0 24 24"><path d="M21 3L10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5 21 3z"/></svg>',act:function(){ fvDocs.openSend(p); }},
+      (p.publicToken&&typeof trackUrlFor==='function')&&{label:'Copy tracker link',icon:'<svg viewBox="0 0 24 24"><path d="M9 7h6.5L19 10.5V19a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><path d="M5 16V5a2 2 0 0 1 2-2h6"/></svg>',act:function(){ pvxCopyTracker(trackUrlFor(p)); }},
+      (p.publicToken&&typeof trackUrlFor==='function'&&typeof pvxCanShare==='function'&&pvxCanShare())&&{label:'Share tracker link…',icon:'<svg viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M8 10H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg>',act:function(){ copyLink(p); }}];
   }
   function rdItems(p,row){
     var r=p.rounds||{}, ended=!!r.outcome, open=row.classList.contains('open');
@@ -19146,7 +19162,7 @@ svg .s:not(text){opacity:.45}
       {sep:1},
       find(p.id)&&{label:'Show in Flow',act:function(){ switchApp('flow'); setTimeout(function(){ openDrawer(p.id); },80); }}];
   }
-  var SEL='#board .card[data-pid],#tableBody tr[data-pid],.r-pt[data-pid],.rd-row[data-pid]>.rd-rowmain';
+  var SEL='#board .card[data-pid],#tableBody tr[data-pid],.r-pt[data-pid],.rd-row[data-pid]>.rd-rowmain,#view-dashboard .attn-item[data-pid]';   /* n357: the Attention center too */
   PvxCtx.bind(SEL,function(el){
     if(!shown()) return null;
     var row=el.classList.contains('rd-rowmain')?el.parentElement:null, pid=(row||el).getAttribute('data-pid');
@@ -19483,7 +19499,14 @@ body:not(.dark) .search-bar .pvx-skey{border-color:rgba(15,23,42,.14);background
   var CW=window.matchMedia?matchMedia('(max-width:700px)'):{matches:false};
   function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   /* 1. the placeholder fits the width */
-  function ph(){ inp.placeholder=CW.matches?'Search patients':'Search patients, doctors, rooms'; }
+  var PH=['Search patients, doctors, rooms','Search patients, doctors','Search patients','Search'], cv;   /* PVX-N361: the longest whole phrase that fits */
+  function ph(){ var cs=getComputedStyle(inp), room=inp.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0);
+    if(!(room>0)){ inp.placeholder=CW.matches?PH[2]:PH[0]; return; }
+    try{ cv=cv||document.createElement('canvas').getContext('2d'); cv.font=cs.fontStyle+' '+cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily; }catch(e){ cv=null; }
+    var pick=PH[3]; if(cv){ for(var k=0;k<PH.length;k++){ if(cv.measureText(PH[k]).width<=room-2){ pick=PH[k]; break; } } }
+    if(inp.placeholder!==pick) inp.placeholder=pick; }
+  try{ if(window.ResizeObserver) new ResizeObserver(function(){ ph(); }).observe(inp); }catch(e){}
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(ph);
   ph(); if(CW.addEventListener) CW.addEventListener('change',ph);
   /* 2. Clear */
   var X='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".32"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
@@ -20535,7 +20558,7 @@ body:not(.dark) #searchResults .pvx-rclear{color:#0F6B82}
         clearSearch(); try{ var h1=document.querySelector('#view-'+view+' h1'); if(h1){ h1.tabIndex=-1; h1.focus(); } }catch(x){} }); }
     return s; }
   function scope(){ var t=q().trim(); var all=0; try{ all=PATIENTS.filter(isActive).length; }catch(e){}
-    var n=0; try{ n=filtered().filter(isActive).length; }catch(e){}
+    var n=0; try{ n=(typeof pvxBoardFiltered==='function'?pvxBoardFiltered():filtered()).filter(isActive).length; }catch(e){}
     ['list','flow'].forEach(function(v){ var s=scopeEl(v); if(!s) return; s.classList.toggle('on',!!t);
       var fix=(t&&!n)?correct(t):'';
       var html=t?'Matching <b>“'+esc(t)+'”</b>'+(v==='flow'?' · '+n+' of '+all:'')+(fix?'<button type="button" data-fix="'+esc(fix)+'">Search “'+esc(fix)+'”</button>':'')+'<button type="button" data-clear="1">Clear search</button>':'';
@@ -20934,6 +20957,143 @@ body:not(.dark) #pvxSortReset{color:#0F6B82}
     if(step(e.key==='ArrowDown'?1:-1)){ e.preventDefault(); e.stopPropagation(); }
   },true);
 })();
+</script>
+<style id="pvx-n356">
+/* PVX-N356 - HIG Activity views: Copy and Share are two buttons in the tracker card, each with its symbol */
+.msg-track .mt-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.msg-track .mt-acts .mt-copy{margin-top:0;display:inline-flex;align-items:center;gap:6px}
+.msg-track .mt-acts .mt-copy svg{width:.875rem;height:.875rem;flex:none}
+.msg-track .mt-acts .mt-copy[hidden]{display:none}
+body:not(.dark) .msg-track .mt-copy{color:#0F6B82}
+.msg-track .mt-copy:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+@media (pointer:coarse){ .msg-track .mt-acts .mt-copy{min-height:44px;padding:0 14px;font-size:.8125rem} }
+</style>
+<script id="pvx-n356-js">
+/* PVX-N356 - HIG Tab views + Activity views. See n356/patch_n356.py for the source changes:
+   1. the share sheet wherever the browser has one, beside Copy, with Apple's Share symbol;
+   2. the Patients filter chips filter only Patients; the board shows everyone (search still applies to both). */
+</script>
+<style id="pvx-n357">
+/* PVX-N357 - HIG Buttons + Context menus */
+/* the "Waiting on …" button on a board card */
+button.fv-wait-chip{appearance:none;-webkit-appearance:none;text-align:left;line-height:1.25}
+button.fv-wait-chip{padding-right:6px}
+button.fv-wait-chip{white-space:normal;border-radius:12px;max-width:100%}
+button.fv-wait-chip .fvw-t{min-width:0;overflow-wrap:anywhere}   /* a long flag wraps rather than hiding its words or the ✕ (Brand §4) */
+button.fv-wait-chip small{flex:none}
+button.fv-wait-chip .fvw-x{width:.875rem;height:.875rem;flex:none;margin-left:2px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;opacity:.75}
+button.fv-wait-chip:hover .fvw-x{opacity:1}
+button.fv-wait-chip:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+@media (pointer:coarse){
+  body:not(.tv-mode) #board button.fv-wait-chip{min-height:0;min-width:0;position:relative;overflow:visible}
+  body:not(.tv-mode) #board button.fv-wait-chip::after{content:"";position:absolute;left:0;right:0;top:calc(50% - 22px);height:44px}
+}
+/* a press state for the rows and tiles that open something: Patients rows darken (rows only darken), Rooms' tiles darken and settle */
+#tableBody tr[data-pid]:active > td{background:rgba(120,140,165,.16)}
+body:not(.dark) #tableBody tr[data-pid]:active > td{background:rgba(15,23,42,.07)}
+#view-rooms .room:active{filter:brightness(.9);scale:.985}
+@media (prefers-reduced-motion:reduce){ #view-rooms .room:active{scale:none} }
+/* the context menu's icons and chevrons */
+.pvx-cx-list button .i{flex:none;display:inline-flex;width:1rem;height:1rem;opacity:.85}
+.pvx-cx-list button .i svg,.pvx-cx-list button .c svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pvx-cx-list button .c{display:inline-flex;width:.875rem;height:.875rem}
+@media (pointer:coarse){ .pvx-cx-list button .i{width:1.125rem;height:1.125rem} }
+@media (pointer:coarse){#view-dashboard .attn-item[data-pid]{-webkit-touch-callout:none}}
+</style>
+<script id="pvx-n357-js">
+/* PVX-N357 - HIG Buttons + Context menus. Source changes in n357/patch_n357.py:
+   1. "Waiting on …" on a board card is a button (name, keyboard, press state, ✕), and its context menu can clear it;
+   2. Book surgery… ends in an ellipsis (it opens the booking sheet);
+   3. the context menu draws its chevrons and gives Copy, Share and Send a form their symbols;
+   4. the Attention center's patient items have the same context menu as the board, the list and Rooms. */
+</script>
+<script id="pvx-n358-js">
+/* PVX-N358 - HIG Dock menus: /#find and /#view=… open from the Dock menu, the Mac File menu or a link
+   (/#op=new was n207). Find focuses the search field; a view opens that view. The address is tidied afterwards. */
+(function(){
+  var VIEWS={list:1,flow:1,rooms:1,dashboard:1,consent:1,client:1};
+  function app(){ try{ return typeof currentApp!=='undefined'?currentApp:'flow'; }catch(e){ return 'flow'; } }
+  function go(){ var h=String(location.hash||''); var mv=/(^#|&)view=([a-z]+)/.exec(h), mf=/(^#|&)find\b/.test(h);
+    if(!mv&&!mf) return; if(mv&&!VIEWS[mv[2]]) return;
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    try{ if(app()!=='flow'&&typeof switchApp==='function') switchApp('flow'); }catch(e){}
+    setTimeout(function(){
+      if(mv){ try{ switchView(mv[2]); }catch(e){} return; }
+      var s=document.getElementById('globalSearch'); if(!s) return;
+      if(!s.getClientRects().length){ var b=document.querySelector('#subnavFlow [aria-label^="Search"]:not(input)'); if(b) b.click(); }
+      setTimeout(function(){ try{ s.focus(); s.select(); }catch(e){} },60);
+    },120); }
+  setTimeout(go,700); window.addEventListener('hashchange',go);
+})();
+</script>
+<script id="pvx-n359-js">
+/* PVX-N359 - HIG Home Screen quick actions: with launch_handler focus-existing, choosing New patient, Find a patient,
+   Patients or Client Display from the Dock menu, the File menu or a quick action brings the open Flow window forward and does
+   it there, without reloading the board. The first launch is the one that opened this page, which the page has already
+   handled (n207, n358); later ones are handed to the same #op= / #find / #view= handlers. */
+(function(){
+  if(!('launchQueue' in window)||!window.launchQueue||typeof launchQueue.setConsumer!=='function') return;
+  var first=true;
+  launchQueue.setConsumer(function(params){
+    if(first){ first=false; return; }
+    try{ var u=new URL(params&&params.targetURL||'', location.href); if(u.origin!==location.origin) return;
+      var h=String(u.hash||'').replace(/^#/,''); if(!h) return;
+      if(String(location.hash).replace(/^#/,'')===h){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} }
+      location.hash=h; }catch(e){}
+  });
+})();
+</script>
+<style id="pvx-n360">
+/* PVX-N360 - HIG Pop-up buttons */
+.dd-panel.dd-short .dd-search{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;padding:0;margin:0}
+.dd-opt.dd-none{border-bottom:1px solid var(--glass-hairline,rgba(120,140,165,.18));border-radius:8px 8px 0 0;margin-bottom:4px;padding-bottom:9px;color:var(--ink-500)}
+</style>
+<script id="pvx-n360-js">
+/* PVX-N360 - HIG Pop-up buttons + Pull-down buttons. Source changes in n360/patch_n360.py:
+   1. pop-up choices are read as words ("Klaudia Polak, Free"), the button as "Doctor: Kelley Harpin";
+   2. short pop-ups (three priorities) don't show a search field, and keep their keys;
+   3. the drawer's Doctor pop-up offers "No doctor" once one is assigned, and removing one says "Doctor removed";
+   4. a live update doesn't rebuild the drawer under an open pop-up: the refill waits until the list closes. */
+(function(){
+  if(typeof fillDrawer!=='function') return;
+  var orig=fillDrawer, pend=null, shown=null;
+  function inDrawer(){ try{ var d=document.getElementById('drawer'); return !!(ddOpen&&ddOpen.root&&d&&d.contains(ddOpen.root)); }catch(e){ return false; } }
+  window.fillDrawer=function(p){
+    if(inDrawer()){ if(p&&p.id===shown){ pend=p; return; } try{ ddOpen.close(); }catch(e){} }   /* another patient: close the list, then fill */
+    pend=null; shown=p&&p.id; return orig.apply(this,arguments); };
+  window.__pvxDdClosed=function(){ if(!pend||inDrawer()) return; var id=pend.id; pend=null;
+    try{ if(typeof activePatient!=='undefined'&&activePatient===id){ var q=PATIENTS.find(function(x){ return x.id===id; }); if(q) window.fillDrawer(q); } }catch(e){} };
+})();
+</script>
+<style id="pvx-n361">
+/* PVX-N361 - HIG Search fields */
+@media (min-width:1025px){ .search{width:440px;max-width:31vw} }   /* a wide Mac window (over 1400 pt): room for the whole placeholder */
+@media (min-width:1025px) and (max-width:1400px){ .search{width:310px} }   /* n184's size classes */
+.dd-search input{padding-right:34px}
+.dd-clear{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:999px;background:transparent;color:var(--ink-400);cursor:pointer}
+.dd-clear[hidden]{display:none}
+.dd-clear svg{position:static;transform:none;width:18px;height:18px;left:auto;top:auto}
+.dd-clear:hover{color:var(--ink-900)}
+/* a choice's whole name and load show; a long one wraps rather than ending in "…" (Brand §4) */
+.dd-opt .dd-name{white-space:normal;overflow:visible;text-overflow:clip;display:flex;flex-wrap:wrap;align-items:baseline;row-gap:1px;overflow-wrap:anywhere;line-height:1.3}
+.dd-opt{min-height:44px;height:auto}
+.dd-trigger .dd-name{white-space:normal;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.2;overflow-wrap:anywhere}   /* the button's choice, on two lines if it must */
+.fg-search input::-webkit-search-cancel-button,.fg-search input::-webkit-search-decoration{-webkit-appearance:none;display:none}
+.fg-x{flex:0 0 auto;display:grid;place-items:center;width:24px;height:24px;margin-right:-4px;padding:0;border:0;border-radius:999px;background:transparent;color:var(--fg-l2);cursor:pointer}
+.fg-x svg{width:18px!important;height:18px!important}
+.fg-x:hover{color:var(--fg-l1)}
+.fg-x{position:relative}
+@media (pointer:coarse){ .dd-clear::after,.fg-x::after{content:"";position:absolute;inset:-10px} }
+</style>
+<script id="pvx-n361-js">
+/* PVX-N361 - HIG Path controls + Search fields. Source changes in n361/patch_n361.py:
+   1. Flow's search shows the longest whole placeholder that fits ("Search patients, doctors, rooms" on a wide Mac window),
+      never one cut mid-word; the field is wider where the window has room;
+   2. every search field has a Clear button (pop-ups, Add flag), and Esc in Add flag clears what's typed before closing;
+   3. names aren't autocorrected or underlined in Flow's search or the pop-ups' search;
+   4. a pop-up choice shows its whole name and load, wrapping when long, instead of ending in "…";
+   5. Esc in a pop-up or in Add flag closes only that, not the drawer behind it.
+   Path controls are a Mac file-system control; Flow has no files or folders to show a path for. */
 </script>
 </body>
 </html>

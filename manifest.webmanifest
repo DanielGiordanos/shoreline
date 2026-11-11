@@ -33,33 +33,59 @@
       "name": "New patient",
       "short_name": "New patient",
       "description": "Start intake for a new patient",
-      "url": "/#op=new"
-    },
-    {
-      "name": "Rounds",
-      "short_name": "Rounds",
-      "description": "Open inpatient rounds",
-      "url": "/rounds/",
+      "url": "/#op=new",
       "icons": [
         {
-          "src": "/assets/img/sc-rounds.png",
+          "src": "/assets/img/sc-flow-new.png",
           "sizes": "96x96",
           "type": "image/png"
         }
       ]
     },
     {
-      "name": "Ultrasound",
-      "short_name": "Ultrasound",
-      "description": "Open the ultrasound list",
-      "url": "/ultrasound/",
+      "name": "Find a patient",
+      "short_name": "Find a patient",
+      "description": "Search patients, doctors and rooms",
+      "url": "/#find",
       "icons": [
         {
-          "src": "/assets/img/sc-ultrasound.png",
+          "src": "/assets/img/sc-flow-find.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Patients",
+      "short_name": "Patients",
+      "description": "Everyone in the hospital, most urgent first",
+      "url": "/#view=list",
+      "icons": [
+        {
+          "src": "/assets/img/sc-flow-patients.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Client Display",
+      "short_name": "Client Display",
+      "description": "The lobby screen for families",
+      "url": "/#view=client",
+      "icons": [
+        {
+          "src": "/assets/img/sc-flow-display.png",
           "sizes": "96x96",
           "type": "image/png"
         }
       ]
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "focus-existing",
+      "auto"
+    ]
+  }
 }
