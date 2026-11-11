@@ -58,7 +58,7 @@ async def s_t341(br):
     ok('…no page errors', not newerr(e), newerr(e))
     await c.close()
     c, p, e = await ctx(br, touch=True)
-    d = await p.evaluate(DRAWER_COPY.replace('COPYOK', 'true'))
-    ok('Sharing · on iPhone and iPad it’s “Share tracker link…” and opens the system share sheet (Messages, Mail, AirDrop) with the link', d.get('label') == 'Share tracker link…' and d.get('shared') and d['shared'][0][1].startswith('http') and 'Rocky' in (d['shared'][0][0] or ''), d)
+    d = await p.evaluate(DRAWER_COPY.replace('COPYOK', 'true').replace("getElementById('msgCopyLink')", "getElementById('msgShareLink')"))   # n356: Share… is its own button beside Copy
+    ok('Sharing · on iPhone and iPad “Share…” opens the system share sheet (Messages, Mail, AirDrop) with the link', d.get('label') == 'Share…' and d.get('shared') and d['shared'][0][1].startswith('http') and 'Rocky' in (d['shared'][0][0] or ''), d)
     ok('…no page errors', not newerr(e), newerr(e))
     await c.close()
