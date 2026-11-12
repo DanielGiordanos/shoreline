@@ -211,8 +211,8 @@ async def s_n219(br):
     ok('n219: Jordan’s curriculum — 9 blocks from Mar 16, Block 07 now (Oct 19 – Nov 22), then her final weeks Feb 8 – Feb 23 “Not assigned yet” (no Block 10 after her program)',
        len(jh['h']) == 10 and jh['h'][0]['d'] == 'Mar 16 – Apr 19' and jh['h'][6]['cur'] and jh['h'][6]['d'] == 'Oct 19 – Nov 22' and jh['h'][9]['n'] == 'FINAL WEEKS' and jh['h'][9]['d'] == 'Feb 8 – Feb 23' and jh['h'][9]['s'] == 'Not assigned yet' and jh['bl'] == '9' and jh['b'] == 'BLOCK 07', jh)
     ok('n219: …her term is the agreement’s — 52 weeks, ends February 23, 2027; one timeline (hers)', 'Program ends February 23, 2027' in jh['m'] and ' '.join(jh['sub'].split()) == '9 blocks · 6 clinical services · 52 weeks' and 'Week 35 of 52' in jh['m'] and jh['tlg'] == 1, jh)
-    jc = await pg.evaluate(f"(()=>{{const f={CELLQ}; return {{onco:f('onco',6), em2:[f('em2',7),f('em2',8)]}}; }})()")
-    ok('n219: Jordan: Oncology now (Block 07), ER II in Blocks 08 and 09 (as she confirmed)', jc['onco'] == ['JH'] and jc['em2'] == [['JH', 'RE'], ['JH']], jc)
+    jc = await pg.evaluate(f"(()=>{{const f={CELLQ}; return {{onco:f('onco',6), em2:[f('em2',7),f('em2',8)], neuro:f('neuro',8)}}; }})()")
+    ok('n219: Jordan: Oncology now (Block 07), ER II in Block 08, Neurology in Block 09 (Daniel moved her from ER II, Nov 11)', jc['onco'] == ['JH'] and jc['em2'] == [['JH', 'RE'], []] and jc['neuro'] == ['RE', 'JH'], jc)
     ok('n219: no page errors on Jordan’s curriculum', not errs, errs[:3])
     await pg.locator('.page-content').screenshot(path=os.path.join(SHOTS, 'n219-jordan.png'))
     await ctx.close()
@@ -312,16 +312,16 @@ async def s_n220(br):
     esc_ = await pg.evaluate("[document.getElementById('pvxAskIn').value, document.getElementById('pvxAskOut').textContent, document.querySelectorAll('#currTbody td.pvx-hit').length]")
     ok('n220: an example question asks itself; Esc clears the question, the answer and the highlights', ex[1] == 'Kristi Wenger is on Oncology in Block 05 (Nov 23 – Jan 3, 2027).' and esc_ == ['', '', 0], (ex, esc_))
     ck = await pg.evaluate("(()=>({k:document.querySelector('#pvxCheck .pvx-tl-key').textContent, items:[...document.querySelectorAll('#pvxCheck .pvx-ck-i')].map(x=>x.querySelector('span').textContent), gaps:[...document.querySelectorAll('#currTbody td.pvx-gap')].map(td=>td.dataset.svc+'-'+td.dataset.block)}))()")
-    ok('n220: Schedule check — 6 things: ER II and Surgery empty in Block 07, the March group’s Feb 8 – 23, ER I empty in Blocks 09 and 10, Surgery in Block 10',
-       ck['k'] == '6 things to look at' and ck['items'] == ['No intern on Emergency Medicine II · Block 07, Feb 8 – Mar 14', 'No intern on Surgery · Block 07, Feb 8 – Mar 14',
-                                                         'March group (Jordan, Rachel, Alexa) · Feb 8 – Feb 23: no rotation assigned yet', 'No intern on Emergency Medicine I · Block 09, Apr 19 – May 23'], ck)
+    ok('n220: Schedule check — 7 things: ER II empty in Block 06 (Jordan moved to Neurology, Nov 11), ER II and Surgery empty in Block 07, the March group’s Feb 8 – 23, ER I empty in Blocks 09 and 10, Surgery in Block 10',
+       ck['k'] == '7 things to look at' and ck['items'] == ['No intern on Emergency Medicine II · Block 06 (March group 09), Jan 4 – Feb 7', 'No intern on Emergency Medicine II · Block 07, Feb 8 – Mar 14', 'No intern on Surgery · Block 07, Feb 8 – Mar 14',
+                                                         'March group (Jordan, Rachel, Alexa) · Feb 8 – Feb 23: no rotation assigned yet'], ck)
     ok('n223: the plan no longer marks uncovered cells “Not covered” (the gaps stay in the Schedule check)', ck['gaps'] == [] and 'Not covered' not in await pg.evaluate('document.getElementById("currTbody").innerText'), ck['gaps'])
     await pg.locator('#pvxCheck .pvx-ck-more').click(); await pg.wait_for_timeout(200)
     n_all = await pg.evaluate("[document.querySelectorAll('#pvxCheck .pvx-ck-i').length, document.querySelector('#pvxCheck .pvx-ck-more').getAttribute('aria-expanded'), document.activeElement.className]")
-    ok('n220: “Show all 6” opens the full list (and keeps focus on it)', n_all == [6, 'true', 'pvx-ck-more'], n_all)
+    ok('n220: “Show all 7” opens the full list (and keeps focus on it)', n_all == [7, 'true', 'pvx-ck-more'], n_all)
     await pg.locator('#pvxCheck .pvx-ck-b').first.click(); await pg.wait_for_timeout(300)
     hl = await pg.evaluate("[...document.querySelectorAll('#currTbody td.pvx-hit')].map(td=>td.dataset.svc+'-'+td.dataset.block)")
-    ok('n220: Show highlights that cell in the plan', hl == ['em2-07'], hl)
+    ok('n220: Show highlights that cell in the plan', hl == ['em2-06'], hl)
     await pg.evaluate("pvxCurrMove('SH','neuro','07','em2','07')"); await pg.wait_for_timeout(500)
     ck2 = await pg.evaluate("[...document.querySelectorAll('#pvxCheck .pvx-ck-i')].map(x=>x.querySelector('span').textContent)")
     ok('n220: the check follows the schedule — moving Sarah to ER II in Block 07 clears that gap and flags Neurology instead',
