@@ -70,18 +70,6 @@ LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
 TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
-UID:s-em2-2027-01-04@shoreline.pravix.app
-DTSTAMP:20261019T120000Z
-DTSTART;VALUE=DATE:20270104
-DTEND;VALUE=DATE:20270208
-SUMMARY:Emergency Medicine II: Jordan Hanson
-DESCRIPTION:Block 06 · March group 09\, Jan 4 – Feb 7\nDirector: Sarah S
- chiff\nPhone: Ext. 303
-LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
- ort Avenue\, Shelton\, CT 06484
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
 UID:s-em2-2027-03-15@shoreline.pravix.app
 DTSTAMP:20261019T120000Z
 DTSTART;VALUE=DATE:20270315

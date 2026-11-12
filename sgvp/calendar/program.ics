@@ -188,10 +188,9 @@ DTSTAMP:20261019T120000Z
 DTSTART;VALUE=DATE:20270104
 DTEND;VALUE=DATE:20270208
 SUMMARY:Block 06 · March group 09 (Jan 4 – Feb 7)
-DESCRIPTION:Emergency Medicine I: LIU student\, Marissa Peck\nEmergency Med
- icine II: Jordan Hanson\nInternal Medicine: Alexa Vander Ploeg\nSurgery: S
- arah Herron\nNeurology: Rachel Eberle\nOncology: Benjamin Kerns\nGeneral P
- ractice: Kristi Wenger
+DESCRIPTION:Emergency Medicine I: LIU student\, Marissa Peck\nInternal Medi
+ cine: Alexa Vander Ploeg\nSurgery: Sarah Herron\nNeurology: Rachel Eberle\
+ , Jordan Hanson\nOncology: Benjamin Kerns\nGeneral Practice: Kristi Wenger
 LOCATION:VCA Shoreline Veterinary Referral & Emergency Center\, 895 Bridgep
  ort Avenue\, Shelton\, CT 06484
 TRANSP:TRANSPARENT
