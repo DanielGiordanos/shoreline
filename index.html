@@ -8625,7 +8625,7 @@ let scrim=document.getElementById('usScrim'), modal=document.getElementById('usM
 if(!scrim){ scrim=document.createElement('div'); scrim.id='usScrim'; scrim.className='us-scrim'; document.body.appendChild(scrim); scrim.addEventListener('click',closeUltrasound); }
 if(!modal){ modal=document.createElement('div'); modal.id='usModal'; modal.className='us-modal'; document.body.appendChild(modal); }
 modal.innerHTML =
-'<div class="us-head"><div><div class="us-h-t" id="usHT">Ultrasound Request</div>'
+'<div class="us-head"><div><div class="us-h-t" id="usHT">Ultrasound request</div>'
 +'<div class="us-h-name" id="usHN">'+bcEsc((p.name+' '+(p.last||'')).trim())+'</div>'
 +'<div class="us-h-sub">'+bcEsc(sub)+'</div></div>'
 +'<button class="us-x" id="usX" type="button" aria-label="Close" title="Close (Esc)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'
@@ -11309,7 +11309,7 @@ return -1;
 }
 function search(raw){
 const q=norm(String(raw).trim());
-if(!q) return CT_VET_HOSPITALS.slice().sort((a,b)=>a.name.localeCompare(b.name)).slice(0,60);
+if(!q){ const R=(window.pvxRefRecent?pvxRefRecent():[]), all=CT_VET_HOSPITALS.filter(h=>R.indexOf(h)<0).sort((a,b)=>a.name.localeCompare(b.name)), out=R.concat(all); out._recent=R.length; return out; }   /* PVX-N371: every hospital, recent first */
 const qd=digits(q);
 return CT_VET_HOSPITALS.map(h=>({h,s:score(h,q,qd)})).filter(x=>x.s>=0)
 .sort((a,b)=> a.s-b.s || a.h.name.localeCompare(b.h.name)).slice(0,50).map(x=>x.h);
@@ -11330,7 +11330,8 @@ panel.innerHTML='<div class="bc-empty">No matching hospitals — “'+esc(input.
 } else {
 panel.innerHTML='<div class="bc-list hv-list">'+results.map(function(h,i){
 const pill=TYPE_PILL[h.type]||[String(h.type||'').toUpperCase(),'gp'];
-return'<div class="bc-opt hv-opt'+(i===hl?' hl':'')+'" role="option" data-i="'+i+'">'
+return(results._recent&&i===0?'<div class="pvx-grp" role="presentation">Recent</div>':'')+(results._recent&&i===results._recent?'<div class="pvx-grp" role="presentation">All hospitals</div>':'')
++'<div class="bc-opt hv-opt'+(i===hl?' hl':'')+'" role="option" data-i="'+i+'">'
 +'<div class="hv-main"><div class="hv-name">'+hlText(h.name,q)+'</div>'
 +'<div class="hv-sub">'+esc(h.town)+', CT · '+esc(shortAddr(h.address))+'</div></div>'
 +'<span class="hv-pill hv-'+pill[1]+'">'+esc(pill[0])+'</span></div>';
@@ -16772,11 +16773,21 @@ body:not(.dark) .fvv-more{color:#1F7F96;}body:not(.dark) .fvv-check.ok b{color:#
   var hl=-1;
   function closeTowns(){ var p=document.getElementById('otwTowns'); if(p){ p.innerHTML=''; p.classList.remove('open'); } var f=document.getElementById('otwFrom'); if(f) f.setAttribute('aria-expanded','false'); hl=-1; }
   function showTowns(){ var f=document.getElementById('otwFrom'), p=document.getElementById('otwTowns'); var q=String(f.value||'').trim().toLowerCase();
-    if(!q||/^\d/.test(q)){ closeTowns(); return; }
+    if(!q){ var O=pvxOften(); if(!O.length){ closeTowns(); return; }   /* PVX-N371 */
+      p.innerHTML='<div class="pvx-grp" role="presentation">Often from</div>'+O.map(function(t,i){ return '<button type="button" role="option" data-town="'+esc(t.v)+'" aria-selected="'+(i===hl)+'">'+esc(t.label)+'<span>'+(t.zip?'ZIP':'CT')+'</span></button>'; }).join('');
+      p.classList.add('open'); f.setAttribute('aria-expanded','true'); return; }
+    if(/^\d/.test(q)){ closeTowns(); return; }
     var L=TOWNS.filter(function(t){ return t.toLowerCase().indexOf(q)===0; }).concat(TOWNS.filter(function(t){ return t.toLowerCase().indexOf(q)>0; })).slice(0,6);
     if(!L.length||(L.length===1&&L[0].toLowerCase()===q)){ closeTowns(); return; }
     p.innerHTML=L.map(function(t,i){ return '<button type="button" role="option" data-town="'+esc(t)+'" aria-selected="'+(i===hl)+'">'+esc(t)+'<span>CT</span></button>'; }).join(''); p.classList.add('open'); f.setAttribute('aria-expanded','true'); }
   function pickTown(t){ var f=document.getElementById('otwFrom'); f.value=t; closeTowns(); lookup(); }
+  /* PVX-N371: the places arrivals most often came from (Flow's own arrival log: town or ZIP only), most first */
+  function pvxOften(){ var n={}; (ST.log||[]).forEach(function(r){ var k=String(r&&r.town||'').trim(); if(k) n[k]=(n[k]||0)+1; });
+    return Object.keys(n).sort(function(a,b){ return n[b]-n[a]||a.localeCompare(b); }).slice(0,5).map(function(k){
+      if(/^\d{5}$/.test(k)) return {v:k,label:k,zip:true};
+      var t=TOWNS.filter(function(x){ return x.toLowerCase()===k; })[0]; return {v:t||k,label:t||k.replace(/\b\w/g,function(c){ return c.toUpperCase(); })}; }); }
+  window.pvxOtw371={log:function(){ return ST.log; },often:pvxOften};
+  ['focusin','click'].forEach(function(k){ sect.addEventListener(k,function(e){ if(e.target.id==='otwFrom'&&!String(e.target.value||'').trim()&&!document.getElementById('otwTowns').classList.contains('open')){ hl=-1; showTowns(); } }); });
   sect.addEventListener('input',function(e){ if(e.target.id==='otwFrom'){ hl=-1; showTowns(); lookupSoon(); }
     else if(e.target.id==='otwMin'){ var v=parseInt(e.target.value,10); if(v>0&&v<=240){ F.minutes=v; F.source='family'; } else if(F.source==='family'){ F.minutes=null; F.source=null; }
       var main=sect.querySelector('.otw-eta-main'), x=etaNow(); if(x){ var src=sect.querySelector('.otw-src'); if(main) main.querySelector('b').textContent=hmShort(x.lo)+'–'+hm(x.hi); else { var d=document.createElement('div'); d.className='otw-eta-main'; d.innerHTML='<span class="otw-k">Expected</span><b>'+esc(hmShort(x.lo))+'–'+esc(hm(x.hi))+'</b>'; document.getElementById('otwEta').prepend(d); } }
@@ -19124,7 +19135,7 @@ svg .s:not(text){opacity:.45}
     var rooms=done?[]:ROOMS.concat(['Treatment']).filter(function(rm){ return rm!==p.room&&canDropRoom(p,rm); }).map(function(rm){ return {label:rm,act:function(){
       if(rm==='Comfort Room') showConfirm('Move patient to Comfort Room?','Move patient',function(){ call('moveRoom')(p,rm); }); else call('moveRoom')(p,rm); }}; });
     var docs=done?[]:DOCTORS.filter(function(d){ return d.id!==p.doctor; }).map(function(d){ return {label:d.name,act:function(){ call('assignDoctor')(p,d.id); try{ renderAll(); }catch(e){} }}; });
-    return [{label:'Open',act:function(){ openDrawer(p.id); }}, {sep:1},
+    return [{label:'Open',act:function(){ openDrawer(p.id); }}, (window.pvxNewWinItem&&pvxNewWinItem(p)), {sep:1},
       stages.length&&{label:'Move to',sub:stages}, rooms.length&&{label:'Room',sub:rooms}, docs.length&&{label:'Assign doctor',sub:docs},
       (!done&&p.waitingOn&&p.waitingOn.text)&&{label:'Clear “Waiting on '+p.waitingOn.text+'”',act:function(){ var t=document.createElement('button'); t.type='button'; t.hidden=true; t.setAttribute('data-fvwait',p.id); document.body.appendChild(t); t.click(); t.remove(); }}, {sep:1},
       (!done&&window.fvDocs&&fvDocs.openSend)&&{label:'Send a form…',icon:'<svg viewBox="0 0 24 24"><path d="M21 3L10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5 21 3z"/></svg>',act:function(){ fvDocs.openSend(p); }},
@@ -21245,6 +21256,247 @@ html.pvx-flow-loading #view-dashboard .command-kpi::after{animation:pvxWaitPulse
     else y+=(e.key===' '&&e.shiftKey?-1:K[e.key])*page;
     e.preventDefault(); st.scrollTo({top:y,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   });
+})();
+</script>
+<style id="pvx-n370">/* PVX-N370 - HIG Sheets and Windows (second look) */
+/* 1. the critical-patient banner steps behind an open sheet or alert, dimmed with the page (it was drawn over them) */
+body.pvx-ci-under #critIsland{z-index:96!important}
+/* 2. iPhone sheets for the shells n211 didn't cover (Assign to Dr. …, the Ultrasound request): from the bottom, full width */
+@media (max-width:700px){
+  body :is(.intake-modal,.us-modal).pvx-ps{top:auto!important;bottom:0!important;left:0!important;right:0!important;width:100%!important;max-width:100%!important;
+    max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);border-radius:20px 20px 0 0!important;border-bottom:0;display:flex;flex-direction:column;
+    transform:translateY(100%);opacity:0;padding-bottom:env(safe-area-inset-bottom,0px);transition:transform .36s cubic-bezier(.32,.72,0,1),opacity 0s linear .36s}
+  body :is(.intake-modal,.us-modal).pvx-ps.open{transform:none;opacity:1;transition:transform .42s cubic-bezier(.32,.72,0,1),opacity 0s}
+  body :is(.intake-modal,.us-modal).pvx-ps.pvx-ps-drag{transition:none}
+  body :is(.intake-modal,.us-modal).pvx-ps>:is(.intake-body,.us-body,#assignBody){flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+  body .us-modal.pvx-ps .us-head>div.aph-title{display:block;text-align:center;min-width:0}
+  body .us-modal.pvx-ps .us-h-t{text-transform:none;letter-spacing:-.01em;font-size:1.0625rem;font-weight:600;line-height:1.25;color:inherit;margin:0}
+  body .us-modal.pvx-ps :is(.us-h-name,.us-h-sub){font-size:.75rem;font-weight:500;line-height:1.3;margin:1px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body .us-modal.pvx-ps .us-h-sub{opacity:.75}
+  body .pvx-ps .addpt-head .us-x.pvx-ps-btn svg{width:18px;height:18px}
+}
+@media (max-width:700px) and (prefers-reduced-motion:reduce){body :is(.intake-modal,.us-modal).pvx-ps,body :is(.intake-modal,.us-modal).pvx-ps.open{transition:none}}
+/* 3. Mac and iPad: a sheet that has Cancel has no ✕ as well (kept, out of sight, as Esc's target) */
+@media (min-width:701px){ .pvx-nox :is(.addpt-head,.intake-head)>.close{display:none!important} }
+</style>
+<script id="pvx-n370-js">
+/* PVX-N370 - HIG Sheets and Windows (second look) */
+/* 1. the critical-patient banner and sheets: while a sheet or alert is open, the banner sits behind its dimmed backdrop with the
+   rest of the page. The drawer (an inspector) keeps it beside or above, as n332 set. */
+(function(){
+  function shown(d){ if(d.id==='drawer'||d.id==='locDrawer'||(d.closest&&d.closest('#critIsland'))) return false;
+    var cs=getComputedStyle(d); if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity<0.05) return false;
+    var r=d.getBoundingClientRect(); return r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight; }
+  function check(){ var on=[].some.call(document.querySelectorAll('[role=dialog][aria-modal=true],[role=alertdialog]'),shown);
+    if(document.body.classList.contains('pvx-ci-under')!==on) document.body.classList.toggle('pvx-ci-under',on); }
+  var t=0; function soon(){ if(t) return; t=requestAnimationFrame(function(){ t=0; try{ check(); }catch(e){} }); }
+  try{ new MutationObserver(soon).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-modal']}); }catch(e){}
+  document.addEventListener('transitionend',soon,true); addEventListener('resize',soon); soon();
+  window.pvxCiUnder=check;
+})();
+
+/* 2 and 3. sheets */
+(function(){
+  var PH=window.matchMedia?matchMedia('(max-width:700px)'):{matches:false,addListener:function(){}};
+  var RM=function(){ return !!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches); };
+  function f(n){ return function(){ var g=window[n]; if(typeof g==='function') g(); }; }
+  /* the sheets, their parts, and how they close. n211 already does Add patient, Shift setup and Hospital alert. */
+  var CFG=[{m:'triEditModal',l:'#triEditCancel',r:'#triEditSave',x:'#triEditClose',close:f('closeTriageEdit'),edit:true},
+           {m:'ctModal',x:'#ctClose',close:f('closeCareTeam')},
+           {m:'assignModal',shell:'intake',l:'#assignCancel',x:'#assignClose',close:f('closeAssignModal')},
+           {m:'usModal',shell:'us',l:'#usX',r:'#usSend',rs:'Send',close:f('closeUltrasound')}];
+  /* for the intake and Ultrasound shells, borrow n211's sheet classes while on iPhone */
+  var LEND={intake:[['.intake-head','addpt-head'],['.ih-title','aph-title'],['.ih-ic','aph-ic'],['.ih-t','aph-t'],['.ih-sub','aph-sub'],['.intake-foot','addpt-foot']],
+            us:[['.us-head','addpt-head'],['.us-head>div:first-child','aph-title'],['.us-h-t','aph-t'],['.us-h-name','aph-sub'],['.us-h-sub','aph-sub'],['.us-foot','addpt-foot']]};
+  function el(c){ return document.getElementById(c.m); }
+  function q(c,sel){ var m=el(c); return m&&m.querySelector(sel); }
+  function park(btn,cls,head,before){ if(!btn||btn._pvxMark) return;
+    var mk=document.createComment('pvx-ps'); btn.parentNode.insertBefore(mk,btn); btn._pvxMark=mk;
+    btn.classList.add('pvx-ps-btn',cls); if(before) head.insertBefore(btn,before); else head.appendChild(btn); }
+  function unpark(btn){ if(!btn||!btn._pvxMark) return; var mk=btn._pvxMark; btn._pvxMark=null;
+    btn.classList.remove('pvx-ps-btn','pvx-ps-l','pvx-ps-r'); if(mk.parentNode){ mk.parentNode.insertBefore(btn,mk); mk.remove(); } }
+  function undo(c){ var m=el(c); if(!m) return;
+    [].slice.call(m.querySelectorAll('.pvx-ps-btn')).forEach(function(b){ if(b._pvxText!=null){ b.textContent=b._pvxText; b._pvxText=null; } unpark(b); });
+    var x=c.x&&q(c,c.x); if(x){ if(x._pvxMark) unpark(x); if(x._pvxHid){ x.removeAttribute('aria-hidden'); x.removeAttribute('tabindex'); x._pvxHid=false; } }
+    [].slice.call(m.querySelectorAll('[data-pvx-lent]')).forEach(function(n){ n.getAttribute('data-pvx-lent').split(' ').forEach(function(k){ n.classList.remove(k); }); n.removeAttribute('data-pvx-lent'); });
+    var ft=m.querySelector('.pvx-ps-empty'); if(ft) ft.classList.remove('pvx-ps-empty');
+    m.classList.remove('pvx-ps','pvx-ps-bar'); }
+  function lend(m,shell){ (LEND[shell]||[]).forEach(function(p){ [].slice.call(m.querySelectorAll(p[0])).forEach(function(n){ if(n.classList.contains(p[1])) return;
+    n.classList.add(p[1]); n.setAttribute('data-pvx-lent',((n.getAttribute('data-pvx-lent')||'')+' '+p[1]).trim()); }); }); }
+  function arrange(c){ var m=el(c); if(!m) return; undo(c); nox(c); if(!PH.matches) return;
+    if(c.shell) lend(m,c.shell);
+    var head=m.querySelector('.addpt-head'), t=m.querySelector('.aph-title'), foot=m.querySelector('.addpt-foot'); if(!head||!t) return;
+    m.classList.add('pvx-ps');
+    if(!m.querySelector('.pvx-grab')){ var g=document.createElement('div'); g.className='pvx-grab'; g.setAttribute('aria-hidden','true'); m.insertBefore(g,m.firstChild); }
+    var L=c.l&&m.querySelector(c.l), R=c.r&&m.querySelector(c.r), X=c.x&&m.querySelector(c.x);
+    if(L||R){ if(L) park(L,'pvx-ps-l',head,t); if(R){ park(R,'pvx-ps-r',head,null); if(c.rs){ R._pvxText=R.textContent; R.setAttribute('aria-label',R._pvxText); R.textContent=c.rs; } }
+      m.classList.add('pvx-ps-bar');
+      if(X&&X!==L){ X.setAttribute('aria-hidden','true'); X.setAttribute('tabindex','-1'); X._pvxHid=true; } }
+    else if(X&&X.parentNode===head){ var mk=document.createComment('pvx-ps'); head.insertBefore(mk,X); X._pvxMark=mk; head.insertBefore(X,t); }   /* view-only: ✕ Close, leading */
+    if(foot) foot.classList.toggle('pvx-ps-empty', ![].some.call(foot.children,function(k){ return getComputedStyle(k).display!=='none'&&!k.hidden; }));
+  }
+  /* 3. Mac and iPad: Cancel in the footer means no ✕ in the title bar */
+  var NOX=[{m:'apModal',f:'.addpt-foot'},{m:'shiftModal',f:'.addpt-foot'},{m:'alertModal',f:'.addpt-foot,#alertFoot'},{m:'triEditModal',f:'.addpt-foot'},{m:'assignModal',f:'.intake-foot'}];
+  function nox(c){ var n=NOX.filter(function(k){ return k.m===c.m; })[0]||c, m=el(n); if(!m||!n.f) return;
+    var has=!PH.matches&&[].some.call(m.querySelectorAll(n.f+' button'),function(b){ return /^\s*Cancel\s*$/.test(b.textContent)&&getComputedStyle(b).display!=='none'&&!b.hidden; });
+    m.classList.toggle('pvx-nox',has); var x=m.querySelector(':is(.addpt-head,.intake-head)>.close');
+    if(x){ if(has){ x.setAttribute('aria-hidden','true'); x.setAttribute('tabindex','-1'); x._pvxNox=true; } else if(x._pvxNox){ x.removeAttribute('aria-hidden'); x.removeAttribute('tabindex'); x._pvxNox=false; } } }
+  function noxAll(){ NOX.forEach(nox); }
+  function all(){ CFG.forEach(arrange); noxAll(); }
+  window.pvxSheets370=all;
+  if(PH.addEventListener) PH.addEventListener('change',all); else PH.addListener(all);
+  /* the Ultrasound request is built each time it opens; the Hospital alert rebuilds its footer */
+  if(typeof openUltrasoundRequest==='function'){ var our=openUltrasoundRequest; openUltrasoundRequest=function(){ var r=our.apply(this,arguments); arrange(CFG[3]); return r; }; }
+  if(typeof renderAlertModal==='function'){ var ram=renderAlertModal; renderAlertModal=function(){ var r=ram.apply(this,arguments); nox(NOX[2]); return r; }; }
+  NOX.concat(CFG).forEach(function(k){ var m=el(k); if(!m||m._pvx370) return; m._pvx370=true;
+    new MutationObserver(function(){ var o=m.classList.contains('open'); if(o&&!m._pvx370o){ m._pvxDirty=false; nox(k); } m._pvx370o=o; }).observe(m,{attributes:true,attributeFilter:['class']}); });
+  all();
+  /* Edit triage: typing or choosing since it opened */
+  CFG.forEach(function(c){ var m=el(c); if(!m||!c.edit) return;
+    ['input','change'].forEach(function(k){ m.addEventListener(k,function(e){ if(e.isTrusted!==false) m._pvxDirty=true; },true); }); });
+  function ask(c){ showConfirm('Discard your changes?','Discard',function(){ var m=el(c); if(m) m._pvxDirty=false; c.close(); },{sub:'What you typed in this sheet will be lost.',danger:true});
+    var k=document.getElementById('confirmCancel'); if(k) k.textContent='Keep editing'; }
+  window.pvxSheetDirty370=function(id){ var m=document.getElementById(id); return !!(m&&m._pvxDirty); };
+  /* drag the sheet down by its top to close it; a sheet with typing asks first */
+  CFG.forEach(function(c){ var m=el(c); if(!m) return;
+    var y0=null, dy=0, ly=0, lt=0, v=0;
+    function zone(e){ return e.target.closest&&e.target.closest('.pvx-grab,.addpt-head'); }
+    m.addEventListener('touchstart',function(e){ if(!PH.matches||!m.classList.contains('open')||!m.classList.contains('pvx-ps')||!zone(e)||e.touches.length>1) return;
+      if(e.target.closest('button,a,input,select,textarea')) return;
+      y0=ly=e.touches[0].clientY; lt=performance.now(); dy=0; v=0; m.classList.add('pvx-ps-drag'); },{passive:true});
+    m.addEventListener('touchmove',function(e){ if(y0===null) return; var y=e.touches[0].clientY, t=performance.now();
+      if(t>lt) v=v*.4+(y-ly)/(t-lt)*.6; ly=y; lt=t; dy=y-y0; dy=dy<0?dy/4:dy; m.style.transform='translateY('+dy+'px)'; },{passive:true});
+    function end(){ if(y0===null) return; y0=null; m.classList.remove('pvx-ps-drag');
+      var go=dy>90||(v>.5&&dy>24);
+      if(go&&!(c.edit&&m._pvxDirty)){ if(RM()){ m.style.transform=''; c.close(); return; }
+        m.style.transform='translateY('+(m.offsetHeight+24)+'px)'; setTimeout(function(){ c.close(); setTimeout(function(){ m.style.transform=''; },380); },200); return; }
+      m.style.transform=''; if(go) ask(c); }
+    m.addEventListener('touchend',end); m.addEventListener('touchcancel',end);
+  });
+})();
+
+/* 5. Open in new window (HIG Windows: give people the option to view content in a new window) */
+(function(){
+  var MAC=/Mac|iPhone|iPad|iPod/.test(navigator.platform||'')||/Mac OS X/.test(navigator.userAgent||'');
+  var SEL='#board .card[data-pid],#tableBody tr[data-pid],.r-pt[data-pid],#view-dashboard .attn-item[data-pid]';
+  function staff(){ var b=document.body.classList; return !(b.contains('tv-mode')||b.contains('client-mode')); }
+  function addr(pid){ return location.origin+location.pathname+'#open='+encodeURIComponent(pid); }
+  window.pvxOpenInNewWindow=function(pid){ try{ return window.open(addr(pid),'_blank','noopener'); }catch(e){ return null; } };
+  window.pvxNewWinItem=function(p){ if(!p||!staff()) return false; if(!(window.matchMedia&&matchMedia('(any-pointer:fine)').matches)) return false;
+    return {label:'Open in new window',act:function(){ pvxOpenInNewWindow(p.id); }}; };
+  function target(e){ var t=e.target, row=t&&t.closest&&t.closest(SEL); if(!row||!staff()) return null;
+    var c=t.closest('button,a,input,select,textarea,label'); if(c&&c!==row&&row.contains(c)&&!c.classList.contains('pvx-open')) return null; return row; }   /* the name (the card's open button) counts */
+  document.addEventListener('click',function(e){ if(e.button!==0||e.altKey||e.shiftKey) return; if(!(MAC?(e.metaKey&&!e.ctrlKey):(e.ctrlKey&&!e.metaKey))) return;
+    var row=target(e); if(!row) return; e.preventDefault(); e.stopImmediatePropagation(); pvxOpenInNewWindow(row.getAttribute('data-pid')); },true);
+  /* a middle click: pressed and released on the same patient (the board may redraw the card in between, so it goes by the patient) */
+  var mid=null;
+  document.addEventListener('mousedown',function(e){ if(e.button!==1) return; var row=target(e); mid=row?row.getAttribute('data-pid'):null; if(row) e.preventDefault(); },true);   /* no autoscroll */
+  document.addEventListener('mouseup',function(e){ if(e.button!==1||!mid) return; var row=target(e), id=mid; mid=null;
+    if(row&&row.getAttribute('data-pid')===id){ e.preventDefault(); e.stopImmediatePropagation(); pvxOpenInNewWindow(id); } },true);
+  document.addEventListener('auxclick',function(e){ if(e.button===1&&target(e)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
+  /* the new window: #open=<visit id> opens Flow on that patient once the board has them */
+  function want(){ var m=/(?:^#|&)open=([^&]+)/.exec(location.hash||''); if(!m) return null; try{ return decodeURIComponent(m[1]); }catch(e){ return null; } }
+  function go(){ var id=want(); if(!id) return; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    var t0=Date.now();
+    (function wait(){ var p=(typeof PATIENTS!=='undefined'?PATIENTS:[]).find(function(x){ return String(x.id)===String(id); });
+      if(p){ try{ if(typeof currentApp!=='undefined'&&currentApp!=='flow'&&typeof switchApp==='function') switchApp('flow'); }catch(e){}
+        setTimeout(function(){ try{ openDrawer(p.id); }catch(e){} },80); return; }
+      if(Date.now()-t0>15000){ try{ toast('That patient isn’t on the board now.'); }catch(e){} return; }
+      setTimeout(wait,300); })(); }
+  setTimeout(go,500); addEventListener('hashchange',go);
+})();
+</script>
+<style id="pvx-n371">/* PVX-N371 - HIG Combo boxes */
+/* a hospital's address wraps instead of being cut off (Combo boxes: list items no wider than the field) */
+.hv-sub{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere;line-height:1.3}
+/* group headings in a list: Recent / All hospitals, Often from */
+.pvx-grp{padding:8px 12px 4px;font-size:.6875rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-500,#8A97AA);pointer-events:none}
+#otwTowns .pvx-grp{padding:6px 10px 2px}
+/* the combo box's pull-down button: Mac (mouse or trackpad) only */
+.pvx-cbx{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--ink-500,#8A97AA);
+  display:none;place-items:center;cursor:pointer;padding:0;z-index:1}
+.pvx-cbx svg{width:14px;height:14px;display:block;transition:transform .18s ease}
+.pvx-cbx[aria-expanded="true"] svg{transform:rotate(180deg)}
+.pvx-cbx:hover{color:var(--ink-900,#EEF1F6);background:rgba(127,127,127,.12)}
+.pvx-cbx:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:1px}
+@media (hover:hover) and (pointer:fine){ .pvx-cbx{display:grid} .pvx-cbx-on>.ap-input{padding-right:36px} }
+@media (prefers-reduced-motion:reduce){ .pvx-cbx svg{transition:none} }
+</style>
+<script id="pvx-n371-js">
+/* PVX-N371 - HIG Combo boxes */
+/* 1. hospitals this workstation picked recently, newest first (names only, kept on this computer) */
+(function(){
+  var K='pvx:flow:refhosp';
+  function read(){ try{ var a=JSON.parse(localStorage.getItem(K)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  window.pvxRefRecent=function(){ var L=(typeof CT_VET_HOSPITALS!=='undefined'?CT_VET_HOSPITALS:[]), out=[];
+    read().forEach(function(n){ var h=L.filter(function(x){ return x.name===n; })[0]; if(h&&out.indexOf(h)<0) out.push(h); }); return out.slice(0,5); };
+  window.pvxRefRemember=function(name){ name=String(name||'').trim(); if(!name) return;
+    var L=(typeof CT_VET_HOSPITALS!=='undefined'?CT_VET_HOSPITALS:[]); if(!L.some(function(x){ return x.name===name; })) return;   /* a typed name isn't added to the list */
+    var a=read().filter(function(n){ return n!==name; }); a.unshift(name); try{ localStorage.setItem(K,JSON.stringify(a.slice(0,5))); }catch(e){} };
+  if(typeof commitPatient==='function'){ var cp=commitPatient; commitPatient=function(f){ try{ if(f&&f.referringHospital) pvxRefRemember(f.referringHospital); }catch(e){} return cp.apply(this,arguments); }; }
+})();
+/* 3. the pull-down button of a combo box: opens and closes the list; not in the Tab order (↓ opens it from the keyboard) */
+(function(){
+  var SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  var CFG=[{i:'apBreed',p:'apBreedPanel',label:'Show breeds',close:function(){ if(typeof breedClose==='function') breedClose(); },open:function(){ if(typeof breedRefresh==='function') breedRefresh(); }},
+           {i:'apRefHosp',p:'apRefHospPanel',label:'Show hospitals',close:function(){ try{ _apRefCtrl&&_apRefCtrl.close(); }catch(e){} },
+            open:function(inp){ inp.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true})); }}];
+  function add(c){ var inp=document.getElementById(c.i), pan=document.getElementById(c.p); if(!inp||!pan||inp.__pvxCbx) return; inp.__pvxCbx=1;
+    var wrap=inp.closest('.bc-wrap')||inp.parentNode, b=document.createElement('button');
+    b.type='button'; b.className='pvx-cbx'; b.tabIndex=-1; b.setAttribute('aria-label',c.label); b.setAttribute('aria-controls',c.p); b.setAttribute('aria-expanded','false'); b.innerHTML=SVG;
+    inp.parentNode.insertBefore(b,inp.nextSibling); wrap.classList.add('pvx-cbx-on');
+    function isOpen(){ return pan.classList.contains('open'); }
+    function sync(){ b.setAttribute('aria-expanded',String(isOpen())); }
+    b.addEventListener('mousedown',function(e){ e.preventDefault(); });   /* keep the cursor in the field */
+    b.addEventListener('click',function(e){ e.preventDefault();
+      if(isOpen()){ c.close(); sync(); return; }
+      if(document.activeElement!==inp){ inp.focus(); setTimeout(function(){ if(!isOpen()) c.open(inp); sync(); },0); }
+      else { c.open(inp); sync(); } });
+    try{ new MutationObserver(sync).observe(pan,{attributes:true,attributeFilter:['class']}); }catch(e){} }
+  function all(){ CFG.forEach(add); }
+  all(); if(typeof ensureHospitalAutocompletes==='function'){ var eh=ensureHospitalAutocompletes; ensureHospitalAutocompletes=function(){ var r=eh.apply(this,arguments); all(); return r; }; }
+  document.addEventListener('focusin',function(e){ if(e.target&&(e.target.id==='apBreed'||e.target.id==='apRefHosp')) all(); });
+})();
+</script>
+<style id="pvx-n372">/* PVX-N372 - HIG Segmented controls: one kind of content per control (text), where Arrival type is a segmented row */
+@media (min-width:701px){ #apArrival .ap-seg-btn>svg{display:none} }
+.alert-types .alert-type:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px}
+</style>
+<script id="pvx-n372-js">
+
+(function(){
+  var GROUPS='.otw-leave,.pvx-unit,.alert-types';
+  function radios(g){ return [].slice.call(g.querySelectorAll(g.classList.contains('alert-types')?'.alert-type':'[role=radio]')); }
+  function roving(g){ var R=radios(g); if(!R.length) return; var on=R.filter(function(r){ return r.getAttribute('aria-checked')==='true'; })[0]||R[0];
+    R.forEach(function(r){ var t=r===on?0:-1; if(r.tabIndex!==t) r.tabIndex=t; }); }
+  function alertTypes(){ var g=document.querySelector('#alertModal .alert-types'); if(!g) return;
+    if(g.getAttribute('role')!=='radiogroup'){ g.setAttribute('role','radiogroup'); g.setAttribute('aria-label','Alert type'); }
+    radios(g).forEach(function(b){ b.setAttribute('role','radio'); var on=b.classList.contains('sel'); if(b.getAttribute('aria-checked')!==String(on)) b.setAttribute('aria-checked',String(on)); }); }
+  var refocus=false;
+  document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('#alertModal .alert-type')) refocus=true; },true);
+  if(typeof renderAlertModal==='function'){ var ram=renderAlertModal; renderAlertModal=function(){ var r=ram.apply(this,arguments);
+    try{ alertTypes(); var g=document.querySelector('#alertModal .alert-types'); if(g) roving(g);
+      if(refocus&&g){ var c=g.querySelector('[aria-checked="true"]'); if(c) c.focus({preventScroll:true}); } }catch(e){} refocus=false; past(); return r; }; }
+  document.addEventListener('keydown',function(e){ var g=e.target.closest&&e.target.closest(GROUPS); if(!g) return;
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].indexOf(e.key)<0||e.altKey||e.metaKey||e.ctrlKey) return;
+    var R=radios(g), i=R.indexOf(e.target.closest(g.classList.contains('alert-types')?'.alert-type':'[role=radio]')); if(i<0) return;
+    if(g.classList.contains('pvx-unit')) { setTimeout(function(){ roving(g); },0); return; }
+    e.preventDefault(); e.stopPropagation();
+    var n=R.length, j=e.key==='Home'?0:e.key==='End'?n-1:(i+((e.key==='ArrowLeft'||e.key==='ArrowUp')?-1:1)+n)%n;
+    if(g.classList.contains('alert-types')) refocus=true;
+    R[j].click();
+    var g2=document.querySelector(g.classList.contains('alert-types')?'#alertModal .alert-types':g.classList.contains('otw-leave')?'.otw-leave':null)||g;
+    roving(g2); var c=g2.querySelector('[aria-checked="true"]')||radios(g2)[j]; if(c&&document.activeElement!==c) c.focus({preventScroll:true});
+  },true);
+  var t=0; function sweep(){ t=0; try{ alertTypes(); [].forEach.call(document.querySelectorAll(GROUPS),roving); }catch(e){} }
+  try{ new MutationObserver(function(){ if(!t) t=requestAnimationFrame(sweep); }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-checked','class']}); }catch(e){}
+  sweep();
+  function past(){ var d=document.getElementById('alertReviewDay'), s=document.getElementById('alertReviewTime'); if(!d||!s) return;
+    var n=new Date(), today=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'), now=n.getHours()*60+n.getMinutes(), isT=d.value===today;
+    [].forEach.call(s.options,function(o){ o.disabled=isT&&(+o.value)<=now; });
+    if(isT&&s.selectedOptions[0]&&s.selectedOptions[0].disabled){ var f=[].filter.call(s.options,function(o){ return !o.disabled; })[0]; if(f){ s.value=f.value; s.dispatchEvent(new Event('change',{bubbles:true})); } } }
+  document.addEventListener('change',function(e){ if(e.target&&e.target.id==='alertReviewDay') setTimeout(past,0); },true);
+  past();
 })();
 </script>
 </body>

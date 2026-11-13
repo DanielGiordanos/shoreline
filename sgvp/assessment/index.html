@@ -2286,7 +2286,8 @@ function buildPrintRecord(r) {
   const C = { rounds: 'sgvp_review_rounds', assign: 'sgvp_review_assign', reviews: 'sgvp_reviews' };
   const TOTAL = DOMAINS.reduce((n, d) => n + (d.overall ? 1 : d.questions.length), 0);
   const KINDS = { 'mid-year': 'Mid-year review', 'end-of-year': 'End-of-year review', rotation: 'Rotation review' };
-  const WARN_AFTER = 5 * 60 * 1000;   // silent saving: speak up only when a change is still unsaved after 5 minutes
+  const WARN_AFTER = 20 * 1000;   // silent saving: speak up when a change is still unsaved after 20 seconds (asm1: was 5 minutes)
+  const DOUBLE = 700;   // asm1: a second click or tap on the rating just chosen, this soon, is a double-click, never a clear
 
   const $ = (s, el) => (el || document).querySelector(s);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2341,7 +2342,9 @@ function buildPrintRecord(r) {
     if (!window.firebase) return null;
     try { if (!firebase.apps.length) firebase.initializeApp(CFG); } catch (e) { console.warn('fb init', e); }
     fb = firebase;
-    try { db = firebase.firestore(); db.enablePersistence && db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) { console.warn('fs', e); }
+    try { db = firebase.firestore();
+      try { db.settings && db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}   // asm1: Safari and filtering proxies stall the stream (Flow n92)
+      db.enablePersistence && db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) { console.warn('fs', e); }
     return fb;
   }
   const ts = () => firebase.firestore.FieldValue.serverTimestamp();
@@ -3314,21 +3317,57 @@ function buildPrintRecord(r) {
         const r = o.rev;
         return ref.set({ round: r.round, intern: r.intern, email: S.email, uid: S.uid, evaluator_name: r.evaluator_name, record_id: r.record_id,
           answers: r.answers || {}, notes: r.notes || {}, observations: r.observations || {}, progress: r.progress, status: 'draft',
-          created_at: ts(), updated_at: ts() }).then(() => { o.exists = true; });
+          created_at: ts(), updated_at: ts() }).then(() => { o.exists = true; }, e => adopt(o, ref, changes, e));
       }
-      const u = { progress: o.rev.progress, updated_at: ts() };
-      Object.keys(changes).forEach(p => { u[p] = changes[p] === null ? del() : changes[p]; });
-      return ref.update(u);
+      return ref.update(upd(o, changes));
     };
     o.chain = o.chain.then(write).then(() => { if (!Object.keys(o.pending).length) o.since = 0; }, e => {
       console.warn('save', e);
+      Object.keys(changes).forEach(p => { if (!(p in o.pending)) o.pending[p] = changes[p]; });   // keep it for the next try (a newer change to the same item wins)
       if (/permission/.test((e && e.code) || '')) say('That change didn’t save: this review is locked or its round is closed. Reload to see the latest.', 'error');
-      else say('That change didn’t save. Check your connection; your next change will try again.', 'error');
-      Object.assign(o.pending, changes);   // keep it for the next try
+      else { say('Not saved yet. Check your connection; this page keeps trying.', 'error'); clearTimeout(o.timer); o.timer = setTimeout(flush, 5000); }   // asm1: retries by itself
     }).then(() => { o.inflight--; });
     return o.chain;
   }
-  setInterval(() => { const o = S.open; if (o && o.since && Date.now() - o.since > WARN_AFTER) { say('Some changes haven’t reached the database yet. Keep this page open until you’re back online.', 'warn'); o.since = Date.now(); } }, 30000);
+  /* asm1: one update for a set of changes ('status' is never one: Submit sets it) */
+  function upd(o, changes) {
+    const u = { progress: o.rev.progress, updated_at: ts() };
+    Object.keys(changes).forEach(p => { if (p !== 'status') u[p] = changes[p] === null ? del() : changes[p]; });
+    return u;
+  }
+  /* asm1: the first save was refused. If the review already exists on the server (started on another device, and this
+     device's cached copy said it didn't), take the server copy, put this page's changes on top, and save them as an update. */
+  function adopt(o, ref, changes, e) {
+    return ref.get({ source: 'server' }).then(s => {
+      if (!s.exists) throw e;
+      const d = s.data(); o.exists = true;
+      ['answers', 'notes', 'observations'].forEach(k => { o.rev[k] = d[k] || {}; });
+      Object.assign(o.rev, { status: d.status, submitted_at: d.submitted_at, reopened_at: d.reopened_at });
+      Object.keys(changes).forEach(p => { if (p === 'status') return; const parts = p.split('.'); let t = o.rev;
+        for (let k = 0; k < parts.length - 1; k++) { t[parts[k]] = t[parts[k]] || {}; t = t[parts[k]]; }
+        if (changes[p] === null) delete t[parts[parts.length - 1]]; else t[parts[parts.length - 1]] = changes[p]; });
+      o.rev.progress = computeProgress(o.rev);
+      setTimeout(() => { if (S.open === o) { const k = focusKey(); renderReview(false); refocus(k); } }, 0);
+      return ref.update(upd(o, changes));
+    }, () => { throw e; });
+  }
+  /* asm1: wait for every save, retrying what failed; true when nothing is left unsaved */
+  async function settle(o, tries) {
+    for (let i = 0; i < tries; i++) {
+      if (i) await new Promise(r => setTimeout(r, 1200));
+      flush(); let c; do { c = o.chain; await c; } while (c !== o.chain);
+      if (!Object.keys(o.pending).length) return true;
+    }
+    return false;
+  }
+  /* asm1: the server copy with this page's ratings and text on top: what Submit locks */
+  function onTop(base, mine) {
+    const out = Object.assign({}, base || {});
+    Object.keys(mine || {}).forEach(k => { const v = mine[k];
+      out[k] = v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' ? onTop(out[k], v) : v; });
+    return out;
+  }
+  setInterval(() => { const o = S.open; if (o && o.since && Date.now() - o.since > WARN_AFTER) { say('Not saved yet. Some changes haven’t reached the database. Keep this page open; it keeps trying.', 'warn'); o.since = Date.now(); } }, 5000);
   addEventListener('beforeunload', e => { const o = S.open; if (o && Object.keys(o.pending).length) { flush(); e.preventDefault(); e.returnValue = ''; } });
   addEventListener('pagehide', () => flush());
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
@@ -3378,12 +3417,22 @@ function buildPrintRecord(r) {
     (box, close) => box.querySelector('[data-ok]').addEventListener('click', async () => {
       const b = box.querySelector('[data-ok]'); if (b.disabled) return; busy(b, 'Submitting…');   // the same spinner as every other slow action
       try {
+        if (!navigator.onLine) throw { code: 'offline' };
         if (!o.exists) { o.pending['status'] = 'draft'; flush(); }   // a review with no changes yet still needs its document
-        await o.chain;
-        await db.collection(C.reviews).doc(o.aid).update({ status: 'submitted', submitted_at: ts(), updated_at: ts(), progress: computeProgress(r) });
+        /* asm1: nothing is locked while anything is unsaved, and the lock carries the ratings and text on the screen */
+        const ok = await Promise.race([settle(o, 3), new Promise(res => setTimeout(() => res(false), 20000))]);
+        if (!ok) throw { code: 'unsaved' };
+        const ref = db.collection(C.reviews).doc(o.aid), sv = (await ref.get({ source: 'server' })).data() || {};
+        const lock = { status: 'submitted', submitted_at: ts(), updated_at: ts() };
+        ['answers', 'notes', 'observations'].forEach(k => { lock[k] = onTop(sv[k], r[k]); r[k] = JSON.parse(JSON.stringify(lock[k])); });
+        lock.progress = computeProgress(r);
+        await ref.update(lock);
         const fresh = await db.collection(C.reviews).doc(o.aid).get();
         Object.assign(r, fresh.data()); close(); renderReview(true); say(`Submitted. ${READERS_AND} have your review.`);
-      } catch (e) { unbusy(b); say('The review wasn’t submitted. ' + (/permission/.test((e && e.code) || '') ? 'Its round may be closed.' : 'Check your connection, then try again.'), 'error'); }
+      } catch (e) { unbusy(b); const c = (e && e.code) || '';
+        say(c === 'unsaved' ? 'The review wasn’t submitted: some changes haven’t saved yet. It’s still a draft. Check your connection, then try again.'
+          : c === 'offline' ? 'You’re offline, so the review wasn’t submitted. It’s still a draft; submit when you’re back online.'
+          : 'The review wasn’t submitted. ' + (/permission/.test(c) ? 'Its round may be closed.' : 'Check your connection, then try again.'), 'error'); }
     }), { noDefault: true });   // a signed review: no Return default, so the blank-items line gets read
   }
 
@@ -3471,8 +3520,11 @@ function buildPrintRecord(r) {
       const sc = e.target.closest('.a-score');
       if (sc && !sc.disabled && S.open) {
         const key = sc.dataset.key, qi = sc.dataset.q, v = sc.dataset.score, cur = ((S.open.rev.answers || {})[key] || {})[qi];
-        const nv = cur === v ? null : v;   // choosing the selected rating again clears it
-        const d = DOMAINS[S.open.cur], path = `answers.${key}.${qi}`;
+        const d = DOMAINS[S.open.cur], path = `answers.${key}.${qi}`, now = Date.now(), last = S.open.lastRate;
+        /* asm1: a quick second click or tap on the rating just chosen is a double-click (or a firm tap counted twice): keep it */
+        if (cur === v && last && last.path === path && last.v === v && now - last.t < DOUBLE) { sc.focus({ preventScroll: true }); return; }
+        const nv = cur === v ? null : v;   // choosing the selected rating again, deliberately, clears it
+        S.open.lastRate = nv === null ? null : { path, v, t: now };
         const ent = remember(H.review, { kind: 'field', verb: 'rating', path, merge: path, from: cur == null ? null : cur, to: nv, dom: S.open.cur,
           anchor: d.overall ? '#aQe' : `#aQ${qi}`, label: d.overall ? 'Entrustment' : `Competency ${Number(d.num)}.${Number(qi) + 1}` });
         setField(path, nv);
