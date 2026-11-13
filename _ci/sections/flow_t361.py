@@ -68,7 +68,9 @@ async def s_t361(br):
     ok('…Clear empties it and keeps the cursor there', f2['v'] == '' and f2['focus'] and not f2['x'], f2)
     await p.keyboard.type('abc'); await p.wait_for_timeout(250); await p.keyboard.press('Escape'); await p.wait_for_timeout(300)
     f3 = await p.evaluate("(()=>{ const q=document.getElementById('fgQ'); return {open:!!q, v:q&&q.value, focus:document.activeElement===q}; })()")
-    await p.keyboard.press('Escape'); await p.wait_for_timeout(300)
+    await p.keyboard.press('Escape')
+    try: await p.wait_for_function("!document.getElementById('fgQ') && !!(document.activeElement&&document.activeElement.matches('#flagsMount [data-fg=add]'))", timeout=2500)   # n369: WebKit can take longer than 300 ms to hand focus back
+    except Exception: pass
     f4 = await p.evaluate("(()=>({open:!!document.getElementById('fgQ'), focus:!!(document.activeElement&&document.activeElement.matches('#flagsMount [data-fg=add]'))}))()")
     ok('…Esc clears what’s typed first; a second Esc closes the sheet and returns to Add flag', f3['open'] and f3['v'] == '' and f3['focus'] and not f4['open'] and f4['focus'], [f3, f4])
     ok('…no page errors', not newerr(e), newerr(e))
