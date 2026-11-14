@@ -26,6 +26,13 @@ PINJS = "(()=>{if(window.__pvxPin)return;window.__pvxPin=1;const D=Date,T=%d,o=D
 H = functools.partial(http.server.SimpleHTTPRequestHandler, directory=BUILD)
 class Q(H.func):
     def log_message(self, *a): pass
+    def do_GET(self):
+        # n379: Flow hosts Firebase and the QR library itself (assets/vendor/). The suite runs on its own fake Firebase, so these
+        # are served empty, as the gstatic and jsDelivr addresses were stubbed before. A check that wants the real files reads them
+        # from disk or routes them in (flow_t379).
+        if self.path.split('?')[0].startswith('/assets/vendor/') and self.path.split('?')[0].endswith('.js'):
+            self.send_response(200); self.send_header('Content-Type', 'application/javascript'); self.send_header('Content-Length', '0'); self.end_headers(); return
+        return super().do_GET()
 socketserver.ThreadingTCPServer.daemon_threads = True
 srv = socketserver.ThreadingTCPServer(('127.0.0.1', 0), functools.partial(Q, directory=BUILD)); PORT = srv.server_address[1]
 threading.Thread(target=srv.serve_forever, daemon=True).start()
