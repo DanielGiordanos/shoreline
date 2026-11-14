@@ -32,6 +32,7 @@ python3 tests/run.py SITE --list                 # what there is, with its tags
 | `fixtures/` | The fake Firebase, seeds, probes, and the stand-in drug library. |
 | `fonts/` | Maps the Apple system font names to Inter, so text measures the same everywhere. |
 | `timings.json` | How long each section takes. Shards are balanced with it. |
+| `seal_csp.py` | Seals Flow's page: writes its content policy with a hash for every inline script (n380). See below. |
 
 ## Adding a build's checks
 Add a section to the app's module, or a new `sections/<app>_tNNN.py`:
@@ -43,6 +44,17 @@ async def s_t260(br):
 ```
 - Every section gets the browser and starts from nothing. Anything it leaves open is closed after it.
 - Wait for the condition you're testing with `until(pg, js)`, not a fixed time: GitHub's machines run at a different speed from the build machine.
+
+## After changing Flow's page (n380)
+Flow's `index.html` carries a content security policy that lists every inline script by its SHA-256. An inline script that isn't in the list doesn't run.
+```
+python3 _ci/seal_csp.py .            # after any change to an inline script in index.html
+python3 _ci/seal_csp.py . --check    # says whether the page is sealed
+```
+- **Every change to an inline script in Flow's `index.html` ends with the seal.** `flow_t380` fails first if it was missed, and names this tool.
+- Styles, markup and the files Flow loads (`/assets/…`, `sw.js`) need no seal.
+- An inline `on…=` handler can't be sealed and won't run: add a listener in a script instead.
+- Only Flow's page has the policy. Rounds, Treatment and the other apps are unchanged.
 
 ## What never leaves the build machine
 - **`local_licensed.py`** needs the licensed Yakuri library. It runs when `YK_SEED` points at the licensed test release.
