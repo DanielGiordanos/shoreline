@@ -204,7 +204,6 @@ button > .pvx-gi:only-child{width:1.05em;height:1.05em}
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Pravix Flow | Veterinary Patient Flow Software</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
-<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
 <link rel="preload" href="assets/img/logo-dark.png" as="image">
@@ -6335,14 +6334,14 @@ window.addEventListener('keydown',function(e){
 </div>
 
 <!-- ═══ Pravix multi-tenant foundation — active hospital resolves before the app boots ═══ -->
-<!-- Firebase (Firestore + Auth) — served from Google's gstatic.com, which
-     hospital SSL-inspection proxies already trust, so it loads fast on-site. -->
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<!-- PVX-N379: Firebase (Firestore + Auth) and the QR library are this site's own files (assets/vendor/README.md): the
+     publishers' bytes, checked by the suite. Flow starts whenever the site does. -->
+<script src="/assets/vendor/firebase-10.12.5/firebase-app-compat.js"></script>
+<script src="/assets/vendor/firebase-10.12.5/firebase-firestore-compat.js"></script>
+<script src="/assets/vendor/firebase-10.12.5/firebase-auth-compat.js"></script>
 <!-- defer: qrcode() is only ever called from render code (makeQR), never at parse
      time, so this no longer blocks the parser for every view. -->
-<script defer src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script defer src="/assets/vendor/qrcode-generator-1.4.4/qrcode.js"></script>
 <script>
  
 
@@ -7183,7 +7182,7 @@ if(!_commOpen) _unreadMsgs.add(p.id);
 loadThread(p); return;
 }
 if(p){ _unreadMsgs.add(p.id);
-try{ notify('New message from family', bcEsc((p.name+' '+(p.last||'')).trim())+' · open to reply', {icon:'info', color:'#0A84FF'}); }catch(e){}
+try{ notify('New message from family', bcEsc((p.name+' '+(p.last||'')).trim()), {icon:'info', color:'#0A84FF', dur:8000, openLabel:'Open the conversation', open:(function(pid){ return function(){ pvxOpenThread(pid); }; })(p.id)}); }catch(e){}   /* PVX-N376 */
 try{ renderTable(); renderBoard(); }catch(e){} }
 });
 Backend._msgWarm = false;
@@ -7499,13 +7498,29 @@ room:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke
 info:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
 check:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>'
 };
+/* PVX-N377: a message's title and text are data. Allowed: a few inline tags and links to this site; the rest is shown as text. */
+const PVX_NOTE_TAGS={A:1,B:1,STRONG:1,I:1,EM:1,SPAN:1,SMALL:1,U:1,BR:1}, PVX_NOTE_ATTR={class:1,href:1,target:1,rel:1,'aria-label':1,'aria-hidden':1,lang:1,dir:1};
+function pvxNoteHref(v){ try{ const u=new URL(String(v),location.href); return (u.protocol==='https:'||u.protocol==='http:')&&(u.origin===location.origin||(u.protocol==='https:'&&/(^|\.)pravix\.app$/.test(u.hostname))); }catch(e){ return false; } }
+function pvxNoteFrag(html){ const t=document.createElement('template'); t.innerHTML=String(html==null?'':html);
+  (function walk(n){ Array.prototype.slice.call(n.childNodes).forEach(function(c){ if(c.nodeType===3) return; if(c.nodeType!==1){ c.remove(); return; }
+      if(!PVX_NOTE_TAGS[c.tagName]||c.namespaceURI!=='http://www.w3.org/1999/xhtml'){ c.replaceWith(document.createTextNode(c.outerHTML)); return; }
+      Array.prototype.slice.call(c.attributes).forEach(function(a){ const k=a.name.toLowerCase(); if(!PVX_NOTE_ATTR[k]||(k==='href'&&!pvxNoteHref(a.value))) c.removeAttribute(a.name); });
+      if(c.tagName==='A'&&c.getAttribute('target')) c.setAttribute('rel','noopener');
+      walk(c); }); })(t.content);
+  return t.content; }
+function pvxNoteColor(c){ c=String(c==null?'':c); return /^[#\w(),.%\s-]{1,60}$/.test(c)?c:'var(--accent)'; }
+window.pvxNoteFrag=pvxNoteFrag;
 function notify(title, sub, opts){
 opts=opts||{};
 const wrap=document.getElementById('notes'); if(!wrap) return;
 const el=document.createElement('div'); el.className='note';
-el.innerHTML=`<div class="n-ic" style="background:${opts.color||'var(--accent)'}">${NOTE_ICONS[opts.icon]||NOTE_ICONS.info}</div>
-    <div class="n-body"><div class="n-title">${title}</div>${sub?`<div class="n-sub">${sub}</div>`:''}</div>
-    <div class="n-time">now</div>`;
+el.innerHTML=`<div class="n-ic" style="background:${pvxNoteColor(opts.color||'var(--accent)')}">${NOTE_ICONS[opts.icon]||NOTE_ICONS.info}</div>
+    <div class="n-body"><div class="n-title"></div>${sub?`<div class="n-sub"></div>`:''}</div>
+    <div class="n-time" aria-hidden="true" data-at="${Date.now()}">now</div>`;
+el.querySelector('.n-title').appendChild(pvxNoteFrag(title)); if(sub) el.querySelector('.n-sub').appendChild(pvxNoteFrag(sub));   /* PVX-N377 */
+if(typeof opts.open==='function'){ el.classList.add('n-open'); const tt=el.querySelector('.n-title'), go=document.createElement('button'); go.type='button'; go.className='n-go'; while(tt.firstChild) go.appendChild(tt.firstChild);
+  go.setAttribute('aria-label', go.textContent+'. '+(opts.openLabel||'Open')); tt.appendChild(go);
+  el.addEventListener('click',function(e){ if(e.target.closest('.n-x,a')) return; el.classList.add('hide'); setTimeout(()=>el.remove(),480); try{ opts.open(); }catch(x){ console.warn('[note]',x); } }); }   /* PVX-N376 */
 wrap.appendChild(el);
 RAF ? RAF(()=>el.classList.add('show')) : el.classList.add('show');
 if(opts.sticky){ el.setAttribute('role','alert'); el.classList.add('sticky'); const x=document.createElement('button'); x.type='button'; x.className='n-x'; x.setAttribute('aria-label','Dismiss'); x.innerHTML=(window.PVX_GI?PVX_GI.xmark:'×');
@@ -7691,7 +7706,7 @@ startAt: opts.pending?null:now, endAt:null, updatedAt:now, updatedBy:CURRENT_USE
 if(!opts.pending && !role.multi) ctCurrent(p,roleId).forEach(x=>ctEndAssignment(p,x,'replaced'));
 ctList(p).push(a);
 p.timeline.push({ label: opts.pending?('Handoff proposed · '+role.label):(role.label+' assigned'), at:new Date(), meta: staff.name+' · '+CURRENT_USER });
-notify(opts.pending?'Handoff proposed':'Care team updated',`${staff.name} → ${bcEsc(p.name)} (${role.label})`, {icon:'doctor', color:'var(--accent)'});
+notify(opts.pending?'Handoff proposed':'Care team updated',`${bcEsc(staff.name)} → ${bcEsc(p.name)} (${bcEsc(role.label)})`, {icon:'doctor', color:'var(--accent)'});
 renderAll(); if(activePatient===p.id) fillDrawer(p);
 return a;
 }
@@ -7702,7 +7717,7 @@ if(role.mirror){ if(a.staffKind!=='doctor'){ toast('Choose an emergency doctor a
 if(!role.multi) ctCurrent(p,a.role).forEach(x=>ctEndAssignment(p,x,'handed off'));
 a.status='current'; a.startAt=new Date().toISOString(); a.confirmedBy=CURRENT_USER; a.confirmedAt=a.startAt; ctTouch(a);
 p.timeline.push({ label:'Handoff confirmed · '+role.label, at:new Date(), meta:a.staffName+' · confirmed by '+CURRENT_USER });
-notify('Handoff confirmed',`${a.staffName} now ${role.label.toLowerCase()} for ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--s-admitted)'});
+notify('Handoff confirmed',`${bcEsc(a.staffName)} now ${bcEsc(role.label.toLowerCase())} for ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--s-admitted)'});
 renderAll(); if(activePatient===p.id) fillDrawer(p);
 }
 function ctDecline(p, aid){
@@ -7868,7 +7883,7 @@ p.doctor=id;
 try{ ctSyncPrimary(p); }catch(e){}
 const d=doc(id), off=(id==='unassigned');   /* PVX-N360: removing says so */
 p.timeline.push({label:off?'Doctor removed':'Doctor assigned', at:new Date(), meta:off?'':d.name});
-notify(off?'Doctor removed':'Doctor assigned', off?bcEsc(p.name):`${d.name} → ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--accent)'});
+notify(off?'Doctor removed':'Doctor assigned', off?bcEsc(p.name):`${bcEsc(d.name)} → ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--accent)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function assignLiaison(p,id){
@@ -7876,7 +7891,7 @@ if(p.liaison===id) return;
 p.liaison=id;
 const l=liaison(id);
 p.timeline.push({label: l?'Liaison assigned':'Liaison removed', at:new Date(), meta: l?l.name:''});
-notify(l?'Liaison assigned':'Liaison removed', l?`${l.name} → ${bcEsc(p.name)}`:p.name, {icon:'liaison', color:'var(--purple)'});
+notify(l?'Liaison assigned':'Liaison removed', l?`${bcEsc(l.name)} → ${bcEsc(p.name)}`:bcEsc(p.name), {icon:'liaison', color:'var(--purple)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function setPriority(p,level){
@@ -7960,7 +7975,7 @@ if(!RAF){ el.textContent=fmt(target); return; }
 const dur=850, start=nowMs();
 (function step(){
 let p=Math.min(1,(nowMs()-start)/dur); p=1-Math.pow(1-p,3);
-el.textContent=fmt(Math.round(target*p));
+{ const tx=String(fmt(Math.round(target*p))), n=el.firstChild; if(n&&n.nodeType===3&&!n.nextSibling){ if(n.nodeValue!==tx) n.nodeValue=tx; } else el.textContent=tx; }   /* PVX-N378 */
 if(p<1) RAF(step);
 })();
 }
@@ -8075,13 +8090,13 @@ const val=el.querySelector('.command-kpi__value'),
 sub=el.querySelector('.command-kpi__sub'),
 chip=el.querySelector('.command-kpi__chip'),
 m=CKPI_META[i]||CKPI_META[0];
-if(sub) sub.textContent=c.sub;
-if(chip){ const ch=m.chip(c); chip.textContent=ch.t||''; chip.style.display=ch.t?'':'none'; chip.classList.toggle('is-warn',!!ch.warn); chip.classList.toggle('is-ok',!!ch.ok); }
+if(sub){ const sv=String(c.sub==null?'':c.sub); if(sub.textContent!==sv) sub.textContent=sv; }   /* PVX-N378 */
+if(chip){ const ch=m.chip(c), ct=String(ch.t||''), cd=ch.t?'':'none'; if(chip.textContent!==ct) chip.textContent=ct; if(chip.style.display!==cd) chip.style.display=cd; chip.classList.toggle('is-warn',!!ch.warn); chip.classList.toggle('is-ok',!!ch.ok); }
 const spark=ckpiSpark('top',c.lab), old=el.querySelector('.command-kpi__spark');
 if(!old || old.outerHTML!==spark){ if(old) old.remove(); el.insertAdjacentHTML('beforeend',spark); }
 if(!val) return;
 if(animate && typeof c.raw==='number') countUp(val, c.raw, c.fmt);
-else val.textContent = c.fmt(c.raw);
+else { const vt=String(c.fmt(c.raw)); if(val.textContent!==vt) val.textContent = vt; }
 });
 }
 
@@ -8475,10 +8490,10 @@ body.innerHTML=rows.map(p=>{
 const w=waitMinutes(p);const wc=w>120?'crit':w>45?'warn':'';
 return`<tr data-pid="${p.id}">
       <td><div class="pt-cell">${mono(p,'patient-medallion patient-medallion--compact')}
-        <div class="nm"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)}">${bcEsc(p.name)} ${bcEsc(p.last)}</button>${resusBadge(p)}${recBadge(p)}${msgBadge(p)}${typeof fgInline==='function'?fgInline(p):''}</b><span>${pvxDot(bcEsc(p.species),formatPatientAge(p))}</span></div></div></td>
+        <div class="nm"><b><button type="button" class="pvx-open" data-pid="${p.id}" aria-label="Open patient: ${bcEsc(p.name)} ${bcEsc(p.last)}">${bcEsc(p.name)} ${bcEsc(p.last)}</button>${resusBadge(p)}${recBadge(p)}${msgBadge(p)}${typeof fgInline==='function'?fgInline(p):''}</b><span>${pvxDot(bcEsc(p.species),bcEsc(formatPatientAge(p)))}</span></div></div></td>
       <td><div class="reason" title="${bcEsc((p.reasonProblems&&p.reasonProblems.length)?problemsToString(p.reasonProblems):(p.reason||''))}">${bcEsc(compactProblems(p))}</div></td>
       <td>${p.doctor==='unassigned'?'<span class="muted">Unassigned</span>':`<span class="doctag">${docAv(p.doctor)}${doc(p.doctor).name}</span>`}</td>
-      <td><span class="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${p.room}</span></td>
+      <td><span class="loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${bcEsc(p.room)}</span></td>
       <td>${statusPill(p.status)}</td>
       <td><span class="prio prio-${p.prio}">${PRIO[p.prio].l}</span></td>
       <td class="muted">${fmtTime(p.arrival)}</td>
@@ -8519,7 +8534,7 @@ return`<div class="card" draggable="true" data-pid="${p.id}">
     <div class="c-reason">${p.species?'<span class="c-sp">'+bcEsc(typeof speciesEnglish==='function'?speciesEnglish(p.species):p.species)+'</span> · ':''}${bcEsc(compactProblems(p))}</div>${typeof fgCard==='function'?fgCard(p):''}${typeof fvOrChip==='function'?fvOrChip(p):''}
     ${usFlag(p)}${typeof fvWaitChip==='function'?fvWaitChip(p):''}${typeof fvPresenceChip==='function'?fvPresenceChip(p):''}
     <div class="c-meta"><div class="l">${p.doctor==='unassigned'?'<span class="muted" style="font-size:0.75rem">No doctor</span>':docAv(p.doctor)}${p.liaison?liaAv(p.liaison):''}${ctAvRow(p)}
-      <span class="loc" style="font-size:0.75rem">${p.room}</span></div>
+      <span class="loc" style="font-size:0.75rem">${bcEsc(p.room)}</span></div>
       <span class="wait ${wc}" style="font-size:0.75rem">${fmtWait(w)}</span></div>
     <div class="card-expand">
       <div class="row"><span>Owner</span><b>${bcEsc(p.owner)}</b></div>
@@ -8572,7 +8587,7 @@ if(newStatus==='Ultrasound'&& !p.ultrasound){
 p.ultrasound = { study:'Abdominal Ultrasound', clinicalQuestion:'', status:'incomplete', requestStatus:'incomplete', requestedAt:null, createdAt:at };
 }
 const done = ['Diagnostics','Ultrasound','Procedure'].includes(old) ?`${old} completed`:`Moved to ${newStatus}`;
-notify(done,`${bcEsc(p.name)} · in ${p.room}`, {icon:'move', color:STATUSES[newStatus].color});
+notify(bcEsc(done),`${bcEsc(p.name)} · in ${bcEsc(p.room)}`, {icon:'move', color:STATUSES[newStatus].color});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 
 if(newStatus==='Ultrasound'&& (!p.ultrasound || p.ultrasound.status!=='requested')){
@@ -9036,8 +9051,8 @@ p.totalTimeInHospital=p.totalMin;
 p.timeline.push({label: cfg.tlLabel, at:stamp, meta:`From ${old}`});
 try{ rdOnFlowComplete(p, finalStatus); }catch(e){ console.warn('[rounds] couldn’t update Rounds for',p&&p.name,e); }   /* n252: was silent */
 
-notify(cfg.title,`${bcEsc(p.name)} · ${p.hid}`, {icon: cfg.icon, color: cfg.color});
-if(oldRoom && oldRoom!=='Lobby') notify(`${oldRoom} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
+notify(cfg.title,`${bcEsc(p.name)} · ${bcEsc(p.hid)}`, {icon: cfg.icon, color: cfg.color});
+if(oldRoom && oldRoom!=='Lobby') notify(`${bcEsc(oldRoom)} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
  
@@ -9092,9 +9107,9 @@ const stamp=new Date();
 p.room=newRoom;
 p.roomSince=stamp;
 p.timeline.push({label:`Moved from ${old} to ${newRoom}`, at:stamp, meta:''});
-notify('Patient moved',`${bcEsc(p.name)} · ${old} → ${newRoom}`, {icon:'move', color:STATUSES[p.status].color});
+notify('Patient moved',`${bcEsc(p.name)} · ${bcEsc(old)} → ${bcEsc(newRoom)}`, {icon:'move', color:STATUSES[p.status].color});
 if(old!=='Lobby'&& !PATIENTS.some(x=>x.id!==p.id && isActive(x) && x.room===old))
-notify(`${old} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
+notify(`${bcEsc(old)} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 
@@ -9407,7 +9422,7 @@ if(Array.isArray(p.timeline)) p.timeline.push({ label:'Resuscitation preference:
 
 
 try{ if(typeof Backend!=='undefined'&& Backend && Backend._pubResus && p.publicToken){ Backend._pubResus[p.publicToken]={ pref:pref, status:'confirmed', at:at.toISOString() }; } }catch(e){}
-notify('Resuscitation updated', (p.name||'Patient')+' · '+pref, {icon:'info', color: pref==='CPR'?'var(--s-admitted)':'#8B4DB5'});
+notify('Resuscitation updated', bcEsc(p.name||'Patient')+' · '+bcEsc(pref), {icon:'info', color: pref==='CPR'?'var(--s-admitted)':'#8B4DB5'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function closeResusChooser(){ var pop=document.getElementById('resusPop'); if(pop) pop.remove();
@@ -9537,7 +9552,7 @@ const t=getTriage(p), v=t.vitals||{};
 const vv=(key)=>{ const val=v[key]; return (val!=null&&val!=='')?val:null; };
 const temp=vv('temp'), hr=vv('hr'), weight=vv('weight');
 const parts=[];
-parts.push(`<span class="cb-stat"><b>${p.room}</b><i>Location</i></span>`);
+parts.push(`<span class="cb-stat"><b>${bcEsc(p.room)}</b><i>Location</i></span>`);
 parts.push(`<span class="cb-stat cb-status"><b><span class="cb-statusdot" aria-hidden="true" style="color:${(STATUSES[p.status]||{}).color||'var(--ink-400)'}"></span>${bcEsc((STATUSES[p.status]||{}).label||p.status||'—')}</b><i>Status</i></span>`);   /* PVX-N144 FLOW-07 */
 parts.push(`<span class="cb-pill"><span class="cb-statuscol"><span class="prio prio-${p.prio}" style="width:24px;height:24px;font-size:0.6875rem">${PRIO[p.prio].l}</span><i>Priority</i></span></span>`);
 parts.push(`<span class="cb-stat"><b>${fmtWait(waitMinutes(p))}</b><i>In hospital</i></span>`);
@@ -9552,12 +9567,12 @@ const TRI_CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const TRI_CLIP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>';
 function triageCardHtml(p){
 const t=getTriage(p), st=t.status||'not_started', v=t.vitals||{}, a=t.assess||{};
-const vv=(key)=>{ const val=v[key]; return (val!=null&&val!=='')?val:'—'; };
+const vv=(key)=>{ const val=v[key]; return (val!=null&&val!=='')?bcEsc(val):'—'; };   /* PVX-N377 */
 const stateLabel = st==='complete'?PVX_GI.check+' Complete':(st==='in_progress'?'In Progress':'Not started');
 const quick = ['weight','temp','hr'].map(k=>{ const c=TRIAGE_VITALS.find(x=>x.key===k);
 return`<div class="tq"><span class="tq-v">${vv(k)}</span><span class="tq-l">${c.label}</span></div>`; }).join('');
 const vitalsGrid = TRIAGE_VITALS.map(c=>`<div class="tv"><span class="tv-l">${c.label}</span><span class="tv-v">${vv(c.key)}</span></div>`).join('');
-const assessRows = TRIAGE_ASSESS.map(c=>`<div class="tr-row"><span class="tr-l">${c.label}</span><span class="tr-v">${(a[c.key]!=null&&a[c.key]!=='')?a[c.key]:'—'}</span></div>`).join('');
+const assessRows = TRIAGE_ASSESS.map(c=>`<div class="tr-row"><span class="tr-l">${c.label}</span><span class="tr-v">${(a[c.key]!=null&&a[c.key]!=='')?bcEsc(a[c.key]):'—'}</span></div>`).join('');
 const chief = (t.chief&&t.chief.length) ? t.chief.map(c=>`<span class="tri-chip">${bcEsc(c)}</span>`).join('') :'<span class="tri-muted">—</span>';
 const byLine = st==='complete'?`Completed · ${bcEsc(t.by||'—')} • ${bcEsc(t.at||'')}`: (st==='in_progress'?'In progress':'Awaiting triage');
 return`<div class="tri-card tri-${st}${triExpanded?' open':''}" id="triCard">
@@ -9641,7 +9656,7 @@ t.at=fmtTime(new Date());
 t.status='complete';
 closeTriageEdit();
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
-notify('Triage updated',`${bcEsc(p.name)} · ${p.hid}`, {icon:'info', color:'var(--accent)'});
+notify('Triage updated',`${bcEsc(p.name)} · ${bcEsc(p.hid)}`, {icon:'info', color:'var(--accent)'});
 try{ if(typeof window.fvAfterTriage==='function') window.fvAfterTriage(p); }catch(e){ console.warn('[triage → sheet, Rounds]',e); }   /* n250 */
 }
 function fillDrawer(p){
@@ -9729,7 +9744,7 @@ const kk=p.intake, ist=kk?kk.status:'not_started';
 const isub = (kk && ist!=='not_started') ? summarizeIntake(kk) :'Owner history • Medications • Symptoms • Notes';
 im.innerHTML=`<div class="triage-card" id="intakeCard" role="button" tabindex="0" aria-label="Triage intake — ${bcEsc(TRIAGE_STATUS[ist]||'')}. ${bcEsc(String(isub).replace(/ • /g,', '))}">
     <div class="tc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M10 12a4 4 0 0 0 8 0v-1"/><circle cx="18" cy="9" r="2"/></svg></div>
-    <div class="tc-main"><div class="tc-title">Triage intake</div><div class="tc-sub">${isub}</div>
+    <div class="tc-main"><div class="tc-title">Triage intake</div><div class="tc-sub">${bcEsc(isub)}</div>
       <span class="tc-status tc-${ist}">${TRIAGE_STATUS[ist]}</span></div>
     <div class="tc-chev"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
   </div>`;
@@ -9928,7 +9943,7 @@ return`<div class="cl-card priority-p${p.prio}" style="--gc:${pc.c};--gcrgb:${pc
           <span class="cl-prio" style="background:${pr.c};color:${pr.t}">P${p.prio}</span>
         </div>
         <div class="cl-name">${bcEsc(p.name)} ${bcEsc(p.last)}</div>
-        <div class="cl-meta">${bcEsc(p.breed)} · ${formatPatientAge(p)}</div>
+        <div class="cl-meta">${bcEsc(p.breed)} · ${bcEsc(formatPatientAge(p))}</div>
       </div>
       ${clientVJourney(p)}
     </div>
@@ -11636,7 +11651,7 @@ currentAlert = payload;
 } else { currentAlert = payload; }
 renderAlert();
 closeAlertModal();
-notify("Hospital alert activated", t.label, { icon:"info", color: type==="diversion"?"var(--priority-p1)":(type==="limited"?"var(--amber)":"var(--accent)") });
+notify("Hospital alert activated", bcEsc(t.label), { icon:"info", color: type==="diversion"?"var(--priority-p1)":(type==="limited"?"var(--amber)":"var(--accent)") });
 }
 async function endAlert(silent){
 const by = (typeof CURRENT_USER!=="undefined"&&CURRENT_USER) ? CURRENT_USER : "Unknown";   /* PVX-N149: the person, not the shared address */
@@ -12152,7 +12167,7 @@ function showUndo(p, kind, snap){
 const t=document.getElementById('undoToast'); if(!t) return;
 clearTimeout(_dispUndoTimer);
 const nm=dispFirstName(p), verb=(kind==='admit'?'admitted':kind==='euthanasia'?'· euthanasia recorded':kind==='died'?'· death recorded':'discharged');
-t.innerHTML='<span class="ut-msg">'+nm+' '+verb+'</span><button type="button" class="ut-undo">Undo</button><span class="undo-progress" aria-hidden="true"></span>';
+t.innerHTML='<span class="ut-msg">'+bcEsc(nm)+' '+verb+'</span><button type="button" class="ut-undo">Undo</button><span class="undo-progress" aria-hidden="true"></span>';
 t.classList.remove('open'); void t.offsetWidth; t.classList.add('open');
 const undoBtn=t.querySelector('.ut-undo');
 if(undoBtn) undoBtn.onclick=function(){
@@ -12162,7 +12177,7 @@ restoreDispSnap(p, snap);
 try{ if(typeof rdOnFlowUndo==='function') rdOnFlowUndo(p); }catch(_){}
 try{ renderAll(); }catch(_){}
 if(activePatient===p.id) fillDrawer(p);
-notify('Reverted', nm+' · disposition undone', {icon:'move', color:'var(--accent)'});
+notify('Reverted', bcEsc(nm)+' · disposition undone', {icon:'move', color:'var(--accent)'});
 };
 try{ if(window.pvxUndo&&undoBtn){ var __uo=undoBtn.onclick, __e=pvxUndo.push({label:nm+' '+verb, pid:p.id, undo:function(){ if(!t.classList.contains('open')||!undoBtn.isConnected){ notify('Can’t undo',bcEsc(nm)+' '+verb+' · Undo is offered for 5 seconds after',{icon:'info',color:'var(--accent)'}); if(window.pvxSay) pvxSay('Can’t undo: '+nm+' '+verb); return false; } __uo.call(undoBtn); }});
   undoBtn.onclick=function(){ if(!pvxUndo.undoEntry(__e)) __uo.call(undoBtn); }; } }catch(_){}   /* PVX-N350 */
@@ -13588,7 +13603,7 @@ document.addEventListener('keydown',function(e){
   if(btn){ e.preventDefault(); btn.click(); }
 });
 window.addEventListener('resize',function(){ if(phase==='open'){ size(targetW(),measure()); } });
-function tickStart(){ if(tickT) return; tickT=setInterval(function(){ var w=document.querySelector('#critIsland .ci-wait'); if(w) w.textContent='Waiting '+mmss(Date.now()-Number(w.dataset.arr)); },1000); }
+function tickStart(){ if(tickT) return; tickT=setInterval(function(){ var w=document.querySelector('#critIsland .ci-wait'); if(w){ var tx='Waiting '+mmss(Date.now()-Number(w.dataset.arr)), n=w.firstChild; if(n&&n.nodeType===3&&!n.nextSibling){ if(n.nodeValue!==tx) n.nodeValue=tx; } else w.textContent=tx; } },1000); }   /* PVX-N378 */
 function tickStop(){ clearInterval(tickT); tickT=null; }
 
 /* actions */
@@ -13903,7 +13918,10 @@ function build(){
 function place(){
   if(!panel) return;
   var r=(bar&&bar.offsetParent)?bar.getBoundingClientRect():null;
-  if(r&&r.width){ panel.classList.remove('fv-bottom'); panel.style.top=Math.round(r.bottom+10)+'px'; panel.style.right=Math.max(12,Math.round(window.innerWidth-r.right))+'px'; }
+  if(r&&r.width){ panel.classList.remove('fv-bottom'); panel.style.top=Math.round(r.bottom+10)+'px'; panel.style.right=Math.max(12,Math.round(window.innerWidth-r.right))+'px';
+    try{ var pw=panel.offsetWidth||Math.min(460,window.innerWidth-24); if(window.innerWidth-parseFloat(panel.style.right)-pw<12) panel.style.right=Math.max(12,window.innerWidth-12-pw)+'px'; }catch(e){}   /* PVX-N376: on iPhone the card ran off the left edge */
+    try{ var ci=document.getElementById('critIsland'); if(ci&&ci.classList.contains('on')){ var q=ci.getBoundingClientRect(), pr=window.innerWidth-parseFloat(panel.style.right), pl=pr-(panel.offsetWidth||Math.min(460,window.innerWidth-24));
+      if(q.right>pl&&q.left<pr&&q.bottom>r.bottom) panel.style.top=Math.round(q.bottom+10)+'px'; } }catch(e){}   /* PVX-N376: the card sits below the critical banner, never under it */ }
   else { panel.classList.add('fv-bottom'); panel.style.top=''; panel.style.right=''; }
 }
 function netState(){ if(!talk) return; var off=!navigator.onLine; talk.classList.toggle('fv-off',off);
@@ -14173,7 +14191,7 @@ function propose(steps,raw){
   var one=steps.length===1, s=steps[0];
   var head=one?'<div class="fv-med" style="--c:'+color(s.p)+'">'+esc((s.p.name||'?')[0])+'</div><div class="fv-t"><b>'+esc((s.op==='prio'?'Priority · ':s.op==='wait'?'Flag · ':s.op==='assign'?'Assign ':(s.dest.type==='room'&&/^(Room|Comfort)/.test(s.dest.v)?'Room ':'Move '))+pName(s.p))+'</b><div class="fv-path"><span class="fv-pill">'+esc(fromLabel(s))+'</span> → <span class="fv-pill to">'+esc(destLabel(s))+'</span></div></div>'
     :'<div class="fv-t"><b>'+steps.length+' changes</b></div>';
-  show(heard(raw)+'<div class="fv-act">'+head+'<div class="fv-btns"><button class="fv-no" type="button">Cancel</button><button class="fv-ok" type="button">Confirm</button></div></div>'+(one?'':'<div class="fv-list">'+steps.map(stepRow).join('')+'</div>')+'<div class="fv-sub">'+(via==='typed'?'Press Return to confirm. Type “no, Room 4” to change it.':'Enter or “yes” to confirm. Say “no, Room 4” to change it.')+'</div>');
+  show(heard(raw)+'<div class="fv-act">'+head+'<div class="fv-btns"><button class="fv-no" type="button">Cancel</button><button class="fv-ok" type="button">'+(one?(s.op==='prio'?'Set priority':s.op==='wait'?(s.text?'Flag':'Remove flag'):s.op==='assign'?'Assign':'Move'):'Make '+steps.length+' changes')+'</button></div></div>'+(one?'':'<div class="fv-list">'+steps.map(stepRow).join('')+'</div>')+'<div class="fv-sub">'+(via==='typed'?'Press Return to confirm. Type “no, Room 4” to change it.':'Enter or “yes” to confirm. Say “no, Room 4” to change it.')+'</div>');
   inner.querySelector('.fv-ok').onclick=confirm; inner.querySelector('.fv-no').onclick=function(){ stat('cancelled'); hide(); };
   /* after a spoken command, keep listening a few seconds for “yes”, “no” or “no, Room 4” */
   if(via==='voice'&&ENABLED&&navigator.onLine&&!listening) setTimeout(function(){ if(pending&&pending.steps&&!listening) start(true,true); },350);
@@ -14619,7 +14637,7 @@ function notifyCheckin(p){ var old=document.querySelector('.fg-ntf'); if(old) ol
   var a=S(p), s=a.filter(function(f){ return f.k==='safe'; }), n=a.length, nm=((p.name||'')+' '+(p.last||'')).trim();
   var lead=s.length?s[0].t:a[0].t, rest=n-1;
   var el=document.createElement('div'); el.className='fg-ntf'; el.setAttribute('role','status');
-  el.innerHTML='<span class="fg-app">'+APP+'</span><div class="fg-bd"><div class="fg-nh"><span>FLOW · CHECK-IN</span><span>now</span></div><b>'+E(nm)+' is here</b>'
+  el.innerHTML='<span class="fg-app">'+APP+'</span><div class="fg-bd"><div class="fg-nh"><span class="fg-nk">Check-in</span><span aria-hidden="true">now</span></div><b>'+E(nm)+' is here</b>'
    +'<p>'+E(lead)+(rest?' and '+rest+' more flag'+(rest>1?'s':''):'')+' from the last visit.</p><div class="fg-rw">'+compact(p,false)+'</div>'
    +'<div class="fg-acts"><button type="button" class="fg-pill p" data-n="keep">Keep Flags</button><button type="button" class="fg-pill g" data-n="review">Review</button></div></div>';
   var wrap=document.getElementById('notes'); (wrap||document.body).appendChild(el); requestAnimationFrame(function(){ requestAnimationFrame(function(){ el.classList.add('show'); }); });
@@ -15784,7 +15802,7 @@ body:not(.dark) .pill.st-deceased:hover{box-shadow:0 3px 8px rgba(17,24,39,.07),
   function queue(){ return (PATIENTS||[]).filter(function(p){ var f=p&&p.consentForm; return f&&(active(f)||(f.status==='signed'&&today(f.signed_at||f.requested.at))); })
     .sort(function(a,b){ var A=a.consentForm,B=b.consentForm, ra=active(A)?0:1, rb=active(B)?0:1; if(ra!==rb) return ra-rb;
       return ra===0?(new Date(A.requested.at)-new Date(B.requested.at)):(new Date(B.signed_at)-new Date(A.signed_at)); }); }
-  function badge(){ var n=(PATIENTS||[]).filter(function(p){ return p&&active(p.consentForm); }).length+((window.fvDocs&&fvDocs.queue)?fvDocs.queue().length:0), b=document.getElementById('cfBadge'); if(b){ b.textContent=n; b.hidden=!n; } }
+  function badge(){ var n=(PATIENTS||[]).filter(function(p){ return p&&active(p.consentForm); }).length+((window.fvDocs&&fvDocs.queue)?fvDocs.queue().length:0), b=document.getElementById('cfBadge'); if(b){ if(b.textContent!==String(n)) b.textContent=n; if(b.hidden!==!n) b.hidden=!n; } }
   function renderQueue(){ var el=section(); if(!el) return; badge(); if(el.classList.contains('hidden')) return;
     var Q=queue();
     var h='<div class="cfq-wrap"><div class="cfq-head"><div><h2 class="cfq-title">Consent forms</h2><div class="cfq-sub">Forms sent by the doctors. Take the tablet into the room, tap <b>Start with the family</b>, and go through it together.</div></div>'
@@ -16759,7 +16777,7 @@ body:not(.dark) .fvv-more{color:#1F7F96;}body:not(.dark) .fvv-check.ok b{color:#
     else if(F.minutes!=null){ var x=etaNow(); h='<div class="otw-eta-main"><span class="otw-k">Expected</span><b>'+esc(hmShort(x.lo))+'–'+esc(hm(x.hi))+'</b></div><span class="otw-src">'+(F.source==='google'?'about '+F.minutes+' min drive now · Google Maps':'about '+F.minutes+' min, as the family said')+'</span>'; }
     if(!F.looking&&(F.source!=='google')){
       var why=!F.place?'':(!ST.key?(admin()?'No Google Maps key yet. <button type="button" class="otw-link" data-otw="key">Add it…</button>':'Drive times from Google Maps aren’t set up yet.'):'Google Maps didn’t answer.');
-      h+='<label class="otw-typed"><span>'+(F.place?(why?why+' ':'')+'How many minutes away did they say?':'Or the minutes they said')+'</span><input class="ap-input" id="otwMin" type="number" inputmode="numeric" min="1" max="240" placeholder="min" value="'+(F.source==='family'&&F.minutes!=null?F.minutes:'')+'"></label>'; }
+      h+='<label class="otw-typed"><span>'+(F.place?(why?why+' ':'')+'How many minutes away did they say?':'Or the minutes they said')+'</span><span class="otw-minw"><input class="ap-input" id="otwMin" inputmode="numeric" autocomplete="off" role="spinbutton" aria-valuemin="1" aria-valuemax="240" maxlength="3" placeholder="20" value="'+(F.source==='family'&&F.minutes!=null?F.minutes:'')+'"><span class="otw-minu" aria-hidden="true">min</span></span></label>'; }
     e.innerHTML=h; }
   function lookup(){ var t=document.getElementById('otwFrom'); F.place=place(t&&t.value); var me=++F.seq;
     if(!F.place){ if(F.source==='google'){ F.minutes=null; F.source=null; } paintEta(); return; }
@@ -17079,7 +17097,7 @@ body:not(.dark) .fvv-more{color:#1F7F96;}body:not(.dark) .fvv-check.ok b{color:#
       {icon:'info',color:'var(--s-admitted)',dur:9000}); }catch(e){}
   }
   function fail(p,e){ console.warn('[flow→sheet]',e);
-    try{ notify('Couldn’t open a treatment sheet',esc(p.name||'')+' · start one from Treatment Sheets',{icon:'info',color:'var(--priority-p1)',dur:7000}); }catch(_){} }
+    try{ notify('Couldn’t open a treatment sheet',esc(p.name||'')+' · <a href="/treatment/" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open Treatment Sheets ›</a>',{icon:'info',color:'var(--priority-p1)',dur:7000}); }catch(_){} }
 
   /* Create the sheet on `board`, or promote OP → IP. createOnly: never reopen a closed sheet (used by background sweeps). */
   function ensureSheet(p,board,opts){
@@ -18097,10 +18115,10 @@ body.dark .cnt{color:var(--ink-700)}
   function radios(g,label){ if(!g) return; if(!g.dataset.pvxRg){ g.dataset.pvxRg='1'; g.setAttribute('role','radiogroup'); g.setAttribute('aria-label',label);
       g.addEventListener('keydown',function(e){ var k=e.key; if(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp','Home','End'].indexOf(k)<0) return; var bs=$$('button',g).filter(function(b){ return b.offsetParent!==null&&!b.disabled; }); var i=bs.indexOf(document.activeElement); if(i<0) return; e.preventDefault();
         var j=k==='Home'?0:k==='End'?bs.length-1:(i+((k==='ArrowRight'||k==='ArrowDown')?1:-1)+bs.length)%bs.length; bs[j].focus(); bs[j].click(); }); }
-    $$('button',g).forEach(function(b){ var on=b.classList.contains('active'); b.setAttribute('role','radio'); b.setAttribute('aria-checked',on?'true':'false'); b.tabIndex=on?0:-1; }); }
+    $$('button',g).forEach(function(b){ var on=b.classList.contains('active'), c=on?'true':'false', ti=on?'0':'-1'; if(b.getAttribute('role')!=='radio') b.setAttribute('role','radio'); if(b.getAttribute('aria-checked')!==c) b.setAttribute('aria-checked',c); if(b.getAttribute('tabindex')!==ti) b.tabIndex=on?0:-1; }); }   /* PVX-N378 */
   /* FLOW-10 (state only), US-04, RD-05: the selected view / shift / filter is exposed, not only coloured */
-  function selected(){ ['#switcher','#switcherUs','#switcherRd'].forEach(function(id){ $$(id+' .seg').forEach(function(b){ if(b.classList.contains('active')) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); }); });
-    $$('.rd-svcbtn').forEach(function(b){ b.setAttribute('aria-pressed',b.classList.contains('on')?'true':'false'); });
+  function selected(){ ['#switcher','#switcherUs','#switcherRd'].forEach(function(id){ $$(id+' .seg').forEach(function(b){ if(b.classList.contains('active')){ if(b.getAttribute('aria-current')!=='page') b.setAttribute('aria-current','page'); } else if(b.hasAttribute('aria-current')) b.removeAttribute('aria-current'); }); });
+    $$('.rd-svcbtn').forEach(function(b){ var v=b.classList.contains('on')?'true':'false'; if(b.getAttribute('aria-pressed')!==v) b.setAttribute('aria-pressed',v); });
     radios($('#apArrival'),'Arrival type'); radios($('#apPrio'),'Priority'); tableRegion(); }
   var sRaf=0; function later(){ if(!sRaf) sRaf=requestAnimationFrame(function(){ sRaf=0; selected(); }); }
   function boot(){ selected(); ciTop();
@@ -18465,7 +18483,7 @@ svg .s:not(text){opacity:.45}
 (function(){
   function pct(el){ var w=el&&(el.style.width||el.style.getPropertyValue('--w')||el.dataset.w); var n=parseFloat(w); return isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):0; }
   function txt(e){ return e?e.textContent.replace(/\s+/g,' ').trim():''; }
-  function set(el,lab,now,vt){ el.setAttribute('role','meter'); el.setAttribute('aria-valuemin','0'); el.setAttribute('aria-valuemax','100'); el.setAttribute('aria-valuenow',String(now)); if(lab) el.setAttribute('aria-label',lab); if(vt) el.setAttribute('aria-valuetext',vt); }
+  function set(el,lab,now,vt){ var s=function(k,v){ if(el.getAttribute(k)!==v) el.setAttribute(k,v); }; s('role','meter'); s('aria-valuemin','0'); s('aria-valuemax','100'); s('aria-valuenow',String(now)); if(lab) s('aria-label',String(lab)); if(vt) s('aria-valuetext',String(vt)); }   /* PVX-N378 */
   function all(){
     document.querySelectorAll('.command-kpi__rail').forEach(function(r){ var c=r.closest('.command-kpi'); if(!c) return;
       var v=txt(c.querySelector('.command-kpi__value')).replace(/\s*\/\s*(of\s+)?/,' of '), sub=txt(c.querySelector('.command-kpi__sub'));
@@ -19844,11 +19862,14 @@ body:not(.dark) .search-bar .pvx-skey{border-color:rgba(15,23,42,.14);background
       var t0=ms(q.admittedAt)||ms(q.completedAt)||ms(q.arrival);
       if(q.rounds&&t0&&t0<Date.now()) q.rounds.admittedAt=rdIso(new Date(t0));
       try{ rdAudit(q,'Added to Rounds — '+why); }catch(e){}
-      console.info('[flow-n252] added',q.name,'to Rounds —',why);
+      console.info('[flow-n252] added',q.name,'to Rounds —',why); clearFixed();
       try{ renderAll(); }catch(e){}
     }catch(e){ console.warn('[flow-n252] couldn’t add',q&&q.name,'to Rounds',e);
-      if(!failed[q.id]){ failed[q.id]=1; try{ notify('Couldn’t add '+bcEsc(q.name||'a patient')+' to Rounds','Open Rounds and add them from the census',{icon:'info',color:'var(--priority-p1)',dur:9000}); }catch(_){} } } }
-  function sweep(){
+      if(!failed[q.id]){ failed[q.id]=1; try{ notify('Couldn’t add '+bcEsc(q.name||'a patient')+' to Rounds','Flow tries again in 5 minutes',{icon:'info',color:'var(--priority-p1)',dur:9000}); }catch(_){} } } }
+  /* PVX-N376: a failure note goes once that patient is in Rounds (by this retry or any other way) */
+  function clearFixed(){ try{ [].forEach.call(document.querySelectorAll('#notes .note.sticky .n-title'),function(t){ var m=/^Couldn’t add (.+) to Rounds$/.exec(t.textContent); if(!m) return;
+      if(!PATIENTS.some(function(x){ return (x.name||'a patient')===m[1]&&failed[x.id]&&!x.rounds; })) t.closest('.note').remove(); }); }catch(_){} }
+  function sweep(){ clearFixed();
     var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){}
     if(!u||typeof PATIENTS==='undefined'||!PATIENTS.length||typeof DB==='undefined'||!DB||(typeof Backend!=='undefined'&&Backend.mode!=='staff')) return;
     var now=Date.now();
@@ -20110,10 +20131,10 @@ try{(function(){
   /* the critical banner and an open patient: beside it when there's room, above it when there isn't */
   function island(){ const isl=$('#critIsland'), dr=$('#drawer'); if(!isl) return;
     const on=isl.classList.contains('on'), open=!!(dr&&dr.classList.contains('open'));
-    if(!on||!open){ isl.style.removeProperty('left'); if(dr){ dr.classList.remove('pvx-ci-pad'); dr.style.removeProperty('--pvx-ci-pad'); } }
+    if(!on||!open){ if(isl.style.left) isl.style.removeProperty('left'); if(dr&&dr.classList.contains('pvx-ci-pad')){ dr.classList.remove('pvx-ci-pad'); dr.style.removeProperty('--pvx-ci-pad'); } }   /* PVX-N378: only when it changes; removing an absent class woke every watcher, every frame */
     else{ const dw=dr.getBoundingClientRect().width, free=innerWidth-dw, need=(parseFloat(getComputedStyle(isl).getPropertyValue('--ci-w'))||640)+32;
-      if(free>=need){ isl.style.left=(free/2)+'px'; dr.classList.remove('pvx-ci-pad'); dr.style.removeProperty('--pvx-ci-pad'); }
-      else{ isl.style.removeProperty('left'); const r=isl.getBoundingClientRect(); dr.style.setProperty('--pvx-ci-pad',Math.ceil(r.bottom+10)+'px'); dr.classList.add('pvx-ci-pad'); } }
+      if(free>=need){ const L=(free/2)+'px'; if(isl.style.left!==L) isl.style.left=L; if(dr.classList.contains('pvx-ci-pad')){ dr.classList.remove('pvx-ci-pad'); dr.style.removeProperty('--pvx-ci-pad'); } }
+      else{ if(isl.style.left) isl.style.removeProperty('left'); const r=isl.getBoundingClientRect(), pad=Math.ceil(r.bottom+10)+'px'; if(dr.style.getPropertyValue('--pvx-ci-pad')!==pad) dr.style.setProperty('--pvx-ci-pad',pad); if(!dr.classList.contains('pvx-ci-pad')) dr.classList.add('pvx-ci-pad'); } }
     /* Ultrasound Today has no page title for the banner to sit beside, so it makes room above Next Up */
     const ut=$('#view-us-today'); if(ut){ if(on&&!open&&ut.offsetParent){ if(scrollY<4){ const r=isl.getBoundingClientRect(); ut.style.paddingTop='';
           const f=[...ut.children].find(c=>c.offsetHeight>40&&!/absolute|fixed/.test(getComputedStyle(c).position));
@@ -20769,7 +20790,7 @@ tr.pvx-touched{outline-offset:-2px}
   var n=0; function idFor(el){ if(!el.id) el.id='pvxBoxT'+(++n); return el.id; }
   function head(el,level){ if(!el||el.getAttribute('role')==='heading'||/^H[1-6]$/.test(el.tagName)||el.closest('button,[role=button]')) return;   /* a title inside a button stays the button's name */ el.setAttribute('role','heading'); el.setAttribute('aria-level',String(level||3)); }
   function group(box,title){ if(!box||!title) return; if(box.matches('button,[role=button]')) return;
-    if(!box.getAttribute('role')||box.getAttribute('role')==='group'){ box.setAttribute('role','group'); box.setAttribute('aria-labelledby',idFor(title)); } }
+    if(!box.getAttribute('role')||box.getAttribute('role')==='group'){ var gid=idFor(title); if(box.getAttribute('role')!=='group') box.setAttribute('role','group'); if(box.getAttribute('aria-labelledby')!==gid) box.setAttribute('aria-labelledby',gid); } }
   function drawer(){ var d=document.getElementById('drawer'); if(!d) return;
     d.querySelectorAll('.sect-title,.timeline-title').forEach(function(t){ head(t,3); });
     d.querySelectorAll('.rec-card').forEach(function(b){ var t=b.querySelector('.rec-title'); if(t){ head(t,3); group(b,t); } });
@@ -21131,7 +21152,7 @@ body:not(.dark) #tableBody tr[data-pid]:active > td{background:rgba(15,23,42,.07
   /* 3. Consent forms' badge in words */
   function syncBadge(){ var b=document.getElementById('cfBadge'), seg=b&&b.closest('.seg'); if(!seg) return;
     var n=b.hidden?0:(parseInt(b.textContent,10)||0), lab='Consent forms'+(n?', '+n+' waiting':'');
-    if(seg.getAttribute('aria-label')!==lab) seg.setAttribute('aria-label',lab); b.setAttribute('aria-hidden','true'); }
+    if(seg.getAttribute('aria-label')!==lab) seg.setAttribute('aria-label',lab); if(b.getAttribute('aria-hidden')!=='true') b.setAttribute('aria-hidden','true'); }
   function watch(){ var b=document.getElementById('cfBadge'); if(!b){ setTimeout(watch,500); return; } syncBadge();
     try{ new MutationObserver(syncBadge).observe(b,{attributes:true,attributeFilter:['hidden'],childList:true,characterData:true,subtree:true}); }catch(e){} }
   watch();
@@ -21499,5 +21520,152 @@ body.pvx-ci-under #critIsland{z-index:96!important}
   past();
 })();
 </script>
+<style id="pvx-n373">/* PVX-N373 - HIG Steppers: On the way's minutes say their unit; no browser arrows */
+.otw-minw{display:inline-flex;align-items:center;gap:6px}.otw-minu{font-weight:600;color:var(--ink-700)}
+</style>
+<script id="pvx-n373-js">
+(function(){
+  function sync(i){ var v=parseInt(i.value,10), ok=v>0&&v<=240;
+    if(ok){ i.setAttribute('aria-valuenow',v); i.setAttribute('aria-valuetext',v+(v===1?' minute':' minutes')); } else { i.removeAttribute('aria-valuenow'); i.removeAttribute('aria-valuetext'); } }
+  document.addEventListener('keydown',function(e){ var i=e.target; if(!i||i.id!=='otwMin'||e.altKey||e.metaKey||e.ctrlKey) return;
+    var k=e.key, v=parseInt(i.value,10), big=e.shiftKey?10:1, n;
+    if(k==='ArrowUp') n=(v>0?v:0)+big; else if(k==='ArrowDown') n=(v>0?v:2)-big; else if(k==='PageUp') n=(v>0?v:0)+10; else if(k==='PageDown') n=(v>0?v:11)-10;
+    else if(k==='Home') n=1; else if(k==='End') n=240; else return;
+    e.preventDefault(); n=Math.max(1,Math.min(240,n)); if(String(n)===i.value) return; i.value=String(n); sync(i); i.dispatchEvent(new Event('input',{bubbles:true})); },true);
+  document.addEventListener('input',function(e){ if(e.target&&e.target.id==='otwMin') sync(e.target); },true);
+  try{ new MutationObserver(function(){ var i=document.getElementById('otwMin'); if(i&&!i.__s){ i.__s=1; sync(i); } }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+})();
+</script>
+<style id="pvx-n374">/* PVX-N374 - HIG Text fields, Toggles, Virtual keyboards */
+.pvx-clr{position:fixed;z-index:10060;width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:50%;padding:0;margin:0;background:none;color:inherit;cursor:pointer}
+.pvx-clr[hidden]{display:none}.pvx-clr::before{content:"";position:absolute;inset:-8px}
+.pvx-clr svg{width:16px;height:16px;padding:3px;border-radius:50%;background:rgba(150,185,220,.24);box-sizing:content-box}
+body:not(.dark) .pvx-clr svg{background:rgba(12,41,82,.12)}
+input.pvx-hasclr{padding-right:48px!important}
+html.pvx-kb.pvx-tabbar #subnavFlow #switcher{display:none!important}
+html.pvx-kb.pvx-tabbar body{padding-bottom:env(safe-area-inset-bottom,0px)!important}
+</style>
+<script id="pvx-n374-js">
+(function(){
+  var set=function(e,k,v){ if(e.getAttribute(k)!==v) e.setAttribute(k,v); };
+  var COARSE=window.matchMedia?matchMedia('(hover:none) and (pointer:coarse)'):{matches:false};
+  /* 1. keyboards that fit the text */
+  var CLIN='#apReason,#apTransferNotes,#triEditChief,#triEditHistory,#intakeModal input:not([type=checkbox]):not([type=radio]),#intakeModal textarea,#usCQ,#usDx,#fvOrProc,#fvOrNote,.tq-note,#apBreed,#apRefHosp,#otwFrom,#recPdvm,#triEditBy,#ctFormManual';
+  var WORDS='#triEditBy,#ctFormManual,#cffOwner,#cffAddr,#cffCity,#cffPet';
+  function keys(){ [].forEach.call(document.querySelectorAll(CLIN),function(i){ set(i,'autocorrect','off'); set(i,'spellcheck','false'); });
+    [].forEach.call(document.querySelectorAll('input[placeholder^="List medications"]'),function(i){ set(i,'autocapitalize','off'); });
+    [].forEach.call(document.querySelectorAll(WORDS),function(i){ set(i,'autocapitalize','words'); });
+    var st=document.getElementById('cffState'); if(st) set(st,'autocapitalize','characters'); }
+  /* 4. toggles */
+  function radios(){ [].forEach.call(document.querySelectorAll('#cfFamily .cff-lang,#cfFamily .cff-ts'),function(g){ set(g,'role','radiogroup');
+      var B=[].slice.call(g.querySelectorAll('button')), on=null;
+      B.forEach(function(b){ var p=b.getAttribute('aria-pressed'); if(p!==null){ set(b,'aria-checked',p); b.removeAttribute('aria-pressed'); } set(b,'role','radio'); if(b.getAttribute('aria-checked')==='true') on=b; });
+      B.forEach(function(b){ var t=(b===(on||B[0]))?0:-1; if(b.tabIndex!==t) b.tabIndex=t; }); });
+    [].forEach.call(document.querySelectorAll('#cfFamily [data-fvd="fzoom"][aria-pressed]'),function(b){ b.removeAttribute('aria-pressed'); });
+  }
+  var want=null;
+  document.addEventListener('keydown',function(e){ var b=e.target, g=b&&b.closest&&b.closest('#cfFamily .cff-lang,#cfFamily .cff-ts'); if(!g||e.altKey||e.metaKey||e.ctrlKey) return;
+    var B=[].slice.call(g.querySelectorAll('button')), i=B.indexOf(b), n=B.length; if(i<0) return;
+    var j={ArrowLeft:i-1,ArrowUp:i-1,ArrowRight:i+1,ArrowDown:i+1,Home:0,End:n-1}[e.key]; if(j===undefined) return;
+    e.preventDefault(); e.stopPropagation(); j=(j+n)%n; want={cls:g.className.split(' ')[0],k:j,at:Date.now()}; B[j].click(); back(); },true);
+  document.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('#cfFamily .cff-lang button,#cfFamily .cff-ts button');
+    if(b&&!want){ var g=b.parentNode; want={cls:g.className.split(' ')[0],k:[].indexOf.call(g.querySelectorAll('button'),b),at:Date.now()}; } },true);
+  function back(){ var w=want; if(!w) return; if(Date.now()-w.at>1200){ want=null; return; } radios();
+    var g=document.querySelector('#cfFamily .'+w.cls), c=g&&(g.querySelector('[aria-checked="true"]')||g.querySelectorAll('button')[w.k]);
+    if(c&&document.activeElement!==c) try{ c.focus({preventScroll:true}); }catch(x){} }
+  var t=0; function sweep(){ clearTimeout(t); t=0; try{ keys(); radios(); back(); }catch(e){} }
+  var go=function(){ if(!t) t=setTimeout(sweep,30); };
+  document.addEventListener('focusin',function(){ try{ keys(); }catch(e){} },true);   /* before the keyboard comes up */
+  try{ new MutationObserver(go).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-pressed']}); }catch(e){}
+  sweep();
+  /* 2. a Clear button in sheets on iPhone and iPad */
+  var XM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 8l8 8M16 8l-8 8"/></svg>';
+  var cb=null, cur=null;
+  function clearable(i){ return COARSE.matches&&i&&i.tagName==='INPUT'&&/^(text|tel|email|)$/.test(i.type||'')&&!i.readOnly&&!i.disabled&&i.getAttribute('role')!=='spinbutton'
+    &&!/^Search/.test(i.getAttribute('aria-label')||'')&&!i.closest('.pvx-uwrap')&&!!i.closest('[role=dialog],[aria-modal="true"],#drawer'); }
+  function place(){ var i=cur, show=!!(i&&i.isConnected&&i.value&&document.activeElement===i);
+    if(!show){ if(cb) cb.hidden=true; if(i) i.classList.remove('pvx-hasclr'); return; }
+    if(!cb){ cb=document.createElement('button'); cb.type='button'; cb.className='pvx-clr'; cb.tabIndex=-1; cb.title='Clear'; cb.setAttribute('aria-label','Clear'); cb.innerHTML=XM;
+      var clr=function(e){ e.preventDefault(); var x=cur; if(!x||!x.value) return; x.value=''; x.dispatchEvent(new Event('input',{bubbles:true})); try{ x.focus({preventScroll:true}); }catch(y){} place(); };
+      cb.addEventListener('pointerdown',clr); cb.addEventListener('mousedown',function(e){ e.preventDefault(); }); cb.addEventListener('click',clr); }   /* on touch down: focus never leaves the field */
+    var host=i.closest('[role=dialog],[aria-modal="true"],#drawer')||document.body; if(cb.parentNode!==host) host.appendChild(cb);
+    var r=i.getBoundingClientRect(); i.classList.add('pvx-hasclr'); cb.hidden=false;
+    var w=cb.offsetWidth||28, h=cb.offsetHeight||28, L=Math.round(r.right-w-Math.max(2,(36-w)/2+4)), Y=Math.round(r.top+r.height/2-h/2);   /* 44 pt on touch */ cb.style.left=L+'px'; cb.style.top=Y+'px';
+    var q=cb.getBoundingClientRect(); if(Math.abs(q.left-L)>1||Math.abs(q.top-Y)>1){ cb.style.left=(2*L-q.left)+'px'; cb.style.top=(2*Y-q.top)+'px'; } }   /* a sheet that moves (transform) holds fixed things relative to itself */
+  var later=function(){ requestAnimationFrame(function(){ requestAnimationFrame(place); }); };
+  document.addEventListener('focusin',function(e){ if(clearable(e.target)){ if(cur&&cur!==e.target) cur.classList.remove('pvx-hasclr'); cur=e.target; } place(); later(); });
+  document.addEventListener('focusout',function(){ setTimeout(place,0); });
+  document.addEventListener('input',function(e){ if(e.target===cur) place(); });
+  document.addEventListener('scroll',function(){ if(cur) place(); },{capture:true,passive:true});
+  window.addEventListener('resize',function(){ if(cur) place(); });
+  /* 3. while the touch keyboard is up */
+  var TXT='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),textarea,[contenteditable="true"]';
+  function kb(on){ var h=document.documentElement; if(h.classList.contains('pvx-kb')!==on){ h.classList.toggle('pvx-kb',on); later(); } }
+  document.addEventListener('focusin',function(e){ var x=e.target; if(COARSE.matches&&x&&x.matches&&x.matches(TXT)) kb(true); });
+  document.addEventListener('focusout',function(){ setTimeout(function(){ var a=document.activeElement; if(!(a&&a.matches&&a.matches(TXT))) kb(false); },80); });
+  if(window.visualViewport){ visualViewport.addEventListener('scroll',function(){ if(cur) place(); },{passive:true});
+    visualViewport.addEventListener('resize',function(){ var a=document.activeElement; if(!document.documentElement.classList.contains('pvx-kb')||!a||!a.getBoundingClientRect) return;
+      var r=a.getBoundingClientRect(); if(r.bottom>visualViewport.height-8||r.top<0) try{ a.scrollIntoView({block:'center'}); }catch(x){} place(); }); }
+})();
+</script>
+<style id="pvx-n375">/* PVX-N375 - HIG App Shortcuts: Flow's shortcuts are findable */
+.pvx-ks .pvx-ks-how{margin:2px 0 8px;font-size:.8125rem;color:var(--ink-700,#9fb3c8)}
+.pvx-ks .pvx-ks-ic{list-style:none;margin:0;padding:0}.pvx-ks .pvx-ks-ic li{display:flex;justify-content:space-between;gap:16px;padding:6px 0;font-size:.875rem}
+.pvx-ks .pvx-ks-ic li span{color:var(--ink-700,#9fb3c8);text-align:right}
+</style>
+<script id="pvx-n375-js">
+(function(){
+  if(/[?&](display|tv|lobby)=?/.test(location.search)) return;   /* the lobby TV is untouched */
+  var SC=[['New patient','Start intake for a new patient'],['Find a patient','Search patients, doctors and rooms'],['Patients','Everyone in the hospital, most urgent first'],['Client Display','The lobby screen for families']];
+  function installed(){ if(window.__pvxDisplayMode) return window.__pvxDisplayMode!=='browser';
+    try{ return matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: window-controls-overlay)').matches||matchMedia('(display-mode: minimal-ui)').matches; }catch(e){ return false; } }
+  function where(){ var u=navigator.userAgent||'', touch=navigator.maxTouchPoints>0;
+    if(/iPhone|iPad|iPod/.test(u)||(/Macintosh/.test(u)&&touch)) return null;   /* iPhone and iPad show no web-app shortcuts */
+    if(/Android/.test(u)) return {how:'Touch and hold Flow’s icon.',tip:'Touch and hold Flow’s icon for New patient'};
+    if(/Macintosh|Mac OS X/.test(u)) return {how:'Right-click Flow in the Dock, or open the File menu.',tip:'Right-click Flow in the Dock for New patient'};
+    if(/Windows/.test(u)) return {how:'Right-click Flow in the taskbar.',tip:'Right-click Flow in the taskbar for New patient'};
+    return null; }
+  function avail(){ return installed()&&where(); }
+  var esc=function(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+  /* 1. the Keyboard shortcuts sheet lists them */
+  function add(root){ var w=avail(), b=root.querySelector('.pvx-ks-body'); if(!w||!b||b.querySelector('.pvx-ks-ic')) return;
+    b.insertAdjacentHTML('beforeend','<h3 id="pvxKsIc">From Flow’s icon</h3><p class="pvx-ks-how">'+esc(w.how)+'</p><ul class="pvx-ks-ic" aria-labelledby="pvxKsIc">'
+      +SC.map(function(s){ return '<li><b>'+esc(s[0])+'</b><span>'+esc(s[1])+'</span></li>'; }).join('')+'</ul>'); }
+  try{ new MutationObserver(function(m){ m.forEach(function(r){ [].forEach.call(r.addedNodes,function(n){ if(n.nodeType===1&&n.classList.contains('pvx-ks')) add(n); }); }); })
+    .observe(document.body,{childList:true}); }catch(e){}
+  /* 2. one tip, after the third patient added from inside Flow */
+  var K='pvx:flow:tip-sc', get=function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, put=function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} };
+  if(typeof window.commitPatient==='function'){ var cp=window.commitPatient;
+    window.commitPatient=function(){ var r=cp.apply(this,arguments);
+      try{ var w=avail(); if(w&&get(K)!=='shown'){ var n=(+get(K)||0)+1; if(n>=3){ put(K,'shown'); setTimeout(function(){ if(typeof notify==='function') notify('Tip: New patient from Flow’s icon',w.tip+', Find a patient, Patients and Client Display.',{icon:'info'}); },1600); } else put(K,String(n)); } }catch(e){}
+      return r; }; }
+})();
+</script>
+<style id="pvx-n376">/* PVX-N376 - HIG Notifications */
+.note.n-open{cursor:pointer}.note.n-open:hover{border-color:var(--accent,#38BDD2)}
+.note .n-go{all:unset;font:inherit;color:inherit;cursor:pointer;display:block}.note .n-go:focus-visible{outline:2px solid var(--accent,#38BDD2);outline-offset:2px;border-radius:4px}
+.fg-ntf .fg-nk{text-transform:uppercase}
+/* Talk to Flow's card on iPhone: the patient's name is whole (it was cut to "Pri…"); the buttons take their own line */
+@media (max-width:700px){ #fvPanel .fv-act .fv-t{min-width:calc(100% - 50px)} #fvPanel .fv-t b{white-space:normal} #fvPanel .fv-btns{margin-left:auto} }
+/* staff messages carry patient and owner names: never over the Client Display in full screen or on the lobby TV */
+body.tv-mode .notes,body.fs-mode .notes{display:none!important}
+</style>
+<script id="pvx-n376-js">
+(function(){
+  /* a family message's note opens that patient's conversation */
+  window.pvxOpenThread=function(pid){ try{ (window.openDrawer||openDrawer)(pid);
+      var h=document.getElementById('commHead'); if(h&&h.getAttribute('aria-expanded')!=='true') h.click();
+      setTimeout(function(){ var b=document.getElementById('commBody'), m=document.getElementById('msgBox'); if(b&&b.scrollIntoView) b.scrollIntoView({block:'nearest'});
+        var fine=!window.matchMedia||!matchMedia('(hover:none) and (pointer:coarse)').matches; if(m&&fine) try{ m.focus(); }catch(e){} },150); }catch(e){ console.warn('[thread]',e); } };
+  /* how long ago a message came */
+  function ago(at){ var m=Math.floor((Date.now()-at)/60000); if(m<1) return 'now'; if(m<60) return m+' min ago';
+    try{ return new Date(at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }catch(e){ return m+' min ago'; } }
+  function tick(){ [].forEach.call(document.querySelectorAll('#notes .n-time[data-at]'),function(t){ var v=ago(+t.getAttribute('data-at')); if(t.textContent!==v) t.textContent=v; }); }
+  window.pvxNoteTick=tick; setInterval(tick,20000);
+})();
+</script>
+<style id="pvx-n377">/* PVX-N377 - a message's link is styled here, not inline */
+.note .n-sub a,.note .n-title a{color:var(--accent,#38BDD2);font-weight:700;text-decoration:none}
+</style>
 </body>
 </html>

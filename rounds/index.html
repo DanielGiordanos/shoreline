@@ -13,8 +13,44 @@ function rdN248Set(el,html){ if(!el) return false;
   if(!el._rd248mo&&typeof MutationObserver!=='undefined'){ el._rd248mo=new MutationObserver(function(){ el._rd248dirty=true; }); el._rd248mo.observe(el,{childList:true,subtree:true,characterData:true}); }
   if(el._rd248===html&&!el._rd248dirty) return false;
   el.innerHTML=html; el._rd248=html; if(el._rd248mo) el._rd248mo.takeRecords(); el._rd248dirty=false; return true; }
+/* PVX-N382 - only the rows that changed are drawn again. Each row and section remembers the HTML it was drawn from (__s);
+   one that something has since added to or removed from is marked (__d) and drawn again. */
+function rdN382Kind(n){ return n.nodeType!==1?'#':n.tagName+'.'+String(n.getAttribute('class')||'').split(' ')[0]+(n.hasAttribute('data-pid')?'#'+n.getAttribute('data-pid'):n.hasAttribute('data-sec')?'@'+n.getAttribute('data-sec'):''); }
+function rdN382Stamp(n,depth){ n.__s=n.outerHTML; n.__d=false; if(depth<2&&!n.hasAttribute('data-pid')) for(var c=n.firstElementChild;c;c=c.nextElementSibling) rdN382Stamp(c,depth+1); }
+/* a kept row has made its entrance: the entry class goes, so moving it (a filter, a new order) doesn't play it again */
+function rdN382Still(o){ if(o.classList.contains('rd-in')) o.classList.remove('rd-in'); var w=o.getElementsByClassName('rd-in'); while(w.length) w[0].classList.remove('rd-in'); }
+function rdN382Sync(par,np,depth,st){
+  var olds=[].filter.call(par.childNodes,function(o){ return o.nodeType===1&&o.__s!==undefined&&!o.hasAttribute('data-pid'); }), seq=[];
+  [].slice.call(np.childNodes).forEach(function(n){
+    if(n.nodeType!==1){ seq.push(n); return; }
+    var o=null, k=rdN382Kind(n), i;
+    if(n.hasAttribute('data-pid')){ o=st.pool[k]||null; if(o) delete st.pool[k]; }                 /* a row: wherever it was in the list */
+    else for(i=0;i<olds.length;i++){ if(olds[i]&&rdN382Kind(olds[i])===k){ o=olds[i]; olds[i]=null; break; } }   /* a section or heading: the same one */
+    if(o&&!o.__d&&o.__s===n.outerHTML){ st.kept++; rdN382Still(o); seq.push(o); return; }           /* the same drawing: its elements stay */
+    if(o&&depth<1&&!n.hasAttribute('data-pid')&&n.firstElementChild&&o.firstElementChild&&n.hasAttribute('data-sec')){   /* a section: it stays, and its rows are compared */
+      var s=n.outerHTML, at=n.attributes;
+      for(i=o.attributes.length-1;i>=0;i--){ var a=o.attributes[i].name; if(!n.hasAttribute(a)&&a!=='style') o.removeAttribute(a); }
+      for(i=0;i<at.length;i++){ if(o.getAttribute(at[i].name)!==at[i].value) o.setAttribute(at[i].name,at[i].value); }
+      if(o.classList.contains('rd-in')) o.classList.remove('rd-in'); rdN382Sync(o,n,depth+1,st); o.__s=s; o.__d=false; seq.push(o); return; }
+    rdN382Stamp(n,depth); st.drawn++; seq.push(n);
+  });
+  var cur=par.firstChild;
+  seq.forEach(function(n){ if(n===cur) cur=cur.nextSibling; else par.insertBefore(n,cur); });
+  while(cur){ var nx=cur.nextSibling; par.removeChild(cur); cur=nx; }
+}
+function rdN382Set(list,html){
+  if(!list._rd248mo&&typeof MutationObserver!=='undefined'){ list._rd248mo=new MutationObserver(function(rs){ list._rd248dirty=true;
+      for(var i=0;i<rs.length;i++){ var n=rs[i].target; if(n.nodeType!==1) n=n.parentNode; while(n&&n!==list){ if(n.__s!==undefined) n.__d=true; n=n.parentNode; } } });
+    list._rd248mo.observe(list,{childList:true,subtree:true,characterData:true}); }
+  if(list._rd248mo){ var pend=list._rd248mo.takeRecords(); if(pend.length) list._rd248dirty=true;   /* changes made a moment ago, not yet reported */
+    for(var j=0;j<pend.length;j++){ var m=pend[j].target; if(m.nodeType!==1) m=m.parentNode; while(m&&m!==list){ if(m.__s!==undefined) m.__d=true; m=m.parentNode; } } }
+  if(list._rd248===html&&!list._rd248dirty) return false;
+  var t=document.createElement('template'); t.innerHTML=html; var st={kept:0,drawn:0,pool:{}};
+  [].forEach.call(list.querySelectorAll('[data-pid]'),function(o){ if(o.__s!==undefined&&!o.__d){ var k=rdN382Kind(o); if(!st.pool[k]) st.pool[k]=o; } });
+  try{ rdN382Sync(list,t.content,0,st); }catch(e){ console.warn('[n382]',e); list.innerHTML=html; st={kept:0,drawn:-1,pool:{}}; [].forEach.call(list.children,function(c){ rdN382Stamp(c,0); }); }
+  list._rd248=html; if(list._rd248mo) list._rd248mo.takeRecords(); list._rd248dirty=false; window.rdN382Last={kept:st.kept,drawn:st.drawn}; return true; }
 function rdN248Paint(list,html){ var S=window.rdN248||(window.rdN248={seen:{},work:{}});
-  if(!rdN248Set(list,html)) return;   /* nothing changed: the rows stay exactly as they are */
+  if(!rdN382Set(list,html)) return;   /* nothing changed: the rows stay exactly as they are */
   var work={};
   list.querySelectorAll('.rd-row[data-pid]').forEach(function(r){ var id=r.getAttribute('data-pid'); if(!S.seen[id]){ S.seen[id]=1; r.classList.add('rd-in'); } });
   list.querySelectorAll('.rd-work[data-pid]').forEach(function(w){ var id=w.getAttribute('data-pid'); work[id]=1; if(!S.work[id]) w.classList.add('rd-in'); });
@@ -196,7 +232,6 @@ bang:g('bang','<path d="M12 5.5v8.5"/><path d="M12 18.5h.01"/>'),circlecheck:g('
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Rounds · Pravix</title>
 <link rel="preload" href="assets/data/breeds.js" as="script">
-<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
 <link rel="preload" href="assets/img/logo-dark.png" as="image">
@@ -664,12 +699,12 @@ try{(function(){
 <!-- ═══ Pravix multi-tenant foundation — active hospital resolves before the app boots ═══ -->
 <!-- Firebase (Firestore + Auth) — served from Google's gstatic.com, which
      hospital SSL-inspection proxies already trust, so it loads fast on-site. -->
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="/assets/vendor/firebase-10.12.5/firebase-app-compat.js"></script>
+<script src="/assets/vendor/firebase-10.12.5/firebase-firestore-compat.js"></script>
+<script src="/assets/vendor/firebase-10.12.5/firebase-auth-compat.js"></script>
 <!-- defer: qrcode() is only ever called from render code (makeQR), never at parse
      time, so this no longer blocks the parser for every view. -->
-<script defer src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script defer src="/assets/vendor/qrcode-generator-1.4.4/qrcode.js"></script>
 <script>
  
 
@@ -878,7 +913,7 @@ if (real(theme.accent2)) s.setProperty('--accent-2',   theme.accent2);
 </script>
 
 <script src="assets/data/breeds.js"></script>
-<link rel="stylesheet" href="/rounds/rounds-page.css?v=79a40a53b4"><script src="/rounds/app.js?v=d3ab7ebf74"></script>
+<link rel="stylesheet" href="/rounds/rounds-page.css?v=79a40a53b4"><script src="/rounds/app.js?v=ebdfb63c9b"></script>
 
 <!-- PVX-N134: layout repairs — FL-06 drawer overflow, RX-02 Rounds sub-nav at ≤1024, FL-03 lobby cards below 1700 px -->
 

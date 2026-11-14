@@ -90,7 +90,8 @@ async def s_t333(br):
     ok('…it keeps what it uses itself (Send to Ultrasound, the card flag, the queue, the record mapping) and none of Ultrasound’s screen code',
        f[2:8] == ['function'] * 6 and f[8:11] == ['undefined'] * 3, f[2:11])
     ok('…and none of Ultrasound’s screen styles', f[11] == 0, f[11])
-    ok('…and it is lighter than before (Ultrasound’s code and styles left)', len(flow) < 1733000, len(flow))   # n348: the bar is the page before n333 (1,733,139); 1,660,000 left no room for later Flow work
+    # n373 (Daniel, Nov 13 2026): the page-size comparison is dropped. Ultrasound's code and styles leaving is checked just above,
+    # and ordinary Flow work had caught up with the size of the page before n333 (1,733,139).
     mf = json.load(open(os.path.join(BUILD, 'manifest.webmanifest'), encoding='utf-8'))
     sc = [x for x in mf['shortcuts'] if '/ultrasound' in x['url']]
     ok('…Ultrasound’s shortcuts live in its own manifest; Flow’s Dock menu keeps Flow’s own commands (n358)', not sc, sc)

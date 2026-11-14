@@ -5,9 +5,10 @@
    - The Flow page is network-first with a revalidating fetch, so a reload always gets the newest
      version when online, and the last saved copy when offline.
    - Flow's images and data files are served from cache and refreshed in the background.
-   - The pinned Firebase and QR libraries are cached so Flow can open with no connection.
+   - The Firebase and QR libraries are this site's own files (assets/vendor/, n379), kept so Flow can open with no
+     connection. Other apps' copies from gstatic are cached when they ask for them.
    Emergency: replace this file with KILL-SWITCH-sw.js to remove it from every browser. */
-const SW_VERSION = 'flow-sw-2';   /* n195 */
+const SW_VERSION = 'flow-sw-3';   /* n379 (n195: flow-sw-2) */
 const SHELL = 'flow-shell-v1';
 const ASSETS = 'flow-assets-v1';
 const SHELL_KEY = '/';
@@ -23,14 +24,13 @@ const LOCAL_ASSETS = [
   '/assets/img/disch-icon.png', '/assets/img/docs-icon.png', '/assets/img/pets-icon.png',
   '/assets/img/luna-mask.webp', '/assets/img/luna-orb.webp',
   '/assets/img/icon-192.png', '/assets/img/icon-512.png',
-  '/manifest.webmanifest'
+  '/manifest.webmanifest',
+  '/assets/vendor/firebase-10.12.5/firebase-app-compat.js',
+  '/assets/vendor/firebase-10.12.5/firebase-firestore-compat.js',
+  '/assets/vendor/firebase-10.12.5/firebase-auth-compat.js',
+  '/assets/vendor/qrcode-generator-1.4.4/qrcode.js'
 ];
-const CDN_ASSETS = [
-  'https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js',
-  'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js',
-  'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'
-];
+const CDN_ASSETS = [];   /* n379: Flow's libraries are local now */
 
 self.addEventListener('install', function (event) {
   event.waitUntil((async function () {
@@ -113,6 +113,7 @@ self.addEventListener('fetch', function (event) {
     if (same && (url.pathname === '/' || url.pathname === '/index.html')) event.respondWith(flowPage(event));
     return;
   }
+  if (same && url.pathname.indexOf('/assets/vendor/') === 0) { event.respondWith(cacheFirst(event)); return; }   /* n379: the folder name carries the version */
   if (same && (url.pathname.indexOf('/assets/') === 0 || url.pathname === '/manifest.webmanifest')) {
     event.respondWith(freshInBackground(event));
     return;

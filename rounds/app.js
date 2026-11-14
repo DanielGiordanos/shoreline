@@ -952,13 +952,26 @@ room:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke
 info:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
 check:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>'
 };
+/* PVX-N381 (Flow's n377): a message's title and text are data. Allowed: a few inline tags and links to this site; the rest is shown as text. */
+const PVX_NOTE_TAGS={A:1,B:1,STRONG:1,I:1,EM:1,SPAN:1,SMALL:1,U:1,BR:1}, PVX_NOTE_ATTR={class:1,href:1,target:1,rel:1,'aria-label':1,'aria-hidden':1,lang:1,dir:1};
+function pvxNoteHref(v){ try{ const u=new URL(String(v),location.href); return (u.protocol==='https:'||u.protocol==='http:')&&(u.origin===location.origin||(u.protocol==='https:'&&/(^|\.)pravix\.app$/.test(u.hostname))); }catch(e){ return false; } }
+function pvxNoteFrag(html){ const t=document.createElement('template'); t.innerHTML=String(html==null?'':html);
+  (function walk(n){ Array.prototype.slice.call(n.childNodes).forEach(function(c){ if(c.nodeType===3) return; if(c.nodeType!==1){ c.remove(); return; }
+      if(!PVX_NOTE_TAGS[c.tagName]||c.namespaceURI!=='http://www.w3.org/1999/xhtml'){ c.replaceWith(document.createTextNode(c.outerHTML)); return; }
+      Array.prototype.slice.call(c.attributes).forEach(function(a){ const k=a.name.toLowerCase(); if(!PVX_NOTE_ATTR[k]||(k==='href'&&!pvxNoteHref(a.value))) c.removeAttribute(a.name); });
+      if(c.tagName==='A'&&c.getAttribute('target')) c.setAttribute('rel','noopener');
+      walk(c); }); })(t.content);
+  return t.content; }
+function pvxNoteColor(c){ c=String(c==null?'':c); return /^[#\w(),.%\s-]{1,60}$/.test(c)?c:'var(--accent)'; }
+window.pvxNoteFrag=pvxNoteFrag;
 function notify(title, sub, opts){
 opts=opts||{};
 const wrap=document.getElementById('notes'); if(!wrap) return;
 const el=document.createElement('div'); el.className='note';
-el.innerHTML=`<div class="n-ic" style="background:${opts.color||'var(--accent)'}">${NOTE_ICONS[opts.icon]||NOTE_ICONS.info}</div>
-    <div class="n-body"><div class="n-title">${title}</div>${sub?`<div class="n-sub">${sub}</div>`:''}</div>
+el.innerHTML=`<div class="n-ic" style="background:${pvxNoteColor(opts.color||'var(--accent)')}">${NOTE_ICONS[opts.icon]||NOTE_ICONS.info}</div>
+    <div class="n-body"><div class="n-title"></div>${sub?`<div class="n-sub"></div>`:''}</div>
     <div class="n-time">now</div>`;
+el.querySelector('.n-title').appendChild(pvxNoteFrag(title)); if(sub) el.querySelector('.n-sub').appendChild(pvxNoteFrag(sub));   /* PVX-N381 */
 wrap.appendChild(el);
 RAF ? RAF(()=>el.classList.add('show')) : el.classList.add('show');
 if(opts.sticky){ el.setAttribute('role','alert'); el.classList.add('sticky'); const x=document.createElement('button'); x.type='button'; x.className='n-x'; x.setAttribute('aria-label','Dismiss'); x.innerHTML=(window.PVX_GI?PVX_GI.xmark:'×');
@@ -1139,7 +1152,7 @@ startAt: opts.pending?null:now, endAt:null, updatedAt:now, updatedBy:CURRENT_USE
 if(!opts.pending && !role.multi) ctCurrent(p,roleId).forEach(x=>ctEndAssignment(p,x,'replaced'));
 ctList(p).push(a);
 p.timeline.push({ label: opts.pending?('Handoff proposed · '+role.label):(role.label+' assigned'), at:new Date(), meta: staff.name+' · '+CURRENT_USER });
-notify(opts.pending?'Handoff proposed':'Care team updated',`${staff.name} → ${bcEsc(p.name)} (${role.label})`, {icon:'doctor', color:'var(--accent)'});
+notify(opts.pending?'Handoff proposed':'Care team updated',`${bcEsc(staff.name)} → ${bcEsc(p.name)} (${bcEsc(role.label)})`, {icon:'doctor', color:'var(--accent)'});
 renderAll(); if(activePatient===p.id) fillDrawer(p);
 return a;
 }
@@ -1150,7 +1163,7 @@ if(role.mirror){ if(a.staffKind!=='doctor'){ toast('Primary clinician must be an
 if(!role.multi) ctCurrent(p,a.role).forEach(x=>ctEndAssignment(p,x,'handed off'));
 a.status='current'; a.startAt=new Date().toISOString(); a.confirmedBy=CURRENT_USER; a.confirmedAt=a.startAt; ctTouch(a);
 p.timeline.push({ label:'Handoff confirmed · '+role.label, at:new Date(), meta:a.staffName+' · confirmed by '+CURRENT_USER });
-notify('Handoff confirmed',`${a.staffName} now ${role.label.toLowerCase()} for ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--s-admitted)'});
+notify('Handoff confirmed',`${bcEsc(a.staffName)} now ${bcEsc(role.label.toLowerCase())} for ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--s-admitted)'});
 renderAll(); if(activePatient===p.id) fillDrawer(p);
 }
 function ctDecline(p, aid){
@@ -1310,7 +1323,7 @@ p.doctor=id;
 try{ ctSyncPrimary(p); }catch(e){}
 const d=doc(id);
 p.timeline.push({label:'Doctor assigned', at:new Date(), meta:d.name});
-notify('Doctor assigned',`${d.name} → ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--accent)'});
+notify('Doctor assigned',`${bcEsc(d.name)} → ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--accent)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function assignLiaison(p,id){
@@ -1318,7 +1331,7 @@ if(p.liaison===id) return;
 p.liaison=id;
 const l=liaison(id);
 p.timeline.push({label: l?'Liaison assigned':'Liaison removed', at:new Date(), meta: l?l.name:''});
-notify(l?'Liaison assigned':'Liaison removed', l?`${l.name} → ${bcEsc(p.name)}`:p.name, {icon:'liaison', color:'var(--purple)'});
+notify(l?'Liaison assigned':'Liaison removed', l?`${bcEsc(l.name)} → ${bcEsc(p.name)}`:bcEsc(p.name), {icon:'liaison', color:'var(--purple)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function setPriority(p,level){
@@ -1872,7 +1885,7 @@ if(newStatus==='Ultrasound'&& !p.ultrasound){
 p.ultrasound = { study:'Abdominal Ultrasound', clinicalQuestion:'', status:'incomplete', requestStatus:'incomplete', requestedAt:null, createdAt:at };
 }
 const done = ['Diagnostics','Ultrasound','Procedure'].includes(old) ?`${old} completed`:`Moved to ${newStatus}`;
-notify(done,`${bcEsc(p.name)} · now in ${p.room}`, {icon:'move', color:STATUSES[newStatus].color});
+notify(bcEsc(done),`${bcEsc(p.name)} · now in ${bcEsc(p.room)}`, {icon:'move', color:STATUSES[newStatus].color});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 
 if(newStatus==='Ultrasound'&& (!p.ultrasound || p.ultrasound.status!=='requested')){
@@ -2115,7 +2128,7 @@ u.acceptedBy=d?d.name:CURRENT_USER;
 u.acceptedById=d?d.id:null;
 u.requestStatus='accepted';
 usTimeline(p,'Accepted by Internal Medicine', drName(u.acceptedBy));
-notify('Case taken', p.name+' · '+drName(u.acceptedBy), {icon:'doctor', color:'var(--s-ultrasound)'});
+notify('Case taken', bcEsc(p.name)+' · '+bcEsc(drName(u.acceptedBy)), {icon:'doctor', color:'var(--s-ultrasound)'});
 renderAll();
 }
 function usStartScan(pid){
@@ -2129,7 +2142,7 @@ u.performingDoctorId=u.acceptedById;
 u.requestStatus='in_progress';
 u.queuePosition=null;
 usTimeline(p,'Ultrasound started', drName(u.performingDoctor));
-notify('Ultrasound started', p.name+' · '+drName(u.performingDoctor), {icon:'flask', color:'var(--s-ultrasound)'});
+notify('Ultrasound started', bcEsc(p.name)+' · '+bcEsc(drName(u.performingDoctor)), {icon:'flask', color:'var(--s-ultrasound)'});
 renderAll();
 }
 let _usxForceComplete=null;
@@ -2156,14 +2169,14 @@ usTimeline(p,'Doctor discussion requested', drName(u.performingDoctor)+' → '+d
 notify('Discussion requested', drName(u.performingDoctor)+' requests discussion regarding '+bcEsc(p.name)+"’s ultrasound", {icon:'info', color:'var(--s-ultrasound)'});
 }
 
-notify('Ultrasound completed', p.name+' · '+fmtTime(stamp)+' · '+drName(u.performingDoctor)+(u.criticalFinding?' · critical finding flagged':''), {icon:'check', color:u.criticalFinding?'var(--priority-p1)':'var(--s-admitted)'});
+notify('Ultrasound completed', bcEsc(p.name)+' · '+fmtTime(stamp)+' · '+bcEsc(drName(u.performingDoctor))+(u.criticalFinding?' · critical finding flagged':''), {icon:'check', color:u.criticalFinding?'var(--priority-p1)':'var(--s-admitted)'});
 renderAll();
 if(_usxCase===pid) fillUsxCase();
 }
 function usRequestMoreInfo(pid){
 const p=PATIENTS.find(x=>x.id===pid); if(!p) return;
 usTimeline(p,'More information requested','Ultrasound request incomplete');
-notify('More information requested', p.name+' · '+docShort(p.doctor)+' asked to complete the request', {icon:'info', color:'var(--amber)'});
+notify('More information requested', bcEsc(p.name)+' · '+bcEsc(docShort(p.doctor))+' asked to complete the request', {icon:'info', color:'var(--amber)'});
 openUltrasoundRequest(pid);
 }
 
@@ -3219,8 +3232,8 @@ p.totalTimeInHospital=p.totalMin;
 p.timeline.push({label: cfg.tlLabel, at:stamp, meta:`From ${old}`});
 try{ rdOnFlowComplete(p, finalStatus); }catch(e){ console.warn('[rounds] couldn’t update Rounds for',p&&p.name,e); }   /* n252: was silent */
 
-notify(cfg.title,`${bcEsc(p.name)} · ${p.hid}`, {icon: cfg.icon, color: cfg.color});
-if(oldRoom && oldRoom!=='Lobby') notify(`${oldRoom} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
+notify(cfg.title,`${bcEsc(p.name)} · ${bcEsc(p.hid)}`, {icon: cfg.icon, color: cfg.color});
+if(oldRoom && oldRoom!=='Lobby') notify(`${bcEsc(oldRoom)} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
  
@@ -3256,9 +3269,9 @@ const stamp=new Date();
 p.room=newRoom;
 p.roomSince=stamp;
 p.timeline.push({label:`Moved from ${old} to ${newRoom}`, at:stamp, meta:''});
-notify('Patient moved',`${bcEsc(p.name)} · ${old} → ${newRoom}`, {icon:'move', color:STATUSES[p.status].color});
+notify('Patient moved',`${bcEsc(p.name)} · ${bcEsc(old)} → ${bcEsc(newRoom)}`, {icon:'move', color:STATUSES[p.status].color});
 if(old!=='Lobby'&& !PATIENTS.some(x=>x.id!==p.id && isActive(x) && x.room===old))
-notify(`${old} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
+notify(`${bcEsc(old)} available`,'Ready for next patient', {icon:'room', color:'var(--s-admitted)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 
@@ -3578,7 +3591,7 @@ if(Array.isArray(p.timeline)) p.timeline.push({ label:'Resuscitation preference:
 
 
 try{ if(typeof Backend!=='undefined'&& Backend && Backend._pubResus && p.publicToken){ Backend._pubResus[p.publicToken]={ pref:pref, status:'confirmed', at:at.toISOString() }; } }catch(e){}
-notify('Resuscitation updated', (p.name||'Patient')+' · '+pref, {icon:'info', color: pref==='CPR'?'var(--s-admitted)':'#8B4DB5'});
+notify('Resuscitation updated', bcEsc(p.name||'Patient')+' · '+bcEsc(pref), {icon:'info', color: pref==='CPR'?'var(--s-admitted)':'#8B4DB5'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
 function closeResusChooser(){ var pop=document.getElementById('resusPop'); if(pop) pop.remove();
@@ -3696,7 +3709,7 @@ const t=getTriage(p), v=t.vitals||{};
 const vv=(key)=>{ const val=v[key]; return (val!=null&&val!=='')?val:null; };
 const temp=vv('temp'), hr=vv('hr'), weight=vv('weight');
 const parts=[];
-parts.push(`<span class="cb-stat"><b>${p.room}</b><i>Location</i></span>`);
+parts.push(`<span class="cb-stat"><b>${bcEsc(p.room)}</b><i>Location</i></span>`);
 parts.push(`<span class="cb-stat cb-status"><b><span class="cb-statusdot" aria-hidden="true" style="color:${(STATUSES[p.status]||{}).color||'var(--ink-400)'}"></span>${bcEsc((STATUSES[p.status]||{}).label||p.status||'—')}</b><i>Status</i></span>`);   /* PVX-N144 FLOW-07 */
 parts.push(`<span class="cb-pill"><span class="cb-statuscol"><span class="prio prio-${p.prio}" style="width:24px;height:24px;font-size:0.6875rem">${PRIO[p.prio].l}</span><i>Priority</i></span></span>`);
 parts.push(`<span class="cb-stat"><b>${fmtWait(waitMinutes(p))}</b><i>In hospital</i></span>`);
@@ -3711,12 +3724,12 @@ const TRI_CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const TRI_CLIP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>';
 function triageCardHtml(p){
 const t=getTriage(p), st=t.status||'not_started', v=t.vitals||{}, a=t.assess||{};
-const vv=(key)=>{ const val=v[key]; return (val!=null&&val!=='')?val:'—'; };
+const vv=(key)=>{ const val=v[key]; return (val!=null&&val!=='')?bcEsc(val):'—'; };   /* PVX-N381 */
 const stateLabel = st==='complete'?PVX_GI.check+' Complete':(st==='in_progress'?'In Progress':'Not started');
 const quick = ['weight','temp','hr'].map(k=>{ const c=TRIAGE_VITALS.find(x=>x.key===k);
 return`<div class="tq"><span class="tq-v">${vv(k)}</span><span class="tq-l">${c.label}</span></div>`; }).join('');
 const vitalsGrid = TRIAGE_VITALS.map(c=>`<div class="tv"><span class="tv-l">${c.label}</span><span class="tv-v">${vv(c.key)}</span></div>`).join('');
-const assessRows = TRIAGE_ASSESS.map(c=>`<div class="tr-row"><span class="tr-l">${c.label}</span><span class="tr-v">${(a[c.key]!=null&&a[c.key]!=='')?a[c.key]:'—'}</span></div>`).join('');
+const assessRows = TRIAGE_ASSESS.map(c=>`<div class="tr-row"><span class="tr-l">${c.label}</span><span class="tr-v">${(a[c.key]!=null&&a[c.key]!=='')?bcEsc(a[c.key]):'—'}</span></div>`).join('');
 const chief = (t.chief&&t.chief.length) ? t.chief.map(c=>`<span class="tri-chip">${bcEsc(c)}</span>`).join('') :'<span class="tri-muted">—</span>';
 const byLine = st==='complete'?`Completed · ${bcEsc(t.by||'—')} • ${bcEsc(t.at||'')}`: (st==='in_progress'?'In progress':'Awaiting triage');
 return`<div class="tri-card tri-${st}${triExpanded?' open':''}" id="triCard">
@@ -3764,7 +3777,7 @@ t.at=fmtTime(new Date());
 t.status='complete';
 closeTriageEdit();
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
-notify('Triage updated',`${bcEsc(p.name)} · ${p.hid}`, {icon:'info', color:'var(--accent)'});
+notify('Triage updated',`${bcEsc(p.name)} · ${bcEsc(p.hid)}`, {icon:'info', color:'var(--accent)'});
 try{ if(typeof window.fvAfterTriage==='function') window.fvAfterTriage(p); }catch(e){ console.warn('[triage → sheet, Rounds]',e); }   /* n250 */
 }
 function fillDrawer(p){
@@ -3995,7 +4008,7 @@ return`<div class="cl-card priority-p${p.prio}" style="--gc:${pc.c};--gcrgb:${pc
           <span class="cl-prio" style="background:${pr.c};color:${pr.t}">P${p.prio}</span>
         </div>
         <div class="cl-name">${bcEsc(p.name)} ${bcEsc(p.last)}</div>
-        <div class="cl-meta">${bcEsc(p.breed)} · ${formatPatientAge(p)}</div>
+        <div class="cl-meta">${bcEsc(p.breed)} · ${bcEsc(formatPatientAge(p))}</div>
       </div>
       ${clientVJourney(p)}
     </div>
@@ -5784,7 +5797,7 @@ function showUndo(p, kind, snap){
 const t=document.getElementById('undoToast'); if(!t) return;
 clearTimeout(_dispUndoTimer);
 const nm=dispFirstName(p), verb=(kind==='admit'?'admitted':kind==='euthanasia'?'· euthanasia recorded':kind==='died'?'· death recorded':'discharged');
-t.innerHTML='<span class="ut-msg">'+nm+' '+verb+'</span><button type="button" class="ut-undo">Undo</button><span class="undo-progress" aria-hidden="true"></span>';
+t.innerHTML='<span class="ut-msg">'+bcEsc(nm)+' '+verb+'</span><button type="button" class="ut-undo">Undo</button><span class="undo-progress" aria-hidden="true"></span>';
 t.classList.remove('open'); void t.offsetWidth; t.classList.add('open');
 const undoBtn=t.querySelector('.ut-undo');
 if(undoBtn) undoBtn.onclick=function(){
@@ -5794,7 +5807,7 @@ restoreDispSnap(p, snap);
 try{ if(typeof rdOnFlowUndo==='function') rdOnFlowUndo(p); }catch(_){}
 try{ renderAll(); }catch(_){}
 if(activePatient===p.id) fillDrawer(p);
-notify('Reverted', nm+' · disposition undone', {icon:'move', color:'var(--accent)'});
+notify('Reverted', bcEsc(nm)+' · disposition undone', {icon:'move', color:'var(--accent)'});
 };
 _dispUndoTimer=setTimeout(function(){ hideUndo(); }, 5000);
 }
