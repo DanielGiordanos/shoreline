@@ -55,8 +55,11 @@ async def s_t363(br):
     await p.click('#switcher .seg[data-view=list]'); await p.wait_for_timeout(1000)
     t = await p.evaluate("document.getElementById('stage').scrollTop")
     ok('…choosing the tab you’re on takes the view back to its top', t <= 2, t)
-    lab = await p.evaluate("""(async()=>{ const b=document.getElementById('cfBadge'); const s=b.closest('.seg'); const l0=s.getAttribute('aria-label'); b.textContent='2'; b.hidden=false; await new Promise(r=>setTimeout(r,100));
-      const l1=s.getAttribute('aria-label'), ah=b.getAttribute('aria-hidden'); b.hidden=true; await new Promise(r=>setTimeout(r,100)); return [l0,l1,ah,s.getAttribute('aria-label')]; })()""")
+    # Flow sets the badge again from its own count every two seconds, so the badge set here can be put back before it's read
+    # (n373–n382's run on GitHub: WebKit met that moment on the first run and on the retry). Set it, read it at once, and try again if Flow got in between.
+    lab = await p.evaluate("""(async()=>{ const b=document.getElementById('cfBadge'); const s=b.closest('.seg'); const l0=s.getAttribute('aria-label'); let l1='', ah='';
+      for(let k=0;k<25&&l1!=='Consent forms, 2 waiting';k++){ b.textContent='2'; b.hidden=false; await new Promise(r=>setTimeout(r,20)); l1=s.getAttribute('aria-label'); ah=b.getAttribute('aria-hidden'); }
+      b.hidden=true; await new Promise(r=>setTimeout(r,100)); return [l0,l1,ah,s.getAttribute('aria-label')]; })()""")
     ok('Tab bars · the Consent forms tab says its badge in words (“Consent forms, 2 waiting”), not “Consent forms2”', lab == ['Consent forms', 'Consent forms, 2 waiting', 'true', 'Consent forms'], lab)
     ok('…no page errors', not newerr(e), newerr(e))
     await c.close()
