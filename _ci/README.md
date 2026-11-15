@@ -45,7 +45,7 @@ async def s_t260(br):
 - Every section gets the browser and starts from nothing. Anything it leaves open is closed after it.
 - Wait for the condition you're testing with `until(pg, js)`, not a fixed time: GitHub's machines run at a different speed from the build machine.
 
-## After changing Flow (n380, n383, n384)
+## After changing Flow (n380, n383–n387)
 **Where Flow is (n383, n384).** `index.html` has the markup, three small styles that paint before anything loads, and about twenty small scripts that run before the app. The rest is five files in `assets/flow/`:
 
 | File | What it is |
@@ -68,6 +68,18 @@ python3 _ci/seal_csp.py . --check    # says whether the page is sealed
 - **The policy (n380).** Flow's `index.html` carries a content security policy that lists every inline script by its SHA-256. An inline script that isn't in the list doesn't run. `flow_t380` fails first if the seal was missed, and names this tool.
 - **The `?v=` (n383, n384).** The page asks for each of the five files as `file?v=<the start of its SHA-256>`, in its tag and in its preload. The seal writes those, so a changed file is a new address. `flow_t383` and `flow_t384` fail if one is stale.
 - Markup needs no seal.
+
+**Three things a block no longer does for itself (n385, n386, n387).** They are declared at the top of `app.js`.
+
+| Instead of | A block writes | Why |
+| --- | --- | --- |
+| its own `esc`, `typing`, `pad`, `byId` … | `pvxEsc(text)`, `pvxEscQ(text)`, `pvxTyping()`, `pvxPad2(n)`, `pvxPatientById(id)` and the other helpers in the n385 section | One copy of each. A helper goes in that section only if it uses nothing but page-wide names. |
+| `new MutationObserver(fn).observe(document.body, options)` | `pvxWatch(fn, options, document.body)` (or `document.documentElement`) | One observer per target for every block. Each caller still gets only the records its options ask for, in the order the callers registered. A watcher on one element keeps its own observer. |
+| `var old=fillDrawer; fillDrawer=function(p){ var r=old.apply(this,arguments); …; return r; }` | `pvxAfter('fillDrawer', function(p){ … }, 'n400')` | The function stays one function with a list of layers. `pvxBefore` runs before it; `pvxWrap(name, function(inner){ return function(p){ … }; }, who)` is for a layer that decides whether the function runs or changes what goes in or comes out. |
+
+- The order of layers is the order the blocks run: the last one added is outermost. `pvxSteps.of('fillDrawer')` lists them in the console, and the same list is written above the function in `app.js`. `flow_t387` fails if the two differ, so **after adding a layer, add it to that comment**.
+- The function's own code is `NAME$base`. A function nobody has added to yet has no `NAME$base`; the three calls then wrap it the old way, so they work for any page-wide function.
+- Never put a function in place of one of these by assignment (`fillDrawer=function…`): the layers added after it would run inside it, in the wrong order.
 - An inline `on…=` handler can't be sealed and won't run: add a listener in a script instead.
 - Only Flow's page has the policy. Rounds, Treatment and the other apps are unchanged.
 - **A check that reads Flow's source** uses `core.flow_code()`: the page and its five files as one text. `core.flow_style('pvx-n184-css')` gives one style block by the id it had.
