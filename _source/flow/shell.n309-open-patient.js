@@ -1,0 +1,3 @@
+/* n309: Rounds' "Show in Flow" opens that patient's drawer here (Flow is its own page since n305) */
+(function(){ var id; try{ id=sessionStorage.getItem('pvx:open-patient'); sessionStorage.removeItem('pvx:open-patient'); }catch(e){} if(!id) return; var n=0;
+  (function t(){ try{ if(typeof PATIENTS!=='undefined'&&PATIENTS.some(function(p){ return String(p.id)===id; })&&typeof openDrawer==='function'){ openDrawer(id); return; } }catch(e){} if(++n<80) setTimeout(t,250); })(); })();
