@@ -1,6 +1,128 @@
 /* Pravix Flow — app.js (n383). Flow's main script, as it was inline in index.html (it loads at the same point of the page).
    The scripts that followed it are in layers.js and layers2.js.
    After changing this file:  python3 _ci/seal_csp.py .   (it refreshes the ?v= in index.html) */
+
+/* ━━━━━ PVX-N385 · Flow's shared helpers: one copy each (stage 2a) ━━━━━
+   Each of these was declared again in several layer blocks, with the same code. A block that needs one calls it by this name;
+   it does not declare its own. A helper belongs here only if it uses nothing but page-wide names. */
+/* text made safe to place in markup: & < > " */
+function pvxEsc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+/* text made safe for markup and for a quoted attribute: & < > " ' */
+function pvxEscQ(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+/* is the person typing in a field? */
+function pvxTyping(){ var a=document.activeElement; return !!(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable)); }
+/* the patient with this id, or null */
+function pvxPatientById(id){ try{ return PATIENTS.find(function(x){ return String(x.id)===String(id); })||null; }catch(e){ return null; } }
+/* the patient whose drawer is open, or null */
+function pvxActivePatient(){ try{ return PATIENTS.find(function(x){ return x.id===activePatient; })||null; }catch(e){ return null; } }
+/* the signed-in person's name, or 'Staff' */
+function pvxWho(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Staff'; }catch(e){ return 'Staff'; } }
+/* the signed-in person: {name, uid, initials} */
+function pvxMe(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
+    var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
+    return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
+/* the signed-in person's account id, or null */
+function pvxUid(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.uid)||null; }catch(e){ return null; } }
+/* the signed-in person's email, or '' */
+function pvxEmail(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.email)||''; }catch(e){ return ''; } }
+/* a number as two digits */
+function pvxPad2(n){ return (n<10?'0':'')+n; }
+/* an ISO time as the clock time */
+function pvxHm(iso){ try{ return fmtTime(new Date(iso)); }catch(e){ return ''; } }
+/* whole minutes since an ISO time */
+function pvxMinsSince(iso){ return Math.max(0,Math.round((Date.now()-new Date(iso))/60000)); }
+/* the hospital's id */
+function pvxTenant(){ try{ return TENANT_ID||'shoreline'; }catch(e){ return 'shoreline'; } }
+/* the database, or null before it is ready */
+function pvxDb(){ try{ return (typeof DB!=='undefined'&&DB)?DB:null; }catch(e){ return null; } }
+/* a quiet notice (notify with the info icon) */
+function pvxNote(t,s,o){ try{ notify(t,s,Object.assign({icon:'info',color:'#3E8FA5'},o||{})); }catch(e){} }
+/* a patient's first and last name */
+function pvxFullName(p){ return ((p.name||'')+' '+(p.last||'')).trim(); }
+/* is this element drawn and able to be clicked? */
+function pvxShown(el){ var r=el.getBoundingClientRect(); if(!r.width||!r.height) return false; var c=getComputedStyle(el); return c.display!=='none'&&c.visibility!=='hidden'&&+c.opacity>0.05&&c.pointerEvents!=='none'; }
+/* the Flow view on screen */
+function pvxView(){ try{ return currentView; }catch(e){ return ''; } }
+/* does the person ask for reduced motion? */
+function pvxReduceMotion(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+/* put a parked sheet button back where it was */
+function pvxUnpark(btn){ if(!btn||!btn._pvxMark) return; var mk=btn._pvxMark; btn._pvxMark=null;
+    btn.classList.remove('pvx-ps-btn','pvx-ps-l','pvx-ps-r'); if(mk.parentNode){ mk.parentNode.insertBefore(btn,mk); mk.remove(); } }
+/* the grab area of a sheet under this event, if any */
+function pvxGrabZone(e){ return e.target.closest&&e.target.closest('.pvx-grab,.addpt-head'); }
+/* ━━━━━ PVX-N386 · pvxWatch: the layers that watch the whole page share one observer (stage 2b) ━━━━━
+   pvxWatch(fn, options, target) stands in for  new MutationObserver(fn).observe(target, options)  when target is document.body
+   or document.documentElement. There is one real observer per target. Each caller still gets only the records its own options
+   would have given it (type, attributeFilter, subtree), as an array, in the order the callers registered; a caller with nothing
+   to receive isn't called. Callers with the same options are handed the same array, so a caller must not change it.
+   It returns {disconnect(), takeRecords()}. A watcher on one element keeps its own observer. */
+var pvxWatch=(function(){
+  var hubs=[], UNLISTED=1<<31;   /* an attribute no caller listed by name: only a caller that asked for every attribute receives it */
+  function hubFor(target){ for(var i=0;i<hubs.length;i++) if(hubs[i].target===target) return hubs[i];
+    var h={target:target,subs:[],sigs:{},mo:null,all:false,bits:{},nbits:0,oldV:false,cd:false,cl:false,st:false,last:'',batch:0}; hubs.push(h); return h; }
+  /* A batch is sorted once. Each record gets one number: 1 nodes, 2 text, or the bit of its attribute. Callers with the same options
+     share one answer, worked out the first time one of them is reached. */
+  function pick(h,g,ms,kind,atT){ var out=[], m=g.mask, all=g.allAttr, deep=g.subtree;
+    for(var j=0;j<ms.length;j++){ var k=kind[j]; if((k&m)||(all&&(k<0||k>=4))){ if(deep||atT[j]) out.push(ms[j]); } }
+    return out; }
+  function deliver(h,ms){ var list=h.subs.slice(), n=ms.length, kind=new Array(n), atT=new Array(n), t=h.target, b=++h.batch, j;
+    for(j=0;j<n;j++){ var r=ms[j]; atT[j]=r.target===t; kind[j]= r.type==='childList'?1 : r.type==='characterData'?2 : (h.bits[r.attributeName]||UNLISTED); }
+    for(var i=0;i<list.length;i++){ var s=list[i]; if(s.off) continue; var g=s.sig; if(g.batch!==b){ g.batch=b; g.out=pick(h,g,ms,kind,atT); }
+      if(g.out.length){ try{ s.fn(g.out,s.obs); }catch(e){ (function(e){ setTimeout(function(){ throw e; },0); })(e); } } } }
+  function start(h){ if(!h.mo) h.mo=new MutationObserver(function(ms){ deliver(h,ms); });
+    var o={}; if(h.cl) o.childList=true; if(h.st) o.subtree=true; if(h.cd) o.characterData=true;
+    if(h.all){ o.attributes=true; } else { var f=Object.keys(h.bits); if(f.length){ o.attributes=true; o.attributeFilter=f; } }
+    if(o.attributes&&h.oldV) o.attributeOldValue=true;
+    var k=JSON.stringify(o); if(k!==h.last){ h.last=k; h.mo.observe(h.target,o); } }
+  function watch(fn,opts,target){ opts=opts||{}; target=target||document.body; var h=hubFor(target);
+    var attrs=!!(opts.attributes||opts.attributeFilter||opts.attributeOldValue), filter=opts.attributeFilter?opts.attributeFilter.slice():null, mask=0;
+    if(opts.childList) mask|=1; if(opts.characterData||opts.characterDataOldValue) mask|=2;
+    if(filter) filter.forEach(function(a){ if(!h.bits[a]){ if(h.nbits>=27) throw new Error('pvxWatch: too many different attributes on one target'); h.bits[a]=4<<(h.nbits++); } mask|=h.bits[a]; });
+    var key=mask+'|'+(attrs&&!filter?'a':'')+'|'+(opts.subtree?'s':''), g=h.sigs[key]||(h.sigs[key]={mask:mask,allAttr:attrs&&!filter,subtree:!!opts.subtree,batch:0,out:null});
+    var s={fn:fn,off:false,sig:g};
+    s.obs={disconnect:function(){ s.off=true; var i=h.subs.indexOf(s); if(i>-1) h.subs.splice(i,1); },takeRecords:function(){ return []; }};
+    h.subs.push(s); if(mask&1) h.cl=true; if(opts.subtree) h.st=true; if(mask&2) h.cd=true; if(opts.attributeOldValue) h.oldV=true; if(attrs&&!filter) h.all=true;
+    start(h); return s.obs; }
+  watch.count=function(target){ return target?hubFor(target).subs.length:hubs.reduce(function(a,h){ return a+h.subs.length; },0); };
+  watch.hubs=function(){ return hubs.map(function(h){ return {target:h.target,watchers:h.subs.length,options:h.last}; }); };
+  return watch;
+})();
+
+/* ━━━━━ PVX-N387 · steps: a function of the main script and what the layers add to it (stage 2c) ━━━━━
+   A layer no longer replaces a function (saving the old one and calling it from the new one). It adds to it:
+     pvxBefore('fillDrawer', function(p){ … }, 'who')     runs before the function, with the same arguments
+     pvxAfter ('fillDrawer', function(p){ … }, 'who')     runs after it, with the same arguments; the function's result is returned
+     pvxWrap  ('fillDrawer', function(inner){ return function(p){ … inner.apply(this,arguments) … }; }, 'who')
+                                                          for a layer that decides whether the function runs, or changes what goes in or comes out
+   The order is the order the layers were added, as when each wrapped the one before: the last one added is outermost. Its "before"
+   runs first and its "after" runs last. The function itself is NAME$base; NAME(…) runs it with its layers. pvxSteps.of(NAME) lists them.
+   A name without a NAME$base is wrapped the old way, so the three calls work for any page-wide function. */
+var pvxSteps=(function(){
+  var all={};
+  function flat(inner){ var g={before:[],after:[],inner:inner};
+    g.fn=function(){ var b=g.before, a=g.after, nb=b.length, na=a.length, i, r;
+      for(i=nb-1;i>=0;i--) b[i].apply(this,arguments);
+      r=g.inner.apply(this,arguments);
+      for(i=0;i<na;i++) a[i].apply(this,arguments);
+      return r; };
+    return g; }
+  function add(name,kind,fn,who){ var base=window[name+'$base'];
+    if(typeof base!=='function'){ var old=window[name]; if(typeof old!=='function') throw new Error('pvxSteps: no function named '+name);
+      window[name]= kind==='wrap' ? fn(old) : kind==='before' ? function(){ fn.apply(this,arguments); return old.apply(this,arguments); } : function(){ var r=old.apply(this,arguments); fn.apply(this,arguments); return r; };
+      return; }
+    var s=all[name]||(all[name]={top:base,group:null,list:[]});
+    if(kind==='wrap'){ var w=fn(s.top); if(typeof w!=='function') throw new Error('pvxWrap('+name+'): the layer must return a function'); s.top=w; s.group=null; }
+    else { if(!s.group){ s.group=flat(s.top); s.top=s.group.fn; } s.group[kind].push(fn); }
+    s.list.push({kind:kind,who:who||''}); }
+  return { s:all, add:add,
+    of:function(name){ return all[name]?all[name].list.map(function(x){ return {kind:x.kind,who:x.who}; }):[]; },
+    names:function(){ return Object.keys(all); } };
+})();
+function pvxRun(name,base,self,args){ var s=pvxSteps.s[name]; return (s?s.top:base).apply(self,args); }
+function pvxBefore(name,fn,who){ pvxSteps.add(name,'before',fn,who); }
+function pvxAfter(name,fn,who){ pvxSteps.add(name,'after',fn,who); }
+function pvxWrap(name,make,who){ pvxSteps.add(name,'wrap',make,who); }
+
 const STATUSES = {
 Waiting:     {color:'var(--s-waiting)',     bg:'var(--s-waiting-bg)'},
 Exam:        {color:'var(--s-exam)',        bg:'var(--s-exam-bg)'},
@@ -1113,7 +1235,9 @@ function ctFmt(iso){ if(!iso) return''; const d=new Date(iso); if(isNaN(d)) retu
 function ctUid(){ return'ct-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7); }
 
  
-function ctRoster(){
+/* ctRoster · its layers, innermost first: 1 #3 wrap   (PVX-N387; kept true by flow_t387) */
+function ctRoster(){ return pvxRun('ctRoster',ctRoster$base,this,arguments); }
+function ctRoster$base(){
 const out=[];
 DOCTORS.forEach(d=>out.push({ id:d.id, name:d.name, kind:'doctor', initials:d.initials, color:d.color }));
 (typeof IM_DOCTORS!=='undefined'?IM_DOCTORS:[]).forEach(d=>{ if(!out.some(x=>x.id===d.id)) out.push({ id:d.id, name:d.name, kind:'im', initials:d.initials, color:d.color }); });
@@ -1134,7 +1258,9 @@ function ctList(p){ if(!p.careTeam || !Array.isArray(p.careTeam.assignments)) p.
 function ctCurrent(p, role){ return ctList(p).filter(a=>a.status==='current'&& (!role || a.role===role)); }
 function ctPending(p, role){ return ctList(p).filter(a=>a.status==='pending'&& (!role || a.role===role)); }
 function ctEnded(p){ return ctList(p).filter(a=>a.status==='ended').sort((a,b)=>String(b.endAt||'').localeCompare(String(a.endAt||''))); }
-function ctTouch(a){ a.updatedAt=new Date().toISOString(); a.updatedBy=CURRENT_USER; }
+/* ctTouch · its layers, innermost first: 1 #3 wrap   (PVX-N387; kept true by flow_t387) */
+function ctTouch(a){ return pvxRun('ctTouch',ctTouch$base,this,arguments); }
+function ctTouch$base(a){ a.updatedAt=new Date().toISOString(); a.updatedBy=CURRENT_USER; }
 function ctLastUpdate(p){ return ctList(p).reduce((m,a)=>(!m||String(a.updatedAt)>String(m.updatedAt))?a:m, null); }
 function ctToDb(ct){ const L=(ct&&Array.isArray(ct.assignments))?ct.assignments:[]; return { assignments: L.map(a=>({ id:a.id, patient_id:a.patientId, staff_id:a.staffId, staff_name:a.staffName||'', staff_kind:a.staffKind||'manual', role:a.role, status:a.status,
 start_at:ctIso(a.startAt), end_at:ctIso(a.endAt), updated_at:ctIso(a.updatedAt), updated_by:a.updatedBy||'', proposed_by:a.proposedBy||null, confirmed_by:a.confirmedBy||null, confirmed_at:ctIso(a.confirmedAt), ended_by:a.endedBy||null, end_reason:a.endReason||null, note:a.note||'', actor_uid:a.actorUid||null })) }; }
@@ -1146,7 +1272,9 @@ if(!a || a.status==='ended') return;
 a.status='ended'; a.endAt=new Date().toISOString(); a.endedBy=CURRENT_USER; a.endReason=reason||'ended'; ctTouch(a);
 }
  
-function ctAssign(p, roleId, staff, opts){
+/* ctAssign · its layers, innermost first: 1 #3 wrap   (PVX-N387; kept true by flow_t387) */
+function ctAssign(p,roleId,staff,opts){ return pvxRun('ctAssign',ctAssign$base,this,arguments); }
+function ctAssign$base(p, roleId, staff, opts){
 opts=opts||{}; const role=ctRole(roleId);
 if(role.mirror && !opts.pending){
 if(staff.kind!=='doctor'){ toast('Choose one of Flow\'s emergency doctors as primary clinician'); return null; }
@@ -1232,7 +1360,9 @@ card.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCa
 
  
 let ctOpenId=null, ctFormRole=null, ctRestoreFocus=null;
-function openCareTeam(pid){
+/* openCareTeam · its layers, innermost first: 1 #53 wrap   (PVX-N387; kept true by flow_t387) */
+function openCareTeam(pid){ return pvxRun('openCareTeam',openCareTeam$base,this,arguments); }
+function openCareTeam$base(pid){
 const p=PATIENTS.find(x=>x.id===pid); if(!p) return;
 ctOpenId=pid; ctFormRole=null; ctRestoreFocus=document.activeElement;
 renderCareTeam();
@@ -1240,7 +1370,9 @@ document.getElementById('ctScrim').classList.add('open');
 document.getElementById('ctModal').classList.add('open');
 setTimeout(()=>{ const c=document.getElementById('ctClose'); if(c) c.focus(); }, 40);
 }
-function closeCareTeam(){
+/* closeCareTeam · its layers, innermost first: 1 #53 wrap   (PVX-N387; kept true by flow_t387) */
+function closeCareTeam(){ return pvxRun('closeCareTeam',closeCareTeam$base,this,arguments); }
+function closeCareTeam$base(){
 ctOpenId=null; ctFormRole=null;
 document.getElementById('ctScrim').classList.remove('open');
 document.getElementById('ctModal').classList.remove('open');
@@ -1298,7 +1430,9 @@ return`<div class="ct-row ${a.status}"><span class="dav ${a.staffKind==='service
     <div class="ct-main"><div class="ct-name">${ctEsc(s.name)}<span class="ct-pill ${a.status}">${a.status}</span>${history?'':`<span class="muted" style="font-size:0.6875rem;font-weight:600">${ctEsc(CT_KIND_LABEL[a.staffKind]||'')}</span>`}</div><div class="ct-sub">${sub}</div></div>${actions}</div>`;
 }
 function ctShowForm(roleId){ ctFormRole=roleId; renderCareTeam(); }
-function ctFormHTML(p, roleId){
+/* ctFormHTML · its layers, innermost first: 1 #3 wrap   (PVX-N387; kept true by flow_t387) */
+function ctFormHTML(p,roleId){ return pvxRun('ctFormHTML',ctFormHTML$base,this,arguments); }
+function ctFormHTML$base(p, roleId){
 const r=ctRole(roleId), roster=ctRoster();
 const groups=[['doctor','Emergency doctors'],['im','Internal Medicine'],['liaison','Liaisons'],['service','Services']];
 const allowed = r.mirror ? ['doctor'] : (roleId==='technician'? ['doctor','im','liaison'] : ['doctor','im','service']);
@@ -1329,7 +1463,9 @@ const c=document.getElementById('ctClose'); if(c) c.focus();
 }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape'&& ctOpenId && document.getElementById('ctModal').classList.contains('open')){ e.stopPropagation(); closeCareTeam(); } }, true);
 
-function assignDoctor(p,id){
+/* assignDoctor · its layers, innermost first: 1 #8 after · 2 n350 wrap   (PVX-N387; kept true by flow_t387) */
+function assignDoctor(p,id){ return pvxRun('assignDoctor',assignDoctor$base,this,arguments); }
+function assignDoctor$base(p,id){
 if(p.doctor===id) return;
 p.doctor=id;
 try{ ctSyncPrimary(p); }catch(e){}
@@ -1338,7 +1474,9 @@ p.timeline.push({label:off?'Doctor removed':'Doctor assigned', at:new Date(), me
 notify(off?'Doctor removed':'Doctor assigned', off?bcEsc(p.name):`${bcEsc(d.name)} → ${bcEsc(p.name)}`, {icon:'doctor', color:'var(--accent)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
-function assignLiaison(p,id){
+/* assignLiaison · its layers, innermost first: 1 n350 wrap   (PVX-N387; kept true by flow_t387) */
+function assignLiaison(p,id){ return pvxRun('assignLiaison',assignLiaison$base,this,arguments); }
+function assignLiaison$base(p,id){
 if(p.liaison===id) return;
 p.liaison=id;
 const l=liaison(id);
@@ -1346,7 +1484,9 @@ p.timeline.push({label: l?'Liaison assigned':'Liaison removed', at:new Date(), m
 notify(l?'Liaison assigned':'Liaison removed', l?`${bcEsc(l.name)} → ${bcEsc(p.name)}`:bcEsc(p.name), {icon:'liaison', color:'var(--purple)'});
 scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 }
-function setPriority(p,level){
+/* setPriority · its layers, innermost first: 1 n350 wrap   (PVX-N387; kept true by flow_t387) */
+function setPriority(p,level){ return pvxRun('setPriority',setPriority$base,this,arguments); }
+function setPriority$base(p,level){
 if(p.prio===level) return;
 p.prio=level;
 p.timeline.push({label:`Priority set to P${level}`, at:new Date(), meta:PRIO_LABEL[level]});
@@ -1372,7 +1512,9 @@ commit(v);
 }
 
 function pvxBoardFiltered(){ var f=filters; filters={status:null,prio:null,doctor:null,liaison:null}; try{ return filtered(); } finally { filters=f; } }   /* PVX-N356: the board takes search, not the Patients filters */
-function filtered(){
+/* filtered · its layers, innermost first: 1 #3 wrap   (PVX-N387; kept true by flow_t387) */
+function filtered(){ return pvxRun('filtered',filtered$base,this,arguments); }
+function filtered$base(){
 return PATIENTS.filter(p=>{
 if(filters.status && p.status!==filters.status) return false;
 if(filters.prio && p.prio!==filters.prio) return false;
@@ -1552,7 +1694,9 @@ else { const vt=String(c.fmt(c.raw)); if(val.textContent!==vt) val.textContent =
 });
 }
 
-function attentionItems(){
+/* attentionItems · its layers, innermost first: 1 n197 wrap   (PVX-N387; kept true by flow_t387) */
+function attentionItems(){ return pvxRun('attentionItems',attentionItems$base,this,arguments); }
+function attentionItems$base(){
 const items=[];
 const active=PATIENTS.filter(isActive);
 active.forEach(p=>{
@@ -1590,7 +1734,9 @@ const currentKeys = new Set(all.map(a=>a.key));
 dismissedAlerts.forEach(k=>{ if(!currentKeys.has(k)) dismissedAlerts.delete(k); });
 return all.filter(a=>!dismissedAlerts.has(a.key));
 }
-function dismissAlert(key){ if(!key) return; dismissedAlerts.add(key); renderAttention(); }
+/* dismissAlert · its layers, innermost first: 1 n197 wrap   (PVX-N387; kept true by flow_t387) */
+function dismissAlert(key){ return pvxRun('dismissAlert',dismissAlert$base,this,arguments); }
+function dismissAlert$base(key){ if(!key) return; dismissedAlerts.add(key); renderAttention(); }
 function clearAllAlerts(){ visibleAttentionItems().forEach(a=>dismissedAlerts.add(a.key)); renderAttention(); }
 const ATTN_ICONS={
 user:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/>',
@@ -1614,7 +1760,9 @@ el.classList.toggle('over-limit', count>99);
 el.style.display = count===0 ?'none':'block';
 el.setAttribute('aria-label', count>99 ?'99 or more notifications': count+' notifications');
 }
-function renderAttention(){
+/* renderAttention · its layers, innermost first: 1 n197 after   (PVX-N387; kept true by flow_t387) */
+function renderAttention(){ return pvxRun('renderAttention',renderAttention$base,this,arguments); }
+function renderAttention$base(){
 const items=visibleAttentionItems();
 setNotificationCount('attnCount', items.length);
 const clearAllBtn=document.getElementById('attnClearAll');
@@ -1927,7 +2075,9 @@ onSelect: id => { filters.liaison = (id==='all'? null : id); renderFilterBar(); 
 }));
 }
 
-function renderTable(){
+/* renderTable · its layers, innermost first: 1 n349 after · 2 n354 after   (PVX-N387; kept true by flow_t387) */
+function renderTable(){ return pvxRun('renderTable',renderTable$base,this,arguments); }
+function renderTable$base(){
 const rows=filtered().filter(isActive).sort(pvxByUrgency);
 const rc=document.getElementById('resCount'); if(rc) rc.textContent=rows.length+' Patients';
 const body=document.getElementById('tableBody');
@@ -1959,7 +2109,9 @@ body.querySelectorAll('tr').forEach(tr=>tr.onclick=()=>openDrawer(tr.dataset.pid
 
 const COL_EMPTY={Waiting:'No patients waiting',Exam:'No exams in progress',Diagnostics:'No active diagnostics',Ultrasound:'No ultrasounds running',Procedure:'No procedures in progress'};
 const EMPTY_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>';
-function renderBoard(){
+/* renderBoard · its layers, innermost first: 1 n349 after   (PVX-N387; kept true by flow_t387) */
+function renderBoard(){ return pvxRun('renderBoard',renderBoard$base,this,arguments); }
+function renderBoard$base(){
 const board=document.getElementById('board');
 if(PATIENTS.filter(isActive).length===0){
 board.classList.add('board-empty');
@@ -2021,7 +2173,9 @@ if(p && p.status!==newStatus){ moveStatus(p,newStatus); }
 });
 });
 }
-function moveStatus(p,newStatus){
+/* moveStatus · its layers, innermost first: 1 #10 wrap · 2 n192 wrap · 3 n253-admit wrap · 4 n350 wrap   (PVX-N387; kept true by flow_t387) */
+function moveStatus(p,newStatus){ return pvxRun('moveStatus',moveStatus$base,this,arguments); }
+function moveStatus$base(p,newStatus){
 if(newStatus==='Discharged'||newStatus==='Admitted') return completePatient(p,newStatus);
 const old=p.status;
 const at=new Date();
@@ -2076,7 +2230,9 @@ try{ if(p.records && p.records.status==='received') out.push('pDVM records recei
 return out;
 }
 let _usPid=null;
-function openUltrasoundRequest(pid){
+/* openUltrasoundRequest · its layers, innermost first: 1 n351 wrap · 2 n370 after   (PVX-N387; kept true by flow_t387) */
+function openUltrasoundRequest(pid){ return pvxRun('openUltrasoundRequest',openUltrasoundRequest$base,this,arguments); }
+function openUltrasoundRequest$base(pid){
 const p=(pid && typeof pid==='object') ? pid : PATIENTS.find(x=>x.id===pid); if(!p) return;
 _usPid=p.id;
 if(!p.ultrasound) p.ultrasound={ study:'Abdominal Ultrasound', clinicalQuestion:'', status:'incomplete', requestStatus:'incomplete', requestedAt:null, createdAt:new Date() };
@@ -2451,7 +2607,9 @@ const UMT_IC_PHONE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 /* n333: on Ultrasound's page */
 /* n333: on Ultrasound's page */
-function openUsxCase(pid){
+/* openUsxCase · its layers, innermost first: 1 #30 before   (PVX-N387; kept true by flow_t387) */
+function openUsxCase(pid){ return pvxRun('openUsxCase',openUsxCase$base,this,arguments); }
+function openUsxCase$base(pid){
 const p=PATIENTS.find(x=>x.id===pid); if(!p||!p.ultrasound) return;
 try{ window.__pvxUsFrom=document.activeElement; window.__pvxUsPid=pid; }catch(e){}
 (function(){ var d=document.getElementById('usxDrawer')||usxEnsureDrawer(); if(d&&!d.__pvxObs){ d.__pvxObs=new MutationObserver(function(){ if(!d.classList.contains('open')&&window.__pvxUsPid){ var id=window.__pvxUsPid; window.__pvxUsPid=null; setTimeout(function(){ pvxUsRefocus(id,'case'); },80); setTimeout(function(){ pvxUsRefocus(id,'case'); },450); } }); d.__pvxObs.observe(d,{attributes:true,attributeFilter:['class']}); } })();   /* PVX-N145 UR-05: however the workspace closes (Escape, scrim, ✕) */
@@ -2490,7 +2648,9 @@ Discharged: {tlLabel:'Patient discharged', title:'Patient discharged', icon:'dis
 Admitted:   {tlLabel:'Patient admitted',   title:'Patient admitted',   icon:'check',     color:'var(--s-admitted)', stampKey:'admittedAt'},
 Euthanized: {tlLabel:'Patient euthanized',  title:'Patient euthanized',  icon:'info',      color:'#8A82A8',           stampKey:'euthanizedAt'}
 };
-function completePatient(p, finalStatus){
+/* completePatient · its layers, innermost first: 1 #23 after · 2 n252-net wrap · 3 n350 wrap   (PVX-N387; kept true by flow_t387) */
+function completePatient(p,finalStatus){ return pvxRun('completePatient',completePatient$base,this,arguments); }
+function completePatient$base(p, finalStatus){
 const old=p.status, oldRoom=p.room;
 const cfg=COMPLETION[finalStatus]||COMPLETION.Discharged;
 const stamp=new Date();
@@ -2512,7 +2672,9 @@ scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 
 
 function archiveList(){ return PATIENTS.filter(p=>isCompleted(p) && p.completedAt && isTodayHosp(p.completedAt)).sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)); }
-function renderComplete(){
+/* renderComplete · its layers, innermost first: 1 #17 after   (PVX-N387; kept true by flow_t387) */
+function renderComplete(){ return pvxRun('renderComplete',renderComplete$base,this,arguments); }
+function renderComplete$base(){
 const dEl=document.getElementById('dischCount'), aEl=document.getElementById('admitCount'), eEl=document.getElementById('euthCount'), tEl=document.getElementById('czTotal');
 const _dT=completedTodayCount('Discharged'), _aT=completedTodayCount('Admitted'), _eT=completedTodayCount('Euthanized');
 if(dEl) dEl.textContent=_dT;
@@ -2552,7 +2714,9 @@ showConfirm(`Mark ${p.name} ${p.last} as ${verb}?`, okLabel,
 }
 
  
-function moveRoom(p,newRoom){
+/* moveRoom · its layers, innermost first: 1 #8 wrap · 2 #23 wrap · 3 n192 wrap · 4 n350 wrap   (PVX-N387; kept true by flow_t387) */
+function moveRoom(p,newRoom){ return pvxRun('moveRoom',moveRoom$base,this,arguments); }
+function moveRoom$base(p,newRoom){
 const old=p.room;
 if(old===newRoom) return;
 const stamp=new Date();
@@ -2572,7 +2736,9 @@ if(!ROOMS.includes(target)) return false;
 return !PATIENTS.some(x=>x.id!==p.id && isActive(x) && x.room===target);
 }
 
-function showConfirm(title, okLabel, onOk, opts){
+/* showConfirm · its layers, innermost first: 1 n193 before · 2 #47 wrap · 3 #52 wrap   (PVX-N387; kept true by flow_t387) */
+function showConfirm(title,okLabel,onOk,opts){ return pvxRun('showConfirm',showConfirm$base,this,arguments); }
+function showConfirm$base(title, okLabel, onOk, opts){
 opts=opts||{};
 document.getElementById('confirmTitle').textContent=title;
 document.getElementById('confirmOk').textContent=okLabel;
@@ -2709,13 +2875,17 @@ else moveRoom(p,target);
 
 
 
-function openDrawer(pid){
+/* openDrawer · its layers, innermost first: 1 #8 after · 2 #9 before · 3 #54 after · 4 n351 after · 5 n354 after   (PVX-N387; kept true by flow_t387) */
+function openDrawer(pid){ return pvxRun('openDrawer',openDrawer$base,this,arguments); }
+function openDrawer$base(pid){
 const p=PATIENTS.find(x=>x.id===pid); if(!p) return;
 activePatient=pid; triExpanded=false; recExpanded=false; _commOpen=false; _tlFreshOpen=true; fillDrawer(p);
 document.getElementById('scrim').classList.add('open');
 document.getElementById('drawer').classList.add('open');
 }
-function closeDrawer(){
+/* closeDrawer · its layers, innermost first: 1 #8 after · 2 #17 before   (PVX-N387; kept true by flow_t387) */
+function closeDrawer(){ return pvxRun('closeDrawer',closeDrawer$base,this,arguments); }
+function closeDrawer$base(){
 activePatient=null;
 document.getElementById('scrim').classList.remove('open');
 document.getElementById('drawer').classList.remove('open');
@@ -2859,7 +3029,9 @@ return { mount:mount, stop:stop };
 })();
 
 
-function setResusPref(p, pref){
+/* setResusPref · its layers, innermost first: 1 #23 after   (PVX-N387; kept true by flow_t387) */
+function setResusPref(p,pref){ return pvxRun('setResusPref',setResusPref$base,this,arguments); }
+function setResusPref$base(p, pref){
 if(!p || (pref!=='CPR'&& pref!=='DNR') || p.resusPref===pref) return;
 const at=new Date();
 try{ if(p.publicToken&&p.resusPref) (_fxStaffResus[p.publicToken]=_fxStaffResus[p.publicToken]||{})[fxResusKey(p.resusPref,p.resusRecordedAt)]=1; }catch(e){}   /* the state being replaced */
@@ -3053,7 +3225,9 @@ return`<div class="tri-card tri-${st}${triExpanded?' open':''}" id="triCard">
 }
  
 let triEditPatient=null;
-function openTriageEdit(p){
+/* openTriageEdit · its layers, innermost first: 1 #16 after · 2 n193 after · 3 n351 wrap   (PVX-N387; kept true by flow_t387) */
+function openTriageEdit(p){ return pvxRun('openTriageEdit',openTriageEdit$base,this,arguments); }
+function openTriageEdit$base(p){
 triEditPatient=p;
 const t=getTriage(p), v=t.vitals||{}, a=t.assess||{};
 document.getElementById('triEditSub').textContent=`${p.name} ${p.last} · ${p.species} · ${p.hid}`;
@@ -3111,7 +3285,9 @@ scheduleRender(function(){ if(activePatient===p.id) fillDrawer(p); });
 notify('Triage updated',`${bcEsc(p.name)} · ${bcEsc(p.hid)}`, {icon:'info', color:'var(--accent)'});
 try{ if(typeof window.fvAfterTriage==='function') window.fvAfterTriage(p); }catch(e){ console.warn('[triage → sheet, Rounds]',e); }   /* n250 */
 }
-function fillDrawer(p){
+/* fillDrawer · its layers, innermost first: 1 #3 wrap · 2 #9 after · 3 #10 after · 4 #19 after · 5 #24 after · 6 n253-admit after · 7 n254-yakuri after · 8 n360 wrap   (PVX-N387; kept true by flow_t387) */
+function fillDrawer(p){ return pvxRun('fillDrawer',fillDrawer$base,this,arguments); }
+function fillDrawer$base(p){
 const _dePc=(typeof PRIO_CLR!=='undefined')?(PRIO_CLR[p.prio]||PRIO_CLR[3]):null;
 const de=document.getElementById('dEmoji');de.className='pt-emoji patient-medallion patient-medallion--compact priority-p'+p.prio+' '+spCls(p);
 if(_dePc){ de.style.setProperty('--gc',_dePc.c); de.style.setProperty('--gcrgb',_dePc.rgb); }
@@ -3267,7 +3443,9 @@ try{ renderDisposition(p); }catch(e){}
 
  
 let intakePatient=null, intakeDraft=null;
-function openIntake(p){
+/* openIntake · its layers, innermost first: 1 n351 wrap   (PVX-N387; kept true by flow_t387) */
+function openIntake(p){ return pvxRun('openIntake',openIntake$base,this,arguments); }
+function openIntake$base(p){
 intakePatient=p;
 intakeDraft=JSON.parse(JSON.stringify(getIntake(p)));
 document.getElementById('intakePt').textContent=`${p.name} ${p.last} · ${p.species} · ${p.hid}`;
@@ -3526,7 +3704,9 @@ document.addEventListener('touchstart',e=>{ if(currentView==='client'&& e.target
 document.addEventListener('touchend',e=>{ if(x0===null) return; const dx=e.changedTouches[0].clientX-x0; x0=null; if(Math.abs(dx)>60) clientPage(dx<0?1:-1); },{passive:true});
 })();
 
-function switchView(v){
+/* switchView · its layers, innermost first: 1 #18 after · 2 n363 wrap   (PVX-N387; kept true by flow_t387) */
+function switchView(v){ return pvxRun('switchView',switchView$base,this,arguments); }
+function switchView$base(v){
 
 
 if(typeof currentApp!=='undefined'&& currentApp!=='flow'){ switchAppShell('flow'); usxHideAllViews(); try{ rdHideAllViews(); }catch(e){} }
@@ -3561,7 +3741,9 @@ for(var i=0;i<cbs.length;i++){ try{ cbs[i](); }catch(e){ console.error('post-ren
 }
 function flushRender(){ _runQueuedRender(); }
 var _renderQueued=false, _renderAfter=[];
-function renderAll(){
+/* renderAll · its layers, innermost first: 1 n197 after   (PVX-N387; kept true by flow_t387) */
+function renderAll(){ return pvxRun('renderAll',renderAll$base,this,arguments); }
+function renderAll$base(){
 try{ now.setTime(Date.now()); }catch(e){}
 renderKPIs();renderAttention();renderClientQueue();renderOps();
 renderFilterBar();renderTable();renderBoard();renderRooms();renderComplete();
@@ -3699,7 +3881,9 @@ function breedMeta(k){ return FELINE_BY_NAME[k]||FELINE_BY_ID[k]||CANINE_BY_NAME
 function felineBreedMeta(k){ return FELINE_BY_NAME[k]||FELINE_BY_ID[k]||null; }
 
 
-function breedFuzzyIndexed(INDEX,q){
+/* breedFuzzyIndexed · its layers, innermost first: 1 #57 wrap   (PVX-N387; kept true by flow_t387) */
+function breedFuzzyIndexed(INDEX,q){ return pvxRun('breedFuzzyIndexed',breedFuzzyIndexed$base,this,arguments); }
+function breedFuzzyIndexed$base(INDEX,q){
 const ql=_bnorm(q); if(!ql) return []; const rawL=q.toLowerCase(); const res=[];
 for(let i=0;i<INDEX.length;i++){ const it=INDEX[i]; let score=-1;
 if(it.nameNorm===ql) score=1000; else if(it.nameNorm.indexOf(ql)===0) score=900; else if(it.nameNorm.indexOf(ql)>=0) score=500;
@@ -3801,7 +3985,9 @@ apLocationDD=createDropdown({items:locs, selectedId:apLocation, placeholder:'Ass
 searchPlaceholder:'Search locations…', onSelect:id=>{apLocation=id;}});
 const lm=document.getElementById('apLocationMount'); lm.innerHTML=''; lm.appendChild(apLocationDD);
 }
-function apSetArrival(type){
+/* apSetArrival · its layers, innermost first: 1 #21 wrap   (PVX-N387; kept true by flow_t387) */
+function apSetArrival(type){ return pvxRun('apSetArrival',apSetArrival$base,this,arguments); }
+function apSetArrival$base(type){
 apArrivalType=type;
 document.querySelectorAll('#apArrival .ap-seg-btn').forEach(b=>b.classList.toggle('active', b.dataset.arrival===type));
 document.getElementById('apTransfer').style.display = type==='transfer'?'':'none';
@@ -3815,7 +4001,9 @@ apPrio=level;
 document.querySelectorAll('#apPrio .ap-prio-btn').forEach(b=>b.classList.toggle('active', +b.dataset.prio===level));
 }
  
-function fmtTitleCase(s){
+/* fmtTitleCase · its layers, innermost first: 1 #16 wrap   (PVX-N387; kept true by flow_t387) */
+function fmtTitleCase(s){ return pvxRun('fmtTitleCase',fmtTitleCase$base,this,arguments); }
+function fmtTitleCase$base(s){
 if(!s || !s.trim()) return s;
 return s.trim().replace(/\s+/g,' ').toLowerCase()
 .replace(/(^|[\s'’.-])([a-z])/g, (m,p,c)=>p+c.toUpperCase());
@@ -4166,7 +4354,9 @@ let apProblems=[], _rvCtrl=null, _rpBackspaceArmed=false, _rpLastRaw='';
 let apReviewIntakeId=null;
 function focusReasonInput(){ const i=document.getElementById('apReason'); if(i) try{ i.focus(); }catch(e){} }
 let _rpSel=-1;   /* PVX-N213: the selected token (while _rpBackspaceArmed) */
-function renderProblemChips(){
+/* renderProblemChips · its layers, innermost first: 1 #57 after   (PVX-N387; kept true by flow_t387) */
+function renderProblemChips(){ return pvxRun('renderProblemChips',renderProblemChips$base,this,arguments); }
+function renderProblemChips$base(){
 const wrap=document.getElementById('apProblemsChips'); if(!wrap) return;
 if(!_rpBackspaceArmed||_rpSel<0||_rpSel>=apProblems.length){ if(_rpBackspaceArmed&&apProblems.length) _rpSel=apProblems.length-1; else { _rpSel=-1; _rpBackspaceArmed=false; } }
 wrap.setAttribute('role','list'); wrap.setAttribute('aria-label','Problems');
@@ -4191,7 +4381,9 @@ function rpMove(i,d){ const j=i+d; if(i<0||j<0||j>=apProblems.length) return; co
   if(_rpBackspaceArmed) _rpSel=j; renderProblemChips(); const t=formatProblem(pr); rpSay(t+' moved '+(d<0?'earlier':'later')+', '+(j+1)+' of '+apProblems.length+(j===0?', now the main reason':''));
   if(!_rpBackspaceArmed){ const b=document.querySelector('#apProblemsChips .rvp-chip-t[data-i="'+j+'"]'); if(b) try{ b.focus(); }catch(e){} } }
 function rpSaySel(){ const pr=apProblems[_rpSel]; if(pr) rpSay(formatProblem(pr)+' selected, '+(_rpSel+1)+' of '+apProblems.length+'. Backspace removes it, Return edits it'+(apProblems.length>1?', '+((window.PvxKeys&&!PvxKeys.mac)?'Alt':'Option')+' and an arrow move it.':'.')); }
-function addProblem(item){
+/* addProblem · its layers, innermost first: 1 #55 wrap   (PVX-N387; kept true by flow_t387) */
+function addProblem(item){ return pvxRun('addProblem',addProblem$base,this,arguments); }
+function addProblem$base(item){
 const input=document.getElementById('apReason'); if(!input) return;
 
 const raw = item ? (_rpLastRaw || input.value.trim()) : input.value.trim();
@@ -4228,7 +4420,9 @@ if(_rpBackspaceArmed&&['Shift','Alt','Meta','Control','Tab'].indexOf(e.key)<0){ 
 });
 }
 
-function openAddPatient(){
+/* openAddPatient · its layers, innermost first: 1 #21 wrap · 2 n193 after · 3 n253-admit after   (PVX-N387; kept true by flow_t387) */
+function openAddPatient(){ return pvxRun('openAddPatient',openAddPatient$base,this,arguments); }
+function openAddPatient$base(){
 apArrivalType='walkin'; apPrio=2; apDoctorId='unassigned'; apLocation='Lobby';
 apReviewIntakeId=null;
 { const M=document.getElementById('apModal'); if(M) M.classList.remove('review-mode');
@@ -4261,7 +4455,9 @@ document.getElementById('apModal').classList.remove('open');
 }
 
 
-function commitPatient(fields){
+/* commitPatient · its layers, innermost first: 1 #9 wrap · 2 n371 before · 3 n375 after   (PVX-N387; kept true by flow_t387) */
+function commitPatient(fields){ return pvxRun('commitPatient',commitPatient$base,this,arguments); }
+function commitPatient$base(fields){
 fields=fxCleanPatient(Object.assign({},fields));   /* flow-round2-oct6: no control or invisible override characters */
 const p = patient(fields);
 PATIENTS.push(p);
@@ -4837,7 +5033,9 @@ return { attach:attach, search:search, data:CT_VET_HOSPITALS };
 
  
 let apRefHospObj=null, _apRefCtrl=null;
-function ensureHospitalAutocompletes(){
+/* ensureHospitalAutocompletes · its layers, innermost first: 1 n371 after   (PVX-N387; kept true by flow_t387) */
+function ensureHospitalAutocompletes(){ return pvxRun('ensureHospitalAutocompletes',ensureHospitalAutocompletes$base,this,arguments); }
+function ensureHospitalAutocompletes$base(){
 if(_apRefCtrl) return;
 const inp=document.getElementById('apRefHosp'), pnl=document.getElementById('apRefHospPanel');
 if(inp && pnl) _apRefCtrl=HospitalAutocomplete.attach(inp, pnl, {
@@ -4897,13 +5095,17 @@ const sl=parseFloat(getComputedStyle(document.body).paddingLeft)||0, sr=parseFlo
 m.style.left=Math.round(Math.max(gut+sl, Math.min(b.right-w, innerWidth-w-gut-sr)))+'px'; m.style.top=Math.round(b.bottom+8)+'px'; m.style.bottom='auto';
 }
 window.addEventListener('resize',function(){ if(document.getElementById('opsMenu').classList.contains('open')) opsMenuPlace(); });
-function opsMenuOpen(){
+/* opsMenuOpen · its layers, innermost first: 1 n203 after   (PVX-N387; kept true by flow_t387) */
+function opsMenuOpen(){ return pvxRun('opsMenuOpen',opsMenuOpen$base,this,arguments); }
+function opsMenuOpen$base(){
 opsMenuPlace();
 document.getElementById('opsScrim').classList.add('open');
 document.getElementById('opsMenu').classList.add('open');
 const fab=document.getElementById('fabAdd'); fab.classList.add('open'); fab.setAttribute('aria-expanded','true');
 }
-function opsMenuClose(){
+/* opsMenuClose · its layers, innermost first: 1 n203 wrap   (PVX-N387; kept true by flow_t387) */
+function opsMenuClose(){ return pvxRun('opsMenuClose',opsMenuClose$base,this,arguments); }
+function opsMenuClose$base(){
 document.getElementById('opsScrim').classList.remove('open');
 document.getElementById('opsMenu').classList.remove('open');
 const fab=document.getElementById('fabAdd'); fab.classList.remove('open'); fab.setAttribute('aria-expanded','false');
@@ -5015,7 +5217,9 @@ if(canManage){ const mb=document.getElementById("alertStripManage"); if(mb) mb.o
 try{ window.LunaAnnouncement?.onAlert(a); }catch(e){}
 }
 
-function openAlertModal(){
+/* openAlertModal · its layers, innermost first: 1 n351 wrap   (PVX-N387; kept true by flow_t387) */
+function openAlertModal(){ return pvxRun('openAlertModal',openAlertModal$base,this,arguments); }
+function openAlertModal$base(){
 alertModalMode = currentAlert ?"view":"new";
 alertDraftType = currentAlert ? currentAlert.type :"diversion";
 renderAlertModal();
@@ -5027,7 +5231,9 @@ const c=document.getElementById("alertConfirm"); if(c) c.remove();
 document.getElementById("alertScrim").classList.remove("open");
 document.getElementById("alertModal").classList.remove("open");
 }
-function renderAlertModal(){
+/* renderAlertModal · its layers, innermost first: 1 #53 wrap · 2 #59 after · 3 n370 after · 4 n372 after   (PVX-N387; kept true by flow_t387) */
+function renderAlertModal(){ return pvxRun('renderAlertModal',renderAlertModal$base,this,arguments); }
+function renderAlertModal$base(){
 const body=document.getElementById("alertBody"), foot=document.getElementById("alertFoot");
 foot.classList.toggle("drawer-confirm-actions", alertModalMode!=="view");
 if(alertModalMode==="view"&& currentAlert){
@@ -5238,7 +5444,9 @@ await DB.collection('messages').doc(p.publicToken).collection('items').add({ ten
 loadThread(p);
 }
 
-function opsAction(op){
+/* opsAction · its layers, innermost first: 1 #54 wrap   (PVX-N387; kept true by flow_t387) */
+function opsAction(op){ return pvxRun('opsAction',opsAction$base,this,arguments); }
+function opsAction$base(op){
 opsMenuClose();
 if(op==='new') setTimeout(openAddPatient,120);
 else if(op==='shift') setTimeout(openShiftSetup,120);
@@ -5527,9 +5735,15 @@ discharge:'<path d="M3 8v10"/><path d="M3 12h15a3 3 0 0 1 3 3v3"/><path d="M3 18
 euth:'<path d="M12 21s-7-4.35-7-10a7 7 0 0 1 14 0c0 5.65-7 10-7 10z"/>'
 };
 function dispFirstName(p){ return (p&&p.name)?String(p.name).split(' ')[0]:'Patient'; }
-function captureDispSnap(p){ return {status:p.status,completed:p.completed,active:p.active,completedAt:p.completedAt,dischargedAt:p.dischargedAt,admittedAt:p.admittedAt,euthanizedAt:p.euthanizedAt,totalMin:p.totalMin,totalTimeInHospital:p.totalTimeInHospital,room:p.room,roomSince:p.roomSince,tlLen:(p.timeline?p.timeline.length:0)}; }
-function restoreDispSnap(p,s){ p.status=s.status;p.completed=s.completed;p.active=s.active;p.completedAt=s.completedAt;p.dischargedAt=s.dischargedAt;p.admittedAt=s.admittedAt;p.euthanizedAt=s.euthanizedAt;p.totalMin=s.totalMin;p.totalTimeInHospital=s.totalTimeInHospital;p.room=s.room;p.roomSince=s.roomSince;if(p.timeline&&typeof s.tlLen==='number')p.timeline.length=s.tlLen; }
-function renderDisposition(p){
+/* captureDispSnap · its layers, innermost first: 1 #17 wrap   (PVX-N387; kept true by flow_t387) */
+function captureDispSnap(p){ return pvxRun('captureDispSnap',captureDispSnap$base,this,arguments); }
+function captureDispSnap$base(p){ return {status:p.status,completed:p.completed,active:p.active,completedAt:p.completedAt,dischargedAt:p.dischargedAt,admittedAt:p.admittedAt,euthanizedAt:p.euthanizedAt,totalMin:p.totalMin,totalTimeInHospital:p.totalTimeInHospital,room:p.room,roomSince:p.roomSince,tlLen:(p.timeline?p.timeline.length:0)}; }
+/* restoreDispSnap · its layers, innermost first: 1 #17 wrap   (PVX-N387; kept true by flow_t387) */
+function restoreDispSnap(p,s){ return pvxRun('restoreDispSnap',restoreDispSnap$base,this,arguments); }
+function restoreDispSnap$base(p,s){ p.status=s.status;p.completed=s.completed;p.active=s.active;p.completedAt=s.completedAt;p.dischargedAt=s.dischargedAt;p.admittedAt=s.admittedAt;p.euthanizedAt=s.euthanizedAt;p.totalMin=s.totalMin;p.totalTimeInHospital=s.totalTimeInHospital;p.room=s.room;p.roomSince=s.roomSince;if(p.timeline&&typeof s.tlLen==='number')p.timeline.length=s.tlLen; }
+/* renderDisposition · its layers, innermost first: 1 #17 after · 2 n253-admit wrap   (PVX-N387; kept true by flow_t387) */
+function renderDisposition(p){ return pvxRun('renderDisposition',renderDisposition$base,this,arguments); }
+function renderDisposition$base(p){
 const acts=document.getElementById('dispActions'), conf=document.getElementById('dispConfirm');
 if(!acts||!conf) return;
 if(conf){ conf.className='disp-confirm'; conf.innerHTML=''; }
@@ -5548,7 +5762,9 @@ return;
 }
 acts.style.display='';
 }
-function openDispConfirm(kind){
+/* openDispConfirm · its layers, innermost first: 1 #17 wrap · 2 n253-admit wrap   (PVX-N387; kept true by flow_t387) */
+function openDispConfirm(kind){ return pvxRun('openDispConfirm',openDispConfirm$base,this,arguments); }
+function openDispConfirm$base(kind){
 const p=PATIENTS.find(x=>x.id===activePatient);
 if(!p||_dispBusy||isCompleted(p)) return;
 const acts=document.getElementById('dispActions'), conf=document.getElementById('dispConfirm');
@@ -5565,12 +5781,16 @@ conf.innerHTML='<div class="confirmation '+(isAdmit?'from-admit':'from-discharge
 const surface=conf.querySelector('.confirmation'); if(surface) requestAnimationFrame(()=>surface.classList.add('open'));
 const goBtn=conf.querySelector('.cf-btn.go'); if(goBtn) goBtn.focus();
 }
-function closeDispConfirm(){
+/* closeDispConfirm · its layers, innermost first: 1 #17 after   (PVX-N387; kept true by flow_t387) */
+function closeDispConfirm(){ return pvxRun('closeDispConfirm',closeDispConfirm$base,this,arguments); }
+function closeDispConfirm$base(){
 const acts=document.getElementById('dispActions'), conf=document.getElementById('dispConfirm');
 if(acts) acts.querySelectorAll('.disposition-card').forEach(c=>c.classList.remove('compress'));
 if(conf){ conf.className='disp-confirm'; conf.innerHTML=''; }
 }
-function submitDisp(kind){
+/* submitDisp · its layers, innermost first: 1 n253-admit wrap   (PVX-N387; kept true by flow_t387) */
+function submitDisp(kind){ return pvxRun('submitDisp',submitDisp$base,this,arguments); }
+function submitDisp$base(kind){
 let p=PATIENTS.find(x=>x.id===activePatient);
 if(!p||_dispBusy) return;
 if(isCompleted(p)){ showDispConflict(p); return; }
@@ -5615,7 +5835,9 @@ if(acts){ acts.style.display='none'; acts.classList.remove('mutation-locked'); }
 if(conf){ conf.className='disp-confirm mounted';
 conf.innerHTML='<div class="disp-conflict" role="alert"><div class="cfl-t">Patient status changed</div><div class="cfl-s">This patient’s disposition was updated on another workstation.</div><button type="button" class="cf-btn go" data-cf="refresh">Refresh state</button></div>'; }
 }
-function showUndo(p, kind, snap){
+/* showUndo · its layers, innermost first: 1 n365 after   (PVX-N387; kept true by flow_t387) */
+function showUndo(p,kind,snap){ return pvxRun('showUndo',showUndo$base,this,arguments); }
+function showUndo$base(p, kind, snap){
 const t=document.getElementById('undoToast'); if(!t) return;
 clearTimeout(_dispUndoTimer);
 const nm=dispFirstName(p), verb=(kind==='admit'?'admitted':kind==='euthanasia'?'· euthanasia recorded':kind==='died'?'· death recorded':'discharged');
@@ -5675,7 +5897,9 @@ function pvxClearPrivateLocalState(){
     }
   }catch(e){console.warn('[privacy] local cleanup unavailable');}
 }
-function logout(){
+/* logout · its layers, innermost first: 1 n349 before   (PVX-N387; kept true by flow_t387) */
+function logout(){ return pvxRun('logout',logout$base,this,arguments); }
+function logout$base(){
 try{ ['unsubVisits','unsubPub','unsubShifts','unsubAlert','unsubMsgs','unsubPubLobby'].forEach(function(k){ if(Backend[k]){ try{ Backend[k](); }catch(e){} Backend[k]=null; } }); }catch(e){}
 try{ if(AUTH) AUTH.signOut(); }catch(e){}
 pvxClearPrivateLocalState();
@@ -5686,7 +5910,9 @@ try{ showLogin(); }catch(e){} toast('Signed out');
  
 const searchEl=document.getElementById('globalSearch');
 let searchHl=-1, searchFlat=[];
-function searchIndex(q){
+/* searchIndex · its layers, innermost first: 1 #54 wrap · 2 n347 wrap · 3 n348 wrap · 4 n349 wrap   (PVX-N387; kept true by flow_t387) */
+function searchIndex(q){ return pvxRun('searchIndex',searchIndex$base,this,arguments); }
+function searchIndex$base(q){
 q=q.trim().toLowerCase(); if(!q) return [];
 const res=[];
 PATIENTS.forEach(p=>{
@@ -5707,7 +5933,9 @@ act:()=>{closeSearch(); occ?openDrawer(occ.id):switchView('rooms');}}); } });
 return res;
 }
 function closeSearch(){const r=document.getElementById('searchResults');r.classList.remove('open');r.innerHTML='';searchHl=-1;searchFlat=[];}
-function renderSearch(q){
+/* renderSearch · its layers, innermost first: 1 #54 wrap · 2 n349 wrap   (PVX-N387; kept true by flow_t387) */
+function renderSearch(q){ return pvxRun('renderSearch',renderSearch$base,this,arguments); }
+function renderSearch$base(q){
 const box=document.getElementById('searchResults');
 if(!q.trim()){ closeSearch(); return; }
 const all=searchIndex(q);
@@ -5903,7 +6131,9 @@ const r=p.rounds; if(!r) return;
 r.audit=(r.audit||[]).concat([{at:rdIso(new Date()),by:rdActorName(),what:what}]).slice(-200);
 }
 
-function rdTouch(p,what,skipSnapshot){
+/* rdTouch · its layers, innermost first: 1 #23 after   (PVX-N387; kept true by flow_t387) */
+function rdTouch(p,what,skipSnapshot){ return pvxRun('rdTouch',rdTouch$base,this,arguments); }
+function rdTouch$base(p,what,skipSnapshot){
 if(p&&what) rdAudit(p,what);
 if(p&&p.rounds&&!skipSnapshot) rdSnapshotToday(p);
 window.__rdWaitSince=Date.now(); if(typeof rdSaveState==='function') rdSaveState('saving');   /* PVX-N148: "Saved" waits for the server (see pvx:persist) */
@@ -6146,7 +6376,9 @@ rdSnapshotToday(p);
 rdAudit(p,'Admission closed from Flow · '+type);
 }
 }
-function rdSetOutcome(p,type){
+/* rdSetOutcome · its layers, innermost first: 1 #25 wrap   (PVX-N387; kept true by flow_t387) */
+function rdSetOutcome(p,type){ return pvxRun('rdSetOutcome',rdSetOutcome$base,this,arguments); }
+function rdSetOutcome$base(p,type){
 showConfirm('Mark '+rdFullName(p)+' as '+type.toLowerCase()+'?','Mark '+type.toLowerCase(), ()=>{
 p.rounds.outcome={type:type,at:rdIso(new Date()),by:rdActorName()};
 p.timeline.push({label:type, at:new Date(), meta:'Rounds · '+rdActorName()});
