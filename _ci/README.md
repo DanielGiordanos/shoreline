@@ -45,39 +45,51 @@ async def s_t260(br):
 - Every section gets the browser and starts from nothing. Anything it leaves open is closed after it.
 - Wait for the condition you're testing with `until(pg, js)`, not a fixed time: GitHub's machines run at a different speed from the build machine.
 
-## After changing Flow (n380, n383–n387)
-**Where Flow is (n383, n384).** `index.html` has the markup, three small styles that paint before anything loads, and about twenty small scripts that run before the app. The rest is five files in `assets/flow/`:
+## After changing Flow (n380, n383–n389)
+**Where Flow is.** `index.html` has the markup, three small styles that paint before anything loads, and about twenty small scripts that run before the app. The page loads five files from `assets/flow/`:
 
-| File | What it is |
-| --- | --- |
-| `app.css` | The styles that sat in `<head>`: the base sheet and the blocks after it, each under a heading with the id it had. |
-| `layers.css` | The styles that sat in `<body>` (`pvx-n144-css` … ). Linked in `<body>`, so it comes after the styles the shared assets add to `<head>`. |
-| `app.js` | Flow's main script. |
-| `layers.js` | The scripts that followed it, in the order they ran, each under a heading with the id it had (`pvx-n144-js` …). |
-| `layers2.js` | The ones that run after the Yakuri library: n254 on. |
+| File | What it is | Edit it? |
+| --- | --- | --- |
+| `app.css` | The styles that sat in `<head>`: the base sheet and the blocks after it, each under a heading with the id it had. | yes, here |
+| `layers.css` | The styles that sat in `<body>` (`pvx-n144-css` … ). Linked in `<body>`, so it comes after the styles the shared assets add to `<head>`. | yes, here |
+| `app.js` | Flow's main script. | **no: built** |
+| `layers.js` | The blocks that follow it, in the order they run. | **no: built** |
+| `layers2.js` | The blocks that run after the Yakuri library: n254 on. | **no: built** |
 
-- In the two script layer files each block runs inside its own `try{ … }catch`, because each was its own `<script>` and one that threw never stopped the next. A new block goes at the end of `layers2.js` in the same form.
+**The three script files are built from pieces (n389).** The code is in `_source/flow/`, one small file per piece, named `feature.piece.js`:
+
+- `drawer.fill-drawer.js`, `care-team.care-team.js`, `add-patient.breeds.js` … are pieces of the main script;
+- `disposition.endings.js`, `flags.patient-flags.js`, `hig.n370-sheets-and-windows.js` … are blocks (`hig.` is a pass over the whole app for one Human Interface Guidelines page);
+- `order.json` lists the pieces of each built file **in the order they run**;
+- `INDEX.md` (written by the build) lists every piece by feature, and every function that has layers with the pieces that add them. Start there.
+
+To change Flow's code: edit the piece. To add a block: add `feature.name.js` to `_source/flow/` and one line at the end of `layers2.js` in `order.json` (`{"file": "feature.name.js", "title": "pvx-n400-js"}`); the build gives it its heading and its own `try{ … }catch`, so write the block's code only. Then run the seal, which builds first.
+
+- **Never edit `assets/flow/app.js`, `layers.js` or `layers2.js`.** Each carries the SHA-256 of its body; the seal refuses a built file that was changed by hand and says so. `flow_t389` fails on it too.
+- **Don't move a piece in `order.json`** unless the order is the change: a layer added later is outermost, a listener added later runs later.
 - A new style block goes at the end of `layers.css` under a heading like the others. Later wins, as it did in the page.
 - An address in a style is written from the site's root (`url("/assets/img/…")`).
+- `_source/` is not served by the site (GitHub Pages skips folders that start with `_`, as it does `_ci/`).
 
 **After any change, run the seal:**
 ```
-python3 _ci/seal_csp.py .            # after a change to an inline script in index.html, or to a file in assets/flow/
+python3 _ci/seal_csp.py .            # after a change to a piece in _source/flow/, to an inline script in index.html, or to a style file in assets/flow/
 python3 _ci/seal_csp.py . --check    # says whether the page is sealed
 ```
 - **The policy (n380).** Flow's `index.html` carries a content security policy that lists every inline script by its SHA-256. An inline script that isn't in the list doesn't run. `flow_t380` fails first if the seal was missed, and names this tool.
 - **The `?v=` (n383, n384).** The page asks for each of the five files as `file?v=<the start of its SHA-256>`, in its tag and in its preload. The seal writes those, so a changed file is a new address. `flow_t383` and `flow_t384` fail if one is stale.
+- **The build (n389).** The seal first runs `_ci/build_flow.py`: it joins the pieces into the three script files and rewrites `INDEX.md`. `python3 _ci/build_flow.py . --check` alone says whether the built files are what the pieces give.
 - Markup needs no seal.
 
-**Three things a block no longer does for itself (n385, n386, n387).** They are declared at the top of `app.js`.
+**Three things a block no longer does for itself (n385, n386, n387).** They are declared in `core.helpers.js`, `core.watch.js` and `core.steps.js`, the first pieces of `app.js`.
 
 | Instead of | A block writes | Why |
 | --- | --- | --- |
-| its own `esc`, `typing`, `pad`, `byId` … | `pvxEsc(text)`, `pvxEscQ(text)`, `pvxTyping()`, `pvxPad2(n)`, `pvxPatientById(id)` and the other helpers in the n385 section | One copy of each. A helper goes in that section only if it uses nothing but page-wide names. |
+| its own `esc`, `typing`, `pad`, `byId` … (or the old `bcEsc`, `ctEsc`, `rdEsc`, which still work) | `pvxEsc(text)`, `pvxEscQ(text)`, `pvxTyping()`, `pvxPad2(n)`, `pvxPatientById(id)` and the other helpers in the n385 section | One copy of each. A helper goes in that section only if it uses nothing but page-wide names. |
 | `new MutationObserver(fn).observe(document.body, options)` | `pvxWatch(fn, options, document.body)` (or `document.documentElement`) | One observer per target for every block. Each caller still gets only the records its options ask for, in the order the callers registered. A watcher on one element keeps its own observer. |
 | `var old=fillDrawer; fillDrawer=function(p){ var r=old.apply(this,arguments); …; return r; }` | `pvxAfter('fillDrawer', function(p){ … }, 'n400')` | The function stays one function with a list of layers. `pvxBefore` runs before it; `pvxWrap(name, function(inner){ return function(p){ … }; }, who)` is for a layer that decides whether the function runs or changes what goes in or comes out. |
 
-- The order of layers is the order the blocks run: the last one added is outermost. `pvxSteps.of('fillDrawer')` lists them in the console, and the same list is written above the function in `app.js`. `flow_t387` fails if the two differ, so **after adding a layer, add it to that comment**.
+- The order of layers is the order the blocks run: the last one added is outermost. `pvxSteps.of('fillDrawer')` lists them in the console, and the same list is written above the function in its piece (`INDEX.md` says which piece). `flow_t387` fails if the two differ, so **after adding a layer, add it to that comment**.
 - The function's own code is `NAME$base`. A function nobody has added to yet has no `NAME$base`; the three calls then wrap it the old way, so they work for any page-wide function.
 - Never put a function in place of one of these by assignment (`fillDrawer=function…`): the layers added after it would run inside it, in the wrong order.
 - An inline `on…=` handler can't be sealed and won't run: add a listener in a script instead.

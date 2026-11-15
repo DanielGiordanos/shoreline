@@ -7,8 +7,13 @@ suite (flow_t380) fails first and names this tool.
 Since n383 Flow's code is in assets/flow/ (app.js, layers.js, layers2.js), and since n384 its styles too (app.css, layers.css).
 The page asks for each as file?v=<the first ten characters of its SHA-256>, in its tag and in its preload, so a changed file is
 a new address: no browser or saved copy serves the old one under it. This tool writes those too (flow_t383 and flow_t384 fail
-if one is stale)."""
+if one is stale).
+Since n389 those three script files are BUILT from the pieces in _source/flow/ (see build_flow.py). The seal builds them
+first, so the rule is still one command after any change: edit the piece, then seal. A built file that was edited by hand
+is refused, not overwritten."""
 import sys, os, re, hashlib, base64
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import build_flow
 
 MARK = '<meta http-equiv="Content-Security-Policy" id="pvxCsp" content="'
 # Google Maps' loader (drive times); apis.google.com (Firebase Auth starts its helper frame from there in Safari); reCAPTCHA (should Firebase sign-in ask for it)
@@ -66,8 +71,11 @@ def seal(html):
 
 if __name__ == '__main__':
     P = os.path.join(sys.argv[1], 'index.html'); T = open(P, encoding='utf-8').read()
+    src = build_flow.has_source(sys.argv[1])
     if '--check' in sys.argv:
-        ok = current(T) == policy(T) and stamp(T, sys.argv[1]) == T
-        print('sealed' if ok else 'NOT SEALED: run python3 seal_csp.py ' + sys.argv[1]); sys.exit(0 if ok else 1)
+        stale = build_flow.build(sys.argv[1], write=False) if src else []
+        ok = current(T) == policy(T) and stamp(T, sys.argv[1]) == T and not stale
+        print('sealed' if ok else ('NOT BUILT (' + ', '.join(stale) + '): run python3 seal_csp.py ' if stale else 'NOT SEALED: run python3 seal_csp.py ') + sys.argv[1]); sys.exit(0 if ok else 1)
+    changed = build_flow.build(sys.argv[1]) if src else []
     N = seal(stamp(T, sys.argv[1])); open(P, 'w', encoding='utf-8').write(N)
-    print('sealed', len(inline_hashes(N)), 'inline scripts,', len(current(N)), 'characters of policy,', len(set(m.group(2) for m in FLOWFILE.finditer(N))), 'files stamped')
+    print(('built ' + (', '.join(changed) if changed else 'nothing new') + ' · ' if src else '') + 'sealed', len(inline_hashes(N)), 'inline scripts,', len(current(N)), 'characters of policy,', len(set(m.group(2) for m in FLOWFILE.finditer(N))), 'files stamped')
