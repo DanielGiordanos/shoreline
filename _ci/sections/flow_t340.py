@@ -2,7 +2,7 @@
 Messages say what happened and how to fix it, in one pattern; plain words for the Directory list; one pattern for optional fields;
 sentence case in the source. Chromium and WebKit."""
 import os, re
-from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD
+from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD, flow_code
 
 FU = '{"uid":"u1","email":"resident.a@vca.com","displayName":"Resident A"}'
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]
@@ -32,7 +32,7 @@ async def ctx(br):
 
 @section(id='t340', title='n340 · Writing: messages say how to fix it in one pattern, plain words, one pattern for optional fields, sentence case in the source', apps=['flow'], topics=['writing'], engines=('chromium', 'webkit'))
 async def s_t340(br):
-    s = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    s = flow_code()   # n383: Flow's code is in assets/flow/
     left = [x for x in OLD if x in s]
     ok('Writing · none of the old messages and labels are left: no “please”, “failed to”, “invalid”-style fragments or system words (snapshot, roster, inferred) in Flow’s staff messages', not left, left)
     msgs = re.findall(r"toast\('(Couldn’t[^']*)'\)", s)

@@ -31,7 +31,7 @@ async def s_t379(br):
        and all(h in open(os.path.join(VD, 'README.md'), encoding='utf-8').read() for h in V.values()) and 'MIT license' in open(os.path.join(VD, 'qrcode-generator-1.4.4', 'qrcode.js'), encoding='utf-8').read()[:800], None)
     sw = open(os.path.join(BUILD, 'sw.js'), encoding='utf-8').read()
     ok('The service worker keeps all four for an offline start (cache first; a new version is a new folder) under a new version name, and no longer fetches the outside copies when it installs',
-       all(("'/assets/vendor/" + f + "'") in sw for f in V) and "SW_VERSION = 'flow-sw-3'" in sw and 'const CDN_ASSETS = [];' in sw and "url.pathname.indexOf('/assets/vendor/') === 0) { event.respondWith(cacheFirst(event))" in sw, None)
+       all(("'/assets/vendor/" + f + "'") in sw for f in V) and re.search(r"SW_VERSION = 'flow-sw-(\d+)'", sw) and int(re.search(r"SW_VERSION = 'flow-sw-(\d+)'", sw).group(1)) >= 3 and 'const CDN_ASSETS = [];' in sw and "url.pathname.indexOf('/assets/vendor/') === 0) { event.respondWith(cacheFirst(event))" in sw, None)
 
     # the real libraries, no fake: Flow reaches its sign-in screen on them (Google's servers are out of reach here, as on a bad day)
     c = await br.new_context(viewport={'width': 1280, 'height': 800}, timezone_id='America/New_York', locale='en-US', color_scheme='dark')

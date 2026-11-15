@@ -92,7 +92,7 @@ async def s_n184(br):
     ok('n184: regular height at the same width keeps two rows', not hh[900]['one'], hh)
     # safe areas: simulate a notched phone in landscape (insets 47 left, 34 bottom)
     ctx, pg, errs = await flow_page((844, 390))
-    await pg.evaluate("""(()=>{const t=document.querySelector('#pvx-n184-css').textContent.replace(/env\\(safe-area-inset-left,0px\\)/g,'47px').replace(/env\\(safe-area-inset-bottom,0px\\)/g,'21px').replace(/env\\(safe-area-inset-right,0px\\)/g,'0px');const s=document.createElement('style');s.textContent=t;document.body.appendChild(s)})()"""); await pg.wait_for_timeout(300)
+    await pg.evaluate("""((css)=>{const t=css.replace(/env\\(safe-area-inset-left,0px\\)/g,'47px').replace(/env\\(safe-area-inset-bottom,0px\\)/g,'21px').replace(/env\\(safe-area-inset-right,0px\\)/g,'0px');const s=document.createElement('style');s.textContent=t;document.body.appendChild(s)})""", flow_style('pvx-n184-css')); await pg.wait_for_timeout(300)   # n384: the block is in assets/flow/layers.css
     sa = await pg.evaluate("(()=>{const R=s=>document.querySelector(s).getBoundingClientRect();return {nav:[R('.topnav').left,R('.topnav').width],brand:R('.topnav .brandwrap').left,sub:R('#subnavFlow').left,seg:R('#switcher').left,stage:R('#stage').left,hs:document.documentElement.scrollWidth>innerWidth+1}})()")
     ok('n184: safe areas — the bars reach the screen edge, their content and the board start inside the inset', sa['nav'][0] == 0 and sa['nav'][1] == 844 and sa['sub'] == 0 and sa['brand'] >= 47 and sa['seg'] >= 47 and sa['stage'] >= 47 and not sa['hs'], sa)
     await ctx.close()
@@ -250,7 +250,9 @@ async def s_n189(br):
     await pg.emulate_media(contrast='more'); await pg.wait_for_timeout(200)
     ok('n189: Increase Contrast shows every layer at full strength', await pg.evaluate("+getComputedStyle(document.querySelector('#opsMenu .ops-item[data-op=new] svg circle')).opacity") == 1)
     sh = await pg.evaluate("(()=>{const s=document.documentElement.outerHTML;return {old:(s.match(/points=\"20 6 9 17 4 12\"|M20 6L9 17l-5-5|M20 6 9 17l-5-5|M15 6l-6 6 6 6/g)||[]).length,check:PVX_GI.check.indexOf('M5 12.5l4.5 4.5L19 7\"')>0}})()")
-    ok('n189: checkmark and back chevron are Anesia’s exact shapes', sh['old'] == 0 and sh['check'], sh)
+    _fc = flow_code()   # n383: Flow's code is in assets/flow/, so the page's own HTML no longer holds it
+    sh['oldInCode'] = sum(_fc.count(w) for w in ('points="20 6 9 17 4 12"', 'M20 6L9 17l-5-5', 'M20 6 9 17l-5-5', 'M15 6l-6 6 6 6'))
+    ok('n189: checkmark and back chevron are Anesia’s exact shapes', sh['old'] == 0 and sh['oldInCode'] == 0 and sh['check'], sh)
     ok('n189: with a mouse the selected app stays outline (Mac toolbar)', await pg.evaluate("getComputedStyle(document.querySelector('.topnav .nav-item.active svg :is(path,rect)')).fill") == 'none')
     ok('no new page errors (n189 Mac)', not newerr(errs), errs)
     await ctx.close()
@@ -804,7 +806,7 @@ async def s_n198(br):
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(150)
     k3 = await pg.evaluate("[!!document.querySelector('.rd-menu'), document.activeElement.id]")
     ok('n198: arrow keys, Home and End move through the menu, Return picks, Esc closes and returns focus', k1 == 'Undo last extension' and k2 == ['d1', False] and k3 == [False, 'n198o'], [k1, k2, k3])
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    src = flow_code()   # n383: Flow's code is in assets/flow/
     ok('n198: wording — the discharge title is a question with a one-line message; the Rounds button names the action', "on the treatment sheet?','Open sheet'" in src and "as '+type.toLowerCase()+'?','Mark '+type.toLowerCase()," in src)   # n209: sentence case
     ok('no new page errors (n198 Flow wide)', not newerr(errs), errs)
     await ctx.close()
@@ -856,7 +858,7 @@ async def s_n199(br):
     pr = await pg.evaluate("(()=>{const c=getComputedStyle(document.querySelectorAll('#switcher .seg')[1]);return [c.filter,c.scale]})()")
     await pg.mouse.up(); await pg.wait_for_timeout(300)
     ok('n199: buttons have a press state (darker fill and a small scale while pressed)', 'brightness(0.88)' in pr[0] and pr[1] == '0.97', pr)
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    src = flow_code()
     old = [w for w in ('>Add Flag<', '>Clear All<', '>Move Patient<', '>Request Records<', '>Full Screen<', '>Start Rounds<', "'Discharge Ready'", "'All Patients'", '>Not Reviewed', '>+24 Hours<', "'Set Unavailable'", '>Edit Order<', '>IM Controls<') if w in src]
     ok('n199: Flow’s buttons use sentence case (Add flag, Clear all, Move patient, Request records, Start rounds …)', not old, old)
     ok('no new page errors (n199 Flow Mac)', not newerr(errs), errs)
@@ -1050,7 +1052,7 @@ async def s_n203(br):
     await shot(pg, 'n203-rounds-menu')
     ok('n203: Rounds menus show the current choice with a checkmark (the column is kept on every row)', r1['radio'] and r1['on'] == 'visible' and r1['off'] == 'hidden' and r1['align'] and r1['checked'] == 'true', r1)
     await pg.keyboard.press('Escape')
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read() + open(os.path.join(BUILD, 'rounds', 'app.js'), encoding='utf-8').read()   # n305
+    src = flow_code() + open(os.path.join(BUILD, 'rounds', 'app.js'), encoding='utf-8').read()   # n305, n383
     ok('n203: labels — “Set total hours…” (n206 renamed “Change authorized hours…”), no “Hand off now →” arrow (n205 moved Hand off out of the list)', "label:'Set total hours…'" in src and 'Hand off now →' not in src)
     ok('no new page errors (n203)', not newerr(errs), errs)
     await ctx.close()
@@ -1135,7 +1137,7 @@ async def s_n206(br):
     h2 = await pg.evaluate("document.querySelector('.rd-row.open [data-act=outcome-menu]').getAttribute('aria-expanded')")
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(200)
     ok('n206: End admission… reports expanded while its menu is open', h2 == 'true', h2)
-    src = await pg.content() + open(os.path.join(BUILD, 'rounds', 'app.js'), encoding='utf-8').read()   # n305: Rounds' code is its own file
+    src = await pg.content() + flow_code() + open(os.path.join(BUILD, 'rounds', 'app.js'), encoding='utf-8').read()   # n305: Rounds' code is its own file; n383: so is Flow's
     ok('n206: the dead Rounds menus are gone (auth-extend, payer-menu, auth-more)', "case'auth-extend'" not in src and "case'payer-menu'" not in src and "case'auth-more'" not in src)
     await to_flow(pg)   # n305: Flow's own page
     await pg.evaluate("""(()=>{const now=Date.now();PATIENTS.push(patient({name:'Mvx',last:'Test',owner:'Synthetic',status:'Exam',room:'Room 1',arrival:new Date(now-20*60000),prio:3,doctor:'unassigned',species:'Canine',timeline:[]}));renderAll();})()"""); await pg.wait_for_timeout(500)
@@ -1278,7 +1280,7 @@ async def s_n208(br):
     ok('no new page errors (n208 iPhone)', not errs, errs)
     await ctx.close()
     ctx, pg, errs = await flow_page((1440, 900))
-    src = await pg.content()
+    src = await pg.content() + flow_code()   # n383: Flow's code is in assets/flow/
     f1 = await pg.evaluate("document.querySelectorAll('.subnav-title').length")
     ok('n208: no app-name titles in the sub-navs (Patient Flow, Pravix Rounds, Pravix Ultrasound)', f1 == 0 and '>Pravix Rounds<' not in src and '>Patient Flow<' not in src, f1)
     ok('n208: the signed-form viewer closes with the ✕ symbol named “Close”; Care team has one Close', 'class="es-cancel es-x" data-fvd="close" aria-label="Close"' in src and 'onclick="closeCareTeam()">Close</button>' not in src)
@@ -1319,7 +1321,7 @@ async def s_n209(br):
     f5 = await pg.evaluate("[document.activeElement.id, document.getElementById('confirmBox').getAttribute('aria-describedby')]")
     ok('n209: a non-destructive alert keeps the action as the default and has no description when there is no message', f5 == ['confirmOk', None], f5)
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
-    src = await pg.content()
+    src = await pg.content() + flow_code()   # n383: Flow's code is in assets/flow/
     ok('n209: confirmation buttons in sentence case (Discharge patient, Admit patient, Mark euthanized, Mark discharged)', "Discharged:'Discharge patient',Admitted:'Admit patient',Euthanized:'Mark euthanized'" in src and "'Mark '+type.toLowerCase()" in src and 'Discharge Patient' not in src)
     await to_rounds(pg); await pg.evaluate("rdSeedDemo()"); await pg.wait_for_timeout(900)
     await pg.evaluate("document.querySelector('.rd-row [data-act=cur-menu]').click();0"); await pg.wait_for_timeout(300)

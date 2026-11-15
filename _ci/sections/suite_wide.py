@@ -147,7 +147,7 @@ async def s_n216(br):
     await ctx.close()
     names = {}
     for rel in ['scheduling/index.html', 'or/index.html', 'treatment/index.html', 'index.html']:
-        t = open(os.path.join(BUILD, rel), encoding='utf-8').read(); names[rel] = (t.count('Kristen Wenger'), t.count('Kristi Wenger'))
+        t = flow_code() if rel == 'index.html' else open(os.path.join(BUILD, rel), encoding='utf-8').read(); names[rel] = (t.count('Kristen Wenger'), t.count('Kristi Wenger'))
     ok('n216: Kristi Wenger’s name is right in Scheduling, OR, Treatment and Flow (no “Kristen”)', all(a == 0 and b >= 1 for a, b in names.values()), names)
 
 

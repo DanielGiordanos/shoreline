@@ -2,7 +2,7 @@
 Dark Mode: follows the person's appearance live; with Increase Contrast, small text reaches 7 : 1 in dark; light text reaches 4.5 : 1.
 Icons: one 24-unit grid; real symbols, not a typed "!"; symbols at 3 : 1 or more; the Client Display keeps its colours. Chromium and WebKit."""
 import os, re
-from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD
+from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD, flow_code
 
 FU = '{"uid":"u1","email":"resident.a@vca.com","displayName":"Resident A"}'
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]
@@ -70,7 +70,7 @@ async def ctx(br, dark=True, **kw):
 @section(id='t337', title='n337 · Dark Mode and Icons: Increase Contrast reaches 7 : 1 in dark; one 24-unit symbol grid; symbols at 3 : 1', apps=['flow'], topics=['color', 'icons', 'accessibility'], engines=('chromium', 'webkit'))
 async def s_t337(br):
     # ---- the source: Flow's own symbols on one grid
-    s = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    s = flow_code()   # n383: Flow's code is in assets/flow/
     vb = {}
     for m in re.finditer(r'viewBox=\\?"0 0 (\d+) \1\\?"', s): vb[m.group(1)] = vb.get(m.group(1), 0) + 1
     ok('Icons · every square symbol Flow draws is on the 24-unit grid (badge marks were on 16, the flag glyphs on 16, Add flag’s + and − on 22, the confirm check on 18); the shared top bar’s sign-out chevron is the one 20, the check-in QR code is drawn on 100', set(vb) <= {'24', '20', '100'} and vb.get('100', 0) <= 1 and vb.get('20', 0) == 1 and vb.get('24', 0) >= 160, vb)

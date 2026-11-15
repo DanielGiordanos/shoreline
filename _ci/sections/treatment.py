@@ -975,7 +975,7 @@ async def s_n235(br):
     ok('n235: no page errors on the sign-in card', not errs, errs[:2])
     await ctx.close()
     # 7. Flow's form wording
-    fl = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    fl = flow_code()   # n383: Flow's code is in assets/flow/
     ok('n235: Flow’s sign-in says “Sign in to Pravix”, “Sign in”, “Signing in” and “Signed in” (it said “Welcome back”, “Sign In”, “Signing In”, “Signed In”)', "'Sign in to Pravix'" in fl and '>Sign in</button>' in fl and 'Sign In' not in fl and 'Signing In' not in fl and 'Signed In' not in fl and 'Welcome back' not in fl)
     # 3. opens offline on every device (not only the downtime computer)
     ctx, pg, errs = await ts235(after='window.__pvxSwTest=1;', sw=True, wait=1500)

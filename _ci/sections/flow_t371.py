@@ -3,7 +3,7 @@ Referring hospital lists every hospital, recent ones first, with addresses that 
 often come from; Breed and Referring hospital have a pull-down button on a Mac (not on touch), out of the Tab order. Typed
 values are kept as typed and never added to a list. Flow has no colour wells."""
 import os
-from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD
+from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD, flow_code
 
 FU = '{"uid":"u1","email":"daniel.giordano@pravix.app","displayName":"Daniel Giordano"}'
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]
@@ -38,7 +38,7 @@ CBX = """(id)=>{ const i=document.getElementById(id), b=i.parentNode.querySelect
 @section(id='t371', title='n371 · Color wells and Combo boxes: the whole hospital list, recent first; towns families come from; a pull-down button on a Mac',
          apps=['flow'], topics=['combo-boxes', 'text-fields'], engines=('chromium', 'webkit'))
 async def s_t371(br):
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    src = flow_code()   # n383: Flow's code is in assets/flow/
     ok('Color wells · Flow has no colour well or colour picker to check (its colours carry meaning and aren’t chosen)', 'type="color"' not in src and "type='color'" not in src, 'colour input found')
 
     c, p, e = await ctx(br)

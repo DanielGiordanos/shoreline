@@ -5,7 +5,7 @@ and Send email, light or dark with the person, an action sheet on iPhone, Esc / 
 happened is then said on the sign-in card, whose Sign in button comes back. The activation logic is unchanged (it still answers
 false, which signs out). Chromium and WebKit."""
 import os, json
-from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD
+from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD, flow_code
 
 FU = '{"uid":"u1","email":"resident.a@vca.com","displayName":"Resident A"}'
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]
@@ -69,7 +69,7 @@ async def after(p, ms=450):
 @section(id='t369', title='n369 · Alerts: the sign-in’s own alerts in place of the browser’s pop-ups, in Flow, Rounds and Ultrasound',
          apps=['flow', 'rounds', 'ultrasound'], topics=['alerts', 'sign-in'], engines=('chromium', 'webkit'))
 async def s_t369(br):
-    src = {f: open(os.path.join(BUILD, f), encoding='utf-8').read() for f in ('index.html', 'rounds/app.js', 'ultrasound/app.js')}
+    src = {f: (flow_code() if f == 'index.html' else open(os.path.join(BUILD, f), encoding='utf-8').read()) for f in ('index.html', 'rounds/app.js', 'ultrasound/app.js')}   # n383: Flow's code is in assets/flow/
     ok('No browser pop-ups are left: none of Flow’s page, Rounds’ or Ultrasound’s script calls window.confirm() or window.alert(), and each has the sign-in alert',
        all('window.confirm(' not in t and 'window.alert(' not in t and 'function pvxAuthAlert(' in t for t in src.values()),
        {f: [t.count('window.confirm('), t.count('window.alert('), t.count('function pvxAuthAlert(')] for f, t in src.items()})

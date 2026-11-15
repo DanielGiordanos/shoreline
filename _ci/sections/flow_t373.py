@@ -2,7 +2,7 @@
 On the way's minutes ("How many minutes away did they say?") is a stepper field: spoken with its unit, "min" shown, ↑ ↓ by 1,
 Shift (and Page Up / Page Down) by 10, Home and End to 1 and 240, no tiny browser arrows, and the scroll wheel never changes it."""
 import os, re
-from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD
+from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD, flow_code
 
 FU = '{"uid":"u1","email":"daniel.giordano@pravix.app","displayName":"Daniel Giordano"}'
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]
@@ -38,7 +38,7 @@ ST = """(()=>{ const i=document.getElementById('otwMin'), r=i.getBoundingClientR
 @section(id='t373', title='n373 · Sliders and Steppers: Flow has no sliders; On the way’s minutes is a stepper field (spoken with its unit, ↑ ↓ by 1, Shift by 10, no browser arrows)',
          apps=['flow'], topics=['steppers', 'sliders', 'accessibility'], engines=('chromium', 'webkit'))
 async def s_t373(br):
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    src = flow_code()   # n383: Flow's code is in assets/flow/
     ok('Sliders · Flow has no slider (no range input, no role="slider"), so nothing to adjust; doses and vitals are always typed (Brand §9.2)',
        not re.search(r'type=["\']range|role=["\']slider', src), 'found')
     ok('…and no browser number field is left in Flow (their arrows are tiny and a scroll wheel can change them)', not re.search(r'type=["\']number', src), 'found')
