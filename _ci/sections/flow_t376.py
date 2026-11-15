@@ -4,7 +4,7 @@ retry works; the treatment-sheet failure carries its link; a note left on screen
 show over the Client Display in full screen or on the lobby TV; the check-in card has no app name. Snippets: Talk to Flow's
 confirmation says what it will do. Live Activities: the critical banner has one action and opens its patient."""
 import os
-from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD
+from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD, flow_code
 
 FU = '{"uid":"u1","email":"daniel.giordano@pravix.app","displayName":"Daniel Giordano"}'
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]
@@ -42,7 +42,7 @@ async def typed(p, q):
 @section(id='t376', title='n376 · Notifications, Live Activities, Snippets: a family message opens its conversation; failures say what’s true; notes age; none over the Client Display; Talk to Flow’s confirmation says what it does',
          apps=['flow'], topics=['notifications', 'privacy', 'voice'], engines=('chromium', 'webkit'))
 async def s_t376(br):
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    src = flow_code()   # n383: Flow's code is in assets/flow/
     c, p, e = await ctx(br)
     # Rounds can't be reached for now (set before Flow's own first sweep, 6 s after loading)
     await p.evaluate("(()=>{ const q=PATIENTS.find(x=>x.name==='Pepper'); if(q.rounds) delete q.rounds; window.__rdE=rdEnroll; rdEnroll=function(){ throw new Error('offline'); }; })()")

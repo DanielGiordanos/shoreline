@@ -3,7 +3,7 @@ A content security policy in the page (GitHub Pages can't send headers): this si
 Google Maps' loader. An injected handler, javascript: link, inline script or outside script doesn't run and is reported.
 Flow's own 15 inline handlers are listeners and behave as before. The page is sealed (every inline script is in the policy)."""
 import os, re, hashlib, base64
-from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD
+from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD, flow_code
 
 FU = '{"uid":"u1","email":"daniel.giordano@pravix.app","displayName":"Daniel Giordano"}'
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]
@@ -106,16 +106,16 @@ async def s_t380(br):
     ok('The policy is the first thing in the page, before any script, and allows scripts only from this site, by hash, and from Google Maps and Firebase sign-in’s two Google helpers; base-uri is this site',
        0 <= i < html.find('<script') and pol.startswith("script-src 'self' 'unsafe-eval' https://maps.googleapis.com https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ 'sha256-")
        and "'unsafe-inline'" not in pol and pol.endswith("; worker-src 'self' blob:; base-uri 'self'") and 'http:' not in pol and '*' not in pol, pol[:200])
-    hs = hashes(html); missing = [h for h in hs if h not in pol]
-    ok('The page is sealed: every inline script is in the policy by its SHA-256 (after changing one, run  python3 _ci/seal_csp.py .  or it won’t run)', len(hs) > 100 and not missing, [len(hs), missing[:3]])
+    hs = hashes(html); missing = [h for h in hs if h not in pol]; code = flow_code()   # n383: the page and the files its code is in
+    ok('The page is sealed: every inline script is in the policy by its SHA-256 (after changing one, run  python3 _ci/seal_csp.py .  or it won’t run)', len(hs) >= 10 and not missing, [len(hs), missing[:3]])   # n383: about twenty are left inline (there were 124); the rest are files
     ok('Flow’s own markup carries no inline handler (onclick=…) and no javascript: link: 15 became listeners',
-       not re.search(r'''\son[a-z]+\s*=\s*["']''', html) and 'javascript:' not in html.replace('"javascript:__hit', '') and html.count('data-ct-do=') == 5 and html.count('data-ct-form=') == 2 and html.count('data-ct-open=') == 1,
-       re.findall(r'''.{40}\son[a-z]+\s*=\s*["'].{30}''', html)[:3])
+       not re.search(r'''\son[a-z]+\s*=\s*["']''', code) and 'javascript:' not in code.replace('"javascript:__hit', '') and code.count('data-ct-do=') == 5 and code.count('data-ct-form=') == 2 and code.count('data-ct-open=') == 1,
+       re.findall(r'''.{40}\son[a-z]+\s*=\s*["'].{30}''', code)[:3])
 
     c, p, e = await ctx(br)
     await p.evaluate(SEED3); await p.wait_for_timeout(700)
     t = await p.evaluate(TOUR)
-    ok('Nothing of Flow’s own is stopped: every view, the drawer, messages, Keyboard shortcuts, New patient and search run with no report', t['csp'] == [] and t['scripts'] > 100 and not newerr(e), [t['csp'][:3], newerr(e)[:3]])
+    ok('Nothing of Flow’s own is stopped: every view, the drawer, messages, Keyboard shortcuts, New patient and search run with no report', t['csp'] == [] and t['scripts'] >= 20 and not newerr(e), [t['csp'][:3], newerr(e)[:3]])
     a = await p.evaluate(ATTACK)
     ok('Injected markup doesn’t run: an image’s onerror, an SVG’s onload, a javascript: link, an onclick, an ontoggle, an inline script, a framed page’s script',
        a['ran'] == [], a)

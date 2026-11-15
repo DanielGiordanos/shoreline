@@ -5,10 +5,12 @@
    - The Flow page is network-first with a revalidating fetch, so a reload always gets the newest
      version when online, and the last saved copy when offline.
    - Flow's images and data files are served from cache and refreshed in the background.
+   - Flow's code is in files (assets/flow/…?v=…, n383). The address carries the version, so a file is fetched once and
+     kept. A copy of the page is saved only together with the files it names, so the saved copy always opens.
    - The Firebase and QR libraries are this site's own files (assets/vendor/, n379), kept so Flow can open with no
      connection. Other apps' copies from gstatic are cached when they ask for them.
    Emergency: replace this file with KILL-SWITCH-sw.js to remove it from every browser. */
-const SW_VERSION = 'flow-sw-3';   /* n379 (n195: flow-sw-2) */
+const SW_VERSION = 'flow-sw-4';   /* n383 (n379: flow-sw-3, n195: flow-sw-2) */
 const SHELL = 'flow-shell-v1';
 const ASSETS = 'flow-assets-v1';
 const SHELL_KEY = '/';
@@ -35,9 +37,8 @@ const CDN_ASSETS = [];   /* n379: Flow's libraries are local now */
 self.addEventListener('install', function (event) {
   event.waitUntil((async function () {
     try {
-      const shell = await caches.open(SHELL);
       const res = await fetch(new Request(SHELL_KEY, { cache: 'no-cache', credentials: 'same-origin' }));
-      if (res && res.ok) await shell.put(SHELL_KEY, res);
+      if (res && res.ok) await saveShell(res);   /* n383: with its code files */
     } catch (e) {}
     const assets = await caches.open(ASSETS);
     await Promise.all(LOCAL_ASSETS.map(function (u) {
@@ -58,6 +59,28 @@ self.addEventListener('activate', function (event) {
   })());
 });
 
+/* n383: the page names its code files (/assets/flow/app.js?v=…). Save them first, then the page; forget the ones no saved page names. */
+function flowFiles(html) {
+  const out = [], re = /(?:src|href)="(\/assets\/flow\/[^"]+)"/g; let m;
+  while ((m = re.exec(html))) if (out.indexOf(m[1]) < 0) out.push(m[1]);
+  return out;
+}
+async function saveShell(res) {
+  const shell = await caches.open(SHELL), assets = await caches.open(ASSETS);
+  const files = flowFiles(await res.clone().text());
+  const got = await Promise.all(files.map(async function (u) {
+    if (await assets.match(u)) return true;
+    try { const r = await fetch(new Request(u, { cache: 'no-cache' })); if (r && r.ok) { await assets.put(u, r); return true; } } catch (e) {}
+    return false;
+  }));
+  if (got.indexOf(false) >= 0) return false;   /* keep the last copy that is whole */
+  await shell.put(SHELL_KEY, res);
+  const keys = await assets.keys();
+  await Promise.all(keys.filter(function (k) { const u = new URL(k.url); return u.origin === self.location.origin && u.pathname.indexOf('/assets/flow/') === 0 && files.indexOf(u.pathname + u.search) < 0; })
+    .map(function (k) { return assets.delete(k); }));
+  return true;
+}
+
 function timeout(ms) { return new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); }); }
 
 async function flowPage(event) {
@@ -66,7 +89,7 @@ async function flowPage(event) {
   const saved = await cache.match(SHELL_KEY);
   const net = fetch(new Request(url.href, { cache: 'no-cache', credentials: 'same-origin' }));
   /* n195: a late network copy is still saved for next time */
-  event.waitUntil(net.then(function (r) { if (r && r.ok && !r.redirected) return cache.put(SHELL_KEY, r.clone()); }).catch(function () {}));
+  event.waitUntil(net.then(function (r) { if (r && r.ok && !r.redirected) return saveShell(r.clone()); }).catch(function () {}));   /* n383: with its code files */
   try {
     const res = saved ? await Promise.race([net, timeout(NET_TIMEOUT_MS)]) : await net;
     if (res && res.ok && !res.redirected) return res;
@@ -114,6 +137,7 @@ self.addEventListener('fetch', function (event) {
     return;
   }
   if (same && url.pathname.indexOf('/assets/vendor/') === 0) { event.respondWith(cacheFirst(event)); return; }   /* n379: the folder name carries the version */
+  if (same && url.pathname.indexOf('/assets/flow/') === 0 && url.search.indexOf('?v=') === 0) { event.respondWith(cacheFirst(event)); return; }   /* n383: ?v= carries the version */
   if (same && (url.pathname.indexOf('/assets/') === 0 || url.pathname === '/manifest.webmanifest')) {
     event.respondWith(freshInBackground(event));
     return;

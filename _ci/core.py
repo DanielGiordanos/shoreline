@@ -20,6 +20,31 @@ NOW = '2026-10-16T22:20:00Z'
 # pinned clock: Friday Oct 23 2026, 11 AM in Los Angeles, 2 PM in New York (away from midnight and 11 PM in both)
 PIN = '2026-10-23T18:00:00Z'
 import datetime as _dtp; PIN_MS = int(_dtp.datetime.fromisoformat(PIN.replace('Z', '+00:00')).timestamp() * 1000)
+def flow_code(build=None):
+    """Flow's page and its code as one text: index.html and the files it loads from assets/flow/, in the order the page names
+    them (n383: app.js, layers.js, layers2.js; n384: app.css, layers.css). A check that reads Flow's source reads it where it lives now."""
+    import re as _re
+    b = build or BUILD; t = open(os.path.join(b, 'index.html'), encoding='utf-8').read(); seen = []
+    for f in _re.findall(r'<(?:script src|link rel="stylesheet" href)="/assets/flow/([A-Za-z0-9_.-]+)\?v=', t):
+        if f not in seen: seen.append(f); t += '\n' + open(os.path.join(b, 'assets', 'flow', f), encoding='utf-8').read()
+    return t
+
+
+def flow_style(id_, build=None):
+    """The text of one of Flow's style blocks, by the id it had as a <style>: from index.html while it is there or, since n384, from
+    under its heading in assets/flow/app.css or layers.css ("/* ━━━━━ 12 of 68 · pvx-n184-css … ━━━━━ */")."""
+    import re as _re
+    b = build or BUILD; t = open(os.path.join(b, 'index.html'), encoding='utf-8').read()
+    m = _re.search(r'<style\b[^>]*\bid="' + _re.escape(id_) + r'"[^>]*>(.*?)</style\s*>', t, _re.S)
+    if m: return m.group(1)
+    for f in ('app.css', 'layers.css'):
+        p = os.path.join(b, 'assets', 'flow', f)
+        if not os.path.exists(p): continue
+        m = _re.search(r'/\* ━━━━━ \d+ of \d+ · ' + _re.escape(id_) + r'(?: · [^\n]*?)? ━━━━━ \*/\n(.*?)(?=\n/\* ━━━━━ \d+ of \d+ · |\Z)', open(p, encoding='utf-8').read(), _re.S)
+        if m: return m.group(1)
+    return None
+
+
 def pin_now(tz='America/Los_Angeles'):
     from zoneinfo import ZoneInfo; return _dtp.datetime.fromtimestamp(PIN_MS / 1000, ZoneInfo(tz))
 PINJS = "(()=>{if(window.__pvxPin)return;window.__pvxPin=1;const D=Date,T=%d,o=D.now();class F extends D{constructor(...a){ if(a.length) super(...a); else super(T+(D.now()-o)); } static now(){ return T+(D.now()-o); }} window.Date=F; })()" % PIN_MS

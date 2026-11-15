@@ -3,7 +3,7 @@ n214, n215 and n216 first). The Hospital alert's type is a named radio group (on
 redraw); On the way's Leaving and the units are one Tab stop with arrows; Arrival type is text only on iPad and Mac; the review
 time offers no time already past today. No PIN entry in Flow."""
 import os, re
-from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD
+from core import ok, section, PORT, INIT, FAKE, WRAP, SEED, BUILD, flow_code
 
 FU = '{"uid":"u1","email":"daniel.giordano@pravix.app","displayName":"Daniel Giordano"}'
 newerr = lambda e: [x for x in e if 'cb is not a function' not in x and 'collectionGroup' not in x]
@@ -34,7 +34,7 @@ GRP = """((sel)=>{ const R=[...document.querySelector(sel).querySelectorAll('[ro
 @section(id='t372', title='n372 · Pickers and Segmented controls: the alert type is a radio group, one Tab stop per choice, text-only Arrival type, no past review times',
          apps=['flow'], topics=['segmented-controls', 'pickers', 'accessibility'], engines=('chromium', 'webkit'))
 async def s_t372(br):
-    src = open(os.path.join(BUILD, 'index.html'), encoding='utf-8').read()
+    src = flow_code()   # n383: Flow's code is in assets/flow/
     ok('Digit entry views · nothing in Flow asks for a PIN or a row of digits (the page is for tvOS)', not re.search(r'digit-entry|pin-entry|autocomplete="one-time-code"', src), 'found')
 
     c, p, e = await ctx(br)
