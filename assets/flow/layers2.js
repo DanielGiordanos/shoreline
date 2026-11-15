@@ -9,7 +9,6 @@ try{
 /* PVX-N254 - Flow and Rounds read Yakuri: Rounds medications link to it; the drawer lists the owner's medications from intake as
    Yakuri drugs and runs Yakuri's own interaction check (see patch_n254.py) */
 (function(){ if(!window.PvxYakuri) return;
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   window.pvxYkLink=function(name,html){ return PvxYakuri.ready()?PvxYakuri.link(name,html):html; };
   function tokens(text){ return String(text||'').split(/[,;\n\/+]|\band\b|\bwith\b/i).map(function(x){ return x.trim(); }).filter(Boolean); }
   function panel(p){
@@ -19,7 +18,7 @@ try{
     var ds=PvxYakuri.matchAll(meds), miss=tokens(meds).filter(function(x){ return !PvxYakuri.match(x) && !/^(none|no|n\/a|na)$/i.test(x); });
     if(!ds.length&&!miss.length){ if(old) old.remove(); return; }
     var h='<div class="t">Owner’s medications · Yakuri</div><div class="l">'+(ds.length?ds.map(function(d){ return PvxYakuri.link(d); }).join(' · '):'')
-      +(miss.length?'<span class="u">Not found in Yakuri: '+esc(miss.join(', '))+'</span>':'')+'</div>'
+      +(miss.length?'<span class="u">Not found in Yakuri: '+pvxEsc(miss.join(', '))+'</span>':'')+'</div>'
       +(ds.length>=2?'<button type="button" data-ykint>Check interactions</button><div class="r" hidden></div>':'');
     var el=old||document.createElement('div'); el.id='pvxYkMeds'; el.className='pvx-ykmeds'; el.setAttribute('data-pid',String(p.id)); el.innerHTML=h;
     if(!old) mount.parentNode.insertBefore(el,mount.nextSibling);
@@ -29,11 +28,11 @@ try{
     r.hidden=false; if(!sp){ r.innerHTML='<div class="sc">Yakuri’s interaction check covers dogs and cats.</div>'; return; }
     r.innerHTML='<div class="sc">Checking in Yakuri…</div>';
     PvxYakuri.interactions(ds,sp).then(function(x){
-      r.innerHTML=(x.pairs||[]).map(function(q){ return '<div class="pr"><b>'+esc(q.names.join(' + '))+'</b> · '+esc(q.classification)+'<br><i>'+esc(q.summary)+'</i></div>'; }).join('')
-        +'<div class="sc">'+esc(x.scope||'')+' Yakuri has no clinical approval yet.</div>';
-    }).catch(function(e){ r.innerHTML='<div class="sc">'+esc((e&&e.message)||'Yakuri’s check didn’t run.')+'</div>'; });
+      r.innerHTML=(x.pairs||[]).map(function(q){ return '<div class="pr"><b>'+pvxEsc(q.names.join(' + '))+'</b> · '+pvxEsc(q.classification)+'<br><i>'+pvxEsc(q.summary)+'</i></div>'; }).join('')
+        +'<div class="sc">'+pvxEsc(x.scope||'')+' Yakuri has no clinical approval yet.</div>';
+    }).catch(function(e){ r.innerHTML='<div class="sc">'+pvxEsc((e&&e.message)||'Yakuri’s check didn’t run.')+'</div>'; });
   }
-  if(typeof fillDrawer==='function'){ var fd=fillDrawer; window.fillDrawer=fillDrawer=function(p){ var r=fd.apply(this,arguments); try{ panel(p); }catch(e){ console.warn('[yakuri meds]',e); } return r; }; }
+  if(typeof fillDrawer==='function'){ pvxAfter('fillDrawer',function(p){ try{ panel(p); }catch(e){ console.warn('[yakuri meds]',e); } },'n254-yakuri'); }
   PvxYakuri.onReady(function(){ try{ renderAll(); }catch(e){} try{ if(activePatient){ var p=PATIENTS.find(function(x){ return x.id===activePatient; }); if(p) fillDrawer(p); } }catch(e){} });
   function start(){ try{ if(typeof LOBBY!=='undefined'&&LOBBY) return; if(typeof Backend!=='undefined'&&Backend.mode&&Backend.mode!=='staff') return; }catch(e){} PvxYakuri.load().catch(function(){}); }
   setTimeout(start,6000);
@@ -86,7 +85,7 @@ try{(function(){
           if(f){ const base=parseFloat(getComputedStyle(ut).paddingTop)||0, pad=Math.max(0,Math.ceil(r.bottom+14-f.getBoundingClientRect().top)); if(pad) ut.style.paddingTop=(base+pad)+'px'; } } }
       else ut.style.paddingTop=''; } }
   let t=0; const soon=()=>{ if(t) return; t=requestAnimationFrame(()=>{ t=0; try{ sayWaits(); attn(); island(); }catch(e){} }); };
-  try{ new MutationObserver(soon).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']}); }catch(e){}
+  try{ pvxWatch(soon,{childList:true,subtree:true,attributes:true,attributeFilter:['class']},document.body); }catch(e){}
   addEventListener('resize',soon); soon();
   window.pvxN332={sayWaits,attn,island};
 })();}catch(__e){ console.warn('[n332]',__e); }
@@ -139,8 +138,8 @@ try{(function(){
     const isl=$('#critIsland'); if(!isl||!isl.classList.contains('content')) return; const inn=isl.querySelector('.ci-inner'); if(!inn) return;
     const h=Math.max(36,inn.offsetHeight), cur=parseFloat(isl.style.height)||0; if(cur&&Math.abs(h-cur)>1) isl.style.height=h+'px'; }
   let t=0; const soon=()=>{ if(t) return; t=requestAnimationFrame(()=>{ t=0; try{ fit(); room(); }catch(e){} }); };
-  try{ new MutationObserver(soon).observe(document.body,{attributes:true,attributeFilter:['class','style'],subtree:true}); }catch(e){}
-  try{ new MutationObserver(soon).observe(document.documentElement,{attributes:true,attributeFilter:['style','class']}); }catch(e){}
+  try{ pvxWatch(soon,{attributes:true,attributeFilter:['class','style'],subtree:true},document.body); }catch(e){}
+  try{ pvxWatch(soon,{attributes:true,attributeFilter:['style','class']},document.documentElement); }catch(e){}
   addEventListener('resize',()=>{ last=''; soon(); });
   const st=$('#stage'); if(st) st.addEventListener('scroll',()=>{ if(st.scrollTop<=4) soon(); },{passive:true});
   const isl=$('#critIsland'); if(isl) isl.addEventListener('transitionend',()=>{ last=''; soon(); });
@@ -188,7 +187,7 @@ try{
     N.style.top=top+'px'; }
   function soon(){ if(!t) t=requestAnimationFrame(place); }
   function go(){ place(); addEventListener('resize',soon);
-    try{ new MutationObserver(soon).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+    try{ pvxWatch(soon,{attributes:true,attributeFilter:['class']},document.body); }catch(e){}
     var ci=document.getElementById('critIsland'); if(ci) try{ new MutationObserver(soon).observe(ci,{attributes:true,attributeFilter:['class','style']}); }catch(e){}
     var n=document.getElementById('notes'); if(n) try{ new MutationObserver(soon).observe(n,{childList:true}); }catch(e){} }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
@@ -234,7 +233,7 @@ try{
     var t=(n?'('+n+') ':'')+(crit?'Critical patient waiting · ':'')+BASE;
     if(t!==last){ last=t; if(document.title!==t&&(document.title===BASE||/^(\(\d+\) )?(Critical patient waiting · )?/.test(document.title))) document.title=t;
       try{ if(navigator.setAppBadge){ if(n||crit) navigator.setAppBadge(n+(crit?1:0)); else if(navigator.clearAppBadge) navigator.clearAppBadge(); } }catch(e){} } }
-  function go(){ upd(); setInterval(upd,1000); try{ new MutationObserver(upd).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){} }
+  function go(){ upd(); setInterval(upd,1000); try{ pvxWatch(upd,{attributes:true,attributeFilter:['class']},document.body); }catch(e){} }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
   window.pvxBadgeNow=upd;   /* for checks */
 })();
@@ -257,7 +256,7 @@ try{
       var f=document.activeElement, lost=!f||f===document.body||f.id==='stage'||IDS.some(function(id){ var m=document.getElementById(id); return m&&!m.classList.contains('open')&&m.contains(f); }); if(lost&&back&&back.isConnected&&dr.classList.contains('open')) try{ back.focus({preventScroll:true}); }catch(e){}
       back=null; } }
   function go(){ IDS.concat(['drawer']).forEach(function(id){ var m=document.getElementById(id); if(m) try{ new MutationObserver(sync).observe(m,{attributes:true,attributeFilter:['class']}); }catch(e){} });
-    try{ new MutationObserver(sync).observe(document.body,{childList:true}); }catch(e){} sync(); }
+    try{ pvxWatch(sync,{childList:true},document.body); }catch(e){} sync(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();
 }catch(e){setTimeout(function(){throw e})}
@@ -269,13 +268,12 @@ try{
 (function(){
   if(typeof searchIndex!=='function') return;
   var KEYS='<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/>';
-  var _si=searchIndex;
-  searchIndex=function(q){ var r=_si.apply(this,arguments); var t=String(q||'').trim().toLowerCase();
+  pvxWrap('searchIndex',function(_si){ return function(q){ var r=_si.apply(this,arguments); var t=String(q||'').trim().toLowerCase();
     if(t.length>=2&&/^(help|hel|he|short|shortc|shortcu|shortcut|shortcuts|keyb|keyboard|keys|key|hotkey|\?)/.test(t)||t==='?'){
       r.push({kind:'Help',icon:true,svg:KEYS,color:'var(--ink-500)',title:'Keyboard shortcuts',sub:'Or press ? anytime',
         act:function(){ try{ closeSearch(); }catch(e){} var s=document.getElementById('globalSearch'); if(s) s.blur();
           setTimeout(function(){ document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'?',bubbles:true})); },30); }}); }
-    return r; };
+    return r; }; },'n347');
 })();
 }catch(e){setTimeout(function(){throw e})}
 
@@ -287,13 +285,12 @@ try{
    2. Print is in the + menu (with the view's name) and in the keyboard shortcuts; search answers "print". It's offered only where there's a view to print. */
 (function(){
   var NAMES={dashboard:'Command',list:'Patients',flow:'Board',rooms:'Rooms'};
-  function view(){ try{ return currentView; }catch(e){ return ''; } }
-  function can(){ var b=document.body; return !!NAMES[view()]&&!b.classList.contains('client-mode')&&!b.classList.contains('tv-mode')&&!b.classList.contains('fs-mode')&&!b.classList.contains('app-ultrasound')&&!b.classList.contains('app-rounds'); }
+  function can(){ var b=document.body; return !!NAMES[pvxView()]&&!b.classList.contains('client-mode')&&!b.classList.contains('tv-mode')&&!b.classList.contains('fs-mode')&&!b.classList.contains('app-ultrasound')&&!b.classList.contains('app-rounds'); }
   var head=document.createElement('div'); head.id='pvxPrintHead'; head.setAttribute('aria-hidden','true'); document.body.insertBefore(head,document.body.firstChild);
   var wasDark=false, on=false;
   function begin(){ var b=document.body; if(on||b.classList.contains('end-tagging')||b.classList.contains('cf-printing')||!can()) return; on=true;
     var d=new Date(), when=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})+', '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    head.innerHTML='<span>VCA Shoreline · Pravix Flow · '+NAMES[view()]+'</span><span>Printed '+when+'</span>';
+    head.innerHTML='<span>VCA Shoreline · Pravix Flow · '+NAMES[pvxView()]+'</span><span>Printed '+when+'</span>';
     wasDark=b.classList.contains('dark'); if(wasDark) b.classList.remove('dark'); b.classList.add('pvx-printing'); }
   function end(){ if(!on) return; on=false; var b=document.body; b.classList.remove('pvx-printing'); if(wasDark) b.classList.add('dark'); wasDark=false; }
   window.addEventListener('beforeprint',begin); window.addEventListener('afterprint',end);
@@ -302,16 +299,15 @@ try{
   window.pvxPrintBegin=begin; window.pvxPrintEnd=end;
   /* the + menu item: named for the view, offered only where printing makes sense */
   function paint(){ var it=document.getElementById('opsPrint'), s=document.getElementById('opsPrintS'); if(!it) return; var ok=can(); it.hidden=!ok;
-    if(s) s.textContent=(NAMES[view()]||'This view')+' · '+((window.PvxKeys&&PvxKeys.mac===false)?'Ctrl P':'⌘P'); }
+    if(s) s.textContent=(NAMES[pvxView()]||'This view')+' · '+((window.PvxKeys&&PvxKeys.mac===false)?'Ctrl P':'⌘P'); }
   var fab=document.getElementById('fabAdd'); if(fab) fab.addEventListener('click',paint,true); paint();
   /* search: "print" offers Print this view */
   if(typeof searchIndex==='function'){
     var IC='<path d="M6.5 9V3.5h11V9"/><rect x="2.5" y="9" width="19" height="8.5" rx="2"/><rect x="6.5" y="14" width="11" height="7" rx="1"/>';
-    var _si=searchIndex;
-    searchIndex=function(q){ var r=_si.apply(this,arguments); var t=String(q||'').trim().toLowerCase();
-      if(/^prin(t|ti|tin|ting)?$/.test(t)&&can()) r.push({kind:'Help',icon:true,svg:IC,color:'var(--ink-500)',title:'Print '+(view()==='flow'?'the board':NAMES[view()]),sub:((window.PvxKeys&&PvxKeys.mac===false)?'Ctrl P':'⌘P'),
+    pvxWrap('searchIndex',function(_si){ return function(q){ var r=_si.apply(this,arguments); var t=String(q||'').trim().toLowerCase();
+      if(/^prin(t|ti|tin|ting)?$/.test(t)&&can()) r.push({kind:'Help',icon:true,svg:IC,color:'var(--ink-500)',title:'Print '+(pvxView()==='flow'?'the board':NAMES[pvxView()]),sub:((window.PvxKeys&&PvxKeys.mac===false)?'Ctrl P':'⌘P'),
         act:function(){ try{ closeSearch(); }catch(e){} var s=document.getElementById('globalSearch'); if(s) s.blur(); setTimeout(function(){ pvxPrintView(); },60); }});
-      return r; };
+      return r; }; },'n348');
   }
 })();
 }catch(e){setTimeout(function(){throw e})}
@@ -325,7 +321,6 @@ try{
 (function(){
   var inp=document.getElementById('globalSearch'); if(!inp) return;
   function q(){ try{ return String(searchQ||''); }catch(e){ return ''; } }
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function clearSearch(){ inp.value=''; inp.dispatchEvent(new Event('input',{bubbles:true})); try{ closeSearch(); }catch(e){} }
   /* 1. the scope: "Matching “mil” · 1 of 9 · Clear search" under the Patients and Flow titles */
   function scopeEl(view){ var h=document.querySelector('#view-'+view+' .view-head > div'); if(!h) return null; var s=h.querySelector('.pvx-scope');
@@ -338,18 +333,17 @@ try{
     var n=0; try{ n=(typeof pvxBoardFiltered==='function'?pvxBoardFiltered():filtered()).filter(isActive).length; }catch(e){}
     ['list','flow'].forEach(function(v){ var s=scopeEl(v); if(!s) return; s.classList.toggle('on',!!t);
       var fix=(t&&!n)?correct(t):'';
-      var html=t?'Matching <b>“'+esc(t)+'”</b>'+(v==='flow'?' · '+n+' of '+all:'')+(fix?'<button type="button" data-fix="'+esc(fix)+'">Search “'+esc(fix)+'”</button>':'')+'<button type="button" data-clear="1">Clear search</button>':'';
+      var html=t?'Matching <b>“'+pvxEsc(t)+'”</b>'+(v==='flow'?' · '+n+' of '+all:'')+(fix?'<button type="button" data-fix="'+pvxEsc(fix)+'">Search “'+pvxEsc(fix)+'”</button>':'')+'<button type="button" data-clear="1">Clear search</button>':'';
       if(s.__h!==html){ s.__h=html; s.innerHTML=html; } }); }
-  if(typeof renderTable==='function'){ var rt=renderTable; renderTable=function(){ var r=rt.apply(this,arguments);
+  if(typeof renderTable==='function'){ pvxAfter('renderTable',function(){ 
     try{ var rc=document.getElementById('resCount'); if(rc){ var m=/^(\d+)/.exec(rc.textContent); if(m) rc.textContent=m[1]+(+m[1]===1?' patient':' patients'); } }catch(e){}
-    scope(); return r; }; }
-  if(typeof renderBoard==='function'){ var rb=renderBoard; renderBoard=function(){ var r=rb.apply(this,arguments); scope(); return r; }; }
+    scope(); },'n349'); }
+  if(typeof renderBoard==='function'){ pvxAfter('renderBoard',function(){ scope(); },'n349'); }
   /* 2. why it matched, and filters, in search */
   var STAGES=(typeof FLOW_COLS!=='undefined'?FLOW_COLS:[]);
   function lc(s){ return String(s||'').toLowerCase(); }
   if(typeof searchIndex==='function'){
-    var si=searchIndex;
-    searchIndex=function(qq){ var r=si.apply(this,arguments), t=lc(qq).trim(); if(!t) return r;
+    pvxWrap('searchIndex',function(si){ return function(qq){ var r=si.apply(this,arguments), t=lc(qq).trim(); if(!t) return r;
       try{ r.forEach(function(x){ if(x.kind!=='Patient'||x.__why) return; var p=PATIENTS.find(function(pp){ return (pp.name+' '+pp.last)===x.title; }); if(!p) return;
           var named=lc([p.name,p.last,p.room,p.status].join(' ')).indexOf(t)>-1; if(named) return;
           var why=lc(p.owner).indexOf(t)>-1?'Owner '+p.owner:lc(p.reason).indexOf(t)>-1?p.reason:'';
@@ -362,7 +356,7 @@ try{
         if(t.length>=3) STAGES.forEach(function(s){ if(lc(s).indexOf(t)!==0) return; var n=act.filter(function(p){ return p.status===s; }).length;
           r.unshift({kind:'Filter',icon:true,color:(STATUSES[s]&&STATUSES[s].color)||'var(--accent)',svg:'<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',title:'All patients in '+s,sub:(n===1?'1 patient':n+' patients')+' · Patients list',
             act:function(){ try{ closeSearch(); }catch(e){} clearSearch(); filters={status:s,prio:null,doctor:null,liaison:null}; switchView('list'); renderFilterBar(); renderTable(); }}); }); }catch(e){}
-      return r; };
+      return r; }; },'n349');
   }
   /* 3. a typo: show the closest name ("No matches for “Bela”. Showing Bella.") */
   function dl(a,b){ var m=a.length,n=b.length,d=[],i,j; for(i=0;i<=m;i++){ d[i]=[i]; } for(j=0;j<=n;j++) d[0][j]=j;
@@ -375,13 +369,12 @@ try{
       if(d<=lim&&d<bd){ bd=d; best=w; } });
     return best; }
   if(typeof renderSearch==='function'){
-    var rs=renderSearch;
-    renderSearch=function(qq){ var t=String(qq||'').trim();
+    pvxWrap('renderSearch',function(rs){ return function(qq){ var t=String(qq||'').trim();
       if(t&&!searchIndex(t).length){ var c=correct(t); if(c&&searchIndex(c).length){ var r=rs.call(this,c);
           var box=document.getElementById('searchResults'), inr=box&&box.querySelector('.sr-inner');
-          if(inr){ inr.insertAdjacentHTML('afterbegin','<div class="sr-hint pvx-dym" role="status">No matches for “'+esc(t)+'”. Showing <b>'+esc(c)+'</b>.</div>'); }
+          if(inr){ inr.insertAdjacentHTML('afterbegin','<div class="sr-hint pvx-dym" role="status">No matches for “'+pvxEsc(t)+'”. Showing <b>'+pvxEsc(c)+'</b>.</div>'); }
           return r; } }
-      return rs.apply(this,arguments); };
+      return rs.apply(this,arguments); }; },'n349');
   }
   /* 4. Recent can be cleared (it lives only in this tab, and goes when someone signs out) */
   var box=document.getElementById('searchResults');
@@ -395,7 +388,7 @@ try{
       var g=e.target.closest('.sr-group'); if(g) g.remove(); try{ searchFlat=[]; searchHl=-1; }catch(x){} try{ inp.focus(); }catch(x){}
       try{ if(window.pvxSay) pvxSay('Recent patients cleared'); }catch(x){} },true);
   }
-  if(typeof logout==='function'){ var lo=logout; logout=function(){ try{ if(window.pvxRecent) pvxRecent.clear(); }catch(e){} return lo.apply(this,arguments); }; }
+  if(typeof logout==='function'){ pvxBefore('logout',function(){ try{ if(window.pvxRecent) pvxRecent.clear(); }catch(e){} },'n349'); }
   /* 5. Settings: Talk to Flow on this screen */
   function vpaint(){ var b=document.getElementById('opsVoice'), s=document.getElementById('opsVoiceS'); if(!b) return; var V=window.pvxVoice;
     var can=!!(V&&V.can())&&!document.body.classList.contains('client-mode'); b.hidden=!can; if(!can) return; var on=V.on();
@@ -434,7 +427,7 @@ try{
       var r=na.call(this,title,sub,act,go,opts); try{ var w=document.getElementById('notes'); if(e&&w) e.__note=w.lastElementChild; }catch(x){} return r; }; }
   /* nested changes (a move that assigns a doctor, taking a case) belong to the outer change */
   var nest=0;
-  ['moveStatus','moveRoom','completePatient'].forEach(function(n){ var f=window[n]; if(typeof f!=='function') return; window[n]=function(){ nest++; try{ return f.apply(this,arguments); } finally { nest--; } }; });
+  ['moveStatus','moveRoom','completePatient'].forEach(function(n){ if(typeof window[n]!=='function') return; pvxWrap(n,function(f){ return function(){ nest++; try{ return f.apply(this,arguments); } finally { nest--; } }; },'n350'); });
   if(typeof window.critTakeCase==='function'){ var tk=window.critTakeCase;
     window.critTakeCase=function(id){ var r; nest++; try{ r=tk.apply(this,arguments); } finally { nest--; } var p=find(id); if(!p||!p.critTakenAt) return r;
       var nm=p.name||'Patient', e=pvxUndo.push({label:'Case taken',pid:id,undo:function(){ var q=find(id); if(!q||!q.critTakenAt) return false; window.critUndoTake(); q=find(id);
@@ -446,8 +439,8 @@ try{
   /* 1. priority, doctor and liaison */
   function label(field,p){ try{ if(field==='prio') return 'P'+p.prio+' · '+PRIO_LABEL[p.prio]; if(field==='doctor') return (p.doctor&&p.doctor!=='unassigned')?doc(p.doctor).name:'no doctor'; if(field==='liaison'){ var l=p.liaison&&liaison(p.liaison); return l?l.name:'no liaison'; } }catch(e){} return ''; }
   function fieldUndo(name,field,word,extra){
-    var f=window[name]; if(typeof f!=='function') return;
-    window[name]=function(p,v){
+    if(typeof window[name]!=='function') return;
+    pvxWrap(name,function(f){ return function(p,v){
       if(nest||!p||p[field]===v) return f.apply(this,arguments);
       var before=p[field], keep={}; (extra||[]).forEach(function(k){ keep[k]=p[k]; });
       var tl=(p.timeline||[]).length, real=window.notify, cap=null, r; nest++;
@@ -465,7 +458,7 @@ try{
         redo:function(){ var q=find(id); if(q) window[name].apply(null,[q].concat(args)); }});
       var go=function(){ pvxUndo.undoEntry(e); }; go.__pvxU=1;
       if(cap&&typeof window.fvNotifyAct==='function') window.fvNotifyAct(cap[0],cap[1],'Undo',go,Object.assign({dur:8000},cap[2]||{})); else if(cap) real.apply(null,cap);
-      return r; };
+      return r; }; },'n350');
   }
   fieldUndo('setPriority','prio','Priority change');
   fieldUndo('assignDoctor','doctor','Doctor change',['msDoctorAt']);
@@ -498,8 +491,8 @@ try{
   document.addEventListener('input',function(e){ if(e.target&&e.target.matches&&e.target.matches(SEL)) fit(e.target); },true);
   document.addEventListener('focusin',function(e){ if(e.target&&e.target.matches&&e.target.matches(SEL)) fit(e.target); },true);
   window.addEventListener('resize',function(){ fitAll(); });
-  ['openAlertModal','openIntake','openUltrasoundRequest','openTriageEdit'].forEach(function(n){ var f=window[n]; if(typeof f!=='function') return;
-    window[n]=function(){ var r=f.apply(this,arguments); requestAnimationFrame(fitAll); setTimeout(fitAll,350); return r; }; });
+  ['openAlertModal','openIntake','openUltrasoundRequest','openTriageEdit'].forEach(function(n){ if(typeof window[n]!=='function') return;
+    pvxWrap(n,function(f){ return function(){ var r=f.apply(this,arguments); requestAnimationFrame(fitAll); setTimeout(fitAll,350); return r; }; },'n351'); });
 
   /* 2. Back and Forward */
   if(!window.history||!history.pushState) return;
@@ -520,7 +513,7 @@ try{
       was=now; if(now) opened(k); else closed(k); }).observe(el,{attributes:true,attributeFilter:['class']});
     if(was) opened(k); });
   /* a different patient in the open drawer updates the step */
-  if(typeof window.openDrawer==='function'){ var od=window.openDrawer; window.openDrawer=function(pid){ var r=od.apply(this,arguments); try{ var c=st(); if(!fromPop&&c&&c.pvxPanel==='drawer'&&c.id!==pid&&isOpen('drawer')) history.replaceState({pvxPanel:'drawer',id:pid},''); }catch(e){} return r; }; }
+  if(typeof window.openDrawer==='function'){ pvxAfter('openDrawer',function(pid){ try{ var c=st(); if(!fromPop&&c&&c.pvxPanel==='drawer'&&c.id!==pid&&isOpen('drawer')) history.replaceState({pvxPanel:'drawer',id:pid},''); }catch(e){} },'n351'); }
   window.addEventListener('popstate',function(e){ var s=e.state&&e.state.pvxPanel?e.state:null; if(pend){ clearTimeout(pend); pend=null; }
     fromPop++; try{
       Object.keys(PANELS).forEach(function(k){ if(isOpen(k)&&(!s||s.pvxPanel!==k)) PANELS[k].close(); });
@@ -604,7 +597,7 @@ try{
   var mt=0; function soon(){ if(mt) return; mt=setTimeout(function(){ mt=0; mark(); },0); }   /* a timer, not the next frame: a page in the background gets no frames */
   ['tableBody','board'].forEach(function(id){ var el=document.getElementById(id); if(el) new MutationObserver(soon).observe(el,{childList:true,subtree:true}); });
   var dr=document.getElementById('drawer'); if(dr) new MutationObserver(soon).observe(dr,{attributes:true,attributeFilter:['class']});
-  if(typeof window.openDrawer==='function'){ var od=window.openDrawer; window.openDrawer=function(){ var r=od.apply(this,arguments); try{ mark(); }catch(e){} soon(); return r; }; }
+  if(typeof window.openDrawer==='function'){ pvxAfter('openDrawer',function(){ try{ mark(); }catch(e){} soon(); },'n354'); }
 
   /* 2. sorting */
   var KEY=null, DIR=1;
@@ -646,7 +639,7 @@ try{
     try{ if(window.pvxSay) pvxSay(KEY?('Sorted by '+WORD[KEY]+', '+DIRW[KEY][DIR===1?0:1]):'Sorted most urgent first'); }catch(e){}
     var th=KEY&&document.querySelector('#view-list thead th[data-sort="'+KEY+'"] .pvx-th'); if(th&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('thead')) th.focus(); }
   window.pvxListSort=function(k){ choose(k); return {key:KEY,dir:DIR}; };
-  if(typeof renderTable==='function'){ var rt=renderTable; renderTable=function(){ var r=rt.apply(this,arguments); try{ apply(); }catch(e){} return r; }; }
+  if(typeof renderTable==='function'){ pvxAfter('renderTable',function(){ try{ apply(); }catch(e){} },'n354'); }
   paint();
 })();
 }catch(e){setTimeout(function(){throw e})}
@@ -658,8 +651,7 @@ try{
    a list with its message open. The drawer follows, the row or card stays highlighted (n354), and VoiceOver hears where it is
    ("Milo Chen, 3 of 9"). It stops at either end and says so. Text fields, menus and sheets keep their own arrow keys. */
 (function(){
-  function view(){ try{ return currentView; }catch(e){ return ''; } }
-  function seq(){ var sel={list:'#tableBody tr[data-pid]',flow:'#board .card[data-pid]',rooms:'#view-rooms [data-pid]'}[view()], ids=[];
+  function seq(){ var sel={list:'#tableBody tr[data-pid]',flow:'#board .card[data-pid]',rooms:'#view-rooms [data-pid]'}[pvxView()], ids=[];
     if(sel){ [].forEach.call(document.querySelectorAll(sel),function(el){ if(!el.offsetParent) return; var id=el.getAttribute('data-pid'); if(id&&ids.indexOf(id)<0) ids.push(id); }); }
     if(!ids.length){ try{ ids=PATIENTS.filter(isActive).slice().sort(pvxByUrgency).map(function(p){ return String(p.id); }); }catch(e){} }
     return ids; }
@@ -670,15 +662,14 @@ try{
     var j=i+d; if(j<0||j>=ids.length){ say(d>0?'Last patient':'First patient'); return true; }
     openDrawer(ids[j]); say(name(ids[j])+', '+(j+1)+' of '+ids.length);
     var dr=document.getElementById('drawer'); if(dr&&!dr.contains(document.activeElement)){ var h=dr.querySelector('h2'); if(h){ h.tabIndex=-1; try{ h.focus({preventScroll:true}); }catch(e){ h.focus(); } } }
-    try{ var row=document.querySelector('#view-'+view()+' [data-pid="'+ids[j]+'"]'); if(row) row.scrollIntoView({block:'nearest'}); }catch(e){}
+    try{ var row=document.querySelector('#view-'+pvxView()+' [data-pid="'+ids[j]+'"]'); if(row) row.scrollIntoView({block:'nearest'}); }catch(e){}
     return true; }
   window.pvxStepPatient=step;
-  function typing(){ var a=document.activeElement; return !!(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable)); }
   function covered(){ return [].some.call(document.querySelectorAll('.addpt-modal.open,.intake-modal.open,.us-modal.open,.confirm.open,#fvStale.show,.ops-menu.open,.dd-panel.open,[role=menu]:not([hidden])'),function(m){ return !!m.offsetParent; }); }
   document.addEventListener('keydown',function(e){
     if(!e.altKey||e.metaKey||e.ctrlKey||e.shiftKey||(e.key!=='ArrowDown'&&e.key!=='ArrowUp')) return;
     var dr=document.getElementById('drawer'); if(!dr||!dr.classList.contains('open')) return;
-    if(typing()||covered()) return;
+    if(pvxTyping()||covered()) return;
     if(step(e.key==='ArrowDown'?1:-1)){ e.preventDefault(); e.stopPropagation(); }
   },true);
 })();
@@ -749,11 +740,11 @@ try{
    4. a live update doesn't rebuild the drawer under an open pop-up: the refill waits until the list closes. */
 (function(){
   if(typeof fillDrawer!=='function') return;
-  var orig=fillDrawer, pend=null, shown=null;
+  var pend=null, shown=null;
   function inDrawer(){ try{ var d=document.getElementById('drawer'); return !!(ddOpen&&ddOpen.root&&d&&d.contains(ddOpen.root)); }catch(e){ return false; } }
-  window.fillDrawer=function(p){
+  pvxWrap('fillDrawer',function(orig){ return function(p){
     if(inDrawer()){ if(p&&p.id===shown){ pend=p; return; } try{ ddOpen.close(); }catch(e){} }   /* another patient: close the list, then fill */
-    pend=null; shown=p&&p.id; return orig.apply(this,arguments); };
+    pend=null; shown=p&&p.id; return orig.apply(this,arguments); }; },'n360');
   window.__pvxDdClosed=function(){ if(!pend||inDrawer()) return; var id=pend.id; pend=null;
     try{ if(typeof activePatient!=='undefined'&&activePatient===id){ var q=PATIENTS.find(function(x){ return x.id===id; }); if(q) window.fillDrawer(q); } }catch(e){} };
 })();
@@ -789,7 +780,6 @@ try{
   var POS={}, busy=false;
   function stage(){ return document.getElementById('stage'); }
   function cur(){ try{ return currentView; }catch(e){ return ''; } }
-  function reduce(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
   if(typeof switchView!=='function') return;
   /* where a view was: the first patient in sight and its distance from the top (a pixel offset alone drifts when the
      critical banner's room comes and goes), with the offset as the fallback */
@@ -801,8 +791,7 @@ try{
     var el=document.getElementById('view-'+v), same=m.a&&el?[].filter.call(el.querySelectorAll('[data-pid]'),function(x){ return x.getAttribute('data-pid')===m.a.pid; }):[], t=same[m.a?m.a.nth:0]||same[0];
     if(t&&!t.getBoundingClientRect().height) t=null;
     if(t){ var top=st.getBoundingClientRect().top; jump(st, st.scrollTop+(t.getBoundingClientRect().top-top)-m.a.off); } else jump(st,m.y); }
-  var base=switchView;
-  window.switchView=switchView=function(v){
+  pvxWrap('switchView',function(base){ return function(v){
     var st=stage(), from=cur();
     if(st&&from&&!busy) POS[from]=mark(from);
     var r=base.apply(this,arguments);
@@ -811,11 +800,11 @@ try{
       /* after the view has drawn (renderAll is synchronous; late layers and the banner's room settle over a few frames) */
       back(v,m); requestAnimationFrame(function(){ if(cur()===v&&!touched) back(v,m); });
       [120,350].forEach(function(ms){ setTimeout(function(){ if(cur()===v&&!touched) back(v,m); },ms); }); }
-    return r; };
+    return r; }; },'n363');
   /* 2. the current tab again: back to the top */
   document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#switcher .seg[data-view]'); if(!b) return;
     var v=b.dataset.view; if(v!==cur()||v==='client') return; var st=stage(); if(!st||st.scrollTop<4) return;
-    try{ st.scrollTo({top:0,behavior:reduce()?'auto':'smooth'}); }catch(x){ st.scrollTop=0; } POS[v]=null; },true);
+    try{ st.scrollTo({top:0,behavior:pvxReduceMotion()?'auto':'smooth'}); }catch(x){ st.scrollTop=0; } POS[v]=null; },true);
   /* 3. Consent forms' badge in words */
   function syncBadge(){ var b=document.getElementById('cfBadge'), seg=b&&b.closest('.seg'); if(!seg) return;
     var n=b.hidden?0:(parseInt(b.textContent,10)||0), lab='Consent forms'+(n?', '+n+' waiting':'');
@@ -863,7 +852,7 @@ try{
     el.innerHTML=pvxWaitHTML('msgs'); if(p&&typeof loadThread==='function') loadThread(p); });
 
   if(typeof showUndo==='function'){
-    var orig=showUndo, start=0, left=5000, paused=false;
+    var start=0, left=5000, paused=false;
     function bar(t){ return t&&t.querySelector('.undo-progress'); }
     function pause(){ var t=document.getElementById('undoToast'); if(paused||!t||!t.classList.contains('open')) return;
       paused=true; try{ clearTimeout(_dispUndoTimer); }catch(_){} left=Math.max(0,left-(Date.now()-start)); var b=bar(t); if(b) b.style.animationPlayState='paused'; }
@@ -871,13 +860,13 @@ try{
       if(t.matches(':hover')||t.contains(document.activeElement)) return;
       paused=false; start=Date.now(); var b=bar(t); if(b) b.style.animationPlayState='running';
       try{ _dispUndoTimer=setTimeout(function(){ hideUndo(); }, Math.max(600,left)); }catch(_){} }
-    window.showUndo=function(){ var r=orig.apply(this,arguments); start=Date.now(); left=5000; paused=false;
+    pvxAfter('showUndo',function(){ start=Date.now(); left=5000; paused=false;
       var t=document.getElementById('undoToast');
       if(t&&!t.__pvx365){ t.__pvx365=1;
         t.addEventListener('pointerenter',pause); t.addEventListener('focusin',pause);
         t.addEventListener('pointerleave',function(){ setTimeout(resume,0); }); t.addEventListener('focusout',function(){ setTimeout(resume,0); }); }
       if(t&&(t.matches(':hover')||t.contains(document.activeElement))) pause();
-      return r; };
+      },'n365');
   }
 })();
 }catch(e){setTimeout(function(){throw e})}
@@ -941,7 +930,7 @@ try{
   function check(){ var on=[].some.call(document.querySelectorAll('[role=dialog][aria-modal=true],[role=alertdialog]'),shown);
     if(document.body.classList.contains('pvx-ci-under')!==on) document.body.classList.toggle('pvx-ci-under',on); }
   var t=0; function soon(){ if(t) return; t=requestAnimationFrame(function(){ t=0; try{ check(); }catch(e){} }); }
-  try{ new MutationObserver(soon).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-modal']}); }catch(e){}
+  try{ pvxWatch(soon,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden','aria-modal']},document.body); }catch(e){}
   document.addEventListener('transitionend',soon,true); addEventListener('resize',soon); soon();
   window.pvxCiUnder=check;
 })();
@@ -964,11 +953,9 @@ try{
   function park(btn,cls,head,before){ if(!btn||btn._pvxMark) return;
     var mk=document.createComment('pvx-ps'); btn.parentNode.insertBefore(mk,btn); btn._pvxMark=mk;
     btn.classList.add('pvx-ps-btn',cls); if(before) head.insertBefore(btn,before); else head.appendChild(btn); }
-  function unpark(btn){ if(!btn||!btn._pvxMark) return; var mk=btn._pvxMark; btn._pvxMark=null;
-    btn.classList.remove('pvx-ps-btn','pvx-ps-l','pvx-ps-r'); if(mk.parentNode){ mk.parentNode.insertBefore(btn,mk); mk.remove(); } }
   function undo(c){ var m=el(c); if(!m) return;
-    [].slice.call(m.querySelectorAll('.pvx-ps-btn')).forEach(function(b){ if(b._pvxText!=null){ b.textContent=b._pvxText; b._pvxText=null; } unpark(b); });
-    var x=c.x&&q(c,c.x); if(x){ if(x._pvxMark) unpark(x); if(x._pvxHid){ x.removeAttribute('aria-hidden'); x.removeAttribute('tabindex'); x._pvxHid=false; } }
+    [].slice.call(m.querySelectorAll('.pvx-ps-btn')).forEach(function(b){ if(b._pvxText!=null){ b.textContent=b._pvxText; b._pvxText=null; } pvxUnpark(b); });
+    var x=c.x&&q(c,c.x); if(x){ if(x._pvxMark) pvxUnpark(x); if(x._pvxHid){ x.removeAttribute('aria-hidden'); x.removeAttribute('tabindex'); x._pvxHid=false; } }
     [].slice.call(m.querySelectorAll('[data-pvx-lent]')).forEach(function(n){ n.getAttribute('data-pvx-lent').split(' ').forEach(function(k){ n.classList.remove(k); }); n.removeAttribute('data-pvx-lent'); });
     var ft=m.querySelector('.pvx-ps-empty'); if(ft) ft.classList.remove('pvx-ps-empty');
     m.classList.remove('pvx-ps','pvx-ps-bar'); }
@@ -997,8 +984,8 @@ try{
   window.pvxSheets370=all;
   if(PH.addEventListener) PH.addEventListener('change',all); else PH.addListener(all);
   /* the Ultrasound request is built each time it opens; the Hospital alert rebuilds its footer */
-  if(typeof openUltrasoundRequest==='function'){ var our=openUltrasoundRequest; openUltrasoundRequest=function(){ var r=our.apply(this,arguments); arrange(CFG[3]); return r; }; }
-  if(typeof renderAlertModal==='function'){ var ram=renderAlertModal; renderAlertModal=function(){ var r=ram.apply(this,arguments); nox(NOX[2]); return r; }; }
+  if(typeof openUltrasoundRequest==='function'){ pvxAfter('openUltrasoundRequest',function(){ arrange(CFG[3]); },'n370'); }
+  if(typeof renderAlertModal==='function'){ pvxAfter('renderAlertModal',function(){ nox(NOX[2]); },'n370'); }
   NOX.concat(CFG).forEach(function(k){ var m=el(k); if(!m||m._pvx370) return; m._pvx370=true;
     new MutationObserver(function(){ var o=m.classList.contains('open'); if(o&&!m._pvx370o){ m._pvxDirty=false; nox(k); } m._pvx370o=o; }).observe(m,{attributes:true,attributeFilter:['class']}); });
   all();
@@ -1011,8 +998,7 @@ try{
   /* drag the sheet down by its top to close it; a sheet with typing asks first */
   CFG.forEach(function(c){ var m=el(c); if(!m) return;
     var y0=null, dy=0, ly=0, lt=0, v=0;
-    function zone(e){ return e.target.closest&&e.target.closest('.pvx-grab,.addpt-head'); }
-    m.addEventListener('touchstart',function(e){ if(!PH.matches||!m.classList.contains('open')||!m.classList.contains('pvx-ps')||!zone(e)||e.touches.length>1) return;
+    m.addEventListener('touchstart',function(e){ if(!PH.matches||!m.classList.contains('open')||!m.classList.contains('pvx-ps')||!pvxGrabZone(e)||e.touches.length>1) return;
       if(e.target.closest('button,a,input,select,textarea')) return;
       y0=ly=e.touches[0].clientY; lt=performance.now(); dy=0; v=0; m.classList.add('pvx-ps-drag'); },{passive:true});
     m.addEventListener('touchmove',function(e){ if(y0===null) return; var y=e.touches[0].clientY, t=performance.now();
@@ -1070,7 +1056,7 @@ try{
   window.pvxRefRemember=function(name){ name=String(name||'').trim(); if(!name) return;
     var L=(typeof CT_VET_HOSPITALS!=='undefined'?CT_VET_HOSPITALS:[]); if(!L.some(function(x){ return x.name===name; })) return;   /* a typed name isn't added to the list */
     var a=read().filter(function(n){ return n!==name; }); a.unshift(name); try{ localStorage.setItem(K,JSON.stringify(a.slice(0,5))); }catch(e){} };
-  if(typeof commitPatient==='function'){ var cp=commitPatient; commitPatient=function(f){ try{ if(f&&f.referringHospital) pvxRefRemember(f.referringHospital); }catch(e){} return cp.apply(this,arguments); }; }
+  if(typeof commitPatient==='function'){ pvxBefore('commitPatient',function(f){ try{ if(f&&f.referringHospital) pvxRefRemember(f.referringHospital); }catch(e){} },'n371'); }
 })();
 /* 3. the pull-down button of a combo box: opens and closes the list; not in the Tab order (↓ opens it from the keyboard) */
 (function(){
@@ -1091,7 +1077,7 @@ try{
       else { c.open(inp); sync(); } });
     try{ new MutationObserver(sync).observe(pan,{attributes:true,attributeFilter:['class']}); }catch(e){} }
   function all(){ CFG.forEach(add); }
-  all(); if(typeof ensureHospitalAutocompletes==='function'){ var eh=ensureHospitalAutocompletes; ensureHospitalAutocompletes=function(){ var r=eh.apply(this,arguments); all(); return r; }; }
+  all(); if(typeof ensureHospitalAutocompletes==='function'){ pvxAfter('ensureHospitalAutocompletes',function(){ all(); },'n371'); }
   document.addEventListener('focusin',function(e){ if(e.target&&(e.target.id==='apBreed'||e.target.id==='apRefHosp')) all(); });
 })();
 }catch(e){setTimeout(function(){throw e})}
@@ -1108,9 +1094,9 @@ try{
     radios(g).forEach(function(b){ b.setAttribute('role','radio'); var on=b.classList.contains('sel'); if(b.getAttribute('aria-checked')!==String(on)) b.setAttribute('aria-checked',String(on)); }); }
   var refocus=false;
   document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('#alertModal .alert-type')) refocus=true; },true);
-  if(typeof renderAlertModal==='function'){ var ram=renderAlertModal; renderAlertModal=function(){ var r=ram.apply(this,arguments);
+  if(typeof renderAlertModal==='function'){ pvxAfter('renderAlertModal',function(){ 
     try{ alertTypes(); var g=document.querySelector('#alertModal .alert-types'); if(g) roving(g);
-      if(refocus&&g){ var c=g.querySelector('[aria-checked="true"]'); if(c) c.focus({preventScroll:true}); } }catch(e){} refocus=false; past(); return r; }; }
+      if(refocus&&g){ var c=g.querySelector('[aria-checked="true"]'); if(c) c.focus({preventScroll:true}); } }catch(e){} refocus=false; past(); },'n372'); }
   document.addEventListener('keydown',function(e){ var g=e.target.closest&&e.target.closest(GROUPS); if(!g) return;
     if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].indexOf(e.key)<0||e.altKey||e.metaKey||e.ctrlKey) return;
     var R=radios(g), i=R.indexOf(e.target.closest(g.classList.contains('alert-types')?'.alert-type':'[role=radio]')); if(i<0) return;
@@ -1123,7 +1109,7 @@ try{
     roving(g2); var c=g2.querySelector('[aria-checked="true"]')||radios(g2)[j]; if(c&&document.activeElement!==c) c.focus({preventScroll:true});
   },true);
   var t=0; function sweep(){ t=0; try{ alertTypes(); [].forEach.call(document.querySelectorAll(GROUPS),roving); }catch(e){} }
-  try{ new MutationObserver(function(){ if(!t) t=requestAnimationFrame(sweep); }).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-checked','class']}); }catch(e){}
+  try{ pvxWatch(function(){ if(!t) t=requestAnimationFrame(sweep); },{subtree:true,childList:true,attributes:true,attributeFilter:['aria-checked','class']},document.body); }catch(e){}
   sweep();
   function past(){ var d=document.getElementById('alertReviewDay'), s=document.getElementById('alertReviewTime'); if(!d||!s) return;
     var n=new Date(), today=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'), now=n.getHours()*60+n.getMinutes(), isT=d.value===today;
@@ -1145,7 +1131,7 @@ try{
     else if(k==='Home') n=1; else if(k==='End') n=240; else return;
     e.preventDefault(); n=Math.max(1,Math.min(240,n)); if(String(n)===i.value) return; i.value=String(n); sync(i); i.dispatchEvent(new Event('input',{bubbles:true})); },true);
   document.addEventListener('input',function(e){ if(e.target&&e.target.id==='otwMin') sync(e.target); },true);
-  try{ new MutationObserver(function(){ var i=document.getElementById('otwMin'); if(i&&!i.__s){ i.__s=1; sync(i); } }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+  try{ pvxWatch(function(){ var i=document.getElementById('otwMin'); if(i&&!i.__s){ i.__s=1; sync(i); } },{childList:true,subtree:true},document.body); }catch(e){}
 })();
 }catch(e){setTimeout(function(){throw e})}
 
@@ -1181,7 +1167,7 @@ try{
   var t=0; function sweep(){ clearTimeout(t); t=0; try{ keys(); radios(); back(); }catch(e){} }
   var go=function(){ if(!t) t=setTimeout(sweep,30); };
   document.addEventListener('focusin',function(){ try{ keys(); }catch(e){} },true);   /* before the keyboard comes up */
-  try{ new MutationObserver(go).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-pressed']}); }catch(e){}
+  try{ pvxWatch(go,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-pressed']},document.documentElement); }catch(e){}
   sweep();
   /* 2. a Clear button in sheets on iPhone and iPad */
   var XM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 8l8 8M16 8l-8 8"/></svg>';
@@ -1233,14 +1219,13 @@ try{
   function add(root){ var w=avail(), b=root.querySelector('.pvx-ks-body'); if(!w||!b||b.querySelector('.pvx-ks-ic')) return;
     b.insertAdjacentHTML('beforeend','<h3 id="pvxKsIc">From Flow’s icon</h3><p class="pvx-ks-how">'+esc(w.how)+'</p><ul class="pvx-ks-ic" aria-labelledby="pvxKsIc">'
       +SC.map(function(s){ return '<li><b>'+esc(s[0])+'</b><span>'+esc(s[1])+'</span></li>'; }).join('')+'</ul>'); }
-  try{ new MutationObserver(function(m){ m.forEach(function(r){ [].forEach.call(r.addedNodes,function(n){ if(n.nodeType===1&&n.classList.contains('pvx-ks')) add(n); }); }); })
-    .observe(document.body,{childList:true}); }catch(e){}
+  try{ pvxWatch(function(m){ m.forEach(function(r){ [].forEach.call(r.addedNodes,function(n){ if(n.nodeType===1&&n.classList.contains('pvx-ks')) add(n); }); }); },{childList:true},document.body); }catch(e){}
   /* 2. one tip, after the third patient added from inside Flow */
   var K='pvx:flow:tip-sc', get=function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, put=function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} };
-  if(typeof window.commitPatient==='function'){ var cp=window.commitPatient;
-    window.commitPatient=function(){ var r=cp.apply(this,arguments);
+  if(typeof window.commitPatient==='function'){ 
+    pvxAfter('commitPatient',function(){ 
       try{ var w=avail(); if(w&&get(K)!=='shown'){ var n=(+get(K)||0)+1; if(n>=3){ put(K,'shown'); setTimeout(function(){ if(typeof notify==='function') notify('Tip: New patient from Flow’s icon',w.tip+', Find a patient, Patients and Client Display.',{icon:'info'}); },1600); } else put(K,String(n)); } }catch(e){}
-      return r; }; }
+      },'n375'); }
 })();
 }catch(e){setTimeout(function(){throw e})}
 

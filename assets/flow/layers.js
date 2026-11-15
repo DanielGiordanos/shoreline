@@ -49,23 +49,22 @@ const q=new URLSearchParams(location.search);let staffFilter=q.get('staff')||'',
 if(!['active','today','week','month','all'].includes(period))period='active';
 CT_ROLES.splice(2,0,{id:'intern',label:'Intern',missing:'No intern assigned'});CT_KIND_LABEL.directory='Directory staff';CT_KIND_LABEL.intern='Intern';
 CARE_TEAM_CONFIG.directoryUrl=new URL('Directory.integrated.html',location.href).href;
-const oldRoster=ctRoster;
-ctRoster=function(){const out=oldRoster();roster.filter(e=>e.active!==false).forEach(e=>{if(!out.some(x=>x.id===e.staffId))out.push({id:e.staffId,name:e.name,kind:e.dept==='Interns'?'intern':'directory',initials:e.initials||docInitials(e.name),color:'var(--accent)'});});return out;};
+pvxWrap('ctRoster',function(oldRoster){ return function(){const out=oldRoster();roster.filter(e=>e.active!==false).forEach(e=>{if(!out.some(x=>x.id===e.staffId))out.push({id:e.staffId,name:e.name,kind:e.dept==='Interns'?'intern':'directory',initials:e.initials||docInitials(e.name),color:'var(--accent)'});});return out;}; },'#3');
 function currentStaff(p,r){return ctCurrent(p,r)[0]?.staffId||'';}
 function canAssign(p){return (typeof Backend!=='undefined'&&Backend.mode==='staff')||(q.get('fixtures')==='1'&&p?._demo===true);}
 function isSupervisor(e){const title=e.title||'';return e.dept!=='Interns'&&!/coordinator|technician|liaison|assistant|manager|administrat|client/i.test(title)&&/veterinarian|surgeon|internist|neurologist|oncologist|criticalist|\bDVM\b|\bVMD\b/i.test(title);}
 function options(p,r){const chosen=currentStaff(p,r);const entries=roster.filter(e=>e.active!==false&&(r==='intern'?e.dept==='Interns':isSupervisor(e)));return'<option value="">'+(r==='intern'?'No intern assigned':'No supervising doctor assigned')+'</option>'+entries.map(e=>`<option value="${ctEsc(e.staffId)}" ${chosen===e.staffId?'selected':''}>${ctEsc(e.name)} · ${ctEsc(e.dept)}</option>`).join('')+(chosen&&!entries.some(e=>e.staffId===chosen)?`<option value="${ctEsc(chosen)}" selected>Current: ${ctEsc(ctCurrent(p,r)[0].staffName)} (not in active roster)</option>`:'');}
 function mount(p){let el=document.getElementById('pv-intern');if(!el){el=document.createElement('section');el.id='pv-intern';el.className='pv-assignment';document.getElementById('careTeamMount')?.before(el);}const disabled=!canAssign(p);el.innerHTML=`<label for="pv-intern-select">Intern</label><select class="pv-input" id="pv-intern-select" ${disabled?'disabled':''}>${options(p,'intern')}</select><label for="pv-supervisor-select">Supervising doctor</label><select class="pv-input" id="pv-supervisor-select" ${disabled?'disabled':''}>${options(p,'supervising')}</select><p class="pv-note">${ctEsc(rosterStatus)}. Choose the supervisor here; it isn’t taken from the manager or the shift.</p>${currentStaff(p,'intern')&&!currentStaff(p,'supervising')?'<p role="status">Supervisor assignment needed for this intern’s case.</p>':''}<button class="pv-btn" type="button" id="pv-history">See history or hand off…</button>`;el.querySelector('#pv-intern-select').onchange=e=>assign(p,'intern',e.target.value);el.querySelector('#pv-supervisor-select').onchange=e=>assign(p,'supervising',e.target.value);el.querySelector('#pv-history').onclick=()=>openCareTeam(p.id);}
 function assign(p,r,id){if(!canAssign(p))return;if(id===currentStaff(p,r))return;if(!id){ctCurrent(p,r).slice().forEach(a=>ctEnd(p,a.id));mount(p);return;}const e=roster.find(e=>e.staffId===id&&e.active!==false);if(!e)return;if(r==='intern'&&e.dept!=='Interns')return;if(r==='supervising'&&!isSupervisor(e))return;ctAssign(p,r,ctStaff(id),{});}
-const oldFill=fillDrawer;fillDrawer=function(p){oldFill(p);mount(p);};
+pvxWrap('fillDrawer',function(oldFill){ return function(p){oldFill(p);mount(p);}; },'#3');
 
-const oldTouch=ctTouch;ctTouch=function(a){oldTouch(a);if(typeof AUTH!=='undefined'&&AUTH?.currentUser)a.actorUid=AUTH.currentUser.uid;};
-const oldAssign=ctAssign;ctAssign=function(p,r,s,o){if(r==='intern'&&!roster.some(e=>e.staffId===s.id&&e.dept==='Interns'&&e.active!==false)){toast('Choose an active intern from Directory');return null;}const a=oldAssign(p,r,s,o);if(a&&AUTH?.currentUser){a.actorUid=AUTH.currentUser.uid;renderAll();}return a;};
+pvxWrap('ctTouch',function(oldTouch){ return function(a){oldTouch(a);if(typeof AUTH!=='undefined'&&AUTH?.currentUser)a.actorUid=AUTH.currentUser.uid;}; },'#3');
+pvxWrap('ctAssign',function(oldAssign){ return function(p,r,s,o){if(r==='intern'&&!roster.some(e=>e.staffId===s.id&&e.dept==='Interns'&&e.active!==false)){toast('Choose an active intern from Directory');return null;}const a=oldAssign(p,r,s,o);if(a&&AUTH?.currentUser){a.actorUid=AUTH.currentUser.uid;renderAll();}return a;}; },'#3');
 
-const oldForm=ctFormHTML;ctFormHTML=function(p,r){let html=oldForm(p,r);if(r==='intern'){html=html.replace(/<select id="ctFormWho"[^>]*>[\s\S]*?<\/select>/,`<select id="ctFormWho">${roster.filter(e=>e.dept==='Interns'&&e.active!==false).map(e=>`<option value="${ctEsc(e.staffId)}">${ctEsc(e.name)}</option>`).join('')}</select>`);}return html;};
+pvxWrap('ctFormHTML',function(oldForm){ return function(p,r){let html=oldForm(p,r);if(r==='intern'){html=html.replace(/<select id="ctFormWho"[^>]*>[\s\S]*?<\/select>/,`<select id="ctFormWho">${roster.filter(e=>e.dept==='Interns'&&e.active!==false).map(e=>`<option value="${ctEsc(e.staffId)}">${ctEsc(e.name)}</option>`).join('')}</select>`);}return html;}; },'#3');
 function asVisit(p){return {...mapToDb(p),_demo:!!p._demo};}
 function selected(){return roster.find(e=>e.staffId===staffFilter||(e.flowIds||[]).includes(staffFilter));}
-const oldFiltered=filtered;filtered=function(){const all=oldFiltered();if(!staffFilter)return all;const e=selected();if(!e)return [];return all.filter(p=>A.match(asVisit(p),e,period,roleFilter));};
+pvxWrap('filtered',function(oldFiltered){ return function(){const all=oldFiltered();if(!staffFilter)return all;const e=selected();if(!e)return [];return all.filter(p=>A.match(asVisit(p),e,period,roleFilter));}; },'#3');
 const banner=document.createElement('section');banner.className='pv-connect';banner.id='pv-flow-filter';banner.hidden=!staffFilter;(document.querySelector('.subnav')||document.querySelector('.topnav'))?.after(banner);
 function drawFilter(){banner.hidden=!staffFilter;if(!staffFilter)return;const e=selected();const history=e&&historyLive?A.rows(sharedHistory,e,period,roleFilter):[];banner.innerHTML=`<strong>${e?ctEsc(e.name):'Unknown staff profile'} · ${ctEsc(period)} assignments ${roleFilter?'· '+ctEsc(roleFilter):''}</strong><p class="pv-note">Active board filtered by explicit assignment. ${historyLive?'Retained encounter history loaded.':'Historical log unavailable until connected.'} Counts describe assignments, not care intensity.</p><button class="pv-btn" id="pv-clear">Clear staff filter</button><div class="pv-log">${history.map(v=>`<button class="pv-btn" data-visit="${ctEsc(v.id)}">${ctEsc(v.patient_name||'Patient')} · ${ctEsc(v.visit_code||v.id)}</button>`).join('')}</div>`;banner.querySelector('#pv-clear').onclick=()=>{staffFilter='';const u=new URL(location.href);['staff','period','role','patient'].forEach(k=>u.searchParams.delete(k));window.history.replaceState({},'',u);banner.hidden=true;renderAll();};banner.querySelectorAll('[data-visit]').forEach(b=>b.onclick=()=>openEncounter(b.dataset.visit));}
 function openEncounter(id){const existing=PATIENTS.find(p=>String(p.id)===String(id));if(existing){openDrawer(existing.id);return;}const v=sharedHistory.find(v=>String(v.id)===String(id));if(!v)return;let log=document.getElementById('pv-history-detail');if(!log){log=document.createElement('details');log.id='pv-history-detail';log.className='pv-assignment';banner.appendChild(log);}log.open=true;log.innerHTML=`<summary>${ctEsc(v.patient_name||'Patient')} · Historical assignment log</summary><p class="pv-note">Read-only retained encounter. Not added to the active census.</p>`+(v.care_team?.assignments||[]).map(a=>`<p>${ctEsc(a.staff_name)} · ${ctEsc(a.role)} · ${ctEsc(a.status)}<br><small>${ctEsc(a.start_at||'Start unknown')} → ${ctEsc(a.end_at||'No end recorded')} · ${ctEsc(a.updated_by||'Actor unknown')}</small></p>`).join('');}
@@ -242,7 +241,6 @@ var CHECK='<svg class="ci-check" viewBox="0 0 24 24" fill="none" stroke="current
 
 function box(){var n=document.getElementById('critIsland');if(!n){n=document.createElement('div');n.id='critIsland';n.setAttribute('role','alert');n.setAttribute('aria-live','assertive');n.innerHTML='<span class="ci-seed" aria-hidden="true"></span><div class="ci-inner"></div>';document.body.appendChild(n);}return n;}
 function inner(){return box().querySelector('.ci-inner');}
-function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function pts(){try{return PATIENTS||[];}catch(e){return [];}}
 function byId(id){return pts().find(function(x){return x.id===id;});}
 function onTV(){try{ if(document.body.classList.contains('client-mode')) return true; return (typeof currentView!=='undefined' && currentView==='client'); }catch(e){return false;}}
@@ -310,7 +308,7 @@ function initials(n){return String(n||'').split(/\s+/).map(function(w){return w[
 function docBtn(d,shifts,dl){
   var col=shifts&&shifts.length?shifts[0].color:(d.baseColor||d.color||'#5C5E62');
   var sub=(shifts&&shifts.length?shifts.map(function(s){return s.label;}).join(' + ')+' · ':'')+patientCount(d.id);
-  return '<button class="ci-doc ci-s" style="--d:'+dl+'s" type="button" data-doc="'+esc(d.id)+'"><span class="ci-av" style="background:'+esc(col)+'">'+esc(initials(d.name))+'</span><span><b>'+esc(d.name)+'</b><small>'+esc(sub)+'</small></span></button>';
+  return '<button class="ci-doc ci-s" style="--d:'+dl+'s" type="button" data-doc="'+pvxEsc(d.id)+'"><span class="ci-av" style="background:'+pvxEsc(col)+'">'+pvxEsc(initials(d.name))+'</span><span><b>'+pvxEsc(d.name)+'</b><small>'+pvxEsc(sub)+'</small></span></button>';
 }
 
 /* view html */
@@ -322,17 +320,17 @@ function resus(p){try{return normalizeResusPref(p.resusPref);}catch(e){return ''
 function alertHTML(p,more){
   var loc=(p.room&&p.room!=='Lobby')?p.room:'Lobby', a=arrMs(p), r=resus(p), g=sig(p);
   var h='<div class="ci-row"><div class="ci-ic ci-s" style="--d:.02s">'+ECG+'</div>'
-   +'<button class="ci-main ci-s" style="--d:.07s" type="button" data-open="'+esc(p.id)+'" aria-label="Open '+esc(p.name)+'">'
-   +'<span class="ci-kicker">Critical patient · '+esc(loc)+'</span>'
-   +'<span class="ci-name">'+esc(p.name||'Unnamed patient')+(g?' <span class="ci-sig">'+esc(g)+'</span>':'')+'</span>'
-   +'<span class="ci-meta">'+(a?'<span class="ci-wait" data-arr="'+a+'">Waiting '+mmss(Date.now()-a)+'</span>':'Just arrived')+(p.reason?', '+esc(p.reason):'')+'</span></button>'
+   +'<button class="ci-main ci-s" style="--d:.07s" type="button" data-open="'+pvxEsc(p.id)+'" aria-label="Open '+pvxEsc(p.name)+'">'
+   +'<span class="ci-kicker">Critical patient · '+pvxEsc(loc)+'</span>'
+   +'<span class="ci-name">'+pvxEsc(p.name||'Unnamed patient')+(g?' <span class="ci-sig">'+pvxEsc(g)+'</span>':'')+'</span>'
+   +'<span class="ci-meta">'+(a?'<span class="ci-wait" data-arr="'+a+'">Waiting '+mmss(Date.now()-a)+'</span>':'Just arrived')+(p.reason?', '+pvxEsc(p.reason):'')+'</span></button>'
    +(r?'<span class="ci-tag ci-s" style="--d:.11s">'.replace('ci-tag','ci-tag '+(r==='DNR'?'dnr':'cpr'))+r+'</span>':'')
    +(more>0?'<span class="ci-more ci-s" style="--d:.12s">+'+more+' more</span>':'')
-   +(pickFor===p.id?'':'<button class="ci-take ci-s" style="--d:.14s" type="button" data-take="'+esc(p.id)+'">Take case</button>')+'</div>';
+   +(pickFor===p.id?'':'<button class="ci-take ci-s" style="--d:.14s" type="button" data-take="'+pvxEsc(p.id)+'">Take case</button>')+'</div>';
   if(pickFor===p.id){
     var on=shiftDoctors(), rest;
     try{ rest=DOCTORS.filter(function(d){return !on.some(function(o){return o.d.id===d.id;});}); }catch(e){ rest=[]; }
-    h+='<div class="ci-pick">'+(on.length?'':'<div class="ci-pick-h ci-s" style="--d:.05s"><span>Shifts haven\'t been set today. Choose the doctor taking '+esc(p.name)+'.</span></div>');
+    h+='<div class="ci-pick">'+(on.length?'':'<div class="ci-pick-h ci-s" style="--d:.05s"><span>Shifts haven\'t been set today. Choose the doctor taking '+pvxEsc(p.name)+'.</span></div>');
     var grid=on.length?on:rest.map(function(d){return {d:d,shifts:[]};});
     h+='<div class="ci-docs">'+grid.map(function(o,i){return docBtn(o.d,o.shifts,(.08+i*.035).toFixed(3));}).join('')+'</div>';
     if(on.length&&rest.length&&showAll){ h+='<div class="ci-all"><div class="ci-docs">'+rest.map(function(d,i){return docBtn(d,[],(.03+i*.02).toFixed(3));}).join('')+'</div></div>'; }
@@ -344,8 +342,8 @@ function alertHTML(p,more){
 }
 function takenHTML(){
   return '<div class="ci-row"><div class="ci-ic ci-s" style="--d:0s">'+CHECK+'</div><div class="ci-main ci-s" style="--d:.06s;cursor:default">'
-   +'<span class="ci-kicker">Case Taken</span><span class="ci-name">'+esc(doneMsg.name)+' · '+esc(doneMsg.doc)+'</span>'
-   +'<span class="ci-meta">'+(doneMsg.took!=null?'Taken in '+dur(doneMsg.took):'Just now')+(doneMsg.by?' · by '+esc(doneMsg.by):'')+'</span></div>'
+   +'<span class="ci-kicker">Case Taken</span><span class="ci-name">'+pvxEsc(doneMsg.name)+' · '+pvxEsc(doneMsg.doc)+'</span>'
+   +'<span class="ci-meta">'+(doneMsg.took!=null?'Taken in '+dur(doneMsg.took):'Just now')+(doneMsg.by?' · by '+pvxEsc(doneMsg.by):'')+'</span></div>'
    +'<button class="ci-link ci-undo ci-s" style="--d:.12s" type="button" data-undo="1">Undo</button></div>';
 }
 
@@ -438,7 +436,7 @@ window.renderCritAlert=function(){
   shownIds.forEach(function(id){
     if(ids.indexOf(id)>-1||localTaken.has(id)||tv) return;
     var p=byId(id); var by=p?takenBy(p):'';
-    if(by){ try{ notify('Critical case taken', esc(p.name)+' · '+esc(by), {icon:'doctor', color:'var(--priority-p1)'}); }catch(e){} }
+    if(by){ try{ notify('Critical case taken', pvxEsc(p.name)+' · '+pvxEsc(by), {icon:'doctor', color:'var(--priority-p1)'}); }catch(e){} }
   });
   shownIds=ids;
   if(pickFor&&ids.indexOf(pickFor)<0){ pickFor=null; showAll=false; }
@@ -671,7 +669,6 @@ window.addEventListener('pagehide',flush); document.addEventListener('visibility
 function stats(){ try{ return JSON.parse(localStorage.getItem(STATS)||'{}'); }catch(e){ return {}; } }
 
 /* ---------- ui ---------- */
-function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 var MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>';
 var confirmMode=false, sessionId=0, tapMode=false, silenceT=null, maxT=null, hintT=null, bar=null, wrap=null, live=null;
 function build(){
@@ -750,9 +747,9 @@ function meterStop(){ cancelAnimationFrame(meter.raf); try{ if(meter.stream) met
   meter.stream=meter.ctx=meter.an=null; meter.l=0; if(wrap) wrap.style.setProperty('--fvL','0'); }
 function show(html){ inner.innerHTML=html; place(); panel.classList.add('show'); }
 function hide(){ panel.classList.remove('show'); pending=null; if(listening&&confirmMode){ sessionId++; stop(); } }
-function heard(t){ return '<div class="fv-heard">'+(via==='typed'?'':'Heard ')+'<q>'+esc(t)+'</q></div>'; }
+function heard(t){ return '<div class="fv-heard">'+(via==='typed'?'':'Heard ')+'<q>'+pvxEsc(t)+'</q></div>'; }
 function toast(t,withUndo,dur){
-  toastEl.innerHTML='<span>'+esc(t)+'</span>'+(withUndo?'<button type="button">Undo</button>':'');
+  toastEl.innerHTML='<span>'+pvxEsc(t)+'</span>'+(withUndo?'<button type="button">Undo</button>':'');
   toastEl.classList.add('show');
   var b=toastEl.querySelector('button'); if(b) b.onclick=function(){ toastEl.classList.remove('show'); if(undoFn){ undoFn(); undoFn=null; } };
   clearTimeout(toastEl._h); toastEl._h=setTimeout(function(){ toastEl.classList.remove('show'); undoFn=null; }, dur||(withUndo?7000:2200));
@@ -900,7 +897,7 @@ function dur(x){ var m=Math.max(0,Math.round(x/60000)); if(m<60) return m+' min'
 function docName(id){ var d=docs().find(function(x){ return x.id===id; }); return d?d.name:''; }
 function ans(html){ return '<div class="fv-ans">'+html+'</div>'; }
 function err(html){ return '<div class="fv-ans fv-err">'+html+'</div>'; }
-function list(ps,fn){ return ps.length?ps.map(fn||function(p){ return esc(pName(p)); }).join(', '):'none'; }
+function list(ps,fn){ return ps.length?ps.map(fn||function(p){ return pvxEsc(pName(p)); }).join(', '):'none'; }
 var HELP_SHEET='<div class="fv-help"><div><b>Move</b>“Move Bella to Exam” · “Put Max in Room 3” · “Send Oscar to the back”</div>'
  +'<div><b>Doctor</b>“Give Bella to Dr. Downes” · “Dr. Koch is taking Max”</div>'
  +'<div><b>Two at once</b>“Move Max to Room 3 and give him to Dr. Downes”</div>'
@@ -912,19 +909,19 @@ var HELP_SHEET='<div class="fv-help"><div><b>Move</b>“Move Bella to Exam” ·
 function answer(q){
   if(q.q==='help') return HELP_SHEET;
   var A=active();
-  if(q.q==='waiting'){ var L=A.filter(function(p){ return p.status==='Waiting'; }); return ans('<b>'+L.length+' waiting:</b> '+(L.length?list(L,function(p){ return esc(pName(p))+' <small>'+dur(Date.now()-ms(p.arrival))+'</small>'; }):'no one')+'.'); }
-  if(q.q==='critical'){ var C=A.filter(function(p){ return Number(p.prio)===1; }); return ans('<b>'+C.length+' critical:</b> '+(C.length?list(C,function(p){ return esc(pName(p))+' <small>'+esc(where(p))+'</small>'; }):'none')+'.'); }
-  if(q.q==='who'){ if(!q.room) return err('Which room?'); var ps=A.filter(function(p){ return p.room===q.room; }); return ans(ps.length?'<b>'+esc(q.room)+':</b> '+list(ps)+'.':'<b>'+esc(q.room)+'</b> is empty.'); }
-  if(q.q==='open'){ var R=roomList().filter(function(r){ return r!=='Treatment'&&!occupant(r); }); return ans(R.length?'<b>'+R.length+' open:</b> '+esc(R.join(', '))+'.':'Every room is taken right now.'); }
+  if(q.q==='waiting'){ var L=A.filter(function(p){ return p.status==='Waiting'; }); return ans('<b>'+L.length+' waiting:</b> '+(L.length?list(L,function(p){ return pvxEsc(pName(p))+' <small>'+dur(Date.now()-ms(p.arrival))+'</small>'; }):'no one')+'.'); }
+  if(q.q==='critical'){ var C=A.filter(function(p){ return Number(p.prio)===1; }); return ans('<b>'+C.length+' critical:</b> '+(C.length?list(C,function(p){ return pvxEsc(pName(p))+' <small>'+pvxEsc(where(p))+'</small>'; }):'none')+'.'); }
+  if(q.q==='who'){ if(!q.room) return err('Which room?'); var ps=A.filter(function(p){ return p.room===q.room; }); return ans(ps.length?'<b>'+pvxEsc(q.room)+':</b> '+list(ps)+'.':'<b>'+pvxEsc(q.room)+'</b> is empty.'); }
+  if(q.q==='open'){ var R=roomList().filter(function(r){ return r!=='Treatment'&&!occupant(r); }); return ans(R.length?'<b>'+R.length+' open:</b> '+pvxEsc(R.join(', '))+'.':'Every room is taken right now.'); }
   if(q.q==='count'){ var by={}; A.forEach(function(p){ by[p.status]=(by[p.status]||0)+1; }); var order=['Waiting','Exam','Diagnostics','Ultrasound','Procedure','Hospitalized'];
     var parts=order.filter(function(s){ return by[s]; }).map(function(s){ return by[s]+' '+s; }); Object.keys(by).forEach(function(s){ if(order.indexOf(s)<0) parts.push(by[s]+' '+s); });
-    return ans('<b>'+A.length+' on the board</b>'+(parts.length?': '+esc(parts.join(' · ')):'')+'.'); }
-  if(q.q==='doctor'){ var d=findDoctor(q.said); if(!d) return err('No doctor named “'+esc(q.said)+'”.'); var D=A.filter(function(p){ return p.doctor===d.d.id; });
-    return ans('<b>'+esc(d.d.name)+'</b> '+(D.length?'has '+D.length+': '+list(D,function(p){ return esc(pName(p))+' <small>'+esc(where(p))+'</small>'; })+'.':'has no patients right now.')); }
-  if(q.q==='howlong'||q.q==='where'){ var M=findPatients(q.who); if(!M.length) return err('No patient named “'+esc(q.who)+'” on the board.');
+    return ans('<b>'+A.length+' on the board</b>'+(parts.length?': '+pvxEsc(parts.join(' · ')):'')+'.'); }
+  if(q.q==='doctor'){ var d=findDoctor(q.said); if(!d) return err('No doctor named “'+pvxEsc(q.said)+'”.'); var D=A.filter(function(p){ return p.doctor===d.d.id; });
+    return ans('<b>'+pvxEsc(d.d.name)+'</b> '+(D.length?'has '+D.length+': '+list(D,function(p){ return pvxEsc(pName(p))+' <small>'+pvxEsc(where(p))+'</small>'; })+'.':'has no patients right now.')); }
+  if(q.q==='howlong'||q.q==='where'){ var M=findPatients(q.who); if(!M.length) return err('No patient named “'+pvxEsc(q.who)+'” on the board.');
     return M.map(function(x){ var p=x.p;
-      if(q.q==='howlong'){ var inRoom=(p.room&&p.room!=='Lobby'&&p.roomSince)?' · '+dur(Date.now()-ms(p.roomSince))+' in '+esc(p.room):''; return ans('<b>'+esc(pName(p))+'</b> has been here '+dur(Date.now()-ms(p.arrival))+inRoom+' · '+esc(p.status)+'.'); }
-      var dn=(p.doctor&&p.doctor!=='unassigned')?docName(p.doctor):''; return ans('<b>'+esc(pName(p))+'</b> is in '+esc(p.room||'Lobby')+' · '+esc(p.status)+(dn?' · '+esc(dn):' · no doctor yet')+'.'); }).join(''); }
+      if(q.q==='howlong'){ var inRoom=(p.room&&p.room!=='Lobby'&&p.roomSince)?' · '+dur(Date.now()-ms(p.roomSince))+' in '+pvxEsc(p.room):''; return ans('<b>'+pvxEsc(pName(p))+'</b> has been here '+dur(Date.now()-ms(p.arrival))+inRoom+' · '+pvxEsc(p.status)+'.'); }
+      var dn=(p.doctor&&p.doctor!=='unassigned')?docName(p.doctor):''; return ans('<b>'+pvxEsc(pName(p))+'</b> is in '+pvxEsc(p.room||'Lobby')+' · '+pvxEsc(p.status)+(dn?' · '+pvxEsc(dn):' · no doctor yet')+'.'); }).join(''); }
   return err(HELP); }
 
 /* ---------- actions ---------- */
@@ -944,10 +941,10 @@ function same(s){ if(s.op==='prio') return Number(s.p.prio)===s.level; if(s.op==
    between rooms), and rooming a pet from the Lobby into an empty numbered room. Everything else asks first. */
 function safe(s){ if((s.conf||0)<0.92) return false; if(s.op==='prio') return false; if(s.op==='wait') return true; if(s.op==='assign') return true; if(s.dest.type==='status') return true;
   var cur=s.p.room||'Lobby'; return /^Room \d+$/.test(s.dest.v)&&cur==='Lobby'&&!occupant(s.dest.v); }
-function stepRow(s){ return '<div class="fv-row"><div class="fv-med" style="--c:'+color(s.p)+'">'+esc((s.p.name||'?')[0])+'</div><div class="fv-t"><b>'+esc(pName(s.p))+'</b><div class="fv-path"><span class="fv-pill">'+esc(fromLabel(s))+'</span> → <span class="fv-pill to">'+esc(destLabel(s))+'</span></div></div></div>'; }
+function stepRow(s){ return '<div class="fv-row"><div class="fv-med" style="--c:'+color(s.p)+'">'+pvxEsc((s.p.name||'?')[0])+'</div><div class="fv-t"><b>'+pvxEsc(pName(s.p))+'</b><div class="fv-path"><span class="fv-pill">'+pvxEsc(fromLabel(s))+'</span> → <span class="fv-pill to">'+pvxEsc(destLabel(s))+'</span></div></div></div>'; }
 function choose(M,raw,cb){
   pending={kind:'choose'};
-  show(heard(raw)+ans('Which '+esc(M[0].p.name)+'?')+'<div class="fv-choices">'+M.slice(0,4).map(function(x){ var p=x.p; return '<button class="fv-choice" type="button" data-id="'+esc(p.id)+'"><span class="fv-med" style="--c:'+color(p)+'">'+esc((p.name||'?')[0])+'</span><span>'+esc(pName(p))+'<small>'+esc(where(p))+'</small></span></button>'; }).join('')+'</div>');
+  show(heard(raw)+ans('Which '+pvxEsc(M[0].p.name)+'?')+'<div class="fv-choices">'+M.slice(0,4).map(function(x){ var p=x.p; return '<button class="fv-choice" type="button" data-id="'+pvxEsc(p.id)+'"><span class="fv-med" style="--c:'+color(p)+'">'+pvxEsc((p.name||'?')[0])+'</span><span>'+pvxEsc(pName(p))+'<small>'+pvxEsc(where(p))+'</small></span></button>'; }).join('')+'</div>');
   inner.querySelectorAll('[data-id]').forEach(function(b){ b.onclick=function(){ var x=M.find(function(y){ return String(y.p.id)===b.getAttribute('data-id'); }); if(x) cb(x.p); }; });
 }
 function resolveAll(steps,raw){
@@ -955,16 +952,16 @@ function resolveAll(steps,raw){
   (function next(i){
     if(i>=steps.length) return plan(out,raw);
     var s=steps[i];
-    if(s.noDest) return show(heard(raw)+err('Move '+esc(s.who)+' where?'));
-    if(s.badDest){ stat('bad_dest'); statWord('dest',s.badDest); } if(s.badDest) return show(heard(raw)+err('I didn’t catch where: “'+esc(s.badDest)+'”. Try Exam, Room 3, Ultrasound or Treatment.'));
+    if(s.noDest) return show(heard(raw)+err('Move '+pvxEsc(s.who)+' where?'));
+    if(s.badDest){ stat('bad_dest'); statWord('dest',s.badDest); } if(s.badDest) return show(heard(raw)+err('I didn’t catch where: “'+pvxEsc(s.badDest)+'”. Try Exam, Room 3, Ultrasound or Treatment.'));
     if(s.op==='assign'&&!s.doc&&/busy|available|free|next|whoever/.test(s.said||'')) return show(heard(raw)+err('Nobody is on today’s shift list yet. Set today’s shift assignments first.'));
-    if(s.op==='assign'&&!s.doc) return show(heard(raw)+err('No doctor named “'+esc(s.said)+'”.'));
-    if(s.op==='dest'&&s.dest.type==='room'&&roomList().indexOf(s.dest.v)<0&&s.dest.v!=='Treatment') return show(heard(raw)+err('There’s no '+esc(s.dest.v)+'.'));
+    if(s.op==='assign'&&!s.doc) return show(heard(raw)+err('No doctor named “'+pvxEsc(s.said)+'”.'));
+    if(s.op==='dest'&&s.dest.type==='room'&&roomList().indexOf(s.dest.v)<0&&s.dest.v!=='Treatment') return show(heard(raw)+err('There’s no '+pvxEsc(s.dest.v)+'.'));
     if(s.op==='prio'&&!s.level) return show(heard(raw)+err('Which priority? Critical, urgent or stable.'));
     var take=function(p,score){ lastP=p; out.push({op:s.op,p:p,dest:s.dest,doc:s.doc,level:s.level,text:s.text,conf:Math.min(score,s.op==='assign'?(s.ds||0):1)}); next(i+1); };
     if(PRONOUN.test(s.who)){ var pp=lastP||(ctx&&Date.now()-ctx.at<120000?ctx.steps[ctx.steps.length-1].p:null); if(!pp) return show(heard(raw)+err('Who do you mean?')); return take(pp,1); }
     var M=findPatients(s.who);
-    if(!M.length){ stat('no_patient'); return show(heard(raw)+err('No patient named “'+esc(s.who)+'” on the board.')); }
+    if(!M.length){ stat('no_patient'); return show(heard(raw)+err('No patient named “'+pvxEsc(s.who)+'” on the board.')); }
     if(M.length===1) return take(M[0].p,M[0].s);
     choose(M,raw,function(p){ take(p,1); });
   })(0);
@@ -972,9 +969,9 @@ function resolveAll(steps,raw){
 function plan(steps,raw){
   for(var i=0;i<steps.length;i++){ var s=steps[i]; if(s.op==='dest'&&s.dest.type==='room'&&s.dest.v!=='Treatment'){ var o=occupant(s.dest.v);
     var leaving=o&&steps.some(function(x){ return x.p===o&&x.op==='dest'&&x.dest.type==='room'&&x.dest.v!==s.dest.v; });
-    if(o&&o!==s.p&&!leaving) return show(heard(raw)+err(esc(s.dest.v)+' has '+esc(pName(o))+' in it.')); } }
+    if(o&&o!==s.p&&!leaving) return show(heard(raw)+err(pvxEsc(s.dest.v)+' has '+pvxEsc(pName(o))+' in it.')); } }
   var real=steps.filter(function(s){ return !same(s); });
-  if(!real.length) return show(heard(raw)+ans(steps.map(function(s){ return esc(pName(s.p))+' is already '+(s.op==='prio'?esc(prioName(s.level)):s.op==='wait'?(s.text?'flagged waiting on '+esc(s.text):'unflagged'):s.op==='assign'?'with '+esc(s.doc.name):'in '+esc(s.dest.v)); }).join('. ')+'.'));
+  if(!real.length) return show(heard(raw)+ans(steps.map(function(s){ return pvxEsc(pName(s.p))+' is already '+(s.op==='prio'?pvxEsc(prioName(s.level)):s.op==='wait'?(s.text?'flagged waiting on '+pvxEsc(s.text):'unflagged'):s.op==='assign'?'with '+pvxEsc(s.doc.name):'in '+pvxEsc(s.dest.v)); }).join('. ')+'.'));
   stat('understood');
   if(real.every(safe)) return run(real,raw,true);
   propose(real,raw);
@@ -982,7 +979,7 @@ function plan(steps,raw){
 function propose(steps,raw){
   pending={steps:steps,raw:raw}; ctx={steps:steps,raw:raw,at:Date.now(),done:false};
   var one=steps.length===1, s=steps[0];
-  var head=one?'<div class="fv-med" style="--c:'+color(s.p)+'">'+esc((s.p.name||'?')[0])+'</div><div class="fv-t"><b>'+esc((s.op==='prio'?'Priority · ':s.op==='wait'?'Flag · ':s.op==='assign'?'Assign ':(s.dest.type==='room'&&/^(Room|Comfort)/.test(s.dest.v)?'Room ':'Move '))+pName(s.p))+'</b><div class="fv-path"><span class="fv-pill">'+esc(fromLabel(s))+'</span> → <span class="fv-pill to">'+esc(destLabel(s))+'</span></div></div>'
+  var head=one?'<div class="fv-med" style="--c:'+color(s.p)+'">'+pvxEsc((s.p.name||'?')[0])+'</div><div class="fv-t"><b>'+pvxEsc((s.op==='prio'?'Priority · ':s.op==='wait'?'Flag · ':s.op==='assign'?'Assign ':(s.dest.type==='room'&&/^(Room|Comfort)/.test(s.dest.v)?'Room ':'Move '))+pName(s.p))+'</b><div class="fv-path"><span class="fv-pill">'+pvxEsc(fromLabel(s))+'</span> → <span class="fv-pill to">'+pvxEsc(destLabel(s))+'</span></div></div>'
     :'<div class="fv-t"><b>'+steps.length+' changes</b></div>';
   show(heard(raw)+'<div class="fv-act">'+head+'<div class="fv-btns"><button class="fv-no" type="button">Cancel</button><button class="fv-ok" type="button">'+(one?(s.op==='prio'?'Set priority':s.op==='wait'?(s.text?'Flag':'Remove flag'):s.op==='assign'?'Assign':'Move'):'Make '+steps.length+' changes')+'</button></div></div>'+(one?'':'<div class="fv-list">'+steps.map(stepRow).join('')+'</div>')+'<div class="fv-sub">'+(via==='typed'?'Press Return to confirm. Type “no, Room 4” to change it.':'Enter or “yes” to confirm. Say “no, Room 4” to change it.')+'</div>');
   inner.querySelector('.fv-ok').onclick=confirm; inner.querySelector('.fv-no').onclick=function(){ stat('cancelled'); hide(); };
@@ -996,26 +993,26 @@ function tagTimeline(p,from){ if(via!=='voice'&&via!=='typed') return; var tl=p.
   for(var k=from;k<tl.length;k++){ var e=tl[k]; if(e&&!e.fvTagged){ e.fvTagged=1; e.meta=(e.meta?e.meta+' · ':'')+(via==='typed'?'typed command':'voice')+(u?' · '+u:''); } } }
 function setWaiting(p,text){ var at=new Date(); p.waitingOn=text?{text:String(text).slice(0,40), at:at.toISOString(), by:userName()}:null;
   (p.timeline=p.timeline||[]).push({label:text?'Waiting on '+text:'Waiting-on flag cleared', at:at, meta:''});
-  try{ notify(text?'Waiting on '+esc(text):'Flag cleared', esc(pName(p)), {icon:'info', color:'var(--accent)'}); }catch(e){}
+  try{ notify(text?'Waiting on '+pvxEsc(text):'Flag cleared', pvxEsc(pName(p)), {icon:'info', color:'var(--accent)'}); }catch(e){}
   try{ scheduleRender(function(){ try{ if(activePatient===p.id) fillDrawer(p); }catch(e){} }); }catch(e){ try{ renderAll(); }catch(_){} } }
 /* Small chip on the Flow card; click it to clear (with Undo). */
 window.fvWaitChip=function(p){ var w=p&&p.waitingOn; if(!w||!w.text) return ''; var mins=Math.max(0,Math.round((Date.now()-new Date(w.at).getTime())/60000));
   var ago=isNaN(mins)?'':(mins<1?'now':mins<60?mins+'m':Math.floor(mins/60)+'h'), said=isNaN(mins)?'':(mins<1?', just now':', '+(typeof pvxSpoken==='function'?pvxSpoken(mins):mins+' minutes'));   /* PVX-N357: a real button that says what it does */
-  return '<button type="button" class="fv-wait-chip" data-fvwait="'+esc(p.id)+'" title="Clear “Waiting on '+esc(w.text)+'”" aria-label="Waiting on '+esc(w.text)+said+'. Clear"><i></i><span class="fvw-t">Waiting on '+esc(w.text)+'</span><small>'+ago+'</small><svg class="fvw-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>'; };
+  return '<button type="button" class="fv-wait-chip" data-fvwait="'+pvxEsc(p.id)+'" title="Clear “Waiting on '+pvxEsc(w.text)+'”" aria-label="Waiting on '+pvxEsc(w.text)+said+'. Clear"><i></i><span class="fvw-t">Waiting on '+pvxEsc(w.text)+'</span><small>'+ago+'</small><svg class="fvw-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>'; };
 document.addEventListener('click',function(e){ var c=e.target&&e.target.closest&&e.target.closest('[data-fvwait]'); if(!c) return; e.preventDefault(); e.stopPropagation();
   var p=active().find(function(x){ return String(x.id)===c.getAttribute('data-fvwait'); }); if(!p) return; via='board'; run([{op:'wait',p:p,text:'',conf:1}],'',true); },true);
 function run(steps,raw,instant){
   if(listening){ sessionId++; stop(); }
   var snaps=[], done=[];
   for(var i=0;i<steps.length;i++){ var s=steps[i];
-    if(!isActive(s.p)){ rollback(snaps); pending=null; return show(err(esc(pName(s.p))+' is no longer on the board.')); }
+    if(!isActive(s.p)){ rollback(snaps); pending=null; return show(err(pvxEsc(pName(s.p))+' is no longer on the board.')); }
     s._from=s.p.room||'Lobby'; snaps.push([s.p,snapshot(s.p)]);
     try{
       if(s.op==='prio'){ setPriority(s.p,s.level); }
       else if(s.op==='wait'){ setWaiting(s.p,s.text); }
       else if(s.op==='assign'){ if(s.p.doctor!==s.doc.id) assignDoctor(s.p,s.doc.id); }
       else if(s.dest.type==='status'){ if(s.p.status!==s.dest.v) moveStatus(s.p,s.dest.v); }
-      else if(s.p.room!==s.dest.v){ if(!canDropRoom(s.p,s.dest.v)){ rollback(snaps); pending=null; var o=occupant(s.dest.v); return show(heard(raw)+err(esc(s.dest.v)+(o?' has '+esc(pName(o))+' in it.':' isn’t available.'))); } moveRoom(s.p,s.dest.v); }
+      else if(s.p.room!==s.dest.v){ if(!canDropRoom(s.p,s.dest.v)){ rollback(snaps); pending=null; var o=occupant(s.dest.v); return show(heard(raw)+err(pvxEsc(s.dest.v)+(o?' has '+pvxEsc(pName(o))+' in it.':' isn’t available.'))); } moveRoom(s.p,s.dest.v); }
       tagTimeline(s.p,snaps[snaps.length-1][1].tl); done.push(s);
     }catch(e){ rollback(snaps); pending=null; return show(err('That didn’t work. Try again or use the board.')); }
   }
@@ -1032,10 +1029,10 @@ function applyFix(slot,raw){
   var idx=-1, k;
   if(slot.doc){ for(k=steps.length-1;k>=0;k--) if(steps[k].op==='assign'){ idx=k; break; } if(idx<0) idx=steps.length-1; steps[idx].op='assign'; steps[idx].doc=slot.doc; steps[idx].dest=null; steps[idx].conf=Math.min(1,slot.ds||1); }
   else if(slot.dest){ for(k=steps.length-1;k>=0;k--) if(steps[k].op==='dest'){ idx=k; break; } if(idx<0) idx=steps.length-1; steps[idx].op='dest'; steps[idx].dest=slot.dest; steps[idx].doc=null;
-    if(slot.dest.type==='room'&&roomList().indexOf(slot.dest.v)<0&&slot.dest.v!=='Treatment') return show(heard(raw)+err('There’s no '+esc(slot.dest.v)+'.')); }
+    if(slot.dest.type==='room'&&roomList().indexOf(slot.dest.v)<0&&slot.dest.v!=='Treatment') return show(heard(raw)+err('There’s no '+pvxEsc(slot.dest.v)+'.')); }
   var go=function(np){ if(np){ var old=steps[steps.length-1].p; steps.forEach(function(s){ if(s.p===old) s.p=np; }); }
     if(c.done){ rollback(c.snaps); undoFn=null; } pending=null; stat('corrected'); plan(steps,raw); };
-  if(slot.who){ var M=findPatients(slot.who); if(!M.length) return show(heard(raw)+err('No patient named “'+esc(slot.who)+'” on the board.')); if(M.length>1) return choose(M,raw,function(p){ go(p); }); return go(M[0].p); }
+  if(slot.who){ var M=findPatients(slot.who); if(!M.length) return show(heard(raw)+err('No patient named “'+pvxEsc(slot.who)+'” on the board.')); if(M.length>1) return choose(M,raw,function(p){ go(p); }); return go(M[0].p); }
   go(null);
 }
 function handle(raw,opts){
@@ -1075,7 +1072,7 @@ function cmdHint(q){
   if(!inr){ box.innerHTML='<div class="sr-inner"></div>'; inr=box.firstChild; }
   var none=inr.querySelector('.sr-none'); if(none) none.remove();
   var d=u?describe(u,q):{t:'Keep typing, like “move Bella to Exam”', s:'Command'};
-  inr.insertAdjacentHTML('afterbegin','<div class="sr-group fv-cmd-g"><div class="sr-label">'+esc(d.s)+'</div><div class="fv-cmd'+(u?' ready':'')+'"><span class="sr-ic">'+CMD_ICON+'</span><div class="sr-main"><div class="sr-t">'+esc(d.t)+'</div></div>'+(u?'<kbd>return</kbd>':'')+'</div></div>');
+  inr.insertAdjacentHTML('afterbegin','<div class="sr-group fv-cmd-g"><div class="sr-label">'+pvxEsc(d.s)+'</div><div class="fv-cmd'+(u?' ready':'')+'"><span class="sr-ic">'+CMD_ICON+'</span><div class="sr-main"><div class="sr-t">'+pvxEsc(d.t)+'</div></div>'+(u?'<kbd>return</kbd>':'')+'</div></div>');
   box.classList.add('open'); try{ positionSearchResults(); }catch(e){}
   var row=inr.querySelector('.fv-cmd.ready'); if(row) row.onclick=function(){ runTyped(); };
 }
@@ -1102,7 +1099,7 @@ function start(tap,cm){
   meterStart();
   rec=new SR(); rec._id=++sessionId; rec.lang='en-US'; rec.interimResults=true; rec.continuous=true;
   rec.onresult=function(e){ interim=''; for(var i=e.resultIndex;i<e.results.length;i++){ var r=e.results[i]; if(r.isFinal) finalText+=r[0].transcript+' '; else interim+=r[0].transcript; }
-    var said=(finalText+interim).trim(); meter.syn=.7; if(live) liveText(said); var l=document.getElementById('fvLive'); if(l) l.innerHTML='<q>'+esc(said)+'</q>'; if(tapMode) armSilence(1400); };
+    var said=(finalText+interim).trim(); meter.syn=.7; if(live) liveText(said); var l=document.getElementById('fvLive'); if(l) l.innerHTML='<q>'+pvxEsc(said)+'</q>'; if(tapMode) armSilence(1400); };
   rec.onerror=function(e){ var m=e&&e.error; if(m==='not-allowed'||m==='service-not-allowed'){ listening=false; setOn(false); endLive(); meterStop(); show('<div class="fv-ans fv-err">The microphone is blocked. Click the icon in the address bar and allow the microphone for Flow.</div>'); } };
   try{ rec.start(); }catch(e){}
 }
@@ -1155,7 +1152,6 @@ try{
    Everything here is additive; if any part fails, Flow keeps working as before. */
 (function(){
 var LOBBY=/[?&](display|tv|lobby)=?/.test(location.search);
-function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function ms(v){ if(!v) return 0; if(v instanceof Date) return v.getTime(); if(v.toDate) return v.toDate().getTime(); if(typeof v==='number') return v; var n=new Date(v).getTime(); return isNaN(n)?0:n; }
 function me(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){} var n=''; try{ n=(typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):''; }catch(e){} return {uid:(u&&u.uid)||'', name:n||(u&&u.email)||''}; }
 function first(n){ return String(n||'').trim().split(/\s+/)[0]||'Someone'; }
@@ -1179,10 +1175,10 @@ window.fvSaveVisit=function(batch,p,prev){
 window.fvSaveFallback=async function(){ throw new Error('Whole-record fallback is disabled to protect concurrent edits.'); };
 
 /* ---------- 3. milestones ---------- */
-try{ if(typeof moveRoom==='function'){ var _mr=moveRoom; moveRoom=function(p,r){ var was=p&&p.room; var out=_mr.apply(this,arguments);
-  try{ if(p&&!p.msRoomedAt&&(!was||was==='Lobby')&&p.room&&p.room!=='Lobby') p.msRoomedAt=new Date(); }catch(e){} return out; }; } }catch(e){}
-try{ if(typeof assignDoctor==='function'){ var _ad=assignDoctor; assignDoctor=function(p,id){ var out=_ad.apply(this,arguments);
-  try{ if(p&&!p.msDoctorAt&&id&&id!=='unassigned'&&p.doctor===id) p.msDoctorAt=new Date(); }catch(e){} return out; }; } }catch(e){}
+try{ if(typeof moveRoom==='function'){ pvxWrap('moveRoom',function(_mr){ return function(p,r){ var was=p&&p.room; var out=_mr.apply(this,arguments);
+  try{ if(p&&!p.msRoomedAt&&(!was||was==='Lobby')&&p.room&&p.room!=='Lobby') p.msRoomedAt=new Date(); }catch(e){} return out; }; },'#8'); } }catch(e){}
+try{ if(typeof assignDoctor==='function'){ pvxAfter('assignDoctor',function(p,id){ 
+  try{ if(p&&!p.msDoctorAt&&id&&id!=='unassigned'&&p.doctor===id) p.msDoctorAt=new Date(); }catch(e){} },'#8'); } }catch(e){}
 
 /* ---------- 4. least-busy doctor ---------- */
 function onShift(){ var on={}; try{ Object.keys(shiftAssign||{}).forEach(function(k){ if(shiftAssign[k]) on[shiftAssign[k]]=k; }); }catch(e){} return on; }
@@ -1194,7 +1190,7 @@ window.fvLeastBusy=function(){ var b=ranked().find(function(x){ return x.on; });
 window.fvDoctorItems=function(){ var r=ranked(), best=r.find(function(x){ return x.on; });
   return r.map(function(x){ var tag=x.n===0?'Free':(x.n+' active');
     var label=x===best?'Suggested':(x.on?'On shift · '+tag:tag);
-    return Object.assign({}, x.d, {name:esc(x.d.name)+'<span class="fv-load'+(x===best?' best':'')+(x.on?'':' off')+'" title="'+(x.on?'On shift':'Off shift')+' · '+tag+'">'+label+'</span>'}); }); };
+    return Object.assign({}, x.d, {name:pvxEsc(x.d.name)+'<span class="fv-load'+(x===best?' best':'')+(x.on?'':' off')+'" title="'+(x.on?'On shift':'Off shift')+' · '+tag+'">'+label+'</span>'}); }); };
 
 if(LOBBY) return;
 
@@ -1222,12 +1218,12 @@ function buildStale(){
     try{ completePatient(p, act==='admit'?'Admitted':'Discharged'); }catch(err){ return; }
     rowDone(b, act==='admit'?'Admitted':'Discharged'); });
 }
-function rowDone(b,label){ var r=b.closest('.fs-row'); if(!r) return; r.classList.add('done'); r.querySelector('.fs-act').innerHTML='<span class="fs-ok">'+esc(label)+'</span>';
+function rowDone(b,label){ var r=b.closest('.fs-row'); if(!r) return; r.classList.add('done'); r.querySelector('.fs-act').innerHTML='<span class="fs-ok">'+pvxEsc(label)+'</span>';
   setTimeout(function(){ r.remove(); if(!sheet.querySelector('.fs-row')) closeSheet(); updatePill(); },900); }
 function renderSheet(){ var L=staleList(), list=sheet.querySelector('.fs-list');
   list.innerHTML=L.map(function(p){ var c='#6FD3E6'; try{ c=STATUSES[p.status].color; }catch(e){}
-    return '<div class="fs-row"><span class="fs-med" style="--c:'+c+'">'+esc((p.name||'?')[0])+'</span><div class="fs-t"><b>'+esc(pn(p))+'</b><small>'+esc(hrs(p))+' · arrived '+esc(when(p))+' · '+esc(p.status)+' · '+esc(p.room||'Lobby')+'</small></div>'
-      +'<div class="fs-act"><button type="button" data-act="discharge" data-label="Discharge" data-id="'+esc(p.id)+'">Discharge</button><button type="button" data-act="admit" data-label="Admit" data-id="'+esc(p.id)+'">Admit</button><button type="button" class="ghost" data-act="keep" data-label="Keep" data-id="'+esc(p.id)+'">Keep</button></div></div>'; }).join('')
+    return '<div class="fs-row"><span class="fs-med" style="--c:'+c+'">'+pvxEsc((p.name||'?')[0])+'</span><div class="fs-t"><b>'+pvxEsc(pn(p))+'</b><small>'+pvxEsc(hrs(p))+' · arrived '+pvxEsc(when(p))+' · '+pvxEsc(p.status)+' · '+pvxEsc(p.room||'Lobby')+'</small></div>'
+      +'<div class="fs-act"><button type="button" data-act="discharge" data-label="Discharge" data-id="'+pvxEsc(p.id)+'">Discharge</button><button type="button" data-act="admit" data-label="Admit" data-id="'+pvxEsc(p.id)+'">Admit</button><button type="button" class="ghost" data-act="keep" data-label="Keep" data-id="'+pvxEsc(p.id)+'">Keep</button></div></div>'; }).join('')
     ||'<div class="fs-empty">All clear.</div>'; }
 function openSheet(){ if(!sheet) return; renderSheet(); sheet.classList.add('show'); try{ localStorage.setItem(AUTO_KEY,String(Date.now())); }catch(e){} }
 function closeSheet(){ if(sheet) sheet.classList.remove('show'); updatePill(); }
@@ -1251,9 +1247,9 @@ function presOpen(id){ if(presId&&presId!==id) presWrite(presId,false); presId=i
 function presClose(){ if(presId) presWrite(presId,false); presId=null; clearInterval(presT); }
 function viewers(p){ var v=p&&p.viewing, u=me(), out=[]; if(!v) return out; Object.keys(v).forEach(function(k){ var x=v[k]; if(k!==u.uid&&x&&Date.now()-ms(x.at)<STALE_VIEW) out.push(x.name||'Someone'); }); return out; }
 window.fvPresenceChip=function(p){ var vs=viewers(p); if(!vs.length) return '';
-  return '<div class="fv-pres" title="'+esc(vs.join(', '))+' viewing">'+vs.slice(0,3).map(function(n){ return '<span class="av">'+esc(inits(n))+'</span>'; }).join('')+'<span>'+esc(first(vs[0]))+(vs.length>1?' +'+(vs.length-1):'')+' viewing</span></div>'; };
-try{ if(typeof openDrawer==='function'){ var _od=openDrawer; openDrawer=function(pid){ var out=_od.apply(this,arguments); try{ var p=PATIENTS.find(function(x){ return x.id===pid; }); if(p&&!p._demo) presOpen(pid); }catch(e){} tick(); return out; }; } }catch(e){}
-try{ if(typeof closeDrawer==='function'){ var _cd=closeDrawer; closeDrawer=function(){ var out=_cd.apply(this,arguments); presClose(); return out; }; } }catch(e){}
+  return '<div class="fv-pres" title="'+pvxEsc(vs.join(', '))+' viewing">'+vs.slice(0,3).map(function(n){ return '<span class="av">'+pvxEsc(inits(n))+'</span>'; }).join('')+'<span>'+pvxEsc(first(vs[0]))+(vs.length>1?' +'+(vs.length-1):'')+' viewing</span></div>'; };
+try{ if(typeof openDrawer==='function'){ pvxAfter('openDrawer',function(pid){ try{ var p=PATIENTS.find(function(x){ return x.id===pid; }); if(p&&!p._demo) presOpen(pid); }catch(e){} tick(); },'#8'); } }catch(e){}
+try{ if(typeof closeDrawer==='function'){ pvxAfter('closeDrawer',function(){ presClose(); },'#8'); } }catch(e){}
 window.addEventListener('pagehide',presClose);
 
 var bar=null, seen={}, warm=false, flashT=null, flashMsg='';
@@ -1273,11 +1269,11 @@ function tick(){
       if(!p.lastByUid||p.lastByUid===u.uid||Date.now()-ms(p.lastAt)>20000) return;
       var msg=describe(p,old);
       var card=document.querySelector('.card[data-pid="'+p.id+'"]'); if(card){ card.classList.remove('fv-remote'); void card.offsetWidth; card.classList.add('fv-remote'); }
-      if(open&&activePatient===p.id){ flashMsg=msg; clearTimeout(flashT); flashT=setTimeout(function(){ flashMsg=''; tick(); },8000); try{ notify(esc(msg),'',{icon:'info', color:'var(--accent)'}); }catch(e){} } });
+      if(open&&activePatient===p.id){ flashMsg=msg; clearTimeout(flashT); flashT=setTimeout(function(){ flashMsg=''; tick(); },8000); try{ notify(pvxEsc(msg),'',{icon:'info', color:'var(--accent)'}); }catch(e){} } });
     warm=true;
     if(bar){ var p=open?PATIENTS.find(function(x){ return x.id===activePatient; }):null, vs=p?viewers(p):[], html='';
-      if(flashMsg) html='<span class="dot live"></span>'+esc(flashMsg);
-      else if(vs.length) html=vs.slice(0,3).map(function(n){ return '<span class="av">'+esc(inits(n))+'</span>'; }).join('')+esc(vs.length===1?first(vs[0])+' is also viewing '+(p.name||''):first(vs[0])+' and '+(vs.length-1)+' more are viewing');
+      if(flashMsg) html='<span class="dot live"></span>'+pvxEsc(flashMsg);
+      else if(vs.length) html=vs.slice(0,3).map(function(n){ return '<span class="av">'+pvxEsc(inits(n))+'</span>'; }).join('')+pvxEsc(vs.length===1?first(vs[0])+' is also viewing '+(p.name||''):first(vs[0])+' and '+(vs.length-1)+' more are viewing');
       if(bar._h!==html){ bar._h=html; bar.innerHTML=html; bar.classList.toggle('show',!!html); } }
     updatePill();
   }catch(e){}
@@ -1317,7 +1313,6 @@ function iso(d){ try{ return d?new Date(d).toISOString():null; }catch(e){ return
 function who(){ try{ return (typeof CURRENT_USER==='string'&&CURRENT_USER)?CURRENT_USER:'Staff'; }catch(e){ return 'Staff'; } }
 function L(p){ return (p&&Array.isArray(p.flags))?p.flags:[]; }
 function S(p){ return L(p).slice().sort(function(a,b){ return ORDER.indexOf(a.k)-ORDER.indexOf(b.k); }); }
-function reduce(){ try{ return matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
 
 /* Firestore ↔ app */
 window.fgToDb=function(a){ return Array.isArray(a)?a.filter(function(f){ return f&&f.t; }).slice(0,30).map(function(f){
@@ -1396,7 +1391,7 @@ document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.
   if(act==='edit'){ ST.edit=!ST.edit; if(!ST.edit) document.querySelectorAll('#flagsMount .fg-row.arm').forEach(function(r){ r.classList.remove('arm'); }); var sec=document.getElementById('fgSec'); sec.classList.toggle('edit',ST.edit); b.textContent=ST.edit?'Done':'Edit'; return; }
   if(act==='arm'){ var was=row.classList.contains('arm'); document.querySelectorAll('#flagsMount .fg-row.arm').forEach(function(r){ r.classList.remove('arm'); }); if(!was) row.classList.add('arm'); return; }
   if(act==='del'){ var id=row.dataset.id; row.style.maxHeight=row.offsetHeight+'px'; void row.offsetWidth; row.classList.add('gone');
-    setTimeout(function(){ remove(p,id); if(!L(p).length) ST.edit=false; mountFor(p); }, reduce()?160:340); return; }
+    setTimeout(function(){ remove(p,id); if(!L(p).length) ST.edit=false; mountFor(p); }, pvxReduceMotion()?160:340); return; }
   if(act==='add'){ ST.sheet=!ST.sheet; ST.q=''; ST.touched=false; ST.scope='always'; mountFor(p); if(ST.sheet){ var qi=document.getElementById('fgQ'); if(qi) qi.focus(); } return; }
   if(act==='close'){ ST.sheet=false; ST.q=''; mountFor(p); return; }
   if(act==='scope'){ ST.scope=b.dataset.s; ST.touched=true; b.parentNode.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on',x===b); }); return; }
@@ -1425,9 +1420,9 @@ function carryFrom(p,pr){
   try{ p.timeline.push({label:'Flags from last visit',at:new Date(),meta:p.flags.map(function(f){ return f.t; }).join(', ')}); }catch(e){}
   save(p); notifyCheckin(p); }
 window.fgCarry=carry;
-if(typeof commitPatient==='function'){ var _commit=commitPatient;
-  window.commitPatient=function(){ var before={}; PATIENTS.forEach(function(x){ before[x.id]=1; }); var r=_commit.apply(this,arguments);
-    try{ PATIENTS.filter(function(x){ return !before[x.id]; }).forEach(carry); }catch(e){} return r; }; }
+if(typeof commitPatient==='function'){ 
+  pvxWrap('commitPatient',function(_commit){ return function(){ var before={}; PATIENTS.forEach(function(x){ before[x.id]=1; }); var r=_commit.apply(this,arguments);
+    try{ PATIENTS.filter(function(x){ return !before[x.id]; }).forEach(carry); }catch(e){} return r; }; },'#9'); }
 
 function notifyCheckin(p){ var old=document.querySelector('.fg-ntf'); if(old) old.remove();
   var a=S(p), s=a.filter(function(f){ return f.k==='safe'; }), n=a.length, nm=((p.name||'')+' '+(p.last||'')).trim();
@@ -1442,7 +1437,7 @@ function notifyCheckin(p){ var old=document.querySelector('.fg-ntf'); if(old) ol
   el.querySelector('[data-n="review"]').onclick=function(){ close(); try{ ST={pid:p.id,edit:true,sheet:false,scope:'always',touched:false,q:''}; openDrawer(p.id); }catch(e){} };
   el.querySelector('[data-n="keep"]').onclick=function(){ var to=document.querySelector('.card[data-pid="'+(window.CSS&&CSS.escape?CSS.escape(p.id):p.id)+'"] .fg-fl'), from=el.querySelectorAll('.fg-rw>*');
     var r=to&&to.getBoundingClientRect(), vis=r&&r.width&&r.top<innerHeight&&r.bottom>0;
-    if(!vis||reduce()||!Element.prototype.animate){ close(); return; }
+    if(!vis||pvxReduceMotion()||!Element.prototype.animate){ close(); return; }
     var targets=to.querySelectorAll('.fg-cap,.fg-si'), done=0;
     [].forEach.call(from,function(src,i){ var a=src.getBoundingClientRect(), t=targets[i]||to, b=t.getBoundingClientRect(), c=src.cloneNode(true);
       c.classList.add('fg-fly'); c.style.left=a.left+'px'; c.style.top=a.top+'px'; document.body.appendChild(c); src.style.opacity=0;
@@ -1454,8 +1449,8 @@ function notifyCheckin(p){ var old=document.querySelector('.fg-ntf'); if(old) ol
 window.fgNotifyCheckin=notifyCheckin;
 
 /* drawer hooks: section on every fill, Safety pulses once when the patient is opened */
-if(typeof fillDrawer==='function'){ var _fill=fillDrawer; window.fillDrawer=function(p){ var r=_fill.apply(this,arguments); try{ mountFor(p); }catch(e){} return r; }; }
-if(typeof openDrawer==='function'){ var _open=openDrawer; window.openDrawer=function(pid){ PULSE=pid; return _open.apply(this,arguments); }; }
+if(typeof fillDrawer==='function'){ pvxAfter('fillDrawer',function(p){ try{ mountFor(p); }catch(e){} },'#9'); }
+if(typeof openDrawer==='function'){ pvxBefore('openDrawer',function(pid){ PULSE=pid; },'#9'); }
 })();
 }catch(e){setTimeout(function(){throw e})}
 
@@ -1467,7 +1462,6 @@ try{
      from the visit (reason, triage, intake, flags, ultrasound, and the treatments already on the sheet).
    · Weight typed in pounds shows its kg as you type, and is stored in kg. */
 (function(){
-  function esc(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function cur(p){ return (p&&PATIENTS.find(function(x){ return x.id===p.id; }))||p; }
   function active(p){ try{ return isActive(p); }catch(e){ return p&&!p.completed; } }
   function inRoom(p){ var r=String(p&&p.room||''); return r!=='Lobby'&&r!=='Treatment'&&/room/i.test(r); }
@@ -1480,21 +1474,21 @@ try{
   function hasOP(p){ return !!(p&&p.tsSheet&&p.tsSheet.board==='OP'&&active(p)&&p.status!=='Hospitalized'); }
 
   /* Diagnostics: make the outpatient sheet; from a room, go to Treatment (the Treatment move makes the sheet itself) */
-  if(typeof moveStatus==='function'){ var _ms=moveStatus;
-    window.moveStatus=moveStatus=function(p,newStatus){ var was=p&&p.status, r=_ms.apply(this,arguments);
+  if(typeof moveStatus==='function'){ 
+    pvxWrap('moveStatus',function(_ms){ return function(p,newStatus){ var was=p&&p.status, r=_ms.apply(this,arguments);
       try{ if(p&&newStatus==='Diagnostics'&&was!=='Diagnostics'&&p.status==='Diagnostics'&&active(p)){
         if(p.room!=='Treatment'&&typeof moveRoom==='function') moveRoom(p,'Treatment');   /* a sheet means Treatment (n91: from the Lobby too); the move makes the sheet */
         else if(!p._demo&&window.fvAdmitSheet&&fvAdmitSheet.ensure) fvAdmitSheet.ensure(p,'OP'); } }catch(e){ console.warn('[flow diagnostics]',e); }
-      return r; }; }
+      return r; }; },'#10'); }
 
   /* drawer: the Admit card says what it will do; a visit from before this change is checked once */
   var looked={};
-  if(typeof fillDrawer==='function'){ var _fd=fillDrawer;
-    window.fillDrawer=fillDrawer=function(p){ var r=_fd.apply(this,arguments);
+  if(typeof fillDrawer==='function'){ 
+    pvxAfter('fillDrawer',function(p){ 
       try{ var n=document.getElementById('dAdmitNote'); if(n) n.hidden=!hasOP(p);
         if(p&&!p._demo&&!p.tsSheet&&!looked[p.id]&&active(p)&&typeof DB!=='undefined'&&DB&&window.fvAdmitSheet&&fvAdmitSheet.id){ looked[p.id]=1;
           DB.collection('sheets').doc(fvAdmitSheet.id(p)).get().then(function(s){ var d=s.exists&&s.data(); if(d&&d.status==='active') fvSheetSeen(p,'exists',d.board||'IP'); }).catch(function(){}); } }catch(e){}
-      return r; }; }
+      },'#10'); }
 
   /* Rounds pre-fill (called by rdEnroll) */
   function triAt(p,t){ var base=p.arrival?new Date(p.arrival):new Date(), m=String(t&&t.at||'').match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i); if(!m) return base;
@@ -1872,8 +1866,8 @@ try{
   window.fvDedupeProblems=dedupe;
 
   /* ---- 2. triage: the check-in weight is the starting value ---- */
-  try{ if(typeof openTriageEdit==='function'){ var _ote=openTriageEdit;
-    openTriageEdit=function(p){ var out=_ote.apply(this,arguments);
+  try{ if(typeof openTriageEdit==='function'){ 
+    pvxAfter('openTriageEdit',function(p){ 
       try{ var t=getTriage(p), v=(t&&t.vitals)||{}; var el=document.querySelector('#triEditBody [data-vk="weight"]');
         if(el&&!String(el.value||'').trim()&&!(v.weight&&String(v.weight).trim())){
           var w=(typeof p.weightKg==='number'&&p.weightKg>0)?(p.weightKg+' kg'):String(p.weight||'').trim();
@@ -1881,7 +1875,7 @@ try{
             var lab=el.parentNode&&el.parentNode.querySelector('label');
             if(lab&&!lab.querySelector('.fv-from')){ var s=document.createElement('span'); s.className='fv-from'; s.textContent='from check-in'; lab.appendChild(s); }
             el.addEventListener('input',function rm(){ var f=lab&&lab.querySelector('.fv-from'); if(f) f.remove(); el.removeEventListener('input',rm); }); } } }catch(e){}
-      return out; }; } }catch(e){}
+      },'#16'); } }catch(e){}
 
   /* ---- 3. names keep the capitals people type ---- */
   function nameCase(s){ if(!s||!String(s).trim()) return s;
@@ -1890,7 +1884,7 @@ try{
       var mixed=letters&&letters!==letters.toLowerCase()&&letters!==letters.toUpperCase();
       if(mixed) return w.replace(/^([^A-Za-zÀ-ÖØ-öø-ÿ]*)([a-zà-öø-ÿ])/,function(m,a,c){ return a+c.toUpperCase(); });
       return w.toLowerCase().replace(/(^|['’.\-(])([a-zà-öø-ÿ])/g,function(m,a,c){ return a+c.toUpperCase(); }); }).join(' '); }
-  try{ if(typeof fmtTitleCase==='function') fmtTitleCase=nameCase; }catch(e){}
+  try{ if(typeof fmtTitleCase==='function') pvxWrap('fmtTitleCase',function(){ return nameCase; },'#16'); }catch(e){}
   window.fvNameCase=nameCase;
 
   /* ---- 4. the owner's surname ---- */
@@ -1946,11 +1940,8 @@ try{
   window.fvDCard=dcard; window.fvDCardIcons=IC;
   var draft=null;   /* the open sheet: {pid, type, fee, consent, aftercare, keepsakes, edit, manual, used} */
 
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function label(list,k){ var x=list.filter(function(a){ return a[0]===k; })[0]; return x?x[1]:''; }
   function who(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Flow'; }catch(e){ return 'Flow'; } }
-  function cur(){ try{ return PATIENTS.find(function(x){ return x.id===activePatient; })||null; }catch(e){ return null; } }
-  function byId(id){ try{ return PATIENTS.find(function(x){ return String(x.id)===String(id); })||null; }catch(e){ return null; } }
   function kindOf(p){ return p&&p.ending&&KIND[p.ending.type]?p.ending.type:(p&&p.status==='Deceased'?'died':(p&&p.status==='Euthanized'?'euthanasia':null)); }
   function ipSheet(p){ return !!(p&&p.tsSheet&&p.tsSheet.board==='IP'); }
   function sheetHref(p){ var id=''; try{ id=window.fvAdmitSheet?fvAdmitSheet.id(p):''; }catch(e){} return '/treatment/'+(id?'#sheet='+encodeURIComponent(id)+'&discharge=1':''); }
@@ -1986,9 +1977,8 @@ try{
   try{ STATUSES.Deceased={color:'#8A82A8',bg:'rgba(138,130,168,.16)'}; }catch(e){}
   try{ COMPLETION.Deceased={tlLabel:'Patient died',title:'Patient died',icon:'info',color:'#8A82A8',stampKey:'deceasedAt'}; }catch(e){}
   if(typeof captureDispSnap==='function'&&typeof restoreDispSnap==='function'){
-    var capBase=captureDispSnap, resBase=restoreDispSnap;
-    captureDispSnap=function(p){ var s=capBase.apply(this,arguments); s.deceasedAt=p.deceasedAt; s.ending=p.ending?JSON.parse(JSON.stringify(p.ending)):null; return s; };
-    restoreDispSnap=function(p,s){ resBase.apply(this,arguments); p.deceasedAt=s.deceasedAt; p.ending=s.ending||null; };
+    pvxWrap('captureDispSnap',function(capBase){ return function(p){ var s=capBase.apply(this,arguments); s.deceasedAt=p.deceasedAt; s.ending=p.ending?JSON.parse(JSON.stringify(p.ending)):null; return s; }; },'#17');
+    pvxWrap('restoreDispSnap',function(resBase){ return function(p,s){ resBase.apply(this,arguments); p.deceasedAt=s.deceasedAt; p.ending=s.ending||null; }; },'#17');
   }
 
   /* ---------- the drawer: "Other ending…" ---------- */
@@ -1998,25 +1988,23 @@ try{
     el.setAttribute('aria-label','Other ending — euthanasia or died'); el.setAttribute('aria-haspopup','dialog');
     el.innerHTML='<span>Other ending…</span>'+CHEV;
     acts.insertAdjacentElement('afterend',el); return el; }
-  function showLink(on){ var el=link(); if(!el) return; el.hidden=!on; var p=cur(), F=formOf(p), sp=el.querySelector('span');
+  function showLink(on){ var el=link(); if(!el) return; el.hidden=!on; var p=pvxActivePatient(), F=formOf(p), sp=el.querySelector('span');
     var t=(F&&F.status==='requested')?'Other ending · form waiting for reception':(F&&F.status==='family')?'Other ending · form with the family':(F&&F.status==='signed'&&!isCompleted(p))?'Other ending · form signed — record it':'Other ending…';
     if(sp&&sp.textContent!==t) sp.textContent=t; el.classList.toggle('has-form',t!=='Other ending…'); }
 
-  var rdBase=renderDisposition;
-  renderDisposition=function(p){
-    var r=rdBase.apply(this,arguments);
+  pvxAfter('renderDisposition',function(p){
     try{ showLink(!!p&&!isCompleted(p)); var k=kindOf(p); if(p&&isCompleted(p)&&k) terminal(p,k);
       if(draft&&p&&draft.pid===p.id) paintSheet();   /* a live update: keep the sheet and what's in it */
     }catch(e){ console.warn('[endings]',e); }
-    return r; };
+    },'#17');
   function terminal(p,k){
     var conf=document.getElementById('dispConfirm'); if(!conf) return; var K=KIND[k], e=p.ending;
     var when=''; try{ when=p.completedAt?fmtTime(p.completedAt):''; }catch(_){}
     var desc=e?summary(e,false):'Recorded in Completed Today';
     conf.className='disp-confirm mounted';
     conf.innerHTML='<div class="disp-terminal end-terminal"><span class="dc-ic" aria-hidden="true"><svg viewBox="0 0 24 24">'+K.ic+'</svg></span>'
-      +'<span class="dc-body"><span class="dc-title">'+esc(K.done)+(when?' <span class="end-when">'+esc(when)+'</span>':'')+'</span><span class="dc-desc">'+esc(desc)+'</span>'
-      +(e&&e.consent?'<span class="dc-desc end-consent-line">'+esc(consentLine(e.consent))+'</span>':'')+'</span>'
+      +'<span class="dc-body"><span class="dc-title">'+pvxEscQ(K.done)+(when?' <span class="end-when">'+pvxEscQ(when)+'</span>':'')+'</span><span class="dc-desc">'+pvxEscQ(desc)+'</span>'
+      +(e&&e.consent?'<span class="dc-desc end-consent-line">'+pvxEscQ(consentLine(e.consent))+'</span>':'')+'</span>'
       +'<span class="end-acts">'+(e&&e.aftercare?'<button type="button" class="end-edit" data-end="tag">Print tag</button>':'')+'<button type="button" class="end-edit" data-end="edit">Edit details</button></span></div>'; }
 
   /* ---------- the sheet ---------- */
@@ -2039,20 +2027,20 @@ try{
     var tail=o.kind==='radio'?'<span class="es-check" aria-hidden="true"></span>':o.kind==='switch'?'<span class="es-switch" aria-hidden="true"><span></span></span>':o.kind==='link'?'<span class="es-chev" aria-hidden="true">'+CHEV+'</span>':'';
     var role=o.kind==='radio'?' role="radio" aria-checked="'+!!o.on+'"':o.kind==='switch'?' role="switch" aria-checked="'+!!o.on+'"':'';
     return '<button type="button" class="es-row'+(o.on?' on':'')+(o.cls?' '+o.cls:'')+'"'+role+' '+(o.attrs||'')+'><span class="es-rl">'+o.t+(o.d?'<span class="es-rd">'+o.d+'</span>':'')+'</span>'+tail+'</button>'; }
-  function field(k,lab,val,ph,list){ return '<label class="es-row es-field"><span class="es-fl">'+lab+'</span><input type="text" data-end-ph="'+k+'" value="'+esc(val)+'" placeholder="'+esc(ph)+'" autocomplete="off" autocapitalize="words" spellcheck="false"'+(list?' list="'+list+'"':'')+'></label>'; }
+  function field(k,lab,val,ph,list){ return '<label class="es-row es-field"><span class="es-fl">'+lab+'</span><input type="text" data-end-ph="'+k+'" value="'+pvxEscQ(val)+'" placeholder="'+pvxEscQ(ph)+'" autocomplete="off" autocapitalize="words" spellcheck="false"'+(list?' list="'+list+'"':'')+'></label>'; }
   function paintSheet(first){
-    var p=draft&&byId(draft.pid), s=sheetEl(); if(!p||!draft){ closeSheet(true); return; }
+    var p=draft&&pvxPatientById(draft.pid), s=sheetEl(); if(!p||!draft){ closeSheet(true); return; }
     var fk=first?null:focusKey(), scroll=(s.querySelector('.es-body')||{}).scrollTop||0, ae=document.activeElement, caret=(ae&&ae.tagName==='INPUT'&&s.contains(ae))?[ae.selectionStart,ae.selectionEnd]:null;
     var d=draft, nm=dispFirstName(p), K=d.type?KIND[d.type]:null, F=formOf(p), SF=signedForm(p), FO=formOpen(p);
     var fields=d.edit||d.manual||d.used||!window.fvConsent;
     var h='<div class="es-scrim" data-end="scrim"></div><div class="es-panel" role="dialog" aria-modal="true" aria-labelledby="endSheetT">'
-      +'<header class="es-bar"><button type="button" class="es-cancel" data-end="cancel">Cancel</button><h2 id="endSheetT">'+esc(d.edit?nm+' · ending details':nm+'’s ending')+'</h2><span class="es-bar-r"></span></header><div class="es-body">';
+      +'<header class="es-bar"><button type="button" class="es-cancel" data-end="cancel">Cancel</button><h2 id="endSheetT">'+pvxEscQ(d.edit?nm+' · ending details':nm+'’s ending')+'</h2><span class="es-bar-r"></span></header><div class="es-body">';
     var foot='';
     if(!d.edit&&ipSheet(p)){
-      h+='<div class="es-sec"><div class="es-group es-text"><b>'+esc(nm)+' has an inpatient treatment sheet.</b><br>Record the ending on the sheet — it has Euthanasia and Died — so it’s written once. Flow and Rounds follow.</div></div>';
-      foot='<a class="es-primary" href="'+esc(sheetHref(p))+'" target="_blank" rel="noopener" data-end="sheet">Open the treatment sheet</a>';
+      h+='<div class="es-sec"><div class="es-group es-text"><b>'+pvxEscQ(nm)+' has an inpatient treatment sheet.</b><br>Record the ending on the sheet — it has Euthanasia and Died — so it’s written once. Flow and Rounds follow.</div></div>';
+      foot='<a class="es-primary" href="'+pvxEscQ(sheetHref(p))+'" target="_blank" rel="noopener" data-end="sheet">Open the treatment sheet</a>';
     }else{
-      if(!d.edit){ h+='<div class="es-sec"><div class="es-h" id="endKindH">How did '+esc(nm)+'’s visit end?</div><div class="end-kinds" role="radiogroup" aria-labelledby="endKindH">';
+      if(!d.edit){ h+='<div class="es-sec"><div class="es-h" id="endKindH">How did '+pvxEscQ(nm)+'’s visit end?</div><div class="end-kinds" role="radiogroup" aria-labelledby="endKindH">';
         ['euthanasia','died'].forEach(function(k){ var on=d.type===k, X=KIND[k]; h+=dcard({ic:X.ic,title:X.title,sel:on,label:X.title+' — '+X.sub,cls:'end-kind'+(on?' on':''),attrs:'data-end-kind="'+k+'"'}); });
         h+='</div></div>'; }
       if(K&&!d.edit&&window.fvConsent){
@@ -2063,11 +2051,11 @@ try{
           h+='<div class="es-group">'+(d.type==='euthanasia'?'<div class="es-row es-static"><span class="es-rl">Fee</span><span class="es-seg" role="radiogroup" aria-label="Euthanasia fee">'
             +[['outpatient','Outpatient'],['consult','With consult']].map(function(x){ var on=(d.fee||'outpatient')===x[0]; return '<button type="button" class="'+(on?'on':'')+'" role="radio" aria-checked="'+on+'" data-end-fee="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</span></div>':'')
             +'<div class="es-cardrow">'+dcard({ic:IC.form,title:'Send form to reception',desc:'Shows up in Consent forms',arrow:'out',cls:'end-send',attrs:'data-end="send"'})+'</div></div>'
-            +'<div class="es-foot-note">Reception takes the tablet into the room and goes over '+esc(nm)+'’s aftercare'+(d.type==='died'?'':' and the consent')+' with the family.</div>';
+            +'<div class="es-foot-note">Reception takes the tablet into the room and goes over '+pvxEscQ(nm)+'’s aftercare'+(d.type==='died'?'':' and the consent')+' with the family.</div>';
           if(!d.manual) h+='<div class="es-group">'+row({t:'Record it here instead',d:'From a paper form, or with the family beside you',kind:'link',attrs:'data-end="manual"'})+'</div>';
         }else if(FO||SF){
           h+='<div class="es-group es-text">'+fvConsent.progress(F)+'</div>';
-          if(SF){ h+='<div class="es-foot-note">'+esc((SF.owner_sig&&SF.owner_sig.name)||'The owner')+' chose '+esc(fvConsent.summary(SF))+'.</div>';
+          if(SF){ h+='<div class="es-foot-note">'+pvxEscQ((SF.owner_sig&&SF.owner_sig.name)||'The owner')+' chose '+pvxEscQ(fvConsent.summary(SF))+'.</div>';
             if(!d.used) h+='<div class="es-group"><div class="es-cardrow">'+dcard({ic:IC.use,title:'Use the family’s choices',desc:'Fills in the ending for you',arrow:'in',cls:'end-use',attrs:'data-end="use-form"'})+'</div></div>';
             h+='<div class="es-group">'+row({t:'Print the form',kind:'link',attrs:'data-end="print-form"'})+'</div>';
           }else{
@@ -2079,8 +2067,8 @@ try{
       }
       if(K&&fields){
         if(d.type==='euthanasia'){ h+='<div class="es-sec"><div class="es-h">Consent</div><div class="es-group">';
-          var ec=d.edit&&byId(d.pid)&&byId(d.pid).ending&&byId(d.pid).ending.consent;
-          if(d.edit||SF) h+='<div class="es-row es-static on"><span class="es-rl">'+(SF?'Signed on the tablet · '+esc(fmtT(SF.signed_at)):ec?esc(ec.via==='phone'?consentLine(ec):ec.via==='form'?'Signed on the tablet':'Signed the paper form'):'Euthanasia consent signed by the owner')+'</span><span class="es-check" aria-hidden="true"></span></div></div>';
+          var ec=d.edit&&pvxPatientById(d.pid)&&pvxPatientById(d.pid).ending&&pvxPatientById(d.pid).ending.consent;
+          if(d.edit||SF) h+='<div class="es-row es-static on"><span class="es-rl">'+(SF?'Signed on the tablet · '+pvxEscQ(fmtT(SF.signed_at)):ec?pvxEscQ(ec.via==='phone'?consentLine(ec):ec.via==='form'?'Signed on the tablet':'Signed the paper form'):'Euthanasia consent signed by the owner')+'</span><span class="es-check" aria-hidden="true"></span></div></div>';
           else{ h=h.replace(/<div class="es-group">$/,'<div class="es-group" role="radiogroup" aria-label="How the owner consented">');
             h+=row({t:'Signed the paper form',kind:'radio',on:d.consent==='paper',attrs:'data-end-consent="paper"'})
               +row({t:'By phone',d:'Two staff witness the owner’s consent on the call',kind:'radio',on:d.consent==='phone',attrs:'data-end-consent="phone"'})+'</div>';
@@ -2090,8 +2078,8 @@ try{
                 +field('w1','Witness',P.w1,'Staff name','endStaff')
                 +field('w2','Second witness',P.w2,'Another staff member','endStaff')
                 +row({t:P.read?'Hide the consent wording':'Consent wording to read',d:P.read?'':'Read it to the owner, word for word',kind:'link',attrs:'data-end="read"'})
-                +(P.read&&window.fvConsent&&fvConsent.consentText?'<div class="es-text es-read"><span class="es-seg es-rl-seg" role="radiogroup" aria-label="Language">'+[['en','English'],['es','Español']].map(function(x){ var on=P.lang===x[0]; return '<button type="button" class="'+(on?'on':'')+'" role="radio" aria-checked="'+on+'" data-end-rl="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</span><p>'+esc(fvConsent.consentText(P.lang))+'</p></div>':'')
-                +'</div><datalist id="endStaff">'+staffNames().map(function(n){ return '<option value="'+esc(n)+'"></option>'; }).join('')+'</datalist>'
+                +(P.read&&window.fvConsent&&fvConsent.consentText?'<div class="es-text es-read"><span class="es-seg es-rl-seg" role="radiogroup" aria-label="Language">'+[['en','English'],['es','Español']].map(function(x){ var on=P.lang===x[0]; return '<button type="button" class="'+(on?'on':'')+'" role="radio" aria-checked="'+on+'" data-end-rl="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</span><p>'+pvxEscQ(fvConsent.consentText(P.lang))+'</p></div>':'')
+                +'</div><datalist id="endStaff">'+staffNames().map(function(n){ return '<option value="'+pvxEscQ(n)+'"></option>'; }).join('')+'</datalist>'
                 +'<div class="es-foot-note">Both witnesses hear the owner give consent. The time is recorded when you tap Record.</div>'; }
             }
           h+='</div>'; }
@@ -2101,7 +2089,7 @@ try{
         h+='<div class="es-sec"><div class="es-h">Keepsake</div><div class="es-group">'+row({t:'Clay paw print',kind:'switch',on:d.keepsakes.indexOf('clay')>-1,attrs:'data-end-keep="clay"'})+'</div>'
           +(d.aftercare==='private'?'<div class="es-foot-note">Included with private cremation.</div>':'')+'</div>';
       }
-      if(K) foot=(fields?'<button type="button" class="es-primary" data-end="go">'+esc(d.edit?'Save':K.go)+'</button>':(FO?'<button type="button" class="es-primary quiet" data-end="cancel">Done</button>':''));
+      if(K) foot=(fields?'<button type="button" class="es-primary" data-end="go">'+pvxEscQ(d.edit?'Save':K.go)+'</button>':(FO?'<button type="button" class="es-primary quiet" data-end="cancel">Done</button>':''));
     }
     h+='</div><footer class="es-foot"><div class="end-hint" id="endHint" role="alert" hidden></div>'+foot+'</footer></div>';
     s.className='end-sheet open'+(s.classList.contains('shown')?' shown':''); s.innerHTML=h;
@@ -2109,7 +2097,7 @@ try{
     if(fk){ var f=s.querySelector(fk); if(f){ f.focus({preventScroll:true}); if(caret&&f.setSelectionRange) try{ f.setSelectionRange(caret[0],caret[1]); }catch(_){} } }
   }
   function closeSheet(silent){ var s=document.getElementById('endSheet'); draft=null; if(s){ s.className='end-sheet'; s.innerHTML=''; }
-    var p=cur(); if(p) showLink(!isCompleted(p)); if(!silent){ var lf=(lastFocus&&lastFocus!==document.body&&document.contains(lastFocus)&&lastFocus.offsetParent!==null)?lastFocus:document.getElementById('dispOther'); if(lf&&lf.focus&&!lf.hidden) try{ lf.focus({preventScroll:true}); }catch(e){} } }
+    var p=pvxActivePatient(); if(p) showLink(!isCompleted(p)); if(!silent){ var lf=(lastFocus&&lastFocus!==document.body&&document.contains(lastFocus)&&lastFocus.offsetParent!==null)?lastFocus:document.getElementById('dispOther'); if(lf&&lf.focus&&!lf.hidden) try{ lf.focus({preventScroll:true}); }catch(e){} } }
   function hint(msg,sel){ var h=document.getElementById('endHint'); if(h){ h.textContent=msg; h.hidden=false; }
     var f=sel&&document.querySelector('#endSheet '+sel); if(f){ f.focus(); f.classList.remove('end-nudge'); void f.offsetWidth; f.classList.add('end-nudge'); } }
   function useForm(p){ var sf=signedForm(p); if(!sf||!draft) return; draft.type=draft.type||sf.kind; draft.aftercare=sf.care; draft.keepsakes=(sf.clay||sf.care==='private')?['clay']:[]; draft.used=true; }
@@ -2158,8 +2146,8 @@ try{
     p.ending=e;
     try{ renderAll(); }catch(_){}
     if(activePatient===p.id) fillDrawer(p);
-    if(after!==before) try{ if(window.fvNotifyAct) fvNotifyAct('Ending details saved',esc(dispFirstName(p))+' · '+esc(after),'Print new tag',function(){ printTag(byId(p.id)); });
-      else notify('Ending details saved',esc(dispFirstName(p))+' · '+esc(after),{icon:'info',color:'#8A82A8'}); }catch(_){}
+    if(after!==before) try{ if(window.fvNotifyAct) fvNotifyAct('Ending details saved',pvxEscQ(dispFirstName(p))+' · '+pvxEscQ(after),'Print new tag',function(){ printTag(pvxPatientById(p.id)); });
+      else notify('Ending details saved',pvxEscQ(dispFirstName(p))+' · '+pvxEscQ(after),{icon:'info',color:'#8A82A8'}); }catch(_){}
   }
   function dirty(){ var d=draft; return !!d&&!d.edit&&!!(d.consent||d.aftercare||d.keepsakes.length||d.ph.who||d.ph.w2); }
 
@@ -2174,14 +2162,14 @@ try{
     var doc=(p.doctor&&p.doctor!=='unassigned')?p.doctor:'', time='';
     try{ time=fmtTime(at); }catch(_){ time=''; }
     var keep=(e.keepsakes||[]).map(function(k){ return label(KEEP,k); }).filter(Boolean);
-    var line=function(l,v){ return v?'<tr><td>'+l+'</td><td>'+esc(v)+'</td></tr>':''; };
-    return '<div class="et"><div class="et-top"><span>VCA Shoreline</span><b>'+esc(p.hid||'')+'</b></div>'
-      +'<div class="et-name">'+esc(full)+'</div><div class="et-pet">'+esc(pet)+'</div>'
-      +'<div class="et-band et-'+B.cls+'"><b>'+esc(B.t)+'</b>'+(B.s?'<span>'+esc(B.s)+'</span>':'')+'</div>'
+    var line=function(l,v){ return v?'<tr><td>'+l+'</td><td>'+pvxEscQ(v)+'</td></tr>':''; };
+    return '<div class="et"><div class="et-top"><span>VCA Shoreline</span><b>'+pvxEscQ(p.hid||'')+'</b></div>'
+      +'<div class="et-name">'+pvxEscQ(full)+'</div><div class="et-pet">'+pvxEscQ(pet)+'</div>'
+      +'<div class="et-band et-'+B.cls+'"><b>'+pvxEscQ(B.t)+'</b>'+(B.s?'<span>'+pvxEscQ(B.s)+'</span>':'')+'</div>'
       +'<table class="et-t">'+line('Owner',p.owner)+line('Urn',e.urn||'')+line(K.done,(tagDay(at)+' · '+time).replace(/ · $/,''))+line('Doctor',doc)+line('Consent',e.type==='euthanasia'?consentLine(e.consent).replace(/^Consent (\w)/,function(_,c){ return c.toUpperCase(); }):'')+'</table>'
-      +(keep.length?'<div class="et-keep">'+keep.map(function(k){ return '<span><i></i>'+esc(k)+' made</span>'; }).join('')+'</div>':'')
+      +(keep.length?'<div class="et-keep">'+keep.map(function(k){ return '<span><i></i>'+pvxEscQ(k)+' made</span>'; }).join('')+'</div>':'')
       +'<div class="et-sign"><span>Tagged by</span><span>Picked up by Final Gift · date</span></div>'
-      +'<div class="et-foot">Recorded by '+esc(e.by||'')+' · Pravix Flow</div></div>'; }
+      +'<div class="et-foot">Recorded by '+pvxEscQ(e.by||'')+' · Pravix Flow</div></div>'; }
   function printTag(p){ var h=tagHtml(p); if(!h) return false;
     var w=document.getElementById('endTag'); if(!w){ w=document.createElement('div'); w.id='endTag'; document.body.appendChild(w); }
     w.innerHTML=h; document.body.classList.add('end-tagging');
@@ -2191,11 +2179,11 @@ try{
   /* ---------- clicks and keys ---------- */
   document.addEventListener('click',function(ev){
     var t=ev.target; if(!t||!t.closest) return;
-    if(t.closest('#dispOther')){ openSheet(cur(),null); return; }
-    if(t.closest('#dispConfirm [data-end="tag"]')){ var pt=cur(); if(pt) printTag(pt); return; }
-    if(t.closest('#dispConfirm [data-end="edit"]')){ var pe=cur(); if(pe) openSheet(pe,null,{edit:true}); return; }
+    if(t.closest('#dispOther')){ openSheet(pvxActivePatient(),null); return; }
+    if(t.closest('#dispConfirm [data-end="tag"]')){ var pt=pvxActivePatient(); if(pt) printTag(pt); return; }
+    if(t.closest('#dispConfirm [data-end="edit"]')){ var pe=pvxActivePatient(); if(pe) openSheet(pe,null,{edit:true}); return; }
     var s=t.closest('#endSheet'); if(!s||!draft) return;
-    var p=byId(draft.pid); if(!p) return;
+    var p=pvxPatientById(draft.pid); if(!p) return;
     var a=t.closest('[data-end]'); if(a){ var w=a.dataset.end;
       if(w==='cancel') closeSheet();
       else if(w==='scrim'){ if(dirty()){ var pn=s.querySelector('.es-panel'); if(pn){ pn.classList.remove('end-nudge'); void pn.offsetWidth; pn.classList.add('end-nudge'); } } else closeSheet(); }
@@ -2228,9 +2216,9 @@ try{
     if(e.key==='Tab'){ var f=[].slice.call(document.querySelectorAll('#endSheet .es-panel button, #endSheet .es-panel a[href], #endSheet .es-panel input')).filter(function(x){ return x.offsetParent!==null; }); if(!f.length) return;
       var i=f.indexOf(document.activeElement); if(e.shiftKey&&i<=0){ e.preventDefault(); f[f.length-1].focus(); } else if(!e.shiftKey&&i===f.length-1){ e.preventDefault(); f[0].focus(); } } },true);
   /* closing the drawer closes its sheet */
-  if(typeof closeDrawer==='function'){ var cdrBase=closeDrawer; closeDrawer=function(){ if(draft) closeSheet(true); return cdrBase.apply(this,arguments); }; }
-  if(typeof openDispConfirm==='function'){ var odBase=openDispConfirm; openDispConfirm=function(){ if(draft) closeSheet(true); var r=odBase.apply(this,arguments); var c=document.getElementById('dispConfirm'); if(c&&c.querySelector('.confirmation')) showLink(false); return r; }; }
-  if(typeof closeDispConfirm==='function'){ var cdBase=closeDispConfirm; closeDispConfirm=function(){ var r=cdBase.apply(this,arguments); var p=cur(); if(p) showLink(!isCompleted(p)); return r; }; }
+  if(typeof closeDrawer==='function'){ pvxBefore('closeDrawer',function(){ if(draft) closeSheet(true); },'#17'); }
+  if(typeof openDispConfirm==='function'){ pvxWrap('openDispConfirm',function(odBase){ return function(){ if(draft) closeSheet(true); var r=odBase.apply(this,arguments); var c=document.getElementById('dispConfirm'); if(c&&c.querySelector('.confirmation')) showLink(false); return r; }; },'#17'); }
+  if(typeof closeDispConfirm==='function'){ pvxAfter('closeDispConfirm',function(){ var p=pvxActivePatient(); if(p) showLink(!isCompleted(p)); },'#17'); }
 
   /* ---------- Completed Today › Euthanized: the same sheet, not a plain confirm ---------- */
   document.addEventListener('drop',function(ev){
@@ -2240,26 +2228,26 @@ try{
     z.classList.remove('cz-over'); var bd=document.getElementById('board'); if(bd) bd.classList.remove('board-dim');
     var p=PATIENTS.find(function(x){ return x.id===id; }); if(!p||isCompleted(p)) return;
     try{ openDrawer(p.id); }catch(e){}
-    setTimeout(function(){ var q=cur(); if(q&&q.id===p.id) openSheet(q,'euthanasia'); },260);
+    setTimeout(function(){ var q=pvxActivePatient(); if(q&&q.id===p.id) openSheet(q,'euthanasia'); },260);
   },true);
 
   /* ---------- Completed Today: the aftercare under the name ---------- */
-  if(typeof renderComplete==='function'){ var rcBase=renderComplete;
-    renderComplete=function(){ var r=rcBase.apply(this,arguments);
+  if(typeof renderComplete==='function'){ 
+    pvxAfter('renderComplete',function(){ 
       try{ var tEl=document.getElementById('czTotal'); if(tEl) tEl.textContent=String((+tEl.textContent||0)+completedTodayCount('Deceased'));
         document.querySelectorAll('#czList .cz-item').forEach(function(n){ var p=PATIENTS.find(function(x){ return x.id===n.dataset.pid; });
           if(!p||!p.ending) return; var s=n.querySelector('.cz-sub'); if(!s||s.querySelector('.cz-end')) return;
-          var a=p.ending.aftercare==='hold'?'Held for instructions':label(AFTER,p.ending.aftercare); if(a) s.insertAdjacentHTML('beforeend','<span class="cz-end"> · '+esc(a)+'</span>'); });
+          var a=p.ending.aftercare==='hold'?'Held for instructions':label(AFTER,p.ending.aftercare); if(a) s.insertAdjacentHTML('beforeend','<span class="cz-end"> · '+pvxEscQ(a)+'</span>'); });
       }catch(e){}
-      return r; }; }
+      },'#17'); }
 
   try{ link(); }catch(e){}
-  window.fvEndings={open:function(p,t,o){ openSheet(p||cur(),t||null,o); },
+  window.fvEndings={open:function(p,t,o){ openSheet(p||pvxActivePatient(),t||null,o); },
     /* from the "Form signed" notice: the drawer, then this sheet with the family's choices in, focused on Record */
     openSigned:function(p){ if(!p) return; try{ if(activePatient!==p.id) openDrawer(p.id); }catch(e){}
-      setTimeout(function(){ var q=cur(); if(q&&q.id===p.id&&!isCompleted(q)){ var sf=signedForm(q); openSheet(q,sf?sf.kind:null,{useForm:!!sf}); } },260); },
-    summary:summary,consentLine:consentLine,tagHtml:tagHtml,printTag:function(p){ return printTag(p||cur()); },staffNames:staffNames,AFTER:AFTER,KEEP:KEEP,state:function(){ return draft; },close:function(){ closeSheet(); },
-    repaint:function(){ var p=cur(); if(draft) paintSheet(); else if(p) showLink(!isCompleted(p)); }};
+      setTimeout(function(){ var q=pvxActivePatient(); if(q&&q.id===p.id&&!isCompleted(q)){ var sf=signedForm(q); openSheet(q,sf?sf.kind:null,{useForm:!!sf}); } },260); },
+    summary:summary,consentLine:consentLine,tagHtml:tagHtml,printTag:function(p){ return printTag(p||pvxActivePatient()); },staffNames:staffNames,AFTER:AFTER,KEEP:KEEP,state:function(){ return draft; },close:function(){ closeSheet(); },
+    repaint:function(){ var p=pvxActivePatient(); if(draft) paintSheet(); else if(p) showLink(!isCompleted(p)); }};
 })();
 }catch(e){setTimeout(function(){throw e})}
 
@@ -2333,16 +2321,9 @@ try{
     paw:'<circle cx="7.5" cy="10" r="1.7"/><circle cx="10.8" cy="6.6" r="1.7"/><circle cx="14.8" cy="6.9" r="1.7"/><circle cx="17.8" cy="10.6" r="1.7"/><path d="M8.6 17.4c0-2.8 2-5 4.3-5s4.2 2.2 4.2 4.6c0 1.6-1.3 2.4-2.6 2-1-.3-1.6-.4-2-.4s-1.2.1-2 .4c-1.2.4-1.9-.3-1.9-1.6z"/>'};
   var CHEVL='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-  function who(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Staff'; }catch(e){ return 'Staff'; } }
-  function uid(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.uid)||null; }catch(e){ return null; } }
-  function email(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.email)||''; }catch(e){ return ''; } }
-  function isAdmin(){ var e=email().toLowerCase(); try{ if(typeof isAdminUser==='function'&&isAdminUser(e)) return true; }catch(_){} return e==='daniel.giordano@pravix.app'; }
+  function isAdmin(){ var e=pvxEmail().toLowerCase(); try{ if(typeof isAdminUser==='function'&&isAdminUser(e)) return true; }catch(_){} return e==='daniel.giordano@pravix.app'; }
   function pet(p){ return (p&&p.name)?String(p.name).split(' ')[0]:'your pet'; }
-  function byId(id){ try{ return PATIENTS.find(function(x){ return String(x.id)===String(id); })||null; }catch(e){ return null; } }
   function money(n){ return (typeof n==='number'&&isFinite(n))?'$'+n.toFixed(2):''; }
-  function hm(iso){ try{ return fmtTime(new Date(iso)); }catch(e){ return ''; } }
-  function mins(iso){ return Math.max(0,Math.round((Date.now()-new Date(iso))/60000)); }
   function dur(m){ return m<1?'just now':m<60?m+' min':Math.floor(m/60)+' h '+(m%60?(m%60)+' min':''); }
   function day(d,l){ try{ return d.toLocaleDateString(l==='es'?'es-US':'en-US',{weekday:'long',month:'long',day:'numeric'}); }catch(e){ return ''; } }
   function today(iso){ try{ return isTodayHosp(new Date(iso)); }catch(e){ return new Date(iso).toDateString()===new Date().toDateString(); } }
@@ -2363,7 +2344,7 @@ try{
   /* the progress line, for the drawer's sheet and the queue */
   function progress(f){ if(!f) return ''; var st=f.status, S=[['Sent',f.requested&&f.requested.at],['With the family',f.family_at],['Signed',f.signed_at]], at=st==='requested'?0:st==='family'?1:st==='signed'?2:-1;
     return '<ol class="cf-prog" aria-label="Form progress">'+S.map(function(x,i){ var c=i<at||(i===at&&st==='signed')?'done':i===at?'now':''; if(i===0&&at>0) c='done';
-      return '<li class="'+c+'"'+(i===at?' aria-current="step"':'')+'>'+x[0]+(x[1]&&(c==='done'||c==='now')?'<small>'+esc(hm(x[1]))+'</small>':'')+'</li>'; }).join('')+'</ol>'; }
+      return '<li class="'+c+'"'+(i===at?' aria-current="step"':'')+'>'+x[0]+(x[1]&&(c==='done'||c==='now')?'<small>'+pvxEscQ(pvxHm(x[1]))+'</small>':'')+'</li>'; }).join('')+'</ol>'; }
 
   /* ---------- prices: ts_settings/aftercare_prices (staff read, admin write — no rules change) ---------- */
   function loadPrices(){ try{ if(typeof DB==='undefined'||!DB) return; var ref=DB.collection('ts_settings').doc('aftercare_prices');
@@ -2379,7 +2360,7 @@ try{
       var cur=(s&&s.exists&&(s.data()||{}).consent_form)||null;
       if(!force&&cur&&cur.id===f.id&&cur.status==='signed'&&f.status!=='signed') return 'signed-elsewhere';
       if(!force&&cur&&cur.id!==f.id&&active(cur)&&f.status==='requested') return 'other-open';
-      t.update(ref,{consent_form:f,last_by:who(),last_at:new Date().toISOString()}); return true; }); })
+      t.update(ref,{consent_form:f,last_by:pvxWho(),last_at:new Date().toISOString()}); return true; }); })
       .then(function(r){ if(r!==true){ try{ notify('Not saved','The form changed on another screen',{icon:'info',color:'var(--accent)'}); }catch(_){} } return r===true; })
       .catch(function(e){ console.warn('[aftercare] save',e); try{ notify('Couldn’t save the form','Check the connection and try again',{icon:'info',color:'#C85A50'}); }catch(_){} return false; });
   }
@@ -2393,13 +2374,13 @@ try{
   function send(p,kind,fee){
     if(!p) return; if(active(p.consentForm)) return;
     var f={id:'cf_'+Date.now().toString(36),v:VER,kind:kind==='died'?'died':'euthanasia',fee:kind==='died'?null:(fee==='consult'?'consult':'outpatient'),status:'requested',
-      requested:{at:new Date().toISOString(),by:who(),uid:uid()},pet:{name:pet(p),species:species(p)},owner:{name:p.owner||''}};
-    write(p,f).then(function(ok){ if(ok) try{ notify('Form sent to reception',esc(pet(p))+' · '+(f.kind==='died'?'Aftercare form':'Euthanasia & aftercare form'),{icon:'info',color:'#8A82A8'}); }catch(_){} });
+      requested:{at:new Date().toISOString(),by:pvxWho(),uid:pvxUid()},pet:{name:pet(p),species:species(p)},owner:{name:p.owner||''}};
+    write(p,f).then(function(ok){ if(ok) try{ notify('Form sent to reception',pvxEscQ(pet(p))+' · '+(f.kind==='died'?'Aftercare form':'Euthanasia & aftercare form'),{icon:'info',color:'#8A82A8'}); }catch(_){} });
   }
   /* cancel straight away, with Undo (no "are you sure") */
   function cancel(p){ var f=p&&p.consentForm; if(!active(f)) return; var before=JSON.parse(JSON.stringify(f));
-    var g=Object.assign({},f,{status:'cancelled',cancelled:{at:new Date().toISOString(),by:who()}}); write(p,g);
-    (window.fvNotifyAct||notifyAct)('Form cancelled',esc(pet(p))+'’s '+(f.kind==='died'?'aftercare':'consent')+' form','Undo',function(){ var q=byId(p.id); if(q&&q.consentForm&&q.consentForm.id===before.id&&q.consentForm.status==='cancelled') write(q,before,true); },{dur:8000}); }
+    var g=Object.assign({},f,{status:'cancelled',cancelled:{at:new Date().toISOString(),by:pvxWho()}}); write(p,g);
+    (window.fvNotifyAct||notifyAct)('Form cancelled',pvxEscQ(pet(p))+'’s '+(f.kind==='died'?'aftercare':'consent')+' form','Undo',function(){ var q=pvxPatientById(p.id); if(q&&q.consentForm&&q.consentForm.id===before.id&&q.consentForm.status==='cancelled') write(q,before,true); },{dur:8000}); }
 
   /* ---------- Flow › Consent forms ---------- */
   function seg(){ var sw=document.getElementById('switcher'); if(!sw||document.querySelector('#switcher .seg[data-view="consent"]')) return;
@@ -2408,8 +2389,7 @@ try{
     var cl=sw.querySelector('.seg[data-view="client"]'); sw.insertBefore(b,cl||null); }
   function section(){ var el=document.getElementById('view-consent'); if(el) return el; var cl=document.getElementById('view-client'); if(!cl) return null;
     el=document.createElement('section'); el.className='view hidden'; el.id='view-consent'; cl.parentNode.insertBefore(el,cl); return el; }
-  var svBase=switchView;
-  switchView=function(v){ var r=svBase.apply(this,arguments); var el=section(); if(el){ el.classList.toggle('hidden',v!=='consent'); if(v==='consent'){ el.classList.remove('view'); void el.offsetWidth; el.classList.add('view'); renderQueue(); } } return r; };
+  pvxAfter('switchView',function(v){ var el=section(); if(el){ el.classList.toggle('hidden',v!=='consent'); if(v==='consent'){ el.classList.remove('view'); void el.offsetWidth; el.classList.add('view'); renderQueue(); } } },'#18');
   if(typeof switchApp==='function'){ var saBase=switchApp; switchApp=function(app){ var r=saBase.apply(this,arguments); if(app!=='flow'){ var el=document.getElementById('view-consent'); if(el) el.classList.add('hidden'); } return r; }; }
   /* waiting forms first, the longest wait at the top; then today's signed forms, newest first */
   function queue(){ return (PATIENTS||[]).filter(function(p){ var f=p&&p.consentForm; return f&&(active(f)||(f.status==='signed'&&today(f.signed_at||f.requested.at))); })
@@ -2423,15 +2403,15 @@ try{
     if(!PRICES) h+='<div class="cfq-note">Prices aren’t set yet, so the family form shows the choices without prices.'+(isAdmin()?' Open <b>Prices</b> to add them.':'')+'</div>';
     var G=[]; try{ if(window.fvDocs&&fvDocs.queue) G=fvDocs.queue(); }catch(e){}
     if(!Q.length&&!G.length) h+='<div class="cfq-empty"><b>No forms waiting</b><span>When a doctor sends a euthanasia or aftercare form, it appears here.</span></div>';
-    Q.forEach(function(p){ var f=p.consentForm, st=f.status, m=mins(f.requested.at);
+    Q.forEach(function(p){ var f=p.consentForm, st=f.status, m=pvxMinsSince(f.requested.at);
       var doc=''; try{ doc=(p.doctor&&p.doctor!=='unassigned')?docShort(p.doctor):''; }catch(e){}
-      var wait=st==='signed'?'<div class="cfq-wait done"><b>Signed</b><span>'+esc(hm(f.signed_at))+'</span></div>'
-        :'<div class="cfq-wait'+(m>=15?' long':'')+'"><b>'+esc(dur(m))+'</b><span>'+(st==='family'?'with the family':'waiting')+'</span></div>';
-      h+='<div class="cfq-card" data-pid="'+esc(p.id)+'">'+wait
-        +'<div class="cfq-main"><div class="cfq-name">'+esc(((p.name||'')+' '+(p.last||'')).trim())+'</div>'
-        +'<div class="cfq-meta">'+esc([f.kind==='died'?'Aftercare form':'Euthanasia & aftercare',p.room&&p.room!=='Lobby'?p.room:'',doc,'sent by '+(f.requested.by||'')].filter(Boolean).join(' · '))+'</div>'
+      var wait=st==='signed'?'<div class="cfq-wait done"><b>Signed</b><span>'+pvxEscQ(pvxHm(f.signed_at))+'</span></div>'
+        :'<div class="cfq-wait'+(m>=15?' long':'')+'"><b>'+pvxEscQ(dur(m))+'</b><span>'+(st==='family'?'with the family':'waiting')+'</span></div>';
+      h+='<div class="cfq-card" data-pid="'+pvxEscQ(p.id)+'">'+wait
+        +'<div class="cfq-main"><div class="cfq-name">'+pvxEscQ(((p.name||'')+' '+(p.last||'')).trim())+'</div>'
+        +'<div class="cfq-meta">'+pvxEscQ([f.kind==='died'?'Aftercare form':'Euthanasia & aftercare',p.room&&p.room!=='Lobby'?p.room:'',doc,'sent by '+(f.requested.by||'')].filter(Boolean).join(' · '))+'</div>'
         +'<div class="cfq-prog">'+progress(f)+'</div>'
-        +(st==='signed'?'<div class="cfq-meta strong">'+esc(summary(f))+(f.witness?' · witnessed by '+esc(f.witness.name||''):'')+'</div>':'')+'</div>'
+        +(st==='signed'?'<div class="cfq-meta strong">'+pvxEscQ(summary(f))+(f.witness?' · witnessed by '+pvxEscQ(f.witness.name||''):'')+'</div>':'')+'</div>'
         +'<div class="cfq-acts">'+(st==='signed'?DC({ic:IC.print,title:'Print · PDF',desc:'The signed form',arrow:'out',attrs:'data-cfa="print"'})
           :'<button type="button" class="cfq-btn quiet" data-cfa="cancel">Cancel</button>'+DC({ic:IC.ipad,title:st==='family'?'Resume':'Start with the family',desc:st==='family'?'Back to where they were':'Opens the family form',arrow:'out',attrs:'data-cfa="family"'}))+'</div></div>'; });
     try{ if(G.length) h+=fvDocs.queueCards(G); }catch(e){}
@@ -2441,10 +2421,10 @@ try{
   /* ---------- prices editor ---------- */
   function pricesSheet(){ var adm=isAdmin(), it=(PRICES&&PRICES.items)||{};
     var h='<div class="cfp-box" role="dialog" aria-modal="true" aria-label="Aftercare prices"><div class="cfp-t">Aftercare prices</div><div class="cfp-s">'+(adm?'Applies to this hospital.':'Only an admin can change these.')+'</div><div class="cfp-rows">';
-    PRICE_KEYS.forEach(function(k){ var x=it[k[0]]||{}; h+='<label class="cfp-row"><span class="cfp-l">'+esc(k[1])+'</span>'
-      +'<input class="cfp-code" data-pk="'+k[0]+'" data-pf="code" placeholder="Code" aria-label="'+esc(k[1])+' — code" value="'+esc(x.code||'')+'"'+(adm?'':' disabled')+'>'
-      +'<span class="cfp-dollar">$</span><input class="cfp-amt" data-pk="'+k[0]+'" data-pf="amount" inputmode="decimal" placeholder="0.00" aria-label="'+esc(k[1])+' — amount, dollars" value="'+(typeof x.amount==='number'?x.amount.toFixed(2):'')+'"'+(adm?'':' disabled')+'></label>'; });
-    h+='</div><div class="cfp-foot">'+(PRICES&&PRICES.updated_by?'<span class="cfp-by">Last changed by '+esc(PRICES.updated_by)+'</span>':'<span></span>')
+    PRICE_KEYS.forEach(function(k){ var x=it[k[0]]||{}; h+='<label class="cfp-row"><span class="cfp-l">'+pvxEscQ(k[1])+'</span>'
+      +'<input class="cfp-code" data-pk="'+k[0]+'" data-pf="code" placeholder="Code" aria-label="'+pvxEscQ(k[1])+' — code" value="'+pvxEscQ(x.code||'')+'"'+(adm?'':' disabled')+'>'
+      +'<span class="cfp-dollar">$</span><input class="cfp-amt" data-pk="'+k[0]+'" data-pf="amount" inputmode="decimal" placeholder="0.00" aria-label="'+pvxEscQ(k[1])+' — amount, dollars" value="'+(typeof x.amount==='number'?x.amount.toFixed(2):'')+'"'+(adm?'':' disabled')+'></label>'; });
+    h+='</div><div class="cfp-foot">'+(PRICES&&PRICES.updated_by?'<span class="cfp-by">Last changed by '+pvxEscQ(PRICES.updated_by)+'</span>':'<span></span>')
       +'<span><button type="button" class="cf-btn cancel" data-cfa="prices-close">'+(adm?'Cancel':'Close')+'</button>'+(adm?' <button type="button" class="cf-btn go" data-cfa="prices-save">Save</button>':'')+'</span></div></div>';
     var w=document.getElementById('cfPrices'); if(!w){ w=document.createElement('div'); w.id='cfPrices'; w.className='cfp-scrim open'; document.body.appendChild(w); }
     w.className='cfp-scrim open'; w.innerHTML=h; var f=w.querySelector('input:not([disabled])'); if(f) f.focus(); }
@@ -2453,7 +2433,7 @@ try{
       var v=String(a.value||'').replace(/[$,\s]/g,''); if(v===''){ return; } var n=Number(v); if(!isFinite(n)||n<0){ bad=bad||a; return; }
       items[k[0]]={amount:Math.round(n*100)/100,code:String(c.value||'').trim().slice(0,20)}; });
     if(bad){ bad.focus(); bad.classList.add('cfp-bad'); return; }
-    var doc={items:items,updated_at:new Date().toISOString(),updated_by:who()};
+    var doc={items:items,updated_at:new Date().toISOString(),updated_by:pvxWho()};
     PRICES=doc; w.className='cfp-scrim'; w.innerHTML=''; repaint();
     try{ if(typeof DB!=='undefined'&&DB) DB.runTransaction(function(t){ var ref=DB.collection('ts_settings').doc('aftercare_prices'); return t.get(ref).then(function(){ t.set(ref,doc); }); })
       .catch(function(e){ console.warn('[aftercare] prices',e); try{ notify('Prices not saved','Only an admin can change them',{icon:'info',color:'#C85A50'}); }catch(_){} }); }catch(e){} }
@@ -2463,19 +2443,19 @@ try{
   function startFamily(p){ if(!p||!p.consentForm) return; var f=JSON.parse(JSON.stringify(p.consentForm));
     f.owner=f.owner||{}; if(!f.owner.name) f.owner.name=p.owner||''; f.owner.state=f.owner.state||'CT'; f.pet=f.pet||{name:pet(p),species:species(p)};
     lang=f.lang||'en'; open={pid:p.id,step:1,f:f,err:'',dir:0};
-    if(f.status==='requested'){ var g=Object.assign({},p.consentForm,{status:'family',family_at:new Date().toISOString(),family_by:who()}); write(p,g); open.f.status='family'; open.f.family_at=g.family_at; }
+    if(f.status==='requested'){ var g=Object.assign({},p.consentForm,{status:'family',family_at:new Date().toISOString(),family_by:pvxWho()}); write(p,g); open.f.status='family'; open.f.family_at=g.family_at; }
     document.body.classList.add('cf-family-on'); paintFamily(); var b=document.getElementById('cfFamily'); if(b) b.scrollTop=0; }
   function el(){ var w=document.getElementById('cfFamily'); if(!w){ w=document.createElement('div'); w.id='cfFamily'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true'); document.body.appendChild(w); } return w; }
-  function field(id,label,val,attrs){ return '<label class="cff-field"><span>'+label+'</span><input id="'+id+'" value="'+esc(val||'')+'" '+(attrs||'')+'></label>'; }
-  function careOpts(nm){ var v={pet:esc(nm)}; return [
+  function field(id,label,val,attrs){ return '<label class="cff-field"><span>'+label+'</span><input id="'+id+'" value="'+pvxEscQ(val||'')+'" '+(attrs||'')+'></label>'; }
+  function careOpts(nm){ var v={pet:pvxEscQ(nm)}; return [
     {k:'private',t:L('private_t',v),d:L('private_d',v),urn:true,clay:'included'},
     {k:'communal',t:L('communal_t',v),d:L('communal_d',v),clay:'option'},
     {k:'release',t:L('release_t',v),d:L('release_d',v),clay:'option'},
     {k:'hold',t:L('hold_t',v),d:L('hold_d',v),clay:null}]; }
-  function careName(k,nm){ return L(k+'_t',{pet:esc(nm)}); }
-  function paintFamily(){ if(!open) return; var p=byId(open.pid), w=el(), f=open.f; if(!p){ closeFamily(); return; }
+  function careName(k,nm){ return L(k+'_t',{pet:pvxEscQ(nm)}); }
+  function paintFamily(){ if(!open) return; var p=pvxPatientById(open.pid), w=el(), f=open.f; if(!p){ closeFamily(); return; }
     if(w.querySelector('.cff')) readFields();   /* a live update repaints the form: keep what the family has typed */
-    var nm=f.pet&&f.pet.name||pet(p), v={pet:esc(nm)}, step=open.step, fam=step<=STEPS;
+    var nm=f.pet&&f.pet.name||pet(p), v={pet:pvxEscQ(nm)}, step=open.step, fam=step<=STEPS;
     var h='<div class="cff" lang="'+lang+'"><header class="cff-nav">'
       +'<div class="cff-nav-l">'+(step>1&&step<=STEPS?'<button type="button" class="cff-back" data-cfh="back">'+CHEVL+'<span>'+L('back')+'</span></button>':'<img class="cff-logo" src="assets/img/logo-light.png" alt="VCA Shoreline">')+'</div>'
       +'<div class="cff-dots" aria-hidden="'+(!fam)+'">'+(fam?Array.from({length:STEPS},function(_,i){ return '<span class="'+(i+1===step?'on':i+1<step?'done':'')+'"></span>'; }).join('')+'<em class="cff-sr">'+(lang==='es'?'Paso ':'Step ')+step+(lang==='es'?' de ':' of ')+STEPS+'</em>':'')+'</div>'
@@ -2488,18 +2468,18 @@ try{
       h+='<h1 class="cff-big">'+L('for',v)+'</h1><p class="cff-lead">'+L('lead1',v)+'</p>'
         +'<div class="cff-grid">'+field('cffOwner',L('name'),f.owner.name,'autocomplete="name"')+field('cffAddr',L('addr'),f.owner.address,'autocomplete="street-address"')
         +field('cffCity',L('city'),f.owner.city,'autocomplete="address-level2"')+'<div class="cff-two">'+field('cffState',L('state'),f.owner.state,'autocomplete="address-level1" maxlength="2"')+field('cffZip',L('zip'),f.owner.zip,'inputmode="numeric" autocomplete="postal-code" maxlength="10"')+'</div>'
-        +field('cffPet',L('petname'),f.pet.name,'')+'<div class="cff-field"><span>'+L('dogcat')+'</span><div class="cff-seg" role="radiogroup" aria-label="'+esc(L('dogcat'))+'">'
+        +field('cffPet',L('petname'),f.pet.name,'')+'<div class="cff-field"><span>'+L('dogcat')+'</span><div class="cff-seg" role="radiogroup" aria-label="'+pvxEscQ(L('dogcat'))+'">'
         +['Dog','Cat','Other'].map(function(s){ var on=(f.pet.species||'')===s||(s==='Other'&&f.pet.species&&f.pet.species!=='Dog'&&f.pet.species!=='Cat'); return '<button type="button" role="radio" aria-checked="'+on+'" class="'+(on?'on':'')+'" data-cfs="'+s+'">'+L(s)+'</button>'; }).join('')+'</div></div></div>';
       primary='<button type="button" class="cff-primary" data-cfh="next">'+L('cont')+'</button>';
     }else if(step===2){
-      h+='<h1>'+L('care',v)+'</h1><p class="cff-lead">'+L('one')+'</p><div class="cff-care" role="radiogroup" aria-label="'+esc(L('care',v))+'">';
+      h+='<h1>'+L('care',v)+'</h1><p class="cff-lead">'+L('one')+'</p><div class="cff-care" role="radiogroup" aria-label="'+pvxEscQ(L('care',v))+'">';
       careOpts(nm).forEach(function(o){ var on=f.care===o.k, pr=o.k==='private'?price('private_clay'):o.k==='communal'?price('communal'):null;
-        var dd=o.d+(o.k==='hold'?'<span class="cff-note">'+L('hold_n',{pet:esc(nm),date:esc(day(new Date(Date.now()+7*864e5),lang))})+'</span>':'');
+        var dd=o.d+(o.k==='hold'?'<span class="cff-note">'+L('hold_n',{pet:pvxEscQ(nm),date:pvxEscQ(day(new Date(Date.now()+7*864e5),lang))})+'</span>':'');
         h+=DC({ic:IC[o.k],title:o.t,aside:pr?money(pr.amount):'',desc:dd,sel:on,wrap:true,cls:'cff-opt'+(on?' on':''),attrs:'data-cfc="'+o.k+'"'});
-        if(on&&o.urn){ h+='<div class="cff-sub"><div class="cff-subt">'+L('urn')+' <span>'+L('urn1')+'</span></div><div class="cff-urns" role="radiogroup" aria-label="'+esc(L('urn'))+'">';
+        if(on&&o.urn){ h+='<div class="cff-sub"><div class="cff-subt">'+L('urn')+' <span>'+L('urn1')+'</span></div><div class="cff-urns" role="radiogroup" aria-label="'+pvxEscQ(L('urn'))+'">';
           URNS.forEach(function(u){ var uo=f.urn===u[0]; h+='<button type="button" class="cff-urn'+(uo?' on':'')+'" role="radio" aria-checked="'+uo+'" data-cfu="'+u[0]+'">'
-            +(URN_IMG[u[0]]?'<img src="'+esc(URN_IMG[u[0]])+'" alt="">':'<span class="cff-urn-ph" aria-hidden="true"><svg viewBox="0 0 24 24">'+IC.private+'</svg><em>'+L('photo')+'</em></span>')
-            +'<span class="cff-urn-t">'+esc(u[1])+'</span><span class="cff-urn-ok" aria-hidden="true"></span></button>'; });
+            +(URN_IMG[u[0]]?'<img src="'+pvxEscQ(URN_IMG[u[0]])+'" alt="">':'<span class="cff-urn-ph" aria-hidden="true"><svg viewBox="0 0 24 24">'+IC.private+'</svg><em>'+L('photo')+'</em></span>')
+            +'<span class="cff-urn-t">'+pvxEscQ(u[1])+'</span><span class="cff-urn-ok" aria-hidden="true"></span></button>'; });
           h+='</div><div class="cff-incl">'+L('incl')+'</div></div>'; }
         if(on&&o.clay==='option'){ var cp=price('clay_only'), cc=price('communal_clay'), cm=price('communal'), add=(o.k==='communal'&&cc&&cm)?Math.round((cc.amount-cm.amount)*100)/100:(cp?cp.amount:null);
           h+='<div class="cff-sub">'+DC({ic:IC.paw,title:L('clay'),aside:add!=null?'+'+money(add):'',desc:L('clay_d',v),sel:!!f.clay,box:true,cls:'cff-check'+(f.clay?' on':''),attrs:'data-cfk="clay"'})+'</div>'; } });
@@ -2507,33 +2487,33 @@ try{
       primary='<button type="button" class="cff-primary" data-cfh="next">'+L('toreview')+'</button>';
     }else if(step===3){
       var L2=lines(f), Tt=total(L2), o=f.owner||{};
-      var rowr=function(lbl,val,goStep,id){ return '<div class="cff-rrow"><span class="cff-rl">'+lbl+'</span><span class="cff-rv">'+val+'</span>'+(goStep?'<button type="button" class="cff-edit" data-cfe="'+goStep+'" aria-label="'+esc(L('change')+' · '+lbl)+'">'+L('change')+'</button>':'<span></span>')+'</div>'; };
+      var rowr=function(lbl,val,goStep,id){ return '<div class="cff-rrow"><span class="cff-rl">'+lbl+'</span><span class="cff-rv">'+val+'</span>'+(goStep?'<button type="button" class="cff-edit" data-cfe="'+goStep+'" aria-label="'+pvxEscQ(L('change')+' · '+lbl)+'">'+L('change')+'</button>':'<span></span>')+'</div>'; };
       h+='<h1>'+L('review')+'</h1><p class="cff-lead">'+L('review_l')+'</p><div class="cff-review">'
-        +rowr(L('r_you'),esc(o.name||'')+'<small>'+esc([o.address,o.city,((o.state||'')+' '+(o.zip||'')).trim()].filter(Boolean).join(', '))+'</small>',1)
-        +rowr(L('r_pet'),esc(nm)+(f.pet&&f.pet.species?' · '+esc(L(f.pet.species)||f.pet.species):''),1)
+        +rowr(L('r_you'),pvxEscQ(o.name||'')+'<small>'+pvxEscQ([o.address,o.city,((o.state||'')+' '+(o.zip||'')).trim()].filter(Boolean).join(', '))+'</small>',1)
+        +rowr(L('r_pet'),pvxEscQ(nm)+(f.pet&&f.pet.species?' · '+pvxEscQ(L(f.pet.species)||f.pet.species):''),1)
         +rowr(L('r_care'),careName(f.care,nm),2)
-        +(f.care==='private'?rowr(L('r_urn'),esc(urnLabel(f.urn)),2):'')
+        +(f.care==='private'?rowr(L('r_urn'),pvxEscQ(urnLabel(f.urn)),2):'')
         +(f.care!=='hold'?rowr(L('r_keep'),(f.clay||f.care==='private')?L('r_clay'):L('r_none'),2):'')
         +'</div>';
-      if(L2.length&&PRICES) h+='<div class="cff-sum"><div class="cff-sumt">'+L('fees')+'</div><table class="cff-fees">'+L2.map(function(l){ return '<tr><td>'+esc(L(l.k))+'</td><td>'+(l.amount!=null?money(l.amount):'—')+'</td></tr>'; }).join('')+(Tt!=null?'<tr class="t"><td>'+L('totalw')+'</td><td>'+money(Tt)+'</td></tr>':'')+'</table></div>';
+      if(L2.length&&PRICES) h+='<div class="cff-sum"><div class="cff-sumt">'+L('fees')+'</div><table class="cff-fees">'+L2.map(function(l){ return '<tr><td>'+pvxEscQ(L(l.k))+'</td><td>'+(l.amount!=null?money(l.amount):'—')+'</td></tr>'; }).join('')+(Tt!=null?'<tr class="t"><td>'+L('totalw')+'</td><td>'+money(Tt)+'</td></tr>':'')+'</table></div>';
       if(f.care==='hold') h+='<div class="cff-note">'+L('hold_fee')+'</div>';
       primary='<button type="button" class="cff-primary" data-cfh="next">'+L('tosign')+'</button>';
     }else if(step===4){
       h+='<h1>'+(f.kind==='died'?L('sign_t'):L('consent_t'))+'</h1>';
-      if(f.kind!=='died') h+='<p class="cff-consent">'+esc(CONSENT[lang])+'</p>'; else h+='<p class="cff-lead">'+L('sign_l',v)+'</p>';
+      if(f.kind!=='died') h+='<p class="cff-consent">'+pvxEscQ(CONSENT[lang])+'</p>'; else h+='<p class="cff-lead">'+L('sign_l',v)+'</p>';
       h+=field('cffSignName',L('name'),f.owner.sign_name!=null?f.owner.sign_name:f.owner.name,'autocomplete="name"')
-        +'<div class="cff-sigwrap"><div class="cff-sigl">'+L('signhere')+' <button type="button" class="cff-clear" data-cfh="clear-owner">'+L('clear')+'</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="cffSigOwner" aria-label="'+esc(L('signhere'))+'"></canvas><span class="cff-x" aria-hidden="true">×</span></div><div class="cff-sigd">'+esc(day(new Date(),lang))+'</div></div>';
+        +'<div class="cff-sigwrap"><div class="cff-sigl">'+L('signhere')+' <button type="button" class="cff-clear" data-cfh="clear-owner">'+L('clear')+'</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="cffSigOwner" aria-label="'+pvxEscQ(L('signhere'))+'"></canvas><span class="cff-x" aria-hidden="true">×</span></div><div class="cff-sigd">'+pvxEscQ(day(new Date(),lang))+'</div></div>';
       primary='<button type="button" class="cff-primary" data-cfh="sign">'+L('signbtn')+'</button>';
     }else if(step===5){
-      h+='<div class="cff-thanks"><h1 class="cff-big">'+L('thanks')+'</h1><p class="cff-lead">'+L('handback',{pet:esc(nm)})+'</p></div>';
+      h+='<div class="cff-thanks"><h1 class="cff-big">'+L('thanks')+'</h1><p class="cff-lead">'+L('handback',{pet:pvxEscQ(nm)})+'</p></div>';
       primary='<button type="button" class="cff-primary" data-cfh="staff">Staff: witness the signature</button>';
     }else if(step===6){
-      h+='<h1>Witness</h1><p class="cff-lead">'+esc(f.owner_sig&&f.owner_sig.name||f.owner.name||'The owner')+' signed for '+esc(nm)+(f.lang==='es'?' (in Spanish)':'')+'. Sign as the witness to the owner’s consent.</p>'
-        +'<div class="cff-sum"><div class="cff-sumt">'+esc(summary(f))+'</div></div>'
-        +'<div class="cff-sigwrap"><div class="cff-sigl">'+esc(who())+' <button type="button" class="cff-clear" data-cfh="clear-witness">Clear</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="cffSigWitness" aria-label="Witness signature pad"></canvas><span class="cff-x" aria-hidden="true">×</span></div><div class="cff-sigd">'+esc(day(new Date()))+'</div></div>';
+      h+='<h1>Witness</h1><p class="cff-lead">'+pvxEscQ(f.owner_sig&&f.owner_sig.name||f.owner.name||'The owner')+' signed for '+pvxEscQ(nm)+(f.lang==='es'?' (in Spanish)':'')+'. Sign as the witness to the owner’s consent.</p>'
+        +'<div class="cff-sum"><div class="cff-sumt">'+pvxEscQ(summary(f))+'</div></div>'
+        +'<div class="cff-sigwrap"><div class="cff-sigl">'+pvxEscQ(pvxWho())+' <button type="button" class="cff-clear" data-cfh="clear-witness">Clear</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="cffSigWitness" aria-label="Witness signature pad"></canvas><span class="cff-x" aria-hidden="true">×</span></div><div class="cff-sigd">'+pvxEscQ(day(new Date()))+'</div></div>';
       primary='<button type="button" class="cff-primary" data-cfh="witness">Save the signed form</button>';
     }
-    if(open.err) h+='<div class="cff-err" role="alert">'+esc(typeof open.err==='object'?L(open.err.k,open.err.v):open.err)+'</div>';
+    if(open.err) h+='<div class="cff-err" role="alert">'+pvxEscQ(typeof open.err==='object'?L(open.err.k,open.err.v):open.err)+'</div>';
     h+='</main><footer class="cff-bar">'+primary+'</footer></div>';
     var keep=document.activeElement&&w.contains(document.activeElement)&&document.activeElement.id;
     w.className='cf-family-sheet open'; w.innerHTML=h;
@@ -2568,7 +2548,7 @@ try{
     return o.toDataURL('image/png'); }
   function next(){ var f=open.f; readFields(); open.err='';
     if(open.step===1){ if(!f.owner.name){ open.err=E('e_name'); paintFamily(); focus('cffOwner'); return; }
-      if(!f.owner.address||!f.owner.city||!f.owner.zip){ open.err=E('e_addr',{pet:f.pet.name||pet(byId(open.pid))}); paintFamily(); focus(!f.owner.address?'cffAddr':!f.owner.city?'cffCity':'cffZip'); return; } }
+      if(!f.owner.address||!f.owner.city||!f.owner.zip){ open.err=E('e_addr',{pet:f.pet.name||pet(pvxPatientById(open.pid))}); paintFamily(); focus(!f.owner.address?'cffAddr':!f.owner.city?'cffCity':'cffZip'); return; } }
     if(open.step===2){ if(!f.care){ open.err=E('e_one'); paintFamily(); return; } if(f.care==='private'&&!f.urn){ open.err=E('e_urn'); paintFamily(); var u=document.querySelector('[data-cfu]'); if(u) u.focus(); return; } }
     go(open.step+1,1); }
   function focus(id){ var e=document.getElementById(id); if(e) e.focus(); }
@@ -2577,13 +2557,13 @@ try{
     if(!inked('sigOwner')){ open.err=E('e_sig'); paintFamily(); return; }
     f.owner_sig={name:f.owner.sign_name,at:new Date().toISOString(),png:png('sigOwner','cffSigOwner')};
     f.lang=lang; f.lines=lines(f); f.total=total(f.lines); f.consent_text=f.kind==='died'?null:CONSENT[lang]; f.consent_text_en=f.kind==='died'?null:CONSENT.en; go(5,1); }
-  function signWitness(){ var p=byId(open.pid), f=open.f; open.err='';
+  function signWitness(){ var p=pvxPatientById(open.pid), f=open.f; open.err='';
     if(!inked('sigWitness')){ open.err='Please sign as the witness.'; paintFamily(); return; }
-    f.witness={name:who(),uid:uid(),at:new Date().toISOString(),png:png('sigWitness','cffSigWitness')};
+    f.witness={name:pvxWho(),uid:pvxUid(),at:new Date().toISOString(),png:png('sigWitness','cffSigWitness')};
     f.status='signed'; f.signed_at=f.witness.at; delete f.owner.sign_name;
     var done=JSON.parse(JSON.stringify(f));
     write(p,done).then(function(ok){ if(!ok){ open.err='Couldn’t save. Check the connection and tap Save again.'; open.f.status='family'; paintFamily(); return; }
-      seen[p.id]=done.id+':signed'; try{ if(window.fvDocs&&fvDocs.fileEnding) fvDocs.fileEnding(p,done); }catch(e){ console.warn('[aftercare] pdf',e); } closeFamily(); try{ notify('Form signed',esc(done.pet&&done.pet.name||pet(p))+' · '+esc(summary(done)),{icon:'info',color:'#8A82A8'}); }catch(_){} }); }
+      seen[p.id]=done.id+':signed'; try{ if(window.fvDocs&&fvDocs.fileEnding) fvDocs.fileEnding(p,done); }catch(e){ console.warn('[aftercare] pdf',e); } closeFamily(); try{ notify('Form signed',pvxEscQ(done.pet&&done.pet.name||pet(p))+' · '+pvxEscQ(summary(done)),{icon:'info',color:'#8A82A8'}); }catch(_){} }); }
   /* n125 · Aa text size for the family (Standard / Large / Extra large); resets when the family form closes */
   window.fvTextSize=function(lg){ var cur=window.__cffTS||'s', es=lg==='es', L3=es?['Normal','Grande','Muy grande']:['Standard','Large','Extra large'];
     return '<div class="cff-ts" role="group" aria-label="'+(es?'Tamaño del texto':'Text size')+'">'+['s','l','xl'].map(function(k,i){ return '<button type="button" data-cfts="'+k+'" aria-pressed="'+(cur===k)+'" aria-label="'+L3[i]+'">A</button>'; }).join('')+'</div>'; };
@@ -2603,17 +2583,17 @@ try{
     if(!html&&window.fvDocs&&fvDocs.docForForm){ var d=fvDocs.docForForm(p,f.id); if(d){ fvDocs.view(p,d); return; } } var L2=f.lines||lines(f), Tt=f.total!=null?f.total:total(L2), o=f.owner||{};
     function box(on){ return '<span class="cpb">'+(on?'✓':'')+'</span>'; }
     var h='<div class="cp"><div class="cp-head"><img src="assets/img/logo-light.png" alt=""><div><b>VCA Shoreline Veterinary Referral &amp; Emergency Center</b><br>895 Bridgeport Ave, Shelton, CT 06484 · 203-929-8600</div></div>'
-      +'<h1>Pet aftercare'+(f.kind==='died'?'':' and euthanasia consent')+'</h1><div class="cp-sub">Pet aftercare services and memorial center · Final Gift · Visit '+esc(p.hid||'')+(f.lang==='es'?' · Signed in Spanish':'')+'</div>'
-      +'<table class="cp-t"><tr><td>Owner</td><td>'+esc(o.name||'')+'</td></tr><tr><td>Address</td><td>'+esc([o.address,o.city,(o.state||'')+' '+(o.zip||'')].filter(function(x){ return String(x||'').trim(); }).join(', '))+'</td></tr>'
-      +'<tr><td>Pet</td><td>'+esc(f.pet&&f.pet.name||'')+' · '+esc(f.pet&&f.pet.species||'')+'</td></tr></table>'
-      +'<h2>Care of body</h2><div class="cp-care">'+['private','communal','release','hold'].map(function(k){ return '<div>'+box(f.care===k)+careLabel(k)+(k==='private'&&f.care==='private'&&f.urn?' — urn: '+esc(urnLabel(f.urn)):'')+'</div>'; }).join('')
+      +'<h1>Pet aftercare'+(f.kind==='died'?'':' and euthanasia consent')+'</h1><div class="cp-sub">Pet aftercare services and memorial center · Final Gift · Visit '+pvxEscQ(p.hid||'')+(f.lang==='es'?' · Signed in Spanish':'')+'</div>'
+      +'<table class="cp-t"><tr><td>Owner</td><td>'+pvxEscQ(o.name||'')+'</td></tr><tr><td>Address</td><td>'+pvxEscQ([o.address,o.city,(o.state||'')+' '+(o.zip||'')].filter(function(x){ return String(x||'').trim(); }).join(', '))+'</td></tr>'
+      +'<tr><td>Pet</td><td>'+pvxEscQ(f.pet&&f.pet.name||'')+' · '+pvxEscQ(f.pet&&f.pet.species||'')+'</td></tr></table>'
+      +'<h2>Care of body</h2><div class="cp-care">'+['private','communal','release','hold'].map(function(k){ return '<div>'+box(f.care===k)+careLabel(k)+(k==='private'&&f.care==='private'&&f.urn?' — urn: '+pvxEscQ(urnLabel(f.urn)):'')+'</div>'; }).join('')
       +'<div>'+box(f.clay||f.care==='private')+'Clay paw print'+(f.care==='private'?' (included)':'')+'</div></div>'
       +(f.care==='hold'?'<p class="cp-note">We will hold the pet for 7 days from this date. If VCA Shoreline is not told of a decision within 7 days, a communal cremation is charged and the remains are released to Final Gift.</p>':'')
-      +(f.consent_text?'<h2>Euthanasia</h2><p class="cp-consent">'+esc(f.consent_text)+'</p>'+(f.lang==='es'&&f.consent_text_en?'<p class="cp-consent en"><b>English wording (for the record):</b> '+esc(f.consent_text_en)+'</p>':''):'')
-      +'<div class="cp-sigs"><div><img src="'+esc(f.owner_sig&&f.owner_sig.png||'')+'" alt="Owner signature"><div class="cp-line">Signature · '+esc(f.owner_sig&&f.owner_sig.name||'')+' · '+esc(new Date(f.owner_sig&&f.owner_sig.at||f.signed_at).toLocaleString('en-US'))+'</div></div>'
-      +'<div><img src="'+esc(f.witness&&f.witness.png||'')+'" alt="Witness signature"><div class="cp-line">Witness to pet owner’s consent · '+esc(f.witness&&f.witness.name||'')+' · '+esc(new Date(f.signed_at).toLocaleString('en-US'))+'</div></div></div>'
-      +(L2.length?'<h2>Fees (staff copy)</h2><table class="cp-fees">'+L2.map(function(l){ return '<tr><td>'+esc(l.label)+'</td><td>'+esc(l.code?'Code #'+l.code:'')+'</td><td>'+(l.amount!=null?money(l.amount):'—')+'</td></tr>'; }).join('')+(Tt!=null?'<tr class="t"><td>Total</td><td></td><td>'+money(Tt)+'</td></tr>':'')+'</table>':'')
-      +'<div class="cp-foot">Sent by '+esc(f.requested&&f.requested.by||'')+' · '+esc(new Date(f.requested&&f.requested.at).toLocaleString('en-US'))+' · Pravix Flow</div></div>';
+      +(f.consent_text?'<h2>Euthanasia</h2><p class="cp-consent">'+pvxEscQ(f.consent_text)+'</p>'+(f.lang==='es'&&f.consent_text_en?'<p class="cp-consent en"><b>English wording (for the record):</b> '+pvxEscQ(f.consent_text_en)+'</p>':''):'')
+      +'<div class="cp-sigs"><div><img src="'+pvxEscQ(f.owner_sig&&f.owner_sig.png||'')+'" alt="Owner signature"><div class="cp-line">Signature · '+pvxEscQ(f.owner_sig&&f.owner_sig.name||'')+' · '+pvxEscQ(new Date(f.owner_sig&&f.owner_sig.at||f.signed_at).toLocaleString('en-US'))+'</div></div>'
+      +'<div><img src="'+pvxEscQ(f.witness&&f.witness.png||'')+'" alt="Witness signature"><div class="cp-line">Witness to pet owner’s consent · '+pvxEscQ(f.witness&&f.witness.name||'')+' · '+pvxEscQ(new Date(f.signed_at).toLocaleString('en-US'))+'</div></div></div>'
+      +(L2.length?'<h2>Fees (staff copy)</h2><table class="cp-fees">'+L2.map(function(l){ return '<tr><td>'+pvxEscQ(l.label)+'</td><td>'+pvxEscQ(l.code?'Code #'+l.code:'')+'</td><td>'+(l.amount!=null?money(l.amount):'—')+'</td></tr>'; }).join('')+(Tt!=null?'<tr class="t"><td>Total</td><td></td><td>'+money(Tt)+'</td></tr>':'')+'</table>':'')
+      +'<div class="cp-foot">Sent by '+pvxEscQ(f.requested&&f.requested.by||'')+' · '+pvxEscQ(new Date(f.requested&&f.requested.at).toLocaleString('en-US'))+' · Pravix Flow</div></div>';
     var w=document.getElementById('cfPrint'); if(!w){ w=document.createElement('div'); w.id='cfPrint'; document.body.appendChild(w); }
     w.innerHTML=h; document.body.classList.add('cf-printing');
     var done=function(){ document.body.classList.remove('cf-printing'); window.removeEventListener('afterprint',done); };
@@ -2621,7 +2601,7 @@ try{
 
   /* ---------- clicks ---------- */
   document.addEventListener('click',function(e){ var t=e.target; if(!t||!t.closest) return;
-    var a=t.closest('[data-cfa]'); if(a){ var c=a.closest('.cfq-card'), p=c?byId(c.dataset.pid):null, w=a.dataset.cfa;
+    var a=t.closest('[data-cfa]'); if(a){ var c=a.closest('.cfq-card'), p=c?pvxPatientById(c.dataset.pid):null, w=a.dataset.cfa;
       if(w==='family'&&p){ var d=drafts[p.id]; if(d&&p.consentForm&&d.f.id===p.consentForm.id){ lang=d.lang||'en'; open={pid:p.id,step:d.step,f:d.f,err:'',dir:0}; document.body.classList.add('cf-family-on'); paintFamily(); } else startFamily(p); }
       else if(w==='cancel'&&p) cancel(p);
       else if(w==='print'&&p) printCopy(p);
@@ -2648,8 +2628,8 @@ try{
   setInterval(function(){ if(LOBBY||typeof PATIENTS==='undefined') return; try{
     (PATIENTS||[]).forEach(function(p){ var f=p&&p.consentForm; if(!f) return; var k=f.id+':'+f.status, was=seen[p.id]; seen[p.id]=k; if(!seeded||was===k) return;
       if(f.status==='signed'){ var ended=(typeof isCompleted==='function')&&isCompleted(p);
-        notifyAct('Form signed',esc(f.pet&&f.pet.name||pet(p))+' · '+esc(summary(f)),ended?null:(f.kind==='died'?'Record death':'Record euthanasia'),function(){ if(window.fvEndings&&fvEndings.openSigned) fvEndings.openSigned(byId(p.id)); },{dur:15000}); }
-      else if(f.status==='requested'&&(!f.requested||f.requested.uid!==uid())) notifyAct('Form for reception',esc(pet(p))+' · sent by '+esc(f.requested&&f.requested.by||''),'Open',function(){ switchView('consent'); },{dur:9000}); });
+        notifyAct('Form signed',pvxEscQ(f.pet&&f.pet.name||pet(p))+' · '+pvxEscQ(summary(f)),ended?null:(f.kind==='died'?'Record death':'Record euthanasia'),function(){ if(window.fvEndings&&fvEndings.openSigned) fvEndings.openSigned(pvxPatientById(p.id)); },{dur:15000}); }
+      else if(f.status==='requested'&&(!f.requested||f.requested.uid!==pvxUid())) notifyAct('Form for reception',pvxEscQ(pet(p))+' · sent by '+pvxEscQ(f.requested&&f.requested.by||''),'Open',function(){ switchView('consent'); },{dur:9000}); });
     seeded=true; badge(); var v=document.getElementById('view-consent'); if(v&&!v.classList.contains('hidden')&&!open) renderQueue(); }catch(e){} },2000);
 
   seg(); section(); badge(); loadPrices();
@@ -2678,17 +2658,8 @@ try{
 (function(){
   if(typeof fillDrawer!=='function'||typeof renderDisposition!=='function') return;
   var LIB='/forms/lib/', LV='20261013n';   /* n126: verify codes on signed copies */
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-  function who(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Staff'; }catch(e){ return 'Staff'; } }
-  function uid(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.uid)||null; }catch(e){ return null; } }
-  function T(){ try{ return TENANT_ID||'shoreline'; }catch(e){ return 'shoreline'; } }
-  function db(){ try{ return (typeof DB!=='undefined'&&DB)?DB:null; }catch(e){ return null; } }
-  function byId(id){ try{ return PATIENTS.find(function(x){ return String(x.id)===String(id); })||null; }catch(e){ return null; } }
-  function cur(){ try{ return PATIENTS.find(function(x){ return x.id===activePatient; })||null; }catch(e){ return null; } }
   function pet(p){ try{ return dispFirstName(p); }catch(e){ return p&&p.name||'the pet'; } }
-  function hm(iso){ try{ return fmtTime(new Date(iso)); }catch(e){ return ''; } }
-  function note(t,s,o){ try{ notify(t,s,Object.assign({icon:'info',color:'#3E8FA5'},o||{})); }catch(e){} }
-  function noteAct(t,s,a,fn,o){ if(window.fvNotifyAct) fvNotifyAct(t,s,a,fn,Object.assign({color:'#3E8FA5'},o||{})); else note(t,s,o); }
+  function noteAct(t,s,a,fn,o){ if(window.fvNotifyAct) fvNotifyAct(t,s,a,fn,Object.assign({color:'#3E8FA5'},o||{})); else pvxNote(t,s,o); }
   var IC={doc:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h6"/>',tag:'<path d="M3 12l9-9h9v9l-9 9z"/><circle cx="16" cy="8" r="1.6"/>',send:'<path d="M9 4h6l1 2h3v15H5V6h3z"/><path d="M9 12l2 2 4-4"/>',plus:'<path d="M12 5v14M5 12h14"/>',chev:'<path d="M9 6l6 6-6 6"/>',up:'<path d="M6 15l6-6 6 6"/>',down:'<path d="M6 9l6 6 6-6"/>',shield:'<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/>',warn:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',ipad:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>',dl:'<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>'};
   function svg(n){ return '<svg viewBox="0 0 24 24" aria-hidden="true">'+IC[n]+'</svg>'; }
 
@@ -2700,8 +2671,8 @@ try{
 
   /* ---------- templates (Pravix Forms) ---------- */
   var TPL={list:null,at:0,p:null};
-  function templates(force){ if(!force&&TPL.list&&Date.now()-TPL.at<5*60000) return Promise.resolve(TPL.list); if(TPL.p&&!force) return TPL.p; var D=db(); if(!D) return Promise.resolve([]);
-    TPL.p=D.collection('form_templates').where('tenant_id','==',T()).get().then(function(s){ TPL.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(t){ return t.status==='ready'; })
+  function templates(force){ if(!force&&TPL.list&&Date.now()-TPL.at<5*60000) return Promise.resolve(TPL.list); if(TPL.p&&!force) return TPL.p; var D=pvxDb(); if(!D) return Promise.resolve([]);
+    TPL.p=D.collection('form_templates').where('tenant_id','==',pvxTenant()).get().then(function(s){ TPL.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(t){ return t.status==='ready'; })
       .sort(function(a,b){ return String(b.updated_at||'').localeCompare(String(a.updated_at||'')); }); TPL.at=Date.now(); TPL.p=null; return TPL.list; })
       .catch(function(e){ console.warn('[docs] templates',e); TPL.p=null; return TPL.list||[]; });
     return TPL.p; }
@@ -2709,9 +2680,9 @@ try{
 
   /* ---------- documents on a visit ---------- */
   var DOCS={};
-  function loadDocs(p,force){ var k=String(p.id), c=DOCS[k]; if(c&&!force&&(c.list||c.p)) return c.p||Promise.resolve(c.list); var D=db(); if(!D) return Promise.resolve([]);
-    c=DOCS[k]=c||{list:null}; c.p=D.collection('visit_docs').where('visit_id','==',k).where('tenant_id','==',T()).get().then(function(s){
-      c.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(m){ return !m.tenant_id||m.tenant_id===T(); }).sort(function(a,b){ return String(b.created_at||'').localeCompare(String(a.created_at||'')); });
+  function loadDocs(p,force){ var k=String(p.id), c=DOCS[k]; if(c&&!force&&(c.list||c.p)) return c.p||Promise.resolve(c.list); var D=pvxDb(); if(!D) return Promise.resolve([]);
+    c=DOCS[k]=c||{list:null}; c.p=D.collection('visit_docs').where('visit_id','==',k).where('tenant_id','==',pvxTenant()).get().then(function(s){
+      c.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }).filter(function(m){ return !m.tenant_id||m.tenant_id===pvxTenant(); }).sort(function(a,b){ return String(b.created_at||'').localeCompare(String(a.created_at||'')); });
       c.p=null; return c.list; }).catch(function(e){ console.warn('[docs] list',e); c.p=null; c.err=true; return c.list||[]; });
     return c.p; }
   function docsOf(p){ var c=p&&DOCS[String(p.id)]; return (c&&c.list)||[]; }
@@ -2719,35 +2690,33 @@ try{
 
   /* ---------- forms out with reception (form_requests) ---------- */
   var REQ=[], reqUnsub=null, reqSeen={};
-  function listen(){ var D=db(); if(!D||reqUnsub) return;
-    try{ reqUnsub=D.collection('form_requests').where('tenant_id','==',T()).where('status','in',['requested','family']).onSnapshot(function(s){
+  function listen(){ var D=pvxDb(); if(!D||reqUnsub) return;
+    try{ reqUnsub=D.collection('form_requests').where('tenant_id','==',pvxTenant()).where('status','in',['requested','family']).onSnapshot(function(s){
       var before=REQ.map(function(r){ return r.id; }); REQ=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
-      REQ.forEach(function(r){ if(before.indexOf(r.id)<0&&!reqSeen[r.id]&&r.status==='requested'&&r.requested&&r.requested.uid!==uid()&&(Date.now()-new Date(r.requested.at))<10*60000){ reqSeen[r.id]=1;
-        var p=byId(r.visit_id); noteAct('Form for reception',esc(p?pet(p):'A patient')+' · '+esc(r.template_name||'Form'),'Open',function(){ try{ switchView('consent'); }catch(e){} }); } });
+      REQ.forEach(function(r){ if(before.indexOf(r.id)<0&&!reqSeen[r.id]&&r.status==='requested'&&r.requested&&r.requested.uid!==pvxUid()&&(Date.now()-new Date(r.requested.at))<10*60000){ reqSeen[r.id]=1;
+        var p=pvxPatientById(r.visit_id); noteAct('Form for reception',pvxEscQ(p?pet(p):'A patient')+' · '+pvxEscQ(r.template_name||'Form'),'Open',function(){ try{ switchView('consent'); }catch(e){} }); } });
       repaintAll(); },function(e){ console.warn('[docs] requests',e); reqUnsub=null; }); }catch(e){ console.warn('[docs] listen',e); } }
-  var tries=0; (function wait(){ if(db()) return listen(); if(++tries<60) setTimeout(wait,500); })();
+  var tries=0; (function wait(){ if(pvxDb()) return listen(); if(++tries<60) setTimeout(wait,500); })();
   function reqsOf(p){ return REQ.filter(function(r){ return String(r.visit_id)===String(p.id); }); }
-  function queue(){ return REQ.filter(function(r){ return !!byId(r.visit_id); }).sort(function(a,b){ return new Date(a.requested.at)-new Date(b.requested.at); }); }
-  function mins(iso){ return Math.max(0,Math.round((Date.now()-new Date(iso))/60000)); }
+  function queue(){ return REQ.filter(function(r){ return !!pvxPatientById(r.visit_id); }).sort(function(a,b){ return new Date(a.requested.at)-new Date(b.requested.at); }); }
   function dur(m){ return m<1?'just now':m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min'; }
-  function queueCards(G){ var DC=window.fvDCard; return G.map(function(r){ var p=byId(r.visit_id), m=mins(r.requested.at), st=r.status;
-      return '<div class="cfq-card fvq-card" data-rid="'+esc(r.id)+'"><div class="cfq-wait'+(m>=15?' long':'')+'"><b>'+esc(dur(m))+'</b><span>'+(st==='family'?'with the family':'waiting')+'</span></div>'
-        +'<div class="cfq-main"><div class="cfq-name">'+esc(((p.name||'')+' '+(p.last||'')).trim())+'</div><div class="cfq-meta">'+esc([r.template_name||'Form',p.room&&p.room!=='Lobby'?p.room:'','sent by '+(r.requested.by||'')].filter(Boolean).join(' · '))+'</div></div>'
-        +'<div class="cfq-acts"><button type="button" class="cfq-btn quiet" data-fvq="cancel" data-rid="'+esc(r.id)+'">Cancel</button>'
-        +(DC?DC({ic:IC.ipad,title:st==='family'?'Resume':'Start with the family',desc:'Opens the family form',arrow:'out',attrs:'data-fvq="family" data-rid="'+esc(r.id)+'"'}):'<button type="button" class="cfq-btn" data-fvq="family" data-rid="'+esc(r.id)+'">Start with the family</button>')+'</div></div>'; }).join(''); }
-  function setReq(r,patch){ var D=db(); if(!D) return Promise.reject(new Error('offline')); Object.assign(r,patch); return D.collection('form_requests').doc(r.id).set(patch,{merge:true}); }
-  function repaintAll(){ try{ if(window.fvConsentRepaint) fvConsentRepaint(); }catch(e){} var p=cur(); if(p) try{ paintDocs(p); }catch(e){} }
+  function queueCards(G){ var DC=window.fvDCard; return G.map(function(r){ var p=pvxPatientById(r.visit_id), m=pvxMinsSince(r.requested.at), st=r.status;
+      return '<div class="cfq-card fvq-card" data-rid="'+pvxEscQ(r.id)+'"><div class="cfq-wait'+(m>=15?' long':'')+'"><b>'+pvxEscQ(dur(m))+'</b><span>'+(st==='family'?'with the family':'waiting')+'</span></div>'
+        +'<div class="cfq-main"><div class="cfq-name">'+pvxEscQ(((p.name||'')+' '+(p.last||'')).trim())+'</div><div class="cfq-meta">'+pvxEscQ([r.template_name||'Form',p.room&&p.room!=='Lobby'?p.room:'','sent by '+(r.requested.by||'')].filter(Boolean).join(' · '))+'</div></div>'
+        +'<div class="cfq-acts"><button type="button" class="cfq-btn quiet" data-fvq="cancel" data-rid="'+pvxEscQ(r.id)+'">Cancel</button>'
+        +(DC?DC({ic:IC.ipad,title:st==='family'?'Resume':'Start with the family',desc:'Opens the family form',arrow:'out',attrs:'data-fvq="family" data-rid="'+pvxEscQ(r.id)+'"'}):'<button type="button" class="cfq-btn" data-fvq="family" data-rid="'+pvxEscQ(r.id)+'">Start with the family</button>')+'</div></div>'; }).join(''); }
+  function setReq(r,patch){ var D=pvxDb(); if(!D) return Promise.reject(new Error('offline')); Object.assign(r,patch); return D.collection('form_requests').doc(r.id).set(patch,{merge:true}); }
+  function repaintAll(){ try{ if(window.fvConsentRepaint) fvConsentRepaint(); }catch(e){} var p=pvxActivePatient(); if(p) try{ paintDocs(p); }catch(e){} }
 
   /* ---------- the drawer: Documents ---------- */
   function mount(){ var m=document.getElementById('docsMount'); if(m) return m; var after=document.getElementById('intakeCardMount')||document.getElementById('recordsMount'); if(!after) return null;
     m=document.createElement('div'); m.id='docsMount'; after.insertAdjacentElement('afterend',m); return m; }
-  var fdBase=fillDrawer;
-  fillDrawer=function(p){ var r=fdBase.apply(this,arguments); try{ if(p){ paintDocs(p); var k=String(p.id); if(!DOCS[k]||!DOCS[k].list||Date.now()-(DOCS[k].at||0)>60000){ (DOCS[k]=DOCS[k]||{}).at=Date.now(); loadDocs(p,true).then(function(){ var c=cur(); if(c&&c.id===p.id) paintDocs(c); }); } } }catch(e){ console.warn('[docs]',e); } return r; };
+  pvxAfter('fillDrawer',function(p){ try{ if(p){ paintDocs(p); var k=String(p.id); if(!DOCS[k]||!DOCS[k].list||Date.now()-(DOCS[k].at||0)>60000){ (DOCS[k]=DOCS[k]||{}).at=Date.now(); loadDocs(p,true).then(function(){ var c=pvxActivePatient(); if(c&&c.id===p.id) paintDocs(c); }); } } }catch(e){ console.warn('[docs]',e); } },'#19');
   function paintDocs(p){ var m=mount(); if(!m) return; var D=docsOf(p), R=reqsOf(p), F=p.consentForm, e=p.ending, rows=[];
-    D.forEach(function(d){ rows.push('<button type="button" class="fvd-item" data-fvd="view" data-doc="'+esc(d.id)+'"><span class="fvd-thumb" aria-hidden="true">'+svg('doc')+'</span><span class="fvd-b"><span class="fvd-t">'+esc(d.title||'Signed form')+'</span><span class="fvd-s">Signed '+esc(hm(d.signed_at||d.created_at))+(d.signed_by?' · '+esc(d.signed_by):'')+(d.witness?' · witnessed':'')+'</span><span class="fvd-ok">'+(d.pages||1)+' page'+((d.pages||1)===1?'':'s')+' · PDF</span></span><span class="fvd-chev" aria-hidden="true">'+svg('chev')+'</span></button>'); });
-    if(F&&F.status==='signed'&&!docForForm(p,F.id)) rows.push('<button type="button" class="fvd-item" data-fvd="print-consent"><span class="fvd-thumb" aria-hidden="true">'+svg('doc')+'</span><span class="fvd-b"><span class="fvd-t">'+(F.kind==='died'?'Aftercare form':'Euthanasia &amp; aftercare consent')+'</span><span class="fvd-s">Signed '+esc(hm(F.signed_at))+' · printable copy</span></span><span class="fvd-chev" aria-hidden="true">'+svg('chev')+'</span></button>');
-    if(e&&e.aftercare) rows.push('<div class="fvd-item static"><span class="fvd-thumb" aria-hidden="true">'+svg('tag')+'</span><span class="fvd-b"><span class="fvd-t">Body tag · 4 × 6 in</span><span class="fvd-s">'+esc((window.fvEndings&&fvEndings.summary)?fvEndings.summary(e,false):'')+'</span></span><button type="button" class="fvd-mini" data-fvd="tag">Print</button></div>');
-    R.forEach(function(r){ rows.push('<div class="fvd-item static pending"><span class="fvd-thumb" aria-hidden="true">'+svg('send')+'</span><span class="fvd-b"><span class="fvd-t">'+esc(r.template_name||'Form')+'</span><span class="fvd-s">'+(r.status==='family'?'With the family':'With reception')+' · sent '+esc(hm(r.requested.at))+'</span></span><button type="button" class="fvd-mini" data-fvd="cancel-req" data-rid="'+esc(r.id)+'">Cancel</button></div>'); });
+    D.forEach(function(d){ rows.push('<button type="button" class="fvd-item" data-fvd="view" data-doc="'+pvxEscQ(d.id)+'"><span class="fvd-thumb" aria-hidden="true">'+svg('doc')+'</span><span class="fvd-b"><span class="fvd-t">'+pvxEscQ(d.title||'Signed form')+'</span><span class="fvd-s">Signed '+pvxEscQ(pvxHm(d.signed_at||d.created_at))+(d.signed_by?' · '+pvxEscQ(d.signed_by):'')+(d.witness?' · witnessed':'')+'</span><span class="fvd-ok">'+(d.pages||1)+' page'+((d.pages||1)===1?'':'s')+' · PDF</span></span><span class="fvd-chev" aria-hidden="true">'+svg('chev')+'</span></button>'); });
+    if(F&&F.status==='signed'&&!docForForm(p,F.id)) rows.push('<button type="button" class="fvd-item" data-fvd="print-consent"><span class="fvd-thumb" aria-hidden="true">'+svg('doc')+'</span><span class="fvd-b"><span class="fvd-t">'+(F.kind==='died'?'Aftercare form':'Euthanasia &amp; aftercare consent')+'</span><span class="fvd-s">Signed '+pvxEscQ(pvxHm(F.signed_at))+' · printable copy</span></span><span class="fvd-chev" aria-hidden="true">'+svg('chev')+'</span></button>');
+    if(e&&e.aftercare) rows.push('<div class="fvd-item static"><span class="fvd-thumb" aria-hidden="true">'+svg('tag')+'</span><span class="fvd-b"><span class="fvd-t">Body tag · 4 × 6 in</span><span class="fvd-s">'+pvxEscQ((window.fvEndings&&fvEndings.summary)?fvEndings.summary(e,false):'')+'</span></span><button type="button" class="fvd-mini" data-fvd="tag">Print</button></div>');
+    R.forEach(function(r){ rows.push('<div class="fvd-item static pending"><span class="fvd-thumb" aria-hidden="true">'+svg('send')+'</span><span class="fvd-b"><span class="fvd-t">'+pvxEscQ(r.template_name||'Form')+'</span><span class="fvd-s">'+(r.status==='family'?'With the family':'With reception')+' · sent '+pvxEscQ(pvxHm(r.requested.at))+'</span></span><button type="button" class="fvd-mini" data-fvd="cancel-req" data-rid="'+pvxEscQ(r.id)+'">Cancel</button></div>'); });
     var loading=DOCS[String(p.id)]&&DOCS[String(p.id)].p&&!D.length;
     var h='<div class="fvd"><div class="fvd-head"><p class="sect-title">Documents'+(rows.length?' · '+rows.length:'')+'</p>'+((D.length||(e&&e.aftercare))?'<button type="button" class="fvd-link" data-fvd="packet">Make a packet…</button>':'')+'</div>'
       +(rows.length?'<div class="fvd-list">'+rows.join('')+'</div>':(loading?(window.pvxWaitHTML?pvxWaitHTML('docs',p.id):'<div class="fvd-empty">Loading…</div>'):''))
@@ -2758,12 +2727,12 @@ try{
   var sheet=null;
   var backPend=null;   /* PVX-N211: on iPhone the drawer steps aside for this sheet and comes back after it */
   function openSheet(html,cls,label){ var bk=(sheet&&sheet.back)||backPend; if(sheet) sheet.back=null; closeSheet(); backPend=null; if(!bk&&window.pvxSheetBack) bk=pvxSheetBack(); var s=document.createElement('div'); s.id='fvdSheet'; s.className='end-sheet open';
-    s.innerHTML='<div class="es-scrim" data-fvd="close"></div><div class="es-panel '+(cls||'')+'" role="dialog" aria-modal="true" aria-label="'+esc(label||'')+'">'+html+'</div>';
+    s.innerHTML='<div class="es-scrim" data-fvd="close"></div><div class="es-panel '+(cls||'')+'" role="dialog" aria-modal="true" aria-label="'+pvxEscQ(label||'')+'">'+html+'</div>';
     document.body.appendChild(s); sheet={el:s,last:document.activeElement,back:bk}; requestAnimationFrame(function(){ s.classList.add('shown'); var f=s.querySelector('[data-autofocus]')||s.querySelector('.es-panel button:not([data-fvd="close"])'); if(f) f.focus({preventScroll:true}); }); return s; }
   function closeSheet(){ if(!sheet) return; var s=sheet.el, l=sheet.last, bk=sheet.back; sheet=null; s.remove();
     if(bk){ backPend=bk; setTimeout(function(){ if(backPend===bk&&!sheet){ backPend=null; if(window.pvxSheetReturn) pvxSheetReturn(bk); } },0); return; }
     try{ if(l&&document.contains(l)) l.focus({preventScroll:true}); }catch(e){} }
-  function bar(title,right){ return '<header class="es-bar"><button type="button" class="es-cancel" data-fvd="close">'+(right?'Cancel':'Close')+'</button><h2>'+esc(title)+'</h2><span class="es-bar-r"></span></header>'; }
+  function bar(title,right){ return '<header class="es-bar"><button type="button" class="es-cancel" data-fvd="close">'+(right?'Cancel':'Close')+'</button><h2>'+pvxEscQ(title)+'</h2><span class="es-bar-r"></span></header>'; }
   document.addEventListener('keydown',function(e){ if(sheet&&e.key==='Escape'){ e.stopPropagation(); e.preventDefault(); closeSheet(); } },true);
 
   /* Send a form */
@@ -2771,18 +2740,18 @@ try{
   function openSend(p){ send={pid:p.id,tid:null,ans:{}};
     openSheet(bar('Send a form for '+pet(p),true)+'<div class="es-body"><div class="es-sec"><div class="es-text">Loading hospital forms…</div></div></div>','','Send a form');
     templates(true).then(function(){ paintSend(); }); }
-  function paintSend(){ if(!send||!sheet) return; var p=byId(send.pid); if(!p){ closeSheet(); return; }
+  function paintSend(){ if(!send||!sheet) return; var p=pvxPatientById(send.pid); if(!p){ closeSheet(); return; }
     var L=(TPL.list||[]).filter(function(t){ return t.purpose!=='ending'; }), out=reqsOf(p).map(function(r){ return r.template_id; }), done=docsOf(p).map(function(d){ return d.template_id; });
     var h=bar('Send a form for '+pet(p),true)+'<div class="es-body">';
     if(!L.length) h+='<div class="es-sec"><div class="es-group es-text"><b>No forms are ready yet.</b><br>Map your hospital’s PDFs in Pravix Forms, then publish them to Flow.</div></div>';
     else{ h+='<div class="es-sec"><div class="es-h" id="fvdFormsH">Hospital forms</div><div class="es-group" role="radiogroup" aria-labelledby="fvdFormsH">';
       L.forEach(function(t){ var on=send.tid===t.id, isOut=out.indexOf(t.id)>-1, isDone=done.indexOf(t.id)>-1, pages=(t.file&&t.file.pages||[]).length;
-        h+='<button type="button" class="es-row fvd-pickrow'+(on?' on':'')+'" role="radio" aria-checked="'+on+'" data-fvd="pick" data-tid="'+esc(t.id)+'"'+(isOut?' disabled':'')+'><span class="fvd-th" data-fvd-th="'+esc(t.id)+'" aria-hidden="true"></span><span class="es-rl">'+esc(t.name||'Form')+'<span class="es-rd">'+(isOut?'Already with reception':isDone?'Signed earlier today · send again':pages+' page'+(pages===1?'':'s'))+'</span></span><span class="es-check" aria-hidden="true"></span></button>'; });
+        h+='<button type="button" class="es-row fvd-pickrow'+(on?' on':'')+'" role="radio" aria-checked="'+on+'" data-fvd="pick" data-tid="'+pvxEscQ(t.id)+'"'+(isOut?' disabled':'')+'><span class="fvd-th" data-fvd-th="'+pvxEscQ(t.id)+'" aria-hidden="true"></span><span class="es-rl">'+pvxEscQ(t.name||'Form')+'<span class="es-rd">'+(isOut?'Already with reception':isDone?'Signed earlier today · send again':pages+' page'+(pages===1?'':'s'))+'</span></span><span class="es-check" aria-hidden="true"></span></button>'; });
       h+='</div></div>';
       var t=L.filter(function(x){ return x.id===send.tid; })[0];
       if(t){ var staffQ=(t.boxes||[]).filter(function(b){ return b.src==='staff.text'; });
-        if(staffQ.length){ h+='<div class="es-sec"><div class="es-h">Before you send it</div><div class="es-group">'+staffQ.map(function(b){ return '<label class="es-row es-field"><span class="es-fl">'+esc(b.label&&b.label.en||'Staff answer')+'</span><input type="text" data-fvd-staff="'+esc(b.id)+'" value="'+esc(send.ans[b.id]||'')+'" autocomplete="off"></label>'; }).join('')+'</div></div>'; }
-        h+='<div class="es-sec fvd-filled"><div>Filled from '+esc(pet(p))+'’s visit: <b>'+esc([p.owner,p.hid].filter(Boolean).join(' · '))+'</b></div><div class="fvd-sub">Reception takes the tablet into the room with the family.</div></div>'; } }
+        if(staffQ.length){ h+='<div class="es-sec"><div class="es-h">Before you send it</div><div class="es-group">'+staffQ.map(function(b){ return '<label class="es-row es-field"><span class="es-fl">'+pvxEscQ(b.label&&b.label.en||'Staff answer')+'</span><input type="text" data-fvd-staff="'+pvxEscQ(b.id)+'" value="'+pvxEscQ(send.ans[b.id]||'')+'" autocomplete="off"></label>'; }).join('')+'</div></div>'; }
+        h+='<div class="es-sec fvd-filled"><div>Filled from '+pvxEscQ(pet(p))+'’s visit: <b>'+pvxEscQ([p.owner,p.hid].filter(Boolean).join(' · '))+'</b></div><div class="fvd-sub">Reception takes the tablet into the room with the family.</div></div>'; } }
     h+='</div><footer class="es-foot"><div class="end-hint" id="fvdHint" role="alert" hidden></div><button type="button" class="es-primary fvd-solid" data-fvd="do-send"'+(send.tid?'':' disabled')+'>Send to reception</button></footer>';
     var panel=sheet.el.querySelector('.es-panel'), fk=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.tid; panel.innerHTML=h;
     if(fk){ var f=panel.querySelector('[data-tid="'+fk+'"]'); if(f) f.focus(); }
@@ -2791,16 +2760,16 @@ try{
   var THUMB={};
   function tplThumb(t){ var put=function(u){ var e=document.querySelector('#fvdSheet [data-fvd-th="'+t.id+'"]'); if(e&&!e.firstChild){ var i=new Image(); i.src=u; i.alt=''; e.appendChild(i); } };
     var k=t.id+':'+(t.file&&t.file.sha256); if(THUMB[k]){ if(THUMB[k]!==1) put(THUMB[k]); return; } THUMB[k]=1;
-    lib().then(function(){ return PvxForms.templateBytes(db(),t); }).then(function(b){ return PvxPdf.renderPage(b,0,0.25); }).then(function(c){ THUMB[k]=c.toDataURL('image/png'); put(THUMB[k]); }).catch(function(){ delete THUMB[k]; }); }
-  function doSend(){ var p=byId(send.pid), t=(TPL.list||[]).filter(function(x){ return x.id===send.tid; })[0], D=db(); if(!p||!t||!D||send.busy) return;
+    lib().then(function(){ return PvxForms.templateBytes(pvxDb(),t); }).then(function(b){ return PvxPdf.renderPage(b,0,0.25); }).then(function(c){ THUMB[k]=c.toDataURL('image/png'); put(THUMB[k]); }).catch(function(){ delete THUMB[k]; }); }
+  function doSend(){ var p=pvxPatientById(send.pid), t=(TPL.list||[]).filter(function(x){ return x.id===send.tid; })[0], D=pvxDb(); if(!p||!t||!D||send.busy) return;
     send.busy=true; var btn=document.querySelector('#fvdSheet [data-fvd="do-send"]'); if(btn){ btn.disabled=true; btn.innerHTML='<span class="fvd-spin" aria-hidden="true"></span>Sending…'; }
-    var id='fr_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), r={tenant_id:T(),visit_id:String(p.id),template_id:t.id,template_name:t.name||'Form',status:'requested',
-      requested:{at:new Date().toISOString(),by:who(),uid:uid()},pet:{name:pet(p)},owner:{name:p.owner||''},staff_answers:send.ans||{}};
-    reqSeen[id]=1; D.collection('form_requests').doc(id).set(r).then(function(){ r.id=id; if(!REQ.some(function(x){ return x.id===id; })) REQ.push(r); closeSheet(); note('Form sent to reception',esc(pet(p))+' · '+esc(r.template_name)); repaintAll(); })
+    var id='fr_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), r={tenant_id:pvxTenant(),visit_id:String(p.id),template_id:t.id,template_name:t.name||'Form',status:'requested',
+      requested:{at:new Date().toISOString(),by:pvxWho(),uid:pvxUid()},pet:{name:pet(p)},owner:{name:p.owner||''},staff_answers:send.ans||{}};
+    reqSeen[id]=1; D.collection('form_requests').doc(id).set(r).then(function(){ r.id=id; if(!REQ.some(function(x){ return x.id===id; })) REQ.push(r); closeSheet(); pvxNote('Form sent to reception',pvxEscQ(pet(p))+' · '+pvxEscQ(r.template_name)); repaintAll(); })
       .catch(function(e){ console.warn('[docs] send',e); send.busy=false; var b2=document.querySelector('#fvdSheet [data-fvd="do-send"]'); if(b2){ b2.disabled=false; b2.textContent='Send to reception'; } var h=document.getElementById('fvdHint'); if(h){ h.textContent='Couldn’t send it. Check the connection and try again.'; h.hidden=false; } }); }
   function cancelReq(id){ var r=REQ.filter(function(x){ return x.id===id; })[0]; if(!r) return; var before={status:r.status};
-    setReq(r,{status:'cancelled',cancelled:{at:new Date().toISOString(),by:who()}}).then(function(){ REQ=REQ.filter(function(x){ return x.id!==id; }); repaintAll();
-      noteAct('Form cancelled',esc(r.template_name||'Form'),'Undo',function(){ setReq(r,{status:before.status,cancelled:null}).then(function(){ if(!REQ.some(function(x){ return x.id===id; })) REQ.push(r); repaintAll(); }); },{dur:8000}); })
+    setReq(r,{status:'cancelled',cancelled:{at:new Date().toISOString(),by:pvxWho()}}).then(function(){ REQ=REQ.filter(function(x){ return x.id!==id; }); repaintAll();
+      noteAct('Form cancelled',pvxEscQ(r.template_name||'Form'),'Undo',function(){ setReq(r,{status:before.status,cancelled:null}).then(function(){ if(!REQ.some(function(x){ return x.id===id; })) REQ.push(r); repaintAll(); }); },{dur:8000}); })
       .catch(function(e){ console.warn('[docs] cancel',e); }); }
 
   /* ---------- the family's iPad screens for a mapped form ---------- */
@@ -2815,23 +2784,23 @@ try{
   var FAM=null;
   function t2(k,v){ var r=(L2[k]||[k,k])[FAM&&FAM.lang==='es'?1:0]; return r.replace(/\{(\w+)\}/g,function(_,n){ return v&&v[n]!=null?v[n]:''; }); }
   function qTitle(q){ var t=q.title||{}; return (FAM.lang==='es'&&t.es)?t.es:(t.en||''); }
-  function startFamily(rid){ var r=REQ.filter(function(x){ return x.id===rid; })[0]; if(!r) return; var p=byId(r.visit_id); if(!p) return;
+  function startFamily(rid){ var r=REQ.filter(function(x){ return x.id===rid; })[0]; if(!r) return; var p=pvxPatientById(r.visit_id); if(!p) return;
     var aw=document.getElementById('cfFamily'); if(aw&&aw.classList.contains('open')) return;   /* the euthanasia form is open */
     var kept=famDrafts[rid]||null; delete famDrafts[rid];
     FAM=kept||{rid:rid,pid:p.id,step:'read',lang:'en',ans:{},err:'',pages:null,tpl:null,sig:{}};
-    if(r.status==='requested') setReq(r,{status:'family',family_at:new Date().toISOString(),family_by:who()}).catch(function(){});
+    if(r.status==='requested') setReq(r,{status:'family',family_at:new Date().toISOString(),family_by:pvxWho()}).catch(function(){});
     document.body.classList.add('cf-family-on'); paintFamily();
     lib().then(function(){ return templates(); }).then(function(L){ var tpl=L.filter(function(t){ return t.id===r.template_id; })[0]; if(!tpl) throw new Error('This form is no longer published.');
       FAM.tpl=tpl; var a=FAM.ans; PvxForms.questions(tpl).forEach(function(q){ if(a[q.key]!=null) return;
         if(q.src==='owner.name') a[q.key]=p.owner||''; else if(q.src==='owner.phone') a[q.key]=p.ownerPhone||''; else if(q.src==='family.state') a[q.key]='CT'; });
       Object.keys(r.staff_answers||{}).forEach(function(k){ a[k]=r.staff_answers[k]; });
       return preview(); }).catch(function(e){ console.warn('[docs] family',e); if(FAM){ FAM.err=String(e.message||e); paintFamily(); } }); }
-  function preview(){ var p=byId(FAM.pid); return PvxForms.templateBytes(db(),FAM.tpl).then(function(src){ FAM.src=src; return PvxPdf.fill(src,FAM.tpl.boxes,PvxForms.resolve(FAM.tpl,{p:p,answers:FAM.ans,hospital:'VCA Shoreline'}),{}); })
+  function preview(){ var p=pvxPatientById(FAM.pid); return PvxForms.templateBytes(pvxDb(),FAM.tpl).then(function(src){ FAM.src=src; return PvxPdf.fill(src,FAM.tpl.boxes,PvxForms.resolve(FAM.tpl,{p:p,answers:FAM.ans,hospital:'VCA Shoreline'}),{}); })
     .then(function(b){ var n=FAM.tpl.file.pages.length, out=[], ch=Promise.resolve(); for(var i=0;i<n;i++)(function(i){ ch=ch.then(function(){ return PvxPdf.renderPage(b,i,1.6); }).then(function(c){ out.push(c.toDataURL('image/jpeg',0.86)); }); })(i);
       return ch.then(function(){ if(!FAM) return; FAM.pages=out; paintFamily(); }); }); }
   function famEl(){ var w=document.getElementById('cfFamily'); if(!w){ w=document.createElement('div'); w.id='cfFamily'; w.setAttribute('role','dialog'); w.setAttribute('aria-modal','true'); document.body.appendChild(w); } return w; }
   function steps(){ var Q=FAM.tpl?PvxForms.questions(FAM.tpl):[]; return Q.length?['read','ask','sign']:['read','sign']; }
-  function paintFamily(){ if(!FAM) return; var p=byId(FAM.pid); if(!p){ closeFamily(); return; } readAnswers();
+  function paintFamily(){ if(!FAM) return; var p=pvxPatientById(FAM.pid); if(!p){ closeFamily(); return; } readAnswers();
     var w=famEl(), S=steps(), idx=S.indexOf(FAM.step), fam=idx>-1, nm=pet(p), tpl=FAM.tpl, h='<div class="cff" lang="'+FAM.lang+'"><header class="cff-nav"><div class="cff-nav-l">'
       +(fam&&idx>0?'<button type="button" class="cff-back" data-fvd="fback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>'+t2('back')+'</span></button>':'<img class="cff-logo" src="assets/img/logo-light.png" alt="VCA Shoreline">')+'</div>'
       +'<div class="cff-dots" aria-hidden="'+(!fam)+'">'+(fam?S.map(function(s,i){ return '<span class="'+(i===idx?'on':i<idx?'done':'')+'"></span>'; }).join(''):'')+'</div>'
@@ -2840,24 +2809,24 @@ try{
     if(!tpl&&!FAM.err) h+='<h1>'+t2('loading')+'</h1>';
     else if(FAM.step==='read'){ var NP=FAM.pages?FAM.pages.length:0;
       h+='<h1>'+t2('read')+'</h1><p class="cff-lead">'+t2('read_l')+'</p>'+(NP?'<div class="fvf-zoombar"><span>'+t2('ztip')+'</span><button type="button" class="fvf-zbtn" data-fvd="fzoom" aria-pressed="'+!!FAM.zoom+'">'+t2(FAM.zoom?'zout':'zin')+'</button></div>':'')
-        +'<div class="fvf-pages'+(FAM.zoom?' zoomed':'')+'">'+(NP?FAM.pages.map(function(u,i){ return '<figure class="fvf-pg">'+(NP>1?'<figcaption>'+t2('page',{n:i+1,t:NP})+'</figcaption>':'')+'<div class="fvf-pz"><img src="'+u+'" alt="'+esc((tpl&&tpl.name||'Form')+' · page '+(i+1))+'" data-fvd-pz="1"></div></figure>'; }).join(''):'<div class="fvf-wait">'+t2('loading')+'</div>')+'</div>';
+        +'<div class="fvf-pages'+(FAM.zoom?' zoomed':'')+'">'+(NP?FAM.pages.map(function(u,i){ return '<figure class="fvf-pg">'+(NP>1?'<figcaption>'+t2('page',{n:i+1,t:NP})+'</figcaption>':'')+'<div class="fvf-pz"><img src="'+u+'" alt="'+pvxEscQ((tpl&&tpl.name||'Form')+' · page '+(i+1))+'" data-fvd-pz="1"></div></figure>'; }).join(''):'<div class="fvf-wait">'+t2('loading')+'</div>')+'</div>';
       primary='<button type="button" class="cff-primary" data-fvd="fnext"'+(FAM.pages?'':' disabled')+'>'+t2('cont')+'</button>'; }
     else if(FAM.step==='ask'){ h+='<h1>'+t2('ask')+'</h1><p class="cff-lead">'+t2('ask_l')+'</p><div class="cff-grid">';
       PvxForms.questions(tpl).forEach(function(q){ var v=FAM.ans[q.key];
-        if(q.kind==='text') h+='<label class="cff-field"><span>'+esc(qTitle(q))+(q.required?'':'')+'</span><input data-fvq-k="'+esc(q.key)+'" value="'+esc(v||'')+'"'+(q.src==='family.zip'?' inputmode="numeric"':'')+'></label>';
-        else if(q.kind==='check') h+=(window.fvDCard?fvDCard({ic:'',title:esc(qTitle(q)),sel:!!v,box:true,wrap:true,cls:'fvf-noic cff-check'+(v?' on':''),attrs:'data-fvq-c="'+esc(q.key)+'"'}):'');
-        else if(q.kind==='choice'){ h+='<div class="cff-field"><span>'+esc(qTitle(q))+'</span><div class="cff-care" role="radiogroup" aria-label="'+esc(qTitle(q))+'">'+q.options.map(function(o){ var on=v===o.id, lab=(FAM.lang==='es'&&o.label.es)?o.label.es:o.label.en; return window.fvDCard?fvDCard({ic:'',title:esc(lab||'—'),sel:on,wrap:true,cls:'fvf-noic cff-opt'+(on?' on':''),attrs:'data-fvq-o="'+esc(q.key)+'" data-opt="'+esc(o.id)+'"'}):''; }).join('')+'</div></div>'; } });
+        if(q.kind==='text') h+='<label class="cff-field"><span>'+pvxEscQ(qTitle(q))+(q.required?'':'')+'</span><input data-fvq-k="'+pvxEscQ(q.key)+'" value="'+pvxEscQ(v||'')+'"'+(q.src==='family.zip'?' inputmode="numeric"':'')+'></label>';
+        else if(q.kind==='check') h+=(window.fvDCard?fvDCard({ic:'',title:pvxEscQ(qTitle(q)),sel:!!v,box:true,wrap:true,cls:'fvf-noic cff-check'+(v?' on':''),attrs:'data-fvq-c="'+pvxEscQ(q.key)+'"'}):'');
+        else if(q.kind==='choice'){ h+='<div class="cff-field"><span>'+pvxEscQ(qTitle(q))+'</span><div class="cff-care" role="radiogroup" aria-label="'+pvxEscQ(qTitle(q))+'">'+q.options.map(function(o){ var on=v===o.id, lab=(FAM.lang==='es'&&o.label.es)?o.label.es:o.label.en; return window.fvDCard?fvDCard({ic:'',title:pvxEscQ(lab||'—'),sel:on,wrap:true,cls:'fvf-noic cff-opt'+(on?' on':''),attrs:'data-fvq-o="'+pvxEscQ(q.key)+'" data-opt="'+pvxEscQ(o.id)+'"'}):''; }).join('')+'</div></div>'; } });
       h+='</div>'; primary='<button type="button" class="cff-primary" data-fvd="fnext">'+t2('cont')+'</button>'; }
-    else if(FAM.step==='sign'){ h+='<h1>'+t2('sign')+'</h1><p class="cff-lead">'+t2('sign_l')+'</p><label class="cff-field"><span>'+t2('name')+'</span><input id="fvdSignName" value="'+esc(FAM.signName!=null?FAM.signName:(FAM.ans['owner.name']||p.owner||''))+'" autocomplete="name"></label>'
-        +'<div class="cff-sigwrap"><div class="cff-sigl">'+t2('signhere')+' <button type="button" class="cff-clear" data-fvd="fclear">'+t2('clear')+'</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="fvdSigOwner" aria-label="'+esc(t2('signhere'))+'"></canvas><span class="cff-x" aria-hidden="true">×</span></div></div>';
+    else if(FAM.step==='sign'){ h+='<h1>'+t2('sign')+'</h1><p class="cff-lead">'+t2('sign_l')+'</p><label class="cff-field"><span>'+t2('name')+'</span><input id="fvdSignName" value="'+pvxEscQ(FAM.signName!=null?FAM.signName:(FAM.ans['owner.name']||p.owner||''))+'" autocomplete="name"></label>'
+        +'<div class="cff-sigwrap"><div class="cff-sigl">'+t2('signhere')+' <button type="button" class="cff-clear" data-fvd="fclear">'+t2('clear')+'</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="fvdSigOwner" aria-label="'+pvxEscQ(t2('signhere'))+'"></canvas><span class="cff-x" aria-hidden="true">×</span></div></div>';
       primary='<button type="button" class="cff-primary" data-fvd="fsign">'+t2('signbtn')+'</button>'; }
-    else if(FAM.step==='thanks'){ h+='<div class="cff-thanks"><h1 class="cff-big">'+t2('thanks')+'</h1><p class="cff-lead">'+t2('care',{pet:esc(nm)})+'</p></div>';
+    else if(FAM.step==='thanks'){ h+='<div class="cff-thanks"><h1 class="cff-big">'+t2('thanks')+'</h1><p class="cff-lead">'+t2('care',{pet:pvxEscQ(nm)})+'</p></div>';
       primary='<button type="button" class="cff-primary" data-fvd="'+(needsWitness()?'fwit':'fsave')+'">'+(needsWitness()?'Staff: witness the signature':'Staff: save the signed form')+'</button>'; }
-    else if(FAM.step==='witness'){ h+='<h1>Witness</h1><p class="cff-lead">'+esc(FAM.sign.owner.name)+' signed '+esc(tpl.name||'the form')+' for '+esc(nm)+'. Sign as the witness.</p>'
-        +'<div class="cff-sigwrap"><div class="cff-sigl">'+esc(who())+' <button type="button" class="cff-clear" data-fvd="fclearw">Clear</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="fvdSigWitness" aria-label="Witness signature pad"></canvas><span class="cff-x" aria-hidden="true">×</span></div></div>';
+    else if(FAM.step==='witness'){ h+='<h1>Witness</h1><p class="cff-lead">'+pvxEscQ(FAM.sign.owner.name)+' signed '+pvxEscQ(tpl.name||'the form')+' for '+pvxEscQ(nm)+'. Sign as the witness.</p>'
+        +'<div class="cff-sigwrap"><div class="cff-sigl">'+pvxEscQ(pvxWho())+' <button type="button" class="cff-clear" data-fvd="fclearw">Clear</button></div><div class="cff-sigbox"><canvas class="cff-sig" id="fvdSigWitness" aria-label="Witness signature pad"></canvas><span class="cff-x" aria-hidden="true">×</span></div></div>';
       primary='<button type="button" class="cff-primary" data-fvd="fsave">Save the signed form</button>'; }
     else if(FAM.step==='saving'){ h+='<div class="cff-thanks" role="status"><span class="pvx-spin pvx-spin-l" aria-hidden="true"></span><h1>Saving…</h1><p class="cff-lead">Making the signed PDF and checking it.</p></div>'; }   /* PVX-N365 */
-    if(FAM.err) h+='<div class="cff-err" role="alert">'+esc(FAM.err)+'</div>';
+    if(FAM.err) h+='<div class="cff-err" role="alert">'+pvxEscQ(FAM.err)+'</div>';
     h+='</main><footer class="cff-bar">'+primary+'</footer></div>';
     var keep=document.activeElement&&w.contains(document.activeElement)&&(document.activeElement.id||document.activeElement.dataset.fvqK);
     w.className='cf-family-sheet open'; w.innerHTML=h;
@@ -2874,13 +2843,13 @@ try{
   function fsign(){ readAnswers(); if(!FAM.signName){ FAM.err=t2('e_name'); paintFamily(); var n=document.getElementById('fvdSignName'); if(n) n.focus(); return; }
     if(!window.fvSigPad||!fvSigPad.inked('owner',FAM.sig)){ FAM.err=t2('e_sig'); paintFamily(); return; }
     FAM.sign={owner:{name:FAM.signName,at:new Date().toISOString(),png:fvSigPad.png('owner','fvdSigOwner',FAM.sig)}}; if(FAM.ans['owner.name']==null) FAM.ans['owner.name']=FAM.signName; fgo('thanks'); }
-  function fsave(){ var p=byId(FAM.pid), r=REQ.filter(function(x){ return x.id===FAM.rid; })[0];
-    if(FAM.step==='witness'){ if(!fvSigPad.inked('witness',FAM.sig)){ FAM.err='Please sign as the witness.'; paintFamily(); return; } FAM.sign.witness={name:who(),uid:uid(),at:new Date().toISOString(),png:fvSigPad.png('witness','fvdSigWitness',FAM.sig)}; }
+  function fsave(){ var p=pvxPatientById(FAM.pid), r=REQ.filter(function(x){ return x.id===FAM.rid; })[0];
+    if(FAM.step==='witness'){ if(!fvSigPad.inked('witness',FAM.sig)){ FAM.err='Please sign as the witness.'; paintFamily(); return; } FAM.sign.witness={name:pvxWho(),uid:pvxUid(),at:new Date().toISOString(),png:fvSigPad.png('witness','fvdSigWitness',FAM.sig)}; }
     var F0=FAM; F0.step='saving'; paintFamily();
-    PvxForms.fileSigned(db(),{tpl:F0.tpl,p:p,answers:F0.ans,sign:F0.sign,lang:F0.lang,title:F0.tpl.name,by:who(),tenant:T(),hospital:'VCA Shoreline',request_id:F0.rid}).then(function(meta){
+    PvxForms.fileSigned(pvxDb(),{tpl:F0.tpl,p:p,answers:F0.ans,sign:F0.sign,lang:F0.lang,title:F0.tpl.name,by:pvxWho(),tenant:pvxTenant(),hospital:'VCA Shoreline',request_id:F0.rid}).then(function(meta){
       var k=String(p.id); (DOCS[k]=DOCS[k]||{list:[]}).list=[meta].concat((DOCS[k].list||[]).filter(function(d){ return d.id!==meta.id; }));
       return (r?setReq(r,{status:'signed',signed_at:meta.signed_at,doc_id:meta.id,sha256:meta.sha256}):Promise.resolve()).then(function(){ REQ=REQ.filter(function(x){ return x.id!==F0.rid; });
-        FAM=null; closeFamily(); note('Form signed',esc(pet(p))+' · '+esc(meta.title)+' · saved as a PDF on the visit'); repaintAll(); }); })
+        FAM=null; closeFamily(); pvxNote('Form signed',pvxEscQ(pet(p))+' · '+pvxEscQ(meta.title)+' · saved as a PDF on the visit'); repaintAll(); }); })
     .catch(function(e){ console.warn('[docs] save',e); if(FAM===F0){ F0.step=F0.sign&&F0.sign.witness?'witness':'thanks'; F0.err='Couldn’t save the signed PDF. Check the connection, then tap Save again. Nothing has been lost.'; paintFamily(); } }); }
   function closeFamily(){ FAM=null; window.__cffTS='s'; var tw=document.getElementById('cfFamily'); if(tw) tw.removeAttribute('data-ts'); document.body.classList.remove('cf-family-on'); var w=document.getElementById('cfFamily'); if(w){ w.className='cf-family-sheet'; w.innerHTML=''; } repaintAll(); }
   var holdT=null, famDrafts={};
@@ -2893,23 +2862,23 @@ try{
     return lib().then(function(){ return endingTemplate(f.kind); }).then(function(tpl){ if(!tpl) return null;
       if(docForForm(p,f.id)) return docForForm(p,f.id);
       var o=f.owner||{}, urn=''; try{ urn=window.fvConsent&&f.urn?fvConsent.urnLabel(f.urn):''; }catch(e){}
-      return PvxForms.fileSigned(db(),{tpl:tpl,p:p,answers:{'owner.name':o.name||p.owner||'','family.address':o.address||'','family.city':o.city||'','family.state':o.state||'','family.zip':o.zip||'','owner.phone':p.ownerPhone||''},
+      return PvxForms.fileSigned(pvxDb(),{tpl:tpl,p:p,answers:{'owner.name':o.name||p.owner||'','family.address':o.address||'','family.city':o.city||'','family.state':o.state||'','family.zip':o.zip||'','owner.phone':p.ownerPhone||''},
         aftercare:{care:f.care,urn:urn,clay:!!f.clay,total:f.total},sign:{owner:f.owner_sig,witness:f.witness},lang:f.lang||'en',title:tpl.name||(f.kind==='died'?'Aftercare form':'Euthanasia & aftercare consent'),
-        kind:f.kind,by:who(),tenant:T(),hospital:'VCA Shoreline',form_id:f.id}).then(function(meta){ var k=String(p.id); (DOCS[k]=DOCS[k]||{list:[]}).list=[meta].concat(DOCS[k].list||[]); repaintAll(); return meta; }); })
-      .catch(function(e){ console.warn('[docs] ending pdf',e); noteAct('PDF not saved',esc(pet(p))+'’s signed form is safe; the PDF copy wasn’t made','Try again',function(){ fileEnding(byId(p.id)||p,f); },{color:'#C85A50'}); return null; }); }
+        kind:f.kind,by:pvxWho(),tenant:pvxTenant(),hospital:'VCA Shoreline',form_id:f.id}).then(function(meta){ var k=String(p.id); (DOCS[k]=DOCS[k]||{list:[]}).list=[meta].concat(DOCS[k].list||[]); repaintAll(); return meta; }); })
+      .catch(function(e){ console.warn('[docs] ending pdf',e); noteAct('PDF not saved',pvxEscQ(pet(p))+'’s signed form is safe; the PDF copy wasn’t made','Try again',function(){ fileEnding(pvxPatientById(p.id)||p,f); },{color:'#C85A50'}); return null; }); }
 
   /* ---------- viewer ---------- */
   var VIEW=null;
-  function view(p,meta){ VIEW={pid:p.id,meta:meta,state:'loading'}; paintView(); lib().then(function(){ return PvxForms.docBytes(db(),meta); }).then(function(r){ if(!VIEW||VIEW.meta.id!==meta.id) return; VIEW.bytes=r.bytes; VIEW.intact=r.intact;
+  function view(p,meta){ VIEW={pid:p.id,meta:meta,state:'loading'}; paintView(); lib().then(function(){ return PvxForms.docBytes(pvxDb(),meta); }).then(function(r){ if(!VIEW||VIEW.meta.id!==meta.id) return; VIEW.bytes=r.bytes; VIEW.intact=r.intact;
       var ch=Promise.resolve(), out=[]; for(var i=0;i<(meta.pages||1);i++)(function(i){ ch=ch.then(function(){ return PvxPdf.renderPage(r.bytes,i,1.5); }).then(function(c){ out.push(c.toDataURL('image/jpeg',0.88)); }); })(i);
       return ch.then(function(){ if(!VIEW) return; VIEW.pages=out; VIEW.state='ready'; paintView(); }); }).catch(function(e){ console.warn('[docs] view',e); if(VIEW){ VIEW.state='error'; VIEW.err=String(e.message||e); paintView(); } }); }
-  function paintView(){ var V=VIEW, p=byId(V.pid)||{}, m=V.meta, NP=(V.pages||[]).length;
-    var h='<header class="es-bar"><button type="button" class="es-cancel es-x" data-fvd="close" aria-label="Close" title="Close">'+PVX_GI.xmark+'</button><h2>'+esc(m.title||'Signed form')+'</h2><span class="es-bar-r"><button type="button" class="fvv-icon" data-fvd="v-dl" aria-label="Download the PDF" title="Download"'+(V.bytes?'':' disabled')+'>'+svg('dl')+'</button></span></header>';
-    var who2=esc([m.signed_by?'Signed by '+m.signed_by:'',hm(m.signed_at)?hm(m.signed_at):''].filter(Boolean).join(' · '));
+  function paintView(){ var V=VIEW, p=pvxPatientById(V.pid)||{}, m=V.meta, NP=(V.pages||[]).length;
+    var h='<header class="es-bar"><button type="button" class="es-cancel es-x" data-fvd="close" aria-label="Close" title="Close">'+PVX_GI.xmark+'</button><h2>'+pvxEscQ(m.title||'Signed form')+'</h2><span class="es-bar-r"><button type="button" class="fvv-icon" data-fvd="v-dl" aria-label="Download the PDF" title="Download"'+(V.bytes?'':' disabled')+'>'+svg('dl')+'</button></span></header>';
+    var who2=pvxEscQ([m.signed_by?'Signed by '+m.signed_by:'',pvxHm(m.signed_at)?pvxHm(m.signed_at):''].filter(Boolean).join(' · '));
     if(V.state==='ready') h+='<div class="fvv-status"><div class="fvv-check '+(V.intact?'ok':'bad')+'">'+svg(V.intact?'shield':'warn')+'<b>'+(V.intact?'Unchanged since signing':'This copy doesn’t match its fingerprint — don’t rely on it; ask an admin.')+'</b>'
       +'<button type="button" class="fvv-more" data-fvd="v-details" aria-expanded="'+!!V.details+'">'+(V.details?'Hide details':'Details')+'</button></div><span class="fvv-who">'+who2+'</span></div>';
     else h+='<div class="fvv-status"><span class="fvv-who">'+who2+'</span></div>';
-    if(V.details) h+='<div class="fvv-meta">'+esc([m.witness?'Witness '+m.witness:'',m.lang==='es'?'Filled in Spanish':'',(m.pages||NP||1)+' page'+((m.pages||NP||1)===1?'':'s')].filter(Boolean).join(' · '))+'<span>Fingerprint <code>'+esc(String(m.sha256||'').slice(0,16).replace(/(.{4})/g,'$1 ').trim())+'</code></span>'+(m.verify_id?'<span>Verify code <code>'+esc(String(m.verify_id).replace(/(.{4})(?=.)/g,'$1 '))+'</code> · on every page</span>':'')+'</div>';
+    if(V.details) h+='<div class="fvv-meta">'+pvxEscQ([m.witness?'Witness '+m.witness:'',m.lang==='es'?'Filled in Spanish':'',(m.pages||NP||1)+' page'+((m.pages||NP||1)===1?'':'s')].filter(Boolean).join(' · '))+'<span>Fingerprint <code>'+pvxEscQ(String(m.sha256||'').slice(0,16).replace(/(.{4})/g,'$1 ').trim())+'</code></span>'+(m.verify_id?'<span>Verify code <code>'+pvxEscQ(String(m.verify_id).replace(/(.{4})(?=.)/g,'$1 '))+'</code> · on every page</span>':'')+'</div>';
     h+='<div class="es-body fvv-body">';
     if(V.state==='loading') h+='<div class="es-text">Opening the PDF…</div>';
     if(V.state==='error') h+='<div class="es-text">Couldn’t open this PDF. Try again in a moment; if it keeps happening, ask an admin.</div>';
@@ -2952,24 +2921,24 @@ try{
   /* ---------- packet ---------- */
   var PK=null;
   var AUD={family:{t:'The family',contact:false,fees:false},rdvm:{t:'Referring vet',contact:true,fees:true},crem:{t:'Final Gift',contact:true,fees:true}};
-  function openPacket(p){ var items=docsOf(p).map(function(d){ return {key:'d:'+d.id,t:d.title||'Signed form',s:'Signed '+hm(d.signed_at||d.created_at)+' · '+(d.pages||1)+' page'+((d.pages||1)===1?'':'s'),on:true,meta:d}; });
+  function openPacket(p){ var items=docsOf(p).map(function(d){ return {key:'d:'+d.id,t:d.title||'Signed form',s:'Signed '+pvxHm(d.signed_at||d.created_at)+' · '+(d.pages||1)+' page'+((d.pages||1)===1?'':'s'),on:true,meta:d}; });
     if(p.ending&&p.ending.aftercare) items.push({key:'tag',t:'Body tag',s:'4 × 6 in · 1 page',on:true});
     PK={pid:p.id,aud:'rdvm',items:items,contact:true,fees:true,state:'edit',out:null}; paintPacket(); }
-  function paintPacket(){ var P=PK, p=byId(P.pid)||{}, hasC=P.items.some(function(i){ return i.meta&&i.meta.regions&&i.meta.regions.contact&&i.meta.regions.contact.length; }), hasF=P.items.some(function(i){ return i.meta&&i.meta.regions&&i.meta.regions.fees&&i.meta.regions.fees.length; });
+  function paintPacket(){ var P=PK, p=pvxPatientById(P.pid)||{}, hasC=P.items.some(function(i){ return i.meta&&i.meta.regions&&i.meta.regions.contact&&i.meta.regions.contact.length; }), hasF=P.items.some(function(i){ return i.meta&&i.meta.regions&&i.meta.regions.fees&&i.meta.regions.fees.length; });
     var h=bar('Packet · '+pet(p),true)+'<div class="es-body"><div class="es-sec"><div class="es-h">Who it’s for</div><span class="es-seg fvp-aud" role="radiogroup" aria-label="Who it’s for">'+Object.keys(AUD).map(function(k){ var on=P.aud===k; return '<button type="button" class="'+(on?'on':'')+'" role="radio" aria-checked="'+on+'" data-fvd="aud" data-aud="'+k+'">'+AUD[k].t+'</button>'; }).join('')+'</span></div>'
-      +'<div class="es-sec"><div class="es-h">Documents, in order</div><div class="es-group">'+(P.items.length?P.items.map(function(it,i){ return '<div class="es-row fvp-row"><label class="fvp-l"><input type="checkbox" data-fvd-on="'+i+'"'+(it.on?' checked':'')+'><span class="es-rl">'+esc(it.t)+'<span class="es-rd">'+esc(it.s)+'</span></span></label><span class="fvp-ord"><button type="button" aria-label="Move up" data-fvd="up" data-i="'+i+'"'+(i===0?' disabled':'')+'>'+svg('up')+'</button><button type="button" aria-label="Move down" data-fvd="dn" data-i="'+i+'"'+(i===P.items.length-1?' disabled':'')+'>'+svg('down')+'</button></span></div>'; }).join(''):'<div class="es-text">No PDFs on this visit yet.</div>')+'</div></div>'
+      +'<div class="es-sec"><div class="es-h">Documents, in order</div><div class="es-group">'+(P.items.length?P.items.map(function(it,i){ return '<div class="es-row fvp-row"><label class="fvp-l"><input type="checkbox" data-fvd-on="'+i+'"'+(it.on?' checked':'')+'><span class="es-rl">'+pvxEscQ(it.t)+'<span class="es-rd">'+pvxEscQ(it.s)+'</span></span></label><span class="fvp-ord"><button type="button" aria-label="Move up" data-fvd="up" data-i="'+i+'"'+(i===0?' disabled':'')+'>'+svg('up')+'</button><button type="button" aria-label="Move down" data-fvd="dn" data-i="'+i+'"'+(i===P.items.length-1?' disabled':'')+'>'+svg('down')+'</button></span></div>'; }).join(''):'<div class="es-text">No PDFs on this visit yet.</div>')+'</div></div>'
       +'<div class="es-sec"><div class="es-h">Before it leaves the hospital</div><div class="es-group">'
       +'<label class="es-row fvp-l"><span class="es-rl">Black out the owner’s contact details<span class="es-rd">'+(hasC?'Phone, address and email boxes · removed from the file, not just covered':'None mapped on these forms')+'</span></span><input type="checkbox" data-fvd-opt="contact"'+(P.contact&&hasC?' checked':'')+(hasC?'':' disabled')+'></label>'
       +'<label class="es-row fvp-l"><span class="es-rl">Leave out the fees<span class="es-rd">'+(hasF?'The fee boxes are blacked out':'No fee boxes on these forms')+'</span></span><input type="checkbox" data-fvd-opt="fees"'+(P.fees&&hasF?' checked':'')+(hasF?'':' disabled')+'></label></div>'
       +'<div class="es-foot-note">The packet is made in this browser. Nothing is saved or sent until you download or print it.</div></div>';
-    if(P.state==='done') h+='<div class="es-sec"><div class="es-group es-text"><b>'+esc(P.outName)+'</b><br>'+P.outPages+' pages · one bookmark per document'+(P.redacted?' · '+P.redacted+' page'+(P.redacted===1?'':'s')+' redrawn with details removed':'')+'</div></div>';
-    if(P.state==='error') h+='<div class="es-sec"><div class="es-group es-text">'+(/fingerprint/.test(P.err||'')?esc(P.err)+'. Leave it out of the packet and ask an admin.':'Couldn’t make the packet. Try again in a moment.')+'</div></div>';
+    if(P.state==='done') h+='<div class="es-sec"><div class="es-group es-text"><b>'+pvxEscQ(P.outName)+'</b><br>'+P.outPages+' pages · one bookmark per document'+(P.redacted?' · '+P.redacted+' page'+(P.redacted===1?'':'s')+' redrawn with details removed':'')+'</div></div>';
+    if(P.state==='error') h+='<div class="es-sec"><div class="es-group es-text">'+(/fingerprint/.test(P.err||'')?pvxEscQ(P.err)+'. Leave it out of the packet and ask an admin.':'Couldn’t make the packet. Try again in a moment.')+'</div></div>';
     h+='</div><footer class="es-foot">'+(P.state==='done'?'<div class="fvv-foot"><button type="button" class="fvd-mini" data-fvd="p-dl">Download</button><button type="button" class="es-primary fvd-solid" data-fvd="p-print">Print</button></div>'
       :'<button type="button" class="es-primary fvd-solid" data-fvd="p-make"'+(P.items.some(function(i){ return i.on; })&&P.state!=='working'?'':' disabled')+'>'+(P.state==='working'?'Making the PDF…':'Make the packet')+'</button>')+'</footer>';
     if(sheet&&sheet.el.querySelector('.fvp')) sheet.el.querySelector('.es-panel').innerHTML=h; else openSheet(h,'fvp','Packet'); }
-  function makePacket(){ var P=PK, p=byId(P.pid); P.state='working'; paintPacket();
+  function makePacket(){ var P=PK, p=pvxPatientById(P.pid); P.state='working'; paintPacket();
     lib().then(function(){ var sel=P.items.filter(function(i){ return i.on; });
-      return Promise.all(sel.map(function(it){ return it.key==='tag'?tagPdf(p).then(function(b){ return {it:it,bytes:b}; }):PvxForms.docBytes(db(),it.meta).then(function(r){ if(!r.intact) throw new Error(it.t+' doesn’t match its fingerprint'); return {it:it,bytes:r.bytes}; }); })); })
+      return Promise.all(sel.map(function(it){ return it.key==='tag'?tagPdf(p).then(function(b){ return {it:it,bytes:b}; }):PvxForms.docBytes(pvxDb(),it.meta).then(function(r){ if(!r.intact) throw new Error(it.t+' doesn’t match its fingerprint'); return {it:it,bytes:r.bytes}; }); })); })
     .then(function(parts){ parts=parts.filter(function(x){ return x.bytes; }); var regions=[], at=0;
       parts.forEach(function(x){ var m=x.it.meta, rg=m&&m.regions||{}; if(P.contact) (rg.contact||[]).forEach(function(r){ regions.push({page:at+(r.page|0),rect:r.rect}); }); if(P.fees) (rg.fees||[]).forEach(function(r){ regions.push({page:at+(r.page|0),rect:r.rect}); }); at+=(m&&m.pages)||1; });
       return PvxPdf.merge(parts.map(function(x){ return {bytes:x.bytes,title:x.it.t}; })).then(function(m){ return regions.length?PvxPdf.redact(m,regions,{dpi:150}):m; })
@@ -2983,7 +2952,7 @@ try{
     var fl=t.closest('#cfFamily [data-fvl]'); if(fl&&FAM){ readAnswers(); FAM.lang=fl.dataset.fvl; FAM.err=''; paintFamily(); return; }
     if(FAM&&t.closest('#cfFamily')){ var c=t.closest('[data-fvq-c]'); if(c){ readAnswers(); FAM.ans[c.dataset.fvqC]=!FAM.ans[c.dataset.fvqC]; FAM.err=''; paintFamily(); return; }
       var o=t.closest('[data-fvq-o]'); if(o){ readAnswers(); FAM.ans[o.dataset.fvqO]=o.dataset.opt; FAM.err=''; paintFamily(); return; } }
-    var a=t.closest('[data-fvd]'); if(!a) return; var w=a.dataset.fvd, p=cur();
+    var a=t.closest('[data-fvd]'); if(!a) return; var w=a.dataset.fvd, p=pvxActivePatient();
     if(w==='close'){ closeSheet(); VIEW=null; PK=null; send=null; return; }
     if(w==='send'&&p){ openSend(p); return; }
     if(w==='pick'&&send){ send.tid=a.dataset.tid; paintSend(); return; }
@@ -2993,10 +2962,10 @@ try{
     if(w==='print-consent'&&p&&window.fvConsent){ fvConsent.print(p); return; }
     if(w==='tag'&&p&&window.fvEndings&&fvEndings.printTag){ fvEndings.printTag(p); return; }
     if(w==='packet'&&p){ openPacket(p); return; }
-    if(w==='v-packet'&&VIEW){ var vp=byId(VIEW.pid); closeSheet(); VIEW=null; if(vp) openPacket(vp); return; }
+    if(w==='v-packet'&&VIEW){ var vp=pvxPatientById(VIEW.pid); closeSheet(); VIEW=null; if(vp) openPacket(vp); return; }
     if(w==='v-details'&&VIEW){ VIEW.details=!VIEW.details; paintView(); return; }
-    if(w==='v-dl'&&VIEW&&VIEW.bytes){ download(VIEW.bytes,fileName(byId(VIEW.pid),VIEW.meta.title)); return; }
-    if(w==='v-print'&&VIEW&&VIEW.bytes){ printBytes(VIEW.bytes); try{ var D=db(); if(D) D.collection('visit_docs').doc(VIEW.meta.id).set({printed_at:new Date().toISOString(),printed_by:who()},{merge:true}).catch(function(){}); }catch(e){} return; }
+    if(w==='v-dl'&&VIEW&&VIEW.bytes){ download(VIEW.bytes,fileName(pvxPatientById(VIEW.pid),VIEW.meta.title)); return; }
+    if(w==='v-print'&&VIEW&&VIEW.bytes){ printBytes(VIEW.bytes); try{ var D=pvxDb(); if(D) D.collection('visit_docs').doc(VIEW.meta.id).set({printed_at:new Date().toISOString(),printed_by:pvxWho()},{merge:true}).catch(function(){}); }catch(e){} return; }
     if(w==='aud'&&PK){ PK.aud=a.dataset.aud; PK.contact=AUD[PK.aud].contact; PK.fees=AUD[PK.aud].fees; PK.state='edit'; paintPacket(); return; }
     if((w==='up'||w==='dn')&&PK){ var i=+a.dataset.i, j=w==='up'?i-1:i+1; if(j<0||j>=PK.items.length) return; var x=PK.items[i]; PK.items[i]=PK.items[j]; PK.items[j]=x; PK.state='edit'; paintPacket(); var f=document.querySelector('#fvdSheet [data-fvd="'+w+'"][data-i="'+j+'"]'); if(f&&!f.disabled) f.focus(); return; }
     if(w==='p-make'&&PK){ makePacket(); return; }
@@ -3057,15 +3026,9 @@ try{
 (function(){
   if(typeof openAddPatient!=='function'||typeof createPatient!=='function'||!document.getElementById('apArrival')) return;
   var HOSP=(function(){ try{ return (window.PravixHospitals&&PravixHospitals.shoreline&&PravixHospitals.shoreline.address)||'895 Bridgeport Avenue, Shelton, CT 06484'; }catch(e){ return '895 Bridgeport Avenue, Shelton, CT 06484'; } })();
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-  function who(){ try{ return (typeof CURRENT_USER!=='undefined'&&CURRENT_USER)?String(CURRENT_USER):'Staff'; }catch(e){ return 'Staff'; } }
-  function email(){ try{ return (AUTH&&AUTH.currentUser&&AUTH.currentUser.email)||''; }catch(e){ return ''; } }
-  function admin(){ try{ return typeof isAdminUser==='function'&&isAdminUser(email()); }catch(e){ return false; } }
-  function T(){ try{ return TENANT_ID||'shoreline'; }catch(e){ return 'shoreline'; } }
-  function db(){ try{ return (typeof DB!=='undefined'&&DB)?DB:null; }catch(e){ return null; } }
+  function admin(){ try{ return typeof isAdminUser==='function'&&isAdminUser(pvxEmail()); }catch(e){ return false; } }
   function hm(ms){ try{ return fmtTime(new Date(ms)); }catch(e){ var d=new Date(ms),h=d.getHours(),m=d.getMinutes(); return (h%12||12)+':'+('0'+m).slice(-2)+(h>=12?' PM':' AM'); } }
   function hmShort(ms){ return hm(ms).replace(/ (AM|PM)$/,''); }
-  function note(t,s,o){ try{ notify(t,s,Object.assign({icon:'info',color:'#3E8FA5'},o||{})); }catch(e){} }
   function iso(ms){ return new Date(ms).toISOString(); }
   function ms(v){ return v?new Date(v).getTime():0; }
 
@@ -3097,12 +3060,12 @@ try{
     .then(function(r){ var rt=r&&r.routes&&r.routes[0], d=rt&&(rt.durationMillis||rt.staticDurationMillis); if(!d||!isFinite(d)) throw new Error('no-route');
       ST.lastOk=Date.now(); ST.lastErr=null; return Math.max(1,Math.round(d/60000)); })
     .catch(function(e){ ST.lastErr=String(e&&e.message||e); throw e; }); }
-  function loadKey(){ var D=db(); if(!D) return Promise.resolve(null);
+  function loadKey(){ var D=pvxDb(); if(!D) return Promise.resolve(null);
     return D.collection('ts_settings').doc('maps').get().then(function(s){ var k=s.exists&&(s.data()||{}).browser_key; ST.key=k?String(k).trim():null; ST.keyLoaded=true; return ST.key; })
       .catch(function(){ ST.keyLoaded=true; return null; }); }
 
   /* ---------- learning from real arrivals ---------- */
-  function loadLog(){ var D=db(); if(!D) return; D.collection('eta_log').where('tenant_id','==',T()).limit(400).get().then(function(s){ ST.log=s.docs.map(function(d){ return d.data(); }); }).catch(function(){}); }
+  function loadLog(){ var D=pvxDb(); if(!D) return; D.collection('eta_log').where('tenant_id','==',pvxTenant()).limit(400).get().then(function(s){ ST.log=s.docs.map(function(d){ return d.data(); }); }).catch(function(){}); }
   function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
   function pct(a,p){ var i=(a.length-1)*p, lo=Math.floor(i), hi=Math.ceil(i); return a[lo]+(a[hi]-a[lo])*(i-lo); }
   /* shift = how much later than estimated people from this town really arrive (median); the window = the middle half */
@@ -3125,20 +3088,18 @@ try{
   var tr=document.getElementById('apTransfer'); tr.parentNode.insertBefore(sect,tr.nextSibling);
   var F={leave:0, minutes:null, source:null, place:null, looking:false, seq:0, typed:null};
   function isOtw(){ try{ return apArrivalType==='otw'; }catch(e){ return false; } }
-  var _set=apSetArrival;
-  apSetArrival=function(type){ _set.apply(this,arguments); var on=type==='otw'; sect.style.display=on?'':'none';
+  pvxWrap('apSetArrival',function(_set){ return function(type){ _set.apply(this,arguments); var on=type==='otw'; sect.style.display=on?'':'none';
     var as=document.getElementById('apLocationMount'), sec=as&&as.closest('.ap-field'); if(sec) sec.style.display=on?'none':'';
     var cb=document.getElementById('apCreate'); if(cb&&!ST.arriving) cb.textContent=on?'Add to On the way':'Create patient';
-    if(on){ if(!ST.keyLoaded) loadKey().then(paintEta); paintEta(); setTimeout(function(){ var f=document.getElementById('otwFrom'); if(f&&!f.value) f.focus(); },60); } };
-  var _open=openAddPatient;
-  openAddPatient=function(){ F={leave:0, minutes:null, source:null, place:null, looking:false, seq:0, typed:null}; var r=_open.apply(this,arguments);
+    if(on){ if(!ST.keyLoaded) loadKey().then(paintEta); paintEta(); setTimeout(function(){ var f=document.getElementById('otwFrom'); if(f&&!f.value) f.focus(); },60); } }; },'#21');
+  pvxWrap('openAddPatient',function(_open){ return function(){ F={leave:0, minutes:null, source:null, place:null, looking:false, seq:0, typed:null}; var r=_open.apply(this,arguments);
     sect.style.display='none'; var f=document.getElementById('otwFrom'); if(f) f.value=''; paintLeave(); paintEta(); closeTowns();
-    var as=document.getElementById('apLocationMount'), sec=as&&as.closest('.ap-field'); if(sec) sec.style.display=''; return r; };
+    var as=document.getElementById('apLocationMount'), sec=as&&as.closest('.ap-field'); if(sec) sec.style.display=''; return r; }; },'#21');
   function paintLeave(){ sect.querySelectorAll('[data-leave]').forEach(function(b){ b.setAttribute('aria-checked',String(+b.dataset.leave===F.leave)); }); }
   function etaNow(){ if(F.minutes==null) return null; return etaFrom(Date.now()+F.leave*60000, F.minutes, learned(F.place?F.place.key:'')); }
   function paintEta(){ var e=document.getElementById('otwEta'); if(!e) return; var h='';
     if(F.looking) h='<span class="otw-spin" aria-hidden="true"></span><span>Asking Google Maps for the drive time…</span>';
-    else if(F.minutes!=null){ var x=etaNow(); h='<div class="otw-eta-main"><span class="otw-k">Expected</span><b>'+esc(hmShort(x.lo))+'–'+esc(hm(x.hi))+'</b></div><span class="otw-src">'+(F.source==='google'?'about '+F.minutes+' min drive now · Google Maps':'about '+F.minutes+' min, as the family said')+'</span>'; }
+    else if(F.minutes!=null){ var x=etaNow(); h='<div class="otw-eta-main"><span class="otw-k">Expected</span><b>'+pvxEscQ(hmShort(x.lo))+'–'+pvxEscQ(hm(x.hi))+'</b></div><span class="otw-src">'+(F.source==='google'?'about '+F.minutes+' min drive now · Google Maps':'about '+F.minutes+' min, as the family said')+'</span>'; }
     if(!F.looking&&(F.source!=='google')){
       var why=!F.place?'':(!ST.key?(admin()?'No Google Maps key yet. <button type="button" class="otw-link" data-otw="key">Add it…</button>':'Drive times from Google Maps aren’t set up yet.'):'Google Maps didn’t answer.');
       h+='<label class="otw-typed"><span>'+(F.place?(why?why+' ':'')+'How many minutes away did they say?':'Or the minutes they said')+'</span><span class="otw-minw"><input class="ap-input" id="otwMin" inputmode="numeric" autocomplete="off" role="spinbutton" aria-valuemin="1" aria-valuemax="240" maxlength="3" placeholder="20" value="'+(F.source==='family'&&F.minutes!=null?F.minutes:'')+'"><span class="otw-minu" aria-hidden="true">min</span></span></label>'; }
@@ -3156,12 +3117,12 @@ try{
   function closeTowns(){ var p=document.getElementById('otwTowns'); if(p){ p.innerHTML=''; p.classList.remove('open'); } var f=document.getElementById('otwFrom'); if(f) f.setAttribute('aria-expanded','false'); hl=-1; }
   function showTowns(){ var f=document.getElementById('otwFrom'), p=document.getElementById('otwTowns'); var q=String(f.value||'').trim().toLowerCase();
     if(!q){ var O=pvxOften(); if(!O.length){ closeTowns(); return; }   /* PVX-N371 */
-      p.innerHTML='<div class="pvx-grp" role="presentation">Often from</div>'+O.map(function(t,i){ return '<button type="button" role="option" data-town="'+esc(t.v)+'" aria-selected="'+(i===hl)+'">'+esc(t.label)+'<span>'+(t.zip?'ZIP':'CT')+'</span></button>'; }).join('');
+      p.innerHTML='<div class="pvx-grp" role="presentation">Often from</div>'+O.map(function(t,i){ return '<button type="button" role="option" data-town="'+pvxEscQ(t.v)+'" aria-selected="'+(i===hl)+'">'+pvxEscQ(t.label)+'<span>'+(t.zip?'ZIP':'CT')+'</span></button>'; }).join('');
       p.classList.add('open'); f.setAttribute('aria-expanded','true'); return; }
     if(/^\d/.test(q)){ closeTowns(); return; }
     var L=TOWNS.filter(function(t){ return t.toLowerCase().indexOf(q)===0; }).concat(TOWNS.filter(function(t){ return t.toLowerCase().indexOf(q)>0; })).slice(0,6);
     if(!L.length||(L.length===1&&L[0].toLowerCase()===q)){ closeTowns(); return; }
-    p.innerHTML=L.map(function(t,i){ return '<button type="button" role="option" data-town="'+esc(t)+'" aria-selected="'+(i===hl)+'">'+esc(t)+'<span>CT</span></button>'; }).join(''); p.classList.add('open'); f.setAttribute('aria-expanded','true'); }
+    p.innerHTML=L.map(function(t,i){ return '<button type="button" role="option" data-town="'+pvxEscQ(t)+'" aria-selected="'+(i===hl)+'">'+pvxEscQ(t)+'<span>CT</span></button>'; }).join(''); p.classList.add('open'); f.setAttribute('aria-expanded','true'); }
   function pickTown(t){ var f=document.getElementById('otwFrom'); f.value=t; closeTowns(); lookup(); }
   /* PVX-N371: the places arrivals most often came from (Flow's own arrival log: town or ZIP only), most first */
   function pvxOften(){ var n={}; (ST.log||[]).forEach(function(r){ var k=String(r&&r.town||'').trim(); if(k) n[k]=(n[k]||0)+1; });
@@ -3172,7 +3133,7 @@ try{
   ['focusin','click'].forEach(function(k){ sect.addEventListener(k,function(e){ if(e.target.id==='otwFrom'&&!String(e.target.value||'').trim()&&!document.getElementById('otwTowns').classList.contains('open')){ hl=-1; showTowns(); } }); });
   sect.addEventListener('input',function(e){ if(e.target.id==='otwFrom'){ hl=-1; showTowns(); lookupSoon(); }
     else if(e.target.id==='otwMin'){ var v=parseInt(e.target.value,10); if(v>0&&v<=240){ F.minutes=v; F.source='family'; } else if(F.source==='family'){ F.minutes=null; F.source=null; }
-      var main=sect.querySelector('.otw-eta-main'), x=etaNow(); if(x){ var src=sect.querySelector('.otw-src'); if(main) main.querySelector('b').textContent=hmShort(x.lo)+'–'+hm(x.hi); else { var d=document.createElement('div'); d.className='otw-eta-main'; d.innerHTML='<span class="otw-k">Expected</span><b>'+esc(hmShort(x.lo))+'–'+esc(hm(x.hi))+'</b>'; document.getElementById('otwEta').prepend(d); } }
+      var main=sect.querySelector('.otw-eta-main'), x=etaNow(); if(x){ var src=sect.querySelector('.otw-src'); if(main) main.querySelector('b').textContent=hmShort(x.lo)+'–'+hm(x.hi); else { var d=document.createElement('div'); d.className='otw-eta-main'; d.innerHTML='<span class="otw-k">Expected</span><b>'+pvxEscQ(hmShort(x.lo))+'–'+pvxEscQ(hm(x.hi))+'</b>'; document.getElementById('otwEta').prepend(d); } }
       else if(main) main.remove(); } });
   sect.addEventListener('keydown',function(e){ if(e.target.id!=='otwFrom') return; var p=document.getElementById('otwTowns'), B=p?[].slice.call(p.querySelectorAll('button')):[]; if(!B.length) return;
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); hl=(hl+(e.key==='ArrowDown'?1:-1)+B.length)%B.length; B.forEach(function(b,i){ b.setAttribute('aria-selected',String(i===hl)); }); }
@@ -3190,30 +3151,30 @@ try{
     var name=val('apName'); if(!name){ try{ toast('Enter a patient name'); }catch(e){} var n=document.getElementById('apName'); if(n) n.focus(); return; }
     F.place=place(val('otwFrom'));
     if(!F.place&&F.minutes==null){ try{ toast('Add the town they’re coming from, or the minutes they said'); }catch(e){} var f=document.getElementById('otwFrom'); if(f) f.focus(); return; }
-    var D=db(); if(!D){ try{ toast('Not connected — try again in a moment'); }catch(e){} return; }
+    var D=pvxDb(); if(!D){ try{ toast('Not connected — try again in a moment'); }catch(e){} return; }
     var now=Date.now(), leaveAt=now+F.leave*60000, L=learned(F.place?F.place.key:''), x=F.minutes!=null?etaFrom(leaveAt,F.minutes,L):null;
     var reason=val('apReason'); try{ if(!reason&&apProblems&&apProblems.length) reason=problemsToString(apProblems); }catch(e){}
-    var doc={tenant_id:T(), status:'on_the_way', name:name, species:val('apSpecies'), breed:val('apBreed'), owner:val('apOwner'), phone:val('apPhone'), prio:(function(){ try{ return apPrio; }catch(e){ return 2; } })(),
+    var doc={tenant_id:pvxTenant(), status:'on_the_way', name:name, species:val('apSpecies'), breed:val('apBreed'), owner:val('apOwner'), phone:val('apPhone'), prio:(function(){ try{ return apPrio; }catch(e){ return 2; } })(),
       reason:reason, from:F.place?{label:F.place.label, query:F.place.query, key:F.place.key}:null, leave_min:F.leave, leave_at:iso(leaveAt),
       minutes:F.minutes, minutes_source:F.source, shift:L.shift, eta_first:x?iso(x.mid):null, eta_at:x?iso(x.mid):null, eta_lo:x?iso(x.lo):null, eta_hi:x?iso(x.hi):null, eta_updated_at:iso(now), refreshes:0,
-      doctor:(function(){ try{ return apDoctorId; }catch(e){ return 'unassigned'; } })(), room_plan:null, created_at:iso(now), created_by:who()};
+      doctor:(function(){ try{ return apDoctorId; }catch(e){ return 'unassigned'; } })(), room_plan:null, created_at:iso(now), created_by:pvxWho()};
     var b=document.getElementById('apCreate'); if(b){ b.disabled=true; b.textContent='Adding…'; }
     D.collection('incoming').add(doc).then(function(ref){ doc.id=ref.id; upsert(doc); if(b){ b.disabled=false; } closeAddPatient(); renderStrip();
-      note(esc(name)+' is on the way', x?'Expected '+hmShort(x.lo)+'–'+hm(x.hi)+(F.place?' · from '+esc(F.place.label):''):'From '+esc(F.place.label)+' · add the minutes when they call back'); })
+      pvxNote(pvxEscQ(name)+' is on the way', x?'Expected '+hmShort(x.lo)+'–'+hm(x.hi)+(F.place?' · from '+pvxEscQ(F.place.label):''):'From '+pvxEscQ(F.place.label)+' · add the minutes when they call back'); })
       .catch(function(e){ console.warn('[otw] save',e); if(b){ b.disabled=false; b.textContent='Add to On the way'; } try{ toast('Couldn’t save — check the connection and try again'); }catch(_){} }); }
 
   /* ---------- the live list ---------- */
   function upsert(d){ var i=ST.list.findIndex(function(x){ return x.id===d.id; }); if(d.status!=='on_the_way'){ if(i>-1) ST.list.splice(i,1); return; } if(i>-1) ST.list[i]=d; else ST.list.push(d); }
-  function start(){ if(ST.started) return; var D=db(); if(!D) return; var signed=false; try{ signed=!!(AUTH&&AUTH.currentUser); }catch(e){} if(!signed) return; ST.started=true;
+  function start(){ if(ST.started) return; var D=pvxDb(); if(!D) return; var signed=false; try{ signed=!!(AUTH&&AUTH.currentUser); }catch(e){} if(!signed) return; ST.started=true;
     loadKey(); loadLog();
-    try{ ST.unsub=D.collection('incoming').where('tenant_id','==',T()).where('status','==','on_the_way').onSnapshot(function(s){ ST.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }); renderStrip(); },
+    try{ ST.unsub=D.collection('incoming').where('tenant_id','==',pvxTenant()).where('status','==','on_the_way').onSnapshot(function(s){ ST.list=s.docs.map(function(d){ return Object.assign({id:d.id},d.data()); }); renderStrip(); },
       function(e){ console.warn('[otw] listen',e); }); }catch(e){ console.warn('[otw] listen',e); }
     ST.tick=setInterval(function(){ renderStrip(); refreshDue(); matchArrivals(); },20000); }
   var boot=setInterval(function(){ start(); if(ST.started) clearInterval(boot); },700); start();
   window.addEventListener('focus',function(){ if(ST.started){ renderStrip(); refreshDue(); } });
 
   /* every 5 minutes, one workstation asks Google again (the one that finds the record oldest), at most 8 times a trip */
-  function refreshDue(){ var D=db(); if(!D) return; var now=Date.now();
+  function refreshDue(){ var D=pvxDb(); if(!D) return; var now=Date.now();
     ST.list.forEach(function(d){ if(d.minutes_source!=='google'||!d.from||!d.from.query) return; if(now-ms(d.eta_updated_at)<5*60000||(d.refreshes||0)>=8) return; if(d.eta_hi&&now>ms(d.eta_hi)+15*60000) return; if(d._busy) return;
       d._busy=true; var leaveAt=ms(d.leave_at);
       D.collection('incoming').doc(d.id).get().then(function(s){ var cur=s.exists?s.data():null; if(!cur||cur.status!=='on_the_way'||Date.now()-ms(cur.eta_updated_at)<5*60000) throw new Error('fresh');
@@ -3229,11 +3190,11 @@ try{
       var p=P.filter(function(x){ var a=x.arrival?new Date(x.arrival).getTime():0; return a>=ms(d.created_at)-60000&&String(x.name||'').toLowerCase()===first&&(!d.species||!x.species||x.species==='—'||String(x.species).toLowerCase()===String(d.species).toLowerCase()); })[0];
       if(p) markArrived(d,p); }); }
   function watchArrival(a){ var n=0, t=setInterval(function(){ n++; matchArrivals(); if(!ST.list.some(function(d){ return d.id===a.id; })||n>40){ clearInterval(t); if(ST.arriving&&ST.arriving.id===a.id) ST.arriving=null; } },1500); }
-  function markArrived(d,p){ var D=db(); if(!D||d._done) return; d._done=true; var now=p&&p.arrival?new Date(p.arrival).getTime():Date.now();
+  function markArrived(d,p){ var D=pvxDb(); if(!D||d._done) return; d._done=true; var now=p&&p.arrival?new Date(p.arrival).getTime():Date.now();
     var first=d.eta_first||d.eta_at, pred=first?Math.round((ms(first)-ms(d.created_at))/60000):null,   /* the estimate made on the call, not later +5s or refreshes */ act=Math.round((now-ms(d.created_at))/60000);
     var up={status:'arrived', arrived_at:iso(now), visit_id:p&&p.id!=null?String(p.id):null, from:null, phone:null, owner:null};
     D.collection('incoming').doc(d.id).update(up).catch(function(e){ console.warn('[otw] arrived',e); });
-    if(pred!=null&&act>=0&&act<=360){ var dt=new Date(ms(d.created_at)); D.collection('eta_log').add({tenant_id:T(), town:d.from&&d.from.key||'', dow:dt.getDay(), hour:dt.getHours(), leave_min:d.leave_min||0,
+    if(pred!=null&&act>=0&&act<=360){ var dt=new Date(ms(d.created_at)); D.collection('eta_log').add({tenant_id:pvxTenant(), town:d.from&&d.from.key||'', dow:dt.getDay(), hour:dt.getHours(), leave_min:d.leave_min||0,
       predicted_min:pred, actual_min:act, source:d.minutes_source||'none', at:iso(now)}).then(function(){ ST.log.push({town:d.from&&d.from.key||'', predicted_min:pred, actual_min:act}); }).catch(function(){}); }
     upsert(Object.assign({},d,up)); renderStrip(); }
   function arrived(id){ var d=ST.list.filter(function(x){ return x.id===id; })[0]; if(!d) return; ST.arriving={id:id, at:Date.now()};
@@ -3247,18 +3208,18 @@ try{
     var t=document.querySelector('#apModal .aph-t'); if(t) t.textContent='Check in '+(d.name||'');
     var s=document.querySelector('#apModal .aph-sub'); if(s) s.textContent='They were on the way. Check the details, then create the patient.';
     var cb=document.getElementById('apCreate'); if(cb) cb.textContent='Check in'; }
-  function notComing(id){ var D=db(), d=ST.list.filter(function(x){ return x.id===id; })[0]; if(!D||!d) return;
-    var up={status:'cancelled', cancelled_at:iso(Date.now()), cancelled_by:who(), from:null, phone:null, owner:null};
+  function notComing(id){ var D=pvxDb(), d=ST.list.filter(function(x){ return x.id===id; })[0]; if(!D||!d) return;
+    var up={status:'cancelled', cancelled_at:iso(Date.now()), cancelled_by:pvxWho(), from:null, phone:null, owner:null};
     var back={status:'on_the_way', cancelled_at:null, cancelled_by:null, from:d.from||null, phone:d.phone||null, owner:d.owner||null};
     D.collection('incoming').doc(id).update(up).then(function(){ upsert(Object.assign({},d,up)); renderStrip();
       var undo=function(){ D.collection('incoming').doc(id).update(back).then(function(){ upsert(Object.assign({},d,back)); renderStrip(); }).catch(function(){ try{ toast('Couldn’t undo — add them again from Add patient'); }catch(e){} }); };
       /* Apple: Undo instead of "Are you sure?" */
-      if(window.fvNotifyAct) fvNotifyAct(esc(d.name||'Patient')+' taken off On the way','','Undo',undo,{color:'#3E8FA5'}); else note(esc(d.name||'Patient')+' taken off On the way',''); })
+      if(window.fvNotifyAct) fvNotifyAct(pvxEscQ(d.name||'Patient')+' taken off On the way','','Undo',undo,{color:'#3E8FA5'}); else pvxNote(pvxEscQ(d.name||'Patient')+' taken off On the way',''); })
       .catch(function(){ try{ toast('Couldn’t update — try again'); }catch(e){} }); }
-  function later(id,min){ var D=db(), d=ST.list.filter(function(x){ return x.id===id; })[0]; if(!D||!d||!d.eta_at) return; var k=min*60000;
+  function later(id,min){ var D=pvxDb(), d=ST.list.filter(function(x){ return x.id===id; })[0]; if(!D||!d||!d.eta_at) return; var k=min*60000;
     var up={eta_at:iso(ms(d.eta_at)+k), eta_lo:iso(ms(d.eta_lo)+k), eta_hi:iso(ms(d.eta_hi)+k), leave_at:iso(ms(d.leave_at)+k), shift:(d.shift||0)}; Object.assign(d,up); renderStrip();
     D.collection('incoming').doc(id).update(up).catch(function(){}); }
-  function planRoom(id,room){ var D=db(), d=ST.list.filter(function(x){ return x.id===id; })[0]; if(!D||!d) return; d.room_plan=room||null; renderStrip();
+  function planRoom(id,room){ var D=pvxDb(), d=ST.list.filter(function(x){ return x.id===id; })[0]; if(!D||!d) return; d.room_plan=room||null; renderStrip();
     D.collection('incoming').doc(id).update({room_plan:room||null}).catch(function(){}); }
 
   /* ---------- the Command Center strip ---------- */
@@ -3273,26 +3234,26 @@ try{
   var CAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M3.3 16C2.9 16 2.5 15.6 2.5 15.2V12.7C2.5 11.9 3 11.2 3.8 11L6.7 10.2L9 7.1C9.4 6.6 9.9 6.3 10.6 6.3H15.1C15.7 6.3 16.3 6.6 16.6 7.1L18.9 10.1L20.3 10.4C21 10.6 21.5 11.2 21.5 11.9V15.2C21.5 15.6 21.1 16 20.7 16H19.7A2.7 2.7 0 0 0 14.3 16H9.7A2.7 2.7 0 0 0 4.3 16ZM9.4 10.1L10.8 8C10.9 7.8 11.1 7.7 11.4 7.7H12.6V10.1ZM13.8 7.7H14.9C15.2 7.7 15.4 7.8 15.5 8L17.1 10.1H13.8Z"/><circle cx="7" cy="16" r="2"/><circle cx="17" cy="16" r="2"/></svg>';
   function card(d){ var now=Date.now(), mid=ms(d.eta_at), hi=ms(d.eta_hi), has=!!mid;
     var left=has?Math.round((mid-now)/60000):null, late=has&&now>hi, lateBy=has?Math.max(1,Math.round((now-mid)/60000)):0, soon=has&&!late&&left<=5, call=late&&now-hi>=10*60000;
-    var name=esc(d.name||'Patient'), prio=+d.prio||2, from=d.from&&d.from.label?esc(d.from.label):'';
+    var name=pvxEscQ(d.name||'Patient'), prio=+d.prio||2, from=d.from&&d.from.label?pvxEscQ(d.from.label):'';
     var state=late?'late':soon&&!d.room_plan?'soon':'', cls='otw-card'+(state?' '+state:'');   /* orange only when something needs doing */
     var kicker=late?'Running late':soon?'Arriving soon':'On the way';
     var right=!has?'':late?lateBy+' min late':left<=0?'now':'in '+left+' min';
     var title=late?name+' is running late':name+' is on the way';
-    var room=d.room_plan?(taken(d.room_plan)?' <span class="otw-warn">'+esc(d.room_plan)+' is taken right now.</span>':' <span class="otw-ok">'+esc(d.room_plan)+' is ready.</span>'):soon||late?' <span class="otw-warn">No room planned yet.</span>':'';
+    var room=d.room_plan?(taken(d.room_plan)?' <span class="otw-warn">'+pvxEscQ(d.room_plan)+' is taken right now.</span>':' <span class="otw-ok">'+pvxEscQ(d.room_plan)+' is ready.</span>'):soon||late?' <span class="otw-warn">No room planned yet.</span>':'';
     var src=d.minutes_source==='google'?' Live traffic from Google Maps.':d.minutes_source==='family'?' From what the family said.':'';
     var line;
     if(!has) line=name+' is coming'+(from?' from '+from:'')+'. Add the minutes when they call back.';
-    else if(late) line=name+' was expected around '+esc(hm(mid))+', '+lateBy+' min ago.'+room+(call&&d.phone?' <span class="otw-warn">Call '+esc(d.owner&&d.owner!=='—'?d.owner:'the family')+': <a href="tel:'+esc(String(d.phone).replace(/[^\d+]/g,''))+'">'+esc(d.phone)+'</a></span>':'');
-    else line=name+' will arrive'+(from?' from '+from:'')+' around '+esc(hm(mid))+'.'+room+'<span class="otw-src">'+src+'</span>';
+    else if(late) line=name+' was expected around '+pvxEscQ(hm(mid))+', '+lateBy+' min ago.'+room+(call&&d.phone?' <span class="otw-warn">Call '+pvxEscQ(d.owner&&d.owner!=='—'?d.owner:'the family')+': <a href="tel:'+pvxEscQ(String(d.phone).replace(/[^\d+]/g,''))+'">'+pvxEscQ(d.phone)+'</a></span>':'');
+    else line=name+' will arrive'+(from?' from '+from:'')+' around '+pvxEscQ(hm(mid))+'.'+room+'<span class="otw-src">'+src+'</span>';
     var what=[d.species,d.breed,d.reason].filter(function(x){ return x&&x!=='—'; }).join(' · ');
-    var med; try{ med=mono({name:d.name||'?', species:d.species||'', prio:prio},'patient-medallion patient-medallion--compact'); }catch(e){ med='<div class="pt-emoji">'+esc(String(d.name||'?').charAt(0).toUpperCase())+'</div>'; }
-    return '<article class="'+cls+'" data-otw-id="'+esc(d.id)+'" aria-label="'+esc((d.name||'Patient')+', '+kicker+(right?', '+right:''))+'">'
+    var med; try{ med=mono({name:d.name||'?', species:d.species||'', prio:prio},'patient-medallion patient-medallion--compact'); }catch(e){ med='<div class="pt-emoji">'+pvxEscQ(String(d.name||'?').charAt(0).toUpperCase())+'</div>'; }
+    return '<article class="'+cls+'" data-otw-id="'+pvxEscQ(d.id)+'" aria-label="'+pvxEscQ((d.name||'Patient')+', '+kicker+(right?', '+right:''))+'">'
       +'<span class="otw-edge" style="background:var(--priority-p'+prio+')"></span>'
       +'<div class="otw-av">'+med+'<span class="otw-badge">'+CAR+'</span></div><div class="otw-body">'
-      +'<div class="otw-top"><span class="otw-kick">'+esc(kicker)+(from?' · '+from:'')+'</span><span class="otw-in">'+esc(right)+'</span></div>'
-      +'<div class="otw-tl"><b class="otw-t">'+title+'</b><span class="prio prio-'+prio+'" style="width:22px;height:22px;font-size:0.625rem">P'+prio+'</span></div><p class="otw-line">'+line+'</p>'+(what?'<span class="otw-what">'+esc(what)+'</span>':'')
+      +'<div class="otw-top"><span class="otw-kick">'+pvxEscQ(kicker)+(from?' · '+from:'')+'</span><span class="otw-in">'+pvxEscQ(right)+'</span></div>'
+      +'<div class="otw-tl"><b class="otw-t">'+title+'</b><span class="prio prio-'+prio+'" style="width:22px;height:22px;font-size:0.625rem">P'+prio+'</span></div><p class="otw-line">'+line+'</p>'+(what?'<span class="otw-what">'+pvxEscQ(what)+'</span>':'')
       +'<div class="otw-acts"><button type="button" class="otw-primary" data-otw-act="arrived">Arrived</button>'
-      +'<label class="otw-room"><span class="otw-vh">Plan a room for '+name+'</span><select data-otw-act="room"><option value="">Plan a room…</option>'+rooms(d.room_plan).map(function(r){ return '<option'+(r===d.room_plan?' selected':'')+'>'+esc(r)+'</option>'; }).join('')+'</select></label>'
+      +'<label class="otw-room"><span class="otw-vh">Plan a room for '+name+'</span><select data-otw-act="room"><option value="">Plan a room…</option>'+rooms(d.room_plan).map(function(r){ return '<option'+(r===d.room_plan?' selected':'')+'>'+pvxEscQ(r)+'</option>'; }).join('')+'</select></label>'
       +(has?'<button type="button" class="otw-quiet" data-otw-act="later">+5 min</button>':'')+'<button type="button" class="otw-quiet" data-otw-act="cancel">Not coming</button></div></div></article>'; }
   function renderStrip(){ var L=ST.list.filter(function(d){ return d.status==='on_the_way'; }).sort(function(a,b){ return (ms(a.eta_at)||9e15)-(ms(b.eta_at)||9e15); });
     if(!L.length){ strip.hidden=true; strip.innerHTML=''; return; }
@@ -3309,12 +3270,12 @@ try{
     var w=document.createElement('div'); w.id='otwKey'; w.className='otw-key-scrim';
     w.innerHTML='<div class="otw-key" role="dialog" aria-modal="true" aria-labelledby="otwKeyT"><h3 id="otwKeyT">Drive times from Google Maps</h3>'
       +'<p>Paste the browser key from the hospital’s Google Cloud project. Restrict it to shoreline.pravix.app and the Maps JavaScript API with Routes. Only the town a family is coming from is sent to Google.</p>'
-      +'<label><span>Browser key</span><input id="otwKeyIn" type="text" autocomplete="off" spellcheck="false" value="'+esc(ST.key||'')+'"></label>'
+      +'<label><span>Browser key</span><input id="otwKeyIn" type="text" autocomplete="off" spellcheck="false" value="'+pvxEscQ(ST.key||'')+'"></label>'
       +'<div class="otw-key-acts"><button type="button" class="otw-quiet" data-k="cancel">Cancel</button><button type="button" class="otw-primary" data-k="save">Save</button></div></div>';
     document.body.appendChild(w); var inp=document.getElementById('otwKeyIn'); if(inp) inp.focus();
     w.addEventListener('click',function(e){ var k=e.target.closest('[data-k]'); if(e.target===w||(k&&k.dataset.k==='cancel')){ w.remove(); return; }
-      if(k&&k.dataset.k==='save'){ var v=String(inp.value||'').trim(), D=db(); if(!D) return;
-        D.collection('ts_settings').doc('maps').set({browser_key:v||null, updated_at:iso(Date.now()), updated_by:email()},{merge:true}).then(function(){ ST.key=v||null; ST.keyLoaded=true; gP=null; w.remove(); note('Google Maps key saved',''); lookup(); })
+      if(k&&k.dataset.k==='save'){ var v=String(inp.value||'').trim(), D=pvxDb(); if(!D) return;
+        D.collection('ts_settings').doc('maps').set({browser_key:v||null, updated_at:iso(Date.now()), updated_by:pvxEmail()},{merge:true}).then(function(){ ST.key=v||null; ST.keyLoaded=true; gP=null; w.remove(); pvxNote('Google Maps key saved',''); lookup(); })
           .catch(function(){ try{ toast('Not saved — only an admin can change it'); }catch(e){} }); } });
     w.addEventListener('keydown',function(e){ if(e.key==='Escape'){ e.stopPropagation(); w.remove(); } }); }
 
@@ -3401,12 +3362,8 @@ try{
   var OP_COUNT=8;   /* vitals, pain and weight */
   function defaultOrders(h,board){ var out={}; DEFAULTS.forEach(function(r,i){ if(board==='OP'&&i>=OP_COUNT) return; var id='d'+(i+1);
     out[id]={id:id,name:r[0],type:r[1],section:r[2],freq:r[3],start:r[5]!=null?r[5]:((h||0)+1)%4}; if(r[4]) out[id].unit=r[4]; }); return out; }
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function sheetId(p){ if(p&&p.tsSheetId) return String(p.tsSheetId); return 'v_'+String(p.id||p.hid||'').replace(/[\/\s.#$\[\]]/g,'_'); }
   function ready(){ return typeof DB!=='undefined'&&DB&&!(typeof LOBBY!=='undefined'&&LOBBY); }
-  function me(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
-    var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
-    return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
   function doctorName(id){ try{ var L=(typeof rdAllDoctors==='function')?rdAllDoctors():(DOCTORS||[]); var d=L.find(function(x){ return x.id===id; }); return d?d.name:''; }catch(e){ return ''; } }
   /* Triage weight (measured) always wins over the weight typed at check-in. */
   function triageKg(p){ var v=p&&p.triage&&p.triage.vitals&&p.triage.vitals.weight; if(v==null||String(v).trim()==='') return null;
@@ -3431,8 +3388,7 @@ try{
   /* ---- triage → sheet: each triage reading becomes a completed entry at the triage time ---- */
   var TRI_MAP={temp:'Temperature',hr:'Heart Rate',rr:'Respiratory Rate',weight:'Weight',mentation:'Mentation',mm:'Mucous Membrane',crt:'CRT'};
   var NUMERIC={temp:1,hr:1,rr:1,weight:1};
-  function pad(n){ return (n<10?'0':'')+n; }
-  function dayKeyOf(d){ return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate()); }
+  function dayKeyOf(d){ return d.getFullYear()+pvxPad2(d.getMonth()+1)+pvxPad2(d.getDate()); }
   function triageTime(p,t){
     var base=p.arrival?new Date(p.arrival):new Date(), m=String(t.at||'').match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i);
     if(!m) return new Date();
@@ -3462,18 +3418,18 @@ try{
   function announce(p,id,res,board){
     var t={created:board==='OP'?'Treatment sheet ready · OP':'Treatment sheet ready',promoted:'Sheet moved to IP Board',reopened:'Treatment sheet reopened'}[res];
     if(!t) return;
-    try{ notify(t, esc(p.name||'Patient')+' · <a href="'+openLink(id)+'" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open sheet ›</a>',
+    try{ notify(t, pvxEsc(p.name||'Patient')+' · <a href="'+openLink(id)+'" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open sheet ›</a>',
       {icon:'info',color:'var(--s-admitted)',dur:9000}); }catch(e){}
   }
   function fail(p,e){ console.warn('[flow→sheet]',e);
-    try{ notify('Couldn’t open a treatment sheet',esc(p.name||'')+' · <a href="/treatment/" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open Treatment Sheets ›</a>',{icon:'info',color:'var(--priority-p1)',dur:7000}); }catch(_){} }
+    try{ notify('Couldn’t open a treatment sheet',pvxEsc(p.name||'')+' · <a href="/treatment/" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open Treatment Sheets ›</a>',{icon:'info',color:'var(--priority-p1)',dur:7000}); }catch(_){} }
 
   /* Create the sheet on `board`, or promote OP → IP. createOnly: never reopen a closed sheet (used by background sweeps). */
   function ensureSheet(p,board,opts){
     opts=opts||{};
     if(!ready()||!p) return Promise.resolve(null);
     var id=sheetId(p); if(id==='v_') return Promise.resolve(null);
-    var ref=DB.collection(COL).doc(id), who=me(), now=new Date(), FV=firebase.firestore.FieldValue, pt=patientFor(p), nm=esc((pt.name+' '+pt.last).trim()), outB=board;
+    var ref=DB.collection(COL).doc(id), who=pvxMe(), now=new Date(), FV=firebase.firestore.FieldValue, pt=patientFor(p), nm=pvxEsc((pt.name+' '+pt.last).trim()), outB=board;
     return DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(snap.exists){
         var d=snap.data()||{}, cur=d.board||'IP'; outB=cur;
@@ -3499,7 +3455,7 @@ try{
         source:board==='OP'?'flow-treatment':'flow',created_at:now.toISOString(),
         admitted_at:(board==='IP'&&p.admittedAt?new Date(p.admittedAt):now).toISOString(),created_by:who.name,created_uid:who.uid,patient:pt,
         orders:defaultOrders(now.getHours(),board),notes:[],digest_dirty:true,
-        audit:[audit((board==='OP'?'Moved to Treatment in Flow — <b>':'Admitted from Flow — <b>')+nm+'</b>'+(pt.doctor?' · '+esc(pt.doctor):''),who,now)],
+        audit:[audit((board==='OP'?'Moved to Treatment in Flow — <b>':'Admitted from Flow — <b>')+nm+'</b>'+(pt.doctor?' · '+pvxEsc(pt.doctor):''),who,now)],
         updated_at:now.toISOString(),updated_by:who.initials};
       if(board==='OP') doc.op_at=now.toISOString(); else doc.ip_at=now.toISOString();
       writeDays(t,id,byDay(triageMarks(p,doc.orders,who)),now.toISOString());
@@ -3516,7 +3472,7 @@ try{
   /* Discharged / euthanized from Flow: close an OP sheet. IP sheets are left alone. */
   function closeOP(p,why){
     if(!ready()||!p) return;
-    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date();
+    var ref=DB.collection(COL).doc(sheetId(p)), who=pvxMe(), now=new Date();
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return; var d=snap.data()||{};
       if(d.status!=='active'||(d.board||'IP')!=='OP') return;
@@ -3530,7 +3486,7 @@ try{
      (unless someone already charted on it). */
   function undoSheet(p){
     if(!ready()||!p||p.status==='Admitted') return;
-    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=pvxMe(), now=new Date(), FV=firebase.firestore.FieldValue;
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return 'none'; var d=snap.data()||{};
       if(d.status!=='active'||(d.board||'IP')!=='IP') return 'skip';
@@ -3540,35 +3496,31 @@ try{
       t.update(ref,{status:'closed',closed_at:now.toISOString(),closed_reason:'Admission undone',updated_at:now.toISOString(),updated_by:who.initials,
         audit:FV.arrayUnion(audit('Admission undone in Flow — sheet closed',who,now))});
       return 'undone';
-    }); }).then(function(r){ try{ if((r==='demoted'||r==='undone')&&window.fvSheetSeen) fvSheetSeen(p,r,r==='demoted'?'OP':null); }catch(e){} if(r==='kept'){ try{ notify('Treatment sheet kept',esc(p.name||'')+' · it already has charting',{icon:'info',color:'var(--accent)'}); }catch(e){} } })
+    }); }).then(function(r){ try{ if((r==='demoted'||r==='undone')&&window.fvSheetSeen) fvSheetSeen(p,r,r==='demoted'?'OP':null); }catch(e){} if(r==='kept'){ try{ notify('Treatment sheet kept',pvxEsc(p.name||'')+' · it already has charting',{icon:'info',color:'var(--accent)'}); }catch(e){} } })
       .catch(function(e){ console.warn('[flow→sheet undo]',e); });
   }
 
   /* ---- hooks ---- */
-  var origComplete=completePatient;
-  window.completePatient=completePatient=function(p,finalStatus){
-    var r=origComplete.apply(this,arguments);
+  pvxAfter('completePatient',function(p,finalStatus){
     if(p&&!p._demo){ try{
       if(finalStatus==='Admitted') ensureSheet(p,'IP').then(function(){ setTimeout(function(){ pullEstimate(p); pushEstimate(p); },400); });
       else if(finalStatus==='Discharged'||finalStatus==='Euthanized'||finalStatus==='Deceased') closeOP(p,finalStatus);
     }catch(e){ console.warn(e); } }
-    return r;
-  };
+  },'#23');
   if(typeof moveRoom==='function'){
-    var origMove=moveRoom;
-    window.moveRoom=moveRoom=function(p,newRoom){
+    pvxWrap('moveRoom',function(origMove){ return function(p,newRoom){
       var was=p&&p.room, r=origMove.apply(this,arguments);
       if(p&&!p._demo&&newRoom==='Treatment'&&was!=='Treatment'&&p.room==='Treatment'){ try{
         var active=(typeof isActive==='function')?isActive(p):!p.completed;
         if(active){ ensured[p.id]=1; ensureSheet(p,p.status==='Hospitalized'?'IP':'OP'); }
       }catch(e){ console.warn(e); } }
       return r;
-    };
+    }; },'#23');
   }
   /* Triage edited after the sheet exists: refresh the triage entries on an open sheet. */
   function syncTriage(p){
     if(!ready()||!p||p._demo) return;
-    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date();
+    var ref=DB.collection(COL).doc(sheetId(p)), who=pvxMe(), now=new Date();
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return; var d=snap.data()||{}; if(d.status!=='active') return;
       var tm=triageMarks(p,d.orders||{},who), upd=weightFix(p,d,{}), id=sheetId(p);
@@ -3620,7 +3572,7 @@ try{
   function pushEstimate(p,why){
     if(!ready()||!p||p._demo) return; var r=roundsEst(p); if(!r) return;
     var sig=r.low+'|'+r.high+'|'+r.current+'|'+r.deposit; if(lastEstSig[p.id]===sig) return; lastEstSig[p.id]=sig;
-    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=pvxMe(), now=new Date(), FV=firebase.firestore.FieldValue;
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return; var d=snap.data()||{}; if(d.status!=='active') return;
       var e=(d.estimate&&typeof d.estimate==='object')?d.estimate:null; if(sameEst(e,r)) return;
@@ -3641,8 +3593,7 @@ try{
     }).catch(function(){});
   }
   if(typeof rdTouch==='function'){
-    var origTouch=rdTouch;
-    window.rdTouch=rdTouch=function(p,what){ var r=origTouch.apply(this,arguments); try{ if(p) pushEstimate(p,what); }catch(e){} return r; };
+    pvxAfter('rdTouch',function(p,what){ try{ if(p) pushEstimate(p,what); }catch(e){} },'#23');
   }
   /* ---- code status: Flow's CPR / DNR (staff or client via Care Connect) → the sheet ----
      DNR always wins. CPR keeps a more specific ALS / BLS the team set on the sheet. */
@@ -3650,7 +3601,7 @@ try{
   function syncCode(p){
     if(!ready()||!p||p._demo) return; var pref=p.resusPref; if(pref!=='CPR'&&pref!=='DNR') return;
     if(lastCode[p.id]===pref) return; lastCode[p.id]=pref;
-    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=pvxMe(), now=new Date(), FV=firebase.firestore.FieldValue;
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists){ delete lastCode[p.id]; return; }
       var d=snap.data()||{}; if(d.status==='discharged'||d.status==='closed') return;
@@ -3669,21 +3620,20 @@ try{
   function flagsFor(p){ return (Array.isArray(p&&p.flags)?p.flags:[]).filter(function(f){ return f&&f.t&&FLAG_K[f.k]; }).slice(0,30).map(function(f){ return {k:f.k,t:String(f.t).slice(0,40),scope:f.scope==='visit'?'visit':'always'}; }); }
   function syncFlags(p){
     if(!ready()||!p||p._demo) return; var L=flagsFor(p), sig=JSON.stringify(L); if(lastFlags[p.id]===sig) return; lastFlags[p.id]=sig;
-    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=pvxMe(), now=new Date(), FV=firebase.firestore.FieldValue;
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists){ delete lastFlags[p.id]; return; }
       var d=snap.data()||{}; if(d.status==='discharged'||d.status==='closed') return;
       var had=JSON.stringify((d.patient&&d.patient.flags)||[]); if(had===sig) return;
       t.update(ref,{'patient.flags':L,updated_at:now.toISOString(),updated_by:who.initials,
-        audit:FV.arrayUnion(audit('Flags from Flow — '+(L.length?L.map(function(f){ return '<b>'+esc(f.t)+'</b>'; }).join(', '):'none'),who,now))});
+        audit:FV.arrayUnion(audit('Flags from Flow — '+(L.length?L.map(function(f){ return '<b>'+pvxEsc(f.t)+'</b>'; }).join(', '):'none'),who,now))});
     }); }).catch(function(e){ delete lastFlags[p.id]; console.warn('[flow→sheet flags]',e); });
   }
   function sweepCodes(){ try{ (PATIENTS||[]).forEach(function(p){ if(!p) return; var on=p.room==='Treatment'||p.status==='Hospitalized'||p.status==='Admitted'||ensured[p.id]||(p.tsSheet&&p.tsSheet.board);
       if(on){ syncCode(p); syncFlags(p); } }); }catch(e){} }
   setInterval(function(){ var u=null; try{ u=AUTH&&AUTH.currentUser; }catch(e){} if(u&&typeof PATIENTS!=='undefined') sweepCodes(); },8000);
   if(typeof setResusPref==='function'){
-    var origResus=setResusPref;
-    window.setResusPref=setResusPref=function(p,pref){ var r=origResus.apply(this,arguments); try{ if(p){ delete lastCode[p.id]; syncCode(p); } }catch(e){} return r; };
+    pvxAfter('setResusPref',function(p,pref){ try{ if(p){ delete lastCode[p.id]; syncCode(p); } }catch(e){} },'#23');
   }
   /* ---- Technician: replaces the Care Team card in the drawer; the tech follows the patient onto the treatment sheet (and My Board) ---- */
   var TECH_COLOR='#38BDD2';
@@ -3695,7 +3645,7 @@ try{
   function setTech(p,id){
     var cur=techNow(p); if(id==='none'?!cur:(cur&&cur.staffId===id)) return;
     ctCurrent(p,'technician').slice().forEach(function(a){ ctEndAssignment(p,a,id==='none'?'unassigned':'replaced'); });
-    if(id==='none'){ p.timeline.push({label:'Technician unassigned',at:new Date(),meta:CURRENT_USER}); notify('Technician removed',esc(p.name||''),{icon:'doctor',color:'var(--accent)'}); renderAll(); if(activePatient===p.id) fillDrawer(p); }
+    if(id==='none'){ p.timeline.push({label:'Technician unassigned',at:new Date(),meta:CURRENT_USER}); notify('Technician removed',pvxEsc(p.name||''),{icon:'doctor',color:'var(--accent)'}); renderAll(); if(activePatient===p.id) fillDrawer(p); }
     else { var it=(window.FV_TECHS||[]).map(techItem).find(function(x){ return x.id===id; })||(cur&&cur.staffId===id?techItem(cur.staffName):null); if(!it) return;
       ctAssign(p,'technician',{id:it.id,name:it.name,kind:'manual'}); }
     delete lastTech[p.id]; setTimeout(function(){ syncTech(p); },300);
@@ -3705,12 +3655,12 @@ try{
   function syncTech(p){
     if(!ready()||!p||p._demo||typeof ctList!=='function') return; var at=techAt(p); if(!at) return;
     var cur=techNow(p), name=cur?(cur.staffName||null):null, sig=(name||'')+'|'+at; if(lastTech[p.id]===sig) return; lastTech[p.id]=sig;
-    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=pvxMe(), now=new Date(), FV=firebase.firestore.FieldValue;
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return; var d=snap.data()||{}, pt=d.patient||{}; if(d.status==='closed') return;
       if((pt.tech||null)===name) return; if(String(pt.tech_at||'')>at) return;
       t.update(ref,{'patient.tech':name,'patient.tech_at':at,updated_at:now.toISOString(),updated_by:who.initials,
-        audit:FV.arrayUnion(audit(name?'Technician assigned in Flow — <b>'+esc(name)+'</b>':'Technician unassigned in Flow',who,now))});
+        audit:FV.arrayUnion(audit(name?'Technician assigned in Flow — <b>'+pvxEsc(name)+'</b>':'Technician unassigned in Flow',who,now))});
     }); }).catch(function(e){ delete lastTech[p.id]; console.warn('[flow→sheet tech]',e); });
   }
   /* Flow → sheet: the current doctor (Flow's doctor / Rounds' Current) and Rounds' Next doctor — a handoff in either app shows in both */
@@ -3719,12 +3669,12 @@ try{
     if(!ready()||!p||p._demo) return; var cur=(p.doctor&&p.doctor!=='unassigned')?doctorName(p.doctor):'';
     var inRounds=!!(p.rounds&&typeof p.rounds==='object'), nx=inRounds&&p.rounds.next, nxName=nx&&nx.docId?doctorName(nx.docId):'';
     var sig=cur+'|'+(inRounds?nxName:'~'); if(lastDoc[p.id]===sig) return; lastDoc[p.id]=sig;
-    var ref=DB.collection(COL).doc(sheetId(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    var ref=DB.collection(COL).doc(sheetId(p)), who=pvxMe(), now=new Date(), FV=firebase.firestore.FieldValue;
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists) return; var d=snap.data()||{}, pt=d.patient||{}, upd={}, msg=[]; if(d.status==='closed') return;
-      if(cur&&pt.doctor!==cur){ upd['patient.doctor']=cur; upd['patient.doctor_at']=now.toISOString(); msg.push('Doctor in Flow — <b>'+esc(cur)+'</b>'); }
+      if(cur&&pt.doctor!==cur){ upd['patient.doctor']=cur; upd['patient.doctor_at']=now.toISOString(); msg.push('Doctor in Flow — <b>'+pvxEsc(cur)+'</b>'); }
       if(inRounds){ var have=(pt.doctor_next&&pt.doctor_next.name)||''; if(have!==nxName&&!(nxName&&nxName===(upd['patient.doctor']||pt.doctor))){
-        upd['patient.doctor_next']=nxName?{name:nxName,at:nx.at||now.toISOString(),by:nx.by||'Rounds'}:null; msg.push(nxName?'Next doctor in Rounds — <b>'+esc(nxName)+'</b>':'Next doctor cleared in Rounds'); } }
+        upd['patient.doctor_next']=nxName?{name:nxName,at:nx.at||now.toISOString(),by:nx.by||'Rounds'}:null; msg.push(nxName?'Next doctor in Rounds — <b>'+pvxEsc(nxName)+'</b>':'Next doctor cleared in Rounds'); } }
       if(!msg.length) return;
       upd.updated_at=now.toISOString(); upd.updated_by=who.initials; upd.audit=FV.arrayUnion(audit(msg.join(' · '),who,now)); t.update(ref,upd);
     }); }).catch(function(e){ delete lastDoc[p.id]; console.warn('[flow→sheet doctor]',e); });
@@ -3756,14 +3706,9 @@ try{
     'Splenectomy':'Soft Tissue','Exploratory Laparotomy':'Soft Tissue','Foreign Body Removal':'Soft Tissue','Cystotomy':'Soft Tissue','Mass Removal':'Soft Tissue',
     'Thoracotomy':'Soft Tissue','Total Ear Canal Ablation':'Soft Tissue','Liver Lobectomy':'Soft Tissue','Perineal Urethrostomy':'Soft Tissue'};
   var LIVE_ST=['in_room','anesthesia_started','procedure_started','closing','procedure_finished'], REC_ST=['out_of_room','recovery'], DONE_ST=['recovery_complete','out_of_recovery','complete'];
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  function pad(n){ return (n<10?'0':'')+n; }
-  function isoDay(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
-  function clock(iso){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d)) return ''; var h=d.getHours(), m=d.getMinutes(); return (h%12||12)+':'+pad(m)+' '+(h<12?'AM':'PM'); }
-  function minClock(m){ var h=Math.floor(m/60)%24, mm=Math.round(m%60); return (h%12||12)+':'+pad(mm)+' '+(h<12?'AM':'PM'); }
-  function me(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
-    var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
-    return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
+  function isoDay(d){ return d.getFullYear()+'-'+pvxPad2(d.getMonth()+1)+'-'+pvxPad2(d.getDate()); }
+  function clock(iso){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d)) return ''; var h=d.getHours(), m=d.getMinutes(); return (h%12||12)+':'+pvxPad2(m)+' '+(h<12?'AM':'PM'); }
+  function minClock(m){ var h=Math.floor(m/60)%24, mm=Math.round(m%60); return (h%12||12)+':'+pvxPad2(mm)+' '+(h<12?'AM':'PM'); }
   function ok(){ return !LOBBY&&typeof DB!=='undefined'&&DB&&window.fvAdmitSheet&&!document.body.classList.contains('client-mode')&&!document.body.classList.contains('tv-mode'); }
   function curP(p){ return (p&&typeof PATIENTS!=='undefined'&&PATIENTS.find(function(x){ return x.id===p.id; }))||p; }
   function today(s){ return !!s&&String(s.date||'')===isoDay(new Date()); }
@@ -3773,8 +3718,8 @@ try{
   /* ---------- the board card ---------- */
   window.fvOrChip=function(p){ var s=p&&p.orStatus; if(!s||!open(s)||(!today(s)&&LIVE_ST.indexOf(s.status)<0&&REC_ST.indexOf(s.status)<0)) return '';
     var live=LIVE_ST.indexOf(s.status)>-1, rec=REC_ST.indexOf(s.status)>-1;
-    var t=live?'In surgery · '+esc(s.room):rec?'Recovery':esc(s.room)+' · '+clock(s.sched).replace(' ',' ');
-    return '<div class="fv-or-chip'+(live?' live':rec?' rec':'')+'" title="'+esc((s.proc||'Surgery')+' · '+(s.surgeon||'')+' · '+(s.label||''))+'"><i></i>'+t+'</div>'; };
+    var t=live?'In surgery · '+pvxEsc(s.room):rec?'Recovery':pvxEsc(s.room)+' · '+clock(s.sched).replace(' ',' ');
+    return '<div class="fv-or-chip'+(live?' live':rec?' rec':'')+'" title="'+pvxEsc((s.proc||'Surgery')+' · '+(s.surgeon||'')+' · '+(s.label||''))+'"><i></i>'+t+'</div>'; };
 
   /* ---------- the drawer: Surgery ---------- */
   var SG_IC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg>';
@@ -3782,21 +3727,21 @@ try{
     var head='<div class="rec-ic">'+SG_IC+'</div><div class="rec-title">Surgery</div>';
     if(!booked||(!open(s)&&!today(s))) return '<div class="rec-card fv-or-card"><div class="rec-head">'+head+'<button class="rec-req" type="button" data-fvor="book">Book surgery…</button></div></div>';
     var st=LIVE_ST.indexOf(s.status)>-1?'live':REC_ST.indexOf(s.status)>-1?'rec':DONE_ST.indexOf(s.status)>-1?'done':'sched';
-    var chip='<span class="rec-chip fv-or-st '+st+'">'+esc(st==='done'?(s.dest?'Done · '+s.dest:'Done'):s.label||'Scheduled')+'</span>';
+    var chip='<span class="rec-chip fv-or-st '+st+'">'+pvxEsc(st==='done'?(s.dest?'Done · '+s.dest:'Done'):s.label||'Scheduled')+'</span>';
     var when=(today(s)?'':String(s.date||'').slice(5).replace('-','/')+' ')+clock(s.sched);
-    var line=[s.proc,s.room,st==='sched'?when:st==='live'?'in '+clock(s.in):st==='rec'?'out '+clock(s.out):'',s.surgeon].filter(Boolean).map(esc).join(' · ');
+    var line=[s.proc,s.room,st==='sched'?when:st==='live'?'in '+clock(s.in):st==='rec'?'out '+clock(s.out):'',s.surgeon].filter(Boolean).map(pvxEsc).join(' · ');
     return '<div class="rec-card fv-or-card"><div class="rec-head">'+head+chip+'<a class="rec-link" href="'+caseLink(s.case)+'" target="_blank" rel="noopener">Open in OR</a></div><div class="rec-summary">'+line+'</div></div>'; }
   function mount(p){ var m=document.getElementById('fvOrMount');
     if(!m){ var r=document.getElementById('recordsMount'); if(!r) return; m=document.createElement('div'); m.id='fvOrMount'; r.insertAdjacentElement('afterend',m); }
     if(!p||p._demo&&!window.FV_OR_DEMO){ m.innerHTML=''; return; } m.innerHTML=card(p); m.setAttribute('data-pid',p.id); }
-  if(typeof fillDrawer==='function'){ var _fd=fillDrawer;
-    window.fillDrawer=fillDrawer=function(p){ var r=_fd.apply(this,arguments); try{ if(ok()||window.FV_OR_DEMO) mount(p); }catch(e){ console.warn('[flow OR card]',e); } return r; }; }
+  if(typeof fillDrawer==='function'){ 
+    pvxAfter('fillDrawer',function(p){ try{ if(ok()||window.FV_OR_DEMO) mount(p); }catch(e){ console.warn('[flow OR card]',e); } },'#24'); }
   document.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('[data-fvor="book"]'); if(!b) return; e.preventDefault();
     var m=document.getElementById('fvOrMount'), id=m&&m.getAttribute('data-pid'), p=id&&PATIENTS.find(function(x){ return String(x.id)===id; }); if(p) bookOpen(p); });
 
   /* ---------- Book surgery ---------- */
   var BK=null;
-  function seg(name,opts,val){ return '<div class="ap-seg fv-or-seg" data-seg="'+name+'" style="grid-template-columns:repeat('+opts.length+',1fr)">'+opts.map(function(o){ return '<button type="button" class="ap-seg-btn'+(o[0]===val?' active':'')+'" data-v="'+esc(o[0])+'">'+esc(o[1])+'</button>'; }).join('')+'</div>'; }
+  function seg(name,opts,val){ return '<div class="ap-seg fv-or-seg" data-seg="'+name+'" style="grid-template-columns:repeat('+opts.length+',1fr)">'+opts.map(function(o){ return '<button type="button" class="ap-seg-btn'+(o[0]===val?' active':'')+'" data-v="'+pvxEsc(o[0])+'">'+pvxEsc(o[1])+'</button>'; }).join('')+'</div>'; }
   function segVal(name){ var b=document.querySelector('#fvOrModal [data-seg="'+name+'"] .active'); return b?b.getAttribute('data-v'):''; }
   function ensureModal(){ if(document.getElementById('fvOrModal')) return;
     var sc=document.createElement('div'); sc.className='addpt-scrim'; sc.id='fvOrScrim'; sc.onclick=bookClose;
@@ -3815,11 +3760,11 @@ try{
     var days=[[isoDay(d),'Today']]; for(var i=1;i<=7;i++){ var x=new Date(d); x.setDate(d.getDate()+i); days.push([isoDay(x),i===1?'Tomorrow':x.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})]); }
     document.getElementById('fvOrSub').textContent=((p.name||'')+' '+(p.last||'')).trim();
     document.getElementById('fvOrBody').innerHTML=
-      '<div class="ap-sect"><h4>Procedure</h4><div class="ap-grid c2"><div class="ap-field"><label for="fvOrProc">Procedure</label><input class="ap-input" id="fvOrProc" list="fvOrProcs" placeholder="e.g. Foreign Body Removal" autocomplete="off" value="'+esc(/foreign body/i.test(p.reason||'')?'Foreign Body Removal':'')+'"><datalist id="fvOrProcs">'+Object.keys(PROC).map(function(k){ return '<option value="'+esc(k)+'">'; }).join('')+'</datalist></div>'
+      '<div class="ap-sect"><h4>Procedure</h4><div class="ap-grid c2"><div class="ap-field"><label for="fvOrProc">Procedure</label><input class="ap-input" id="fvOrProc" list="fvOrProcs" placeholder="e.g. Foreign Body Removal" autocomplete="off" value="'+pvxEsc(/foreign body/i.test(p.reason||'')?'Foreign Body Removal':'')+'"><datalist id="fvOrProcs">'+Object.keys(PROC).map(function(k){ return '<option value="'+pvxEsc(k)+'">'; }).join('')+'</datalist></div>'
       +'<div class="ap-field"><label>Side</label>'+seg('lat',[['','None'],['Left','Left'],['Right','Right'],['Bilateral','Both']],'')+'</div></div></div>'
       +'<div class="ap-sect"><h4>Team &amp; room</h4><div class="ap-grid c2"><div class="ap-field"><label>Surgeon</label>'+seg('surgeon',SURGEONS.map(function(s){ return [s.id,s.name]; }),'')+'</div>'
       +'<div class="ap-field"><label>Room</label>'+seg('room',ROOMS.map(function(r){ return [r.id,r.name]; }),'or2')+'</div></div></div>'
-      +'<div class="ap-sect"><h4>When</h4><div class="ap-grid c3"><div class="ap-field"><label for="fvOrDate">Day</label><select class="ap-input ap-select" id="fvOrDate">'+days.map(function(x){ return '<option value="'+x[0]+'">'+esc(x[1])+'</option>'; }).join('')+'</select></div>'
+      +'<div class="ap-sect"><h4>When</h4><div class="ap-grid c3"><div class="ap-field"><label for="fvOrDate">Day</label><select class="ap-input ap-select" id="fvOrDate">'+days.map(function(x){ return '<option value="'+x[0]+'">'+pvxEsc(x[1])+'</option>'; }).join('')+'</select></div>'
       +'<div class="ap-field"><label for="fvOrTime">Time</label><select class="ap-input ap-select" id="fvOrTime">'+times.map(function(m){ return '<option value="'+m+'"'+(m===def?' selected':'')+'>'+minClock(m)+'</option>'; }).join('')+'</select></div>'
       +'<div class="ap-field"><label for="fvOrDur">About</label><select class="ap-input ap-select" id="fvOrDur">'+[30,45,60,75,90,120,150,180,240].map(function(m){ return '<option value="'+m+'"'+(m===90?' selected':'')+'>'+(m<60?m+' min':(m%60?Math.floor(m/60)+' h '+m%60+' min':m/60+' h'))+'</option>'; }).join('')+'</select></div></div>'
       +'<div class="ap-field" style="margin-top:13px"><label>Type</label>'+seg('type',[['scheduled','Scheduled'],['addon','Add-on'],['emergency','Emergency']],'addon')+'</div></div>'
@@ -3835,7 +3780,7 @@ try{
     if(!proc){ err('Enter the procedure.'); document.getElementById('fvOrProc').focus(); return; }
     if(!sg){ err('Choose the surgeon.'); return; }
     var lat=segVal('lat')||null, type=segVal('type')||'scheduled', room=segVal('room')||'or2', date=document.getElementById('fvOrDate').value, sched=+document.getElementById('fvOrTime').value, dur=+document.getElementById('fvOrDur').value, note=(document.getElementById('fvOrNote').value||'').trim();
-    var who=me(), at=new Date(), nm=at.getHours()*60+at.getMinutes(), id='c'+at.getTime().toString(36);
+    var who=pvxMe(), at=new Date(), nm=at.getHours()*60+at.getMinutes(), id='c'+at.getTime().toString(36);
     var s={id:id, procedure:proc, laterality:lat, service:PROC[proc]||'Soft Tissue', surgeonId:sg, anesthesiaId:null, techId:null, assistantIds:[], roomId:room, date:date, sched:sched, dur:dur,
       type:type, priority:type==='emergency'?'emergency':type==='addon'?'urgent':'routine', asa:null, status:'scheduled', events:[{status:'scheduled',t:date===isoDay(at)?nm:0}],
       readiness:{}, rman:{}, readinessNotes:{}, delay:null, timeout:{done:false,t:null,checks:{}}, intraop:[], implants:[], specimens:[], kura:[], drugs:[], anesthesia:null, recovery:{}, record:null, prefCardId:null,
@@ -3848,7 +3793,7 @@ try{
       return DB.runTransaction(function(t){ return t.get(ref).then(function(snap){ var d=snap.exists&&snap.data(); if(!d) throw new Error('no sheet');
         var old=d.surgery; if(old&&open(old)&&old.id) throw new Error('booked:'+(old.procedure||''));
         var upd={surgery:s, updated_at:at.toISOString(), updated_by:who.initials,
-          audit:FV.arrayUnion({at:at.toISOString(),type:'doctor',desc:'Surgery booked in Flow — <b>'+esc(proc+(lat?' — '+lat:''))+'</b> · '+esc((ROOMS.find(function(r){ return r.id===room; })||{}).name||'OR')+' · '+minClock(sched)+' · '+esc((SURGEONS.find(function(x){ return x.id===sg; })||{}).name||''),who:who.initials,uid:who.uid})};
+          audit:FV.arrayUnion({at:at.toISOString(),type:'doctor',desc:'Surgery booked in Flow — <b>'+pvxEsc(proc+(lat?' — '+lat:''))+'</b> · '+pvxEsc((ROOMS.find(function(r){ return r.id===room; })||{}).name||'OR')+' · '+minClock(sched)+' · '+pvxEsc((SURGEONS.find(function(x){ return x.id===sg; })||{}).name||''),who:who.initials,uid:who.uid})};
         if(old&&old.id) upd.surgery_past=FV.arrayUnion(old);
         var al=p.intake&&p.intake.allergies; if(al&&String(al).trim()) upd['patient.allergies']=String(al).trim().slice(0,200);
         t.update(ref,upd); }); }); })
@@ -3860,7 +3805,7 @@ try{
     var d=new Date(s.date+'T00:00:00'); d.setMinutes(s.sched);
     return {case:s.id,status:'scheduled',label:'Scheduled',stage:'scheduled',room:r.name,proc:s.procedure+(s.laterality?' — '+s.laterality:''),surgeon:sg?sg.name:'',date:s.date,sched:d.toISOString(),in:null,out:null,dest:null,sent:false}; }
   function done(p,s){ try{ p.timeline=p.timeline||[]; p.timeline.push({label:'Surgery booked',at:new Date(),meta:s.procedure+' · '+(statusOf(s).room)+' · '+minClock(s.sched)}); }catch(e){}
-    try{ notify('Surgery booked', esc(p.name||'Patient')+' · '+esc(s.procedure)+' · <a href="'+caseLink(s.id)+'" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open in OR ›</a>',{icon:'info',color:'var(--accent)',dur:8000}); }catch(e){}
+    try{ notify('Surgery booked', pvxEsc(p.name||'Patient')+' · '+pvxEsc(s.procedure)+' · <a href="'+caseLink(s.id)+'" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700;text-decoration:none">Open in OR ›</a>',{icon:'info',color:'var(--accent)',dur:8000}); }catch(e){}
     try{ if(typeof renderAll==='function') renderAll(); }catch(e){} try{ if(typeof fillDrawer==='function'&&typeof activePatient!=='undefined'&&activePatient===p.id) fillDrawer(p); else mount(p); }catch(e){} }
   window.fvBookSurgery=bookOpen;
 
@@ -3914,12 +3859,7 @@ try{
   var OUT={home:'Discharged',ama:'Discharged',transfer:'Transferred',euth:'Euthanized',died:'Deceased',error:'Admitted in error'};
   var LEGACY={discharged:'Discharged',transferred:'Transferred',deceased:'Deceased',cancelled:'Admitted in error'};
   var LIKELY={likely:'Likely today',possible:'Possible today'};
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  function pad(n){ return (n<10?'0':'')+n; }
-  function dk(d){ return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate()); }
-  function me(){ var u=null; try{ u=(typeof AUTH!=='undefined'&&AUTH&&AUTH.currentUser)||null; }catch(e){}
-    var name=(typeof CURRENT_USER==='string'&&CURRENT_USER)||(u&&(u.displayName||u.email))||'Flow';
-    return {name:name,uid:u?u.uid:null,initials:name.split(/\s+/).map(function(w){ return w[0]||''; }).join('').slice(0,2).toUpperCase()}; }
+  function dk(d){ return d.getFullYear()+pvxPad2(d.getMonth()+1)+pvxPad2(d.getDate()); }
   function ok(){ return !LOBBY&&typeof DB!=='undefined'&&DB&&window.fvAdmitSheet&&!document.body.classList.contains('client-mode')&&!document.body.classList.contains('tv-mode'); }
   function signedIn(){ try{ return !!(AUTH&&AUTH.currentUser); }catch(e){ return false; } }
   function sid(p){ return fvAdmitSheet.id(p); }
@@ -3934,13 +3874,13 @@ try{
   var lastPlan={};
   function syncPlan(p){
     if(!ok()||!p||p._demo||!inRounds(p)) return; var pl=planFor(p), sig=JSON.stringify(pl); if(lastPlan[p.id]===sig) return; lastPlan[p.id]=sig;
-    var ref=DB.collection('sheets').doc(sid(p)), who=me(), now=new Date(), FV=firebase.firestore.FieldValue;
+    var ref=DB.collection('sheets').doc(sid(p)), who=pvxMe(), now=new Date(), FV=firebase.firestore.FieldValue;
     DB.runTransaction(function(t){ return t.get(ref).then(function(snap){
       if(!snap.exists){ delete lastPlan[p.id]; return; }
       var d=snap.data()||{}, had=(d.patient&&d.patient.discharge_plan)||null; if(d.status==='closed') return;
       if(JSON.stringify(had)===sig) return;
       var upd={'patient.discharge_plan':pl,updated_at:now.toISOString(),updated_by:who.initials};
-      if((had&&had.k)!==(pl&&pl.k)) upd.audit=FV.arrayUnion({at:now.toISOString(),type:'doctor',desc:pl?'Discharge planned in Rounds — <b>'+esc(pl.label)+'</b>':'Discharge plan cleared in Rounds',who:who.initials,uid:who.uid});
+      if((had&&had.k)!==(pl&&pl.k)) upd.audit=FV.arrayUnion({at:now.toISOString(),type:'doctor',desc:pl?'Discharge planned in Rounds — <b>'+pvxEsc(pl.label)+'</b>':'Discharge plan cleared in Rounds',who:who.initials,uid:who.uid});
       t.update(ref,upd);
     }); }).catch(function(e){ delete lastPlan[p.id]; console.warn('[rounds→sheet discharge]',e); });
   }
@@ -3957,7 +3897,7 @@ try{
     try{ rdTouch(p,'Admission ended on the treatment sheet · '+lab); }catch(e){ try{ renderAll(); }catch(_){} }
     if(p.status==='Hospitalized'&&!p.completed){ try{ completePatient(p,(type==='Euthanized'||type==='Deceased')?type:'Discharged'); }catch(e){} }   /* a direct admit leaves the board too */
     try{ if(window.fvSheetSeen) fvSheetSeen(p,'closed'); }catch(e){}
-    try{ notify(type==='Discharged'?'Went home':type,esc(((p.name||'')+' '+(p.last||'')).trim())+' · '+esc(lab)+' on the treatment sheet',{icon:'info',color:'var(--s-admitted)',dur:7000}); }catch(e){}
+    try{ notify(type==='Discharged'?'Went home':type,pvxEsc(((p.name||'')+' '+(p.last||'')).trim())+' · '+pvxEsc(lab)+' on the treatment sheet',{icon:'info',color:'var(--s-admitted)',dur:7000}); }catch(e){}
     return true; }
   var claimed={};
   /* one screen ends it: claim the closed sheet first (rounds_ended_at), so two Flow screens never write the ending twice */
@@ -3965,7 +3905,7 @@ try{
     var p=(PATIENTS||[]).find(function(x){ return x&&!x._demo&&sid(x)===id; }); if(!p||!inRounds(p)||!outcomeOf(d)) return;
     claimed[id]=1; var ref=DB.collection('sheets').doc(id), now=new Date().toISOString();
     DB.runTransaction(function(t){ return t.get(ref).then(function(s){ var x=s.exists&&s.data(); if(!x||x.status!=='closed'||x.rounds_ended_at) return null;
-        t.update(ref,{rounds_ended_at:now,rounds_ended_by:me().initials}); return x; }); })
+        t.update(ref,{rounds_ended_at:now,rounds_ended_by:pvxMe().initials}); return x; }); })
       .then(function(x){ if(x) endAdmission(p,x); else delete claimed[id]; })
       .catch(function(e){ delete claimed[id]; console.warn('[sheet→rounds discharge]',e); }); }
   /* sheets closed today or yesterday (closed_on, written by the sheet) — a handful of documents, not the whole collection */
@@ -3977,8 +3917,7 @@ try{
 
   /* ---------- Rounds' End admission… → the sheet, when the patient has one open ---------- */
   if(typeof rdSetOutcome==='function'){
-    var origOutcome=rdSetOutcome;
-    window.rdSetOutcome=rdSetOutcome=function(p,type){
+    pvxWrap('rdSetOutcome',function(origOutcome){ return function(p,type){
       if(!ok()||!p||p._demo) return origOutcome.apply(this,arguments);
       var self=this, args=arguments, id=sid(p);
       DB.collection('sheets').doc(id).get().then(function(s){ var d=s.exists&&s.data();
@@ -3987,7 +3926,7 @@ try{
         showConfirm('Discharge '+nm+' on the treatment sheet?','Open sheet',function(){ window.open(sheetLink(id,true),'_blank','noopener'); },
           {sub:'The sheet runs the charge check; Rounds and the board update by themselves.'});   /* PVX-N198 */
       }).catch(function(){ origOutcome.apply(self,args); });
-    };
+    }; },'#25');
   }
 
   /* ---------- the Rounds row chip (admitted patients are on Rounds, not on the Flow board) ---------- */
@@ -4177,7 +4116,7 @@ try{
   /* FL-06 — icon-only close buttons say what they are */
   function closes(root){ (root||document).querySelectorAll('button.close:not([aria-label]),button.drawer-close:not([aria-label])').forEach(function(b){ if(!b.textContent.trim()) b.setAttribute('aria-label','Close'); }); }
   function run(){ try{ assoc(); closes(); }catch(e){} }
-  var t; new MutationObserver(function(){ clearTimeout(t); t=setTimeout(run,120); }).observe(document.documentElement,{childList:true,subtree:true});
+  var t; pvxWatch(function(){ clearTimeout(t); t=setTimeout(run,120); },{childList:true,subtree:true},document.documentElement);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run); else run(); window.addEventListener('load',run);
   /* FL-02 — Open: the name buttons bubble to the row/card handlers the app already has; Enter/Space on the button is a click */
   /* FL-02 — Move…: the same moves a drop would make, with the same confirmations (moveStatus / canDropRoom + moveRoom) */
@@ -4217,7 +4156,7 @@ try{
   });
   /* the case drawer is created on first open, in the same tick it opens, so the overlay primitive (n133) saw it already open and
      never moved focus into it: make sure it exists and is registered before it opens */
-  if(typeof openUsxCase==='function'){ var _oc=openUsxCase; openUsxCase=function(){ try{ if(typeof usxEnsureDrawer==='function') usxEnsureDrawer(); if(window.pvxOverlay&&pvxOverlay.scan) pvxOverlay.scan(); }catch(err){} return _oc.apply(this,arguments); }; }
+  if(typeof openUsxCase==='function'){ pvxBefore('openUsxCase',function(){ try{ if(typeof usxEnsureDrawer==='function') usxEnsureDrawer(); if(window.pvxOverlay&&pvxOverlay.scan) pvxOverlay.scan(); }catch(err){} },'#30'); }
   /* US-03: arrow keys on a grip move the case in the queue — the same renumbering a drop does */
   var toastT=null, usFocus=null;
   /* the queue re-renders again when the save echoes back; keep focus on the moved case's grip through those re-renders */
@@ -4269,8 +4208,7 @@ try{
     radios($('#apArrival'),'Arrival type'); radios($('#apPrio'),'Priority'); tableRegion(); }
   var sRaf=0; function later(){ if(!sRaf) sRaf=requestAnimationFrame(function(){ sRaf=0; selected(); }); }
   function boot(){ selected(); ciTop();
-    new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ var t=ms[i].target; if(t.nodeType===1&&(ms[i].type==='childList'||t.matches('.seg,.ap-seg-btn,.ap-prio-btn,.rd-svcbtn,#rdShiftSeg button'))){ later(); ciLater(); return; } if(ms[i].type==='attributes'&&t.nodeType===1&&/(^|\s)open(\s|$)/.test(t.className||'')!==/(^|\s)open(\s|$)/.test(ms[i].oldValue||'')) ciLater(); } })
-      .observe(document.body,{subtree:true,childList:true,attributes:true,attributeOldValue:true,attributeFilter:['class']});
+    pvxWatch(function(ms){ for(var i=0;i<ms.length;i++){ var t=ms[i].target; if(t.nodeType===1&&(ms[i].type==='childList'||t.matches('.seg,.ap-seg-btn,.ap-prio-btn,.rd-svcbtn,#rdShiftSeg button'))){ later(); ciLater(); return; } if(ms[i].type==='attributes'&&t.nodeType===1&&/(^|\s)open(\s|$)/.test(t.className||'')!==/(^|\s)open(\s|$)/.test(ms[i].oldValue||'')) ciLater(); } },{subtree:true,childList:true,attributes:true,attributeOldValue:true,attributeFilter:['class']},document.body);
     addEventListener('scroll',ciLater,{passive:true,capture:true}); addEventListener('resize',function(){ ciLater(); later(); });
     /* FLOW-14: a blank name is marked on the field itself, stays until fixed, and is announced */
     var nm=$('#apName'), cb=$('#apCreate');
@@ -4301,7 +4239,7 @@ try{
   function nameOf(pid){ try{ var p=PATIENTS.find(function(x){ return x.id===pid; }); return p?(p.name+' '+(p.last||'')).trim():''; }catch(e){ return ''; } }
   function wire(){ Array.prototype.forEach.call(document.querySelectorAll(SEL),function(e){ if(e.dataset.pvxCase) return; if(e.querySelector('.us-open,.pvx-open,button')) return; var pid=pidOf(e); if(!pid) return; e.dataset.pvxCase='1'; e.tabIndex=0; e.setAttribute('role','button'); var n=nameOf(pid); if(n) e.setAttribute('aria-label','Open ultrasound case: '+n); }); }
   document.addEventListener('keydown',function(ev){ var t=ev.target; if(!t||!t.matches||!t.matches(SEL)||!t.dataset.pvxCase) return; if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); window.__pvxUsFrom=t; t.click(); } });
-  var raf=0; new MutationObserver(function(){ if(!raf) raf=requestAnimationFrame(function(){ raf=0; wire(); }); }).observe(document.body,{childList:true,subtree:true}); wire(); })();
+  var raf=0; pvxWatch(function(){ if(!raf) raf=requestAnimationFrame(function(){ raf=0; wire(); }); },{childList:true,subtree:true},document.body); wire(); })();
 }catch(e){setTimeout(function(){throw e})}
 
 /* ━━━━━ 33 of 104 · pvx-n148-rd-js · PVX-N148 · Rounds: "Saved" after the server confirms; the Tomorrow list on the server ━━━━━ */
@@ -4373,7 +4311,7 @@ try{
   function all(){ document.querySelectorAll('.subnav .switcher').forEach(wire); document.querySelectorAll('.subnav .switcher.pvx-sw').forEach(function(sw){ sw.__pvxUpd&&sw.__pvxUpd(); }); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',all); else all();
   window.addEventListener('load',all);
-  try{ new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ var t=ms[i].target; if(t.classList&&t.classList.contains('subnav')){ requestAnimationFrame(all); return; } } }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']}); }catch(e){}
+  try{ pvxWatch(function(ms){ for(var i=0;i<ms.length;i++){ var t=ms[i].target; if(t.classList&&t.classList.contains('subnav')){ requestAnimationFrame(all); return; } } },{subtree:true,attributes:true,attributeFilter:['class']},document.body); }catch(e){}
 })();
 }catch(e){setTimeout(function(){throw e})}
 
@@ -4441,8 +4379,8 @@ try{
   var t=0; function soon(){ if(t) return; t=setTimeout(function(){ t=0; requestAnimationFrame(all); },120); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',all); else all();
   window.addEventListener('load',all); window.addEventListener('resize',function(){ document.querySelectorAll('svg.pvx-sym').forEach(function(s){ s.__pvxw=null; }); soon(); });
-  try{ new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ if(ms[i].addedNodes.length){ soon(); return; } } }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
-  try{ new MutationObserver(function(){ document.querySelectorAll('svg.pvx-sym').forEach(function(s){ s.__pvxw=null; }); soon(); }).observe(document.documentElement,{attributes:true,attributeFilter:['style','class']}); }catch(e){}
+  try{ pvxWatch(function(ms){ for(var i=0;i<ms.length;i++){ if(ms[i].addedNodes.length){ soon(); return; } } },{childList:true,subtree:true},document.body); }catch(e){}
+  try{ pvxWatch(function(){ document.querySelectorAll('svg.pvx-sym').forEach(function(s){ s.__pvxw=null; }); soon(); },{attributes:true,attributeFilter:['style','class']},document.documentElement); }catch(e){}
   document.addEventListener('click',soon,true); document.addEventListener('focusin',soon,true);
   window.pvxSymbols={sync:all};
 })();
@@ -4466,7 +4404,7 @@ try{
   }
   var t=0; function soon(){ if(t) return; t=setTimeout(function(){ t=0; all(); },150); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',all); else all();
-  try{ new MutationObserver(soon).observe(document.body,{childList:true,subtree:true,characterData:true}); }catch(e){}
+  try{ pvxWatch(soon,{childList:true,subtree:true,characterData:true},document.body); }catch(e){}
   window.pvxMeters={sync:all};
 })();
 }catch(e){setTimeout(function(){throw e})}
@@ -4507,8 +4445,8 @@ try{
     notify('Move undone',bcEsc(q.name||'')+' · back in '+bcEsc(where||''),{icon:'move',color:'var(--accent)'});
   }
   function undoable(name,when){
-    var f=window[name]; if(typeof f!=='function') return;
-    window[name]=function(p,to){
+    if(typeof window[name]!=='function') return;
+    pvxWrap(name,function(f){ return function(p,to){
       if(depth||!p||!when(p,to)) return f.apply(this,arguments);
       var o=snap(p), real=window.notify, cap=null, r; depth++;
       window.notify=function(t,sub,op){ if(!cap){ cap=[t,sub,op]; return; } return real.apply(this,arguments); };   /* the move's own message gets the Undo */
@@ -4517,7 +4455,7 @@ try{
       if(after.status===o.status&&after.room===o.room){ if(cap) real.apply(null,cap); return r; }
       var args=[].slice.call(arguments,1);
       act(cap?cap[0]:'Moved',cap?cap[1]:'',function(){ return undo(p.id,o,after); },cap&&cap[2],function(){ var q=PATIENTS.find(function(x){ return x.id===p.id; }); if(q) window[name].apply(null,[q].concat(args)); },p.id);
-      return r; };
+      return r; }; },'n192');
   }
   undoable('moveStatus',function(p,ns){ return ns!=='Discharged'&&ns!=='Admitted'&&p.status!==ns; });   /* completions keep their own Undo */
   undoable('moveRoom',function(p,rm){ return !!rm&&p.room!==rm; });
@@ -4588,7 +4526,7 @@ try{
     var f=l.parentElement.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]),select,textarea'); if(!f) return;
     if(f.closest('label')===l) return; if(!f.id) f.id='pvxf'+(++n); if(l.tagName==='LABEL') l.htmlFor=f.id; else { if(!l.id) l.id='pvxl'+n; if(!f.getAttribute('aria-labelledby')&&!f.getAttribute('aria-label')) f.setAttribute('aria-labelledby',l.id); } }); }
   var tt=0; function soon(){ if(tt) return; tt=setTimeout(function(){ tt=0; tie(); },60); }
-  tie(); try{ new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++) if(ms[i].addedNodes.length){ soon(); return; } }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+  tie(); try{ pvxWatch(function(ms){ for(var i=0;i<ms.length;i++) if(ms[i].addedNodes.length){ soon(); return; } },{childList:true,subtree:true},document.body); }catch(e){}
 
   /* ---- 1. Add New Patient ---- */
   function unit(id){ var b=document.querySelector('[data-unit-for="'+id+'"] [aria-checked=true]'); return b?b.getAttribute('data-u'):''; }
@@ -4626,7 +4564,7 @@ try{
       return prev.call(this,ev);
     };
   }
-  if(typeof window.openAddPatient==='function'){ var oap=window.openAddPatient; window.openAddPatient=function(){ var r=oap.apply(this,arguments); wireAp(); clearAll(); return r; }; }
+  if(typeof window.openAddPatient==='function'){ pvxAfter('openAddPatient',function(){ wireAp(); clearAll(); },'n193'); }
   document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('#apArrival .ap-seg-btn')) setTimeout(function(){ hint('apSpecies',''); syncCreate(); },0); },true);
   wireAp();
 
@@ -4639,11 +4577,11 @@ try{
     return x<L[0]||x>L[1]?'Enter '+L[2]+' from '+L[0]+' to '+L[1]+' '+L[3]+'.':''; }
   function triShow(el,msg){ var h=el.__h; if(!h){ h=document.createElement('div'); h.className='ap-hint'; h.id='pvxth'+(++n); h.setAttribute('aria-live','polite'); el.insertAdjacentElement('afterend',h); el.setAttribute('aria-describedby',h.id); el.__h=h; }
     h.textContent=msg||''; h.classList.toggle('show',!!msg); if(msg) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid'); return !msg; }
-  if(typeof window.openTriageEdit==='function'){ var ote=window.openTriageEdit; window.openTriageEdit=function(){ var r=ote.apply(this,arguments);
+  if(typeof window.openTriageEdit==='function'){ pvxAfter('openTriageEdit',function(){ 
     document.querySelectorAll('#triEditBody [data-vk]').forEach(function(el){ el.setAttribute('inputmode','decimal'); el.setAttribute('autocomplete','off');
       el.addEventListener('blur',function(){ triShow(el,triMsg(el)); }); el.addEventListener('input',function(){ if(el.getAttribute('aria-invalid')) triShow(el,triMsg(el)); }); });
     var by=$('triEditBy'); if(by&&!by.value&&typeof CURRENT_USER==='string') by.value=CURRENT_USER;
-    tie($('triEditModal')); return r; }; }
+    tie($('triEditModal')); },'n193'); }
   var ts=$('triEditSave'); if(ts){ var tsave=ts.onclick; ts.onclick=function(ev){ var bad=null;
     document.querySelectorAll('#triEditBody [data-vk]').forEach(function(el){ if(!triShow(el,triMsg(el))&&!bad) bad=el; });
     if(bad){ bad.focus(); if(window.pvxSay) pvxSay(bad.__h.textContent); return; } return tsave.call(this,ev); }; }
@@ -4664,7 +4602,7 @@ try{
     $('confirmCancel').onclick=close; $('confirmScrim').onclick=close;
     setTimeout(function(){ inp.focus(); inp.select(); },60);
   };
-  if(typeof window.showConfirm==='function'){ var sc=window.showConfirm; window.showConfirm=function(){ var x=document.querySelector('#confirmBox .pvx-hwrap'); if(x) x.remove(); return sc.apply(this,arguments); }; }
+  if(typeof window.showConfirm==='function'){ pvxBefore('showConfirm',function(){ var x=document.querySelector('#confirmBox .pvx-hwrap'); if(x) x.remove(); },'n193'); }
 
   /* ---- 5. Mac expansion tooltip: a clipped field shows its full text on hover ---- */
   document.addEventListener('mouseover',function(e){ var el=e.target; if(!el||el.tagName!=='INPUT'||!/^(text|search|email|tel|url|)$/.test(el.type||'')) return;
@@ -4711,7 +4649,7 @@ try{
   /* status bar */
   var meta=document.querySelector('meta[name="theme-color"]');
   function tint(){ if(meta) meta.setAttribute('content',document.body.classList.contains('dark')?'#0A1222':'#F2F4F8'); }
-  tint(); try{ new MutationObserver(tint).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+  tint(); try{ pvxWatch(tint,{attributes:true,attributeFilter:['class']},document.body); }catch(e){}
   /* where you were */
   var KEY='pvx:flow:where', R=window.__pvxRestore||null, ready=!R;
   function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null')||{}; }catch(e){ return {}; } }
@@ -4745,7 +4683,7 @@ try{
 (function(){
   var coarse=false; try{ coarse=matchMedia('(pointer:coarse)').matches; }catch(e){}
   function words(){ var w=coarse?'Tap':'Click'; document.querySelectorAll('.pvx-tapclick').forEach(function(x){ if(x.textContent!==w) x.textContent=w; }); }
-  words(); try{ new MutationObserver(function(){ words(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+  words(); try{ pvxWatch(function(){ words(); },{childList:true,subtree:true},document.body); }catch(e){}
   function edit(el){ el.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true})); }   /* the existing editor opens on dblclick */
   document.addEventListener('click',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.rd-fin-edit[data-fin-key]'); if(!el||e.detail>1) return; edit(el); });
   document.addEventListener('keydown',function(e){ var el=e.target&&e.target.closest&&e.target.closest('.rd-fin-edit[data-fin-key]'); if(!el||(e.key!=='Enter'&&e.key!==' ')) return; e.preventDefault(); e.stopPropagation(); edit(el); },true);
@@ -4762,23 +4700,22 @@ try{
 
   /* critical ultrasound findings: card flag (usFlag), Attention Center until seen, a message when one arrives */
   function crit(p){ var u=p&&p.ultrasound; return !!(u&&u.criticalFinding&&!u.critSeenAt&&isActive(p)); }
-  function nm(p){ return ((p.name||'')+' '+(p.last||'')).trim(); }
   function safe(f){ try{ return f()||''; }catch(e){ return ''; } }
   function by(p){ var u=p.ultrasound; return (u.performingDoctor&&safe(function(){ return drName(u.performingDoctor); }))||'Internal Medicine'; }
-  if(typeof window.attentionItems==='function'){ var ai=window.attentionItems;
-    window.attentionItems=function(){ var a=ai.apply(this,arguments);
+  if(typeof window.attentionItems==='function'){ 
+    pvxWrap('attentionItems',function(ai){ return function(){ var a=ai.apply(this,arguments);
       try{ PATIENTS.filter(crit).forEach(function(p){ a.unshift({key:'uscrit:'+p.id,sev:'red',icon:'flask',t:p.name+' — critical ultrasound finding',s:'Flagged by '+by(p)+' · '+safe(function(){ return docShort(p.doctor); }),p:p}); }); }catch(e){ console.warn('[uscrit]',e); }
-      return a; }; }
+      return a; }; },'n197'); }
   function markSeen(pid){ var p=PATIENTS.find(function(x){ return x.id===pid; }); if(!p||!p.ultrasound) return;
     var by=(typeof CURRENT_USER==='string'&&CURRENT_USER)||'Staff'; p.ultrasound.critSeenAt=new Date(); p.ultrasound.critSeenBy=by;
     try{ usTimeline(p,'Critical ultrasound finding seen',by); }catch(e){ (p.timeline=p.timeline||[]).push({label:'Critical ultrasound finding seen',at:new Date(),meta:by}); }
-    try{ renderAll(); }catch(e){} notify('Marked seen',bcEsc(nm(p))+' · critical ultrasound finding',{icon:'check',color:'var(--s-admitted)'}); }
+    try{ renderAll(); }catch(e){} notify('Marked seen',bcEsc(pvxFullName(p))+' · critical ultrasound finding',{icon:'check',color:'var(--s-admitted)'}); }
   window.pvxCritSeen=markSeen;
-  if(typeof window.dismissAlert==='function'){ var da=window.dismissAlert; window.dismissAlert=function(key){ if(String(key||'').indexOf('uscrit:')===0){ markSeen(String(key).slice(7)); return; } return da.apply(this,arguments); }; }
+  if(typeof window.dismissAlert==='function'){ pvxWrap('dismissAlert',function(da){ return function(key){ if(String(key||'').indexOf('uscrit:')===0){ markSeen(String(key).slice(7)); return; } return da.apply(this,arguments); }; },'n197'); }
   function label(){ document.querySelectorAll('#attnList .attn-item[data-key^="uscrit:"]').forEach(function(it){
     var b=it.querySelector('.attn-clear'); if(b){ b.setAttribute('aria-label','Mark seen'); b.title='Mark seen'; }
     var g=it.querySelector('.overdue-badge'); if(g){ g.setAttribute('aria-label','Critical'); var tx=g.querySelector('.overdue-text'); if(tx&&tx.textContent!=='CRITICAL') tx.textContent='CRITICAL'; } }); }   /* a finding, not a wait */
-  if(typeof window.renderAttention==='function'){ var rat=window.renderAttention; window.renderAttention=function(){ var r=rat.apply(this,arguments); label(); return r; }; }
+  if(typeof window.renderAttention==='function'){ pvxAfter('renderAttention',function(){ label(); },'n197'); }
   var announced=null, BOOT=Date.now();
   function sweep(){
     try{ label();
@@ -4788,12 +4725,12 @@ try{
       now.forEach(function(id){ if(announced.has(id)) return; announced.add(id); if(tv||us) return;
         var p=PATIENTS.find(function(x){ return x.id===id; }), fb=by(p);
         var o={icon:'info',color:'var(--priority-p1)',sticky:true};
-        if(typeof window.fvNotifyAct==='function') fvNotifyAct('Critical ultrasound finding',bcEsc(nm(p))+' · flagged by '+bcEsc(fb),'Open',function(){ openDrawer(id); },o);
-        else notify('Critical ultrasound finding',bcEsc(nm(p))+' · flagged by '+bcEsc(fb),o);
-        if(window.pvxSay) pvxSay('Critical ultrasound finding: '+nm(p)+', flagged by '+fb); });
+        if(typeof window.fvNotifyAct==='function') fvNotifyAct('Critical ultrasound finding',bcEsc(pvxFullName(p))+' · flagged by '+bcEsc(fb),'Open',function(){ openDrawer(id); },o);
+        else notify('Critical ultrasound finding',bcEsc(pvxFullName(p))+' · flagged by '+bcEsc(fb),o);
+        if(window.pvxSay) pvxSay('Critical ultrasound finding: '+pvxFullName(p)+', flagged by '+fb); });
     }catch(e){}
   }
-  if(typeof window.renderAll==='function'){ var ra=window.renderAll; window.renderAll=function(){ var r=ra.apply(this,arguments); setTimeout(sweep,0); return r; }; }
+  if(typeof window.renderAll==='function'){ pvxAfter('renderAll',function(){ setTimeout(sweep,0); },'n197'); }
   setInterval(sweep,3000);
 
   /* Operations > Reminder chime, per screen */
@@ -4817,8 +4754,7 @@ try{
   /* 1-2. confirmations */
   var opener=null;
   if(box&&typeof window.showConfirm==='function'){
-    var sc=window.showConfirm;
-    window.showConfirm=function(title,okLabel,onOk,opts){
+    pvxWrap('showConfirm',function(sc){ return function(title,okLabel,onOk,opts){
       var a=document.activeElement; opener=(a&&a!==document.body&&!box.contains(a))?a:opener;
       var r=sc.apply(this,arguments);
       box.classList.toggle('pvx-as',phone());
@@ -4828,7 +4764,7 @@ try{
         var f=danger?box:document.getElementById('confirmOk'); if(f) try{ f.focus({preventScroll:true}); }catch(e){ f.focus(); }   /* PVX-N209: no default on a destructive alert */
       },40);
       return r;
-    };
+    }; },'#47');
     new MutationObserver(function(){
       if(box.classList.contains('open')) return;
       var a=document.activeElement, o=opener; opener=null;
@@ -4950,7 +4886,6 @@ try{
   var cur = null, lastOpen = 0;
   function css() { if (document.getElementById('pvx-ctx-css')) return; var s = document.createElement('style'); s.id = 'pvx-ctx-css'; s.textContent = CSS; document.head.appendChild(s); }
   function rmo() { try { return matchMedia('(prefers-reduced-motion:reduce)').matches; } catch (e) { return false; } }
-  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function norm(items) {
     var a = [], d = [];
     (items || []).forEach(function (i) {
@@ -4989,11 +4924,11 @@ try{
     var c = { root: root, panel: panel, list: list, anchor: o.anchor || null, onClose: o.onClose, lift: o.lift || null, liftCls: o.liftClass || 'pvx-cx-lift', stack: [] };
     function draw(level, title) {
       var h = '';
-      if (title) h += '<button type="button" role="menuitem" class="back" data-back="1"><span class="c" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></span><span class="l">' + esc(title) + '</span></button><div role="separator"></div>';
+      if (title) h += '<button type="button" role="menuitem" class="back" data-back="1"><span class="c" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></span><span class="l">' + pvxEsc(title) + '</span></button><div role="separator"></div>';
       level.forEach(function (it, i) {
         if (it.sep) { h += '<div role="separator"></div>'; return; }
         var ck = it.checked !== undefined;   /* n204: an option can show a checkmark (the current choice) */
-        h += '<button type="button" role="' + (ck ? 'menuitemradio' : 'menuitem') + '"' + (ck ? ' aria-checked="' + !!it.checked + '"' : '') + ' data-i="' + i + '"' + ((it.danger || it.disabled) ? ' class="' + (it.danger ? 'danger' : '') + (it.disabled ? ' off' : '') + '"' : '') + (it.disabled ? ' aria-disabled="true"' : '') + (it.sub ? ' aria-haspopup="menu"' : '') + '>' + (ck ? '<svg class="k" viewBox="0 0 24 24" aria-hidden="true"' + (it.checked ? '' : ' style="visibility:hidden"') + '><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '') + (it.icon ? '<span class="i" aria-hidden="true">' + it.icon + '</span>' : '') + '<span class="l">' + esc(it.label) + '</span>' + (it.sub ? '<span class="c" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></span>' : '') + '</button>';
+        h += '<button type="button" role="' + (ck ? 'menuitemradio' : 'menuitem') + '"' + (ck ? ' aria-checked="' + !!it.checked + '"' : '') + ' data-i="' + i + '"' + ((it.danger || it.disabled) ? ' class="' + (it.danger ? 'danger' : '') + (it.disabled ? ' off' : '') + '"' : '') + (it.disabled ? ' aria-disabled="true"' : '') + (it.sub ? ' aria-haspopup="menu"' : '') + '>' + (ck ? '<svg class="k" viewBox="0 0 24 24" aria-hidden="true"' + (it.checked ? '' : ' style="visibility:hidden"') + '><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '') + (it.icon ? '<span class="i" aria-hidden="true">' + it.icon + '</span>' : '') + '<span class="l">' + pvxEsc(it.label) + '</span>' + (it.sub ? '<span class="c" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></span>' : '') + '</button>';
       });
       list.innerHTML = h; list.scrollTop = 0; c.level = level;
       focusEl(list.querySelector('button[data-i]:not([aria-disabled])') || list.querySelector('button'));
@@ -5091,9 +5026,8 @@ try{
   if(!window.PvxCtx) return;
   function find(pid){ return (typeof PATIENTS!=='undefined'?PATIENTS:[]).find(function(x){ return x.id===pid; }); }
   function shown(){ var b=document.body.classList; return !(b.contains('tv-mode')||b.contains('client-mode')); }
-  function nm(p){ return ((p.name||'')+' '+(p.last||'')).trim(); }
   function call(name){ var f=window[name]; return typeof f==='function'?f:null; }
-  function copyLink(p){ pvxShareTracker(trackUrlFor(p), nm(p)); }
+  function copyLink(p){ pvxShareTracker(trackUrlFor(p), pvxFullName(p)); }
   function flowItems(p){
     var done=typeof isCompleted==='function'&&isCompleted(p);
     var stages=done?[]:STAGE_ORDER.filter(function(st){ return st!==p.status; }).map(function(st){ return {label:st,act:function(){ call('moveStatus')(p,st); }}; });
@@ -5121,7 +5055,7 @@ try{
     if(!shown()) return null;
     var row=el.classList.contains('rd-rowmain')?el.parentElement:null, pid=(row||el).getAttribute('data-pid');
     var p=row?(typeof rdFind==='function'?rdFind(pid):null):find(pid); if(!p) return null;
-    return {items:row?rdItems(p,row):flowItems(p),label:'Actions for '+nm(p),lift:row||el};
+    return {items:row?rdItems(p,row):flowItems(p),label:'Actions for '+pvxFullName(p),lift:row||el};
   },{touchOnly:true,holdMs:500,
      skip:function(el,e){ return e.type==='pointerdown'&&!!(e.target.closest('button,a,input,select,textarea,[role=button]')&&e.target.closest('button,a,input,select,textarea,[role=button]')!==el); },
      beforeHold:function(){ if(window.rdRk&&typeof rdRankEnd==='function') rdRankEnd(false); }});
@@ -5132,15 +5066,13 @@ try{
 try{
 /* PVX-N202 - Cmd-Z / Shift-Cmd-Z (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y) undo and redo the last change that offered Undo */
 (function(){
-  function typing(){ var a=document.activeElement; return !!(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable)); }
-  function shown(el){ var r=el.getBoundingClientRect(); if(!r.width||!r.height) return false; var c=getComputedStyle(el); return c.display!=='none'&&c.visibility!=='hidden'&&+c.opacity>0.05&&c.pointerEvents!=='none'; }
   function modal(){ if(window.PvxCtx&&PvxCtx.isOpen()) return true; if(document.querySelector('.rd-menu,.pvx-menu')) return true;
-    return [].some.call(document.querySelectorAll('[role=dialog][aria-modal=true],[role=alertdialog]'),shown); }
+    return [].some.call(document.querySelectorAll('[role=dialog][aria-modal=true],[role=alertdialog]'),pvxShown); }
   document.addEventListener('keydown',function(e){
     if(!(e.metaKey||e.ctrlKey)||e.altKey||!window.pvxUndo) return;
     var k=(e.key||'').toLowerCase(), isUndo=k==='z'&&!e.shiftKey, isRedo=(k==='z'&&e.shiftKey)||(k==='y'&&e.ctrlKey&&!e.metaKey);
     if(!isUndo&&!isRedo) return;
-    var b=document.body.classList; if(b.contains('tv-mode')||b.contains('client-mode')||typing()||modal()) return;   /* the field's own Undo, or nothing */
+    var b=document.body.classList; if(b.contains('tv-mode')||b.contains('client-mode')||pvxTyping()||modal()) return;   /* the field's own Undo, or nothing */
     e.preventDefault(); e.stopPropagation(); if(isUndo) pvxUndo.undo(); else pvxUndo.redo();
   },true);
 })();
@@ -5154,8 +5086,8 @@ try{
   fab.setAttribute('aria-haspopup','menu'); fab.setAttribute('aria-controls','opsMenu');
   function items(){ return [].slice.call(menu.querySelectorAll('.ops-item')).filter(function(b){ return b.offsetParent!==null&&!b.disabled; }); }
   function focusEl(el){ if(el) try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); } }
-  if(typeof window.opsMenuOpen==='function'){ var op=window.opsMenuOpen; window.opsMenuOpen=function(){ var r=op.apply(this,arguments); setTimeout(function(){ if(menu.classList.contains('open')) focusEl(items()[0]); },30); return r; }; }
-  if(typeof window.opsMenuClose==='function'){ var cl=window.opsMenuClose; window.opsMenuClose=function(){ var inside=menu.contains(document.activeElement); var r=cl.apply(this,arguments); if(inside) focusEl(fab); return r; }; }
+  if(typeof window.opsMenuOpen==='function'){ pvxAfter('opsMenuOpen',function(){ setTimeout(function(){ if(menu.classList.contains('open')) focusEl(items()[0]); },30); },'n203'); }
+  if(typeof window.opsMenuClose==='function'){ pvxWrap('opsMenuClose',function(cl){ return function(){ var inside=menu.contains(document.activeElement); var r=cl.apply(this,arguments); if(inside) focusEl(fab); return r; }; },'n203'); }
   menu.addEventListener('keydown',function(e){
     var b=items(), i=b.indexOf(document.activeElement), n=null;
     if(e.key==='ArrowDown') n=(i+1)%b.length; else if(e.key==='ArrowUp') n=(i-1+b.length)%b.length;
@@ -5213,16 +5145,14 @@ try{
   ].join('\n');
   var cur = null;
   function css() { if (document.getElementById('pvx-keys-css')) return; var s = document.createElement('style'); s.id = 'pvx-keys-css'; s.textContent = CSS; document.head.appendChild(s); }
-  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function word(k) { return NAME[k] || k; }
   function text(keys) { return keys.map(word).join(MAC ? '' : '+'); }   /* for tooltips: ⌥2 / Alt+2 */
-  function cap(keys) { return keys.map(function (k) { return '<kbd class="pvx-kc">' + esc(word(k)) + '</kbd>'; }).join(''); }
+  function cap(keys) { return keys.map(function (k) { return '<kbd class="pvx-kc">' + pvxEsc(word(k)) + '</kbd>'; }).join(''); }
   function said(keys) { return keys.map(function (k) { return { alt: MAC ? 'Option' : 'Alt', mod: MAC ? 'Command' : 'Control', shift: 'Shift', ctrl: 'Control', esc: 'Escape', 'return': MAC ? 'Return' : 'Enter', '↑': 'Up arrow', '↓': 'Down arrow', '?': 'Question mark' }[k] || k; }).join(' '); }
   function aria(keys) {
     function one(mod) { return keys.map(function (k) { return k === 'mod' ? mod : (ARIA[k] || k); }).join('+'); }
     return keys.indexOf('mod') > -1 ? one('Meta') + ' ' + one('Control') : one();
   }
-  function typing() { var a = document.activeElement; return !!(a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)); }
   function shown(el) { var r = el.getBoundingClientRect(); if (!r.width || !r.height) return false; var c = getComputedStyle(el); return c.display !== 'none' && c.visibility !== 'hidden' && +c.opacity > 0.05; }
   function busy() {
     if (window.PvxCtx && PvxCtx.isOpen()) return true;
@@ -5238,8 +5168,8 @@ try{
     close(); css();
     var root = document.createElement('div'); root.className = 'pvx-ks';
     var body = (groups || []).filter(function (g) { return g && g.items && g.items.length; }).map(function (g) {
-      return '<h3>' + esc(g.title) + '</h3><dl>' + g.items.map(function (i) {
-        return '<dt>' + esc(i.label) + '</dt><dd aria-label="' + esc(said(i.keys)) + '">' + cap(i.keys) + '</dd>';
+      return '<h3>' + pvxEsc(g.title) + '</h3><dl>' + g.items.map(function (i) {
+        return '<dt>' + pvxEsc(i.label) + '</dt><dd aria-label="' + pvxEsc(said(i.keys)) + '">' + cap(i.keys) + '</dd>';
       }).join('') + '</dl>';
     }).join('');
     root.innerHTML = '<div class="pvx-ks-box" role="dialog" aria-modal="true" aria-labelledby="pvxKsT"><div class="pvx-ks-head"><h2 id="pvxKsT">Keyboard shortcuts</h2>' +
@@ -5249,7 +5179,7 @@ try{
     var c = { root: root, from: from || document.activeElement };
     c.key = function (e) {
       if (cur !== c) return;
-      if (e.key === 'Escape' || (e.key === '?' && !typing())) { e.preventDefault(); e.stopPropagation(); close(); return; }
+      if (e.key === 'Escape' || (e.key === '?' && !pvxTyping())) { e.preventDefault(); e.stopPropagation(); close(); return; }
       if (e.key === 'Tab') { e.preventDefault(); done.focus(); return; }   /* one control: focus stays on Close */
       e.stopPropagation();   /* the app's own shortcuts wait until the sheet closes (Return and Space still press Close) */
     };
@@ -5264,7 +5194,7 @@ try{
     opts = opts || {};
     document.addEventListener('keydown', function (e) {
       if (e.key !== '?' || e.metaKey || e.ctrlKey || e.altKey || cur) return;
-      if (typing() || busy() || (opts.skip && opts.skip())) return;
+      if (pvxTyping() || busy() || (opts.skip && opts.skip())) return;
       e.preventDefault(); open(typeof groups === 'function' ? groups() : groups, document.activeElement);
     });
   }
@@ -5283,11 +5213,9 @@ try{
 (function(){
   /* the views in their order on screen (Consent forms joins when it is available) */
   function views(){ return [].slice.call(document.querySelectorAll('#subnavFlow .seg[data-view]')).slice(0,9).map(function(b){ var c=b.cloneNode(true); [].forEach.call(c.querySelectorAll('[class*="badge"],[hidden],svg'),function(x){ x.remove(); }); return [b.dataset.view,(c.textContent||'').replace(/\s+/g,' ').trim(),b]; }); }
-  function typing(){ var a=document.activeElement; return !!(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)||a.isContentEditable)); }
-  function shown(el){ var r=el.getBoundingClientRect(); if(!r.width||!r.height) return false; var c=getComputedStyle(el); return c.display!=='none'&&c.visibility!=='hidden'&&+c.opacity>0.05&&c.pointerEvents!=='none'; }
   function modal(){ if(window.PvxCtx&&PvxCtx.isOpen()) return true; if(PvxKeys.isOpen()) return true; if(document.querySelector('.rd-menu,.pvx-menu')) return true;
     if(document.getElementById('opsMenu')&&document.getElementById('opsMenu').classList.contains('open')) return true;
-    return [].some.call(document.querySelectorAll('[role=dialog][aria-modal=true],[role=alertdialog]'),shown); }
+    return [].some.call(document.querySelectorAll('[role=dialog][aria-modal=true],[role=alertdialog]'),pvxShown); }
   function screenMode(){ var b=document.body.classList; return b.contains('tv-mode')||b.contains('client-mode'); }
   function app(){ try{ return currentApp; }catch(e){ return 'flow'; } }
   /* tooltips and aria-keyshortcuts on the view buttons, kept in step when a view joins */
@@ -5297,8 +5225,8 @@ try{
   document.addEventListener('keydown',function(e){
     if(!e.altKey||e.metaKey||e.ctrlKey||e.shiftKey) return;
     var m=/^Digit([1-9])$/.exec(e.code||''); if(!m) return;
-    if(typing()||modal()||screenMode()||app()!=='flow') return;
-    var v=views()[+m[1]-1], b=v&&v[2]; if(!b||!shown(b)) return;
+    if(pvxTyping()||modal()||screenMode()||app()!=='flow') return;
+    var v=views()[+m[1]-1], b=v&&v[2]; if(!b||!pvxShown(b)) return;
     e.preventDefault(); b.click();
   });
   /* the search keycap: Ctrl K off the Mac; hidden while the field has text */
@@ -5332,8 +5260,7 @@ try{
   if(!box||!ok||typeof window.showConfirm!=='function') return;
   var alt=document.createElement('button'); alt.type='button'; alt.id='confirmAlt'; alt.className='btn ghost'; alt.hidden=true;
   ok.parentNode.insertBefore(alt, ok);   /* row: Cancel · second action · action; phone stack: action, second action, Cancel */
-  var sc=window.showConfirm;
-  window.showConfirm=function(title,okLabel,onOk,opts){
+  pvxWrap('showConfirm',function(sc){ return function(title,okLabel,onOk,opts){
     opts=opts||{};
     var r=sc.apply(this,arguments);
     if(cancel) cancel.textContent='Cancel';
@@ -5344,7 +5271,7 @@ try{
     if(sub&&opts.sub) box.setAttribute('aria-describedby','confirmSub'); else box.removeAttribute('aria-describedby');
     if(!box.querySelector('.pvx-hwrap')) box.setAttribute('aria-labelledby','confirmTitle');
     return r;
-  };
+  }; },'#52');
 })();
 }catch(e){setTimeout(function(){throw e})}
 
@@ -5361,11 +5288,9 @@ try{
   function park(btn,cls,head,before){ if(!btn||btn.closest('.addpt-head')) return;
     var mk=document.createComment('pvx-ps'); btn.parentNode.insertBefore(mk,btn); btn._pvxMark=mk;
     btn.classList.add('pvx-ps-btn',cls); if(before) head.insertBefore(btn,before); else head.appendChild(btn); }
-  function unpark(btn){ if(!btn||!btn._pvxMark) return; var mk=btn._pvxMark; btn._pvxMark=null;
-    btn.classList.remove('pvx-ps-btn','pvx-ps-l','pvx-ps-r'); if(mk.parentNode){ mk.parentNode.insertBefore(btn,mk); mk.remove(); } }
   function undo(c){ var m=document.getElementById(c.m); if(!m) return;
-    [].slice.call(m.querySelectorAll('.addpt-head .pvx-ps-btn')).forEach(unpark);
-    var x=q(c,c.x); if(x){ x.removeAttribute('aria-hidden'); x.removeAttribute('tabindex'); if(x._pvxMark) unpark(x); }
+    [].slice.call(m.querySelectorAll('.addpt-head .pvx-ps-btn')).forEach(pvxUnpark);
+    var x=q(c,c.x); if(x){ x.removeAttribute('aria-hidden'); x.removeAttribute('tabindex'); if(x._pvxMark) pvxUnpark(x); }
     var f=m.querySelector('.addpt-foot'); if(f) f.classList.remove('pvx-ps-empty');
     m.classList.remove('pvx-ps','pvx-ps-bar'); }
   function arrange(c){ var m=document.getElementById(c.m); if(!m) return; undo(c); if(!PH.matches) return;
@@ -5381,7 +5306,7 @@ try{
   function all(){ CFG.forEach(arrange); }
   window.pvxPhoneSheets=all;
   /* the alert sheet rebuilds its footer: hand the buttons back first */
-  if(typeof renderAlertModal==='function'){ var ram=renderAlertModal; renderAlertModal=function(){ undo(CFG[2]); var r=ram.apply(this,arguments); arrange(CFG[2]); return r; }; }
+  if(typeof renderAlertModal==='function'){ pvxWrap('renderAlertModal',function(ram){ return function(){ undo(CFG[2]); var r=ram.apply(this,arguments); arrange(CFG[2]); return r; }; },'#53'); }
   if(PH.addEventListener) PH.addEventListener('change',all); else PH.addListener(all);
   all();
   /* changes since the sheet opened: typing, picking, toggling */
@@ -5398,8 +5323,7 @@ try{
   /* drag the sheet down by its top to close it */
   CFG.forEach(function(c){ var m=document.getElementById(c.m); if(!m) return;
     var y0=null, dy=0, ly=0, lt=0, v=0;
-    function zone(e){ return e.target.closest&&e.target.closest('.pvx-grab,.addpt-head'); }
-    m.addEventListener('touchstart',function(e){ if(!PH.matches||!m.classList.contains('open')||!zone(e)||e.touches.length>1) return;
+    m.addEventListener('touchstart',function(e){ if(!PH.matches||!m.classList.contains('open')||!pvxGrabZone(e)||e.touches.length>1) return;
       y0=ly=e.touches[0].clientY; lt=performance.now(); dy=0; v=0; m.classList.add('pvx-ps-drag'); },{passive:true});
     m.addEventListener('touchmove',function(e){ if(y0===null) return; var y=e.touches[0].clientY, t=performance.now();
       if(t>lt) v=v*.4+(y-ly)/(t-lt)*.6; ly=y; lt=t; dy=y-y0; dy=dy<0?dy/4:dy; m.style.transform='translateY('+dy+'px)'; },{passive:true});
@@ -5422,9 +5346,9 @@ try{
     openDrawer(back.pid); var put=function(){ var b=document.querySelector('#drawer .drawer-body'); if(b) b.scrollTop=back.top; };
     put(); requestAnimationFrame(function(){ put(); setTimeout(put,60); }); };
   if(typeof openCareTeam==='function'&&typeof closeCareTeam==='function'){
-    var oct=openCareTeam, cct=closeCareTeam, ctBack=null;
-    openCareTeam=function(pid){ var b=pvxSheetBack(); var r=oct.apply(this,arguments); if(b) ctBack=b; return r; };
-    closeCareTeam=function(){ var b=ctBack; ctBack=null; var r=cct.apply(this,arguments); if(b) setTimeout(function(){ pvxSheetReturn(b); },0); return r; };
+    var ctBack=null;
+    pvxWrap('openCareTeam',function(oct){ return function(pid){ var b=pvxSheetBack(); var r=oct.apply(this,arguments); if(b) ctBack=b; return r; }; },'#53');
+    pvxWrap('closeCareTeam',function(cct){ return function(){ var b=ctBack; ctBack=null; var r=cct.apply(this,arguments); if(b) setTimeout(function(){ pvxSheetReturn(b); },0); return r; }; },'#53');
   }
 })();
 }catch(e){setTimeout(function(){throw e})}
@@ -5435,7 +5359,6 @@ try{
 (function(){
   var inp=document.getElementById('globalSearch'), box=document.getElementById('searchResults'); if(!inp||!box) return;
   var CW=window.matchMedia?matchMedia('(max-width:700px)'):{matches:false};
-  function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   /* 1. the placeholder fits the width */
   var PH=['Search patients, doctors, rooms','Search patients, doctors','Search patients','Search'], cv;   /* PVX-N361: the longest whole phrase that fits */
   function ph(){ var cs=getComputedStyle(inp), room=inp.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0);
@@ -5458,28 +5381,28 @@ try{
     sync(); }
   clearer(inp); clearer(document.getElementById('rdSearch'));
   /* 6. best match first */
-  if(typeof searchIndex==='function'){ var si=searchIndex; searchIndex=function(q){ var r=si.apply(this,arguments), ql=String(q||'').trim().toLowerCase();
+  if(typeof searchIndex==='function'){ pvxWrap('searchIndex',function(si){ return function(q){ var r=si.apply(this,arguments), ql=String(q||'').trim().toLowerCase();
     function rank(x){ var t=String(x.title||'').toLowerCase(); if(t.indexOf(ql)===0) return 0; if(t.split(/[\s.\-']+/).some(function(w){ return w.indexOf(ql)===0; })) return 1; return 2; }
-    return r.map(function(x,i){ return {x:x,i:i,k:rank(x)}; }).sort(function(a,b){ return a.k-b.k||a.i-b.i; }).map(function(o){ return o.x; }); }; }
+    return r.map(function(x,i){ return {x:x,i:i,k:rank(x)}; }).sort(function(a,b){ return a.k-b.k||a.i-b.i; }).map(function(o){ return o.x; }); }; },'#54'); }
   /* 3. recent patients, in memory only (this tab), never stored */
   var RECENT=[];
   window.pvxRecent={clear:function(){ RECENT=[]; }, list:function(){ return RECENT.slice(); }};   /* PVX-N349 */
-  if(typeof openDrawer==='function'){ var od=openDrawer; openDrawer=function(pid){ var r=od.apply(this,arguments); try{ RECENT=[pid].concat(RECENT.filter(function(x){ return x!==pid; })).slice(0,5); }catch(e){} return r; }; }
+  if(typeof openDrawer==='function'){ pvxAfter('openDrawer',function(pid){ try{ RECENT=[pid].concat(RECENT.filter(function(x){ return x!==pid; })).slice(0,5); }catch(e){} },'#54'); }
   function showRecent(){ if(document.activeElement!==inp||inp.value.trim()) return;
     var ps=RECENT.map(function(id){ return PATIENTS.find(function(p){ return p.id===id; }); }).filter(Boolean);
     var html='', flat=[];
     if(ps.length){ html+='<div class="sr-group"><div class="sr-label">Recent</div>';
       ps.forEach(function(p,i){ var st=(typeof STATUSES!=='undefined'&&STATUSES[p.status])||{};
         flat.push({kind:'Patient',act:function(){ closeSearch(); openDrawer(p.id); }});
-        html+='<div class="sr-item" data-i="'+i+'"><span class="sr-ic" style="background:'+(st.color||'var(--accent)')+'">'+esc(typeof initials==='function'?initials(p):'')+'</span><div class="sr-main"><div class="sr-t">'+esc((p.name||'')+' '+(p.last||''))+'</div><div class="sr-s">'+esc([p.species,p.room,p.hid].filter(Boolean).join(' · '))+'</div></div><div class="sr-kind">Patient</div></div>'; });
+        html+='<div class="sr-item" data-i="'+i+'"><span class="sr-ic" style="background:'+(st.color||'var(--accent)')+'">'+pvxEsc(typeof initials==='function'?initials(p):'')+'</span><div class="sr-main"><div class="sr-t">'+pvxEsc((p.name||'')+' '+(p.last||''))+'</div><div class="sr-s">'+pvxEsc([p.species,p.room,p.hid].filter(Boolean).join(' · '))+'</div></div><div class="sr-kind">Patient</div></div>'; });
       html+='</div>'; }
     var ex=(ps[0]&&ps[0].name)||'Bella';
-    html+='<div class="sr-hint">Or type a command, like <b>“move '+esc(ex)+' to Exam”</b></div>';
+    html+='<div class="sr-hint">Or type a command, like <b>“move '+pvxEsc(ex)+' to Exam”</b></div>';
     box.innerHTML='<div class="sr-inner">'+html+'</div>'; box.classList.add('open'); try{ positionSearchResults(); }catch(e){}
     searchFlat=flat; searchHl=-1;
     box.querySelectorAll('.sr-item').forEach(function(n){ n.onclick=function(){ var r=searchFlat[+n.dataset.i]; if(r) r.act(); }; });
     deco(); }
-  if(typeof renderSearch==='function'){ var rs=renderSearch; renderSearch=function(q){ if(!String(q||'').trim()&&document.activeElement===inp){ showRecent(); return; } return rs.apply(this,arguments); }; }
+  if(typeof renderSearch==='function'){ pvxWrap('renderSearch',function(rs){ return function(q){ if(!String(q||'').trim()&&document.activeElement===inp){ showRecent(); return; } return rs.apply(this,arguments); }; },'#54'); }
   inp.addEventListener('focus',function(){ if(!inp.value.trim()) setTimeout(showRecent,0); });
   /* 5. combobox semantics */
   box.setAttribute('role','listbox'); box.setAttribute('aria-label','Search results');
@@ -5515,7 +5438,7 @@ try{
   if(CW.addEventListener) CW.addEventListener('change',sync);
   new MutationObserver(sync).observe(sub,{attributes:true,attributeFilter:['class','style']});
   window.addEventListener('resize',sync); sync(); setTimeout(sync,500);
-  if(typeof opsAction==='function'){ var oa=opsAction; opsAction=function(op){ if(op==='client'){ opsMenuClose(); switchView('client'); return; } return oa.apply(this,arguments); }; }
+  if(typeof opsAction==='function'){ pvxWrap('opsAction',function(oa){ return function(op){ if(op==='client'){ opsMenuClose(); switchView('client'); return; } return oa.apply(this,arguments); }; },'#54'); }
 })();
 }catch(e){setTimeout(function(){throw e})}
 
@@ -5532,8 +5455,8 @@ try{
     items.push({sep:1},{label:'Remove',danger:true,act:function(){ rpRemove(i); }});
     return {items:items,label:'Problem: '+t,lift:el};
   },{holdMs:500});
-  if(typeof addProblem==='function'){ var ap=addProblem; addProblem=function(){ var n=apProblems.length, r=ap.apply(this,arguments);
-    if(apProblems.length>n) rpSay('Added '+apProblems.slice(n).map(formatProblem).join(', ')); return r; }; }
+  if(typeof addProblem==='function'){ pvxWrap('addProblem',function(ap){ return function(){ var n=apProblems.length, r=ap.apply(this,arguments);
+    if(apProblems.length>n) rpSay('Added '+apProblems.slice(n).map(formatProblem).join(', ')); return r; }; },'#55'); }
 })();
 }catch(e){setTimeout(function(){throw e})}
 
@@ -5579,13 +5502,13 @@ try{
 /* PVX-N214 - combo boxes (HIG Combo boxes): best match first, VoiceOver semantics, Sex as a pop-up */
 (function(){
   /* Flow's breed search ranks the likeliest first */
-  if(typeof breedFuzzyIndexed==='function'){ var bfi=breedFuzzyIndexed; breedFuzzyIndexed=function(IDX,q){ var r=bfi.apply(this,arguments), sp=(typeof breedSpecies==='function')?breedSpecies():null;
-    return pvxBreedRank(r,q,(typeof BREED_PINS!=='undefined'&&sp&&BREED_PINS[sp])||[],typeof bcHighlight==='function'?bcHighlight:null); }; }
+  if(typeof breedFuzzyIndexed==='function'){ pvxWrap('breedFuzzyIndexed',function(bfi){ return function(IDX,q){ var r=bfi.apply(this,arguments), sp=(typeof breedSpecies==='function')?breedSpecies():null;
+    return pvxBreedRank(r,q,(typeof BREED_PINS!=='undefined'&&sp&&BREED_PINS[sp])||[],typeof bcHighlight==='function'?bcHighlight:null); }; },'#57'); }
   pvxCombo(document.getElementById('apBreed'),document.getElementById('apBreedPanel'),{label:'Breeds',close:function(){ breedClose(); }});
   pvxCombo(document.getElementById('apRefHosp'),document.getElementById('apRefHospPanel'),{label:'Hospitals',opt:'.hv-opt,.bc-opt',close:function(){ rhClose(); }});
   pvxCombo(document.getElementById('apReason'),document.getElementById('rvList'),{label:'Reason suggestions',opt:'.rv-opt',hl:'active',close:function(){ if(typeof _rvCtrl!=='undefined'&&_rvCtrl) _rvCtrl.close(); }});
   /* a selected Reason token takes Esc (deselect) before the sheet does */
-  if(typeof renderProblemChips==='function'){ var rpc=renderProblemChips; renderProblemChips=function(){ var r=rpc.apply(this,arguments); var i=document.getElementById('apReason'); if(i){ if(typeof _rpBackspaceArmed!=='undefined'&&_rpBackspaceArmed) i.setAttribute('data-pvx-esc',''); else i.removeAttribute('data-pvx-esc'); } return r; }; }
+  if(typeof renderProblemChips==='function'){ pvxAfter('renderProblemChips',function(){ var i=document.getElementById('apReason'); if(i){ if(typeof _rpBackspaceArmed!=='undefined'&&_rpBackspaceArmed) i.setAttribute('data-pvx-esc',''); else i.removeAttribute('data-pvx-esc'); } },'#57'); }
   /* Sex: a value from elsewhere (check-in review, an older record) that isn't one of the five stays as an extra option */
   var sx=document.getElementById('apSex');
   if(sx&&sx.tagName==='SELECT'){ var D=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');
@@ -5645,7 +5568,7 @@ try{
   function later(){ if(!raf) raf=requestAnimationFrame(scan); }
   var obs=null;
   window.pvxSeg=function(sel,opts){ var o=Object.assign({sel:sel,mode:'radio'},opts||{}); REG.push(o);
-    if(!obs&&document.body){ obs=new MutationObserver(later); obs.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden']}); }
+    if(!obs&&document.body){ obs=pvxWatch(later,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden']},document.body); }
     [].forEach.call(document.querySelectorAll(sel),function(g){ sync(g,o); }); return o; };
   window.pvxSeg.sync=scan;
 })();
@@ -5682,7 +5605,7 @@ try{
     ts.addEventListener('change',function(){ ds.dataset.touched='1'; put(); });
     put();
   }
-  if(typeof renderAlertModal==='function'){ var ram=renderAlertModal; renderAlertModal=function(){ var r=ram.apply(this,arguments); try{ review(); }catch(e){} return r; }; }
+  if(typeof renderAlertModal==='function'){ pvxAfter('renderAlertModal',function(){ try{ review(); }catch(e){} },'#59'); }
   review();
   /* single-choice segmented controls */
   function fieldLabel(g){ var f=g.closest('.ap-field'), l=f&&f.querySelector('label'); return l?l.textContent.trim():'Choice'; }
@@ -5709,7 +5632,7 @@ try{
     }
   }
   var q=0; function soon(){ if(q) return; q=setTimeout(function(){ q=0; fix(); },150); }
-  function boot(){ fix(); new MutationObserver(soon).observe(document.body,{childList:true,subtree:true}); }
+  function boot(){ fix(); pvxWatch(soon,{childList:true,subtree:true},document.body); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 }catch(e){setTimeout(function(){throw e})}
@@ -5726,7 +5649,6 @@ try{
   function who(){ var u=(AUTH&&AUTH.currentUser)||{}, n=(typeof CURRENT_USER==='string'&&CURRENT_USER)||u.displayName||u.email||'Flow';
     return {name:n,uid:u.uid||null,ini:String(n).split(/[\s@.]+/).filter(Boolean).map(function(w){ return w[0]; }).join('').slice(0,3).toUpperCase()}; }
   function norm(v){ return String(v==null?'':v).trim().toLowerCase(); }
-  function esc(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function species(v){ var t=norm(v); return /cat|fel/.test(t)?'Feline':/dog|can|k9/.test(t)?'Canine':(t?t.charAt(0).toUpperCase()+t.slice(1):'—'); }
   function doctorId(name){ var n=norm(name).replace(/^dr\.?\s*/,''); if(!n) return 'unassigned';
     var all=(typeof rdAllDoctors==='function'?rdAllDoctors():(typeof DOCTORS!=='undefined'?DOCTORS:[]))||[];
@@ -5771,7 +5693,7 @@ try{
         if(again){ if(!stale(d)) return null; t.update(ref,{'flow_link.at':now,'flow_link.by':w.name,'flow_link.uid':w.uid,updated_at:now}); return d; }
         if(d.visit_id||d.flow_link) return null;
         t.update(ref,{visit_id:vid,flow_link:{at:now,by:w.name,uid:w.uid,visit:vid,how:how},updated_at:now,updated_by:w.ini,
-          audit:FV.arrayUnion({at:now,type:'doctor',desc:(how==='twin'?'Linked to Flow — the open admission for <b>'+esc((x.patient||{}).name)+'</b>':'Added to Flow and Rounds as a direct admit'),who:w.ini,uid:w.uid})});
+          audit:FV.arrayUnion({at:now,type:'doctor',desc:(how==='twin'?'Linked to Flow — the open admission for <b>'+pvxEsc((x.patient||{}).name)+'</b>':'Added to Flow and Rounds as a direct admit'),who:w.ini,uid:w.uid})});
         return d; }); })
       .then(function(d){ if(d) attach(id,d,vid,w,again?'new':how); })
       .catch(function(e){ console.warn('[n242 link]',e); })
@@ -5792,8 +5714,7 @@ try{
 /* PVX-N252 - every ending acts on the current patient; admissions that never reached Rounds are added (see patch_n252.py) */
 (function(){
   if(typeof completePatient!=='function') return;
-  var base=completePatient;
-  window.completePatient=completePatient=function(p,finalStatus){ var a=[].slice.call(arguments); a[0]=window.fvCurPatient?fvCurPatient(p):p; return base.apply(this,a); };
+  pvxWrap('completePatient',function(base){ return function(p,finalStatus){ var a=[].slice.call(arguments); a[0]=window.fvCurPatient?fvCurPatient(p):p; return base.apply(this,a); }; },'n252-net');
   if(typeof LOBBY!=='undefined'&&LOBBY) return;
   var tried={}, failed={};
   function ms(v){ var t=v?new Date(v).getTime():NaN; return isNaN(t)?null:t; }
@@ -5857,18 +5778,18 @@ try{
   window.pvxAdmitRefresh=refresh;
   try{ if(AUTH&&AUTH.onAuthStateChanged) AUTH.onAuthStateChanged(function(){ setTimeout(refresh,0); }); }catch(e){}
   setTimeout(refresh,0);
-  if(typeof fillDrawer==='function'){ var fd=fillDrawer; window.fillDrawer=fillDrawer=function(){ var r=fd.apply(this,arguments); try{ apply(); }catch(e){} return r; }; }
-  if(typeof openAddPatient==='function'){ var oa=openAddPatient; window.openAddPatient=openAddPatient=function(){ var r=oa.apply(this,arguments); try{ apply(); }catch(e){} return r; }; }
+  if(typeof fillDrawer==='function'){ pvxAfter('fillDrawer',function(){ try{ apply(); }catch(e){} },'n253-admit'); }
+  if(typeof openAddPatient==='function'){ pvxAfter('openAddPatient',function(){ try{ apply(); }catch(e){} },'n253-admit'); }
   /* the arrival chip: a click on Direct admit is refused (it is not a real disabled button, so the others keep their keyboard order) */
   document.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('#apArrival [data-arrival="hospitalized"]');
     if(b&&!pvxCanAdmit()){ e.stopImmediatePropagation(); e.preventDefault(); pvxAdmitDenied(); } },true);
-  if(typeof openDispConfirm==='function'){ var od=openDispConfirm; window.openDispConfirm=openDispConfirm=function(kind){ if(kind==='admit'&&!pvxCanAdmit()){ pvxAdmitDenied(); return; }
-    var r=od.apply(this,arguments); try{ var cf=document.getElementById('dispConfirm'); if(cf&&typeof activePatient!=='undefined') cf.setAttribute('data-pid',String(activePatient)); }catch(e){} return r; }; }
+  if(typeof openDispConfirm==='function'){ pvxWrap('openDispConfirm',function(od){ return function(kind){ if(kind==='admit'&&!pvxCanAdmit()){ pvxAdmitDenied(); return; }
+    var r=od.apply(this,arguments); try{ var cf=document.getElementById('dispConfirm'); if(cf&&typeof activePatient!=='undefined') cf.setAttribute('data-pid',String(activePatient)); }catch(e){} return r; }; },'n253-admit'); }
   /* a board refresh (any change on any screen) no longer closes an open Admit / Discharge confirmation or the "Admitting…" state */
-  if(typeof renderDisposition==='function'){ var rdp=renderDisposition; window.renderDisposition=renderDisposition=function(p){ try{ var cf=document.getElementById('dispConfirm');
+  if(typeof renderDisposition==='function'){ pvxWrap('renderDisposition',function(rdp){ return function(p){ try{ var cf=document.getElementById('dispConfirm');
     if(p&&cf&&!isCompleted(p)&&((typeof _dispBusy!=='undefined'&&_dispBusy)||(cf.querySelector('.confirmation')&&cf.getAttribute('data-pid')===String(p.id)))){ apply(); return; } }catch(e){}
-    return rdp.apply(this,arguments); }; }
-  if(typeof submitDisp==='function'){ var sd=submitDisp; window.submitDisp=submitDisp=function(kind){ if(kind==='admit'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ closeDispConfirm(); }catch(e){} return; } return sd.apply(this,arguments); }; }
-  if(typeof moveStatus==='function'){ var ms=moveStatus; window.moveStatus=moveStatus=function(p,st){ if(st==='Admitted'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ renderAll(); }catch(e){} return; } return ms.apply(this,arguments); }; }
+    return rdp.apply(this,arguments); }; },'n253-admit'); }
+  if(typeof submitDisp==='function'){ pvxWrap('submitDisp',function(sd){ return function(kind){ if(kind==='admit'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ closeDispConfirm(); }catch(e){} return; } return sd.apply(this,arguments); }; },'n253-admit'); }
+  if(typeof moveStatus==='function'){ pvxWrap('moveStatus',function(ms){ return function(p,st){ if(st==='Admitted'&&!pvxCanAdmit()){ pvxAdmitDenied(); try{ renderAll(); }catch(e){} return; } return ms.apply(this,arguments); }; },'n253-admit'); }
 })();
 }catch(e){setTimeout(function(){throw e})}
