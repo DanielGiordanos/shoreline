@@ -32,7 +32,7 @@ python3 tests/run.py SITE --list                 # what there is, with its tags
 | `fixtures/` | The fake Firebase, seeds, probes, and the stand-in drug library. |
 | `fonts/` | Maps the Apple system font names to Inter, so text measures the same everywhere. |
 | `timings.json` | How long each section takes. Shards are balanced with it. |
-| `seal_csp.py` | Seals Flow's page: writes its content policy with a hash for every inline script (n380). See below. |
+| `seal_csp.py` | Seals Flow's page: writes its content policy with a hash for every inline script (n380) and the `?v=` of Flow's files (n383, n384). See below. |
 
 ## Adding a build's checks
 Add a section to the app's module, or a new `sections/<app>_tNNN.py`:
@@ -45,16 +45,32 @@ async def s_t260(br):
 - Every section gets the browser and starts from nothing. Anything it leaves open is closed after it.
 - Wait for the condition you're testing with `until(pg, js)`, not a fixed time: GitHub's machines run at a different speed from the build machine.
 
-## After changing Flow's page (n380)
-Flow's `index.html` carries a content security policy that lists every inline script by its SHA-256. An inline script that isn't in the list doesn't run.
+## After changing Flow (n380, n383, n384)
+**Where Flow is (n383, n384).** `index.html` has the markup, three small styles that paint before anything loads, and about twenty small scripts that run before the app. The rest is five files in `assets/flow/`:
+
+| File | What it is |
+| --- | --- |
+| `app.css` | The styles that sat in `<head>`: the base sheet and the blocks after it, each under a heading with the id it had. |
+| `layers.css` | The styles that sat in `<body>` (`pvx-n144-css` … ). Linked in `<body>`, so it comes after the styles the shared assets add to `<head>`. |
+| `app.js` | Flow's main script. |
+| `layers.js` | The scripts that followed it, in the order they ran, each under a heading with the id it had (`pvx-n144-js` …). |
+| `layers2.js` | The ones that run after the Yakuri library: n254 on. |
+
+- In the two script layer files each block runs inside its own `try{ … }catch`, because each was its own `<script>` and one that threw never stopped the next. A new block goes at the end of `layers2.js` in the same form.
+- A new style block goes at the end of `layers.css` under a heading like the others. Later wins, as it did in the page.
+- An address in a style is written from the site's root (`url("/assets/img/…")`).
+
+**After any change, run the seal:**
 ```
-python3 _ci/seal_csp.py .            # after any change to an inline script in index.html
+python3 _ci/seal_csp.py .            # after a change to an inline script in index.html, or to a file in assets/flow/
 python3 _ci/seal_csp.py . --check    # says whether the page is sealed
 ```
-- **Every change to an inline script in Flow's `index.html` ends with the seal.** `flow_t380` fails first if it was missed, and names this tool.
-- Styles, markup and the files Flow loads (`/assets/…`, `sw.js`) need no seal.
+- **The policy (n380).** Flow's `index.html` carries a content security policy that lists every inline script by its SHA-256. An inline script that isn't in the list doesn't run. `flow_t380` fails first if the seal was missed, and names this tool.
+- **The `?v=` (n383, n384).** The page asks for each of the five files as `file?v=<the start of its SHA-256>`, in its tag and in its preload. The seal writes those, so a changed file is a new address. `flow_t383` and `flow_t384` fail if one is stale.
+- Markup needs no seal.
 - An inline `on…=` handler can't be sealed and won't run: add a listener in a script instead.
 - Only Flow's page has the policy. Rounds, Treatment and the other apps are unchanged.
+- **A check that reads Flow's source** uses `core.flow_code()`: the page and its five files as one text. `core.flow_style('pvx-n184-css')` gives one style block by the id it had.
 
 ## What never leaves the build machine
 - **`local_licensed.py`** needs the licensed Yakuri library. It runs when `YK_SEED` points at the licensed test release.
