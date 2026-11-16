@@ -2486,6 +2486,29 @@ body{letter-spacing:normal}
 #pvxTopnav,nav.topnav{letter-spacing:-0.16px}
 
 </style>
+
+<script id="pvx-n397-js">
+/* PVX-N397 · Collaboration and sharing: a link to one case, the Copy link confirmation, and the utilization summary */
+const OR_SYM={
+  copy:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5V5a2 2 0 0 1 2-2h4.6L20 7.4V17a2 2 0 0 1-2 2h-1.5"/><path d="M15.5 3v4.5H20"/><rect x="4" y="6.5" width="12.5" height="14.5" rx="2"/></svg>',
+  share:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 9.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7.5a2 2 0 0 0-2-2h-1.5"/><line x1="12" y1="3" x2="12" y2="14"/><polyline points="8.5 6.5 12 3 15.5 6.5"/></svg>',
+  check:'<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>'};
+function orCaseLink(c){ return location.origin+location.pathname+'#case='+encodeURIComponent(c.id); }
+function orWireShare(c){
+  const cp=document.getElementById('caseCopy'), sh=document.getElementById('caseShare');
+  if(cp) cp.onclick=()=>{ const url=orCaseLink(c);
+    const done=()=>{ cp.innerHTML=OR_SYM.check+'<span>Copied</span>'; toast('Link copied. It opens this case after sign-in and carries no name.');
+      setTimeout(()=>{ if(cp.isConnected) cp.innerHTML=OR_SYM.copy+'<span>Copy link</span>'; },1300); };
+    const fail=()=>toast('Couldn’t copy the link. Select the address after opening the case, and copy it instead.',{error:true});
+    try{ (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(url):Promise.reject()).then(done,fail); }catch(e){ fail(); } };
+  if(sh) sh.onclick=()=>{ try{ navigator.share({title:'OR case', url:orCaseLink(c)}).catch(()=>{}); }catch(e){} };
+}
+function orUtilSummary(a){
+  const rs=a.byRoom.slice().sort((x,y)=>y.pct-x.pct); if(!rs.length) return '';
+  const top=rs[0], same=rs.every(r=>r.pct===top.pct);
+  return `<p class="or-an-sum">${same?`Every room was in use ${top.pct}% of a 10-hour day.`:`${esc(top.room.name)} was the busiest, in use ${top.pct}% of a 10-hour day.`}</p>`;
+}
+</script>
 </head>
 <body>
 <script id="pvx-theme-js">
@@ -3043,7 +3066,7 @@ function serviceFor(proc){ return PROC_SERVICE[proc] || 'Soft Tissue'; }
 let PREF_CARDS = [];   /* or-demo.js */
 
 /* ---------- cases ---------- */
-function ev(status,t){ return {status,t}; }
+function ev(status,t){ const e={status,t}; try{ if(LIVE&&window.orMe){ const n=orMe().name; if(n) e.by=n; } }catch(_){} return e; }   /* PVX-N397: who did it */
 const CASE_DEFAULTS={techId:null, anesthesiaId:null, asa:null};   /* the demo assigns its invented team (or-demo.js) */
 function mkCase(c){
   return Object.assign({
@@ -3307,7 +3330,7 @@ function analytics(){
   const first=hist.filter(c=>c.sched<=8*60+30); const onTime=first.filter(c=>evT(c,'in_room')-c.sched<=10).length;
   const delayed=hist.filter(c=>c.delay).length;
   const causes={}; hist.filter(c=>c.delay).forEach(c=>{ causes[c.delay.reason]=(causes[c.delay.reason]||0)+1; });
-  const causeList=Object.entries(causes).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({reason:k, pct:Math.round(v/delayed*100)}));
+  const causeList=Object.entries(causes).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({reason:k, n:v, pct:Math.round(v/delayed*100)}));
   const byProc={}; hist.forEach(c=>{ const d=evT(c,'procedure_finished')-evT(c,'procedure_started'); (byProc[c.procedure]=byProc[c.procedure]||{sched:c.dur,list:[]}).list.push(d); });
   const durRows=Object.entries(byProc).map(([k,v])=>({proc:k, sched:v.sched, actual:Math.round(v.list.reduce((a,b)=>a+b,0)/v.list.length), n:v.list.length})).sort((a,b)=>(b.actual-b.sched)-(a.actual-a.sched)).slice(0,7);
   const turnovers=[]; ROOMS.forEach(r=>{ const days={}; hist.filter(c=>c.roomId===r.id).forEach(c=>(days[c.date]=days[c.date]||[]).push(c));
@@ -3517,12 +3540,20 @@ function rebuild(){
   SHEETS.forEach(sh=>{ const p=patientFrom(sh); PATIENTS.push(p); PATIENT[p.id]=p;
     (Array.isArray(sh.surgery_past)?sh.surgery_past:[]).forEach(ps=>{ if(!ps||!ps.id||(sh.surgery&&sh.surgery.id===ps.id)) return; const pc=caseFrom(Object.assign({},sh,{surgery:ps})); pc._past=true; next.push(pc); });
     const s=sh.surgery; if(!s||!s.id) return;
-    const fresh=caseFrom(sh), old=CASES.find(x=>x.id===fresh.id); next.push(old?replaceInto(old,fresh):fresh);
+    const fresh=caseFrom(sh), old=CASES.find(x=>x.id===fresh.id); if(old&&old.status!==fresh.status&&!fresh._past) orHeard.push(fresh.id);   /* PVX-N397 */
+    next.push(old?replaceInto(old,fresh):fresh);
     WRITTEN.set(s.id,JSON.parse(JSON.stringify(s))); if(fresh.date===TODAY&&!['complete','cancelled'].includes(fresh.status)) want.add(sh._id); });
   PATIENTS.sort((a,b)=>a.name.localeCompare(b.name));
   CASES.length=0; next.forEach(c=>CASES.push(c));
   daySubs.forEach((u,id)=>{ if(!want.has(id)) watchDay(id,false); }); want.forEach(id=>watchDay(id,true));
-  storageMessage(''); safeRender(); if(orHashWait&&firstSnap) orHashWait=!orOpenHash(); }
+  storageMessage(''); safeRender(); if(orHashWait&&firstSnap) orHashWait=!orOpenHash(); orAnnounce(); }
+/* PVX-N397: someone else's step on a case, said once */
+let orHeard=[];
+function orAnnounce(){ const ids=orHeard.splice(0); const me=(user().name||'');
+  ids.forEach(id=>{ const c=caseById(id); if(!c||!STATUS[c.status]) return; const e=lastEvent(c); if(!e||e.status!==c.status) return;
+    if(e.by&&e.by===me) return;   /* your own step, on its way back */
+    if(document.body.classList.contains('display-mode')) return;   /* the wall display shows it already */
+    notify(`${pt(c).name} · ${STATUS[c.status].label}`, `${ROOM[c.roomId]?ROOM[c.roomId].name+' · ':''}${fmtT(e.t)}${e.by?' · by '+e.by:' · on another screen'}`, `var(--st-${STAGES[STATUS[c.status].stage].color})`); }); }
 let srT=null;
 function busy(){ const a=document.activeElement; return $('#modal').classList.contains('open')||menuOpen||(a&&a.matches&&a.matches('#caseBody input,#caseBody textarea,#caseBody select,#drawer input,#drawer textarea'));}
 function safeRender(){ clearTimeout(srT); if(busy()){ srT=setTimeout(safeRender,900); return; } try{ render(); if(UI.drawerId){ if(caseById(UI.drawerId)) renderDrawer(); else closeDrawer(); } }catch(e){ console.warn('[OR render]',e); } }
@@ -3627,7 +3658,10 @@ const ICON_SVG = {
   risk:      '<path d="M12 3.6 2.6 20.4h18.8z"/><line x1="12" y1="10" x2="12" y2="14.4"/><circle cx="12" cy="17.5" r=".95" fill="currentColor" stroke="none"/>',
   airway:    '<path d="M3 8.5c2.6 0 2.6 2.6 5.2 2.6s2.6-2.6 5.2-2.6 2.6 2.6 5.2 2.6"/><path d="M3 15c2.6 0 2.6 2.6 5.2 2.6s2.6-2.6 5.2-2.6 2.6 2.6 5.2 2.6"/><line x1="4.5" y1="20" x2="19.5" y2="4"/>',
   paw:       '<circle cx="6.4" cy="10.4" r="1.75"/><circle cx="10.3" cy="6.7" r="1.85"/><circle cx="14.8" cy="7" r="1.85"/><circle cx="18.3" cy="11" r="1.75"/><path d="M12.4 12.4c-2.5 0-4.8 1.9-4.8 4.3 0 1.8 1.5 2.9 3.2 2.9.9 0 1.1-.4 1.6-.4s.7.4 1.6.4c1.7 0 3.2-1.1 3.2-2.9 0-2.4-2.3-4.3-4.8-4.3z"/>',
-  allergy:   '<path d="M12 3.8c2.9 3.9 4.8 6.2 4.8 9a4.8 4.8 0 0 1-9.6 0c0-2.8 1.9-5.1 4.8-9z"/><line x1="4.5" y1="20" x2="19.5" y2="4"/>',
+  allergy:   '<g transform="rotate(45 12 12)"><rect x="3" y="8.4" width="18" height="7.2" rx="3.6"/><line x1="12" y1="8.4" x2="12" y2="15.6"/></g>',   /* PVX-N396: a capsule (it was a drop with a slash, now Blood not confirmed) */
+  bloodX:    '<path d="M12 3.8c2.9 3.9 4.8 6.2 4.8 9a4.8 4.8 0 0 1-9.6 0c0-2.8 1.9-5.1 4.8-9z"/><line x1="4.5" y1="20" x2="19.5" y2="4"/>',   /* PVX-N396: slash variants for the "not" states */
+  implantX:  '<rect x="2.8" y="9" width="18.4" height="6" rx="3"/><circle cx="7.8" cy="12" r="1.35"/><circle cx="16.2" cy="12" r="1.35"/><line x1="4.5" y1="20" x2="19.5" y2="4"/>',
+  noteX:     '<path d="M14 3.2H7.6a2 2 0 0 0-2 2v13.6a2 2 0 0 0 2 2h8.8a2 2 0 0 0 2-2V8z"/><path d="M14 3.2V8h4.4"/><line x1="8.6" y1="13" x2="15" y2="13"/><line x1="8.6" y1="16.4" x2="13" y2="16.4"/><line x1="4.5" y1="20" x2="19.5" y2="4"/>',
   blood:     '<path d="M12 3.8c2.9 3.9 4.8 6.2 4.8 9a4.8 4.8 0 0 1-9.6 0c0-2.8 1.9-5.1 4.8-9z"/>',
   dnr:       '<path d="M20.2 6a4.5 4.5 0 0 0-6.4 0L12 7.7l-1.8-1.7A4.5 4.5 0 1 0 3.8 12.4L12 20.3l8.2-7.9A4.5 4.5 0 0 0 20.2 6z"/><line x1="4.5" y1="20" x2="19.5" y2="4"/>',
   implant:   '<rect x="2.8" y="9" width="18.4" height="6" rx="3"/><circle cx="7.8" cy="12" r="1.35"/><circle cx="16.2" cy="12" r="1.35"/>',
@@ -3646,8 +3680,8 @@ const ICON_SVG = {
   /* Pravix perioperative milestones. These are intentionally geometric and
      original, with a shared stroke language instead of copied vendor glyphs. */
   scheduled:          '<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><line x1="8" y1="3.5" x2="8" y2="7.5"/><line x1="16" y1="3.5" x2="16" y2="7.5"/><line x1="4" y1="9.5" x2="20" y2="9.5"/><circle cx="8" cy="13.5" r=".8" fill="currentColor" stroke="none"/><circle cx="12" cy="13.5" r=".8" fill="currentColor" stroke="none"/><circle cx="16" cy="13.5" r=".8" fill="currentColor" stroke="none"/>',
-  arrived:            '<path d="M5 20V4h9v16"/><path d="M9 12h11"/><polyline points="16 8 20 12 16 16"/><circle cx="11" cy="12" r=".7" fill="currentColor" stroke="none"/>',
-  preop:              '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1"/><path d="M8.5 10.5h7M8.5 14h4.5"/><circle cx="15.7" cy="17.2" r="2.2"/><path d="m14.7 17.2.7.8 1.4-1.6"/>',
+  arrived:            '<path d="M10 20V4h9v16"/><path d="M3 12h11"/><polyline points="10.5 8.5 14 12 10.5 15.5"/><circle cx="16.6" cy="12" r=".7" fill="currentColor" stroke="none"/>',   /* PVX-N396: going in */
+  preop:              '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1"/><path d="M8.5 10.5h7M8.5 14h7M8.5 17.5h4.5"/>',   /* PVX-N396: no badge too small to read */
   preop_complete:     '<path d="M5 6h8M5 12h8M5 18h8"/><polyline points="15 5 17 7 21 3"/><polyline points="15 11 17 13 21 9"/><polyline points="15 17 17 19 21 15"/>',
   holding:            '<path d="M3 18V8M21 18v-6H8a5 5 0 0 0-5 5v1M3 14h18"/><circle cx="9" cy="9" r="2.4"/>',
   ready:              '<circle cx="12" cy="12" r="9"/><polyline points="7.8 12.2 10.7 15.1 16.7 8.8"/>',
@@ -3656,7 +3690,7 @@ const ICON_SVG = {
   procedure_started:  '<path d="m4 19 4.4-4.4 2 2L6 21H3z"/><path d="m9.2 13.8 7.9-7.9 2.8 2.8-7.9 7.9"/><path d="m16.2 6.8 1.9-2 2.8 2.8-2 1.9"/>',
   closing:            '<path d="M5 17c1.7-6 4.2-9 7.2-9 3.2 0 4.5 3.1 2.7 5.2-1.7 2-5.2 1.8-5.8-.3-.5-1.8 1.8-3 4.5-1.1 2.1 1.5 3.2 4.1 5.4 6.2"/><path d="m17.3 17.3 3.2 3.2"/>',
   procedure_finished: '<circle cx="12" cy="12" r="9"/><rect x="8.5" y="8.5" width="7" height="7" rx="1.2"/>',
-  out_of_room:        '<path d="M5 20V4h9v16"/><path d="M4 12h11"/><polyline points="12 8 16 12 12 16"/><circle cx="11" cy="12" r=".7" fill="currentColor" stroke="none"/>',
+  out_of_room:        '<path d="M5 20V4h9v16"/><path d="M9 12h11"/><polyline points="16 8 20 12 16 16"/>',   /* PVX-N396: going out */
   recovery:           '<path d="M3 13h3l1.5-3.5 2.2 7 2.2-10 2.2 8 1.4-2.5H21"/><path d="M6.2 5.7a3.7 3.7 0 0 1 5.8.5 3.7 3.7 0 0 1 5.8-.5"/>',
   recovery_complete:  '<path d="M4 13h3l1.4-3 2.1 6 2-9 2.2 7 1.3-2H20"/><polyline points="14.8 18 17 20 21 15.5"/>',
   out_of_recovery:    '<path d="M4 15h10"/><polyline points="11 11 15 15 11 19"/><path d="M5 9c1.7-4 4.1-5.8 7-5.8S17.4 5 19 9"/><path d="M6 21h12"/>',
@@ -3680,12 +3714,12 @@ const FLAG_DEFS = {
   isolation:  {icon:'isolation', tone:'crit', label:'Isolation',           group:'Patient safety', hint:'Infectious precautions — terminal clean after the case'},
   caution:    {icon:'paw',       tone:'warn', label:'Handling caution',    group:'Patient safety', hint:'Fractious or aggressive — sedation plan and handling precautions'},
   consentX:   {icon:'consentX',  tone:'crit', label:'Consent not signed',  group:'Documentation',  hint:'Surgical consent has not been signed'},
-  bloodX:     {icon:'blood',     tone:'crit', label:'Blood not confirmed', group:'Case setup',     hint:'Blood products required but not yet confirmed available'},
-  implantX:   {icon:'implant',   tone:'crit', label:'Implant unavailable', group:'Case setup',     hint:'A required implant is not in stock'},
+  bloodX:     {icon:'bloodX',     tone:'crit', label:'Blood not confirmed', group:'Case setup',     hint:'Blood products required but not yet confirmed available'},
+  implantX:   {icon:'implantX',   tone:'crit', label:'Implant unavailable', group:'Case setup',     hint:'A required implant is not in stock'},
   equipmentX: {icon:'equipment', tone:'crit', label:'Equipment unavailable',group:'Case setup',    hint:'Required equipment is not available'},
   imagingX:   {icon:'imaging',   tone:'warn', label:'Imaging not reviewed',group:'Case setup',     hint:'Pre-op imaging has not been reviewed'},
   recordX:    {icon:'recordX',   tone:'warn', label:'Anesthesia record unsigned', group:'Documentation', hint:'Anesia record is complete but not signed'},
-  noteX:      {icon:'note',      tone:'warn', label:'Operative note not written', group:'Documentation', hint:'The operative record has not been drafted or signed'},
+  noteX:      {icon:'noteX',      tone:'warn', label:'Operative note not written', group:'Documentation', hint:'The operative record has not been drafted or signed'},
   emergency:  {icon:'bolt',      tone:'crit', label:'Emergency',           group:'Case type',      hint:'Unscheduled emergency case'},
   addon:      {icon:'addon',     tone:'info', label:'Add-on',              group:'Case type',      hint:'Added to the schedule after the day was built'},
   blood:      {icon:'blood',     tone:'info', label:'Blood products',      group:'Case setup',     hint:'Blood products reserved for this case'},
@@ -4139,10 +4173,10 @@ function renderDrawer(){
   $('#drawerClose').onclick=closeDrawer;
 
   let alerts='';
-  if(late) alerts+=`<div class="or-alert"><div class="ai">!</div><div><b>Delay · ${late} min</b><span>${esc(c.delay?c.delay.reason:'Scheduled time has passed')}${c.delay&&c.delay.note?' · '+esc(c.delay.note):''}</span></div></div>`;
-  if(isPre(c)&&!rs.ready) alerts+=`<div class="or-alert is-crit"><div class="ai">!</div><div><b>Not ready · ${rs.done} / ${rs.total}</b><span>${esc(readinessReason(c))}</span></div></div>`;
-  if(c.kura.some(k=>k.status==='Unavailable')) alerts+=`<div class="or-alert is-crit"><div class="ai">!</div><div><b>Implant unavailable</b><span>${esc(c.kura.find(k=>k.status==='Unavailable').item)} · Kura</span></div></div>`;
-  if(inRoom(c)&&!c.timeout.done) alerts+=`<div class="or-alert"><div class="ai">!</div><div><b>Time out not completed</b><span>Complete the surgical time out before incision</span></div></div>`;
+  if(late) alerts+=`<div class="or-alert"><div class="ai" aria-hidden="true">${I.warn}</div><div><b>Delay · ${late} min</b><span>${esc(c.delay?c.delay.reason:'Scheduled time has passed')}${c.delay&&c.delay.note?' · '+esc(c.delay.note):''}</span></div></div>`;
+  if(isPre(c)&&!rs.ready) alerts+=`<div class="or-alert is-crit"><div class="ai" aria-hidden="true">${I.warn}</div><div><b>Not ready · ${rs.done} / ${rs.total}</b><span>${esc(readinessReason(c))}</span></div></div>`;
+  if(c.kura.some(k=>k.status==='Unavailable')) alerts+=`<div class="or-alert is-crit"><div class="ai" aria-hidden="true">${I.warn}</div><div><b>Implant unavailable</b><span>${esc(c.kura.find(k=>k.status==='Unavailable').item)} · Kura</span></div></div>`;
+  if(inRoom(c)&&!c.timeout.done) alerts+=`<div class="or-alert"><div class="ai" aria-hidden="true">${I.warn}</div><div><b>Time out not completed</b><span>Complete the surgical time out before incision</span></div></div>`;
   if(!alerts && (isPre(c)||inRoom(c))) alerts=`<div class="or-alert is-ok"><div class="ai">${I.check}</div><div><b>No unresolved alerts</b><span>${isPre(c)?'Patient is ready for OR':'Case is progressing normally'}</span></div></div>`;
 
   let nowBlock='';
@@ -4267,10 +4301,11 @@ function renderCase(){
         <div class="meta"><b class="or-case-date">${esc(c.date===TODAY?'Today, '+parseISO(c.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}):fmtDateLong(c.date))}</b> ${[esc(ptLine(p)), p.owner?`<b>${esc(p.owner)}</b>`:'', esc(p.hid||''), esc(ROOM[c.roomId].name), esc(c.service)].filter(Boolean).map(x=>' · '+x).join('')}</div></div></div>
     </div>
     <div class="or-case-side">
-      <div class="or-actions"><button class="or-btn" id="caseAnesia">Open Anesia</button>${NEXT_ACTION[c.status]?(()=>{ const nx=NEXT_ACTION[c.status], why=transitionError(c,nx); return `<span class="or-next"><button class="or-btn primary" id="caseAdvance"${why?' aria-disabled="true"':''}>${esc(ACTION_LABEL[nx])}</button>${why?`<small>${esc(why)}</small>`:''}</span>`; })():''}</div>
+      <div class="or-actions"><button class="or-btn" id="caseCopy" title="Copy a link to this case. It opens after sign-in and carries no name.">${OR_SYM.copy}<span>Copy link</span></button>${navigator.share?`<button class="or-btn" id="caseShare" title="Share a link to this case">${OR_SYM.share}<span>Share…</span></button>`:''}<button class="or-btn" id="caseAnesia">Open Anesia</button>${NEXT_ACTION[c.status]?(()=>{ const nx=NEXT_ACTION[c.status], why=transitionError(c,nx); return `<span class="or-next"><button class="or-btn primary" id="caseAdvance"${why?' aria-disabled="true"':''}>${esc(ACTION_LABEL[nx])}</button>${why?`<small>${esc(why)}</small>`:''}</span>`; })():''}</div>
     </div>`;
   $('#caseBack').onclick=()=>{ if(UI.casePushed&&history.state&&history.state.pvxOrCase){ history.back(); } else leaveCase(); };
   $('#caseAnesia').onclick=()=>openAnesia(c);
+  orWireShare(c);   /* PVX-N397 */
   const adv=$('#caseAdvance'); if(adv) adv.onclick=()=>doAdvance(c);
   $$('#caseTabs button').forEach(b=>{ b.classList.toggle('active',b.dataset.tab===UI.caseTab);
     if(b.dataset.tab==='preop'){ b.innerHTML='Pre-op'+(isPre(c)&&!rs.ready?`<span class="badge">${rs.pending.length}</span>`:''); } });
@@ -4285,7 +4320,7 @@ function renderCase(){
 function timelineHtml(c){
   const done=c.events.slice().sort((a,b)=>a.t-b.t);
   const future=STATUS_ORDER.filter(s=>s!=='cancelled' && statusIdx(s)>statusIdx(c.status) && !['out_of_recovery','preop_complete','holding','arrived'].includes(s));
-  const items=done.map((e,i)=>`<div class="tl-item ${i===done.length-1&&c.status!=='complete'?'current':''}" style="--tl-col:var(--st-${STAGES[STATUS[e.status].stage].color});--tl-rgb:var(--st-${STAGES[STATUS[e.status].stage].color}-rgb);animation-delay:${i*40}ms"><span class="tl-node">${milestoneIcon(e.status,STATUS[e.status].label)}</span><div class="tl-t">${esc(STATUS[e.status].tl)}<span>${fmtT(e.t)}</span></div></div>`)
+  const items=done.map((e,i)=>`<div class="tl-item ${i===done.length-1&&c.status!=='complete'?'current':''}" style="--tl-col:var(--st-${STAGES[STATUS[e.status].stage].color});--tl-rgb:var(--st-${STAGES[STATUS[e.status].stage].color}-rgb);animation-delay:${i*40}ms"><span class="tl-node">${milestoneIcon(e.status,STATUS[e.status].label)}</span><div class="tl-t">${esc(STATUS[e.status].tl)}<span>${fmtT(e.t)}${e.by?` · ${esc(e.by)}`:''}</span></div></div>`)
     .concat(c.status==='complete'||c.status==='cancelled'?[]:future.map((s,i)=>`<div class="tl-item upcoming" style="--tl-col:var(--st-${STAGES[STATUS[s].stage].color});--tl-rgb:var(--st-${STAGES[STATUS[s].stage].color}-rgb);animation-delay:${(done.length+i)*40}ms"><span class="tl-node">${milestoneIcon(s,STATUS[s].label)}</span><div class="tl-t">${esc(STATUS[s].tl)}<span></span></div></div>`));
   return `<div class="timeline or-timeline">${items.join('')}</div>`;
 }
@@ -4293,9 +4328,9 @@ function tabOverview(c){
   const p=pt(c); const rs=readinessSummary(c); const late=lateMin(c);
   const patient=panel('Patient', `<div class="or-kv">${cell('Species · breed',esc(p.species+' · '+p.breed))}${cell('Sex · age · weight',esc([orSexLabel(p.sex),p.age,(p.kg!=null&&p.kg!=='—'&&p.kg!=='')?p.kg+' kg':''].filter(Boolean).join(' · ')||'—'))}${cell('Owner',esc(p.owner))}${cell('CPR / DNR',esc(p.cpr),p.cpr==='DNR'?'warn':'')}${cell('Allergies',esc(p.allergies),orAllergyKnown(p.allergies)?'warn':'')}${cell('Relevant conditions',esc(p.conditions))}${cell('Blood type',esc(p.bloodType))}${cell('Crossmatch',esc(p.crossmatch))}${cell('Fasting',esc(p.fasting))}${cell('Current location',esc(p.location))}</div>`, {cls:'span7'});
   const details=panel('Case', `<div class="or-kv">${cell('Procedure',esc(procLabel(c)))}${cell('Service',esc(c.service))}${cell('Room',esc(ROOM[c.roomId].name))}${cell('Scheduled',fmtT(c.sched))}${cell('Estimated duration',fmtDur(c.dur))}${cell('Type',esc(c.type==='scheduled'?'Scheduled':c.type==='addon'?'Add-on':'Emergency add-on'))}${cell('Priority',esc(c.priority[0].toUpperCase()+c.priority.slice(1)))}${c.requestedAt?cell('Requested',fmtT(c.requestedAt)):''}${cell('Surgeon',esc(person(c.surgeonId).full||person(c.surgeonId).name))}${cell('Anesthesia',esc(person(c.anesthesiaId).full||person(c.anesthesiaId).name))}${cell('Technician',esc(person(c.techId).name))}${cell('Readiness',`${rs.done} / ${rs.total}`,rs.ready?'ok':'warn')}</div>
-    ${late?`<div class="or-alert" style="margin:14px 0 0"><div class="ai">!</div><div><b>Delay · ${late} min</b><span>${esc(c.delay?c.delay.reason:'Scheduled time has passed')}${c.delay&&c.delay.note?' · '+esc(c.delay.note):''}</span></div></div>`:''}
+    ${late?`<div class="or-alert" style="margin:14px 0 0"><div class="ai" aria-hidden="true">${I.warn}</div><div><b>Delay · ${late} min</b><span>${esc(c.delay?c.delay.reason:'Scheduled time has passed')}${c.delay&&c.delay.note?' · '+esc(c.delay.note):''}</span></div></div>`:''}
     ${c.impact&&c.impact.minutes?`<div class="or-impact" style="margin-top:12px"><div><b>Schedule impact</b><span>Delays the next case in ${esc(ROOM[c.impact.roomId].name)} by ≈ ${c.impact.minutes} min</span></div></div>`:''}
-    ${c.notes?`<div class="or-alert is-ok" style="margin:14px 0 0"><div class="ai">i</div><div><b>Note</b><span>${esc(c.notes)}</span></div></div>`:''}`, {cls:'span5'});
+    ${c.notes?`<div class="or-alert is-ok" style="margin:14px 0 0"><div class="ai" aria-hidden="true"><svg viewBox="0 0 24 24"><line x1="12" y1="11" x2="12" y2="17.5"/><circle cx="12" cy="7" r=".6"/></svg></div><div><b>Note</b><span>${esc(c.notes)}</span></div></div>`:''}`, {cls:'span5'});
   const tl=panel('Surgical timeline', timelineHtml(c), {cls:'span5', right:`<span class="count">${c.events.length} events</span>`});
   const an=anOf(c);
   const anesia=panel('Anesia', an?`<div class="or-anesia${an.real?' real':''}"><div class="or-anesia-top"><span class="brand"><i></i>Anesia</span><span class="state">${an.state==='active'?'Active':an.state==='ended'?'Ended':'Pre-op assessment'}</span></div><div class="or-anesia-mode">${esc(an.mode)}</div>
@@ -4473,7 +4508,8 @@ function caseAction(c, act, btn){
     case 'send-flow': sendToFlow(c); break;
     case 'luna-draft': lunaDraft(c); break;
     case 'rec-review': c.record=defaultRecord(c); c.record.status='review'; save(); toast('Record marked reviewed'); renderCase(); break;
-    case 'rec-sign': if(c.record?.status!=='review'){toast('Review the current draft before signing.',{error:true});return;} c.record=defaultRecord(c); c.record.status='signed'; const who=LIVE&&window.orMe?orMe():null; c.record.signedBy=who&&who.name?who.name:(person(c.surgeonId).full||person(c.surgeonId).name); if(who) c.record.signedUid=who.uid; c.record.signedAt=now(); save(); notify(LIVE?'Operative record signed':'Demo · signature recorded locally', `${p.name} · ${c.record.signedBy}${LIVE?'':' (not authenticated)'}`, 'var(--st-ready)'); renderCase(); break;
+    case 'rec-sign': if(c.record?.status!=='review'){toast('Review the current draft before signing.',{error:true});return;} const who=LIVE&&window.orMe?orMe():null; if(LIVE&&!(who&&who.uid&&who.name)){ toast('Not signed. OR can’t tell who’s signed in on this computer — sign in again, then sign.',{error:true}); return; }   /* PVX-N396: never sign in someone else's name */
+      c.record=defaultRecord(c); c.record.status='signed'; c.record.signedBy=who?who.name:(person(c.surgeonId).full||person(c.surgeonId).name); if(who) c.record.signedUid=who.uid; c.record.signedAt=now(); save(); notify(LIVE?'Operative record signed':'Demo · signature recorded locally', `${p.name} · ${c.record.signedBy}${LIVE?'':' (not authenticated)'}`, 'var(--st-ready)'); renderCase(); break;
     case 'pref-edit': UI.prefEdit=true; renderCase(); break;
     case 'pref-cancel': UI.prefEdit=false; renderCase(); break;
     case 'pref-save': { const pc=PREFS.find(x=>x.id===c.prefCardId)||PREFS.find(x=>x.procedure===c.procedure&&x.surgeonId===c.surgeonId)||PREFS.find(x=>x.procedure===c.procedure); $$('[data-pref]').forEach(n=>pc[n.dataset.pref]=n.value); UI.prefEdit=false; save(); toast('Preference card saved'); renderCase(); break; }
@@ -4591,7 +4627,8 @@ function renderSchedule(){
        common and must stay legible: pack each lane into sub-rows, first fit. */
     const items=cs.map(c=>({c,...scheduleRange(c)})).sort((a,b)=>a.start-b.start);
     const rowEnd=[];
-    items.forEach(it=>{ let row=rowEnd.findIndex(e=>e<=it.start); if(row<0){ row=rowEnd.length; } rowEnd[row]=it.end; it.row=row; });
+    items.forEach(it=>{ const vEnd=Math.max(it.end, it.start+SCHED_SPAN*0.06); /* PVX-N395: the drawn width, not only the time */
+      let row=rowEnd.findIndex(e=>e<=it.start); if(row<0){ row=rowEnd.length; } rowEnd[row]=vEnd; it.row=row; });
     const rows=Math.max(1,rowEnd.length);
     const blocks=items.map(({c,start,end,row})=>{
       const w=Math.max(6,pctX(end)-pctX(start));
@@ -4676,14 +4713,15 @@ function renderAnalytics(){
     kpiCard('Emergency cases', a.total?String(a.emergencies):'—', a.total?`${a.addons} scheduled add-on${a.addons===1?'':'s'}`:'No completed cases in the last 30 days', 'red'),
     kpiCard('Avg recovery', a.nRec?fmtDur(a.avgRec):'—', a.nRec?`Recovery start → complete · ${a.nRec} case${a.nRec===1?'':'s'}`:'Not enough data yet', 'cyan'),
   ].join('');
-  const util=panel('Utilization by room', !a.total?'<p class="sub">No completed cases in the last 30 days</p>':a.byRoom.map(r=>`<div class="or-bar"><span class="k">${esc(r.room.name)}<small>${esc(r.room.service)}</small></span><div class="track"><i style="width:${r.pct}%"></i></div><span class="v">${r.pct}%</span></div>`).join(''), {});
-  const causes=panel('Delay causes', a.causeList.map((d,i)=>`<div class="or-bar"><span class="k" title="${esc(d.reason)}">${esc(d.reason)}</span><div class="track"><i style="width:${d.pct}%;background:${i===0?'var(--or-late)':'var(--accent)'}"></i></div><span class="v">${d.pct}%</span></div>`).join('')||'<div class="or-empty">No delays recorded</div>', {right:`<span class="count">${a.delayed} delayed</span>`});
-  const dur=panel('Scheduled vs actual duration · <span style="color:var(--ink-400);font-weight:600">last 30 days</span>', `<div class="or-dur head"><span>Procedure</span><span class="n">Scheduled</span><span class="n">Avg actual</span><span class="n">Cases</span></div>`+a.durRows.map(r=>`<div class="or-dur"><b>${esc(r.proc)}</b><span class="n">${r.sched} min</span><span class="n ${r.actual>r.sched+5?'over':''}">${r.actual} min</span><span class="n">${r.n}</span></div>`).join(''), {cls:'span12'});
+  const util=panel('Utilization by room · <span class="or-an-when">last 30 days</span>', !a.total?'<p class="sub">No completed cases in the last 30 days</p>':orUtilSummary(a)+a.byRoom.map(r=>`<div class="or-bar is-util" role="img" aria-label="${esc(r.room.name)}, ${esc(r.room.service)}: in use ${r.pct}% of a 10-hour day"><span class="k" aria-hidden="true">${esc(r.room.name)}<small>${esc(r.room.service)}</small></span><div class="track" aria-hidden="true"><i style="width:${r.pct}%"></i></div><span class="v" aria-hidden="true">${r.pct}%</span></div>`).join(''), {});
+  const causes=panel('Delay causes · <span class="or-an-when">last 30 days</span>', (a.causeList.length?`<p class="or-an-sum">Most often: ${esc(a.causeList[0].reason)}, ${a.causeList[0].n} of ${a.delayed} delayed case${a.delayed===1?'':'s'}.</p>`:'')+a.causeList.map(d=>`<div class="or-bar is-cause" role="img" aria-label="${esc(d.reason)}: ${d.n} of ${a.delayed} delayed case${a.delayed===1?'':'s'}, ${d.pct}%"><span class="k" aria-hidden="true">${esc(d.reason)}<small>${d.n} of ${a.delayed}</small></span><div class="track" aria-hidden="true"><i style="width:${d.pct}%"></i></div><span class="v" aria-hidden="true">${d.pct}%</span></div>`).join('')||'<div class="or-empty">No delays recorded</div>', {right:`<span class="count">${a.delayed} delayed</span>`});
+  const dur=panel('Scheduled vs actual duration · <span class="or-an-when">last 30 days</span>', `<div role="table" aria-label="Scheduled vs actual duration, last 30 days"><div class="or-dur head" role="row"><span role="columnheader">Procedure</span><span class="n" role="columnheader">Scheduled</span><span class="n" role="columnheader">Avg actual</span><span class="n" role="columnheader">Cases</span></div>`+a.durRows.map(r=>{ const over=r.actual-r.sched; return `<div class="or-dur" role="row"><b role="rowheader">${esc(r.proc)}</b><span class="n" role="cell">${r.sched} min</span><span class="n ${over>5?'over':''}" role="cell"${over>5?` aria-label="${r.actual} min, ${over} min over"`:''}>${r.actual} min${over>5?`<small aria-hidden="true">+${over} min</small>`:''}</span><span class="n" role="cell">${r.n}</span></div>`; }).join('')+'</div>', {cls:'span12'});
   const sample=CASES.filter(c=>c.date<TODAY&&c.date>=dayOffset(-30)&&c.status==='complete'&&c.procedure==='TPLO'&&c.surgeonId==='giannetto'&&evT(c,'procedure_started')!=null&&evT(c,'procedure_finished')!=null);
   const avg=sample.length?Math.round(sample.reduce((sum,c)=>sum+evT(c,'procedure_finished')-evT(c,'procedure_started'),0)/sample.length):null;
   const luna=LIVE?'':panel('<i></i>LUNA · demo summary', `<p class="sub"><b>TPLO · Dr. Giannetto</b></p><div class="or-luna-pred">${cell('Observed average',avg==null?'No data':`${avg} min`)}${cell('Sample',String(sample.length))}</div><p class="sub">Synthetic completed cases in the last 30 days. This is a descriptive average, not a validated prediction or scheduling recommendation.</p>`, {cls:'or-luna'});
   $('#anGrid').innerHTML=util+causes+luna+dur;
-  requestAnimationFrame(()=>{ $$('#anGrid .track i').forEach(i=>{ const w=i.style.width; i.style.width='0'; requestAnimationFrame(()=>i.style.width=w); }); });
+  const bars=$$('#anGrid .track i'); if(bars.length&&!window.__orAnDrawn){ window.__orAnDrawn=true;   /* PVX-N397: drawn on once, not on every update */
+    requestAnimationFrame(()=>{ bars.forEach(i=>{ const w=i.style.width; i.style.width='0'; requestAnimationFrame(()=>i.style.width=w); }); }); }
 }
 
 /* ---------- ADD CASE (scheduled / add-on / emergency) ---------- */
@@ -5554,6 +5592,110 @@ html.pvx-or-dark{color-scheme:dark}
   try{ new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
 })();
 </script>
+
+<style id="pvx-n394-css">
+/* PVX-N394 · OR's dark mode matched to the rest of Pravix (Nov 16 2026) */
+
+/* 1 · Status colours in dark: the suite's own (Flow, Rounds, Treatment; Brand §3.2) wherever they read as small text.
+   Kept as OR's: Critical #FF6B6B (Brand's dark Critical for words; Flow's #E4342B is 3.8 : 1 on a card, too faint for
+   "Consent not signed") and In surgery #FF9A62 (Brand's coral #E8644A is ΔE 8.7 from Critical and 4.4 : 1 on its tint;
+   OR's orange stays ΔE 18 from Critical, n391), and Pre-op #6EA2FF (no Flow stage means pre-op, and the suite's blue
+   #4F9AD6 is 4.2 : 1 on OR's tinted pills), and Recovery #4FD3EC (Flow's Exam is the accent itself, #38BDD2; in OR a
+   status in the exact accent would look pressable, Brand §3). Light mode and Increase Contrast keep their own values (n390, n391, n393),
+   so these apply only without Increase Contrast. */
+@media not all and (prefers-contrast:more){ body.dark{
+  --st-ready:#48B888; --st-ready-rgb:72,184,136;          /* Flow's Admitted / Good (was #3DDC84) */
+  --st-inor:#A888E0; --st-inor-rgb:168,136,224;           /* Flow's Diagnostics purple (was #B394FF) */
+  --st-closing:#EBC95D; --st-closing-rgb:235,201,93;      /* Flow's yellow (was #FFC24D) */
+  --or-late:#E8A830; --or-late-rgb:232,168,48;            /* the suite's overdue amber, as Treatment (was #FFB340) */
+} }
+
+/* 2 · Secondary text in dark is the suite's #9AB3CC, as in Treatment (OR's was #A3B8CD). Flow's #7A98B8 would fall to
+   4.0–4.4 : 1 on OR's filled labels and counts, which Flow doesn't have. Increase Contrast keeps its own value. */
+@media not all and (prefers-contrast:more){ body.dark{--ink-500:#9AB3CC} }
+
+/* 3 · The suite's font stack (Brand §4): SF on Apple devices, Segoe UI on Windows (OR fell back to Helvetica or Arial) */
+:root,body{
+  --font-text:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+}
+
+/* 4 · No "Pravix OR" label in the bar: Flow, Rounds and Treatment show none, and the top bar already says OR
+   (HIG Branding: people seldom need reminding which app they're in). It was already gone on iPhone (n390). */
+#subnavOR .subnav-title{display:none!important}
+
+/* 5 · Card corners at Brand's large radius, 20 pt (OR's rooms and Schedule were 22) */
+body .panel,body .or-sched{border-radius:20px}
+</style>
+
+<style id="pvx-n395-css">
+/* PVX-N395 · OR against Apple's HIG: Icons, Layout, Motion (Nov 16 2026) */
+
+/* Motion · no motion on what people repeat all day (Brand §8, n232): switching sections, opening a case and coming back
+   was a 0.5 s rise (0.4 s for the case page); now a 0.15 s cross-fade. */
+@keyframes pvxFadeIn{from{opacity:0}to{opacity:1}}
+.view,.or-case-body{animation:pvxFadeIn .15s var(--ease) both}
+
+/* Motion · the case page's timeline rose in item by item on every visit (0.5 s each, 40 ms apart: about a second for a full
+   case) and its current step pulsed for as long as the page was open. Now it's simply there, and the current step is a
+   still ring (Brand §8: states don't breathe; nothing lasts over 0.5 s). */
+.tl-item{opacity:1;transform:none;animation:pvxFadeIn .15s var(--ease) both;animation-delay:0s!important}
+.tl-item.current .tl-node{animation:none}
+
+/* Motion · drawers open in 0.3 s and the scrim fades with them (Brand §8; they took 0.5 s and 0.4 s) */
+html body .drawer{transition-duration:.3s}
+html body .scrim{transition-duration:.3s}
+
+/* Motion · close buttons don't spin on hover (they turned 90°): decoration on a control people use all day */
+.drawer-head .close:hover,.or-modal-close:hover{transform:none}
+
+/* Icons · a symbol's line follows its label's weight (Brand §7, n171): 600 → 2.0 and 700 → 2.25 on the 24-pt grid, 800 → 2.5.
+   Stage symbols were 1.9 beside 600-weight words, 1.9 beside the wall display's 800, the time-out mark 2.4 beside 600, and
+   the bar's Display mode and Add case 2.0 and 2.2 beside 700. */
+.or-stage .or-milestone svg{stroke-width:2}
+.dstage .or-milestone svg,.or-display .or-milestone svg{stroke-width:2.5}
+.or-to svg{stroke-width:2}
+#subnavOR #displayBtn svg,#subnavOR #addCaseBtn svg{stroke-width:2.25}
+</style>
+
+<script id="pvx-n396-js">
+/* PVX-N396 · OR against Apple's HIG: Privacy (Nov 16 2026)
+   Patient details stay for the visit only (Daniel's rule): OR's fields — the operative record, recovery, events, specimens,
+   implants, drugs, delays, the Cases search — had no autocomplete setting, so the browser could keep what was typed in its
+   form history on a shared hospital computer and offer it on the next patient's case. Every text field OR draws now says
+   autocomplete="off". Fields that already choose (sign-in, the shared search) keep their own setting. */
+(function(){
+  var SEL='input:not([autocomplete]):not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=email]):not([type=password]),textarea:not([autocomplete])';
+  function off(root){ if(root.nodeType!==1) return; if(root.matches(SEL)) root.setAttribute('autocomplete','off'); root.querySelectorAll(SEL).forEach(function(e){ e.setAttribute('autocomplete','off'); }); }
+  off(document.body);
+  new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ var a=ms[i].addedNodes; for(var j=0;j<a.length;j++) off(a[j]); } })
+    .observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="pvx-n397-css">
+/* PVX-N397 · OR against Apple's HIG: Typography, Charting data, Collaboration and sharing (Nov 16 2026) */
+
+/* Typography · the wall display is read from across the room (tvOS: 23 pt at the least; Brand §4: 23 pt for content at
+   1920 × 1080). The counts' words, the surgeon line, safety flags, Next and "Not ready" were 19–22. They scale with the
+   screen and reach 24 at 1920. */
+html body .or-display-summary div{font-size:clamp(13px,1.25vw,24px)}
+html body .or-droom .head span{font-size:clamp(12px,1.25vw,24px)}
+html body .or-droom .next{font-size:clamp(13px,1.25vw,24px)}
+html body .or-droom .notready{font-size:clamp(12px,1.25vw,24px)}
+html body .or-droom .dflags span{font-size:clamp(13px,1.3vw,25px)}
+
+/* Charting data · every chart's window, a sentence that says what it shows, neutral data bars, amber delays */
+.or-an-when{color:var(--ink-500);font-weight:600}
+.or-an-sum{margin:0 0 6px;font-size:.8125rem;line-height:1.45;color:var(--ink-700);font-weight:500}
+html body .or-bar.is-util .track i{background:var(--ink-500)}
+html body .or-bar.is-cause .track i{background:var(--or-late)}
+.or-dur .n.over small{display:block;font-size:.6875rem;font-weight:700}
+
+/* Collaboration and sharing · Copy link and Share… on the case page */
+#caseCopy svg,#caseShare svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;margin-right:6px;vertical-align:-.125em}
+#caseCopy,#caseShare{display:inline-flex;align-items:center}
+</style>
 </body>
 
 <!-- PVX-TYPE n135: contrast + type floor (shared sheet + or rules) -->
