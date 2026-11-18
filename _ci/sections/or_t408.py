@@ -66,20 +66,26 @@ async def s_t408(br):
     await p.evaluate("exitDisplay()"); await p.wait_for_timeout(500)
     ok('…the wall display has none', tv is False, tv)
 
-    # Buttons · press states
+    # Buttons · press states. The pressed look is read with transitions off (a busy CI runner may not advance a 0.1 s
+    # transition at all); the 0.1 s itself is read from n408's rule
+    dur = await p.evaluate("""[...document.getElementById('pvx-n408-css').sheet.cssRules].filter(r=>r.selectorText&&r.selectorText.includes(':active')&&r.style.filter==='brightness(0.88)'&&r.style.transitionDuration).map(r=>r.style.transitionDuration)""")
+    await p.add_style_tag(content='*,*::before,*::after{transition:none!important}')
     await p.evaluate("openDrawer('or390c5')"); await p.wait_for_timeout(500)
     b = await p.locator('#drawerOpen').bounding_box()
     r0 = await p.evaluate(PRESS, '#drawerOpen')
-    await p.mouse.move(b['x'] + 20, b['y'] + 10); await p.mouse.down(); await p.wait_for_timeout(200)
+    await p.mouse.move(b['x'] + 20, b['y'] + 10); await p.mouse.down()
+    await core.until(p, "getComputedStyle(document.querySelector('#drawerOpen')).filter==='brightness(0.88)'", 2000)
     r1 = await p.evaluate(PRESS, '#drawerOpen'); await p.mouse.move(5, 890); await p.mouse.up(); await p.wait_for_timeout(200)
     await p.evaluate("closeDrawer()"); await p.wait_for_timeout(300)
     card = p.locator('#view-board .or-q:not(.is-done)').first
     cid = await card.get_attribute('data-id'); q = await card.bounding_box()
-    await p.mouse.move(q['x'] + 30, q['y'] + 12); await p.mouse.down(); await p.wait_for_timeout(200)
+    await p.mouse.move(q['x'] + 30, q['y'] + 12); await p.mouse.down()
+    await core.until(p, "getComputedStyle(document.querySelector('#view-board .or-q[data-id=\"%s\"]')).filter==='brightness(0.88)'" % cid, 2000)
     r2 = await p.evaluate(PRESS, f'#view-board .or-q[data-id="{cid}"]'); await p.mouse.move(5, 890); await p.mouse.up(); await p.wait_for_timeout(600)
     await p.evaluate("closeDrawer()"); await p.wait_for_timeout(300)
-    ok('Buttons · a button pressed darkens and shrinks to 97 % (nothing changed while pressed); a case card only darkens',
-       r0[0] == 'none' and r0[1] in ('none', '') and r1 == ['brightness(0.88)', '0.97'] and r2[0] == 'brightness(0.88)' and r2[1] in ('none', ''), (r0, r1, r2))
+    ok('Buttons · a button pressed darkens and shrinks to 97 % in 0.1 s (nothing changed while pressed); a case card only darkens',
+       r0[0] == 'none' and r0[1] in ('none', '') and r1 == ['brightness(0.88)', '0.97'] and r2[0] == 'brightness(0.88)' and r2[1] in ('none', '')
+       and dur and all(d.split(',')[0].strip() in ('0.1s', '.1s') for d in dur), (r0, r1, r2, dur))
 
     an = await p.evaluate("""(()=>{openDrawer('or390c5');const d=document.getElementById('drawerAnesia');const r=[d.getAttribute('aria-label'),!!d.querySelector('.or-nw svg.or-ext')];closeDrawer();
         openCase('or390c5');const k=document.getElementById('caseAnesia');r.push(k.getAttribute('aria-label'),!!k.querySelector('.or-nw svg.or-ext'));return r})()""")
@@ -92,9 +98,11 @@ async def s_t408(br):
 
     c, p, e = await T.open_or(br)
     await p.emulate_media(reduced_motion='reduce')
+    await p.add_style_tag(content='*,*::before,*::after{transition:none!important}')
     await p.evaluate("openDrawer('or390c5')"); await p.wait_for_timeout(500)
     b = await p.locator('#drawerOpen').bounding_box()
-    await p.mouse.move(b['x'] + 20, b['y'] + 10); await p.mouse.down(); await p.wait_for_timeout(200)
+    await p.mouse.move(b['x'] + 20, b['y'] + 10); await p.mouse.down()
+    await core.until(p, "getComputedStyle(document.querySelector('#drawerOpen')).filter==='brightness(0.88)'", 2000)
     rm = await p.evaluate(PRESS, '#drawerOpen'); await p.mouse.move(5, 890); await p.mouse.up()
     ok('…with Reduce Motion a press only darkens', rm[0] == 'brightness(0.88)' and rm[1] in ('none', ''), rm)
     await c.close()
