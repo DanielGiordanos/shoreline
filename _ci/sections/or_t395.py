@@ -24,7 +24,9 @@ async def s_t395(br):
     ok('Motion · switching sections is a 0.15 s cross-fade (it was a 0.5 s rise, every time)', seen and all(a['d'] <= 200 and not a['move'] for a in seen), seen[:3])
     await p.evaluate("openDrawer('or390c4')"); await p.wait_for_timeout(40)
     d = [a for a in await p.evaluate(ANIM) if a['el'].split(' ')[0] in ('drawer', 'scrim')]
-    ok('…the drawer slides in 0.3 s and the scrim fades with it (0.5 s and 0.4 s)', len(d) >= 2 and all(a['d'] <= 300 for a in d), d)
+    # n407: on a wide window the details are an inspector, with no scrim to fade; a narrower window keeps it
+    ok('…the drawer slides in 0.3 s and its scrim, where there is one, fades with it (0.5 s and 0.4 s)',
+       any(a['el'].startswith('drawer') for a in d) and all(a['d'] <= 300 for a in d), d)
     await p.wait_for_timeout(500)
     await p.hover('#drawerClose'); await p.wait_for_timeout(350)
     rot = await p.evaluate("getComputedStyle(document.getElementById('drawerClose')).transform")
