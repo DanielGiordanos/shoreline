@@ -2697,7 +2697,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
         </div>
       </div>
       <div class="or-kpis" id="boardKpis"></div>
-      <div class="or-rooms" id="roomGrid"></div>
+      <div class="or-rooms" id="roomGrid" role="tabpanel" aria-labelledby="boardTab-live"></div>
     </section>
 
     <!-- ═══ SCHEDULE ═══ -->
@@ -2747,13 +2747,13 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     <section class="view or-app hidden" id="view-case">
       <div class="or-case-head" id="caseHead"></div>
       <div class="or-case-tabs" id="caseTabs" role="tablist">
-        <button class="active" data-tab="overview" role="tab">Overview</button>
-        <button data-tab="preop" role="tab">Pre-op</button>
-        <button data-tab="procedure" role="tab">Procedure</button>
-        <button data-tab="recovery" role="tab">Recovery</button>
-        <button data-tab="record" role="tab">Record</button>
+        <button class="active" data-tab="overview" role="tab" id="caseTab-overview" aria-controls="caseBody">Overview</button>
+        <button data-tab="preop" role="tab" id="caseTab-preop" aria-controls="caseBody">Pre-op</button>
+        <button data-tab="procedure" role="tab" id="caseTab-procedure" aria-controls="caseBody">Procedure</button>
+        <button data-tab="recovery" role="tab" id="caseTab-recovery" aria-controls="caseBody">Recovery</button>
+        <button data-tab="record" role="tab" id="caseTab-record" aria-controls="caseBody">Record</button>
       </div>
-      <div class="or-case-body" id="caseBody"></div>
+      <div class="or-case-body" id="caseBody" role="tabpanel" aria-labelledby="caseTab-overview"></div>
     </section>
 
     <div class="footer-bar"><div class="fb1"></div><div class="fb2"></div><div class="fb3"></div><div class="fb4"></div></div>
@@ -4283,7 +4283,7 @@ function renderDrawer(){
     </div></div>
     ${next?`<div class="or-sect"><div class="sect-title">Next step</div><div class="or-actions"><button class="or-btn stg" id="drawerAdvance" style="${stageVars(c)}">${milestoneIcon(next,STATUS[next].label)}${esc(ACTION_LABEL[next])}</button>${isPre(c)?`<button class="or-btn" id="drawerMove">Move…</button><button class="or-btn" id="drawerDelay">${c.delay?'Edit delay…':'Report delay…'}</button>`:''}</div></div>`:''}
   `;
-  $('#drawerFoot').innerHTML=`<button class="btn primary" id="drawerOpen">Open case</button><button class="btn ghost anesia" id="drawerAnesia"><i></i>Open Anesia</button>`;
+  $('#drawerFoot').innerHTML=`<button class="btn primary" id="drawerOpen">Open case</button><button class="btn ghost anesia" id="drawerAnesia"${LIVE?' aria-label="Open Anesia, opens in a new tab"':''}><i></i>${LIVE?'<span class="or-nw">Open Anesia<svg class=\"or-ext\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 17 17 7\"/><path d=\"M8.5 7H17v8.5\"/></svg></span>':'Open Anesia…'}</button>`;
   $('#drawerOpen').onclick=()=>{ closeDrawer(); openCase(c.id); };
   $('#drawerAnesia').onclick=()=>openAnesia(c);
   const adv=$('#drawerAdvance'); if(adv) adv.onclick=()=>doAdvance(c);
@@ -4371,14 +4371,14 @@ function renderCase(){
         <div class="meta"><b class="or-case-date">${esc(c.date===TODAY?'Today, '+parseISO(c.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}):fmtDateLong(c.date))}</b> ${[esc(ptLine(p)), p.owner?`<b>${esc(p.owner)}</b>`:'', esc(p.hid||''), esc(ROOM[c.roomId].name), esc(c.service)].filter(Boolean).map(x=>' · '+x).join('')}</div></div></div>
     </div>
     <div class="or-case-side">
-      <div class="or-actions"><button class="or-btn" id="caseCopy" title="Copy a link that opens this case after sign-in, without a name">${OR_SYM.copy}<span>Copy link</span></button>${navigator.share?`<button class="or-btn" id="caseShare" title="Share a link to this case">${OR_SYM.share}<span>Share…</span></button>`:''}<button class="or-btn" id="caseAnesia">Open Anesia</button>${NEXT_ACTION[c.status]?(()=>{ const nx=NEXT_ACTION[c.status], why=transitionError(c,nx); return `<span class="or-next"><button class="or-btn primary" id="caseAdvance"${why?' aria-disabled="true"':''}>${esc(ACTION_LABEL[nx])}</button>${why?`<small>${esc(why)}</small>`:''}</span>`; })():''}</div>
+      <div class="or-actions"><button class="or-btn" id="caseCopy" title="Copy a link that opens this case after sign-in, without a name">${OR_SYM.copy}<span>Copy link</span></button>${navigator.share?`<button class="or-btn" id="caseShare" title="Share a link to this case">${OR_SYM.share}<span>Share…</span></button>`:''}<button class="or-btn" id="caseAnesia"${LIVE?' aria-label="Open Anesia, opens in a new tab"':''}>${LIVE?'<span class="or-nw">Open Anesia<svg class=\"or-ext\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 17 17 7\"/><path d=\"M8.5 7H17v8.5\"/></svg></span>':'Open Anesia…'}</button>${NEXT_ACTION[c.status]?(()=>{ const nx=NEXT_ACTION[c.status], why=transitionError(c,nx); return `<span class="or-next"><button class="or-btn primary" id="caseAdvance"${why?' aria-disabled="true"':''}>${esc(ACTION_LABEL[nx])}</button>${why?`<small>${esc(why)}</small>`:''}</span>`; })():''}</div>
     </div>`;
   $('#caseBack').onclick=()=>{ if(UI.casePushed&&history.state&&history.state.pvxOrCase){ history.back(); } else leaveCase(); };
   $('#caseAnesia').onclick=()=>openAnesia(c);
   orWireShare(c);   /* PVX-N397 */
   const adv=$('#caseAdvance'); if(adv) adv.onclick=()=>doAdvance(c);
   $$('#caseTabs button').forEach(b=>{ b.classList.toggle('active',b.dataset.tab===UI.caseTab);
-    if(b.dataset.tab==='preop'){ b.innerHTML='Pre-op'+(isPre(c)&&!rs.ready?`<span class="badge">${rs.pending.length}</span>`:''); } });
+    if(b.dataset.tab==='preop'){ b.innerHTML='Pre-op'+(isPre(c)&&!rs.ready?`<span class="badge" aria-hidden="true">${rs.pending.length}</span>`:''); if(isPre(c)&&!rs.ready) b.setAttribute('aria-label',`Pre-op, ${rs.pending.length} missing`); else b.removeAttribute('aria-label'); } });
   syncTabs($('#caseTabs'),'tab',UI.caseTab);
   const body=$('#caseBody'); body.style.animation='none'; void body.offsetWidth; body.style.animation='';
   body.innerHTML=({overview:tabOverview, preop:tabPreop, procedure:tabProcedure, recovery:tabRecovery, record:tabRecord}[UI.caseTab])(c);
@@ -7199,6 +7199,360 @@ body:not(.dark) #casesBody tr.or-sel>td{background:rgba(35,67,156,.07)}
     requestAnimationFrame(function(){ requestAnimationFrame(function(){ land(true); }); });
     setTimeout(land,150); setTimeout(land,450); return r; };
   heads();
+})();
+</script>
+
+<style id="pvx-n407-css">
+/* PVX-N407 · OR against Apple's HIG: Lockups, Outline views, Split views, Tab views (Nov 18 2026) */
+
+/* Tab views on a phone: the case's five sections stay one row (they wrapped to two uneven rows); if a larger text size
+   needs more room, the row scrolls sideways, fades at the edge that has more, and keeps the open section in view */
+@media (max-width:600px){
+  .or-case-tabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;max-width:100%;scroll-snap-type:x proximity}
+  .or-case-tabs::-webkit-scrollbar{display:none}
+  .or-case-tabs button{flex:1 0 auto;padding:0 9px;scroll-snap-align:center;white-space:nowrap}
+  .or-case-tabs.or-more-end{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+  .or-case-tabs.or-more-start{-webkit-mask-image:linear-gradient(90deg,transparent,#000 28px);mask-image:linear-gradient(90deg,transparent,#000 28px)}
+  .or-case-tabs.or-more-start.or-more-end{-webkit-mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}
+}
+
+/* Split views: on a wide window the case details are an inspector beside the board, not a sheet over it. The page stays
+   in view and in reach: one click on another case shows it, and nothing dims or blurs behind */
+body.or-inspect #scrim.open{opacity:0!important;pointer-events:none!important;backdrop-filter:none!important}
+body.or-inspect #drawer{box-shadow:0 18px 50px rgba(0,0,0,.35),0 0 0 1px var(--glass-hairline)}
+/* …and the page makes room for it, so nothing is hidden under the details: the two panes sit side by side */
+body.or-inspect #stage>section.view{padding-right:calc(var(--or-insp,470px) + 20px)}
+/* …under the app's bars, 12 pt from the window's edges (Brand §6), so the sections, search and Add case stay in reach */
+body.or-inspect #drawer{top:calc(var(--or-insp-top,150px) + 12px)!important;bottom:12px!important;right:12px!important;height:auto!important;max-height:none!important;border-radius:20px;overflow:hidden}
+</style>
+
+<script id="pvx-n407-js">
+/* PVX-N407 · OR against Apple's HIG: Lockups, Outline views, Split views, Tab views (Nov 18 2026)
+
+   Tab views — the case's sections are one tab control, not two: the shared segmented-control helper (n216) and OR's own
+   tab keys both moved on each arrow, so → from Overview skipped Pre-op and landed on Procedure. Each tab names its pane
+   (aria-controls) and the pane is named by the open tab (role tabpanel), on the case page and for the Board's Live / Day
+   / History. On a phone the five sections stay one row.
+
+   Split views — on a window 1024 pt and wider, the case details are an inspector (as Flow since n367): the board, schedule
+   or list stays live and reachable beside them, so one click on another case shows that case (it took two: the first
+   only closed the details), nothing is dimmed or blurred, the page makes room so nothing sits under them, and VoiceOver
+   isn't shut out of the page. Esc and ✕ still
+   close them; narrower windows keep the sheet. The case shown stays marked where it's listed (n406). */
+(function(){
+  var D=document;
+  /* one keyboard handler per tab control */
+  var st=window.syncTabs;
+  if(typeof st==='function') window.syncTabs=function(root,key,current){ var r=st.apply(this,arguments);
+    if(root&&root.__pvxSegO&&root.onkeydown) root.onkeydown=null;   /* pvxSeg already moves and chooses */
+    if(root){ var on=root.querySelector('[aria-selected="true"]'), pane=root.id==='caseTabs'?D.getElementById('caseBody'):root.id==='boardMode'?D.getElementById('roomGrid'):null;
+      if(root.id==='boardMode') root.querySelectorAll('button[data-mode]').forEach(function(b){ var id='boardTab-'+b.dataset.mode; if(b.id!==id) b.id=id; if(b.getAttribute('aria-controls')!=='roomGrid') b.setAttribute('aria-controls','roomGrid'); });
+      if(pane&&on&&on.id&&pane.getAttribute('aria-labelledby')!==on.id) pane.setAttribute('aria-labelledby',on.id);
+      if(root.id==='caseTabs') edge(root,true); }
+    return r; };
+
+  /* a phone's tab row: fade the edge that has more, keep the open section in view */
+  function edge(row,bring){ if(!row) return; var more=row.scrollWidth>row.clientWidth+1;
+    row.classList.toggle('or-more-start',more&&row.scrollLeft>2); row.classList.toggle('or-more-end',more&&row.scrollLeft+row.clientWidth<row.scrollWidth-2);
+    if(bring&&more){ var on=row.querySelector('[aria-selected="true"]'); if(on){ var a=on.offsetLeft, b=a+on.offsetWidth;
+      if(a<row.scrollLeft||b>row.scrollLeft+row.clientWidth) row.scrollLeft=Math.max(0,a-(row.clientWidth-on.offsetWidth)/2); edge(row,false); } } }
+  var ct=D.getElementById('caseTabs'); if(ct){ ct.addEventListener('scroll',function(){ edge(ct,false); },{passive:true}); addEventListener('resize',function(){ edge(ct,false); }); }
+
+  /* Split views: an inspector on a wide window */
+  var WIDE=window.matchMedia?matchMedia('(min-width:1024px)'):{matches:true};
+  function inspector(){ return WIDE.matches&&!D.body.classList.contains('display-mode'); }
+  var so=window.syncOverlays;
+  if(typeof so==='function') window.syncOverlays=function(){ var r=so.apply(this,arguments);
+    var dr=D.getElementById('drawer'), open=dr&&dr.classList.contains('open'), modal=D.getElementById('modal').classList.contains('open');
+    var ins=open&&inspector();
+    D.body.classList.toggle('or-inspect',!!ins);
+    if(dr){ var m=ins?'false':'true'; if(dr.getAttribute('aria-modal')!==m) dr.setAttribute('aria-modal',m); }
+    if(ins&&!modal){ var app=D.querySelector('.app'); if(app&&app.inert) app.inert=false; }
+    if(ins){ var sn=D.getElementById('subnavOR'), top=sn?Math.round(sn.getBoundingClientRect().bottom):0; if(top>0){ var tv=top+'px'; if(D.documentElement.style.getPropertyValue('--or-insp-top')!==tv) D.documentElement.style.setProperty('--or-insp-top',tv); } }
+    if(ins){ var w=Math.max(0,Math.round(innerWidth-dr.getBoundingClientRect().left)); if(w>200&&w<innerWidth*0.7){ var v=w+'px'; if(D.documentElement.style.getPropertyValue('--or-insp')!==v) D.documentElement.style.setProperty('--or-insp',v); } }
+    return r; };
+  if(WIDE.addEventListener) WIDE.addEventListener('change',function(){ try{ window.syncOverlays(); }catch(e){} });
+  try{ window.syncOverlays(); }catch(e){}
+})();
+</script>
+
+<style id="pvx-n408-css">
+/* PVX-N408 · OR against Apple's HIG: Activity views, Buttons, Context menus (Nov 18 2026) */
+
+/* Buttons · a press state on every button (Brand §9.1): a darker fill and 97 % for 0.1 s. Rows, cards, tabs, segments
+   and the schedule's blocks only darken, because people press them all day. With Reduce Motion only the fill changes.
+   The scale property is used, so positioned buttons don't move */
+html body :is(.or-btn,.btn,.or-addcase,.fs-btn,.or-sum-chip,.or-issue-go,.or-back,.or-link,#drawerClose,#modal .close,.or-sortbtn,.seg,#caseTabs button,#boardMode button,.or-q,.or-rnow,.or-block,#casesBody tr,.or-done>summary,.or-donefold>summary,.or-srow):active:not([aria-disabled="true"]){filter:brightness(.88);transition:filter .1s ease,scale .1s ease}
+@media (prefers-reduced-motion:no-preference){
+  html body :is(.or-btn,.btn,.or-addcase,.fs-btn,.or-sum-chip,.or-issue-go,.or-back,#drawerClose,#modal .close):active:not([aria-disabled="true"]){scale:.97}
+}
+/* …a dimmed button still answers a press (it says why), with the fill only */
+html body :is(.or-btn,.btn)[aria-disabled="true"]:active{filter:brightness(.94)}
+/* the press doesn't reach a card's own small buttons twice */
+html body :is(.or-q,.or-rnow) :is(button,[role=button]):active{filter:brightness(.88)}
+
+/* Buttons · 44 pt to touch: "Done today" and Pre-op's "N done" were 36 and 40 pt tall */
+@media (pointer:coarse){
+  html body :is(.or-done>summary,.or-donefold>summary){min-height:44px;box-sizing:border-box;display:flex;align-items:center}
+}
+
+/* Buttons · a link that opens a new tab carries arrow.up.right, kept with its last word */
+.or-nw{white-space:nowrap}
+html body .or-ext{width:.86em;height:.86em;margin-left:.28em;vertical-align:-.06em;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* Context menus · OR's menus use the shared menu; its items' symbols are drawn at the text's size */
+.pvx-cx-list button .i{display:inline-flex;flex:none;width:16px;height:16px}
+.pvx-cx-list button .i svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+
+<script id="pvx-n408-ctx">
+/* PVX-N408 · the shared Pravix context menu, copied unchanged from _source/flow/ui.context-menu.js (Flow, Anesia) */
+/* PVX-CTX n201 (n204: checked options) - one Pravix context menu (HIG Context menus; claude/hig-audit-context-menus.md).
+   Shared by Flow and Anesia. Self-contained: it injects its own styles on first use.
+   PvxCtx.open({items, x, y | anchor, label, preview, onClose}) -> opens a menu
+     items: [{label, act(), danger, sub:[items], disabled}, {sep:1}, ...]; falsy entries are dropped (context menus hide);
+       n207: {disabled:true} shows the item dimmed and inert (pull-downs keep the same items, HIG The menu bar)
+     - destructive items always end the menu, after a separator; at most one level of submenu
+     - no title and no keyboard shortcuts; arrow keys, Home/End, Return, Esc; focus returns to the item
+     - on a phone (under 600 px) it is an action sheet from the bottom with Cancel
+     - preview (HTML) shows above the commands, over a dimmed screen (touch and hold)
+   PvxCtx.bind(selector, build(el) -> {items, preview, label} | null, {holdMs, touchOnly, holdPreview})
+     right-click / Control-click / two-finger click / the keyboard's context-menu key, plus touch and hold */
+(function () {
+  if (window.PvxCtx) return;
+  var CSS = [
+    '.pvx-cx{position:fixed;inset:0;z-index:100000;-webkit-tap-highlight-color:transparent}',
+    '.pvx-cx.dim{background:rgba(6,10,22,.42);animation:pvxCxFade .16s ease both}',
+    '.pvx-cx-panel{position:absolute;display:flex;flex-direction:column;gap:8px;width:max-content;min-width:220px;max-width:min(320px,calc(100vw - 16px));transform-origin:var(--ox,0) var(--oy,0);animation:pvxCxIn .16s cubic-bezier(.2,.8,.2,1) both}',
+    '.pvx-cx-pv{padding:12px 14px;border-radius:14px;background:#1A2438;color:#EEF3F8;border:1px solid rgba(255,255,255,.10);box-shadow:0 18px 40px rgba(0,0,0,.35);font:600 .9375rem/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}',
+    '.pvx-cx-pv small{display:block;margin-top:2px;font-weight:500;font-size:.8125rem;opacity:.72}',
+    '.pvx-cx-list{display:flex;flex-direction:column;padding:5px;border-radius:14px;background:#1A2438;border:1px solid rgba(255,255,255,.10);box-shadow:0 18px 40px rgba(0,0,0,.35);overflow-y:auto;overscroll-behavior:contain;max-height:calc(100vh - 16px)}',
+    '.pvx-cx-list button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:36px;padding:7px 12px;border-radius:9px;color:#EEF3F8;cursor:pointer;font:500 .875rem/1.25 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;white-space:nowrap}',
+    '.pvx-cx-list button .l{flex:1;overflow:hidden;text-overflow:ellipsis}',
+    '.pvx-cx-list button .c{flex:none;opacity:.6;font-size:1rem;line-height:1}',
+    '.pvx-cx-list button .k{flex:none;width:16px;height:16px;fill:none;stroke:#38BDD2;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}',
+    '.pvx-cx-list button:hover,.pvx-cx-list button:focus-visible{background:rgba(56,189,210,.16);outline:none}',
+    '.pvx-cx-list button:active{filter:brightness(.88)}',
+    '.pvx-cx-list button.danger{color:#FF6B6B}',
+    '.pvx-cx-list button.off{opacity:.42;cursor:default}.pvx-cx-list button.off:hover{background:none}',
+    '.pvx-cx-list button.back{font-weight:700}',
+    '.pvx-cx-list [role=separator]{height:1px;margin:4px 6px;background:rgba(255,255,255,.12);flex:none}',
+    'body:not(.dark) .pvx-cx-list,body:not(.dark) .pvx-cx-pv{background:#FFFFFF;border-color:rgba(15,23,42,.10);box-shadow:0 18px 40px rgba(15,23,42,.18)}',
+    'body:not(.dark) .pvx-cx-list button,body:not(.dark) .pvx-cx-pv{color:#14181F}',
+    'body:not(.dark) .pvx-cx-list button.danger{color:#D92B22}',
+    'body:not(.dark) .pvx-cx-list [role=separator]{background:rgba(15,23,42,.10)}',
+    '@media (pointer:coarse){.pvx-cx-list button{min-height:44px}}',
+    '.pvx-cx.sheet .pvx-cx-panel{left:8px!important;right:8px;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;max-width:none;min-width:0;transform-origin:50% 100%;animation-name:pvxCxUp}',
+    '.pvx-cx.sheet .pvx-cx-list{max-height:62vh}',
+    '.pvx-cx.sheet .pvx-cx-list button{justify-content:center;min-height:48px;font-size:1.0625rem}',
+    '.pvx-cx-cancel{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:#1A2438;border:1px solid rgba(255,255,255,.10);color:#EEF3F8;font:700 1.0625rem/1 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;cursor:pointer}',
+    'body:not(.dark) .pvx-cx-cancel{background:#FFFFFF;border-color:rgba(15,23,42,.10);color:#14181F}',
+    '.pvx-cx-cancel:focus-visible{outline:2px solid #38BDD2;outline-offset:2px}',
+    '.pvx-cx.out{opacity:0;transition:opacity .12s ease}',
+    '.pvx-cx-lift{scale:1.02;transition:scale .16s ease}',
+    '@keyframes pvxCxIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}',
+    '@keyframes pvxCxUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}',
+    '@keyframes pvxCxFade{from{opacity:0}to{opacity:1}}',
+    '@media (prefers-reduced-motion:reduce){.pvx-cx-panel,.pvx-cx.dim{animation:none}.pvx-cx-lift{scale:none}}',
+    '@media (forced-colors:active){.pvx-cx-list,.pvx-cx-pv,.pvx-cx-cancel{border:1px solid CanvasText}}'
+  ].join('\n');
+  var cur = null, lastOpen = 0;
+  function css() { if (document.getElementById('pvx-ctx-css')) return; var s = document.createElement('style'); s.id = 'pvx-ctx-css'; s.textContent = CSS; document.head.appendChild(s); }
+  function rmo() { try { return matchMedia('(prefers-reduced-motion:reduce)').matches; } catch (e) { return false; } }
+  function norm(items) {
+    var a = [], d = [];
+    (items || []).forEach(function (i) {
+      if (!i) return; if (i.sep) { a.push(i); return; }
+      if (i.sub) { i = Object.assign({}, i, { sub: norm(i.sub) }); if (!i.sub.length) return; }
+      (i.danger ? d : a).push(i);
+    });
+    if (d.length) { a.push({ sep: 1 }); a = a.concat(d); }
+    var out = []; a.forEach(function (i) { if (i.sep && (!out.length || out[out.length - 1].sep)) return; out.push(i); });
+    while (out.length && out[out.length - 1].sep) out.pop();
+    return out;
+  }
+  function focusEl(el) { if (!el) return; try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }
+  function close(back) {
+    if (!cur) return; var c = cur; cur = null;
+    document.removeEventListener('keydown', c.key, true); window.removeEventListener('resize', c.away); window.removeEventListener('wheel', c.sc, true); window.removeEventListener('touchmove', c.sc, true);
+    if (c.lift) c.lift.classList.remove(c.liftCls);
+    c.root.classList.add('out'); setTimeout(function () { c.root.remove(); }, rmo() ? 0 : 130);
+    if (c.onClose) try { c.onClose(); } catch (e) { }
+    if (back !== false && c.anchor && c.anchor.isConnected) focusEl(c.anchor);
+  }
+  function open(o) {
+    close(false); css();
+    var items = norm(o.items);
+    if (!items.length) return null;
+    var phone = window.innerWidth < 600;
+    var root = document.createElement('div');
+    root.className = 'pvx-cx' + (phone ? ' sheet dim' : '') + (o.preview && !phone ? ' dim' : '');
+    var panel = document.createElement('div'); panel.className = 'pvx-cx-panel';
+    root.appendChild(panel);
+    if (o.preview) { var pv = document.createElement('div'); pv.className = 'pvx-cx-pv'; pv.setAttribute('aria-hidden', 'true'); pv.innerHTML = o.preview; panel.appendChild(pv); }
+    var list = document.createElement('div'); list.className = 'pvx-cx-list'; list.setAttribute('role', 'menu'); list.setAttribute('aria-label', o.label || 'Actions');
+    panel.appendChild(list);
+    var cancel = null;
+    if (phone) { cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'pvx-cx-cancel'; cancel.textContent = 'Cancel'; panel.appendChild(cancel); }
+    var c = { root: root, panel: panel, list: list, anchor: o.anchor || null, onClose: o.onClose, lift: o.lift || null, liftCls: o.liftClass || 'pvx-cx-lift', stack: [] };
+    function draw(level, title) {
+      var h = '';
+      if (title) h += '<button type="button" role="menuitem" class="back" data-back="1"><span class="c" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></span><span class="l">' + pvxEsc(title) + '</span></button><div role="separator"></div>';
+      level.forEach(function (it, i) {
+        if (it.sep) { h += '<div role="separator"></div>'; return; }
+        var ck = it.checked !== undefined;   /* n204: an option can show a checkmark (the current choice) */
+        h += '<button type="button" role="' + (ck ? 'menuitemradio' : 'menuitem') + '"' + (ck ? ' aria-checked="' + !!it.checked + '"' : '') + ' data-i="' + i + '"' + ((it.danger || it.disabled) ? ' class="' + (it.danger ? 'danger' : '') + (it.disabled ? ' off' : '') + '"' : '') + (it.disabled ? ' aria-disabled="true"' : '') + (it.sub ? ' aria-haspopup="menu"' : '') + '>' + (ck ? '<svg class="k" viewBox="0 0 24 24" aria-hidden="true"' + (it.checked ? '' : ' style="visibility:hidden"') + '><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '') + (it.icon ? '<span class="i" aria-hidden="true">' + it.icon + '</span>' : '') + '<span class="l">' + pvxEsc(it.label) + '</span>' + (it.sub ? '<span class="c" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></span>' : '') + '</button>';
+      });
+      list.innerHTML = h; list.scrollTop = 0; c.level = level;
+      focusEl(list.querySelector('button[data-i]:not([aria-disabled])') || list.querySelector('button'));
+    }
+    function enter(it) { c.stack.push(c.level); draw(it.sub, it.label); }
+    function back() { if (!c.stack.length) return false; draw(c.stack.pop(), null); return true; }
+    function pick(btn) {
+      if (btn.hasAttribute('data-back')) { back(); return; }
+      var it = c.level[+btn.getAttribute('data-i')]; if (!it || it.disabled) return;
+      if (it.sub) { enter(it); return; }
+      close(false); var a = c.anchor;
+      try { it.act && it.act(); } finally { setTimeout(function () { var f = document.activeElement; if ((!f || f === document.body) && a && a.isConnected) focusEl(a); }, 0); }
+    }
+    list.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; e.stopPropagation(); pick(b); });
+    if (cancel) cancel.addEventListener('click', function (e) { e.stopPropagation(); close(true); });
+    root.addEventListener('pointerdown', function (e) { if (e.target === root) { e.preventDefault(); e.stopPropagation(); close(true); } });
+    root.addEventListener('click', function (e) { if (e.target === root) { e.stopPropagation(); close(true); } });
+    root.addEventListener('contextmenu', function (e) { e.preventDefault(); if (e.target === root) close(true); });
+    c.key = function (e) {
+      if (!cur || cur !== c) return;
+      var bs = [].slice.call(list.querySelectorAll('button')); if (cancel) bs.push(cancel);
+      var i = bs.indexOf(document.activeElement), n = null;
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); return; }
+      if (e.key === 'Tab') { e.preventDefault(); close(true); return; }
+      if (e.key === 'ArrowDown') n = (i + 1) % bs.length; else if (e.key === 'ArrowUp') n = (i - 1 + bs.length) % bs.length;
+      else if (e.key === 'Home') n = 0; else if (e.key === 'End') n = bs.length - 1;
+      else if (e.key === 'ArrowRight') { var b = document.activeElement; if (b && b.getAttribute('aria-haspopup')) { e.preventDefault(); pick(b); } return; }
+      else if (e.key === 'ArrowLeft') { if (back()) e.preventDefault(); return; }
+      if (n !== null) { e.preventDefault(); e.stopPropagation(); focusEl(bs[n]); }
+    };
+    c.away = function () { close(false); };
+    c.sc = function (e) { if (cur === c && !(e.target && e.target.nodeType === 1 && c.panel.contains(e.target))) close(false); };
+    document.body.appendChild(root);
+    cur = c; lastOpen = Date.now();
+    if (c.lift) c.lift.classList.add(c.liftCls);
+    draw(items, null);
+    if (!phone) {
+      var W = window.innerWidth, H = window.innerHeight, pw = panel.offsetWidth, ph = panel.offsetHeight, x, y, ox = '0', oy = '0';
+      if (o.anchor && (o.x == null || o.y == null)) {
+        var r = o.anchor.getBoundingClientRect();
+        x = Math.min(Math.max(8, r.left + r.width / 2 - pw / 2), W - pw - 8); ox = '50%';
+        if (r.bottom + 8 + ph <= H - 8 || r.top - 8 - ph < 8) { y = Math.min(r.bottom + 8, H - ph - 8); oy = '0'; } else { y = r.top - 8 - ph; oy = '100%'; }
+      } else {
+        x = o.x; y = o.y;
+        if (x + pw > W - 8) { x = Math.max(8, x - pw); ox = '100%'; }
+        if (y + ph > H - 8) { y = Math.max(8, y - ph); oy = '100%'; }
+      }
+      panel.style.left = Math.round(x) + 'px'; panel.style.top = Math.round(Math.max(8, y)) + 'px';
+      panel.style.setProperty('--ox', ox); panel.style.setProperty('--oy', oy);
+      list.style.maxHeight = (H - 16 - (o.preview ? panel.querySelector('.pvx-cx-pv').offsetHeight + 8 : 0)) + 'px';
+    }
+    document.addEventListener('keydown', c.key, true);
+    window.addEventListener('resize', c.away); window.addEventListener('wheel', c.sc, { capture: true, passive: true }); window.addEventListener('touchmove', c.sc, { capture: true, passive: true });   /* a scroll by the person closes it; programmatic smooth scrolls don't */
+    return c;
+  }
+  function editable(t) { return !!(t && t.closest && t.closest('input,textarea,select,[contenteditable=""],[contenteditable=true]')); }
+  function bind(sel, build, opt) {
+    opt = opt || {};
+    function show(el, e, how) {
+      var o = build(el, how); if (!o || !o.items) return false;
+      var m = open(Object.assign({ anchor: el }, o, how === 'hold' ? { x: null, y: null, preview: opt.holdPreview ? o.preview : null, lift: o.lift === undefined ? el : o.lift } : how === 'key' ? { x: null, y: null, preview: null } : { x: e.clientX, y: e.clientY, preview: null, lift: null }));
+      return !!m;
+    }
+    document.addEventListener('contextmenu', function (e) {
+      if (editable(e.target)) return;
+      if (e.clientX || e.clientY) { try { var s = window.getSelection && getSelection(); if (s && !s.isCollapsed && String(s).trim()) { for (var k = 0; k < s.rangeCount; k++) { if (s.getRangeAt(k).intersectsNode(e.target)) return; } } } catch (x) {} }   /* n358: on selected text, the browser's Copy and Look Up */
+      var el = e.target.closest && e.target.closest(sel); if (!el) return;
+      if (opt.skip && opt.skip(el, e)) return;
+      if (Date.now() - lastOpen < 700 && cur) { e.preventDefault(); return; }   /* a touch hold already opened it */
+      var how = (!e.clientX && !e.clientY) ? 'key' : 'click';
+      if (show(el, e, how)) e.preventDefault();
+    }, true);
+    var t = 0, sx = 0, sy = 0, eat = 0;
+    function clear() { clearTimeout(t); t = 0; }
+    document.addEventListener('pointerdown', function (e) {
+      clear(); if (e.button > 0 || editable(e.target)) return;
+      if (opt.touchOnly && e.pointerType === 'mouse') return;
+      var el = e.target.closest && e.target.closest(sel); if (!el) return;
+      if (opt.skip && opt.skip(el, e)) return;
+      sx = e.clientX; sy = e.clientY;
+      t = setTimeout(function () {
+        t = 0; if (cur && Date.now() - lastOpen < 700) return; if (opt.beforeHold) try { opt.beforeHold(el); } catch (x) { }
+        if (show(el, e, 'hold')) { eat = Date.now(); try { if (navigator.vibrate && matchMedia('(pointer:coarse)').matches) navigator.vibrate(6); } catch (x) { } }
+      }, opt.holdMs || 500);
+    }, true);
+    document.addEventListener('pointermove', function (e) { if (t && (Math.abs(e.clientX - sx) > 8 || Math.abs(e.clientY - sy) > 8)) clear(); }, { passive: true, capture: true });
+    ['pointerup', 'pointercancel', 'dragstart'].forEach(function (k) { document.addEventListener(k, function (e) { clear(); if (k === 'dragstart' && cur && Date.now() - lastOpen < 1500) close(false); }, true); });
+    document.addEventListener('click', function (e) { if (eat && Date.now() - eat < 900) { eat = 0; e.preventDefault(); e.stopPropagation(); } }, true);
+  }
+  window.PvxCtx = { open: open, close: close, bind: bind, isOpen: function () { return !!cur; } };
+})();
+</script>
+
+<script id="pvx-n408-js">
+/* PVX-N408 · OR against Apple's HIG: Activity views, Buttons, Context menus (Nov 18 2026)
+
+   Context menus — a case on the Board (a room's current case or a queued one), a block on the Schedule and a row in
+   Cases have a context menu: right-click, Control-click, a two-finger click, the context-menu key or ⇧F10, or touch and
+   hold. It is the shared Pravix menu (PvxCtx), named for the patient, with OR's most-used commands for that case, each
+   one also in the main interface (the details, the case page):
+     Show details · Open case
+     the next step (only when it can be taken now) · Move… · Report delay… (before the procedure, as in the details)
+     Copy link · Share… (where the system share sheet exists) · Open Anesia (opens in a new tab)
+   What doesn't apply is left out, a case from History offers only what doesn't change it, and the wall display has
+   none. On a phone it is an action sheet with Cancel. */
+(function(){
+  if(!window.PvxCtx) return;
+  var D=document;
+  var SYM={copy:typeof OR_SYM!=='undefined'?OR_SYM.copy:'', share:typeof OR_SYM!=='undefined'?OR_SYM.share:'',
+    ext:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8.5 7H17v8.5"/></svg>'};
+  function shown(){ var b=D.body.classList; return !b.contains('display-mode'); }
+  function copy(c){ var url=orCaseLink(c);
+    var fail=function(){ toast('Couldn’t copy the link. Select the address after opening the case, and copy it instead.',{error:true}); };
+    try{ (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(url):Promise.reject()).then(function(){ toast('Link copied. It opens this case after sign-in and carries no name.'); },fail); }catch(e){ fail(); } }
+  function items(c){
+    var past=!!c._past||(typeof pvxPast==='function'&&pvxPast(c)), nx=NEXT_ACTION[c.status], can=!past&&nx&&!transitionError(c,nx), pre=!past&&isPre(c);
+    var detailsOpen=UI.drawerId===c.id&&D.getElementById('drawer').classList.contains('open');
+    return [
+      !detailsOpen&&{label:'Show details',act:function(){ openDrawer(c.id); }},
+      {label:'Open case',act:function(){ if(UI.drawerId) closeDrawer(); openCase(c.id); }},
+      {sep:1},
+      can&&{label:ACTION_LABEL[nx],act:function(){ doAdvance(c); }},
+      pre&&{label:'Move…',act:function(){ moveModal(c); }},
+      pre&&{label:c.delay?'Edit delay…':'Report delay…',act:function(){ delayModal(c); }},
+      {sep:1},
+      {label:'Copy link',icon:SYM.copy,act:function(){ copy(c); }},
+      navigator.share&&{label:'Share…',icon:SYM.share,act:function(){ try{ navigator.share({title:'OR case',url:orCaseLink(c)}).catch(function(){}); }catch(e){} }},
+      {label:LIVE?'Open Anesia':'Open Anesia…',icon:LIVE?SYM.ext:'',act:function(){ openAnesia(c); },ext:LIVE}
+    ];
+  }
+  /* a command that opens a new tab says so to VoiceOver (the shared menu has no per-item name, so it's added once open) */
+  function nameNewTabs(list){ var ext=list.filter(function(i){ return i.ext; }).map(function(i){ return i.label; }); if(!ext.length) return;
+    queueMicrotask(function(){ var m=D.querySelector('.pvx-cx-list'); if(!m) return;
+      [].forEach.call(m.querySelectorAll('button[data-i]'),function(b){ var l=b.querySelector('.l'); if(l&&ext.indexOf(l.textContent)>=0) b.setAttribute('aria-label',l.textContent+', opens in a new tab'); }); }); }
+  var SEL='#view-board .or-q[data-id],#view-board .or-rnow[data-id],#view-schedule .or-block[data-id],#casesBody tr[data-id]';
+  PvxCtx.bind(SEL,function(el){
+    if(!shown()) return null;
+    var c=caseById(el.getAttribute('data-id')); if(!c) return null;
+    var list=items(c), groups=[], g=[];
+    /* the shared menu drops empty items and doubled separators; icons go on all of a group or none (Brand §9.3) */
+    list.forEach(function(i){ if(i&&i.sep){ groups.push(g); g=[]; } else if(i) g.push(i); }); groups.push(g);
+    groups.forEach(function(gr){ if(!gr.every(function(i){ return i.icon; })) gr.forEach(function(i){ delete i.icon; }); });
+    var flat=[]; groups.forEach(function(gr,k){ if(!gr.length) return; if(flat.length) flat.push({sep:1}); flat.push.apply(flat,gr); });
+    nameNewTabs(flat.filter(function(i){ return !i.sep; }));
+    var id=c.id;
+    /* a live redraw can replace the card while its menu is open: focus goes back to the case's new card */
+    function back(){ setTimeout(function(){ var f=D.activeElement; if(f&&f!==D.body&&!(f.closest&&f.closest('.pvx-cx'))) return;   /* the closing menu keeps focus while it fades */
+      var n=[].slice.call(D.querySelectorAll(SEL)).filter(function(x){ return x.getAttribute('data-id')===id&&x.getClientRects().length; })[0]; if(n) try{ n.focus({preventScroll:true}); }catch(e){} },0); }
+    return {items:flat,label:'Actions for '+pt(c).name,lift:el,onClose:back};
+  },{touchOnly:true,holdMs:500,
+     skip:function(el,e){ if(e.type!=='pointerdown') return false; var b=e.target.closest('button,a,input,select,textarea,summary,[role=button]'); return !!(b&&b!==el); }});
 })();
 </script>
 </body>
