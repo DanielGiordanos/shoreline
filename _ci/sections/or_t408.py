@@ -66,7 +66,17 @@ async def s_t408(br):
     await p.evaluate("exitDisplay()"); await p.wait_for_timeout(500)
     ok('…the wall display has none', tv is False, tv)
 
-    # Buttons · press states. The pressed look is read with transitions off (a busy CI runner may not advance a 0.1 s
+    an = await p.evaluate("""(()=>{openDrawer('or390c5');const d=document.getElementById('drawerAnesia');const r=[d.getAttribute('aria-label'),!!d.querySelector('.or-nw svg.or-ext')];closeDrawer();
+        openCase('or390c5');const k=document.getElementById('caseAnesia');r.push(k.getAttribute('aria-label'),!!k.querySelector('.or-nw svg.or-ext'));return r})()""")
+    ok('…“Open Anesia” opens a new tab, so it carries arrow.up.right with its last word and says “opens in a new tab”, in the details and on the case page',
+       an == ['Open Anesia, opens in a new tab', True, 'Open Anesia, opens in a new tab', True], an)
+    sh = await p.evaluate("[!!navigator.share, !!document.getElementById('caseShare')]")
+    ok('Activity views · Share… is offered only where the system share sheet exists, on the case page and in the menu', sh[0] == sh[1], sh)
+    ok('no page errors', not e, e)
+    await c.close()
+
+    c, p, e = await T.open_or(br)
+    # Buttons · press states, on a fresh page (after the wall display, CI's WebKit kept no :active). The pressed look is read with transitions off (a busy CI runner may not advance a 0.1 s
     # transition at all); the 0.1 s itself is read from n408's rule
     dur = await p.evaluate("""[...document.getElementById('pvx-n408-css').sheet.cssRules].filter(r=>r.selectorText&&r.selectorText.includes(':active')&&r.style.filter==='brightness(0.88)'&&r.style.transitionDuration).map(r=>r.style.transitionDuration)""")
     await p.add_style_tag(content='*,*::before,*::after{transition:none!important}')
@@ -87,13 +97,6 @@ async def s_t408(br):
        r0[0] == 'none' and r0[1] in ('none', '') and r1 == ['brightness(0.88)', '0.97'] and r2[0] == 'brightness(0.88)' and r2[1] in ('none', '')
        and dur and all(d.split(',')[0].strip() in ('0.1s', '.1s') for d in dur), (r0, r1, r2, dur))
 
-    an = await p.evaluate("""(()=>{openDrawer('or390c5');const d=document.getElementById('drawerAnesia');const r=[d.getAttribute('aria-label'),!!d.querySelector('.or-nw svg.or-ext')];closeDrawer();
-        openCase('or390c5');const k=document.getElementById('caseAnesia');r.push(k.getAttribute('aria-label'),!!k.querySelector('.or-nw svg.or-ext'));return r})()""")
-    ok('…“Open Anesia” opens a new tab, so it carries arrow.up.right with its last word and says “opens in a new tab”, in the details and on the case page',
-       an == ['Open Anesia, opens in a new tab', True, 'Open Anesia, opens in a new tab', True], an)
-    sh = await p.evaluate("[!!navigator.share, !!document.getElementById('caseShare')]")
-    ok('Activity views · Share… is offered only where the system share sheet exists, on the case page and in the menu', sh[0] == sh[1], sh)
-    ok('no page errors', not e, e)
     await c.close()
 
     c, p, e = await T.open_or(br)
