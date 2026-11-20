@@ -1,6 +1,9 @@
 # Pravix tests. Every push to a branch other than main runs every test in _ci/ (see _ci/README.md):
-# Chromium in six even parts, and the sections written for both engines again in WebKit (Safari's engine), in three
-# parts (n362: one WebKit job ran past its 45-minute limit once the Flow builds n336–n361 were added).
+# Chromium in six even parts, and the sections written for both engines again in WebKit (Safari's engine), also in six
+# parts (n362 split WebKit in three after one job ran past its 45-minute limit; with OR n390–n413 a slow runner's
+# install alone took up to 24 minutes, so each WebKit part now has half as much to run).
+# Playwright is 1.63.0, the version the build machine tests with: 1.56.0's WebKit (26.0) crashed on a second reload
+# after moving through a page's history (or_t399, every run since Nov 18), which the build machine's WebKit doesn't.
 # A build goes to its branch, these run, and merging it into main is the deploy.
 #
 # Licensed drug data and staff-only data never come here; their sections run on the build machine before each merge.
@@ -16,7 +19,7 @@ concurrency:
   group: tests-${{ github.ref }}
   cancel-in-progress: true
 env:
-  PLAYWRIGHT_VERSION: '1.56.0'
+  PLAYWRIGHT_VERSION: '1.63.0'
   TZ: America/New_York
 jobs:
   chromium:
@@ -51,13 +54,13 @@ jobs:
           retention-days: 7
 
   webkit:
-    name: WebKit ${{ matrix.shard }}/3
+    name: WebKit ${{ matrix.shard }}/6
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -73,7 +76,7 @@ jobs:
           pip install -q "playwright==$PLAYWRIGHT_VERSION"
           python -m playwright install --with-deps webkit > /dev/null
       - name: Tests
-        run: python _ci/run.py . --shots shots --engine webkit --shard ${{ matrix.shard }}/3
+        run: python _ci/run.py . --shots shots --engine webkit --shard ${{ matrix.shard }}/6
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
