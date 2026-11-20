@@ -7666,7 +7666,8 @@ body.or-inspect #roomGrid.or-rooms{grid-template-columns:repeat(auto-fit,minmax(
    Toolbars (iOS) · Pull-down buttons — on an iPhone (600 pt and under) the case page shows the next step and a More
    (•••) button; More is a pull-down named "More actions for <patient>" with Copy link, Share… (where the system share
    sheet exists), Print… (dimmed with its reason while it can't print) and Open Anesia. Each still runs the case page's
-   own button, so what it does can't drift. On a phone the shared menu is an action sheet with Cancel. */
+   own button, so what it does can't drift. On a phone the shared menu is an action sheet with Cancel.
+   A live redraw of the case header keeps focus on the button that had it (More, the next step, Copy link…). */
 (function(){
   var D=document, TABS={overview:'Overview',preop:'Pre-op',procedure:'Procedure',recovery:'Recovery',record:'Record'};
   function title(){
@@ -7694,13 +7695,14 @@ body.or-inspect #roomGrid.or-rooms{grid-template-columns:repeat(auto-fit,minmax(
     if(b.parentNode!==acts||b.nextSibling!==next) acts.insertBefore(b,next||null);
     b.onclick=function(){
       var cp=D.getElementById('caseCopy'), sh=D.getElementById('caseShare'), pr=acts.querySelector('.or-print-btn'), an=D.getElementById('caseAnesia');
-      function run(el){ return function(){ if(el&&el.isConnected) el.click(); }; }
+      /* found when chosen: a live redraw may have replaced the header's buttons since the menu opened */
+      function run(sel){ return function(){ var el=D.querySelector('#view-case .or-case-side '+sel); if(el) el.click(); }; }
       var prOff=pr&&pr.getAttribute('aria-disabled')==='true';
       var items=[
-        cp&&{label:'Copy link',act:run(cp)},
-        sh&&{label:'Share…',act:run(sh)},
-        pr&&{label:'Print…',act:run(pr),disabled:prOff},
-        an&&{label:LIVE?'Open Anesia':'Open Anesia…',act:run(an)}
+        cp&&{label:'Copy link',act:run('#caseCopy')},
+        sh&&{label:'Share…',act:run('#caseShare')},
+        pr&&{label:'Print…',act:run('.or-print-btn'),disabled:prOff},
+        an&&{label:LIVE?'Open Anesia':'Open Anesia…',act:run('#caseAnesia')}
       ].filter(Boolean);
       if(!items.length||!window.PvxCtx) return;
       menuOpen412=true; b.setAttribute('aria-expanded','true');
@@ -7708,7 +7710,14 @@ body.or-inspect #roomGrid.or-rooms{grid-template-columns:repeat(auto-fit,minmax(
         var m=D.getElementById('caseMore'); if(m) m.setAttribute('aria-expanded','false');
         function back(){ var f=D.activeElement, m=D.getElementById('caseMore');
           if((!f||f===D.body||!f.isConnected||(f.closest&&f.closest('.pvx-cx')))&&m&&m.getClientRects().length) try{ m.focus({preventScroll:true}); }catch(e){} }
-        setTimeout(back,0); setTimeout(back,240); }});   /* the closing menu keeps focus while it fades */
+        /* the closing menu keeps focus while it fades, then hands it to the button that opened it, which a live redraw may
+           have replaced: once the menu has gone, focus goes to the More on screen */
+        setTimeout(back,0);
+        var gone=function(){ return !D.querySelector('.pvx-cx'); };
+        if(gone()) return;
+        var mo=new MutationObserver(function(){ if(gone()){ mo.disconnect(); setTimeout(back,0); } });
+        mo.observe(D.body,{childList:true});
+        setTimeout(function(){ mo.disconnect(); back(); },2000); }});
       if(LIVE) queueMicrotask(function(){ var m=D.querySelector('.pvx-cx-list'); if(!m) return;
         [].forEach.call(m.querySelectorAll('button'),function(x){ var l=x.querySelector('.l'); if(l&&l.textContent==='Open Anesia') x.setAttribute('aria-label','Open Anesia, opens in a new tab'); }); });
     };
@@ -7717,7 +7726,18 @@ body.or-inspect #roomGrid.or-rooms{grid-template-columns:repeat(auto-fit,minmax(
   /* each is added to, not replaced: the original runs first, then the title and the More button */
   function after(name,fn){ var f=window[name]; if(typeof f!=='function') return;
     window[name]=function(){ var r=f.apply(this,arguments); try{ fn(); }catch(e){ console.warn('[OR n412]',e); } return r; }; }
-  after('switchView',sync); after('renderCase',function(){ more(); sync(); });
+  after('switchView',sync);
+  /* the case header is redrawn about every 6 s, live: the button that had focus keeps it (it fell to the page; Start
+     closing as well as More) */
+  (function(){ var rc=window.renderCase; if(typeof rc!=='function') return;
+    window.renderCase=function(){
+      var a=D.activeElement, head=D.getElementById('caseHead'), key=null;
+      if(a&&head&&head.contains(a)) key=a.id?'#'+a.id:(a.dataset&&a.dataset.orprint?'[data-orprint="'+a.dataset.orprint+'"]':null);
+      var r=rc.apply(this,arguments);
+      try{ more(); sync();
+        if(key){ var f=D.activeElement; if(!f||f===D.body||!f.isConnected){ var n=D.querySelector('#caseHead '+key); if(n) n.focus({preventScroll:true}); } }
+      }catch(e){ console.warn('[OR n412]',e); }
+      return r; }; })();
   after('enterDisplay',sync); after('exitDisplay',sync);
   if(typeof window.orLock==='function') after('orLock',sync);
   after('showGate',sync); after('hideGate',sync);
