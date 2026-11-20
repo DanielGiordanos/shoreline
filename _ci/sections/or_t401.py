@@ -13,6 +13,17 @@ import or_t390 as T
 SHEET = "(()=>({open:document.getElementById('modal').classList.contains('open'), ask:(document.querySelector('#modalActions .or-discard')||{}).textContent||null, focus:document.activeElement&&document.activeElement.id, x:!document.getElementById('modalClose').hidden&&getComputedStyle(document.getElementById('modalClose')).display!=='none', acts:[...document.querySelectorAll('#modalActions > .btn')].map(b=>b.textContent)}))()"
 
 
+
+async def choose(p, sel, value=None, index=None):
+    """Choose an option. WebKit sometimes reports a just-opened sheet's row as visibility:hidden for a moment (stale computed
+    style: the sheet is painted and usable), so if the visible-element check doesn't pass, choose through the field and send
+    the change event the app listens for."""
+    try:
+        if value is not None: await p.select_option(sel, value=value, timeout=2500)
+        else: await p.select_option(sel, index=index, timeout=2500)
+    except Exception:
+        await p.evaluate("([s,v,i])=>{const e=document.querySelector(s); if(!e) return; if(v!==null) e.value=v; else e.selectedIndex=i; e.dispatchEvent(new Event('input',{bubbles:true})); e.dispatchEvent(new Event('change',{bubbles:true}))}", [sel, value, index])
+
 @section(id='t401', title='n401 · OR · Modality, Offering help, Onboarding: “Discard what you typed?” before a sheet throws typing away, Cancel or ✕ (not both), one sheet at a time on a phone, the Keyboard shortcuts sheet on ?, device words and verb tooltips',
          apps=['or'], topics=['modality', 'help', 'onboarding'], engines=('chromium', 'webkit'))
 async def s_t401(br):
@@ -55,7 +66,9 @@ async def s_t401(br):
 
     await p.evaluate("delayModal(caseById('or390c6'))"); await p.wait_for_timeout(400)
     sd = await p.evaluate(SHEET)
-    await p.fill('#dlMin', '20'); await p.evaluate("[...document.querySelectorAll('#modalActions .btn.primary')].pop().click()"); await p.wait_for_timeout(300)
+    await p.fill('#dlMin', '20')
+    if await p.evaluate("!document.getElementById('dlReason').value"): await choose(p, '#dlReason', index=1)   # n411: a new delay's reason is chosen
+    await p.evaluate("[...document.querySelectorAll('#modalActions .btn.primary')].pop().click()"); await p.wait_for_timeout(300)
     s7 = await p.evaluate(SHEET)
     ok('…saving never asks (Delay: 20 min saved and closed)', s7['open'] is False and s7['ask'] is None, (sd, s7))
     await p.evaluate("openLegend()"); await p.wait_for_timeout(300)
@@ -83,12 +96,12 @@ async def s_t401(br):
     await p.click('#caseTabs [data-tab="procedure"]'); await p.wait_for_timeout(300)
     allt += await p.evaluate("[...document.querySelectorAll('#view-case [title]')].filter(n=>n.getClientRects().length).map(n=>n.title)")
     bad = sorted(set(t for t in allt if len(t) > 75 or t.rstrip().endswith('.')))
-    lu = await p.evaluate("(document.querySelector('[title^=\"Search patients\"]')||{}).title||''")
+    lu = await p.evaluate("(document.getElementById('searchLuna')||{}).title||''")   # n413: found by id; its scope now matches the field's
     nav = await p.evaluate("[document.getElementById('datePrev').title, document.getElementById('caseCopy').title]")
     spec = await p.evaluate("[...document.querySelectorAll('[data-specnext]')].map(b=>b.title)")
     ok('…OR’s tooltips say what the control does, starting with a verb, under 75 characters, without a full stop (“Previous day”, “Advance status”, “L.U.N.A.”, a two-sentence Copy link)',
        not bad and nav[0] == 'Go to the previous day' and nav[1] == 'Copy a link that opens this case after sign-in, without a name'
-       and lu.startswith('Search patients, staff, procedures and rooms (') and lu.endswith('K)') and (not spec or all(t.startswith('Mark it ') or t == 'The lab has it' for t in spec)), (bad, lu, nav, spec))
+       and (lu.startswith('Search patients, staff, procedures and rooms (') or lu.startswith('Search cases, patients, surgeons, procedures and rooms (')) and lu.endswith('K)') and len(lu) <= 75 and (not spec or all(t.startswith('Mark it ') or t == 'The lab has it' for t in spec)), (bad, lu, nav, spec))
     ok('no page errors', not e, e)
     await c.close()
 

@@ -24,6 +24,17 @@ DRAG = r"""async ([id, room, minutes, drop])=>{
   return res; }"""
 
 
+
+async def choose(p, sel, value=None, index=None):
+    """Choose an option. WebKit sometimes reports a just-opened sheet's row as visibility:hidden for a moment (stale computed
+    style: the sheet is painted and usable), so if the visible-element check doesn't pass, choose through the field and send
+    the change event the app listens for."""
+    try:
+        if value is not None: await p.select_option(sel, value=value, timeout=2500)
+        else: await p.select_option(sel, index=index, timeout=2500)
+    except Exception:
+        await p.evaluate("([s,v,i])=>{const e=document.querySelector(s); if(!e) return; if(v!==null) e.value=v; else e.selectedIndex=i; e.dispatchEvent(new Event('input',{bubbles:true})); e.dispatchEvent(new Event('change',{bubbles:true}))}", [sel, value, index])
+
 @section(id='t398', title='n398 · OR · Drag and drop, Entering data, Feedback: where a dragged case lands and who it pushes back, focus kept, checked minutes, temperature and pain score, problems under their fields, a whole value on hover, no empty “Lot”',
          apps=['or'], topics=['dragdrop', 'forms', 'feedback'], engines=('chromium', 'webkit'))
 async def s_t398(br):
@@ -53,6 +64,7 @@ async def s_t398(br):
     ok('Entering data · the delay’s minutes are whole minutes from 1 to 480, said under the field with Save dimmed (“-5” saved a negative delay; it was the browser’s number field)',
        st == ['text', 'numeric'] and dim == 'true' and bad[0] and 'whole minutes' in (bad[1] or '') and bad[2] == 'true' and bad[3] == 'null', (st, dim, bad))
     await p.fill('#dlMin', '20'); await p.press('#dlMin', 'ArrowUp'); await p.wait_for_timeout(100)
+    if await p.evaluate("!document.getElementById('dlReason').value"): await choose(p, '#dlReason', index=1)   # n411: a new delay's reason is chosen
     await p.evaluate("[...document.querySelectorAll('#modalActions .btn.primary')].pop().click()"); await p.wait_for_timeout(300)
     d = await p.evaluate("caseById('or390c6').delay")
     ok('…↑ steps it, and a right value saves (21 min)', d and d['min'] == 21, d)
@@ -83,6 +95,7 @@ async def s_t398(br):
     await p.evaluate("[...document.querySelectorAll('#modalActions .btn.primary')].pop().click()"); await p.wait_for_timeout(200)
     a2 = await p.evaluate("[document.getElementById('modal').classList.contains('open'), (document.getElementById('acLat').closest('.or-field').querySelector('.or-field-msg')||{}).textContent, document.activeElement.id]")
     await p.select_option('#acLat', 'Left'); await p.wait_for_timeout(150)
+    if await p.evaluate("!!document.querySelector('#acSurgeon option[value=\"\"]')"): await choose(p, '#acSurgeon', index=1); await p.wait_for_timeout(150)   # n411: the surgeon is chosen too
     a3 = await p.evaluate("[[...document.querySelectorAll('#modalActions .btn.primary')].pop().getAttribute('aria-disabled'), (document.getElementById('acLat').closest('.or-field').querySelector('.or-field-msg')||{}).textContent||'']")
     ok('Entering data · Add case is dimmed until the side is chosen, says “Choose the side” under the field with focus on it (it was an error at the top), and lights up once chosen',
        a1 == 'true' and a2[0] and 'Choose the side' in (a2[1] or '') and a2[2] == 'acLat' and a3 == ['false', ''], (a1, a2, a3))

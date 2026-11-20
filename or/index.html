@@ -1436,7 +1436,7 @@ body:not(.dark) .or-case-tabs button.active{background:rgba(44,184,210,.10);colo
 .or-pref .k{font-size:0.6875rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-400);margin-bottom:5px;}
 .or-pref .v{font-size:0.8125rem;font-weight:600;color:var(--ink-900);line-height:1.5;white-space:pre-line;}
 .or-pref textarea{width:100%;min-height:74px;border-radius:10px;border:1px solid var(--ctl-border);background:var(--fill-soft);color:var(--ink-900);font-family:var(--font);font-size:0.8125rem;padding:8px 10px;resize:vertical;line-height:1.45;}
-.or-pref textarea:focus,.or-field input:focus,.or-field select:focus,.or-field textarea:focus{outline:none;border-color:rgba(77,200,224,.55);box-shadow:0 0 0 3px rgba(56,189,210,.15);background:var(--surface-0);}
+.or-pref textarea:focus,.or-field input:focus,.or-field textarea:focus{outline:none;border-color:rgba(77,200,224,.55);box-shadow:0 0 0 3px rgba(56,189,210,.15);background:var(--surface-0);}
 
 /* record */
 .or-field{margin-bottom:12px;}
@@ -2543,16 +2543,18 @@ function orFieldMsg(field,msg,focus){
   else field.removeAttribute('aria-invalid'); }
 /* typing or choosing again clears the message; the field's own check runs when leaving it */
 document.addEventListener('input',e=>{ const f=e.target; if(f&&f.getAttribute&&f.getAttribute('aria-invalid')==='true'&&f.id!=='dlMin') orFieldMsg(f,''); },true);
-document.addEventListener('change',e=>{ const f=e.target; if(!f||!f.id) return; if(f.id==='acPatient'||f.id==='acLat') orFieldMsg(f,''); if(/^ac(Patient|Lat|Proc)$/.test(f.id)) orAddCaseState(); },true);
+document.addEventListener('change',e=>{ const f=e.target; if(!f||!f.id) return; if(f.id==='acPatient'||f.id==='acLat'||f.id==='acSurgeon') orFieldMsg(f,''); if(/^ac(Patient|Lat|Proc|Surgeon)$/.test(f.id)) orAddCaseState(); },true);
 function orPrimary(){ return [...document.querySelectorAll('#modalActions .btn.primary')].pop(); }
 function orAddCaseState(){ const p=document.getElementById('acPatient'), lat=document.getElementById('acLat'), latF=document.getElementById('acLatF'), b=orPrimary(); if(!p||!b) return;
-  const missing=!p.value||(latF&&!latF.hidden&&lat&&!lat.value); b.setAttribute('aria-disabled',missing?'true':'false'); }
+  const sg=document.getElementById('acSurgeon');
+  const missing=!p.value||(latF&&!latF.hidden&&lat&&!lat.value)||(sg&&!sg.value); b.setAttribute('aria-disabled',missing?'true':'false'); }   /* PVX-N411: and the surgeon */
 function orDelayCheck(show){ const n=document.getElementById('dlMin'); if(!n) return false; const v=n.value.trim(); let msg='';
   if(!v) msg='Enter the minutes late, or choose Clear delay.'; else if(!/^\d+$/.test(v)||+v<1||+v>480) msg='Enter whole minutes from 1 to 480.';
-  const b=orPrimary(); if(b) b.setAttribute('aria-disabled',msg?'true':'false');
+  const rs=document.getElementById('dlReason'), b=orPrimary(); if(b) b.setAttribute('aria-disabled',(msg||(rs&&!rs.value))?'true':'false');   /* PVX-N411: and the reason */
   if(show) orFieldMsg(n,msg,show===true); else if(!msg) orFieldMsg(n,'');
   return msg?false:+v; }
 function orWireDelay(){ const n=document.getElementById('dlMin'); if(!n) return;
+  const rs=document.getElementById('dlReason'); if(rs) rs.addEventListener('change',()=>{ orFieldMsg(rs,''); orDelayCheck(false); });   /* PVX-N411 */
   n.oninput=()=>orDelayCheck(false); n.onblur=()=>{ if(n.value.trim()) orDelayCheck('leave'); };
   n.onkeydown=e=>{ if(e.key!=='ArrowUp'&&e.key!=='ArrowDown') return; e.preventDefault(); const s=(e.shiftKey?5:1)*(e.key==='ArrowUp'?1:-1);
     const v=Math.max(1,Math.min(480,(parseInt(n.value,10)||0)+s)); n.value=String(v); orDelayCheck(false); };
@@ -3355,7 +3357,8 @@ function addCase(data){
    or-live.js replaces each one with the real write to the patient's treatment sheet and Flow visit. */
 const DRUG_UNITS=['mg/kg','mg','mcg/kg','mcg','mL/kg','mL','U/kg','U','mEq/kg','mEq'];
 const DRUG_ROUTES=['IV','IM','SC','PO','IO','Inhaled','Epidural','Local block','Topical','IN'];
-function drugLine(d){ return [d.name, d.dose!=null&&d.dose!==''?d.dose+(d.unit?' '+d.unit:''):'', d.route||''].filter(Boolean).join(' · '); }
+function orSafeDose(v){ return ({'U/kg':'units/kg','U':'units','SC':'SUBQ','IU':'units','SQ':'SUBQ'})[v]||v; }   /* PVX-N411 · Brand §10: display only */
+function drugLine(d){ return [d.name, d.dose!=null&&d.dose!==''?d.dose+(d.unit?' '+orSafeDose(d.unit):''):'', orSafeDose(d.route||'')].filter(Boolean).join(' · '); }
 const LINK={
   live:false,
   /* the sheet's medications due while the patient is in the OR: [{key,orderId,name,dose,unit,route,due}] */
@@ -4312,13 +4315,13 @@ function openAnesia(c){
     actions:[{label:'Cancel',ghost:true},{label:'Open Anesia', act:()=>{ notify('Anesia opened', `${p.name} · ${person(c.anesthesiaId).name}`, 'var(--st-inor)'); }}]});
 }
 function delayModal(c){
-  const cur=c.delay||{min:15,reason:DELAY_REASONS[0],note:''};
+  const cur=c.delay||{min:lateMin(c)>0?lateMin(c):'',reason:'',note:''};   /* PVX-N411: it was 15 min, "Previous case running long" */
   openModal({title:'Delay · '+pt(c).name, sub:`Track why the case is late, not just that it is. Scheduled ${fmtT(c.sched)}.`,
     body:`<div class="or-field-row"><div class="or-field"><label for="dlMin">Minutes late</label><div class="or-unit-field"><input id="dlMin" inputmode="numeric" autocomplete="off" value="${cur.min}"><span aria-hidden="true">min</span></div></div>
-      <div class="or-field"><label>Reason</label><select id="dlReason">${DELAY_REASONS.map(r=>`<option ${r===cur.reason?'selected':''}>${r}</option>`).join('')}</select></div></div>
+      <div class="or-field"><label>Reason</label><select id="dlReason">${cur.reason?'':'<option value="" selected>Choose…</option>'}${DELAY_REASONS.map(r=>`<option ${r===cur.reason?'selected':''}>${r}</option>`).join('')}</select></div></div>
       <div class="or-field"><label>Note</label><input id="dlNote" value="${esc(cur.note||'')}" placeholder="Optional detail"></div>`,
     actions:[{label:'Clear delay',ghost:true,act:()=>{ c.delay=null; save(); render(); if(UI.drawerId===c.id) renderDrawer(); toast('Delay cleared'); }},
-      {label:'Save delay', act:()=>{ const m=orDelayCheck(true); if(m===false) return false; c.delay={min:m, reason:$('#dlReason').value, note:$('#dlNote').value}; save(); render(); if(UI.drawerId===c.id) renderDrawer(); toast(`${pt(c).name} · ${m} min late`); }}], onOpen:()=>orWireDelay()});   /* PVX-N398 */
+      {label:'Save delay', act:()=>{ const m=orDelayCheck(true); if(m===false) return false; if(!$('#dlReason').value){ orFieldMsg($('#dlReason'),'Choose the reason.',true); return false; } c.delay={min:m, reason:$('#dlReason').value, note:$('#dlNote').value}; save(); render(); if(UI.drawerId===c.id) renderDrawer(); toast(`${pt(c).name} · ${m} min late`); }}], onOpen:()=>orWireDelay()});   /* PVX-N398 */
 }
 
 /* ---------- live clock: refresh elapsed text without rebuilding open UI ---------- */
@@ -4480,14 +4483,16 @@ function drugModal(c){
   openModal({title:'Drug given', sub:`${esc(pt(c).name)} · ${esc(procLabel(c))}. ${LINK.live?'It goes straight onto the treatment sheet as given, with an OR tag — no one needs to copy it over.':'In the live OR this goes straight onto the treatment sheet as given.'}`,
     body:`<div class="or-field"><label>Drug</label><input id="dgName" list="dgList" placeholder="e.g. Hydromorphone" autocomplete="off"><datalist id="dgList">${meds.map(n=>`<option value="${esc(n)}">`).join('')}</datalist></div>
       <div class="or-field-row3"><div class="or-field"><label>Dose</label><input id="dgDose" inputmode="decimal" placeholder="0.1"></div>
-        <div class="or-field"><label>Unit</label><select id="dgUnit">${DRUG_UNITS.map(u=>`<option>${u}</option>`).join('')}</select></div>
-        <div class="or-field"><label>Route</label><select id="dgRoute">${DRUG_ROUTES.map(r=>`<option>${r}</option>`).join('')}</select></div></div>
+        <div class="or-field"><label>Unit</label><select id="dgUnit"><option value="">Choose…</option>${DRUG_UNITS.map(u=>`<option value="${u}">${orSafeDose(u)}</option>`).join('')}</select></div>
+        <div class="or-field"><label>Route</label><select id="dgRoute"><option value="">Choose…</option>${DRUG_ROUTES.map(r=>`<option value="${r}">${orSafeDose(r)}</option>`).join('')}</select></div></div>
       <div class="or-field-row"><div class="or-field"><label>Time given</label><select id="dgTime">${times.map((m,i)=>`<option value="${m}">${i?fmtT(m):'Now · '+fmtT(m)}</option>`).join('')}</select></div>
         <div class="or-field"><label>Note</label><input id="dgNote" placeholder="Optional"></div></div><div class="or-modal-sub" id="dgWarn" role="alert"></div>`,
     actions:[{label:'Cancel',ghost:true},{label:'Chart it', act:()=>{
       const name=$('#dgName').value.trim(), dose=parseFloat(String($('#dgDose').value).replace(',','.'));
       if(!name){ $('#dgWarn').textContent='Enter the drug.'; $('#dgName').focus(); return false; }
       if(!(dose>0)){ $('#dgWarn').textContent='Enter the dose given.'; $('#dgDose').focus(); return false; }
+      if(!$('#dgUnit').value){ $('#dgWarn').textContent=''; orFieldMsg($('#dgUnit'),'Choose the unit.',true); return false; }   /* PVX-N411 */
+      if(!$('#dgRoute').value){ $('#dgWarn').textContent=''; orFieldMsg($('#dgRoute'),'Choose the route.',true); return false; }
       giveDrug(c,{name, dose, unit:$('#dgUnit').value, route:$('#dgRoute').value, t:+$('#dgTime').value, note:$('#dgNote').value.trim()}); }}],
     onOpen:()=>$('#dgName').focus()});
 }
@@ -4815,7 +4820,7 @@ function addCaseModal(){
         <div class="or-field"><label>Procedure</label><select id="acProc">${PROCEDURES.map(p=>`<option>${p}</option>`).join('')}</select></div>
         <div class="or-field" id="acLatF"><label>Side</label><select id="acLat"><option value="">Choose…</option>${['Left','Right','Bilateral'].map(x=>`<option>${x}</option>`).join('')}</select></div></div>
       <div class="or-field-row3">
-        <div class="or-field"><label>Surgeon</label><select id="acSurgeon">${SURGEONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>
+        <div class="or-field"><label>Surgeon</label><select id="acSurgeon"><option value="">Choose…</option>${SURGEONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>
         <div class="or-field"><label>Anesthesia</label><select id="acAnes">${LIVE?'<option value="">Unassigned</option>':''}${anesStaff().map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>
         <div class="or-field"><label>Service</label><select id="acService">${SERVICES.map(s=>`<option ${s===serviceFor(PROCEDURES[0])?'selected':''}>${s}</option>`).join('')}</select></div></div>
       <div class="or-field-row3">
@@ -4830,6 +4835,7 @@ function addCaseModal(){
       if(!$('#acPatient').value){ orFieldMsg($('#acPatient'),'Choose a patient.',true); return false; }
       const sided=SIDED.has($('#acProc').value), lat=sided?$('#acLat').value:'';
       if(sided&&!lat){ orFieldMsg($('#acLat'),'Choose the side: left, right or bilateral.',true); return false; }
+      if(!$('#acSurgeon').value){ orFieldMsg($('#acSurgeon'),'Choose the surgeon.',true); return false; }   /* PVX-N411 */
       const emerg=state.type==='emergency', time=$('#acTime').value;
       const c=addCase({patientId:$('#acPatient').value, procedure:$('#acProc').value, laterality:lat||null, surgeonId:$('#acSurgeon').value, anesthesiaId:$('#acAnes').value||null,
         service:$('#acService').value, roomId:$('#acRoom').value, date:emerg?TODAY:$('#acDate').value, sched:time==='asap'?asap():+time, dur:+$('#acDur').value, type:state.type, priority:emerg?'emergency':state.priority});
@@ -7259,7 +7265,7 @@ body.or-inspect #drawer{top:calc(var(--or-insp-top,150px) + 12px)!important;bott
   var ct=D.getElementById('caseTabs'); if(ct){ ct.addEventListener('scroll',function(){ edge(ct,false); },{passive:true}); addEventListener('resize',function(){ edge(ct,false); }); }
 
   /* Split views: an inspector on a wide window */
-  var WIDE=window.matchMedia?matchMedia('(min-width:1024px)'):{matches:true};
+  var WIDE=window.matchMedia?matchMedia('(min-width:1180px)'):{matches:true};   /* PVX-N409: 1180, was 1024 */
   function inspector(){ return WIDE.matches&&!D.body.classList.contains('display-mode'); }
   var so=window.syncOverlays;
   if(typeof so==='function') window.syncOverlays=function(){ var r=so.apply(this,arguments);
@@ -7553,6 +7559,274 @@ html body .or-ext{width:.86em;height:.86em;margin-left:.28em;vertical-align:-.06
     return {items:flat,label:'Actions for '+pt(c).name,lift:el,onClose:back};
   },{touchOnly:true,holdMs:500,
      skip:function(el,e){ if(e.type!=='pointerdown') return false; var b=e.target.closest('button,a,input,select,textarea,summary,[role=button]'); return !!(b&&b!==el); }});
+})();
+</script>
+
+<style id="pvx-n409-css">
+/* PVX-N409 · the case details beside the page, sized to the window (Nov 18 2026)
+   400 pt wide below 1366 pt (470 above), so the page keeps room; the Board's rooms keep at least 320 pt each and go to
+   one column rather than squeeze (at 1024 pt they were 243 pt and text collided) */
+@media (max-width:1365px){ body.or-inspect #drawer.or-drawer{width:400px!important} :root{--or-insp:400px} }   /* the page makes room for 400 (n407 always reserved 470) */
+body.or-inspect #roomGrid.or-rooms{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+</style>
+
+<style id="pvx-n410-css">
+/* PVX-N410 · OR against Apple's HIG: Dock menus, Edit menus, Home Screen quick actions (Nov 19 2026) */
+.pvx-ks .pvx-ks-how{margin:2px 0 8px;font-size:.8125rem;color:var(--ink-500)}
+.pvx-ks .pvx-ks-ic{list-style:none;margin:0;padding:0}
+.pvx-ks .pvx-ks-ic li{display:flex;justify-content:space-between;gap:16px;padding:6px 0;font-size:.875rem}
+.pvx-ks .pvx-ks-ic li span{color:var(--ink-500);text-align:right}
+</style>
+
+<script id="pvx-n410-js">
+/* PVX-N410 · OR against Apple's HIG: Dock menus, Edit menus, Home Screen quick actions (Nov 19 2026)
+
+   OR's shortcuts (its Dock menu and File menu on a Mac, the taskbar on Windows, touch and hold on Android) are its four
+   most useful commands, each also in OR: Add case, Find a case, Schedule, Display mode (Cases and its list went: Find a
+   case reaches any case, and the shortcuts had no symbols). #add opens Add case once the cases are in and someone is
+   signed in; #find puts the cursor in search, with its suggestions. A shortcut acts in the OR window already open, the
+   same way. The Keyboard shortcuts sheet lists them where they exist, and one tip says so once per computer, after the
+   third case added. Edit menus: OR's fields and selected text keep the browser's own menu (Copy, Look Up). */
+(function(){
+  var D=document;
+  /* #add and #find (#schedule, #cases, #display are n390's) */
+  var pending=null;
+  function ready(){ return !(window.orWaiting&&orWaiting()) && !D.querySelector('#orGate.show') && !D.body.classList.contains('display-mode'); }
+  function run(h){
+    if(h==='#find'){ var s=D.getElementById('globalSearch'); if(s){ try{ s.focus({preventScroll:true}); }catch(e){ s.focus(); } } return true; }
+    if(h==='#add'){ if(!ready()) return false; if(D.getElementById('modal').classList.contains('open')) return true; if(typeof addCaseModal==='function') addCaseModal(); return true; }
+    return true; }
+  function go(){ var h=location.hash; if(h!=='#add'&&h!=='#find') return;
+    try{ history.replaceState(history.state,'',location.pathname+location.search); }catch(e){}
+    if(!run(h)){ pending=h; var n=0, iv=setInterval(function(){ n++; if(pending&&run(pending)){ pending=null; clearInterval(iv); } else if(n>120){ pending=null; clearInterval(iv); } },250); } }
+  go(); addEventListener('hashchange',go);
+
+  /* a shortcut chosen while OR is open acts in this window (launch_handler focus-existing) */
+  if('launchQueue' in window&&window.launchQueue&&typeof launchQueue.setConsumer==='function'){ var first=true;
+    launchQueue.setConsumer(function(params){ if(first){ first=false; return; }
+      try{ var u=new URL(params&&params.targetURL||'', location.href); if(u.origin!==location.origin) return;
+        var h=String(u.hash||''); if(!h) return; if(location.hash===h){ try{ history.replaceState(history.state,'',location.pathname+location.search); }catch(e){} }
+        location.hash=h; }catch(e){} }); }
+
+  /* the Keyboard shortcuts sheet lists them, where they exist */
+  var SC=[['Add case','Book a scheduled case, an add-on or an emergency'],['Find a case','Search cases, patients, surgeons and rooms'],['Schedule','Today’s cases by room and time'],['Display mode','The board for the wall screen']];
+  function installed(){ try{ return matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: window-controls-overlay)').matches||matchMedia('(display-mode: minimal-ui)').matches; }catch(e){ return false; } }
+  function where(){ var u=navigator.userAgent||'', touch=navigator.maxTouchPoints>0;
+    if(/iPhone|iPad|iPod/.test(u)||(/Macintosh/.test(u)&&touch)) return null;   /* iPhone and iPad show no web-app shortcuts */
+    if(/Android/.test(u)) return {how:'Touch and hold OR’s icon.',tip:'Touch and hold OR’s icon for Add case'};
+    if(/Macintosh|Mac OS X/.test(u)) return {how:'Right-click OR in the Dock, or open the File menu.',tip:'Right-click OR in the Dock for Add case'};
+    if(/Windows/.test(u)) return {how:'Right-click OR in the taskbar.',tip:'Right-click OR in the taskbar for Add case'};
+    return null; }
+  function avail(){ return (window.__orForceInstalled||installed())&&where(); }
+  window.orShortcutsAvail=avail;
+  function add(root){ var w=avail(), b=root.querySelector('.pvx-ks-body'); if(!w||!b||b.querySelector('.pvx-ks-ic')) return;
+    b.insertAdjacentHTML('beforeend','<h3 id="pvxKsIc">From OR’s icon</h3><p class="pvx-ks-how">'+pvxEsc(w.how)+'</p><ul class="pvx-ks-ic" aria-labelledby="pvxKsIc">'
+      +SC.map(function(s){ return '<li><b>'+pvxEsc(s[0])+'</b><span>'+pvxEsc(s[1])+'</span></li>'; }).join('')+'</ul>'); }
+  try{ new MutationObserver(function(m){ m.forEach(function(r){ [].forEach.call(r.addedNodes,function(n){ if(n.nodeType===1&&n.classList&&n.classList.contains('pvx-ks')) add(n); if(n.nodeType===1&&n.querySelector){ var k=n.querySelector('.pvx-ks'); if(k) add(k); } }); }); })
+    .observe(D.body,{childList:true}); }catch(e){}
+
+  /* one tip, once per computer, after the third case added from inside OR */
+  var K='pvx:or:tip-sc', get=function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, put=function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} };
+  if(typeof window.addCase==='function'){ var ac=window.addCase;
+    window.addCase=function(){ var r=ac.apply(this,arguments);
+      try{ var w=avail(); if(w&&get(K)!=='shown'){ var n=(+get(K)||0)+1; if(n>=3){ put(K,'shown'); setTimeout(function(){ if(typeof notify==='function') notify('Tip: Add case from OR’s icon',w.tip+', Find a case, Schedule and Display mode.','var(--accent)',{kind:'info'}); },1600); } else put(K,String(n)); } }catch(e){}
+      return r; }; }
+})();
+</script>
+
+<style id="pvx-n411-css">
+/* PVX-N411 · OR against Apple's HIG: Ornaments, Pop-up buttons (Nov 19 2026)
+   Add case: Room and Day showed "OR 1 · Orthoped…" and "Today · Fri, Oct 2…" in three narrow columns. Room takes the row,
+   Day and Time share the next, so each choice shows whole */
+@media (min-width:601px){
+  #modal .or-field-row3 > .or-field:has(> #acRoom){flex:1 1 100%;grid-column:1/-1}
+  #modal .or-field-row3:has(#acRoom){grid-template-columns:1fr 1fr}
+}
+</style>
+
+<style id="pvx-n412-css">
+/* PVX-N412 · OR against Apple's HIG: Pull-down buttons, The menu bar, Toolbars (Nov 19 2026)
+   On an iPhone the case page keeps the next step in its bar and puts the rest in More (•••) */
+#caseMore{display:none}
+@media (max-width:600px){
+  #view-case .or-case-side .or-actions{flex-wrap:nowrap;align-items:flex-start}
+  #view-case .or-case-side .or-actions > :is(#caseCopy,#caseShare,#caseAnesia,.or-print-btn){display:none}
+  #caseMore{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 12px;flex:none}
+  #caseMore svg{width:20px;height:20px;fill:currentColor;stroke:none}
+}
+</style>
+<script id="pvx-n412-js">
+/* PVX-N412 · OR against Apple's HIG: Pull-down buttons, The menu bar, Toolbars (Nov 19 2026)
+
+   Toolbars · Titles — "Provide a useful title for each window. Don't title windows with your app name." OR's window was
+   "OR · Pravix" whatever was open. It now names what's on screen, written only when it changes:
+     Board · Schedule · Cases · Analytics · "<patient> · <tab>" on a case page · "Display mode" on the wall display
+   Signed out (or before anyone signs in) it keeps "OR · Pravix". No owner's name, ever.
+
+   Toolbars (iOS) · Pull-down buttons — on an iPhone (600 pt and under) the case page shows the next step and a More
+   (•••) button; More is a pull-down named "More actions for <patient>" with Copy link, Share… (where the system share
+   sheet exists), Print… (dimmed with its reason while it can't print) and Open Anesia. Each still runs the case page's
+   own button, so what it does can't drift. On a phone the shared menu is an action sheet with Cancel.
+   A live redraw of the case header keeps focus on the button that had it (More, the next step, Copy link…). */
+(function(){
+  var D=document, TABS={overview:'Overview',preop:'Pre-op',procedure:'Procedure',recovery:'Recovery',record:'Record'};
+  function title(){
+    if(D.querySelector('#orGate.show')||D.body.classList.contains('sb-locked')) return 'OR · Pravix';
+    if(D.body.classList.contains('display-mode')) return 'Display mode';
+    if(UI.view==='case'){ var c=UI.caseId&&caseById(UI.caseId), p=c&&pt(c);
+      return p&&p.name ? p.name+' · '+(TABS[UI.caseTab]||'Overview') : 'Case'; }
+    return OR_VIEW_LABEL[UI.view]||'OR · Pravix';
+  }
+  function sync(){ var s; try{ s=title(); }catch(e){ s='OR · Pravix'; } if(D.title!==s) D.title=s; }
+  window.orSyncTitle=sync;
+
+  var menuOpen412=false;   /* a live redraw can replace the header (and More) while its menu is open */
+  var DOTS='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+  function more(){
+    var acts=D.querySelector('#view-case .or-case-side .or-actions'); if(!acts) return;
+    var c=UI.caseId&&caseById(UI.caseId); if(!c) return;
+    var b=D.getElementById('caseMore');
+    if(!b){ b=D.createElement('button'); b.type='button'; b.id='caseMore'; b.className='or-btn'; b.innerHTML=DOTS;
+      b.setAttribute('aria-haspopup','menu'); }
+    var ex=menuOpen412?'true':'false'; if(b.getAttribute('aria-expanded')!==ex) b.setAttribute('aria-expanded',ex);
+    var name='More actions for '+pt(c).name;
+    if(b.getAttribute('aria-label')!==name){ b.setAttribute('aria-label',name); b.title='More actions'; }
+    var next=acts.querySelector('.or-next');
+    if(b.parentNode!==acts||b.nextSibling!==next) acts.insertBefore(b,next||null);
+    b.onclick=function(){
+      var cp=D.getElementById('caseCopy'), sh=D.getElementById('caseShare'), pr=acts.querySelector('.or-print-btn'), an=D.getElementById('caseAnesia');
+      /* found when chosen: a live redraw may have replaced the header's buttons since the menu opened */
+      function run(sel){ return function(){ var el=D.querySelector('#view-case .or-case-side '+sel); if(el) el.click(); }; }
+      var prOff=pr&&pr.getAttribute('aria-disabled')==='true';
+      var items=[
+        cp&&{label:'Copy link',act:run('#caseCopy')},
+        sh&&{label:'Share…',act:run('#caseShare')},
+        pr&&{label:'Print…',act:run('.or-print-btn'),disabled:prOff},
+        an&&{label:LIVE?'Open Anesia':'Open Anesia…',act:run('#caseAnesia')}
+      ].filter(Boolean);
+      if(!items.length||!window.PvxCtx) return;
+      menuOpen412=true; b.setAttribute('aria-expanded','true');
+      PvxCtx.open({items:items,anchor:b,label:name,onClose:function(){ menuOpen412=false;
+        var m=D.getElementById('caseMore'); if(m) m.setAttribute('aria-expanded','false');
+        function back(){ var f=D.activeElement, m=D.getElementById('caseMore');
+          if((!f||f===D.body||!f.isConnected||(f.closest&&f.closest('.pvx-cx')))&&m&&m.getClientRects().length) try{ m.focus({preventScroll:true}); }catch(e){} }
+        /* the closing menu keeps focus while it fades, then hands it to the button that opened it, which a live redraw may
+           have replaced: once the menu has gone, focus goes to the More on screen */
+        setTimeout(back,0);
+        var gone=function(){ return !D.querySelector('.pvx-cx'); };
+        if(gone()) return;
+        var mo=new MutationObserver(function(){ if(gone()){ mo.disconnect(); setTimeout(back,0); } });
+        mo.observe(D.body,{childList:true});
+        setTimeout(function(){ mo.disconnect(); back(); },2000); }});
+      if(LIVE) queueMicrotask(function(){ var m=D.querySelector('.pvx-cx-list'); if(!m) return;
+        [].forEach.call(m.querySelectorAll('button'),function(x){ var l=x.querySelector('.l'); if(l&&l.textContent==='Open Anesia') x.setAttribute('aria-label','Open Anesia, opens in a new tab'); }); });
+    };
+  }
+
+  /* each is added to, not replaced: the original runs first, then the title and the More button */
+  function after(name,fn){ var f=window[name]; if(typeof f!=='function') return;
+    window[name]=function(){ var r=f.apply(this,arguments); try{ fn(); }catch(e){ console.warn('[OR n412]',e); } return r; }; }
+  after('switchView',sync);
+  /* the case header is redrawn about every 6 s, live: the button that had focus keeps it (it fell to the page; Start
+     closing as well as More) */
+  (function(){ var rc=window.renderCase; if(typeof rc!=='function') return;
+    window.renderCase=function(){
+      var a=D.activeElement, head=D.getElementById('caseHead'), key=null;
+      if(a&&head&&head.contains(a)) key=a.id?'#'+a.id:(a.dataset&&a.dataset.orprint?'[data-orprint="'+a.dataset.orprint+'"]':null);
+      var r=rc.apply(this,arguments);
+      try{ more(); sync();
+        if(key){ var f=D.activeElement; if(!f||f===D.body||!f.isConnected){ var n=D.querySelector('#caseHead '+key); if(n) n.focus({preventScroll:true}); } }
+      }catch(e){ console.warn('[OR n412]',e); }
+      return r; }; })();
+  after('enterDisplay',sync); after('exitDisplay',sync);
+  if(typeof window.orLock==='function') after('orLock',sync);
+  after('showGate',sync); after('hideGate',sync);
+  window.addEventListener('hashchange',function(){ setTimeout(sync,0); });
+  window.addEventListener('afterprint',function(){ setTimeout(sync,0); });
+  if(D.readyState==='loading') D.addEventListener('DOMContentLoaded',sync); else sync();
+})();
+</script>
+
+<style id="pvx-n413-css">
+/* PVX-N413 · OR against Apple's HIG: Path controls, Search fields (Nov 19 2026)
+   The search field takes the room the bar has: 310 pt from 1024 pt (it was 170 at 1024 and 210 at 1180) */
+@media (min-width:1024px){ #subnavOR .search{width:310px} }
+/* Cases' own search: Clear once something is typed, as the main search has */
+.or-cases-search{position:relative}
+.or-cases-search input{padding-right:36px}
+#casesSearchClear{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+  border:0;border-radius:999px;background:transparent;color:var(--ink-500,#7A98B8);cursor:pointer;padding:0}
+#casesSearchClear[hidden]{display:none}
+html body #casesSearchClear svg{position:static;transform:none;left:auto;top:auto;width:14px;height:14px;stroke:currentColor;fill:none}   /* the box's own rule places every svg as its magnifier */
+#casesSearchClear:hover{background:rgba(150,185,220,.14)}
+#casesSearchClear:focus-visible{outline:2px solid #38BDD2;outline-offset:1px}
+@media (pointer:coarse){ #casesSearchClear{width:36px;height:36px;right:2px} #casesSearchClear::after{content:'';position:absolute;inset:-4px} }
+</style>
+<script id="pvx-n413-js">
+/* PVX-N413 · OR against Apple's HIG: Path controls, Search fields (Nov 19 2026)
+
+   Search fields — "Use placeholder text to help people know what they can search for." The placeholder is the longest
+   whole phrase that fits the field (it was cut mid-word below 1280 pt and on an iPhone); its name for VoiceOver keeps
+   the whole scope. It is measured when the field's size or the text size changes, and written only on change.
+   Cases' own search gets Clear (once something is typed; it keeps the cursor in the field), Esc clears it, and the key
+   says Search. Neither field autocorrects, capitalizes or spell-checks: they take names.
+   The phrase is chosen again when the field resizes, the window resizes or the pointer changes (touch text is larger). */
+(function(){
+  var D=document;
+  var MAIN=['Search cases, patients, rooms…','Search cases and patients','Search cases','Search'];
+  var cv=null;
+  function fit(inp, list){
+    if(!inp||!inp.getClientRects().length) return;
+    var cs=getComputedStyle(inp), room=inp.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-2;
+    if(!(room>0)) return;
+    cv=cv||D.createElement('canvas').getContext('2d'); cv.font=cs.fontStyle+' '+cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;
+    var ph=list[list.length-1];
+    for(var i=0;i<list.length;i++){ if(cv.measureText(list[i]).width<=room){ ph=list[i]; break; } }
+    if(inp.placeholder!==ph) inp.placeholder=ph;
+  }
+  function names(inp){ if(!inp) return;
+    [['autocorrect','off'],['autocapitalize','off'],['spellcheck','false']].forEach(function(a){ if(inp.getAttribute(a[0])!==a[1]) inp.setAttribute(a[0],a[1]); }); }
+
+  var g=D.getElementById('globalSearch');
+  names(g);
+  if(g&&window.ResizeObserver){ new ResizeObserver(function(){ fit(g,MAIN); }).observe(g); }
+  else if(g){ addEventListener('resize',function(){ fit(g,MAIN); }); }
+  if(g) fit(g,MAIN);
+  /* touch screens read a step larger (Brand §4): the field's text grows without the field resizing, so the phrase is
+     chosen again when the pointer changes (an iPad gaining or losing a trackpad) and when its size has finished animating */
+  try{ var mq=matchMedia('(hover:none) and (pointer:coarse)'); var ref=function(){ fit(g,MAIN); };
+    if(mq.addEventListener) mq.addEventListener('change',ref); else if(mq.addListener) mq.addListener(ref); }catch(e){}
+  addEventListener('load',function(){ fit(g,MAIN); });
+  /* the field's text size is animated (a transition on the field), so the phrase is chosen again when it settles */
+  if(g) g.addEventListener('transitionend',function(e){ if(!e.propertyName||/font|width|padding|letter/.test(e.propertyName)) fit(g,MAIN); });
+  if(D.fonts&&D.fonts.ready) D.fonts.ready.then(function(){ fit(g,MAIN); });
+
+  /* the L.U.N.A. button names the field's scope (it said "patients, staff, procedures and rooms") */
+  var MAC=/mac|iphone|ipad|ipod/i.test((navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent);
+  var orb=D.getElementById('searchLuna');
+  if(orb){ var tt='Search cases, patients, surgeons, procedures and rooms ('+(MAC?'⌘K':'Ctrl+K')+')'; if(orb.title!==tt) orb.title=tt; }
+
+  /* Cases' own search: Clear, Esc and the Search key. The list redraws its search box, so it's wired when it appears. */
+  var X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>';
+  function wire(){
+    var box=D.querySelector('.or-cases-search'), inp=box&&box.querySelector('input'); if(!inp) return;
+    names(inp); if(inp.getAttribute('enterkeyhint')!=='search') inp.setAttribute('enterkeyhint','search');
+    var b=D.getElementById('casesSearchClear');
+    if(!b||b.parentNode!==box){ if(b) b.remove(); b=D.createElement('button'); b.type='button'; b.id='casesSearchClear'; b.setAttribute('aria-label','Clear search'); b.title='Clear search'; b.innerHTML=X; box.appendChild(b);
+      b.addEventListener('mousedown',function(e){ e.preventDefault(); });   /* the cursor stays in the field */
+      b.addEventListener('click',function(){ var i=D.querySelector('.or-cases-search input'); if(!i) return; i.value=''; i.dispatchEvent(new Event('input',{bubbles:true}));
+        var n=D.querySelector('.or-cases-search input'); try{ if(n&&D.activeElement!==n) n.focus(); }catch(e){} sync(); }); }   /* the list redraws its box on input: focus the new field */
+    function sync(){ var i=D.querySelector('.or-cases-search input'), c=D.getElementById('casesSearchClear'); if(!i||!c) return; var h=!i.value; if(c.hidden!==h) c.hidden=h; }
+    if(!inp.dataset.n413){ inp.dataset.n413='1';
+      inp.addEventListener('input',sync);
+      inp.addEventListener('keydown',function(e){ if(e.key==='Escape'&&inp.value){ e.preventDefault(); e.stopPropagation(); inp.value=''; inp.dispatchEvent(new Event('input',{bubbles:true})); sync(); } }); }
+    sync();
+  }
+  function after(name,fn){ var f=window[name]; if(typeof f!=='function') return;
+    window[name]=function(){ var r=f.apply(this,arguments); try{ fn(); }catch(e){ console.warn('[OR n413]',e); } return r; }; }
+  after('switchView',function(){ wire(); fit(g,MAIN); });
+  if(typeof window.renderCases==='function') after('renderCases',wire);
+  wire();
 })();
 </script>
 </body>
