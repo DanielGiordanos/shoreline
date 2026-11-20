@@ -88,7 +88,7 @@ async def s_t390(br):
        and sizes.get('/assets/img/or-192.png', (None,))[0] == (192, 192) and sizes.get('/assets/img/or-512.png', (None,))[0] == (512, 512)
        and sizes.get('/assets/img/or-maskable-512.png') == ((512, 512), 'maskable') and os.path.exists(t180) and png_size(t180) == (180, 180), (m.get('id'), sizes))
     sc = [s['url'] for s in m.get('shortcuts', [])]
-    ok('…and its shortcuts are Schedule, Cases and Display mode', sc == ['/or/#schedule', '/or/#cases', '/or/#display'], sc)
+    ok('…and its shortcuts open OR’s places, Schedule and Display mode among them (n410: Add case and Find a case took Cases’ place)', '/or/#schedule' in sc and '/or/#display' in sc and all(u.startswith('/or/#') for u in sc) and 3 <= len(sc) <= 4, sc)
 
     c, p, e = await open_or(br, path='/or/#schedule')
     v = await p.evaluate("({view:UI.view, seg:(document.querySelector('#switcher .seg.active')||{}).dataset.view, hash:location.hash})")
