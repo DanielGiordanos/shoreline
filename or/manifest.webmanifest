@@ -29,22 +29,62 @@
   ],
   "shortcuts": [
     {
+      "name": "Add case",
+      "short_name": "Add case",
+      "description": "Book a scheduled case, an add-on or an emergency",
+      "url": "/or/#add",
+      "icons": [
+        {
+          "src": "/assets/img/sc-or-add.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Find a case",
+      "short_name": "Find",
+      "description": "Search cases, patients, surgeons and rooms",
+      "url": "/or/#find",
+      "icons": [
+        {
+          "src": "/assets/img/sc-or-find.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
       "name": "Schedule",
       "short_name": "Schedule",
       "description": "Today's cases by room and time",
-      "url": "/or/#schedule"
-    },
-    {
-      "name": "Cases",
-      "short_name": "Cases",
-      "description": "Every surgical case, searchable",
-      "url": "/or/#cases"
+      "url": "/or/#schedule",
+      "icons": [
+        {
+          "src": "/assets/img/sc-or-schedule.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Display mode",
       "short_name": "Display",
       "description": "The board for the surgery department's wall screen",
-      "url": "/or/#display"
+      "url": "/or/#display",
+      "icons": [
+        {
+          "src": "/assets/img/sc-or-display.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "focus-existing",
+      "auto"
+    ]
+  }
 }
