@@ -7829,6 +7829,119 @@ html body #casesSearchClear svg{position:static;transform:none;left:auto;top:aut
   wire();
 })();
 </script>
+
+<style id="pvx-n414-css">
+/* PVX-N414 · OR against Apple's HIG: Sidebars, Tab bars, Token fields (Nov 20 2026)
+   iPhone (700 pt and under): OR's sections are a bottom tab bar on the floating glass, symbol over label (Brand §9.6c) */
+@media (max-width:700px){
+  html.or-tabbar #stage{padding-bottom:calc(74px + env(safe-area-inset-bottom,0px))!important;scroll-padding-bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+  html.or-tabbar #subnavOR #switcher{position:fixed!important;left:0;right:0;bottom:0;z-index:30;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
+    width:100%!important;max-width:none!important;flex:none!important;margin:0!important;padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px))!important;overflow:visible!important;
+    background:var(--pvx-glass-strong,rgba(23,35,56,.86));-webkit-backdrop-filter:var(--pvx-glass-blur,blur(12px) saturate(160%));backdrop-filter:var(--pvx-glass-blur,blur(12px) saturate(160%));
+    box-shadow:0 -1px 0 var(--pvx-glass-edge,rgba(255,255,255,.08)),0 -8px 24px rgba(0,0,0,.18);border:0;border-radius:0}
+  html.or-tabbar body:not(.dark) #subnavOR #switcher{box-shadow:0 -1px 0 rgba(0,0,0,.08),0 -8px 24px rgba(0,0,0,.08)}
+  html.or-tabbar #subnavOR #switcher .seg{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;min-height:50px!important;height:auto!important;
+    padding:4px 2px!important;border:0!important;border-radius:12px;font-size:.6875rem!important;font-weight:600;letter-spacing:normal!important;line-height:1.1;white-space:nowrap;position:relative;
+    background:transparent!important;box-shadow:none!important;color:rgba(255,255,255,.62)!important}
+  html.or-tabbar #subnavOR #switcher .seg svg{display:block!important;width:24px;height:24px;flex:0 0 auto;color:inherit}
+  html.or-tabbar #subnavOR #switcher .seg.active{color:#38BDD2!important}
+  html.or-tabbar body:not(.dark) #subnavOR #switcher .seg{color:#6E6E73!important}
+  html.or-tabbar body:not(.dark) #subnavOR #switcher .seg.active{color:#0B6F86!important}
+  html.or-tabbar body:not(.dark) #subnavOR #switcher .seg.active svg{color:#0B6F86!important}
+  html.or-tabbar #subnavOR #switcher .seg:focus-visible{outline:2px solid #38BDD2;outline-offset:-2px}
+  /* while typing, the keyboard needs the room: the bar steps aside (Flow n374) */
+  html.or-tabbar.or-typing #subnavOR #switcher{display:none!important}
+  html.or-tabbar.or-typing #stage{padding-bottom:0!important}
+}
+/* the selected tab uses the fill variant on touch, as Flow's, Treatment's and Rounds' do (n227) */
+@media (hover:none) and (pointer:coarse){
+  html.or-tabbar #switcher .seg.active svg :is(path,rect,circle,ellipse,polygon){fill:currentColor;fill-opacity:.5}
+}
+@media (hover:none) and (pointer:coarse) and (prefers-contrast:more){ html.or-tabbar #switcher .seg.active svg :is(path,rect,circle,ellipse,polygon){fill-opacity:.7} }
+html.pvx-noblur.or-tabbar #subnavOR #switcher{background:var(--pvx-glass-solid,#172440)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+@media (prefers-reduced-transparency:reduce){ html.or-tabbar #subnavOR #switcher{background:var(--pvx-glass-solid,#172440)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important} }
+@media (prefers-contrast:more){ html.or-tabbar #subnavOR #switcher{background:var(--pvx-glass-solid,#172440)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important} }
+@media (forced-colors:active){ html.or-tabbar #subnavOR #switcher{border-top:1px solid CanvasText} }
+@media print{ html.or-tabbar #subnavOR #switcher{display:none!important} }
+</style>
+<script id="pvx-n414-js">
+/* PVX-N414 · OR against Apple's HIG: Sidebars, Tab bars, Token fields (Nov 20 2026)
+
+   Tab bars — "switch between sections while preserving the current navigation state within each section" and "make
+   sure the tab bar is visible when people navigate to different sections":
+   1. A case page keeps the section it was opened from marked (aria-current); choosing that section again goes back to
+      it, as "‹ Board" does. Another section opens that section.
+   2. Each section keeps its place: Cases scrolled to Pepper, a look at the Board, and Pepper is still in view (the
+      first case in sight and its distance from the top, as Flow n363; the offset when that case has gone). A section
+      opened for the first time starts at its top; choosing the section you're on takes it to its top.
+   3. iPhone (700 pt and under): the sections are a bottom tab bar, only while OR's sub-nav shows (not behind the sign-in
+      card, not on the wall display), and it steps aside while a field has the keyboard. */
+(function(){
+  var D=document, POS={};
+  function stage(){ return D.getElementById('stage'); }
+  function cur(){ try{ return UI.view; }catch(e){ return ''; } }
+  var SECT={board:1,schedule:1,cases:1,analytics:1};
+
+  /* 2. where a section was: the first case in sight and how far it was from the top */
+  function mark(v){ var st=stage(), el=D.getElementById('view-'+v); if(!st) return null; var top=st.getBoundingClientRect().top, a=null;
+    if(el&&st.scrollTop>4){ var c=el.querySelectorAll('[data-id]');
+      for(var k=0;k<c.length;k++){ var r=c[k].getBoundingClientRect(); if(r.height&&r.bottom>top+8){ var id=c[k].getAttribute('data-id');
+        a={id:id,off:r.top-top,nth:[].filter.call(c,function(x){ return x.getAttribute('data-id')===id; }).indexOf(c[k])}; break; } } }
+    return {y:st.scrollTop,a:a}; }
+  function jump(st,y){ var s=st.style.scrollBehavior; st.style.scrollBehavior='auto'; st.scrollTop=y; st.style.scrollBehavior=s; }
+  function back(v,m){ var st=stage(); if(!st||!m) return; if(m.y<=4){ jump(st,0); return; }
+    var el=D.getElementById('view-'+v), same=m.a&&el?[].filter.call(el.querySelectorAll('[data-id]'),function(x){ return x.getAttribute('data-id')===m.a.id; }):[], t=same[m.a?m.a.nth:0]||same[0];
+    if(t&&!t.getBoundingClientRect().height) t=null;
+    if(t){ var top=st.getBoundingClientRect().top; jump(st, st.scrollTop+(t.getBoundingClientRect().top-top)-m.a.off); } else jump(st,m.y); }
+
+  /* 1. a case page keeps its section marked */
+  function markCase(){ if(cur()!=='case') return; var from=SECT[UI.caseFrom]?UI.caseFrom:'board';
+    [].forEach.call(D.querySelectorAll('#switcher .seg'),function(b){ var on=b.dataset.view===from; if(b.classList.contains('active')!==on) b.classList.toggle('active',on); }); }
+
+  var base=window.switchView; if(typeof base!=='function') return;
+  window.switchView=function(v){
+    var st=stage(), from=cur();
+    if(st&&SECT[from]) POS[from]=mark(from);
+    var r=base.apply(this,arguments);
+    try{ markCase();
+      if(st&&SECT[v]&&v!==from&&POS[v]){ var m=POS[v], touched=false, hit=function(){ touched=true; };
+        ['wheel','touchstart','keydown','pointerdown'].forEach(function(k){ st.addEventListener(k,hit,{once:true,passive:true}); });
+        back(v,m); requestAnimationFrame(function(){ if(cur()===v&&!touched) back(v,m); });
+        [120,350].forEach(function(ms){ setTimeout(function(){ if(cur()===v&&!touched) back(v,m); },ms); }); }
+      if(SECT[v]&&v===from) POS[v]=null;   /* the section you're on again: its top */
+    }catch(e){ console.warn('[OR n414]',e); }
+    return r; };
+
+  /* 1. on a case page, its own section goes back to it (as "‹ Board"); the case's place in that section is kept */
+  var sw=D.getElementById('switcher');
+  if(sw) sw.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('.seg[data-view]'); if(!b||cur()!=='case') return;
+    var from=SECT[UI.caseFrom]?UI.caseFrom:'board'; if(b.dataset.view!==from) return;
+    var bk=D.getElementById('caseBack'); if(!bk) return; e.preventDefault(); e.stopPropagation(); bk.click(); },true);
+
+  /* 3. the iPhone tab bar */
+  var CW=window.matchMedia?matchMedia('(max-width:700px)'):{matches:false};
+  function on(){ var sub=D.getElementById('subnavOR'); if(!sub||!CW.matches) return false;
+    if(sub.classList.contains('hidden')||getComputedStyle(sub).display==='none') return false;
+    if(D.body.classList.contains('display-mode')||D.body.classList.contains('sb-locked')||D.querySelector('#orGate.show')) return false;
+    return true; }
+  function sync(){ var t=on(), h=D.documentElement; if(h.classList.contains('or-tabbar')!==t) h.classList.toggle('or-tabbar',t); }
+  window.orTabbarSync=sync;
+  if(CW.addEventListener) CW.addEventListener('change',sync); else if(CW.addListener) CW.addListener(sync);
+  try{ var sub=D.getElementById('subnavOR'); if(sub) new MutationObserver(sync).observe(sub,{attributes:true,attributeFilter:['class','style']});
+    new MutationObserver(sync).observe(D.body,{attributes:true,attributeFilter:['class']});
+    var g=D.getElementById('orGate'); if(g) new MutationObserver(sync).observe(g,{attributes:true,attributeFilter:['class']}); }catch(e){}
+  addEventListener('resize',sync); sync(); setTimeout(sync,500);
+
+  /* while a field has the keyboard (touch), the bar steps aside */
+  var TOUCH=window.matchMedia?matchMedia('(hover:none) and (pointer:coarse)'):{matches:false}, tOff=0;
+  function typing(el){ if(!el||!el.matches) return false; if(el.isContentEditable) return true;
+    if(el.matches('textarea')) return true;
+    return el.matches('input')&&!/^(button|submit|reset|checkbox|radio|range|color|file|image|hidden)$/i.test(el.type||''); }
+  D.addEventListener('focusin',function(e){ if(!TOUCH.matches) return; clearTimeout(tOff); var h=D.documentElement, t=typing(e.target);
+    if(h.classList.contains('or-typing')!==t) h.classList.toggle('or-typing',t); });
+  D.addEventListener('focusout',function(){ clearTimeout(tOff); tOff=setTimeout(function(){ if(!typing(D.activeElement)) D.documentElement.classList.remove('or-typing'); },120); });
+})();
+</script>
 </body>
 
 <!-- PVX-TYPE n135: contrast + type floor (shared sheet + or rules) -->
