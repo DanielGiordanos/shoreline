@@ -55,12 +55,21 @@ async def s_t412(br):
        (geo, menu))
     an = None; fx = None
     if menu:
+        await p.evaluate("renderCase()"); await p.wait_for_timeout(150)   # a live redraw between opening the menu and choosing
         await p.evaluate("[...document.querySelectorAll('.pvx-cx-list button')].find(b=>(b.textContent||'').includes('Open Anesia')).click()"); await p.wait_for_timeout(400)
         an = await p.evaluate("window.__an")
         await p.click('#caseMore'); await p.wait_for_timeout(400)
         await p.keyboard.press('Escape'); await p.wait_for_timeout(500)
         fx = await p.evaluate("[document.activeElement&&document.activeElement.id, document.getElementById('caseMore').getAttribute('aria-expanded')]")
-    ok('…each item runs the case page’s own button (Open Anesia opened it once), and Esc closes the menu with focus back on More',
+    keep = None
+    if geo:
+        await p.focus('#caseMore'); await p.evaluate("renderCase()"); await p.wait_for_timeout(200)
+        k1 = await p.evaluate("document.activeElement.id")
+        await p.focus('#caseAdvance'); await p.evaluate("renderCase()"); await p.wait_for_timeout(200)
+        keep = [k1, await p.evaluate("document.activeElement.id")]
+    ok('…a live redraw of the case header (about every 6 s) keeps focus on the button that had it, More or the next step (it fell to the page)',
+       keep == ['caseMore', 'caseAdvance'], keep)
+    ok('…each item runs the case page’s own button, also after a live redraw while the menu was open (Open Anesia opened it once), and Esc closes the menu with focus back on More',
        an == 1 and fx == ['caseMore', 'false'], (an, fx))
     errs += list(e)
     await c.close()
