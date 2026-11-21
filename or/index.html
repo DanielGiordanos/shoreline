@@ -791,7 +791,7 @@ body:not(.dark) .btn.ghost:hover{background:var(--surface-2);}
 /* toast */
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(30px);z-index:80;
   background:var(--toast-bg);color:#fff;padding:13px 20px;border-radius:14px;font-size:0.8125rem;font-weight:600;
-  box-shadow:0 18px 40px rgba(11,16,32,.4);opacity:0;pointer-events:none;transition:all .4s var(--ease-spring);
+  box-shadow:0 18px 40px rgba(11,16,32,.4);opacity:0;pointer-events:none;transition:opacity .4s var(--ease-spring),transform .4s var(--ease-spring);   /* PVX-N418: was `all`; the glass turns solid at once on a slow device, not over .4 s */
   display:flex;align-items:center;gap:10px;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast .dot{background:var(--s-admitted);}
