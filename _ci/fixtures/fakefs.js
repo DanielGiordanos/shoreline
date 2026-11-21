@@ -38,9 +38,10 @@ Q.prototype._docs=function(){ var n=this.n, F=this.F; return Object.keys(S).filt
   .filter(function(p){ return F.every(function(f){ var v=get(S[p],f[0]); return f[1]==='=='?v===f[2]:f[1]==='in'?f[2].indexOf(v)>-1:f[1]==='>='?v>=f[2]:f[1]==='<='?v<=f[2]:true; }); })
   .map(function(p){ return snapOf(p); }); };
 Q.prototype.get=function(){ var d=this._docs(); return Promise.resolve({docs:d,empty:!d.length,size:d.length,forEach:function(f){ d.forEach(f); }}); };
-Q.prototype.onSnapshot=function(cb,c2){ if(typeof cb!=='function') cb=c2; var q=this, last=null; function f(){ var d=q._docs(), j=JSON.stringify(d.map(function(x){ return [x.id,x.data()]; })); if(j===last) return; last=j;
+Q.prototype.onSnapshot=function(cb,c2){ if(typeof cb!=='function') cb=c2; var q=this, last=null, wait=window.__fsDelay>0; function f(){ if(wait) return; var d=q._docs(), j=JSON.stringify(d.map(function(x){ return [x.id,x.data()]; })); if(j===last) return; last=j;
   cb({docs:d,empty:!d.length,size:d.length,forEach:function(g){ d.forEach(g); },docChanges:function(){ return []; },metadata:{hasPendingWrites:false,fromCache:false}}); }
-  subs.push(f); setTimeout(f,window.__fsDelay||0); return function(){ var i=subs.indexOf(f); if(i>-1) subs.splice(i,1); }; };   /* __fsDelay: simulate a slow first load (n175 tests) */
+  subs.push(f); setTimeout(function(){ wait=false; f(); },window.__fsDelay||0); return function(){ var i=subs.indexOf(f); if(i>-1) subs.splice(i,1); }; };   /* __fsDelay: simulate a slow first load (n175 tests).
+     While that first answer is pending, a write elsewhere doesn't deliver it early (n418): the tests' own seeding writes did, so the "slow" list arrived at once. */
 var db={collection:function(n){ return new Q(n); },doc:function(p){ return new D(p); },
   batch:function(){ var ops=[]; return {set:function(r,d,o){ ops.push(function(){ return r.set(d,o); }); },update:function(r,d){ ops.push(function(){ return r.update(d); }); },delete:function(r){ ops.push(function(){ return r.delete(); }); },commit:function(){ ops.forEach(function(f){ f(); }); return Promise.resolve(); }}; },
   runTransaction:function(fn){ var w=[]; var tx={get:function(r){ return r.get(); },set:function(r,d,o){ w.push(function(){ return r.set(d,o); }); return tx; },update:function(r,d){ w.push(function(){ return r.update(d); }); return tx; },delete:function(r){ w.push(function(){ return r.delete(); }); return tx; }};
