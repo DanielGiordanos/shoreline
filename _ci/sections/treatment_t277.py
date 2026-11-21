@@ -66,6 +66,8 @@ async def s_t277(br):
     pl = await pg.evaluate("(()=>{const i=document.querySelector('.pl-add input');i.focus();return !!i})()")
     await pg.keyboard.press('Tab'); f1 = await pg.evaluate("(()=>{const a=document.activeElement;return [a.className,getComputedStyle(a).visibility]})()")
     await pg.wait_for_timeout(300); await pg.fill('.pl-add input', 'Vomiting'); await pg.wait_for_timeout(250)
+    # n415: the button fades in; wait for the fade to finish (the box may first scroll into view, now that the sheet opens at its top in WebKit too)
+    await until(pg, "getComputedStyle(document.querySelector('.pl-go')).opacity==='1'", 1500)
     v = await pg.evaluate("(()=>{const b=document.querySelector('.pl-go');const c=getComputedStyle(b);return [c.visibility,c.opacity,b.getClientRects().length>0]})()")
     ok('Tab from the empty problem box skips the invisible Add button (it stopped on it); once something is typed the button shows and is reachable',
        pl and f1[0] != 'pl-go' and v[0] == 'visible' and v[1] == '1', [f1, v])
