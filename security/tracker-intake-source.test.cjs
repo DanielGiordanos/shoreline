@@ -3,7 +3,8 @@
 const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
-const flow=fs.readFileSync('index.html','utf8');
+// Flow's page and the scripts it loads (its code moved out of index.html in n383–n389).
+const flow=require('./flow-source.cjs').flowSource().text;
 const track=fs.readFileSync('track.html','utf8');
 const rules=fs.readFileSync('firestore.rules','utf8');
 const allowed='ABCDEFGHJKMNPQRSTUVWXYZ23456789';

@@ -45,6 +45,27 @@ async function main() {
     seen.push(name);
     process.stdout.write('PASS ' + name + '\n');
   };
+  // The rule that lets the pilot accounts create their own membership has an end date
+  // (allow create: if request.time < timestamp.date(Y, M, D)). The emulator uses the real clock, so these checks
+  // read that date from the rules: while the window is open the create must succeed, and once it has closed the
+  // same create must be refused. After a refusal the record is seeded with rules off, as Daniel creating it by
+  // hand, so the checks of what an activated member can and cannot do still run against the rules.
+  const pilotWindow = rules.match(/match \/staff_members\/\{uid\}[\s\S]*?allow create: if request\.time < timestamp\.date\((\d+),\s*(\d+),\s*(\d+)\)/);
+  assert.ok(pilotWindow, 'staff_members create rule must keep an end date');
+  const pilotWindowEnds = Date.UTC(+pilotWindow[1], +pilotWindow[2] - 1, +pilotWindow[3]);
+  const pilotWindowOpen = Date.now() < pilotWindowEnds;
+  process.stdout.write('NOTE self-provisioning window ' + (pilotWindowOpen ? 'is open until ' : 'closed on ')
+    + new Date(pilotWindowEnds).toISOString().slice(0, 10) + ' UTC\n');
+  const pilotCreate = async (name, ctx, uid, payload) => {
+    if (pilotWindowOpen) {
+      await check(name, () => assertSucceeds(setDoc(doc(ctx, 'staff_members', uid), payload)));
+      return;
+    }
+    await check('window closed: refused — ' + name, () => assertFails(setDoc(doc(ctx, 'staff_members', uid), payload)));
+    await env.withSecurityRulesDisabled(async (admin) => {
+      await setDoc(doc(admin.firestore(), 'staff_members', uid), payload);
+    });
+  };
 
   try {
     await env.withSecurityRulesDisabled(async (ctx) => {
@@ -469,18 +490,18 @@ async function main() {
       assertFails(setDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'), {
         ...ownerPayload, manage_roles: true,
       })));
-    await check('verified Daniel may create his exact UID-bound owner membership', () =>
-      assertSucceeds(setDoc(doc(verifiedDaniel, 'staff_members', 'pilot-daniel-uid'), ownerPayload)));
-    await check('verified Heather may create her exact UID-bound management membership', () =>
-      assertSucceeds(setDoc(doc(verifiedHeather, 'staff_members', 'pilot-heather-uid'), directorPayload)));
-    await check('unverified Heather with existing Firebase password session can activate', () =>
-      assertSucceeds(setDoc(doc(unverifiedPasswordHeather, 'staff_members', 'heather-password-uid'), directorPayload)));
+    await pilotCreate('verified Daniel may create his exact UID-bound owner membership',
+      verifiedDaniel, 'pilot-daniel-uid', ownerPayload);
+    await pilotCreate('verified Heather may create her exact UID-bound management membership',
+      verifiedHeather, 'pilot-heather-uid', directorPayload);
+    await pilotCreate('unverified Heather with existing Firebase password session can activate',
+      unverifiedPasswordHeather, 'heather-password-uid', directorPayload);
     await check('activated password Heather can read SGVP review rounds', () =>
       assertSucceeds(getDocs(collection(unverifiedPasswordHeather, 'sgvp_review_rounds'))));
-    await check('verified Sarah may self-provision only reviewer membership', () =>
-      assertSucceeds(setDoc(doc(verifiedSarah, 'staff_members', 'pilot-sarah-uid'), reviewerPayload)));
-    await check('existing password Sarah may activate without email verification', () =>
-      assertSucceeds(setDoc(doc(unverifiedPasswordSarah, 'staff_members', 'sarah-password-uid'), reviewerPayload)));
+    await pilotCreate('verified Sarah may self-provision only reviewer membership',
+      verifiedSarah, 'pilot-sarah-uid', reviewerPayload);
+    await pilotCreate('existing password Sarah may activate without email verification',
+      unverifiedPasswordSarah, 'sarah-password-uid', reviewerPayload);
     await check('activated Sarah may read her own membership', () =>
       assertSucceeds(getDoc(doc(unverifiedPasswordSarah, 'staff_members', 'sarah-password-uid'))));
     await check('activated Sarah may read open SGVP rounds', () =>
@@ -541,8 +562,7 @@ async function main() {
         setDoc(doc(db,'staff_members','wrong-'+uid),reviewerPayload)));
       await check(email+' cannot add administrative flags',()=>assertFails(
         setDoc(doc(db,'staff_members',uid),{...reviewerPayload,review_manager:true})));
-      await check(email+' can enroll as reviewer with password login',()=>assertSucceeds(
-        setDoc(doc(db,'staff_members',uid),reviewerPayload)));
+      await pilotCreate(email+' can enroll as reviewer with password login', db, uid, reviewerPayload);
       await check(email+' can read own membership',()=>assertSucceeds(
         getDoc(doc(db,'staff_members',uid))));
       await check(email+' can read review rounds',()=>assertSucceeds(

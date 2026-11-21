@@ -8,7 +8,8 @@ const assert=require('node:assert/strict');
 const helper=fs.readFileSync('sgvp/assessment/reviewer-access.js','utf8');
 const page=fs.readFileSync('sgvp/assessment/index.html','utf8');
 const rules=fs.readFileSync('firestore.rules','utf8');
-const flow=fs.readFileSync('index.html','utf8');
+// Flow's page and the scripts it loads (its code moved out of index.html in n383–n389).
+const flow=require('./flow-source.cjs').flowSource().text;
 const HEATHER='heather.galano@vca.com';
 const SARAH='sarah.schiff@vca.com';
 const expected={

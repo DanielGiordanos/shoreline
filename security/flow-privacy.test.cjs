@@ -4,7 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-const html = fs.readFileSync('index.html', 'utf8');
+// Flow's page and the scripts it loads (its code moved out of index.html in n383–n389).
+const html = require('./flow-source.cjs').flowSource().text;
 const start = html.indexOf('function pvxClearPrivateLocalState(){');
 const end = html.indexOf('function logout(){', start);
 assert.ok(start >= 0 && end > start, 'Privacy cleanup function must exist');
