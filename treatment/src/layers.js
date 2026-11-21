@@ -2152,3 +2152,19 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
   function boot(){ names(); pvxWatch(names,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-label','aria-pressed','data-tip']}); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
+
+/* ════ pvx-n415-ts ════ */
+/* n415 · a section opens at its top in Safari too. selectCTab() resets the stage to its top, but the stage scrolls smoothly,
+   so Safari's WebKit animated the reset and, when the stage was still moving (the status board scrolling to the selected
+   patient), stopped part way: the sheet opened 280 pt down with its toolbar under the bars. For the switch itself the stage
+   jumps; a smooth scroll in flight is stopped by it. In-page jumps keep their smooth scroll. */
+(function(){
+  function wrap(){ var f=window.selectCTab; if(typeof f!=='function'||f.__pvx415) return;
+    var w=function(){ var st=document.querySelector('.stage'), was=st?st.style.scrollBehavior:'';
+      if(st) st.style.scrollBehavior='auto';
+      try{ return f.apply(this,arguments); }
+      finally{ if(st) st.style.scrollBehavior=was; } };
+    w.__pvx415=1; if(f.__pvx239){ w.__pvx239=f.__pvx239; w.__orig=f.__orig||f; }   /* n239 wraps once; it must still see itself */
+    window.selectCTab=w; }
+  wrap(); document.addEventListener('DOMContentLoaded',wrap); addEventListener('load',function(){ setTimeout(wrap,0); });
+})();

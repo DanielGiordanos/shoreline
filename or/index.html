@@ -4625,7 +4625,7 @@ function sendToFlow(c){
   const p=pt(c); const dest=c.recovery.destination;
   if(!['recovery_complete','out_of_recovery'].includes(c.status)||!DESTINATIONS.includes(dest)){ toast('Complete recovery and choose a destination first.',{error:true}); return; }
   if(LINK.live){ const adm=LINK.admits(c);
-    openModal({title:`Send ${p.name} to ${dest}`, sub:adm?`${esc(p.name)} is admitted in Flow, the treatment sheet moves to the IP Board with the inpatient routine orders, and Rounds gets the surgery.`
+    openModal({title:`Send ${p.name} to ${dest}?`, sub:adm?`${esc(p.name)} is admitted in Flow, the treatment sheet moves to the IP Board with the inpatient routine orders, and Rounds gets the surgery.`
         :dest==='Discharge'?`Flow and the treatment sheet show surgery complete. Discharge ${esc(p.name)} from Flow as usual.`:`Flow and the treatment sheet show ${esc(p.name)} in <b>${esc(dest)}</b>.`,
       body:`<div class="or-impact ok"><div><b>${esc(p.name)} → ${esc(dest)}</b><span>${esc(procLabel(c))} · recovery complete ${fmtT(c.recovery.complete)}${c.recovery.techId?' · '+esc(person(c.recovery.techId).name):''}</span></div></div>`,
       actions:[{label:'Cancel',ghost:true},{label:'Send', act:()=>{ if((c.status==='recovery_complete'&&!setStatus(c,'out_of_recovery'))||!setStatus(c,'complete')){ toast('The case changed. Reopen it before retrying.'); return false; }
@@ -6553,7 +6553,8 @@ body.or-offline #displayGrid,body.or-offline #displaySummary{opacity:.6}
   function ask(){
     if(asking) return; asking=true; acts.classList.add('is-asking');
     var q=D.createElement('div'); q.className='or-discard'; q.setAttribute('role','alertdialog'); q.setAttribute('aria-labelledby','orDiscardQ');
-    q.innerHTML='<span id="orDiscardQ">Discard what you typed?</span><button type="button" class="btn ghost" id="orDiscardNo">Cancel</button><button type="button" class="btn danger" id="orDiscardYes">Discard</button>';
+    var ph=window.matchMedia&&matchMedia('(max-width:600px)').matches, kb='<button type="button" class="btn ghost" id="orDiscardNo">Keep editing</button>', db='<button type="button" class="btn danger" id="orDiscardYes">Discard</button>';   /* PVX-N416: Keep editing (it said Cancel); on a phone Discard comes first */
+    q.innerHTML='<span id="orDiscardQ">Discard what you typed?</span>'+(ph?db+kb:kb+db);
     acts.appendChild(q);
     q.querySelector('#orDiscardNo').onclick=keep;
     q.querySelector('#orDiscardYes').onclick=function(){ dirty=false; keep(); closeModal(); };
@@ -7940,6 +7941,180 @@ html.pvx-noblur.or-tabbar #subnavOR #switcher{background:var(--pvx-glass-solid,#
   D.addEventListener('focusin',function(e){ if(!TOUCH.matches) return; clearTimeout(tOff); var h=D.documentElement, t=typing(e.target);
     if(h.classList.contains('or-typing')!==t) h.classList.toggle('or-typing',t); });
   D.addEventListener('focusout',function(){ clearTimeout(tOff); tOff=setTimeout(function(){ if(!typing(D.activeElement)) D.documentElement.classList.remove('or-typing'); },120); });
+})();
+</script>
+
+<style id="pvx-n415-css">
+/* PVX-N415 · a case's five sections fit on an iPhone (Nov 20 2026): at the normal text size the row needed 379 pt in a
+   356 pt box and "Record" sat past the edge. 3 pt each side and 2 between, the leftover room shared out; n407's scroll stays for larger text */
+@media (max-width:600px){
+  #view-case .or-case-tabs{gap:2px}
+  #view-case .or-case-tabs button{flex:1 1 auto;padding:0 3px;justify-content:center}
+}
+</style>
+
+<style id="pvx-n416-css">
+/* PVX-N416 · OR against Apple's HIG: Action sheets, Alerts, Page controls (Nov 20 2026)
+   On a phone a confirmation is an action sheet from the bottom: the action first, Cancel last and set apart (Brand §9.4) */
+@media (max-width:600px){
+  #modal.or-alertsheet{top:auto!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;left:10px!important;right:10px!important;width:auto!important;max-width:none!important;
+    transform:translateY(16px)!important;border-radius:20px}
+  #modal.or-alertsheet.open{transform:none!important}
+  #modal.or-alertsheet #modalActions{display:flex!important;flex-direction:column;align-items:stretch;gap:8px}
+  #modal.or-alertsheet #modalActions>.btn{width:100%!important;min-height:48px!important;margin:0!important;font-size:1.0625rem}
+  #modal.or-alertsheet #modalActions>.btn.ghost{margin-top:6px!important}
+  #modalActions .or-discard{flex-direction:column;align-items:stretch}
+  #modalActions .or-discard span{text-align:center;margin-bottom:2px}
+  #modalActions .or-discard .btn{width:100%!important;min-height:48px!important}
+}
+@media (prefers-reduced-motion:reduce){ #modal.or-alertsheet{transform:none!important} }
+#modal.or-alertsheet:focus{outline:none}
+#modal.or-alertsheet:focus-visible{outline:2px solid #38BDD2;outline-offset:2px}
+</style>
+<script id="pvx-n416-js">
+/* PVX-N416 · OR against Apple's HIG: Action sheets, Alerts, Page controls (Nov 20 2026)
+
+   Alerts — a confirmation (a sheet with only Cancel and one action and nothing to fill in) is an alert: role alertdialog,
+   named by its title and described by its message. Focus goes to the alert itself for a destructive choice (Remove,
+   Reset, Delete, Discard, Clear: no default, so Return does nothing) and to the action otherwise. On a phone it's an
+   action sheet from the bottom, the action first and Cancel last. Closing it puts focus back on what opened it, found
+   again by its id or data attribute if the page redrew it. A live redraw of the case page keeps focus on the same control
+   anywhere on the page (n412 did the header).
+   ⌘. (Ctrl+. on Windows) is Esc everywhere in OR (HIG Alerts: Command-Period). */
+(function(){
+  var D=document, M=D.getElementById('modal'); if(!M) return;
+  var PH=window.matchMedia?matchMedia('(max-width:600px)'):{matches:false};
+  var DESTRUCTIVE=/^(Remove|Reset|Delete|Discard|Clear)\b/;
+  var pressed=null, opener=null, isAlert=false;
+  /* what was pressed last (a click doesn't focus a button in Safari) */
+  D.addEventListener('pointerdown',function(e){ var b=e.target&&e.target.closest&&e.target.closest('button,[role="button"],a,[tabindex]'); if(b) pressed=b; },true);
+  function key(el){ if(!el||el===D.body) return null;
+    if(el.id) return '#'+CSS.escape(el.id);
+    for(var i=0;i<el.attributes.length;i++){ var a=el.attributes[i]; if(/^data-/.test(a.name)) return el.tagName.toLowerCase()+'['+a.name+'="'+CSS.escape(a.value)+'"]'; }
+    return null; }
+  function confirmation(){
+    var acts=[].slice.call(D.querySelectorAll('#modalActions > .btn'));
+    if(acts.length!==2) return null;
+    var cancel=acts.filter(function(b){ return b.classList.contains('ghost')&&/^Cancel$/.test(b.textContent.trim()); })[0], act=acts.filter(function(b){ return b!==cancel; })[0];
+    if(!cancel||!act||act.classList.contains('ghost')) return null;
+    if(D.querySelector('#modalBody input:not([type=hidden]),#modalBody select,#modalBody textarea')) return null;
+    return {cancel:cancel, act:act}; }
+  function order(c){ if(!c) return; var box=D.getElementById('modalActions');
+    if(PH.matches){ if(c.act.nextElementSibling!==c.cancel) box.insertBefore(c.act,c.cancel); }
+    else if(c.cancel.nextElementSibling!==c.act) box.insertBefore(c.cancel,c.act); }
+
+  var base=window.openModal;
+  if(typeof base==='function') window.openModal=function(){
+    var a=D.activeElement, from=(a&&a!==D.body&&!M.contains(a))?a:pressed;
+    var r=base.apply(this,arguments);
+    try{
+      var c=confirmation(); isAlert=!!c; M.classList.toggle('or-alertsheet',isAlert);
+      var sub=D.querySelector('#modalBody .or-modal-sub');
+      if(isAlert){
+        opener={el:from, key:key(from)};
+        M.setAttribute('role','alertdialog');
+        if(sub){ sub.id='modalSub'; M.setAttribute('aria-describedby','modalSub'); } else M.removeAttribute('aria-describedby');
+        order(c);
+        if(DESTRUCTIVE.test(c.act.textContent.trim())) M.focus({preventScroll:true}); else c.act.focus({preventScroll:true});
+      } else {
+        opener=null;
+        if(M.getAttribute('role')!=='dialog') M.setAttribute('role','dialog');
+        M.removeAttribute('aria-describedby');
+      }
+    }catch(e){ console.warn('[OR n416]',e); }
+    return r; };
+  if(PH.addEventListener) PH.addEventListener('change',function(){ if(isAlert&&M.classList.contains('open')) order(confirmation()); });
+
+  /* closing: focus back on what opened it */
+  /* a live redraw of the case can replace the button just after: until it has settled (about a second), focus follows
+     the button to its new copy, unless the person has moved on */
+  function back(o){ if(!o||M.classList.contains('open')) return;
+    var f=D.activeElement; if(f&&f!==D.body&&f.id!=='addCaseBtn'&&f.isConnected) return;
+    var el=o.el&&o.el.isConnected?o.el:(o.key?D.querySelector(o.key):null);
+    if(el&&el.getClientRects().length) try{ el.focus({preventScroll:true}); o.el=el; }catch(e){} }
+  try{ new MutationObserver(function(){ if(!M.classList.contains('open')&&opener){ var o=opener; opener=null; [0,120,400,900].forEach(function(ms){ setTimeout(function(){ back(o); },ms); }); }
+      if(!M.classList.contains('open')&&M.classList.contains('or-alertsheet')){ M.classList.remove('or-alertsheet'); M.setAttribute('role','dialog'); M.removeAttribute('aria-describedby'); isAlert=false; } })
+    .observe(M,{attributes:true,attributeFilter:['class']}); }catch(e){}
+
+  /* a live redraw of the case page keeps focus on the control that had it, anywhere on the page (n412 did the header) */
+  (function(){ var rc=window.renderCase; if(typeof rc!=='function') return;
+    window.renderCase=function(){
+      var a=D.activeElement, v=D.getElementById('view-case'), k=(a&&v&&v.contains(a)&&!(D.getElementById('caseHead')||{contains:function(){return false;}}).contains(a))?key(a):null;
+      var r=rc.apply(this,arguments);
+      try{ if(k){ var f=D.activeElement; if(!f||f===D.body||!f.isConnected){ var n=D.querySelector('#view-case '+k)||D.querySelector(k); if(n&&n.getClientRects().length) n.focus({preventScroll:true}); } } }catch(e){ console.warn('[OR n416]',e); }
+      return r; }; })();
+
+  /* ⌘. / Ctrl+. is Esc */
+  addEventListener('keydown',function(e){
+    if(e.key!=='.'||!(e.metaKey||e.ctrlKey)||e.altKey||e.shiftKey) return;
+    e.preventDefault(); e.stopPropagation();
+    var t=D.activeElement||D.body;
+    t.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',keyCode:27,which:27,bubbles:true,cancelable:true}));
+  },true);
+})();
+</script>
+
+<style id="pvx-n417-css">
+/* PVX-N417 · OR against Apple's HIG: Panels, Popovers, Scroll views (Nov 20 2026) */
+/* the Schedule's timeline: the edge that has more hours fades, just past the room names */
+.or-sched-scroll.or-more-start{-webkit-mask-image:linear-gradient(90deg,#000 var(--or-lw,170px),transparent var(--or-lw,170px),#000 calc(var(--or-lw,170px) + 32px));mask-image:linear-gradient(90deg,#000 var(--or-lw,170px),transparent var(--or-lw,170px),#000 calc(var(--or-lw,170px) + 32px))}
+.or-sched-scroll.or-more-end{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent)}
+.or-sched-scroll.or-more-start.or-more-end{-webkit-mask-image:linear-gradient(90deg,#000 var(--or-lw,170px),transparent var(--or-lw,170px),#000 calc(var(--or-lw,170px) + 32px),#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,#000 var(--or-lw,170px),transparent var(--or-lw,170px),#000 calc(var(--or-lw,170px) + 32px),#000 calc(100% - 32px),transparent)}
+@media (forced-colors:active){ .or-sched-scroll{-webkit-mask-image:none!important;mask-image:none!important} }
+/* Cases: when the table fits, its box clips instead of scrolling, so the headings stick to the page's scroll */
+#view-cases .tablewrap.or-fits{overflow:clip!important}
+#view-cases .tablewrap.or-fits #casesTable thead th{z-index:2}
+</style>
+<script id="pvx-n417-js">
+/* PVX-N417 · OR against Apple's HIG: Panels, Popovers, Scroll views (Nov 20 2026)
+
+   Scroll views — with nothing focused the scroll keys scroll OR's content (#stage): Page Down / Up and Space / ⇧Space a
+   page less one line, ↓ ↑ a line, Home and End; never while typing or behind an overlay (Flow n368, Treatment n288).
+   The Schedule's timeline says it scrolls sideways: the edge with more fades. Cases' headings stay at the top while the
+   list scrolls, whenever the table fits its width. */
+(function(){
+  var D=document;
+  function overlay(){
+    if(D.querySelector('#modal.open,.pvx-cx,#menu.open')) return true;
+    var dr=D.getElementById('drawer'); if(dr&&dr.classList.contains('open')&&!D.body.classList.contains('or-inspect')) return true;
+    if(window.PvxKeys&&PvxKeys.isOpen&&PvxKeys.isOpen()) return true;
+    if(D.body.classList.contains('display-mode')||D.body.classList.contains('sb-locked')||D.querySelector('#orGate.show')) return true;
+    return false; }
+  var K={PageDown:1,PageUp:-1,' ':1,ArrowDown:1,ArrowUp:-1,Home:0,End:0};
+  addEventListener('keydown',function(e){
+    if(e.defaultPrevented||e.metaKey||e.ctrlKey||e.altKey||!(e.key in K)) return;
+    var t=e.target; if(t!==D.body&&t!==D.documentElement) return;
+    if(overlay()) return;
+    var st=D.getElementById('stage'); if(!st||st.scrollHeight<=st.clientHeight+2) return;
+    var line=40, page=Math.max(80,st.clientHeight-line-8), y=st.scrollTop;
+    if(e.key==='Home') y=0; else if(e.key==='End') y=st.scrollHeight;
+    else if(e.key==='ArrowDown'||e.key==='ArrowUp') y+=K[e.key]*line;
+    else y+=(e.key===' '&&e.shiftKey?-1:K[e.key])*page;
+    e.preventDefault();
+    var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try{ st.scrollTo({top:y,behavior:rm?'auto':'smooth'}); }catch(x){ st.scrollTop=y; }
+  });
+
+  /* the Schedule's timeline: which edge has more */
+  function edges(){ var s=D.querySelector('.or-sched-scroll'); if(!s) return;
+    var lab=s.querySelector('.or-lane > :first-child'), lw=lab?Math.round(lab.getBoundingClientRect().width):170;
+    if(s.style.getPropertyValue('--or-lw')!==lw+'px') s.style.setProperty('--or-lw',lw+'px');
+    var max=s.scrollWidth-s.clientWidth, a=max>2&&s.scrollLeft>2, b=max>2&&s.scrollLeft<max-2;
+    if(s.classList.contains('or-more-start')!==a) s.classList.toggle('or-more-start',a);
+    if(s.classList.contains('or-more-end')!==b) s.classList.toggle('or-more-end',b);
+    if(!s.__n417){ s.__n417=1; s.addEventListener('scroll',edges,{passive:true}); } }
+  /* Cases: clip instead of scroll when the table fits */
+  function fits(){ var w=D.querySelector('#view-cases .tablewrap'); if(!w) return;
+    var was=w.classList.contains('or-fits'); if(was) w.classList.remove('or-fits');
+    var ok=w.scrollWidth<=w.clientWidth+1; if(ok) w.classList.add('or-fits'); else if(was) w.classList.remove('or-fits'); }
+  function both(){ try{ edges(); fits(); }catch(e){ console.warn('[OR n417]',e); } }
+  function after(name){ var f=window[name]; if(typeof f!=='function') return;
+    window[name]=function(){ var r=f.apply(this,arguments); both(); return r; }; }
+  after('renderSchedule'); after('renderCases'); after('switchView');
+  var raf=0; addEventListener('resize',function(){ if(!raf) raf=requestAnimationFrame(function(){ raf=0; both(); }); });
+  try{ var st=D.getElementById('stage'); if(st&&window.ResizeObserver) new ResizeObserver(function(){ if(!raf) raf=requestAnimationFrame(function(){ raf=0; both(); }); }).observe(st); }catch(e){}
+  if(D.readyState==='loading') D.addEventListener('DOMContentLoaded',both); else both();
+  addEventListener('load',function(){ setTimeout(both,0); });
 })();
 </script>
 </body>
