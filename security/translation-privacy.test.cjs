@@ -5,7 +5,9 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('index.html','utf8');
+// Flow's page and the scripts it loads (its code moved out of index.html in n383–n389), so the
+// "never a public translator" checks below cover every file Flow runs.
+const source = require('./flow-source.cjs').flowSource().text;
 const begin = source.indexOf('const TranslationService = (function(){');
 const end = source.indexOf('const _t9nPromises = {};', begin);
 assert.ok(begin >= 0 && end > begin, 'TranslationService closure must exist');
