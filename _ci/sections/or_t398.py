@@ -74,9 +74,13 @@ async def s_t398(br):
     async def rec(k, v):
         await p.fill(f'[data-rec="{k}"]', v); await p.press(f'[data-rec="{k}"]', 'Tab'); await p.wait_for_timeout(200)
         return await p.evaluate(f"""[(document.querySelector('[data-rec="{k}"]').closest('.or-field').querySelector('.or-field-msg')||{{}}).textContent||'', caseById('or390c3').recovery['{k}']||null]""")
-    t1 = await rec('temp', '1005'); t2 = await rec('temp', '101.2'); p1 = await rec('pain', '7'); p2 = await rec('pain', '2')
-    ok('Entering data · Recovery’s temperature and pain score are checked when leaving the field: “1005” and a pain score of 7 are said under the field and not kept; 101.2 and 2 are kept',
-       'temperature from 80 to 110' in t1[0] and t1[1] != '1005' and t2 == ['', '101.2'] and 'pain score from 0 to 4' in p1[0] and p1[1] != '7' and p2 == ['', '2'], (t1, t2, p1, p2))
+    t1 = await rec('temp', '1005'); t2 = await rec('temp', '101.2')
+    # n422: Pain score is a pop-up of 0 to 4 (a text field took any value, so “7” had to be refused when leaving it)
+    p1 = await p.evaluate("[...document.querySelector('[data-rec=\"pain\"]').options].map(o=>o.value).filter(Boolean)")
+    await p.select_option('[data-rec="pain"]', '2'); await p.wait_for_timeout(200)
+    p2 = await p.evaluate("[(document.querySelector('[data-rec=\"pain\"]').closest('.or-field').querySelector('.or-field-msg')||{}).textContent||'', caseById('or390c3').recovery.pain||null]")
+    ok('Entering data · Recovery’s temperature is checked when leaving the field: “1005” is said under the field and not kept; 101.2 is kept. Pain score offers only 0 to 4 (n422: a pop-up), and 2 is kept',
+       'temperature from 80 to 110' in t1[0] and t1[1] != '1005' and t2 == ['', '101.2'] and p1 == ['0', '1', '2', '3', '4'] and p2 == ['', '2'], (t1, t2, p1, p2))
 
     await p.click('#caseTabs [data-tab="procedure"]'); await p.wait_for_timeout(300)
     await p.click('[data-act="scan"]'); await p.wait_for_timeout(400)
@@ -84,7 +88,7 @@ async def s_t398(br):
     im = await p.evaluate("[(document.querySelector('[data-imp=\"product\"]').closest('.or-field').querySelector('.or-field-msg')||{}).textContent, document.getElementById('toastMsg').textContent]")
     await p.fill('[data-imp="product"]', 'TPLO plate 3.5 mm, 6-hole'); await p.wait_for_timeout(50)
     await p.evaluate("[...document.querySelectorAll('#modalActions .btn.primary')].pop().click()"); await p.wait_for_timeout(300)
-    note = await p.evaluate("[...document.querySelectorAll('#notes .note')].map(n=>n.textContent).filter(t=>t.includes('implant')).pop()||''")
+    note = await p.evaluate("[...document.querySelectorAll('#notes .note')].map(n=>n.textContent).filter(t=>/implant/i.test(t)).pop()||''")   # n425: the note is "Implant recorded" (it was "Kura · implant recorded")
     ok('Entering data / Feedback · an implant without its product says so under the field (it was a message at the top), and one saved without a lot says “no lot entered”, never “Lot ” with nothing after it',
        'Enter the product' in (im[0] or '') and 'no lot entered' in note and not note.rstrip().endswith('Lot'), (im, note))
     await p.click('#caseBack'); await p.wait_for_timeout(300)

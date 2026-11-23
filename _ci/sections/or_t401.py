@@ -85,7 +85,7 @@ async def s_t401(br):
     lg = await p.evaluate("[document.getElementById('modal').classList.contains('open'), document.getElementById('modalTitle').textContent]")
     await p.evaluate("closeModal()")
     ok('Offering help · ? opens the Keyboard shortcuts sheet (search, undo, the legend on L, tabs, Display mode) as in every Pravix app; it opened the icon legend, which is now L',
-       ks and ks['t'] == 'Keyboard shortcuts' and 'Search patients, staff, procedures and rooms' in ks['txt'] and 'Show the icon legend' in ks['txt'] and gone and lg == [True, 'Icon legend'], (ks, gone, lg))
+       ks and ks['t'] == 'Keyboard shortcuts' and 'Search cases, patients, surgeons, procedures and rooms' in ks['txt'] and 'Show the icon legend' in ks['txt'] and gone and lg == [True, 'Icon legend'], (ks, gone, lg))
     ok('…words that work on every device: no “tap” on a Mac (“Tap each step as it happens”, “tap to retry”); “choose” and “mark” instead',
        all(w not in html for w in ['Tap any item', 'Tap each step', 'tap to retry', 'tap if needed']) and 'Mark each step as it happens' in html, '')
     allt = []
@@ -109,7 +109,7 @@ async def s_t401(br):
     await p.evaluate("openDrawer('or390c5')"); await p.wait_for_timeout(600)
     await p.evaluate("[...document.querySelectorAll('#drawer button')].find(b=>b.textContent.trim()==='Move…').click()"); await p.wait_for_timeout(500)
     held = await p.evaluate("[document.getElementById('modal').classList.contains('open'), getComputedStyle(document.getElementById('drawer')).visibility]")
-    await p.evaluate("[...document.querySelectorAll('#modalActions > .btn')].find(b=>b.textContent==='Cancel').click()"); await p.wait_for_timeout(500)
+    await p.evaluate("[...document.querySelectorAll('#modal button')].find(b=>b.textContent==='Cancel').click()"); await p.wait_for_timeout(500)   # n419: on a phone Cancel is in the sheet's top bar
     back = await p.evaluate("[document.getElementById('modal').classList.contains('open'), getComputedStyle(document.getElementById('drawer')).visibility, !!(document.activeElement&&document.activeElement.closest('#drawer'))]")
     ok('Modality · on a phone, a sheet opened from the case drawer replaces it (both were stacked), and the drawer comes back, with focus, when it closes',
        held == [True, 'hidden'] and back == [False, 'visible', True], (held, back))
