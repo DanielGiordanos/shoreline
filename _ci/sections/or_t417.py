@@ -52,7 +52,8 @@ async def s_t417(br):
     for vp in [(1440, 600), (1024, 600)]:
         c, p, e = await T.open_or(br, vp=vp)
         await p.evaluate("switchView('cases')"); await p.wait_for_timeout(500)
-        await p.evaluate("document.getElementById('stage').style.scrollBehavior='auto'; document.getElementById('stage').scrollTop=200; 0"); await p.wait_for_timeout(300)
+        # scroll the list 200 pt past where its headings start (n421 made the toolbar above it taller at 1024)
+        await p.evaluate("(()=>{const s=document.getElementById('stage'), th=document.querySelector('#casesTable thead th'); s.style.scrollBehavior='auto'; s.scrollTop=Math.round(th.getBoundingClientRect().top-s.getBoundingClientRect().top+s.scrollTop)+200; return 0})()"); await p.wait_for_timeout(300)
         res[vp[0]] = await p.evaluate("(()=>{const th=document.querySelector('#casesTable thead th'), st=document.getElementById('stage').getBoundingClientRect(), r=th.getBoundingClientRect(), x=document.elementFromPoint(r.left+20, r.top+r.height/2); return [Math.round(r.top-st.top), !!x&&!!x.closest('thead'), document.getElementById('stage').scrollTop]})()")
         errs += list(e); await c.close()
     ok('Scroll views · Cases’ column headings stay at the top while the list scrolls (they scrolled away with it: the table’s box scrolled sideways)',

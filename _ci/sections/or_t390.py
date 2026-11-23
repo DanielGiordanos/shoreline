@@ -75,7 +75,7 @@ async def s_t390(br):
     head = html[:html.find('</head>')]
     ok('App icons · OR names its own manifest, Home Screen icon and title (before, Add to Home Screen made a screenshot icon called “OR · Pravix”)',
        '<link rel="manifest" href="/or/manifest.webmanifest">' in head and '<link rel="apple-touch-icon" href="/assets/img/or-180.png">' in head
-       and '<meta name="apple-mobile-web-app-title" content="OR">' in head and '<meta name="theme-color" content="#0A1222">' in head, '')
+       and '<meta name="apple-mobile-web-app-title" content="OR">' in head and '<meta name="theme-color" content="#0D1730">' in head, '')
     mp = os.path.join(BUILD, 'or', 'manifest.webmanifest')
     m = json.load(open(mp)) if os.path.exists(mp) else {}
     sizes = {}

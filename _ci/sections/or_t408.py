@@ -29,8 +29,8 @@ async def s_t408(br):
     await p.click('#view-board [data-id="or390c4"]', button='right'); await p.wait_for_timeout(300)
     m2 = await p.evaluate(MENU)
     ok('Context menus · a case on the Board has the shared menu, named for the patient: Show details, Open case · the next step, Move…, Report delay… · Copy link, Open Anesia (heard as opening a new tab); Juniper’s “Pre-op complete” is left out until her readiness items are done',
-       m1 == ['menu', 'Actions for Otis', ['Show details', 'Open case', '—', 'Patient arrived', 'Move…', 'Report delay…', '—'] + tail(share)]
-       and m2 == ['menu', 'Actions for Juniper', ['Show details', 'Open case', '—', 'Move…', 'Report delay…', '—'] + tail(share)], (m1, m2))
+       m1 == ['menu', 'Actions for Otis', ['Show details', 'Open case', 'Open in new window', '—', 'Patient arrived', 'Move…', 'Report delay…', '—'] + tail(share)]
+       and m2 == ['menu', 'Actions for Juniper', ['Show details', 'Open case', 'Open in new window', '—', 'Move…', 'Report delay…', '—'] + tail(share)], (m1, m2))
     await p.click('.pvx-cx-list button:has-text("Show details")'); await p.wait_for_timeout(500)
     d1 = await p.evaluate("[UI.drawerId, document.getElementById('drawer').classList.contains('open')]")
     await p.click('#view-board [data-id="or390c2"]', button='right'); await p.wait_for_timeout(300)
@@ -41,7 +41,7 @@ async def s_t408(br):
     await p.click('.pvx-cx-list button:has-text("Start closing")'); await p.wait_for_timeout(500)
     st = await p.evaluate("caseById('or390c2').status")
     ok('…“Show details” opens them; with the details open beside the board, Maple’s menu offers her next step, Esc closes only the menu (focus back on her card, Juniper’s details stay), and “Start closing” records it',
-       d1 == ['or390c4', True] and m3 and m3[2][:4] == ['Show details', 'Open case', '—', 'Start closing'] and d2 == ['or390c4', False, 'or390c2'] and st == 'closing', (d1, m3, d2, st))
+       d1 == ['or390c4', True] and m3 and m3[2][:5] == ['Show details', 'Open case', 'Open in new window', '—', 'Start closing'] and d2 == ['or390c4', False, 'or390c2'] and st == 'closing', (d1, m3, d2, st))
     await p.evaluate("closeDrawer()"); await p.wait_for_timeout(300)
 
     await p.click('#switcher .seg[data-view="cases"]'); await p.wait_for_timeout(400)
@@ -57,7 +57,7 @@ async def s_t408(br):
     await p.click('#view-schedule .or-block[data-id="or390c1"]', button='right'); await p.wait_for_timeout(300)
     s1 = await p.evaluate(MENU)
     await p.keyboard.press('Escape'); await p.wait_for_timeout(200)
-    ok('…a block on the Schedule too, and a finished case offers no step it can’t take', s1 and s1[1] == 'Actions for Biscuit' and s1[2] == ['Show details', 'Open case', '—'] + tail(share), s1)
+    ok('…a block on the Schedule too, and a finished case offers no step it can’t take', s1 and s1[1] == 'Actions for Biscuit' and s1[2] == ['Show details', 'Open case', 'Open in new window', '—'] + tail(share), s1)
 
     await p.click('#switcher .seg[data-view="board"]'); await p.wait_for_timeout(400)
     await p.click('#displayBtn'); await p.wait_for_timeout(800)

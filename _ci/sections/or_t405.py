@@ -25,7 +25,7 @@ async def s_t405(br):
     n0 = await p.evaluate("history.length")
     await p.click('#switcher .seg[data-view="schedule"]'); await p.wait_for_timeout(300)
     await p.click('#switcher .seg[data-view="cases"]'); await p.wait_for_timeout(300)
-    await p.click('#casesToolbar .chip[data-f="emergency"]'); await p.wait_for_timeout(400)
+    await p.click('#casesType [data-k="emergency"]'); await p.wait_for_timeout(400)   # n421: Type is its own control
     n1 = await p.evaluate("history.length")
     await p.evaluate(BACK); await p.wait_for_timeout(400); b1 = await p.evaluate(WHERE)
     await p.evaluate(BACK); await p.wait_for_timeout(400); b2 = await p.evaluate(WHERE)
@@ -50,8 +50,9 @@ async def s_t405(br):
     await p.click('#caseBack'); await p.wait_for_timeout(500); cb2 = await p.evaluate(WHERE)
     ok('…choosing a section from a case is an entry too: Back reopens the case, and the case’s own Back returns to Cases',
        ab[0] == 'case' and ab[1] == 'or390c4' and cb2[0] == 'cases', (ab, cb2))
+    # n419 adds the second '_blank': a case in a new window, which is OR's own address (orCaseLink), also with noopener
     ok('Web views · OR embeds no web page, and its one outside link (Anesia) opens in its own tab without access back to OR',
-       '<iframe' not in html and html.count("'_blank'") == 1 and "'_blank', 'noopener'" in html, '')
+       '<iframe' not in html and html.count("'_blank'") == 2 and "'_blank', 'noopener'" in html and "window.open(orCaseLink(c),'_blank','noopener')" in html, '')
     ok('no page errors', not e, e)
     await c.close()
 

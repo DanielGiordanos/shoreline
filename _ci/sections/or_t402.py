@@ -47,7 +47,7 @@ async def s_t402(br):
        and head and 'Training owner' not in cp['txt'], (cb, cp['h1'], head))
 
     await p.evaluate("switchView('cases')"); await p.wait_for_timeout(300)
-    await p.click('#casesToolbar .chip[data-f="emergency"]'); await p.wait_for_timeout(300)
+    await p.click('#casesType [data-k="emergency"]'); await p.wait_for_timeout(300)   # n421: Type is its own control
     await p.evaluate("window.dispatchEvent(new Event('beforeprint'))"); await p.wait_for_timeout(100)
     lp = await p.evaluate(PAPER)
     await p.evaluate("window.dispatchEvent(new Event('afterprint'))")

@@ -47,10 +47,10 @@ async def s_t393(br):
     sel = await p.evaluate("[...document.querySelectorAll('.or-field select, .or-field input')].filter(e=>e.getBoundingClientRect().width>0).map(e=>getComputedStyle(e).colorScheme)")
     await p.keyboard.press('Escape'); await p.wait_for_timeout(300)
     ok('Dark Mode · the page tells the browser it’s dark, so Add case’s menus, the date and time pickers and the scroll bars are dark too (they were light), and the device’s bars are navy',
-       s1['root'] == 'dark' and sel and all(x == 'dark' for x in sel) and s1['meta'].upper() == '#0A1222', (s1, sel))
+       s1['root'] == 'dark' and sel and all(x == 'dark' for x in sel) and s1['meta'].upper() == '#0D1730', (s1, sel))   # n425: the top bar's own navy (it was #0A1222)
     await p.evaluate("document.body.classList.remove('dark')"); await p.wait_for_timeout(300)
     s2 = await p.evaluate("({root:getComputedStyle(document.documentElement).colorScheme,meta:document.querySelector('meta[name=theme-color]').content})")
-    ok('…and when the appearance changes while OR is open, both follow (the bars stayed navy over the light page)', s2['root'] == 'light' and s2['meta'].upper() == '#F2F4F8', s2)
+    ok('…and when the appearance changes while OR is open, both follow (the bars stayed navy over the light page)', s2['root'] == 'light' and s2['meta'].upper() == '#FFFFFF', s2)   # n425: the top bar's own white (it was #F2F4F8)
     await c.close()
 
     # ── Dark Mode + Increase Contrast: 7 : 1 small text ──
