@@ -497,7 +497,7 @@
       save.inflight = false; clearTimeout(save.waitT);
       s.pending.splice(0, n); s.base = next; S.server[id] = next; persistSlot(id);
       if (!s.pending.length) lsSet('rec:' + id, { base: next, pending: [] });
-      if (dropped.length) toast('A change couldn’t be saved: ' + dropped[0]);
+      if (dropped.length) toast('A change couldn’t be saved: ' + dropped[0], { error: true });   /* PVX-N429 */
       saveChip('saved'); softRender(); syncSheet(id);
       if (Object.keys(S.local).some(function (k) { return S.local[k].pending.length; })) flush();
     }).catch(function (e) {
@@ -1604,7 +1604,7 @@
   function shareRecord(r) {
     var url = location.href, title = (r.patient.name || 'Training record') + ' · Anesia';
     if (navigator.share) { navigator.share({ title: title, text: 'Training anesthesia record', url: url }).catch(function () { }); return; }
-    try { navigator.clipboard.writeText(url).then(function () { toast('Link copied'); }, function () { toast('Copy this link: ' + url); }); } catch (e) { toast('Copy this link: ' + url); }
+    try { navigator.clipboard.writeText(url).then(function () { toast('Link copied'); }, function () { toast('Copy this link: ' + url, { stay: true }); }); } catch (e) { toast('Copy this link: ' + url, { stay: true }); }   /* PVX-N429 */
   }
   function printRecord() { window.print(); }
   window.addEventListener('beforeprint', function () {
@@ -2347,7 +2347,7 @@
     if (!at) { change(r.id, { type: 'rmark', kind: k, at: now(), eid: k }); return; }
     openSheet({ title: A.RMARKS[k], primary: 'Save', quiet: true, anchor: anchor,
       body: timeField(at, 'Time', true) + (own ? '<button type="button" class="an-btn plain destr" data-rclear style="align-self:flex-start">Clear ' + esc(A.RMARKS[k].toLowerCase()) + '</button>' : '<p class="hint" style="margin:0">From the Extubation event on the chart.</p>'),
-      init: function (w) { bindTime(w); var c = $('[data-rclear]', w); if (c) c.onclick = function () { try { change(r.id, { type: 'rmark', kind: k, at: null }, { noUndo: true }); closeSheet(); } catch (e) { toast(e.message); } }; },
+      init: function (w) { bindTime(w); var c = $('[data-rclear]', w); if (c) c.onclick = function () { try { change(r.id, { type: 'rmark', kind: k, at: null }, { noUndo: true }); closeSheet(); } catch (e) { toast(e.message, { error: true }); } }; },
       submit: function (w) { change(r.id, { type: 'rmark', kind: k, at: readTime(w, r), eid: k }, { noUndo: true }); } });
   }
   function rCheckSheet(r) {
@@ -2406,13 +2406,27 @@
     openSheet({ title: 'Addendum', primary: 'Add', quiet: true, body: '<div class="an-f"><label for="aT">Addendum</label><textarea class="an-ta" id="aT" name="text" maxlength="1000"></textarea></div>', submit: function (w) { try { change(r.id, { type: 'addendum', text: val(w, 'text') }); } catch (e) { e.field = 'text'; throw e; } } });
   }
 
-  function toast(msg) { var el = $('#anToast'); if (!el) return; el.innerHTML = '<span>' + esc(msg) + '</span>'; showToast(el); clearTimeout(S.toastT); S.toastT = setTimeout(function () { el.hidden = true; }, 6000); }
+  /* PVX-N429 · an error, or a link to copy by hand, stays until it's closed (an error is read at once); other messages
+     go after 6 s, but the time doesn't run while the message is pointed at or focused, or while the page is hidden */
+  function toast(msg, o) { o = o || {}; var el = $('#anToast'); if (!el) return; clearTimeout(S.toastT); S.toastLeft = 0; S.toastPaused = false;
+    var stay = !!(o.error || o.stay); el.setAttribute('role', o.error ? 'alert' : 'status'); el.setAttribute('aria-live', o.error ? 'assertive' : 'polite');
+    el.innerHTML = '<span>' + esc(msg) + '</span>' + (stay ? '<button type="button" class="an-tx" id="anToastX" aria-label="Dismiss">' + icon('close') + '</button>' : '');
+    showToast(el);
+    if (stay) { $('#anToastX').onclick = function () { el.hidden = true; }; return; }
+    toastRun(el, 6000); }
+  function toastRun(el, ms) { clearTimeout(S.toastT); S.toastLeft = ms; S.toastAt = Date.now(); S.toastT = setTimeout(function () { el.hidden = true; S.toastLeft = 0; }, ms); }
+  (function () { var el = $('#anToast'); if (!el) return;
+    function pause() { if (S.toastLeft > 0 && !S.toastPaused) { clearTimeout(S.toastT); S.toastLeft = Math.max(0, S.toastLeft - (Date.now() - S.toastAt)); S.toastPaused = true; } }
+    function resume() { if (!S.toastPaused || el.hidden || document.hidden || el.matches(':hover') || el.contains(document.activeElement)) return; S.toastPaused = false; toastRun(el, Math.max(S.toastLeft, 2000)); }
+    el.addEventListener('mouseenter', pause); el.addEventListener('focusin', pause);
+    el.addEventListener('mouseleave', resume); el.addEventListener('focusout', function () { setTimeout(resume, 0); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) pause(); else resume(); }); })();
   function showToast(el) { el.hidden = false; el.classList.remove('in'); void el.offsetWidth; el.classList.add('in'); }
   /* every change offers Undo — the message stays until the next change or until it is closed (no time limit);
      ⌘Z / Ctrl+Z steps back through your own changes from the last 2 minutes, ⇧⌘Z redoes; later fixes are a strike-through */
   function liveUndo() { var t = now(); S.undoStack = S.undoStack.filter(function (e) { return t - e.ts <= A.UNDO_MS && e.rid === S.cur; }); return S.undoStack; }
   function offerUndo(msg, redo) {
-    var el = $('#anToast'); if (!el) return; clearTimeout(S.toastT);
+    var el = $('#anToast'); if (!el) return; clearTimeout(S.toastT); S.toastLeft = 0; S.toastPaused = false; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');   /* PVX-N429 */
     var ue = S.undoStack[S.undoStack.length - 1], left = !redo && ue ? Math.max(0, Math.round(A.UNDO_MS - (now() - ue.ts))) : 0;
     el.innerHTML = '<span class="an-tok" aria-hidden="true">' + icon('checkd', { scale: 's' }) + '</span><span>' + esc(msg) + '</span><button type="button" class="an-tbtn' + (left ? ' ring' : '') + '" id="anUndo"' + (left ? ' style="--an-ud:' + A.UNDO_MS + 'ms;--an-ue:-' + (A.UNDO_MS - left) + 'ms"' : '') + '>' + (redo ? 'Redo' : 'Undo') + '</button><button type="button" class="an-tx" id="anToastX" aria-label="Dismiss">' + icon('close') + '</button>';
     showToast(el);
@@ -2435,14 +2449,14 @@
   function undoLast() {
     var e = liveUndo().pop(); var el = $('#anToast');
     if (!e) { toast('Nothing to undo — changes can be undone for 2 minutes.'); return; }
-    try { change(e.rid, e.uop); } catch (x) { toast(x.message); return; }
+    try { change(e.rid, e.uop); } catch (x) { toast(x.message, { error: true }); return; }
     if (e.kind === 'weight') { S.pumpNotice = null; render(); }
     S.redoStack.push(e); scrollChartTo(e.t);
     offerUndo('Undid: ' + e.label, true);
   }
   function redoLast() {
     var e = S.redoStack.pop(); if (!e) { toast('Nothing to redo.'); return; }
-    try { change(e.rid, JSON.parse(JSON.stringify(e.op)), { fromRedo: true }); } catch (x) { toast(x.message); return; }
+    try { change(e.rid, JSON.parse(JSON.stringify(e.op)), { fromRedo: true }); } catch (x) { toast(x.message, { error: true }); return; }
     scrollChartTo(e.t);
   }
   document.addEventListener('keydown', function (e) {
@@ -2557,4 +2571,43 @@
   }
   window.addEventListener('resize', function () { requestAnimationFrame(fit); });
   window.anesiaText = { check: check, fit: fit };
+})();
+
+/* PVX-N429 · Anesia against Apple's HIG (Accessibility: spacing; Design principles: agency). Markers that fall close
+   together on a chart row (doses, events, outputs) used to share at most two lanes at fixed widths, so a third, or a long
+   name, covered another: at 2:00 PM "Anesthesia start" sat under Intubation and Induction and couldn't be pointed at or
+   tapped. After each drawing of the chart, a row whose markers overlap takes as many lanes as it needs, measured from the
+   markers themselves (so larger text and touch sizes are counted), and grows to fit them. Rows with no overlap, and rows
+   whose doses sit above an infusion bar, are left as drawn. */
+(function () {
+  'use strict';
+  var GAP = 6, PAD = 6;
+  function lay(trk) {
+    if (trk.classList.contains('both')) return;
+    var mks = [].filter.call(trk.children, function (m) { return m.classList && m.classList.contains('an-mk'); });
+    if (mks.length < 2) return;
+    var rs = mks.map(function (m) { return m.getBoundingClientRect(); }), hit = false;
+    for (var i = 0; i < rs.length && !hit; i++) for (var j = i + 1; j < rs.length; j++) {
+      var a = rs[i], b = rs[j]; if (a.width && b.width && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) { hit = true; break; } }
+    if (!hit) return;
+    var items = mks.map(function (m) { return { m: m, cx: parseFloat(m.style.left) || 0, w: m.offsetWidth, h: m.offsetHeight }; }).sort(function (a, b) { return a.cx - b.cx; });
+    var ends = [], hMax = 0;
+    items.forEach(function (it) { var l = it.cx - it.w / 2, k = -1;
+      for (var n = 0; n < ends.length; n++) if (ends[n] + GAP <= l) { k = n; break; }
+      if (k < 0) { k = ends.length; ends.push(0); }
+      ends[k] = it.cx + it.w / 2; it.lane = k; hMax = Math.max(hMax, it.h); });
+    var laneH = hMax + GAP;
+    trk.style.minHeight = (PAD * 2 + ends.length * laneH) + 'px';
+    items.forEach(function (it) { it.m.classList.remove('l1', 'l2'); it.m.style.top = (PAD + it.lane * laneH + laneH / 2) + 'px'; });
+    trk.setAttribute('data-lanes', String(ends.length));
+  }
+  var queued = false;
+  function run() { queued = false; [].forEach.call(document.querySelectorAll('.an-chart .an-trk'), lay); }
+  function soon() { if (!queued) { queued = true; requestAnimationFrame(run); } }
+  window.anLayLanes = run;
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (ms[i].type === 'childList' && ms[i].addedNodes.length) { soon(); return; } })
+    .observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { }
+  window.addEventListener('resize', soon);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(soon);
+  soon();
 })();

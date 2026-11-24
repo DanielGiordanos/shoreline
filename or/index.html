@@ -2733,7 +2733,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       </div>
       <div class="toolbar" id="casesToolbar"></div>
       <div class="tablewrap"><table class="or-table" id="casesTable" aria-labelledby="casesH"><thead><tr>
-        <th scope="col" data-sort="pt"><button type="button" class="or-sortbtn" data-sort="pt">Patient<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="proc"><button type="button" class="or-sortbtn" data-sort="proc">Procedure<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="surg"><button type="button" class="or-sortbtn" data-sort="surg">Surgeon<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="room"><button type="button" class="or-sortbtn" data-sort="room">Room · time<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="stage"><button type="button" class="or-sortbtn" data-sort="stage">Stage<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="ready"><button type="button" class="or-sortbtn" data-sort="ready">Readiness<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th>Flags <button type="button" class="or-link th-link" id="casesLegend" aria-label="Icon legend">Legend…</button></th>
+        <th scope="col" data-sort="pt"><button type="button" class="or-sortbtn" data-sort="pt">Patient<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="proc"><button type="button" class="or-sortbtn" data-sort="proc">Procedure<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="surg"><button type="button" class="or-sortbtn" data-sort="surg">Surgeon<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="room"><button type="button" class="or-sortbtn" data-sort="room">Room · time<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="stage"><button type="button" class="or-sortbtn" data-sort="stage">Stage<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th scope="col" data-sort="ready"><button type="button" class="or-sortbtn" data-sort="ready">Readiness<svg class="or-sortarr" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></th><th>Flags <button type="button" class="or-link th-link" id="casesLegend" aria-label="Icon legend">Icon legend…</button></th>
       </tr></thead><tbody id="casesBody"></tbody></table></div>
       <button class="or-btn" id="casesMore" hidden>Show more cases</button>
     </section>
@@ -3645,7 +3645,7 @@ let gate=null;
 const PVX_LOBBY_ACCOUNTS=['au733@vca.com'];
 function pvxIsLobbyAccount(u){ const e=String(u&&u.email||'').toLowerCase(); return PVX_LOBBY_ACCOUNTS.indexOf(e)>-1; }
 function showGate(kind){ if(!gate){ gate=document.createElement('div'); gate.id='orGate'; document.body.appendChild(gate); }
-  if(kind==='lobby'){ gate.innerHTML='<div class="og-card"><b>This is the lobby screen account</b><span>The OR needs your own Pravix account. Log out of it here, then sign in with your own.</span><button type="button" class="btn primary" id="orGateOwn">Sign in with my own account</button></div>';
+  if(kind==='lobby'){ gate.innerHTML='<div class="og-card"><b>This is the lobby screen account</b><span>The OR needs your own Pravix account. Log out of this one, then sign in with yours.</span><button type="button" class="btn primary" id="orGateOwn">Log out</button></div>';
     gate.classList.remove('pvx-flow-login'); gate.classList.add('show'); storageMessage(''); if(window.orLock) orLock(true); const b=document.getElementById('orGateOwn'); if(b) b.onclick=()=>{ try{ AUTH.signOut();   /* PVX-N400: the sign-in card then opens here */ }catch(e){} }; return; }   /* PVX-N149 */
   gate.innerHTML=kind==='rules'?'<div class="og-card"><b>The OR can’t reach the database</b><span>Your account doesn’t have access to treatment sheets yet. Ask Daniel to check your access.</span></div>'
     :(window.orSignInHTML?orSignInHTML():'');
@@ -4136,7 +4136,7 @@ function readinessIssue(c){ const rs=readinessSummary(c); if(rs.ready||!isPre(c)
   const note=c.readinessNotes&&c.readinessNotes[id], label=note||READINESS[id].label.replace(/ confirmed$/,' not confirmed').replace(/ signed$/,' not signed').replace(/ reviewed$/,' not reviewed').replace(/ complete$/,' not complete').replace(/ verified$/,' not verified').replace(/ placed$/,' not placed').replace(/ ordered$/,' not ordered').replace(/ available$/,' not available').replace(/ assigned$/,' not assigned');
   return {hard:!!hard.length, id, text:label, who:readinessOwner(c,id), more:rs.pending.length-1}; }
 function issueLine(c){ const x=readinessIssue(c); if(!x) return '';
-  return `<div class="or-issue ${x.hard?'is-block':'is-look'}"><i aria-hidden="true"></i><div><b>${esc(x.text)}</b>${x.hard?` <span class="or-issue-why">· can't start until done</span>`:''}<span class="or-issue-who"> · ${esc(x.who)}${x.more>0?` · ${x.more} more`:''}</span></div><button type="button" class="or-issue-go" data-issue="${c.id}">Open</button></div>`; }
+  return `<div class="or-issue ${x.hard?'is-block':'is-look'}"><i aria-hidden="true"></i><div><b>${esc(x.text)}</b>${x.hard?` <span class="or-issue-why">· can’t start until done</span>`:''}<span class="or-issue-who"> · ${esc(x.who)}${x.more>0?` · ${x.more} more`:''}</span></div><button type="button" class="or-issue-go" data-issue="${c.id}">Open</button></div>`; }
 const ROOM_WORD={inor:'In room',procedure:'In surgery',closing:'Closing'};
 function roomStatus(s, live){ const op=s.operational;
   if(!live) return s.list.length?(s.list.every(c=>['complete','cancelled'].includes(c.status))?{t:'Day complete',k:'complete'}:{t:'Day schedule',k:'scheduled'}):{t:'No cases',k:'complete'};
@@ -4157,9 +4157,9 @@ function nowBlock(s){ const c=s.current, op=s.operational;
   if(op.code==='turnover'){ const from=s.turnoverUntil-TURNOVER_MIN, pct=Math.max(3,Math.min(100,Math.round((now()-from)/TURNOVER_MIN*100)));
     return `<div class="or-rnow is-turn"><div class="or-rnow-big"><b>Ready at ${fmtShort(s.turnoverUntil)}</b><span>in ${fmtDur(s.turnoverUntil-now())}</span></div>
       <div class="or-prog"><div class="or-track" role="img" aria-label="Turnover ${pct}% done"><span style="width:${pct}%"></span></div><div class="or-prog-l"><span>Cleaning not yet marked done</span><span>${s.next?`Next: ${esc(pt(s.next).name)}`:''}</span></div></div></div>`; }
-  if(op.code==='blocked') return `<div class="or-rnow is-block"><div class="or-rnow-big"><b>Free · ${esc(pt(s.next).name)} can't start yet</b></div><div class="or-quiet">What's missing is on ${esc(pt(s.next).name)} below</div></div>`;
+  if(op.code==='blocked') return `<div class="or-rnow is-block"><div class="or-rnow-big"><b>Free · ${esc(pt(s.next).name)} can’t start yet</b></div><div class="or-quiet">What’s missing is on ${esc(pt(s.next).name)} below</div></div>`;
   if(s.next) return `<div class="or-rnow is-free"><div class="or-rnow-big"><b>${op.code==='ready'?'Ready for '+esc(pt(s.next).name):'Free'}</b><span>next at ${fmtShort(projectedStart(s.next))}</span></div></div>`;
-  return `<div class="or-rnow is-free"><div class="or-rnow-big"><b>Free</b><span>no more cases today</span></div></div>`; }
+  return `<div class="or-rnow is-free"><div class="or-rnow-big"><b>Free</b><span>${s.list&&s.list.length?'no more cases today':'nothing booked today'}</span></div></div>`; }   /* PVX-N428 */
 function qTime(c){ const st=stageKey(c), late=lateMin(c);
   if(isPre(c)) return `<b>${fmtShort(projectedStart(c))}</b>${late?`<small class="late">${late} min late</small>`:''}`;
   if(st==='recovery') return `<b>${fmtDur(stageElapsed(c))}</b><small>since ${fmtShort(evT(c,c.status)||now())}</small>`;
@@ -4430,14 +4430,14 @@ function tabPreop(c){
   const pend=READINESS_ITEMS.filter(i=>c.readiness[i.id]==='pending').sort((a,b)=>(READY_HARD.includes(b.id)?1:0)-(READY_HARD.includes(a.id)?1:0)), rest=READINESS_ITEMS.filter(i=>c.readiness[i.id]!=='pending');
   const list=(pend.length?`<div class="or-missing">${pend.map(i=>row(i).replace('or-check ','or-check '+(READY_HARD.includes(i.id)?'is-hard ':'is-look '))).join('')}</div>`:'')
     +`<details class="or-donefold"${pend.length?'':' open'}><summary><span class="ok">${I.check}${rs.done} done</span><span>${esc(rest.filter(i=>c.readiness[i.id]==='done').slice(0,5).map(i=>i.label.replace(/ (confirmed|signed|reviewed|complete|verified|placed|ordered|available|assigned)$/,'')).join(' · '))}${rs.done>5?' …':''}</span></summary>${rest.map(row).join('')}</details>`;
-  const readiness=panel('Pre-op readiness', hero+(window.orYkHeld?orYkHeld(c):'')+`<div class="or-rows">${list}</div><div class="or-sources" style="margin-top:14px"><span><i></i>Consent</span><span><i></i>Flow</span><span><i></i>Treatment Sheets</span><span><i></i>Kura</span><span><i></i>Anesia</span><span><i></i>WoofWare</span></div><p style="font-size:0.75rem;color:var(--ink-400);margin:10px 0 0;line-height:1.5">${LIVE?'CPR / DNR comes from Flow; fluids, medications, antibiotics, NPO and the estimate from the treatment sheet. Choose any item to mark it yourself — your tick always wins.':'Items marked with a product are answered automatically by that Pravix product. Choose any item to override in this prototype.'}</p>`, {cls:'span7'});
+  const readiness=panel('Pre-op readiness', hero+(window.orYkHeld?orYkHeld(c):'')+`<div class="or-rows">${list}</div>${LIVE?'':'<div class="or-sources" style="margin-top:14px"><span><i></i>Consent</span><span><i></i>Flow</span><span><i></i>Treatment Sheets</span><span><i></i>Kura</span><span><i></i>Anesia</span><span><i></i>WoofWare</span></div>'}<!-- PVX-N428 --><p style="font-size:0.75rem;color:var(--ink-400);margin:10px 0 0;line-height:1.5">${LIVE?'CPR / DNR comes from Flow; fluids, medications, antibiotics, NPO and the estimate from the treatment sheet. Choose any item to mark it yourself; what you mark always wins.':'Items marked with a product are answered automatically by that Pravix product. Choose any item to override in this prototype.'}</p>`, {cls:'span7'});
   const kura=panel('Required items', c.kura.length?`<div class="or-list">${c.kura.map(k=>`<div class="or-li"><span class="ic ${k.status==='Unavailable'?'crit':'ok'}">${k.status==='Unavailable'?'!':'✓'}</span><span class="tt">${esc(k.item)}</span><span class="st ${k.status==='Unavailable'?'crit':k.status==='Requested'?'warn':''}">${esc(k.status)} ${k.status==='Unavailable'?'':'✓'}</span></div>`).join('')}</div>`:`<div class="or-empty">No implants or equipment reserved for this case</div>`, {cls:'span5', right:`<span class="count">Kura</span>`});
   const to=c.timeout;
   const timeout=panel('Surgical time out', to.done?`<div class="or-timeout-done"><div class="ai">${I.check}</div><div><b>Time out complete</b><br><span>${fmtT(to.t)} · Incision may follow</span></div></div>`
     :`<div class="or-rows">${TIMEOUT_CHECKS.map(t=>`<div class="or-check ${to.checks[t.id]?'done':''}" data-to="${t.id}" tabindex="0" role="checkbox" aria-checked="${!!to.checks[t.id]}"><span class="box">${I.check}</span><span class="lbl">${esc(t.label)}</span><span class="src"></span></div>`).join('')}</div>
-     <div class="or-actions" style="margin-top:14px"><button class="or-btn primary" data-act="timeout" ${TIMEOUT_CHECKS.every(t=>to.checks[t.id]===true)?'':'disabled'}>Complete time out</button></div><p class="or-modal-sub">Confirm each item individually before completing the time out.</p>`, {cls:'span5'});
+     <div class="or-actions" style="margin-top:14px"><button class="or-btn primary" data-act="timeout" ${TIMEOUT_CHECKS.every(t=>to.checks[t.id]===true)?'':'disabled'}>Complete time out</button></div><p class="or-modal-sub" style="margin-top:8px">Confirm every item, then complete the time out.</p>`, {cls:'span5'});
   const pref=prefPanel(c,'');
-  return `<div class="or-grid">${readiness}<div class="or-stack">${kura}${timeout}</div>${pref}</div>`;
+  return `<div class="or-grid">${readiness}<div class="or-stack">${LIVE?'':kura}${timeout}</div>${pref}</div>`;
 }
 function prefPanel(c, span){
   const pc=PREFS.find(p=>p.id===c.prefCardId) || PREFS.find(p=>p.procedure===c.procedure && p.surgeonId===c.surgeonId) || PREFS.find(p=>p.procedure===c.procedure);
@@ -4524,7 +4524,7 @@ function tabRecovery(c){
     <div class="or-field"><label>Destination</label><div class="or-pills">${DESTINATIONS.map(d=>`<button class="or-pill ${r.destination===d?'active':''}" data-dest="${d}">${d}</button>`).join('')}</div></div>`;
   const doneBlock = r.complete!=null ? `<div class="or-timeout-done" style="margin-top:6px"><div class="ai">${I.check}</div><div><b>Recovery complete</b><br><span>${fmtT(r.complete)} · ${esc(r.destination||'destination pending')}${r.sentToFlow?' · Flow notified':''}</span></div></div>`
     : `<div class="or-actions" style="margin-top:6px"><button class="or-btn primary" data-act="rec-complete" ${c.status==='recovery'?'':'disabled'}>Complete recovery</button></div>`;
-  const flow=panel('Hand-off', `<p style="font-size:0.8125rem;color:var(--ink-500);margin:0 0 14px;line-height:1.5">${LINK.live&&LINK.admits(c)?`Sending admits ${esc(pt(c).name)} to <b>${esc(r.destination)}</b>: the sheet moves to the IP Board and Flow adds them to Rounds with the surgery.`:`Sending to Flow moves ${esc(pt(c).name)} to <b>${esc(r.destination||'the selected destination')}</b> on the patient-flow board and closes the surgical episode in OR.`}</p>
+  const flow=panel('Hand-off', `<p style="font-size:0.8125rem;color:var(--ink-500);margin:0 0 14px;line-height:1.5">${LINK.live&&LINK.admits(c)?`Sending admits ${esc(pt(c).name)} to <b>${esc(r.destination)}</b>: the sheet moves to the IP Board and Flow adds them to Rounds with the surgery.`:(!r.destination?`Choose where ${esc(pt(c).name)} goes, then send to Flow.`:r.destination==='Discharge'?`Sending shows surgery complete in Flow and on the treatment sheet, and completes the case in OR. Discharge ${esc(pt(c).name)} from Flow as usual.`:`Sending shows ${esc(pt(c).name)} in <b>${esc(r.destination)}</b> in Flow and on the treatment sheet, and completes the case in OR.`)/* PVX-N428 */}</p>
     ${window.orSendState&&orSendState(c)?orSendState(c):r.sentToFlow?`<div class="or-timeout-done"><div class="ai">${I.check}</div><div><b>Sent to Flow</b><br><span>${esc(r.destination)} · ${fmtT(r.sentAt||r.complete||now())}</span></div></div>`:`<div class="or-actions"><button class="or-btn primary" data-act="send-flow" ${r.complete!=null&&r.destination?'':'disabled'}>Send to Flow</button></div>${r.complete==null?'<p style="font-size:0.75rem;color:var(--ink-400);margin:10px 0 0">Complete recovery and choose a destination first.</p>':''}`}`, {cls:'span4'});
   return `<div class="or-grid">${panel('Recovery', form+doneBlock, {cls:'span8', right:stagePill(c,'lg')})}${flow}${drugsPanel(c,'span12')}</div>`;
 }
@@ -4543,7 +4543,7 @@ function tabRecord(c){
   const demo=r.lunaDraft?`<div class="or-alert" style="margin-bottom:14px"><div class="ai">L</div><div><b>Draft by LUNA <span class="or-demo" style="margin-left:6px">Demo content</span></b><span>Drafted from the surgical timeline, events, implants and specimens. Placeholder text — not clinical fact. Review every field before signing.</span></div></div>`:'';
   const actions = signed?'':`<div class="or-actions" style="margin-top:6px">${LIVE?'':'<button class="or-btn luna" data-act="luna-draft"><i style="width:8px;height:8px;border-radius:50%;background:var(--st-inor)"></i>Draft with LUNA</button>'}<button class="or-btn" data-act="rec-review">Review</button><button class="or-btn primary" data-act="rec-sign" ${r.status==='review'?'':'disabled'}>Sign</button></div>`;
   return `<div class="or-grid">${panel('Operative record', head+demo+`<div class="or-record"><div class="or-field-row">${fields}</div></div>`+actions, {cls:'span8', right:`<span class="count" id="recordState">${signed?'Signed (demo)':r.status==='review'?'Reviewed':'Draft'}</span>`})}
-    ${panel('Sources', `<div class="or-list">${[['Surgical timeline',`${c.events.length} timestamps`],['Intraoperative events',`${c.intraop.length} logged`],['Implants',`${c.implants.length} placed`],['Specimens',`${c.specimens.length} collected`],['Anesia',c.anesthesia?esc(c.anesthesia.mode):'Not started'],['Surgeon dictation','Not recorded (prototype)']].map(([k,v])=>`<div class="or-li" style="grid-template-columns:minmax(0,1fr) auto"><span class="tt">${k}</span><span class="st muted">${v}</span></div>`).join('')}</div>`, {cls:'span4'})}</div>`;
+    ${panel('Sources', `<div class="or-list">${[['Surgical timeline',`${c.events.length} timestamps`],['Intraoperative events',`${c.intraop.length} logged`],['Implants',`${c.implants.length} placed`],['Specimens',`${c.specimens.length} collected`],['Anesia',c.anesthesia?esc(c.anesthesia.mode):'Not started'],].concat(LIVE?[]:[['Surgeon dictation','Not recorded (prototype)']]).map(([k,v])=>`<div class="or-li" style="grid-template-columns:minmax(0,1fr) auto"><span class="tt">${k}</span><span class="st muted">${v}</span></div>`).join('')}</div>`, {cls:'span4'})}</div>`;
 }
 
 /* ---------- wiring for case tabs ---------- */
@@ -4778,7 +4778,10 @@ function renderCases(){
       <td>${stagePill(c)}${late?` <span class="or-late" style="margin-left:4px">${late} min late</span>`:''}</td>
       <td>${isPre(c)?(rs.ready?`<span class="or-tick">${I.check}Ready</span>`:(()=>{ const x=readinessIssue(c); return `<span class="or-tick ${x&&x.hard?'is-crit':'is-warn'}" title="${esc(x?x.text:'')}">${rs.pending.length} missing</span>`; })()):'<span class="muted" style="font-size:0.75rem">—</span>'}</td>
       <td class="flagcell">${flagRail(c,5)||'<span class="muted" style="font-size:0.75rem">—</span>'}</td></tr>`; }).join('')
-    :`<tr><td colspan="7"><div class="empty"><b>No cases match</b><span>Try another filter or search term</span></div></td></tr>`;
+    :(CASES.length?`<tr><td colspan="7"><div class="empty"><b>No cases match</b><span>Nothing matches this stage, type or search.</span><button type="button" class="or-btn sm or-empty-act" id="casesShowAll">Show all cases</button></div></td></tr>`
+      :`<tr><td colspan="7"><div class="empty"><b>No cases yet</b><span>Cases added in OR or booked in Flow show here.</span><button type="button" class="or-btn sm or-empty-act" id="casesAddFirst">Add case…</button></div></td></tr>`);   /* PVX-N428 */
+  { const sa=$('#casesShowAll'); if(sa) sa.onclick=()=>{ UI.casesFilter='all'; UI.casesQ=''; (window.renderCases||renderCases)(); const s=$('#casesSearch'); if(s) s.focus(); };
+    const af=$('#casesAddFirst'); if(af) af.onclick=()=>{ const b=document.getElementById('addCaseBtn'); if(b) b.click(); }; }
   const clg=$('#casesLegend'); if(clg) clg.onclick=openLegend;
   $$('#casesBody tr[data-id]').forEach(r=>{ r.onclick=()=>openDrawer(r.dataset.id); r.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target===r){ e.preventDefault(); openDrawer(r.dataset.id); } }; });
 }
@@ -4792,7 +4795,7 @@ function renderAnalytics(){
     kpiCard('Cases today', a.todayCount?`${a.todayDone}<small>/ ${a.todayCount}</small>`:'—', a.todayCount?'Complete so far':'No cases today', 'slate', a.todayCount?{rail:Math.round(a.todayDone/a.todayCount*100)}:{}),
     kpiCard('Avg procedure', a.nProc?fmtDur(a.avgProc):'—', a.nProc?`Incision to finish · ${a.nProc} case${a.nProc===1?'':'s'}`:'Not enough data yet', 'coral'),
     kpiCard('Avg room turnover', a.nTurn?fmtDur(a.avgTurn):'—', a.nTurn?`Out of room → next in room · ${a.nTurn} turnover${a.nTurn===1?'':'s'}`:'Not enough data yet · needs two cases in a room on one day', 'blue'),
-    kpiCard('On-time first cases', a.nFirst?`${a.onTimePct}<small>%</small>`:'—', a.nFirst?`In room within 10 min of schedule · ${a.nFirst} first case${a.nFirst===1?'':'s'}`:'No first cases in the last 30 days', a.nFirst?(a.onTimePct>=80?'green':'amber'):'slate', a.nFirst?{rail:a.onTimePct}:{}),
+    kpiCard('On-time first cases', a.nFirst?`${a.onTimePct}<small>%</small>`:'—', a.nFirst?`In room within 10 min of schedule · ${a.nFirst} first case${a.nFirst===1?'':'s'}`:'No first cases in the last 30 days', /* PVX-N427: no agreed target, so no colour verdict */ 'slate', a.nFirst?{rail:a.onTimePct}:{}),
     kpiCard('Cases delayed', a.total?String(a.delayed):'—', a.total?`${a.delayedPct}% of ${a.total} case${a.total===1?'':'s'}`:'No completed cases in the last 30 days', 'amber'),
     kpiCard('Emergency cases', a.total?String(a.emergencies):'—', a.total?`${a.addons} scheduled add-on${a.addons===1?'':'s'}`:'No completed cases in the last 30 days', 'red'),
     kpiCard('Avg recovery', a.nRec?fmtDur(a.avgRec):'—', a.nRec?`Recovery start → complete · ${a.nRec} case${a.nRec===1?'':'s'}`:'Not enough data yet', 'cyan'),
@@ -6821,7 +6824,7 @@ body.or-offline #displayGrid,body.or-offline #displaySummary{opacity:.6}
     if(u){ u.disabled=!U.length; u.setAttribute('aria-label',U.length?'Undo '+U[U.length-1].label:'Nothing to undo'); u.title=u.getAttribute('aria-label'); }
     if(r){ r.disabled=!R.length; r.setAttribute('aria-label',R.length?'Redo '+R[R.length-1].label:'Nothing to redo'); r.title=r.getAttribute('aria-label'); } }
   window.orUndoLabel=function(){ return U.length?'Undo '+U[U.length-1].label:'Undo (nothing to undo yet)'; };
-  window.orRedoLabel=function(){ return R.length?'Redo '+R[R.length-1].label:'Redo (nothing to redo)'; };
+  window.orRedoLabel=function(){ return R.length?'Redo '+R[R.length-1].label:'Redo (nothing to redo yet)'; };
   function push(e){ U.push(e); if(U.length>LIM) U.shift(); R.length=0; sync(); return e; }
   var flash=null;   /* the highlight survives the live redraw that follows the save */
   function paint(){ if(!flash||Date.now()>flash.until) return; [].forEach.call(D.querySelectorAll('.stage [data-id="'+flash.id+'"]'),function(n){ n.classList.add('or-undo-flash'); }); }
@@ -7620,7 +7623,7 @@ body.or-inspect #roomGrid.or-rooms{grid-template-columns:repeat(auto-fit,minmax(
         location.hash=h; }catch(e){} }); }
 
   /* the Keyboard shortcuts sheet lists them, where they exist */
-  var SC=[['Add case','Book a scheduled case, an add-on or an emergency'],['Find a case','Search cases, patients, surgeons and rooms'],['Schedule','Today’s cases by room and time'],['Display mode','The board for the wall screen']];
+  var SC=[['Add case','Book a scheduled case, an add-on or an emergency'],['Find a case','Search cases, patients, surgeons, procedures and rooms'],['Schedule','Today’s cases by room and time'],['Display mode','The board for the wall screen']];
   function installed(){ try{ return matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: window-controls-overlay)').matches||matchMedia('(display-mode: minimal-ui)').matches; }catch(e){ return false; } }
   function where(){ var u=navigator.userAgent||'', touch=navigator.maxTouchPoints>0;
     if(/iPhone|iPad|iPod/.test(u)||(/Macintosh/.test(u)&&touch)) return null;   /* iPhone and iPad show no web-app shortcuts */
@@ -8759,6 +8762,10 @@ body.dark #casesToolbar .or-cf button .cnt{color:var(--ink-900)}
     if(busy){ e.preventDefault(); e.returnValue=''; } });
 })();
 </script>
+<style id="pvx-n428-css">/* PVX-N428 · Writing: an empty list's button sits under its words */
+#casesBody .empty .or-empty-act{margin-top:12px}
+#casesBody .empty{display:flex;flex-direction:column;align-items:center}
+</style>
 </body>
 
 <!-- PVX-TYPE n135: contrast + type floor (shared sheet + or rules) -->
