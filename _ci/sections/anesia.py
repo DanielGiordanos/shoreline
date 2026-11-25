@@ -273,7 +273,7 @@ async def s_n155(br):
     ctx, pg, errs = await new_page(br)
     await pg.goto(URL + '#r=an_train1'); await pg.wait_for_selector('.an-chart')
     ok('n155: the patient name is the page heading (h1)', (await pg.inner_text('.an-id h1')).startswith('Training dog 4'))
-    ok('n155: every toolbar button has a name and a tooltip with its shortcut', await pg.evaluate("[...document.querySelectorAll('.an-tools [data-act]')].every(b=>b.getAttribute('aria-label')&&/⌥/.test(b.title))"))
+    ok('n155: every toolbar button has a name and a tooltip with its shortcut (n438: in this computer’s keys, ⌥V or Alt+V)', await pg.evaluate("[...document.querySelectorAll('.an-tools [data-act]')].every(b=>b.getAttribute('aria-label')&&/\\((⌥|Alt\\+)[A-Z]\\)$/.test(b.title))"))
     ok('n155: "vitals due" is in the button name', 'vitals due' in (await pg.get_attribute('[data-act=vitals]', 'aria-label')))
     ok('n155: time ticks hidden from VoiceOver', await pg.get_attribute('.an-row.time .an-trk', 'aria-hidden') == 'true')
     g = await pg.get_attribute('.an-graph', 'aria-label')
