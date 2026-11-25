@@ -1705,3 +1705,87 @@ a.an-card:visited{color:inherit}
 
 /* n215: equal-width segments (HIG Segmented controls) */
 .an-seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr}
+
+/* PVX-N430 · Increase Contrast, light: the vital names in the Now column (HR, BP, EtCO2, RR, Temp) were 5.1-6.7 : 1 on their
+   white tiles; Increase Contrast brings small text to 7 : 1 (HIG Dark Mode; Brand n257). Deeper values of the same colours,
+   8.1-9.1 : 1; Temp, which has no colour of its own, takes the tertiary ink. Dark already passes (7.6 : 1 or more). */
+@media (prefers-contrast:more){
+  :root,body{--an-hr:#0B5C26;--an-g-o2:#0B5C26;--an-bp:#9A1C37;--an-co2:#634A00;--an-temp:#48484A}
+}
+
+/* PVX-N431 · Layout on compact widths (iPhone, iPad Split View, Display Zoom: 600 pt and less), HIG Layout (Nov 24 2026) */
+@media (max-width:600px){
+  /* 1 · the record's header: the patient line runs the full width, with ⓘ at its end, instead of wrapping beside the weight
+     (it took three rows: two of words and one for ⓘ alone); the weight stays beside the name
+     (with larger text Anesia's own large-text layout already gives the patient its own full-width rows, n164) */
+  html:not(.an-bigtext) .an-rhead .an-id{display:contents}
+  html:not(.an-bigtext) .an-rhead .an-id h1{grid-column:1;grid-row:2;min-width:0}
+  html:not(.an-bigtext) .an-rhead>.an-wbig{grid-column:2;grid-row:2;align-self:start}
+  html:not(.an-bigtext) .an-rhead .an-id .sub{grid-column:1/-1;grid-row:3;margin-top:-.25rem}
+  /* 2 · the list's filter: each segment as wide as its label, so "In progress · 2" stays on one line (2 lines at 390 pt, 3 at 320) */
+  .an-seg[aria-label="Show records"] button{flex:1 1 auto;min-width:0;white-space:nowrap;padding-left:.625rem;padding-right:.625rem}
+  /* 2b · with larger text the record cards stay inside the screen: in Safari a card's name and status pill held it wider than
+     the screen (390 pt: 425 pt wide at 28-pt text, so the list scrolled sideways); now the pill wraps under the name */
+  .an-list{grid-template-columns:minmax(0,1fr)}
+  .an-card .t{flex-wrap:wrap;row-gap:.375rem}
+  /* 3 · Event's time-out warning: "Start time-out" stays on one line; the warning wraps beside it, and under 340 pt the button
+     goes below it. The box always holds its text (at 320 pt the text ran out of it). */
+  .an-towarn{flex-wrap:wrap;flex-shrink:0;height:auto}
+  .an-towarn>span{flex:1 1 9rem;min-width:0}
+  .an-towarn .an-btn{white-space:nowrap;margin-left:auto}
+}
+/* 4 · a sheet's bar: Cancel and the action never break onto two lines (at 320 pt "Give drug" did). The title stays centred
+   while there's room; on the narrowest screens it centres in the space between the two buttons, and only then shortens. */
+.an-sh{grid-template-columns:minmax(max-content,1fr) minmax(0,auto) minmax(max-content,1fr)}
+.an-sh>.an-btn{white-space:nowrap}
+.an-sh h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:340px){.an-sh{grid-template-columns:auto minmax(0,1fr) auto}.an-sh>.an-btn{padding-left:.625rem;padding-right:.625rem}}
+/* …with larger text on a compact width (Anesia's large-text layout, n164) nothing is cut short or runs off the sheet: the bar
+   puts its title on a row of its own, above Cancel and the action */
+@media (max-width:600px){
+  html.an-bigtext .an-sh{grid-template-columns:auto 1fr auto}
+  html.an-bigtext .an-sh h2{grid-column:1/-1;grid-row:1;white-space:normal;overflow:visible;text-overflow:clip}
+  html.an-bigtext .an-sh>.l{grid-column:1;grid-row:2}
+  html.an-bigtext .an-sh>.r,html.an-bigtext .an-sh>span:last-child{grid-column:3;grid-row:2}
+  html.an-bigtext .an-sh>.an-btn{white-space:normal}
+}
+
+/* PVX-N432 · Motion (HIG Motion: brevity; avoid motion on frequent interactions; don't make people wait) — Nov 24 2026 */
+/* 1 · opening a record: the record settles in at once instead of row by row. The last vitals tile was invisible for 0.57 s
+   and fully shown after about 1 s; now everything is there within 0.25 s. The tapped card still grows into the record. */
+.an-enter .an-rhead .an-back,.an-enter .an-rhead .an-id,.an-enter .an-rhead .an-wbig,.an-enter .an-rhead .an-ract,.an-enter .an-sum,.an-enter .an-confirm,.an-enter .an-banner,.an-enter .an-chartp,.an-enter .an-nowcol,
+.an-enter .an-chart .an-row,.an-enter .an-tile{animation:anEnterQuick .25s cubic-bezier(.2,.8,.2,1) both!important;animation-delay:0s!important}
+.an-enter .an-tools{animation:anFadeIn .2s ease-out both!important;animation-delay:0s!important}
+@keyframes anEnterQuick{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .an-enter .an-rhead .an-back,.an-enter .an-rhead .an-id,.an-enter .an-rhead .an-wbig,.an-enter .an-rhead .an-ract,.an-enter .an-sum,.an-enter .an-confirm,.an-enter .an-banner,.an-enter .an-chartp,.an-enter .an-nowcol,
+  .an-enter .an-chart .an-row,.an-enter .an-tile,.an-enter .an-tools{animation:anFadeIn .15s ease-out both!important}
+}
+/* 2 · the card grows into the record in 0.28 s (it took 0.44 s). The page can't be tapped while it grows (the browser holds
+   taps during a view transition): "Vitals now" did nothing for about 0.6 s after opening a record; now about 0.35 s. */
+::view-transition-group(an-hero){animation-duration:.28s!important}
+::view-transition-old(an-hero),::view-transition-new(an-hero),::view-transition-old(root),::view-transition-new(root){animation-duration:.2s!important}
+/* PVX-N433 · HIG Typography, Writing, Charting data */
+/* the trend: drawn at its real width, so its labels are text-sized and follow the text size */
+.an-trend text{font-size:max(11px,.75rem)}
+.an-trendsum{margin:.25rem 0 -.5rem}
+.an-trendsum p{margin:0}
+.an-trendsum .now{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 .3rem;font-variant-numeric:tabular-nums}
+.an-trendsum .now b{font-family:var(--an-rounded);font-size:1.75rem;font-weight:700;line-height:1.15;color:var(--an-ink)}
+.an-trendsum .now small{font-family:var(--an-rounded);font-size:.875rem;font-weight:700;color:var(--an-ink-3)}
+.an-trendsum .now span{font-size:var(--t-subhead,.9375rem);color:var(--an-ink-2)}
+.an-trendsum .rng{margin-top:.125rem;font-size:var(--t-subhead,.9375rem);color:var(--an-ink-2);font-variant-numeric:tabular-nums}
+/* sheet bars on iPhone: Cancel and the action hug their labels, so the title fits */
+@media (min-width:341px) and (max-width:600px){html:not(.an-bigtext) .an-sh>.an-btn{padding-left:.75rem;padding-right:.75rem}}
+@media (max-width:340px){html:not(.an-bigtext) .an-sh h2{white-space:normal;overflow:visible;text-overflow:clip;text-wrap:balance;line-height:1.15}}
+/* PVX-N434 · a number field says at once when what is typed is not a number */
+.an-f .an-nerr{display:block;margin-top:.25rem;font-style:normal}
+.an-f .an-nerr:empty{display:none}
+/* a longer message uses the screen width, not half of it (it was centred from the middle, so it wrapped at half the width) */
+.an-toast{width:max-content;box-sizing:border-box}
+/* PVX-N435 · Going full screen: the expanded record says who is charting (the top bar, which says it, is hidden) */
+.an-who{display:none;align-items:center;gap:.35rem;font-size:var(--t-footnote,.8125rem);color:var(--an-ink-2);white-space:nowrap}
+html.an-expanded .an-who{display:inline-flex;margin-left:auto;align-self:center;padding-left:.5rem}
+.an-who b{font-weight:600;color:var(--an-ink)}
+/* a signed record's tile opens its trend */
+.an-tile.ro{cursor:pointer}
