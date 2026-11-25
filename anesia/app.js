@@ -452,9 +452,11 @@
   }
 
   var save = { state: 'idle', inflight: false, waitT: 0, retryT: 0 };
+  function chipNow() { var st = save.state; if (S.mode === 'local') return 'local'; if (S.denied) return 'noaccess';   /* PVX-N436 */
+    if (st === 'idle' || st === 'saved' || st === 'loading') return S.mode === 'server' && !S.loaded ? 'loading' : 'saved'; return st; }
   function saveChip(st, txt) {
     save.state = st; var el = $('#anSave'); if (!el) return;
-    var T = { saving: 'Saving…', saved: 'Saved', offline: 'Offline · saves when connected', error: 'Not saved · retrying', denied: 'Not saved · no access', local: 'Saved on this device' };
+    var T = { loading: 'Loading…', saving: 'Saving…', saved: 'Saved', offline: 'Offline · saves when connected', noaccess: 'No access', error: 'Not saved · retrying', denied: 'Not saved · no access', local: 'Saved on this device' };
     el.textContent = txt || T[st] || '';
     el.classList.toggle('bad', st === 'offline' || st === 'error' || st === 'denied');
     var live = $('#anSaveLive'); if (live) live.textContent = (st === 'offline' || st === 'error' || st === 'denied') ? el.textContent : '';   /* saving stays silent */
@@ -646,7 +648,8 @@
         var m = {}; q.forEach(function (d) { m[d.id] = d.data(); }); S.server = m; S.loaded = true;
         localIndex().forEach(function (k) { var c = lsGet('rec:' + k); if (m[k] && !(c && c.pending && c.pending.length) && (!c || !c.at || Date.now() - c.at > 12 * 3600000 || m[k].status === 'signed')) { lsDel('rec:' + k); lsSet('index', localIndex().filter(function (x) { return x !== k; })); } });   /* PVX-N434 · Privacy: a saved copy is kept for the case only (signed, or 12 h since it was last changed here, and it goes); copies left by earlier versions go */
         softRender();
-      }, function (e) { if (e && e.code === 'permission-denied') saveChip('denied'); });
+      }, function (e) { if (e && e.code === 'permission-denied') { S.denied = true; render(); } });   /* PVX-N436: say so, instead of loading for ever */
+      clearTimeout(S.slowT); S.slow = false; S.slowT = setTimeout(function () { if (!S.loaded && !S.denied) { S.slow = true; render(); } }, 6000);
       flush(); route();
     });
   }
@@ -654,6 +657,9 @@
   function srSay(t) { var el = document.getElementById('anSr'); if (!el) { el = document.createElement('div'); el.id = 'anSr'; el.className = 'an-vh'; el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
     el.textContent = ''; setTimeout(function () { el.textContent = t; }, 60); }
   window.anesiaSay = srSay;
+  /* PVX-N438 · Offering help: tooltips say what happens, in this computer's keys (⌥V / Alt+V, ⌘P / Ctrl+P) */
+  function kt(k, mod) { try { return window.PvxKeys.text([mod ? 'mod' : 'alt', k]); } catch (e) { return (mod ? '⌘' : '⌥') + k; } }
+  function kc(k) { return '<kbd>' + kt(k) + '</kbd>'; }
   /* n196: tips - one simple feature each, only for people who would benefit, at most one a day */
   function tipHTML(r, signed, conf) {
     if (signed || !conf || lsGet('tips')) return '';   /* dismissed the old all-in-one banner: seen it all */
@@ -666,7 +672,7 @@
     if (!id) return '';
     if (!sh || sh.day !== day) lsSet('tip:shown', { id: id, day: day });
     var txt = id === 'value' ? (coarse ? 'Tap' : 'Click') + ' any value on the chart to see who charted it, or to strike it through'
-      : 'Press <kbd>⌥V</kbd> for vitals — <kbd>⌥D</kbd> drug, <kbd>⌥E</kbd> event · <kbd>?</kbd> all shortcuts';   /* n207 */
+      : 'Press ' + kc('V') + ' for vitals — ' + kc('D') + ' drug, ' + kc('E') + ' event · <kbd>?</kbd> all shortcuts';   /* PVX-N438 */   /* n207 */
     return '<div class="an-tips an-hint" role="note" aria-label="Tip"><span>' + txt + '</span><button type="button" class="an-btn plain strong" id="anTipsOk" data-tip="' + id + '">Got it</button></div>';
   }
   document.addEventListener('click', function (e) {   /* toolbar clicks with a mouse (a shortcut's own click has no pointer) */
@@ -914,26 +920,32 @@
     var tbOpen = $('[data-vtimebox]', root) && !$('[data-vtimebox]', root).hidden;
     if (S.cur) {
       var rec = recOf(S.cur);
-      if (!rec && S.mode === 'server' && !S.loaded) { root.innerHTML = '<div class="an-loading an-skelrec" role="status"><span class="an-vh">Loading the record…</span><div class="sk-h"><i></i><i></i></div><div class="sk-chips"><i></i><i></i><i></i><i></i></div><div class="sk-tools"><i></i><i></i><i></i></div><div class="sk-body"><div class="sk-chart"><i></i><i></i><i></i><i></i><i></i></div><div class="sk-now"><i></i><i></i><i></i><i></i></div></div></div>'; return; }
+      if (!rec && S.mode === 'server' && !S.loaded && S.denied) { root.innerHTML = '<div class="an">' + waitNote() + '</div>'; bindWait(); saveChip('noaccess'); return; }   /* PVX-N436 */
+      if (!rec && S.mode === 'server' && !S.loaded) { root.innerHTML = '<div class="an-loading an-skelrec" role="status"><span class="an-vh">Loading the record…</span><div class="sk-h"><i></i><i></i></div><div class="sk-chips"><i></i><i></i><i></i><i></i></div><div class="sk-tools"><i></i><i></i><i></i></div><div class="sk-body"><div class="sk-chart"><i></i><i></i><i></i><i></i><i></i></div><div class="sk-now"><i></i><i></i><i></i><i></i></div></div></div>' + waitNote(); return; }   /* PVX-N436 */
       if (!rec) { root.innerHTML = '<div class="an-gate"><h1>Record not found</h1><p>It may still be loading, or it was opened from another hospital.</p><a class="an-btn primary" href="#">All records</a></div>'; return; }
       var wasSkel = !!$('.an-skelrec', root), fresh = S.shownRec !== rec.id; S.shownRec = rec.id;
       root.innerHTML = recordHTML(rec); bindRecord(rec);
       if (fresh || wasSkel) { root.classList.remove('an-enter'); void root.offsetWidth; root.classList.add('an-enter'); clearTimeout(S.enterT); S.enterT = setTimeout(function () { root.classList.remove('an-enter'); if (window.anesiaBar) window.anesiaBar.update(); }, 1100); }
       var c2 = $('.an-chart'); if (c2) { c2.scrollLeft = lastScroll; c2.addEventListener('scroll', function () { if (!stickRaf) stickRaf = requestAnimationFrame(stickLabels); }, { passive: true }); stickLabels(); }
-    } else { S.shownRec = null; root.innerHTML = listHTML(); bindList(); }
+    } else { S.shownRec = null; root.innerHTML = listHTML(); bindList(); bindWait(); }
     Object.keys(S.keep).forEach(function (id) { var el = document.getElementById(id); if (el && S.keep[id]) { el.value = S.keep[id].v; el.classList.toggle('filled', !!S.keep[id].filled); } });
     if (tbOpen && $('[data-vtimebox]', root)) $('[data-vtimebox]', root).hidden = false;
     if (S.fresh && $('.fresh', root)) { var fz = S.fresh; setTimeout(function () { if (S.fresh === fz) S.fresh = null; }, 700); }
     if (fk && !$('#anSheet')) { var fe = $(fk, root); if (fe) try { fe.focus({ preventScroll: true }); } catch (e) { } }
     S.shownSig = sigOf(); S.dirtyUi = false; afterRender();
-    if (!soft) { var st = save.state; saveChip(S.mode === 'local' ? 'local' : st === 'idle' ? 'saved' : st); }
-    else saveChip(S.mode === 'local' ? 'local' : save.state === 'idle' ? 'saved' : save.state);
+    saveChip(chipNow());   /* PVX-N436 */
   }
 
   function gateHTML() {
     if (S.gate === 'lobby') return '<div class="an-gate"><h1 id="anGateT">This is the lobby screen account</h1><p>Anesia needs your own Pravix account. Sign in with it on Flow, then come back to this page.</p><button type="button" class="an-btn primary" id="anGateOwn">Sign in with your account</button></div>';
     return '<div class="an-gate"><h1 id="anGateT">Sign in to use Anesia</h1><p>Anesia uses your Pravix account. Sign in on Flow and you’ll come straight back here.</p><a class="an-btn primary" href="' + esc(signInURL()) + '">Sign in on Flow</a></div>';
   }
+  /* PVX-N436 · Loading, Managing accounts */
+  function waitNote() {
+    if (S.denied) return '<div class="an-empty an-noaccess" role="alert"><b>This account can’t open Anesia’s records</b><span>Anesia is for Shoreline staff. If you should have access, ask whoever manages Pravix accounts to add you, or sign in with another account.</span><button type="button" class="an-btn" id="anOther">Sign in with another account</button></div>';
+    return S.slow ? '<p class="an-slow" role="status">Still loading. On a slow connection this can take a moment; records appear as soon as they arrive.</p>' : '';
+  }
+  function bindWait() { var b = $('#anOther'); if (b) b.onclick = function () { S.auth.signOut().then(function () { location.href = signInURL(); }); }; }
   function signInURL() { return 'https://shoreline.pravix.app/?next=' + encodeURIComponent(location.pathname + location.hash); }
   function bindGate() { var b = $('#anGateOwn'); if (b) b.onclick = function () { S.auth.signOut().then(function () { location.href = signInURL(); }); }; }
 
@@ -958,7 +970,7 @@
         '<div class="an-f"><label for="aI">Redose every</label><div class="an-unit"><input class="an-in an-tnum" id="aI" name="min" inputmode="numeric" autocomplete="off" value="' + (d.redoseMin ? sig(d.redoseMin) : '') + '"><span class="u">min</span></div><span class="hint">Use your hospital’s protocol. Anesia has no built-in interval; leave it empty to turn the timer off.</span></div>' +
         '<label class="an-check"><input type="checkbox" name="abx" checked>Count ' + esc(d.name) + ' as an antibiotic</label>' +
         '<button type="button" class="an-btn plain" data-give style="align-self:flex-start">Give drug</button>',
-      init: function (w) { $('[data-give]', w).onclick = function () { closeSheet(true); doseSheet(r); }; },
+      init: function (w) { $('[data-give]', w).onclick = function () { leaveTo(w, function () { doseSheet(r); }, 'Discard and give drug'); }; },
       submit: function (w) { change(r.id, { type: 'redose', drugId: drugId, min: val(w, 'min').trim(), abx: val(w, 'abx') }); }
     });
   }
@@ -1011,7 +1023,7 @@
       body: '<dl class="an-dl">' + rows.map(function (p) { return '<dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd>'; }).join('') + '</dl>' +
         (can ? '<div style="display:flex;gap:.5rem;flex-wrap:wrap">' + (d.end ? '' : '<button type="button" class="an-btn" data-remove>Remove…</button>') + '<button type="button" class="an-btn danger" data-void>Strike through…</button></div>' : ''),
       init: function (w) {
-        var rm = $('[data-remove]', w); if (rm) rm.onclick = function () { closeSheet(true); timeSheet(r, 'Remove ' + devShort(d).toLowerCase(), 'Removed', function (t) { change(r.id, { type: 'remove', deviceId: d.id, at: t }); }); };
+        var rm = $('[data-remove]', w); if (rm) rm.onclick = function () { leaveTo(w, function () { timeSheet(r, 'Remove ' + devShort(d).toLowerCase(), 'Removed', function (t) { change(r.id, { type: 'remove', deviceId: d.id, at: t }); }); }); };
         var vb = $('[data-void]', w); if (vb) vb.onclick = function () { voidSheet(r, 'device', d.id, devShort(d)); };
       }
     });
@@ -1047,7 +1059,7 @@
       title: 'Team', primary: ro ? null : 'Add', quiet: true,
       body: list + (ro ? '' : '<div class="an-f"><span class="lab">Add someone</span><div class="an-two"><div class="an-f"><label for="tmN">Name</label><input class="an-in" id="tmN" name="name" maxlength="80" autocomplete="off" value="' + (meIn ? '' : esc(S.me)) + '"></div>' +
         '<div class="an-f"><span class="lab">Role</span>' + chips('role', Object.keys(A.ROLES).map(function (k) { return [k, A.ROLES[k]]; }), meIn ? '' : 'resident') + '</div></div></div>' + timeField(t, 'Joined')),
-      init: function (w) { bindTime(w); bindChips(w); $$('[data-hand]', w).forEach(function (b) { b.onclick = function () { var x = st.filter(function (y) { return y.id === b.getAttribute('data-hand'); })[0]; closeSheet(true); handoffSheet(r, x); }; }); },
+      init: function (w) { bindTime(w); bindChips(w); $$('[data-hand]', w).forEach(function (b) { b.onclick = function () { var x = st.filter(function (y) { return y.id === b.getAttribute('data-hand'); })[0]; leaveTo(w, function () { handoffSheet(r, x); }); }; }); },
       submit: function (w) { if (!val(w, 'name').trim()) bad('Enter the name.', 'name'); if (!val(w, 'role')) bad('Choose the role.'); change(r.id, { type: 'staff', name: val(w, 'name'), role: val(w, 'role'), at: readTime(w, r), eid: A.uid('s') }); }
     });
     if (ro) { var xb = $('#anSheet [data-x]'); if (xb) asClose(xb); }
@@ -1098,7 +1110,7 @@
       body: '<div class="an-cfm"><span class="ic" aria-hidden="true">' + icon('idcheck') + '</span><b>' + esc(p.name) + '</b><small>Check this against the patient’s cage card or ID band.</small></div>' +
         '<dl class="an-dl">' + rows.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' +
         '<button type="button" class="an-btn plain" data-cedit style="align-self:flex-start">Something’s wrong — edit details</button>',
-      init: function (wr) { $('[data-cedit]', wr).onclick = function () { closeSheet(true); patientSheet(r); }; },
+      init: function (wr) { $('[data-cedit]', wr).onclick = function () { leaveTo(wr, function () { patientSheet(r); }, 'Discard and edit details'); }; },
       submit: function () { fire('conf:' + r.id); change(r.id, { type: 'confirm' }); if (then) setTimeout(function () { var r2 = recOf(r.id); if (r2) then(r2); }, 60); }
     });
   }
@@ -1142,7 +1154,7 @@
     var cards = recs.map(function (r) { var w = A.weightAt(r, now());
       return '<li><a class="an-card" href="#r=' + esc(r.id) + '" data-open="' + esc(r.id) + '"><span class="t"><b>' + esc(r.procedure || 'Anesthesia') + '</b>' + statusPill(r) + '</span><span class="s">' + esc(r.start ? fmtDate(r.start) + ' · ' + fmtTime(r.start) + (r.end ? '–' + fmtTime(r.end) : '') : 'Created ' + fmtDate(r.created_at)) + (w ? ' · ' + sig(w) + ' kg' : '') + '</span><span class="m">' + esc(r.team.resident || '') + (r.team.supervisor ? ' · ' + esc(r.team.supervisor) : '') + '</span></a></li>'; }).join('');
     return '<header class="an-lhead an-shead"><div><h2>Anesthesia</h2><p>' + (recs.length ? recs.length + (recs.length === 1 ? ' record' : ' records') + ' for ' + esc(nm) : 'No anesthesia record for ' + esc(nm) + ' yet') + '</p></div>' +
-      '<button type="button" class="an-btn primary" id="anNew" title="Start anesthesia record (⌥N)" aria-keyshortcuts="Alt+N">' + icon('plus') + 'Start anesthesia record</button></header>' +
+      '<button type="button" class="an-btn primary" id="anNew" title="Start charting anesthesia for this patient (' + kt('N') + ')" aria-keyshortcuts="Alt+N">' + icon('plus') + 'Start anesthesia record</button></header>' +
       (S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true"><li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li></ul>'
         : recs.length ? '<ul class="an-list">' + cards + '</ul>' : '<div class="an-empty"><b>Ready when ' + esc(nm) + ' goes under</b>Start a record and the patient’s name, weight, code status and allergies come from this treatment sheet.</div>') +
       '<p class="an-save an-vh" id="anSave"></p><p class="an-vh" role="status" id="anSaveLive"></p>';
@@ -1163,10 +1175,10 @@
     }).join('');
     var empty = { active: ['No training records in progress', 'Start a training record for the patient you are about to anesthetize.'], ended: ['Nothing waiting to be signed', 'Ended records appear here until they are signed.'], signed: ['No signed records yet', 'Signed records stay here, read-only.'] }[S.filter];
     return '<header class="an-lhead"><div><h1>Anesia</h1><p>Anesthesia records for training. They are not part of the medical record.</p></div>' +
-      '<button type="button" class="an-btn primary" id="anNew" title="New training record (⌥N)" aria-keyshortcuts="Alt+N">' + icon('plus') + 'New training record</button></header>' +
+      (S.denied ? '' : '<button type="button" class="an-btn primary" id="anNew" title="Start a record for the patient you’re about to anesthetize (' + kt('N') + ')" aria-keyshortcuts="Alt+N">' + icon('plus') + 'New training record</button>') + '</header>' +
       (S.mode === 'local' ? '<div class="an-banner info"><span><b>Preview.</b> Records are saved on this device only.</span></div>' : '') +
       '<div class="an-seg" role="radiogroup" aria-label="Show records" data-rove="radio">' + tab('active', 'In progress') + tab('ended', 'To sign') + tab('signed', 'Signed') + '</div>' +
-      (S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true" aria-label="Loading records">' + [1, 2, 3].map(function () { return '<li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li>'; }).join('') + '</ul><p class="an-vh" role="status">Loading records…</p>'
+      (S.mode === 'server' && S.denied && !S.loaded ? waitNote() : S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true" aria-label="Loading records">' + [1, 2, 3].map(function () { return '<li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li>'; }).join('') + '</ul><p class="an-vh" role="status">Loading records…</p>' + waitNote()
         : shown.length ? '<ul class="an-list">' + cards + '</ul>' : '<div class="an-empty"><b>' + empty[0] + '</b>' + empty[1] + '</div>') +
       '<p class="an-save an-vh" id="anSave"></p><p class="an-vh" role="status" id="anSaveLive"></p>';
   }
@@ -1176,7 +1188,7 @@
     $$('[data-f]').forEach(function (b) { b.onclick = function () { S.filter = b.getAttribute('data-f'); lsSet('filter', S.filter); render(); var t = $('[data-f="' + S.filter + '"]'); if (t) t.focus(); }; });
     $$('[data-open]').forEach(function (b) { b.onclick = function (e) { if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button > 0)) return;   /* n211: a modified click opens the record in its own window */
       if (e) e.preventDefault(); var id = b.getAttribute('data-open'); morph(b, function () { location.hash = 'r=' + id; route(); S.skipHash = 'r=' + id; }, '.an-id'); }; });
-    $('#anNew').onclick = function () { patientSheet(null); };
+    var nb0 = $('#anNew'); if (nb0) nb0.onclick = function () { patientSheet(null); };   /* PVX-N436 */
   }
 
   /* ----- record (n152: iPad-first; a Now column; the weight beside the name; one row per drug; empty groups hidden) ----- */
@@ -1209,13 +1221,13 @@
     var facts = [cap(p.species), p.breed, p.sex, p.age].filter(Boolean).map(esc).join(' · '), conf = A.isConfirmed(r);
     var head = '<header class="an-rhead"><a class="an-back" href="#">' + icon('back', { scale: 'l' }) + (SHEET ? 'Anesthesia' : 'Records') + '</a>' +
       '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + statusPill(r) + kindPill(r, true) + confirmChip(r) + presenceChip(r) + '</h1>' +
-      '<div class="sub"><span>' + (facts || 'No details yet') + '</span><button type="button" class="an-info" id="anPatient" aria-label="Patient details">' + icon('info') + '</button></div></div>' +
+      '<div class="sub"><span>' + (facts || 'No details yet') + '</span><button type="button" class="an-info" id="anPatient" title="' + (signed ? 'See' : 'See and edit') + ' the patient’s details" aria-label="Patient details">' + icon('info') + '</button></div></div>' +
       '<button type="button" class="an-wbig' + (w ? '' : ' none') + '" id="anWeight"' + (signed ? ' disabled' : '') + ' aria-label="' + (w ? 'Weight ' + sig(w) + ' kilograms' + (lw ? ', weighed ' + fmtTime(lw.at) : '') + '. Change weight' : 'No weight. Add weight') + '">' +
       (w ? '<b>' + sig(w) + '<span> kg</span></b><small>' + (lw ? (lw.method === 'estimated' ? 'Estimated ' : 'Weighed ') + fmtTime(lw.at) : '') + '</small>' : '<b>' + icon('scale', { slash: true, scale: 's' }) + 'No weight</b><small>Add weight</small>') + '</button>' +
       '<div class="an-ract"><span class="an-save" id="anSave" aria-hidden="true"></span>' + clock + main +
-      '<button type="button" class="an-btn icon" id="anExpand" aria-pressed="' + XP + '" aria-label="' + (XP ? 'Exit expanded view' : 'Expand record') + '" title="' + (XP ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)') + '" aria-keyshortcuts="Alt+F"><span class="ic-out">' + icon('expand') + '</span><span class="ic-in">' + icon('collapse') + '</span></button>' +
-      '<button type="button" class="an-btn icon" id="anShare" aria-label="Share link to this record" title="Share link">' + icon('share') + '</button>' +
-      (r.status === 'ended' || r.status === 'signed' ? '<button type="button" class="an-btn icon" id="anPrint" aria-label="Print record" title="Print (⌘P)">' + icon('print') + '</button>' : '') + '</div>' + summaryHTML(r) + '</header><p class="an-vh" role="status" id="anSaveLive"></p>';
+      '<button type="button" class="an-btn icon" id="anExpand" aria-pressed="' + XP + '" aria-label="' + (XP ? 'Exit expanded view' : 'Expand record') + '" title="' + (XP ? 'Return to the usual view (' + kt('F') + ' or Esc)' : 'Fill the window with the record (' + kt('F') + ')') + '" aria-keyshortcuts="Alt+F"><span class="ic-out">' + icon('expand') + '</span><span class="ic-in">' + icon('collapse') + '</span></button>' +
+      '<button type="button" class="an-btn icon" id="anShare" aria-label="Share link to this record" title="' + (S.mode !== 'server' ? 'Copy a link to this Preview record' : (navigator.share ? 'Share' : 'Copy') + ' a link that opens this record for signed-in staff') + '">' + icon('share') + '</button>' +
+      (r.status === 'ended' || r.status === 'signed' ? '<button type="button" class="an-btn icon" id="anPrint" aria-label="Print record" title="Print this record (' + kt('P', 1) + ')">' + icon('print') + '</button>' : '') + '</div>' + summaryHTML(r) + '</header><p class="an-vh" role="status" id="anSaveLive"></p>';
     var banners = '';
     if (!conf && !signed) banners += '<div class="an-confirm" role="alert"><span class="ic" aria-hidden="true">' + icon('idcheck') + '</span><span><b>Confirm the patient</b>Check the name, weight and procedure against the cage card before you chart.</span><button type="button" class="an-btn danger" id="anConfirmB">Confirm patient</button></div>';
     if (!w && !signed) banners += '<div class="an-banner"><span><b>No weight on file.</b> Per-kg doses can’t be calculated and per-kg infusions can’t start. Doses given now are typed in mg and confirmed.</span><button type="button" class="an-btn tinted" data-act="weight">Add weight</button></div>';
@@ -1226,20 +1238,20 @@
     var dis = signed ? ' disabled' : '';
     var dk = 'due:' + r.id + ':' + (r.vitals.length ? r.vitals[r.vitals.length - 1].at : r.start); if (due && live && !fired(dk)) fire(dk); var bp2 = due ? playing(dk, 900) : null;
     var tools = '<div class="an-tools" role="toolbar" aria-label="Chart" data-rove="toolbar">' +
-      '<button type="button" class="an-btn primary an-dc" data-act="vitals"' + dis + ' aria-label="Vitals now' + (due ? ', vitals due ' + due + ' minutes' : '') + '" title="Vitals now (⌥V)" aria-keyshortcuts="Alt+V">' + (bp2 !== null ? '<span class="an-beat" style="animation-delay:-' + bp2 + 'ms">' + icon('heart') + '</span>' : icon('heart')) + '<span class="t">Vitals now</span>' + '</button>' +
+      '<button type="button" class="an-btn primary an-dc" data-act="vitals"' + dis + ' aria-label="Vitals now' + (due ? ', vitals due ' + due + ' minutes' : '') + '" title="Chart heart rate, blood pressure and the other vitals (' + kt('V') + ')" aria-keyshortcuts="Alt+V">' + (bp2 !== null ? '<span class="an-beat" style="animation-delay:-' + bp2 + 'ms">' + icon('heart') + '</span>' : icon('heart')) + '<span class="t">Vitals now</span>' + '</button>' +
       '<div class="an-group" role="group" aria-label="Chart a drug, infusion, gas or event">' +
-      '<button type="button" class="an-btn" data-act="dose"' + dis + ' aria-label="Give drug" title="Give drug (⌥D)" aria-keyshortcuts="Alt+D">' + icon('syringe') + '<span class="t">Give drug</span></button>' +
-      '<button type="button" class="an-btn" data-act="infusion"' + dis + ' aria-label="Infusion" title="Start an infusion (⌥I)" aria-keyshortcuts="Alt+I">' + icon('drip') + '<span class="t">Infusion</span></button>' +
-      '<button type="button" class="an-btn" data-act="gas"' + dis + ' aria-label="Gas" title="Gas and oxygen (⌥G)" aria-keyshortcuts="Alt+G">' + icon('gas') + '<span class="t">Gas</span></button>' +
-      '<button type="button" class="an-btn" data-act="event"' + dis + ' aria-label="Event" title="Event (⌥E)" aria-keyshortcuts="Alt+E">' + icon('flag') + '<span class="t">Event</span></button>' +
-      '<button type="button" class="an-btn" data-act="output"' + dis + ' aria-label="Output" title="Blood loss, urine and other output (⌥O)" aria-keyshortcuts="Alt+O">' + icon('output') + '<span class="t">Output</span></button>' +
-      '<button type="button" class="an-btn" data-act="airway"' + dis + ' aria-label="Airway" title="Airway, lines and ventilation (⌥A)" aria-keyshortcuts="Alt+A">' + icon('airway') + '<span class="t">Airway</span></button></div>' +
-      '<button type="button" class="an-btn an-pmore" id="anMore" aria-haspopup="menu" aria-label="More charting tools" title="More">' + icon('more') + '</button>' +   /* n204: phones */
+      '<button type="button" class="an-btn" data-act="dose"' + dis + ' aria-label="Give drug" title="Chart a drug given, with its dose and route (' + kt('D') + ')" aria-keyshortcuts="Alt+D">' + icon('syringe') + '<span class="t">Give drug</span></button>' +
+      '<button type="button" class="an-btn" data-act="infusion"' + dis + ' aria-label="Infusion" title="Start a drug or fluid running at a set rate (' + kt('I') + ')" aria-keyshortcuts="Alt+I">' + icon('drip') + '<span class="t">Infusion</span></button>' +
+      '<button type="button" class="an-btn" data-act="gas"' + dis + ' aria-label="Gas" title="Set the inhalant or oxygen (' + kt('G') + ')" aria-keyshortcuts="Alt+G">' + icon('gas') + '<span class="t">Gas</span></button>' +
+      '<button type="button" class="an-btn" data-act="event"' + dis + ' aria-label="Event" title="Chart a moment such as induction or intubation, or a note (' + kt('E') + ')" aria-keyshortcuts="Alt+E">' + icon('flag') + '<span class="t">Event</span></button>' +
+      '<button type="button" class="an-btn" data-act="output"' + dis + ' aria-label="Output" title="Chart blood loss, urine or other output (' + kt('O') + ')" aria-keyshortcuts="Alt+O">' + icon('output') + '<span class="t">Output</span></button>' +
+      '<button type="button" class="an-btn" data-act="airway"' + dis + ' aria-label="Airway" title="Chart a tube, line or catheter, or the ventilation (' + kt('A') + ')" aria-keyshortcuts="Alt+A">' + icon('airway') + '<span class="t">Airway</span></button></div>' +
+      '<button type="button" class="an-btn an-pmore" id="anMore" aria-haspopup="menu" aria-label="More charting tools" title="Show the other charting tools">' + icon('more') + '</button>' +   /* n204: phones */
       '<span class="sp"><span class="an-tbt" aria-hidden="true" title="Back to the top of the record">' + compactTitle(r, t) + '</span></span><div class="an-seg an-zoomseg" role="radiogroup" aria-label="Minutes per column" data-rove="radio">' +
       [5, 10, 15].map(function (m) { return '<button type="button" role="radio" data-zoom="' + m + '" aria-checked="' + (S.colMin === m) + '" tabindex="' + (S.colMin === m ? 0 : -1) + '" aria-label="' + m + ' minutes per column">' + m + ' min</button>'; }).join('') + '</div>' +
-      '<button type="button" class="an-btn an-dc an-zoompop" id="anZoomPop" aria-haspopup="menu" aria-label="Minutes per column: ' + S.colMin + '" title="Minutes per column">' + S.colMin + ' min<span class="an-chev" aria-hidden="true"></span></button>' +   /* n208: the zoom when space is short */
-      '<button type="button" class="an-btn an-dc" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" title="Totals and history">' + icon('sidebar') + '<span class="t">Totals</span></button>' +
-      '<button type="button" class="an-btn an-dc an-emb" id="anEmer" aria-haspopup="dialog" aria-label="Emergency drugs" title="Emergency drugs, calculated for this patient">' + icon('emer') + '<span class="t">Emergency</span></button></div>';   /* n208: set apart at the trailing edge */
+      '<button type="button" class="an-btn an-dc an-zoompop" id="anZoomPop" aria-haspopup="menu" aria-label="Minutes per column: ' + S.colMin + '" title="Change how many minutes each column covers">' + S.colMin + ' min<span class="an-chev" aria-hidden="true"></span></button>' +   /* n208: the zoom when space is short */
+      '<button type="button" class="an-btn an-dc" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" title="' + (insp ? 'Hide' : 'Show') + ' totals and the record’s history">' + icon('sidebar') + '<span class="t">Totals</span></button>' +
+      '<button type="button" class="an-btn an-dc an-emb" id="anEmer" aria-haspopup="dialog" aria-label="Emergency drugs" title="Show emergency drugs calculated for this patient">' + icon('emer') + '<span class="t">Emergency</span></button></div>';   /* n208: set apart at the trailing edge */
     var ptitle = '<div class="an-ptitle" aria-hidden="true" title="Back to the top of the record">' + compactTitle(r, t) + '</div>';   /* n208: iPhone */
     return head + banners + ptitle + tools + '<div class="an-body' + (insp ? ' insp' : '') + (ps !== null ? ' settle' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + tipHTML(r, signed, conf) + (conf ? (playing('conf:' + r.id, 900) !== null ? '<div class="an-wm gone" aria-hidden="true" style="animation-delay:-' + playing('conf:' + r.id, 900) + 'ms"><span>Confirm correct patient</span></div>' : '') : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
       nowHTML(r) + (insp ? '<aside class="an-side' + (S.opening === 'side' ? ' opening' : '') + '" id="anInspector" aria-label="Totals and history">' + sideHTML(r) + '</aside>' : '<aside class="an-side an-print-only" aria-hidden="true">' + sideHTML(r).replace(/ id="an[A-Za-z]+"/g, '') + '</aside>') + '</div>';
@@ -1713,7 +1725,7 @@
     return null;
   }
   /* n208: a view-only sheet closes with the standard Close symbol (HIG Toolbars: no "Close" text) */
-  function asClose(xb) { xb.innerHTML = icon('close'); xb.setAttribute('aria-label', 'Close'); xb.setAttribute('title', 'Close'); xb.classList.add('an-x'); }
+  function asClose(xb) { xb.innerHTML = icon('close'); xb.setAttribute('aria-label', 'Close'); xb.setAttribute('title', 'Close (Esc)');   /* PVX-N438 */ xb.classList.add('an-x'); }
   function openSheet(o) {
     closeSheet(true);
     sheetPrev = document.activeElement;
@@ -1760,6 +1772,14 @@
     }
     $('[data-keep]', wrap).onclick = function () { disc.hidden = true; var f0 = $('input:not([type=hidden]),select,textarea', form); if (f0) f0.focus(); };
     $('[data-drop]', wrap).onclick = function () { wrap.dirty = false; closeSheet(); };
+    /* PVX-N437 · Modality: handing over to another sheet asks first, as closing does, if something was typed */
+    wrap.leave = function (next, label) {
+      if (!wrap.dirty) { closeSheet(true); next(); return; }
+      var db = $('[data-drop]', wrap), kb = $('[data-keep]', wrap), t0 = db.textContent, k0 = kb.onclick, d0 = db.onclick;
+      db.textContent = label || 'Discard and continue'; disc.hidden = false; kb.focus();
+      db.onclick = function () { wrap.dirty = false; closeSheet(true); next(); };
+      kb.onclick = function () { db.textContent = t0; db.onclick = d0; kb.onclick = k0; k0(); };
+    };
     $('[data-x]', wrap).onclick = requestClose;
     wrap.addEventListener('mousedown', function (e) { if (e.target === wrap) requestClose(); });
     /* phones: drag the sheet down by its top to close it */
@@ -1818,6 +1838,7 @@
     return wrap;
   }
   var RM = function () { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+  function leaveTo(w, next, label) { if (w && w.leave) w.leave(next, label); else { closeSheet(true); next(); } }   /* PVX-N437 */
   function closeSheet(silent) {
     $$('.an-scrim.out').forEach(function (x) { x.remove(); });
     var w = $('#anSheet'); if (!w) return;
@@ -2260,7 +2281,7 @@
       title: 'Event', primary: 'Add', quiet: true,
       ready: function (w) { var k = val(w, 'kind'); return !!k && (k !== 'note' || !!val(w, 'note').trim()); },
       body: (!(A.timeoutStatus(r) || {}).complete && r.status !== 'signed' ? '<div class="an-tline an-towarn"><span>Time-out ' + (A.timeoutStatus(r) ? 'not complete' : 'not done yet') + ' — do it before incision.</span><button type="button" class="an-btn plain sm" data-dotimeout>Start time-out</button></div>' : '') + '<div class="an-f"><span class="lab">What happened</span>' + chips('kind', opts, '') + '</div><div class="an-f"><label for="eN">Note</label><textarea class="an-ta" id="eN" name="note" maxlength="300"></textarea></div>' + timeField(now()),
-      focus: '.an-chip', init: function (w) { bindTime(w); bindChips(w); var dt = $('[data-dotimeout]', w); if (dt) dt.onclick = function () { closeSheet(true); timeoutSheet(r); }; },
+      focus: '.an-chip', init: function (w) { bindTime(w); bindChips(w); var dt = $('[data-dotimeout]', w); if (dt) dt.onclick = function () { leaveTo(w, function () { timeoutSheet(r); }, 'Discard and start time-out'); }; },
       submit: function (w) { if (!val(w, 'kind')) bad('Choose what happened.'); if (val(w, 'kind') === 'note' && !val(w, 'note').trim()) bad('Write the note.', 'note'); change(r.id, { type: 'event', kind: val(w, 'kind'), note: val(w, 'note'), at: readTime(w, r), eid: A.uid('e') }); }
     });
   }
@@ -2461,7 +2482,7 @@
      go after 6 s, but the time doesn't run while the message is pointed at or focused, or while the page is hidden */
   function toast(msg, o) { o = o || {}; var el = $('#anToast'); if (!el) return; clearTimeout(S.toastT); S.toastLeft = 0; S.toastPaused = false;
     var stay = !!(o.error || o.stay); el.setAttribute('role', o.error ? 'alert' : 'status'); el.setAttribute('aria-live', o.error ? 'assertive' : 'polite');
-    el.innerHTML = '<span>' + esc(msg) + '</span>' + (stay ? '<button type="button" class="an-tx" id="anToastX" aria-label="Dismiss">' + icon('close') + '</button>' : '');
+    el.innerHTML = '<span>' + esc(msg) + '</span>' + (stay ? '<button type="button" class="an-tx" id="anToastX" aria-label="Dismiss" title="Dismiss">' + icon('close') + '</button>' : '');
     showToast(el);
     if (stay) { $('#anToastX').onclick = function () { el.hidden = true; }; return; }
     toastRun(el, 6000); }
@@ -2479,7 +2500,7 @@
   function offerUndo(msg, redo) {
     var el = $('#anToast'); if (!el) return; clearTimeout(S.toastT); S.toastLeft = 0; S.toastPaused = false; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');   /* PVX-N429 */
     var ue = S.undoStack[S.undoStack.length - 1], left = !redo && ue ? Math.max(0, Math.round(A.UNDO_MS - (now() - ue.ts))) : 0;
-    el.innerHTML = '<span class="an-tok" aria-hidden="true">' + icon('checkd', { scale: 's' }) + '</span><span>' + esc(msg) + '</span><button type="button" class="an-tbtn' + (left ? ' ring' : '') + '" id="anUndo"' + (left ? ' style="--an-ud:' + A.UNDO_MS + 'ms;--an-ue:-' + (A.UNDO_MS - left) + 'ms"' : '') + '>' + (redo ? 'Redo' : 'Undo') + '</button><button type="button" class="an-tx" id="anToastX" aria-label="Dismiss">' + icon('close') + '</button>';
+    el.innerHTML = '<span class="an-tok" aria-hidden="true">' + icon('checkd', { scale: 's' }) + '</span><span>' + esc(msg) + '</span><button type="button" class="an-tbtn' + (left ? ' ring' : '') + '" id="anUndo" title="' + (redo ? 'Make the change again' : 'Take back the last change') + ' (' + (redo ? (window.PvxKeys && PvxKeys.mac ? '⇧⌘Z' : 'Ctrl+Shift+Z') : kt('Z', 1)) + ')"' + (left ? ' style="--an-ud:' + A.UNDO_MS + 'ms;--an-ue:-' + (A.UNDO_MS - left) + 'ms"' : '') + '>' + (redo ? 'Redo' : 'Undo') + '</button><button type="button" class="an-tx" id="anToastX" aria-label="Dismiss" title="Dismiss">' + icon('close') + '</button>';
     showToast(el);
     $('#anUndo').onclick = function () { if (redo) redoLast(); else undoLast(); };
     $('#anToastX').onclick = function () { el.hidden = true; };

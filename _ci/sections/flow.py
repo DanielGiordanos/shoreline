@@ -698,7 +698,7 @@ async def s_n196(br):
     ok('n196: Anesia — the keyboard tip waits for another day (one tip a day)', a3 == [], a3)
     await pg.evaluate("localStorage.setItem('anesia:v1:tip:shown', JSON.stringify({id:'value',day:'Mon Jan 01 2001'}))"); await pg.reload(); await pg.wait_for_selector('.an-chart'); await pg.wait_for_timeout(500)
     a4 = await pg.evaluate("[...document.querySelectorAll('.an-tips')].map(e=>e.textContent)")
-    ok('n196: Anesia — after three toolbar clicks with the mouse, the next day’s tip is the keyboard one (⌥V vitals …)', len(a4) == 1 and a4[0].startswith('Press ⌥V for vitals'), a4)
+    ok('n196: Anesia — after three toolbar clicks with the mouse, the next day’s tip is the keyboard one (⌥V vitals …)', len(a4) == 1 and a4[0].startswith(('Press ⌥V for vitals', 'Press Alt+V for vitals')), a4)   # n438: this computer's keys
     await pg.keyboard.press('Alt+KeyE'); await pg.wait_for_timeout(500); await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
     await pg.reload(); await pg.wait_for_selector('.an-chart'); await pg.wait_for_timeout(500)
     a5 = await pg.evaluate("[document.querySelectorAll('.an-tips').length, localStorage.getItem('anesia:v1:tip:kb')]")

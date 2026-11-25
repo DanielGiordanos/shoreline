@@ -21,7 +21,7 @@ async def s_a435(br):
     await pg.keyboard.press('Escape'); await pg.wait_for_timeout(500)
     if await pg.locator('[data-drop]:visible').count(): await pg.click('[data-drop]:visible'); await pg.wait_for_timeout(300)
     ok('File management · ⌥N opens New training record on the list, and its tooltip and VoiceOver say so (there was no shortcut)',
-       t_new == 'New training record' and nb == ['New training record (⌥N)', 'Alt+N'], [t_new, nb])
+       t_new == 'New training record' and nb[0].endswith(('(⌥N)', '(Alt+N)')) and nb[1] == 'Alt+N', [t_new, nb])
     # Feedback: an ended record
     await pg.click('.an-seg[aria-label="Show records"] button >> nth=1'); await pg.wait_for_timeout(400)
     await pg.click('text=Training cat 2'); await pg.wait_for_selector('.an-chart'); await pg.wait_for_timeout(800)

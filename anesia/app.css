@@ -1789,3 +1789,7 @@ html.an-expanded .an-who{display:inline-flex;margin-left:auto;align-self:center;
 .an-who b{font-weight:600;color:var(--an-ink)}
 /* a signed record's tile opens its trend */
 .an-tile.ro{cursor:pointer}
+/* PVX-N436 · Loading, Managing accounts: a slow first load says so; an account without access says why and what to do */
+.an-slow{margin:.75rem 0 0;color:var(--an-ink-2);font-size:var(--t-subhead,.9375rem)}
+.an-noaccess{display:grid;gap:.5rem;justify-items:center;max-width:34rem}
+.an-noaccess .an-btn{margin-top:.25rem}
