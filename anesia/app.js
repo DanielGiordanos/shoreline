@@ -419,12 +419,19 @@
   function lsGet(k) { try { var v = localStorage.getItem(LKEY + k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(LKEY + k, JSON.stringify(v)); } catch (e) { } }
   function lsDel(k) { try { localStorage.removeItem(LKEY + k); } catch (e) { } }
+  /* PVX-N434 · Privacy: an unsaved Vitals draft is kept for this tab only (it survives a reload, not the next person) */
+  function dGet(k) { var v = null; try { v = JSON.parse(sessionStorage.getItem(LKEY + k) || 'null'); } catch (e) { } var old = lsGet(k); if (old) { lsDel(k); if (!v) { v = old; dSet(k, v); } } return v; }
+  function dSet(k, v) { try { sessionStorage.setItem(LKEY + k, JSON.stringify(v)); } catch (e) { } }
+  function dDel(k) { try { sessionStorage.removeItem(LKEY + k); } catch (e) { } lsDel(k); }
+  try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf(LKEY + 'draft:') === 0) { var d = k.slice(LKEY.length); if (!sessionStorage.getItem(k)) sessionStorage.setItem(k, localStorage.getItem(k)); localStorage.removeItem(k); } }); } catch (e) { }   /* drafts left by earlier versions move to this tab */
   function localIndex() { return lsGet('index') || []; }
   function slot(id) {
     if (!S.local[id]) S.local[id] = lsGet('rec:' + id) || { base: null, pending: [] };
     return S.local[id];
   }
-  function persistSlot(id) { var s = slot(id); lsSet('rec:' + id, { base: s.base, pending: s.pending }); var ix = localIndex(); if (ix.indexOf(id) < 0) { ix.push(id); lsSet('index', ix); } }
+  function persistSlot(id) { var s = slot(id);
+    if (S.mode === 'server' && !s.pending.length && s.base && s.base.status === 'signed') { lsDel('rec:' + id); lsSet('index', localIndex().filter(function (k) { return k !== id; })); return; }   /* PVX-N434 · Privacy: a signed record isn't kept on this computer */
+    lsSet('rec:' + id, { base: s.base, pending: s.pending, at: Date.now() }); var ix = localIndex(); if (ix.indexOf(id) < 0) { ix.push(id); lsSet('index', ix); } }
   function replay(base, pending, onDrop) {
     var r = base;
     pending.forEach(function (p) {
@@ -496,7 +503,6 @@
     }).then(function (next) {
       save.inflight = false; clearTimeout(save.waitT);
       s.pending.splice(0, n); s.base = next; S.server[id] = next; persistSlot(id);
-      if (!s.pending.length) lsSet('rec:' + id, { base: next, pending: [] });
       if (dropped.length) toast('A change couldn’t be saved: ' + dropped[0], { error: true });   /* PVX-N429 */
       saveChip('saved'); softRender(); syncSheet(id);
       if (Object.keys(S.local).some(function (k) { return S.local[k].pending.length; })) flush();
@@ -610,7 +616,7 @@
       if (b) { b.classList.remove('rep'); void b.offsetWidth; b.classList.add('rep'); setTimeout(function () { b.classList.remove('rep'); }, 450); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Exit expanded view' : 'Expand record'); b.title = on ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)'; }
     };
     if (EMBED) { if (!fromHost) try { parent.postMessage({ anesia: 'expand', on: on }, location.origin); } catch (e) { } apply(); return; }   /* the sheet animates the frame */
-    if (document.startViewTransition && !fromHost && !auto) { try { document.startViewTransition(apply); return; } catch (e) { } }
+    if (document.startViewTransition && !fromHost && !auto) { try { var vtx = document.startViewTransition(apply); /* PVX-N431 */ vtx.ready.catch(function () { }); vtx.finished.catch(function () { }); return; } catch (e) { } }
     apply();
   }
   window.addEventListener('message', function (e) { if (e.origin !== location.origin || !e.data || e.data.anesiaHost !== 'expanded') return; setExpanded(e.data.on, true); });
@@ -637,7 +643,9 @@
         if (!d.exists) return; SH = d.data(); PRE = preFromSheet(SH); S.dirtyUi = true; softRender();
       }, function (e) { console.warn('[Anesia ← sheet]', e); });
       S.unsubList = S.db.collection(COL).where('tenant_id', '==', TENANT).onSnapshot(function (q) {
-        var m = {}; q.forEach(function (d) { m[d.id] = d.data(); }); S.server = m; S.loaded = true; softRender();
+        var m = {}; q.forEach(function (d) { m[d.id] = d.data(); }); S.server = m; S.loaded = true;
+        localIndex().forEach(function (k) { var c = lsGet('rec:' + k); if (m[k] && !(c && c.pending && c.pending.length) && (!c || !c.at || Date.now() - c.at > 12 * 3600000 || m[k].status === 'signed')) { lsDel('rec:' + k); lsSet('index', localIndex().filter(function (x) { return x !== k; })); } });   /* PVX-N434 · Privacy: a saved copy is kept for the case only (signed, or 12 h since it was last changed here, and it goes); copies left by earlier versions go */
+        softRender();
       }, function (e) { if (e && e.code === 'permission-denied') saveChip('denied'); });
       flush(); route();
     });
@@ -721,6 +729,7 @@
         var t = typeof to === 'function' ? to() : $(to); if (t) { t.style.viewTransitionName = 'an-hero'; t.classList.add('an-vt'); }
       });
     } catch (e) { clear(); update(); return; }
+    vt.ready.catch(function () { });   /* PVX-N431: cut short when the window changes size; the change itself still happens */
     vt.finished.then(clear, clear);
   }
   /* rolling numbers: only the characters that changed roll in, upward when the value rose */
@@ -780,23 +789,38 @@
   }
   /* 3. a sparkline grows into the vital's trend */
   var VNAME = { hr: ['Heart rate', 'bpm'], spo2: ['SpO₂', '%'], bp: ['Mean arterial pressure', 'mmHg'], etco2: ['EtCO₂', 'mmHg'], rr: ['Respiratory rate', 'br/min'], temp: ['Temperature', '°F'] };
-  function trendSVG(r, k) {
+  function trendFacts(r, k) {   /* PVX-N433: what the trend says, for its headline and its VoiceOver label */
     var key = k === 'bp' ? 'map' : k, vs = liveVitals(r).filter(function (v) { return v[key] !== undefined; });
-    if (vs.length < 2) return '<p class="an-trend-empty">Not enough readings for a trend yet.</p>';
-    var W = 560, H = 220, P = 28, t0 = vs[0].at, t1 = vs[vs.length - 1].at, vals = vs.map(function (v) { return v[key]; }), rg = vRange(vals, k), lo = rg[0], hi = rg[1];
+    if (vs.length < 2) return null;
+    var vals = vs.map(function (v) { return v[key]; });
+    return { vs: vs, key: key, vals: vals, last: vals[vals.length - 1], lo: Math.min.apply(null, vals), hi: Math.max.apply(null, vals), t0: vs[0].at, t1: vs[vs.length - 1].at, u: VNAME[k][1] };
+  }
+  function trendSum(r, k) {
+    var f = trendFacts(r, k); if (!f) return '';
+    return '<div class="an-trendsum"><p class="now"><b>' + esc(String(f.last)) + '</b> <small>' + esc(f.u) + '</small> <span>at ' + esc(fmtTime(f.t1)) + '</span></p>' +
+      '<p class="rng">Lowest ' + esc(String(f.lo)) + ' · Highest ' + esc(String(f.hi)) + ' · ' + f.vals.length + ' readings</p></div>';
+  }
+  function trendSVG(r, k, Wpx) {   /* PVX-N433: drawn at the width it's shown at, so its labels are text-sized (0.75 rem, never under 11 pt) */
+    var f = trendFacts(r, k);
+    if (!f) return '<p class="an-trend-empty">Not enough readings for a trend yet.</p>';
+    var vs = f.vs, key = f.key, vals = f.vals, t0 = f.t0, t1 = f.t1, rg = vRange(vals, k), lo = rg[0], hi = rg[1];
+    var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16, fs = Math.max(11, rem * .75);
+    var W = Math.max(240, Math.round(Wpx || 560)), H = Math.round(Math.max(170, Math.min(240, W * .4)) + fs * 2), PL = Math.round(fs * 2.9 + 8), PR = Math.round(fs * .75 + 6), PT = Math.round(fs * .7), PB = Math.round(fs * 2.1);
     var pad = (hi - lo) * .15; lo -= pad; hi += pad; if (VCAP[k] !== undefined && hi > VCAP[k] + pad) { lo -= hi - VCAP[k] - pad; hi = VCAP[k] + pad; }
-    var X = function (t) { return P + (t - t0) / Math.max(1, t1 - t0) * (W - 2 * P); }, Y = function (v) { return P / 2 + (1 - (v - lo) / (hi - lo)) * (H - 1.5 * P); };
+    var X = function (t) { return PL + (t - t0) / Math.max(1, t1 - t0) * (W - PL - PR); }, Y = function (v) { return PT + (1 - (v - lo) / (hi - lo)) * (H - PT - PB); };
     var pts = vs.map(function (v) { return X(v.at).toFixed(1) + ',' + Y(v[key]).toFixed(1); }).join(' ');
-    var area = 'M' + X(t0).toFixed(1) + ',' + (H - P) + ' L' + pts.split(' ').join(' L') + ' L' + X(t1).toFixed(1) + ',' + (H - P) + 'Z';
-    return '<svg class="an-trend v-' + k + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(VNAME[k][0] + ' from ' + fmtTime(t0) + ' to ' + fmtTime(t1) + ': ' + vals.join(', ') + ' ' + VNAME[k][1]) + '">' +
+    var area = 'M' + X(t0).toFixed(1) + ',' + (H - PB) + ' L' + pts.split(' ').join(' L') + ' L' + X(t1).toFixed(1) + ',' + (H - PB) + 'Z';
+    var label = VNAME[k][0] + ', ' + vals.length + ' readings from ' + fmtTime(t0) + ' to ' + fmtTime(t1) + '; lowest ' + f.lo + ', highest ' + f.hi + ', latest ' + f.last + ' ' + f.u + '. In order: ' + vals.join(', ') + '.';
+    return '<svg class="an-trend v-' + k + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' +
       (function () { var gs = [hi - pad, (hi + lo) / 2, lo + pad], st = [1, 0.5, 0.1], q = 1;   /* n191: labels never repeat */
         for (var i = 0; i < st.length; i++) { q = st[i]; var lab = gs.map(function (g) { return Math.round(g / q) * q; }); if (lab[0] !== lab[1] && lab[1] !== lab[2]) break; }
-        return gs.map(function (g) { var t = Math.round(g / q) * q; return '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + Y(g).toFixed(1) + '" y2="' + Y(g).toFixed(1) + '" class="g"/><text x="2" y="' + (Y(g) + 4).toFixed(1) + '">' + sig(q < 1 ? Math.round(t * 10) / 10 : t) + '</text>'; }).join(''); })() +
+        return gs.map(function (g) { var t = Math.round(g / q) * q; return '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + Y(g).toFixed(1) + '" y2="' + Y(g).toFixed(1) + '" class="g"/><text x="' + (PL - 8) + '" y="' + (Y(g) + fs * .35).toFixed(1) + '" text-anchor="end">' + sig(q < 1 ? Math.round(t * 10) / 10 : t) + '</text>'; }).join(''); })() +
       '<path class="a" d="' + area + '"/><polyline class="l" points="' + pts + '"/>' + vs.map(function (v) { return '<circle cx="' + X(v.at).toFixed(1) + '" cy="' + Y(v[key]).toFixed(1) + '" r="3.5"/>'; }).join('') +
-      '<text x="' + P + '" y="' + (H - 6) + '">' + fmtTime(t0) + '</text><text x="' + (W - P) + '" y="' + (H - 6) + '" text-anchor="end">' + fmtTime(t1) + '</text></svg>';
+      '<text x="' + PL + '" y="' + (H - fs * .45).toFixed(1) + '">' + fmtTime(t0) + '</text><text x="' + (W - PR) + '" y="' + (H - fs * .45).toFixed(1) + '" text-anchor="end">' + fmtTime(t1) + '</text></svg>';
   }
   function openTrend(r, k, fromEl) {
-    var go = function () { openSheet({ title: VNAME[k][0], body: '<div class="an-trendwrap">' + trendSVG(r, k) + '</div>', anchor: null }); var w = $('#anSheet'); if (w) w.classList.add('vtin'); };
+    var go = function () { openSheet({ title: VNAME[k][0], body: trendSum(r, k) + '<div class="an-trendwrap">' + trendSVG(r, k) + '</div>', anchor: null }); var w = $('#anSheet'); if (w) w.classList.add('vtin');
+      var tw = $('#anSheet .an-trendwrap'); if (tw && tw.clientWidth) tw.innerHTML = trendSVG(r, k, tw.clientWidth); };   /* PVX-N433 */
     var spark = fromEl && $('.an-spark', fromEl);
     if (spark) morph(spark, go, '#anSheet .an-trend'); else go();
   }
@@ -1063,7 +1087,7 @@
     var to = A.timeoutStatus(r), tmo = to ? (to.complete ? tag('cpr', 'Time-out', 'Done ' + esc(fmtTime(to.at)), 'Time-out done at ' + fmtTime(to.at)) : tag('alg', 'Time-out', to.open.length + ' not done', 'Time-out: ' + to.open.length + ' items not done')) : (r.status === 'planned' || r.status === 'active' ? tag('none', 'Time-out', 'Not done', 'Time-out not done yet. Do it') : '');
     var tn = teamNames(r, now()), me = S.me && tn.indexOf(S.me) < 0 && (r.status === 'planned' || r.status === 'active');
     var team = me ? tag('alg', 'Team', 'You’re not on it', 'You are not listed on the team. Add yourself') : tag('', 'Team', String(tn.length), 'Team: ' + tn.join(', '));
-    return '<div class="an-sum' + (ro ? ' ro' : '') + '" role="group" aria-label="Patient summary">' + code + alg + asa + pr + tmo.replace('data-sum', 'data-sto') + team.replace('data-sum', 'data-steam') + '</div>';
+    return '<div class="an-sum' + (ro ? ' ro' : '') + '" role="group" aria-label="Patient summary">' + code + alg + asa + pr + tmo.replace('data-sum', 'data-sto') + team.replace('data-sum', 'data-steam') + (S.mode === 'server' && S.me ? '<span class="an-who">Charting as <b>' + esc(S.me) + '</b></span>' : '') + '</div>';   /* PVX-N435 */
   }
   function confirmSheet(r, then) {
     var p = r.patient, w = A.weightAt(r, now()), lw = lastWeighed(r);
@@ -1109,7 +1133,7 @@
     if (r.status === 'active') return '<span class="an-pill active">Under anesthesia</span>';
     if (r.status === 'signed') return '<span class="an-pill signed">Signed</span>';
     if (A.inRecovery(r)) return '<span class="an-pill rec">In recovery</span>';
-    if (r.status === 'ended') return '<span class="an-pill warn">Ended · not signed</span>';
+    if (r.status === 'ended') return '<span class="an-pill warn">Ended · Not signed</span>';
     return '<span class="an-pill">Planned</span>';
   }
   function sheetListHTML() {
@@ -1118,7 +1142,7 @@
     var cards = recs.map(function (r) { var w = A.weightAt(r, now());
       return '<li><a class="an-card" href="#r=' + esc(r.id) + '" data-open="' + esc(r.id) + '"><span class="t"><b>' + esc(r.procedure || 'Anesthesia') + '</b>' + statusPill(r) + '</span><span class="s">' + esc(r.start ? fmtDate(r.start) + ' · ' + fmtTime(r.start) + (r.end ? '–' + fmtTime(r.end) : '') : 'Created ' + fmtDate(r.created_at)) + (w ? ' · ' + sig(w) + ' kg' : '') + '</span><span class="m">' + esc(r.team.resident || '') + (r.team.supervisor ? ' · ' + esc(r.team.supervisor) : '') + '</span></a></li>'; }).join('');
     return '<header class="an-lhead an-shead"><div><h2>Anesthesia</h2><p>' + (recs.length ? recs.length + (recs.length === 1 ? ' record' : ' records') + ' for ' + esc(nm) : 'No anesthesia record for ' + esc(nm) + ' yet') + '</p></div>' +
-      '<button type="button" class="an-btn primary" id="anNew">' + icon('plus') + 'Start anesthesia record</button></header>' +
+      '<button type="button" class="an-btn primary" id="anNew" title="Start anesthesia record (⌥N)" aria-keyshortcuts="Alt+N">' + icon('plus') + 'Start anesthesia record</button></header>' +
       (S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true"><li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li></ul>'
         : recs.length ? '<ul class="an-list">' + cards + '</ul>' : '<div class="an-empty"><b>Ready when ' + esc(nm) + ' goes under</b>Start a record and the patient’s name, weight, code status and allergies come from this treatment sheet.</div>') +
       '<p class="an-save an-vh" id="anSave"></p><p class="an-vh" role="status" id="anSaveLive"></p>';
@@ -1139,7 +1163,7 @@
     }).join('');
     var empty = { active: ['No training records in progress', 'Start a training record for the patient you are about to anesthetize.'], ended: ['Nothing waiting to be signed', 'Ended records appear here until they are signed.'], signed: ['No signed records yet', 'Signed records stay here, read-only.'] }[S.filter];
     return '<header class="an-lhead"><div><h1>Anesia</h1><p>Anesthesia records for training. They are not part of the medical record.</p></div>' +
-      '<button type="button" class="an-btn primary" id="anNew">' + icon('plus') + 'New training record</button></header>' +
+      '<button type="button" class="an-btn primary" id="anNew" title="New training record (⌥N)" aria-keyshortcuts="Alt+N">' + icon('plus') + 'New training record</button></header>' +
       (S.mode === 'local' ? '<div class="an-banner info"><span><b>Preview.</b> Records are saved on this device only.</span></div>' : '') +
       '<div class="an-seg" role="radiogroup" aria-label="Show records" data-rove="radio">' + tab('active', 'In progress') + tab('ended', 'To sign') + tab('signed', 'Signed') + '</div>' +
       (S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true" aria-label="Loading records">' + [1, 2, 3].map(function () { return '<li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li>'; }).join('') + '</ul><p class="an-vh" role="status">Loading records…</p>'
@@ -1246,7 +1270,7 @@
   function vIcon(k) { return icon('v-' + k, { fill: true, cls: 'an-vi' }); }
   var CHEV = '<svg class="an-chev" viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path d="M7 4.5l4.5 4.5L7 13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function nowHTML(r) {
-    var t = now(), vs = liveVitals(r), signed = r.status === 'signed', due = vitalsDue(r, t), live = r.status === 'active';
+    var t = now(), vs = liveVitals(r), signed = r.status === 'signed', due = vitalsDue(r, t), live = r.status === 'active', past = signed || r.status === 'ended';   /* PVX-N435 */
     var last = function (k) { for (var i = vs.length - 1; i >= 0; i--) if (vs[i][k] !== undefined) return vs[i]; return null; };
     var series = function (k) { return vs.filter(function (v) { return v[k] !== undefined; }).slice(-12).map(function (v) { return v[k]; }); };
     var lastAt = vs.length ? vs[vs.length - 1].at : null;
@@ -1256,12 +1280,12 @@
       if (!v) { val = ''; aria = m[1] + ', no value yet'; }
       else if (k === 'bp') { val = v.sap !== undefined ? sig(v.sap) + '/' + (v.dap !== undefined ? sig(v.dap) : '—') : sig(v.map); if (v.sap !== undefined && v.map !== undefined) unit = '(' + sig(v.map) + ') mmHg'; else if (v.sap === undefined) unit = 'mmHg mean'; aria = 'Blood pressure ' + (v.sap !== undefined ? v.sap + ' over ' + (v.dap !== undefined ? v.dap : 'unknown') + ', ' : '') + (v.map !== undefined ? 'mean ' + v.map : ''); }
       else { val = sig(v[k]); aria = m[1] + ' ' + v[k] + ' ' + m[2]; }
-      var age = v ? Math.floor((t - v.at) / MIN) : null, stale = age !== null && age >= 15;
+      var age = v ? Math.floor((t - v.at) / MIN) : null, stale = !past && age !== null && age >= 15;   /* PVX-N435: an ended record's readings aren't late */
       var tk = r.id + ':' + k, pn = performance.now(); if (S.prevTiles[tk] !== undefined && S.prevTiles[tk].v !== val) { S.prevTiles[tk].until = pn + 600; MO.from[tk] = S.prevTiles[tk].v; fire('roll:' + tk); } var chg = !!(S.prevTiles[tk] && S.prevTiles[tk].until > pn); S.prevTiles[tk] = { v: val, until: S.prevTiles[tk] ? S.prevTiles[tk].until : 0 };   /* a new reading flashes once */
-      return '<button type="button" class="an-tile' + (stale ? ' stale' : '') + (chg ? ' chg' : '') + '" data-vk="' + k + '"' + (signed ? ' disabled' : '') + ' aria-label="' + esc(aria) + (v ? ', ' + age + ' minutes ago' : '') + (signed ? '' : '. Enter ' + m[1]) + (v ? '. Press T for the trend' : '') + '" aria-keyshortcuts="T">' +
+      return '<button type="button" class="an-tile' + (stale ? ' stale' : '') + (chg ? ' chg' : '') + '" data-vk="' + k + '"' + (signed ? (v ? ' data-ro="1"' : ' disabled') : '') + ' aria-label="' + esc(aria) + (v ? (past ? ', at ' + fmtTime(v.at) : ', ' + age + ' minutes ago') : '') + (signed ? (v ? '. Show the trend' : '') : '. Enter ' + m[1]) + (v && !signed && (matchMedia('(any-pointer:fine)').matches || matchMedia('(any-hover:hover)').matches) ? '. Press T for the trend' : '') + '" aria-keyshortcuts="T">' +
         '<span class="hd"><b class="tag v-' + k + '">' + vIcon(k) + m[1] + '</b>' + (signed ? '' : CHEV) + '</span>' +
         (v ? '<span class="v"><b' + (chg && MO.from[tk] ? ' class="an-roll"' : '') + '>' + (chg && MO.from[tk] && playing('roll:' + tk, 600) !== null ? rollHTML(MO.from[tk], val, playing('roll:' + tk, 600)) : val) + '</b><small>' + unit + '</small></span>' : '<span class="v nd">No data</span>') +
-        '<span class="f"><span' + (v ? ' data-at="' + v.at + '"' : '') + (v && v.at === lastAt && !stale ? ' class="same"' : '') + '>' + (v ? (age < 1 ? 'Just now' : age + ' min ago') : 'Not yet') + '</span>' + spark(series(k === 'bp' ? 'map' : k), k) + '</span></button>';
+        '<span class="f"><span' + (v && !past ? ' data-at="' + v.at + '"' : '') + (v && v.at === lastAt && !stale ? ' class="same"' : '') + '>' + (v ? (past ? fmtTime(v.at) : age < 1 ? 'Just now' : age + ' min ago') : 'Not yet') + '</span>' + spark(series(k === 'bp' ? 'map' : k), k) + '</span></button>';
     }).join('');
     var gasRows = ['iso', 'sevo', 'o2'].map(function (a) { var g = A.gasAt(r, a, t); return g === null || (g === 0 && a !== 'o2') ? '' : '<button type="button" class="an-nrow" data-gas="' + a + '"' + (signed ? ' disabled' : '') + '><span class="an-key g-' + a + '">' + AGENT[a].name + '</span><b>' + sig(g) + ' <i>' + AGENT[a].unit + '</i></b></button>'; }).join('');
     var running = r.infusions.filter(function (i) { return !i.void && !i.end; });
@@ -1280,7 +1304,7 @@
     var fb = A.balance(r, r.end && r.end < t ? r.end : t), fbRow = (r.outputs || []).length ? '<h3>Fluid balance</h3><div class="an-nlist"><div class="an-nrow an-nbal"><span>In ' + sig(fb.inTotal) + ' · out ' + sig(fb.outTotal) + ' mL</span><b>' + (fb.net >= 0 ? '+' : '−') + sig(Math.abs(fb.net)) + ' <i>mL</i></b></div></div>' : '';
     var form = S.vOpen && S.vOpen === r.id && !signed ? vitalsFormHTML(r) : '';
     return '<aside class="an-nowcol" aria-label="Now">' + recoveryHTML(r, t) +
-      '<div class="an-nh"><div><h2>Now</h2>' + (lastAt ? '<p class="an-nlast">Last check ' + (live ? '<span data-last="' + lastAt + '">' + ago(t - lastAt) + '</span>' : 'at ' + fmtTime(lastAt)) + '</p>' : '<p class="an-nlast">No vitals yet</p>') + '</div>' + (due ? '<span class="an-pill warn due" role="status">Vitals due · ' + due + ' min</span>' : '<span class="an-nt">' + fmtTime(t) + '</span>') + '</div>' +
+      '<div class="an-nh"><div><h2>' + (past ? 'Last readings' : 'Now') + '</h2>' + (lastAt ? '<p class="an-nlast">Last check ' + (live ? '<span data-last="' + lastAt + '">' + ago(t - lastAt) + '</span>' : 'at ' + fmtTime(lastAt)) + '</p>' : '<p class="an-nlast">No vitals yet</p>') + '</div>' + (due ? '<span class="an-pill warn due" role="status">Vitals due · ' + due + ' min</span>' : past ? '' : '<span class="an-nt">' + fmtTime(t) + '</span>') + '</div>' +
       (form || '<div class="an-tiles">' + tiles + '</div>') +
       (abxRows ? '<h3>Antibiotics</h3><div class="an-nlist">' + abxRows + '</div>' : '') +
       (gasRows ? '<h3>Gases</h3><div class="an-nlist">' + gasRows + '</div>' : '') +
@@ -1309,7 +1333,7 @@
     var f = $('#anVForm'); if (!f) return;
     var inputs = $$('input[inputmode]', f);
     inputs.forEach(function (inp) { inp.addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; var vis = inputs.filter(function (x) { return !x.closest('[hidden]'); }), i = vis.indexOf(inp); if (i > -1 && i < vis.length - 1) { e.preventDefault(); vis[i + 1].focus(); } }); });
-    var drop = function () { morph($('#anVForm'), function () { S.vOpen = null; S.keep = {}; S.vTime = null; lsDel('draft:' + r.id); render(); }, '.an-tiles'); var b = $('[data-act=vitals]'); if (b) b.focus(); };
+    var drop = function () { morph($('#anVForm'), function () { S.vOpen = null; S.keep = {}; S.vTime = null; dDel('draft:' + r.id); render(); }, '.an-tiles'); var b = $('[data-act=vitals]'); if (b) b.focus(); };
     var ecgSel = $('#nv_ecg', f), typed = function () { return inputs.some(function (i) { return i.value.trim() !== ''; }) || !!(ecgSel && ecgSel.value); };
     var vm = $('[data-vmore]', f); if (vm) vm.onclick = function () { S.vMore = !S.vMore; var box = $('#anVMore'); box.hidden = !S.vMore; vm.setAttribute('aria-expanded', String(S.vMore)); vm.textContent = S.vMore ? 'Fewer monitors' : 'More monitors'; if (S.vMore) $('#nv_fio2').focus(); };
     var askDrop = function () { if (!typed()) return drop(); var d = $('[data-vdiscard]', f); d.hidden = false; $('[data-vkeep]', f).focus(); };
@@ -1330,7 +1354,7 @@
         var o = {}; o[k] = inp.value; var cv = A.checkVitals(o);
         if (cv.errors[k]) { fe.textContent = cv.errors[k]; inp.setAttribute('aria-invalid', 'true'); } else { fe.textContent = ''; inp.removeAttribute('aria-invalid'); }
       });
-      inp.addEventListener('input', function () { var d = {}; inputs.forEach(function (i) { if (i.value) d[i.id] = { v: i.value }; }); lsSet('draft:' + r.id, d); });
+      inp.addEventListener('input', function () { var d = {}; inputs.forEach(function (i) { if (i.value) d[i.id] = { v: i.value }; }); dSet('draft:' + r.id, d); });
     });
     /* no "same as last": residents read every value off the monitor (n153 decision) */
     inputs.forEach(function (inp) { inp.addEventListener('input', function () { inp.classList.remove('filled'); }); });
@@ -1349,7 +1373,7 @@
         if (ex.errors) Object.keys(ex.errors).forEach(function (k) { var el = $('#nv_' + k), fe = $('[data-ferr="' + k + '"]', f); if (el) el.setAttribute('aria-invalid', 'true'); if (fe) fe.textContent = ex.errors[k]; });
         var bad1 = $('[aria-invalid]', f) || inputs[0]; bad1.focus(); return;
       }
-      morph($('#anVForm'), function () { S.vOpen = null; S.keep = {}; S.vTime = null; lsDel('draft:' + r.id); render(); }, '.an-tiles'); var b = $('[data-act=vitals]'); if (b) b.focus();
+      morph($('#anVForm'), function () { S.vOpen = null; S.keep = {}; S.vTime = null; dDel('draft:' + r.id); render(); }, '.an-tiles'); var b = $('[data-act=vitals]'); if (b) b.focus();
     };
   }
 
@@ -1426,7 +1450,7 @@
       var infs = r.infusions.filter(function (i) { return i.drugId === id; }), both = infs.length && ds.length;
       var L = lanes(ds, 76), two = !both && L.some(function (l) { return l === 1; });
       var mk = ds.map(function (x, i) { return '<button type="button" class="an-mk c-' + drugClass(d) + (two ? (L[i] ? ' l2' : ' l1') : '') + (x.void ? ' void' : '') + (S.fresh === x.id ? ' fresh' : '') + (x.noWeight ? ' nw' : '') + '" data-entry="dose:' + x.id + '" style="left:' + X(x.at) + 'px" aria-label="' + esc(d.name) + ' ' + amt(x.mg) + ' ' + esc(x.route) + ' at ' + fmtTime(x.at) + (x.void ? ', struck through' : '') + '">' + amt(x.mg) + '</button>'; }).join('');
-      var sub = [conc(d.conc), classLabel(d)].concat(infs.some(function (i) { return !i.end && !i.void; }) ? ['running'] : []).filter(Boolean).join(' · ');
+      var sub = [conc(d.conc), classLabel(d)].concat(infs.some(function (i) { return !i.end && !i.void; }) ? ['Running'] : []).filter(Boolean).join(' · ');
       row('<b>' + dot(d) + esc(d.name) + '</b><span>' + esc(sub) + '</span>', infs.map(function (i) { return infBar(i, d); }).join('') + mk, both ? 'both' : '', both ? '4.5rem' : two ? '3.75rem' : '');
     });
 
@@ -1554,7 +1578,7 @@
         });
       };
     });
-    $$('[data-vk]').forEach(function (b) { b.onclick = function (e) { var k = b.getAttribute('data-vk'); if (e && e.target.closest && e.target.closest('.an-spark')) { openTrend(r, k, b); return; } morph(b, function () { openVitals(r, k === 'bp' ? 'sap' : k); }, '#anVForm'); }; b.addEventListener('keydown', function (e) { if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); openTrend(r, b.getAttribute('data-vk'), b); } }); });
+    $$('[data-vk]').forEach(function (b) { if (b.getAttribute('data-ro')) b.classList.add('ro'); b.onclick = function (e) { var k = b.getAttribute('data-vk'); if (b.getAttribute('data-ro') || (e && e.target.closest && e.target.closest('.an-spark'))) { openTrend(r, k, b); return; }   /* PVX-N435: a signed record's tile shows its trend */ morph(b, function () { openVitals(r, k === 'bp' ? 'sap' : k); }, '#anVForm'); }; b.addEventListener('keydown', function (e) { if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); openTrend(r, b.getAttribute('data-vk'), b); } }); });
     $$('[data-inf]').forEach(function (b) { b.onclick = function () { infusionDetail(r, b.getAttribute('data-inf')); }; });
     $$('[data-entry]').forEach(function (b) { b.onclick = function () { var p = b.getAttribute('data-entry').split(':'); entrySheet(r, p[0], p[1], b); }; });
     $$('[data-gas]').forEach(function (b) { b.onclick = function () { gasSheet(r, b.getAttribute('data-gas')); }; });
@@ -1601,10 +1625,26 @@
     var x = (t - cm.from) * cm.px; if (x < ch.scrollLeft + 40 || x > ch.scrollLeft + ch.clientWidth - 40) ch.scrollLeft = Math.max(0, x - ch.clientWidth / 2);
   }
   /* Share and Print (Activity views, Printing) */
+  /* PVX-N434 · Entering data, Drag and drop: a value pasted or dropped with the field's own unit ("98 bpm") keeps its number */
+  function unitNum(c, t) {
+    var box = c.closest('.an-f,.an-vf'), u = box && $('.u, label i, span i', box); u = u ? u.textContent.trim() : ''; if (!u) return null;
+    var m = /^\s*([-+]?\d+(?:[.,]\d+)?)\s*(\S.*?)\s*$/.exec(t || ''); if (!m) return null;
+    var a = m[2].toLowerCase().replace(/\s+/g, ''), b = u.toLowerCase().replace(/\s+/g, ''); return a === b ? m[1] : null;
+  }
+  function isNumField(c) { return c && c.matches && c.matches('input[inputmode=decimal],input[inputmode=numeric]') && !c.disabled && !c.readOnly; }
+  document.addEventListener('paste', function (e) {
+    var c = e.target, t = e.clipboardData && e.clipboardData.getData('text'); if (!isNumField(c)) return; var n = unitNum(c, t); if (n === null) return;
+    e.preventDefault(); try { c.setRangeText(n, c.selectionStart, c.selectionEnd, 'end'); } catch (x) { c.value = n; } c.dispatchEvent(new Event('input', { bubbles: true }));
+  }, true);
+  document.addEventListener('drop', function (e) {
+    var c = e.target, t = e.dataTransfer && e.dataTransfer.getData('text/plain'); if (!isNumField(c)) return; var n = unitNum(c, t); if (n === null) return;
+    e.preventDefault(); c.value = n; c.focus(); c.dispatchEvent(new Event('input', { bubbles: true }));
+  }, true);
   function shareRecord(r) {
     var url = location.href, title = (r.patient.name || 'Training record') + ' · Anesia';
-    if (navigator.share) { navigator.share({ title: title, text: 'Training anesthesia record', url: url }).catch(function () { }); return; }
-    try { navigator.clipboard.writeText(url).then(function () { toast('Link copied'); }, function () { toast('Copy this link: ' + url, { stay: true }); }); } catch (e) { toast('Copy this link: ' + url, { stay: true }); }   /* PVX-N429 */
+    var who = S.mode === 'server' ? 'it opens this record for signed-in staff' : 'this Preview record is on this device only, so the link opens only here';   /* PVX-N434 · Collaboration and sharing */
+    if (navigator.share && S.mode === 'server') { navigator.share({ title: title, text: 'Training anesthesia record. It opens for signed-in staff.', url: url }).catch(function () { }); return; }
+    try { navigator.clipboard.writeText(url).then(function () { toast('Link copied — ' + who); }, function () { toast('Copy this link: ' + url, { stay: true }); }); } catch (e) { toast('Copy this link: ' + url, { stay: true }); }   /* PVX-N429 */
   }
   function printRecord() { window.print(); }
   window.addEventListener('beforeprint', function () {
@@ -1639,7 +1679,7 @@
   window.addEventListener('pagehide', stopPresence);
   function openVitals(r, field) {
     if (r.status === 'signed') return;
-    if (S.vOpen !== r.id) { S.keep = lsGet('draft:' + r.id) || {}; S.vTime = null; S.opening = 'vform'; } S.vOpen = r.id; render(); S.opening = null;
+    if (S.vOpen !== r.id) { S.keep = dGet('draft:' + r.id) || {}; S.vTime = null; S.opening = 'vform'; } S.vOpen = r.id; render(); S.opening = null;
     var el = $('#nv_' + (field || 'hr')); if (el) { el.focus(); try { el.scrollIntoView({ block: 'nearest' }); } catch (e) { } }
   }
   /* a bar's setting stays readable when its start has scrolled out of view: the label slides along the left edge */
@@ -1762,6 +1802,17 @@
     });
     $$('input[type=checkbox]', wrap).forEach(function (c) { c.setAttribute('role', 'switch'); c.setAttribute('switch', ''); c.classList.add('an-switch'); c.addEventListener('change', function () { try { if (navigator.vibrate && matchMedia('(pointer:coarse)').matches) navigator.vibrate(8); } catch (e) { } }); });   /* iOS switches, not checkboxes */
     $$('input[name=time]', wrap).forEach(function (t) { t.addEventListener('input', function () { t.dataset.touched = '1'; }); });
+    /* PVX-N432 · Privacy: the computers are shared, so no field offers what was typed before (for another patient) */
+    $$('input:not([type=hidden]):not([type=checkbox]):not([type=radio]),textarea', wrap).forEach(function (c) { if (!c.hasAttribute('autocomplete')) c.setAttribute('autocomplete', 'off'); });
+    /* PVX-N434 · Entering data: a number field says at once when what's typed isn't a number; the sheet's own checks still run on its action */
+    $$('input[inputmode=decimal],input[inputmode=numeric]', wrap).forEach(function (c) {
+      if (!c.name) return; var box = c.closest('.an-f') || c.parentNode, fe = box.querySelector('[data-ferr="' + c.name + '"]');
+      var show = function (t) {
+        if (!fe && t) { fe = document.createElement('em'); fe.className = 'err an-nerr'; fe.setAttribute('data-ferr', c.name); fe.id = 'anNE_' + c.name; box.appendChild(fe); c.setAttribute('aria-describedby', ((c.getAttribute('aria-describedby') || '') + ' ' + fe.id).trim()); }
+        if (fe) fe.textContent = t; if (t) c.setAttribute('aria-invalid', 'true'); else c.removeAttribute('aria-invalid'); };
+      c.addEventListener('blur', function () { var v = c.value.trim(); show(v && num(v) === null ? 'Enter a number' : ''); });
+      c.addEventListener('input', function () { if (c.getAttribute('aria-invalid') && (!c.value.trim() || num(c.value) !== null)) show(''); });
+    });
     setTimeout(function () { var a = document.activeElement; if (a && a !== wrap && wrap.contains(a) && a.matches('input,select,textarea,button:not([data-x])')) return;   /* n200: don't take focus back from a field already chosen */
       var first = $(o.focus || 'input:not([type=checkbox]):not([type=hidden]),select,textarea', wrap) || ok; if (first) first.focus(); }, 30);
     return wrap;
@@ -2462,6 +2513,7 @@
   document.addEventListener('keydown', function (e) {
     var a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
     if ($('#anSheet')) { if (e.key === 'Escape' && !$('#anSheet').contains(document.activeElement)) { e.preventDefault(); var xb = $('#anSheet [data-x]'); if (xb) xb.click(); } return; }   /* n172: Esc before focus has moved into a new sheet */
+    if (!typing && !S.cur && e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyN') { var nb = $('#anNew'); if (nb && !nb.disabled) { e.preventDefault(); nb.click(); } return; }   /* PVX-N435 · File management: ⌥N, New */
     if (typing || !S.cur) return;
     if (e.key === 'Escape' && XP && !e.defaultPrevented) { e.preventDefault(); setExpanded(false); return; }   /* an open sheet takes Esc first */
     if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyF' && window.innerWidth > 600) { e.preventDefault(); setExpanded(!XP); return; }

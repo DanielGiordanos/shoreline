@@ -112,7 +112,7 @@
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#0A1222">
+<meta name="theme-color" content="#0D1730">
 <title>Anesia · Pravix</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -275,13 +275,13 @@ body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){co
  html body .topnav .nav-center .nav-item{flex:0 0 auto;padding:6px 10px}
  html body .topnav img.logo{height:44px}}
 </style>
-<link rel="stylesheet" href="app.css?v=84c7836f9e">
+<link rel="stylesheet" href="app.css?v=ee305302bb">
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script defer src="engine.js?v=67a3d99dfb"></script>
 <script defer src="/assets/pvx-yakuri.js?v=77dffe7ef6"></script>
-<script defer src="app.js?v=76a4676299"></script>
+<script defer src="app.js?v=5c977c089e"></script>
 <script>/* n254: Give drug shows the chosen drug's Yakuri line (held, or "no clinical approval yet") with Open in Yakuri */
 (function(){ function sheet(){ return document.getElementById('anSheet'); }
   function chosen(w){ var on=w.querySelector('[data-pick][aria-pressed="true"]'); if(on&&on.getAttribute('data-pick')!=='other') return on.textContent;
@@ -314,6 +314,22 @@ body.dark #pvxTopnav .nav-right>button:not(.logout-button):not(.theme-toggle){co
 })();
 </script>
 <script>function toggleDark(){ document.body.classList.toggle('dark'); }</script>
+<script id="pvx-n430-js">
+/* PVX-N430 · Dark Mode: the browser and the device's bars follow Anesia's appearance (which follows the person, n258).
+   color-scheme: the system's own controls (time fields, pop-up lists, scroll bars) are drawn in Anesia's appearance, not
+   the device's, when the two differ. theme-color: Safari's bars and the Home Screen app's status bar take the top bar's
+   colour, #0D1730 in dark and white in light (they stayed #0A1222 over the light page). */
+(function(){
+  var de=document.documentElement, meta=document.querySelector('meta[name="theme-color"]');
+  function sync(){
+    var dark=document.body.classList.contains('dark');
+    if(de.style.colorScheme!==(dark?'dark':'light')) de.style.colorScheme=dark?'dark':'light';
+    if(meta&&meta.getAttribute('content')!==(dark?'#0D1730':'#FFFFFF')) meta.setAttribute('content',dark?'#0D1730':'#FFFFFF');
+  }
+  sync();
+  try{ new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+})();
+</script>
 <nav class="topnav pvx-topnav" aria-label="Apps" id="pvxTopnav">
     <div class="brandwrap">
       <img class="logo logo-dark"  src="/assets/img/logo-dark.png" alt="VCA Shoreline">
