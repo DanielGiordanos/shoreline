@@ -1793,3 +1793,6 @@ html.an-expanded .an-who{display:inline-flex;margin-left:auto;align-self:center;
 .an-slow{margin:.75rem 0 0;color:var(--an-ink-2);font-size:var(--t-subhead,.9375rem)}
 .an-noaccess{display:grid;gap:.5rem;justify-items:center;max-width:34rem}
 .an-noaccess .an-btn{margin-top:.25rem}
+
+/* PVX-N439 · Printing: screen-only controls stay off the paper (the copy of the side panel kept for print has no ids) */
+@media print{#anExpand,.an-side .an-btn,.an-print-only .an-btn{display:none!important}.an-chart{-webkit-print-color-adjust:exact;print-color-adjust:exact}}

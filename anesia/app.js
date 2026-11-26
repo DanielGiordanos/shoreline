@@ -1659,13 +1659,21 @@
     try { navigator.clipboard.writeText(url).then(function () { toast('Link copied — ' + who); }, function () { toast('Copy this link: ' + url, { stay: true }); }); } catch (e) { toast('Copy this link: ' + url, { stay: true }); }   /* PVX-N429 */
   }
   function printRecord() { window.print(); }
+  /* PVX-N439 · Printing: paper is always light, and the chart prints from its start (its row names were scrolled off) */
+  var paperDark = false, paperScroll = null;
+  function paperOn() { if (document.body.classList.contains('dark')) { paperDark = true; document.body.classList.remove('dark'); } }
+  function paperOff() { if (paperDark) { paperDark = false; document.body.classList.add('dark'); } }
   window.addEventListener('beforeprint', function () {
+    paperOn();
     if (S.cur && !S.histAll) { S.histAll = true; S.printHist = true; render(true); }   /* paper gets the whole history */
     var ch = $('.an-chart-in'); if (!ch) return; document.body.classList.add('an-printing');
+    var sc = ch.parentNode; paperScroll = { el: sc, x: sc.scrollLeft }; sc.scrollLeft = 0;
     var avail = 1000, w = ch.scrollWidth; ch.style.transformOrigin = 'top left'; ch.style.transform = w > avail ? 'scale(' + (avail / w) + ')' : '';
     ch.parentNode.style.height = (ch.scrollHeight * Math.min(1, avail / w)) + 'px';
   });
-  window.addEventListener('afterprint', function () { if (S.printHist) { S.printHist = false; S.histAll = false; render(true); } var ch = $('.an-chart-in'); document.body.classList.remove('an-printing'); if (ch) { ch.style.transform = ''; ch.parentNode.style.height = ''; } });
+  window.addEventListener('afterprint', function () { if (S.printHist) { S.printHist = false; S.histAll = false; render(true); } var ch = $('.an-chart-in'); document.body.classList.remove('an-printing'); if (ch) { ch.style.transform = ''; ch.parentNode.style.height = ''; }
+    if (paperScroll) { var c2 = $('.an-chart'); if (c2) c2.scrollLeft = paperScroll.x; paperScroll = null; } paperOff(); });   /* PVX-N439 */
+  try { var mqp = matchMedia('print'), onp = function (e) { if (e.matches) paperOn(); else setTimeout(paperOff, 0); }; if (mqp.addEventListener) mqp.addEventListener('change', onp); else mqp.addListener(onp); } catch (e) { }   /* PVX-N439: Safari's own print */
   /* who else has this record open (Collaboration) — one small document per person, refreshed every minute */
   var presT = 0, presUnsub = null, presRec = null;
   function presenceChip(r) {
