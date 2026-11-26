@@ -1202,7 +1202,7 @@ async def s_n207(br):
     await shot(pg, 'n207-anesia-shortcuts')
     await pg.keyboard.press('Alt+KeyV'); await pg.wait_for_timeout(300)
     a3 = await pg.evaluate("!!document.getElementById('anVForm')")
-    ok('n207: ? in Anesia lists Charting, View, Edit and Help; ⌥V waits while the sheet is open', a2 and a2['groups'] == ['Charting (in a record)', 'View', 'Edit', 'Help'] and a2['n'] == 13 and not a3, [a2, a3])
+    ok('n207: ? in Anesia lists Charting, View, Edit and Help; ⌥V waits while the sheet is open', a2 and a2['groups'][-4:] == ['Charting (in a record)', 'View', 'Edit', 'Help'] and a2['groups'][:-4] in ([], ['Records (on the list)']) and a2['n'] == 13 + 2 * len(a2['groups'][:-4]) and not a3, [a2, a3])   # n440: a Records group first
     await pg.click('.pvx-ks-x'); await pg.wait_for_timeout(250)
     a4 = await pg.evaluate("!!document.querySelector('.pvx-ks')")
     ok('n207: ✕ Close closes the sheet (n211)', not a4, a4)
