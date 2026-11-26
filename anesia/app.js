@@ -366,6 +366,7 @@
     share: '<path class="s" d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v7A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/><path d="M12 3.5v11M8.2 7.3L12 3.5l3.8 3.8"/>',
     print: '<path class="s" d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    trend: '<path d="M4 4.5v15.5h16"/><path d="M7.5 15.25l3.5-4 3 2.5 4.75-6"/>', search: '<circle cx="10.75" cy="10.75" r="6.25"/><path d="M15.4 15.4l4.85 4.85"/>',   /* PVX-N440 */
     flag: '<path d="M5.5 21V3.5"/><path class="b s" d="M5.5 4h12l-2.6 4.25 2.6 4.25h-12z"/>',
     scale: '<circle cx="12" cy="5" r="2.2"/><path class="b s" d="M7 8.5h10a1.8 1.8 0 0 1 1.75 1.4l1.9 8.1A2 2 0 0 1 18.7 20.5H5.3A2 2 0 0 1 3.35 18l1.9-8.1A1.8 1.8 0 0 1 7 8.5z"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
@@ -386,7 +387,7 @@
     'v-rr': '<path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h7"/>',
     'v-temp': '<path class="b" d="M9.5 14.2V5.5a2.5 2.5 0 0 1 5 0v8.7a4.5 4.5 0 1 1-5 0z"/><path class="s k" d="M12 9v7"/>'
   };
-  var SYMOPT = {"more":[1.38,0.01,0.01],"plus":[1.114,0.01,0.01],"emer":[0.956,0.01,0.07],"back":[1.18,0.33,0.01],"heart":[1.033,0.2,0.01],"syringe":[0.915,-0.36,0.42],"drip":[0.98,0.06,-0.35],"output":[1.014,0.01,-0.52],"airway":[1.039,0.06,-0.39],"idcheck":[0.941,0.46,-0.07],"gas":[1.007,0.01,-0.31],"share":[1.004,0.01,0.48],"print":[0.893,0.01,-0.89],"close":[1.18,0.01,0.01],"flag":[1.016,1.8,0.61],"scale":[0.95,0.01,0.58],"check":[1.18,-0.01,-0.26],"checkd":[1.18,-0.01,-0.26],"info":[0.947,0.01,-0.07],"sidebar":[0.896,-0.23,0.01],"stop":[1.166,0.01,0.01],"pen":[1.021,0.66,-0.64],"lockd":[1.028,0.01,-0.06],"timer":[0.989,-0.05,0.58],"expand":[0.991,0.01,0.01],"collapse":[1.004,0.01,0.01],"v-hr":[1.0,0.01,-0.33],"v-spo2":[0.957,0.01,-0.52],"v-bp":[0.894,-0.12,-0.07],"v-etco2":[0.89,0.01,-0.47],"v-rr":[0.936,0.24,0.57],"v-temp":[0.961,0.01,-0.96],"compose":[0.95,-1.13,1.03]};   /* [scale, dx, dy] from tests/optical_measure.py */
+  var SYMOPT = {"search":[1,-0.12,-0.12],"trend":[1,1,-1.39],"more":[1.38,0.01,0.01],"plus":[1.114,0.01,0.01],"emer":[0.956,0.01,0.07],"back":[1.18,0.33,0.01],"heart":[1.033,0.2,0.01],"syringe":[0.915,-0.36,0.42],"drip":[0.98,0.06,-0.35],"output":[1.014,0.01,-0.52],"airway":[1.039,0.06,-0.39],"idcheck":[0.941,0.46,-0.07],"gas":[1.007,0.01,-0.31],"share":[1.004,0.01,0.48],"print":[0.893,0.01,-0.89],"close":[1.18,0.01,0.01],"flag":[1.016,1.8,0.61],"scale":[0.95,0.01,0.58],"check":[1.18,-0.01,-0.26],"checkd":[1.18,-0.01,-0.26],"info":[0.947,0.01,-0.07],"sidebar":[0.896,-0.23,0.01],"stop":[1.166,0.01,0.01],"pen":[1.021,0.66,-0.64],"lockd":[1.028,0.01,-0.06],"timer":[0.989,-0.05,0.58],"expand":[0.991,0.01,0.01],"collapse":[1.004,0.01,0.01],"v-hr":[1.0,0.01,-0.33],"v-spo2":[0.957,0.01,-0.52],"v-bp":[0.894,-0.12,-0.07],"v-etco2":[0.89,0.01,-0.47],"v-rr":[0.936,0.24,0.57],"v-temp":[0.961,0.01,-0.96],"compose":[0.95,-1.13,1.03]};   /* [scale, dx, dy] from tests/optical_measure.py */
   var SYMFLIP = { back: 1 };   /* directional symbols mirror in right-to-left layouts */
   var symN = 0;
   /* icon(name, {fill, slash, scale: 's'|'m'|'l', cls}) */
@@ -657,6 +658,20 @@
   function srSay(t) { var el = document.getElementById('anSr'); if (!el) { el = document.createElement('div'); el.id = 'anSr'; el.className = 'an-vh'; el.setAttribute('aria-live', 'polite'); document.body.appendChild(el); }
     el.textContent = ''; setTimeout(function () { el.textContent = t; }, 60); }
   window.anesiaSay = srSay;
+  /* PVX-N442 · HIG Collections: a record that arrives while the list is open shows itself */
+  function listArrive() {
+    var cards = $$('.an-list .an-card[data-open]'), ids = cards.map(function (a) { return a.getAttribute('data-open'); }), key = S.filter + '|' + String(S.find || '').trim().toLowerCase();
+    var ready = S.mode !== 'server' || !!S.loaded;   /* the first load isn't an arrival */
+    if (S.lsIds && S.lsKey === key && S.lsReady && ready) {
+      var fresh = cards.filter(function (a) { return S.lsIds.indexOf(a.getAttribute('data-open')) < 0; });
+      fresh.forEach(function (a) { var li = a.parentElement; li.classList.add('an-arrive'); setTimeout(function () { li.classList.remove('an-arrive'); }, 1700); });
+      if (fresh.length && fresh.length <= 3) srSay('New record: ' + fresh.map(function (a) { var b = $('b', a); return b ? b.textContent : ''; }).join(', '));
+    }
+    S.lsIds = ids; S.lsKey = key; S.lsReady = ready;
+  }
+  /* PVX-N441 · HIG Text views: a note grows with its text, then scrolls */
+  function taGrow(t) { if (!t || !t.classList || !t.classList.contains('an-ta')) return; t.style.height = 'auto'; var cs = getComputedStyle(t), lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.35, pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth), mx = Math.round(lh * 8 + pad); t.style.height = Math.min(t.scrollHeight + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth), mx) + 'px'; t.style.overflowY = t.scrollHeight + 2 > mx ? 'auto' : 'hidden'; }
+  document.addEventListener('input', function (e) { taGrow(e.target); });
   /* PVX-N438 · Offering help: tooltips say what happens, in this computer's keys (⌥V / Alt+V, ⌘P / Ctrl+P) */
   function kt(k, mod) { try { return window.PvxKeys.text([mod ? 'mod' : 'alt', k]); } catch (e) { return (mod ? '⌘' : '⌥') + k; } }
   function kc(k) { return '<kbd>' + kt(k) + '</kbd>'; }
@@ -709,6 +724,7 @@
   if (window.PvxKeys) PvxKeys.bind(function () {
     var tools = [['V', 'Vitals now'], ['D', 'Give drug'], ['I', 'Infusion'], ['G', 'Gas'], ['E', 'Event'], ['O', 'Output'], ['A', 'Airway']];
     return [
+      { title: 'Records (on the list)', items: [{ keys: ['alt', 'N'], label: 'New training record' }, { keys: ['/'], label: 'Search the records (once there are 7 or more)' }] },   /* PVX-N440 */
       { title: 'Charting (in a record)', items: tools.map(function (t) { return { keys: ['alt', t[0]], label: t[1] }; }).concat([{ keys: ['T'], label: 'Show the trend of the focused vital' }]) },
       { title: 'View', items: [{ keys: ['alt', 'F'], label: 'Expand or exit expanded view' }, { keys: ['esc'], label: 'Exit expanded view, or close the sheet' }] },
       { title: 'Edit', items: [{ keys: ['mod', 'Z'], label: 'Undo the last change (within 2 minutes)' }, { keys: ['shift', 'mod', 'Z'], label: 'Redo' }] },
@@ -824,9 +840,72 @@
       '<path class="a" d="' + area + '"/><polyline class="l" points="' + pts + '"/>' + vs.map(function (v) { return '<circle cx="' + X(v.at).toFixed(1) + '" cy="' + Y(v[key]).toFixed(1) + '" r="3.5"/>'; }).join('') +
       '<text x="' + PL + '" y="' + (H - fs * .45).toFixed(1) + '">' + fmtTime(t0) + '</text><text x="' + (W - PR) + '" y="' + (H - fs * .45).toFixed(1) + '" text-anchor="end">' + fmtTime(t1) + '</text></svg>';
   }
+  /* PVX-N441 · HIG Charts: pick a vital, scrub the trend, and see new readings arrive */
+  var TKEYS = ['hr', 'bp', 'spo2', 'etco2', 'rr', 'temp'], TSHORT = { hr: 'HR', bp: 'MAP', spo2: 'SpO₂', etco2: 'EtCO₂', rr: 'RR', temp: 'Temp' };
+  function trendSig(r, k) { var f = trendFacts(r, k); return f ? f.vals.length + ':' + f.t1 + ':' + f.last + ':' + f.vals.join(',') : '0'; }
+  function trendPick(r, k) {
+    var ks = TKEYS.filter(function (x) { return !!trendFacts(r, x); }); if (ks.length < 2) return '';
+    return '<div class="an-tpick">' + chips('trendk', ks.map(function (x) { return [x, TSHORT[x]]; }), k).replace('role="group"', 'role="group" aria-label="Vital"') + '</div>';
+  }
+  function trendBox(r, k) { return trendSum(r, k) + '<div class="an-trendwrap">' + trendSVG(r, k) + '</div>'; }
+  function trendFill(r, k, keepAt) {
+    var tw = $('#anSheet .an-trendwrap'); if (!tw) return;
+    if (tw.clientWidth) tw.innerHTML = trendSVG(r, k, tw.clientWidth);   /* PVX-N433 */
+    S.trend = { rec: r.id, k: k, sig: trendSig(r, k) };
+    bindTrend(r, k, keepAt);
+  }
+  function bindTrend(r, k, keepAt) {
+    var f = trendFacts(r, k), tw = $('#anSheet .an-trendwrap'), svg = tw && $('svg.an-trend', tw); if (!f || !svg) return;
+    var pts = $$('circle', svg).map(function (c) { return [parseFloat(c.getAttribute('cx')), parseFloat(c.getAttribute('cy'))]; });
+    if (pts.length !== f.vals.length) return;
+    var vb = svg.viewBox.baseVal, n = pts.length, last = n - 1, cur = last;
+    var NS = 'http://www.w3.org/2000/svg', ln = document.createElementNS(NS, 'line'), ring = document.createElementNS(NS, 'circle');
+    ln.setAttribute('class', 'sl'); ln.setAttribute('y1', String(pts.reduce(function (m, p) { return Math.min(m, p[1]); }, 1e9) - 12)); ln.setAttribute('y2', String(vb.height - Math.round(Math.max(11, (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16) * .75) * 2.1)));
+    ring.setAttribute('class', 'sr'); ring.setAttribute('r', '6.5');
+    svg.appendChild(ln); svg.appendChild(ring);
+    var sc = document.createElement('div'); sc.className = 'an-scrub'; sc.tabIndex = 0; sc.setAttribute('role', 'slider');
+    sc.setAttribute('aria-label', VNAME[k][0] + ', reading by reading'); sc.setAttribute('aria-valuemin', '1'); sc.setAttribute('aria-valuemax', String(n));
+    tw.appendChild(sc);
+    var head = $('#anSheet .an-trendsum .now'), pos = document.createElement('span'); pos.className = 'pos';
+    var say = function (i) { return f.vals[i] + ' ' + f.u + ' at ' + fmtTime(f.vs[i].at) + (i === last ? ', the latest' : ', reading ' + (i + 1) + ' of ' + n); };
+    var show = function (i) {
+      cur = i; var p = pts[i], on = i !== last; if (S.trend) S.trend.selAt = on ? f.vs[i].at : null;
+      svg.classList.toggle('scrub', on);
+      ln.setAttribute('x1', String(p[0])); ln.setAttribute('x2', String(p[0])); ring.setAttribute('cx', String(p[0])); ring.setAttribute('cy', String(p[1]));
+      sc.setAttribute('aria-valuenow', String(i + 1)); sc.setAttribute('aria-valuetext', say(i));
+      if (head) { head.innerHTML = '<b>' + esc(String(f.vals[i])) + '</b> <small>' + esc(f.u) + '</small> <span>at ' + esc(fmtTime(f.vs[i].at)) + '</span>'; if (on) { pos.textContent = 'Reading ' + (i + 1) + ' of ' + n; head.appendChild(pos); } }   /* at the latest, the headline is as it was (n433) */
+    };
+    var near = function (cx) { var rc = svg.getBoundingClientRect(), x = (cx - rc.left) * vb.width / Math.max(1, rc.width), b = 0; pts.forEach(function (p, i) { if (Math.abs(p[0] - x) < Math.abs(pts[b][0] - x)) b = i; }); return b; };
+    var drag = false;
+    sc.addEventListener('pointerdown', function (e) { drag = true; try { sc.setPointerCapture(e.pointerId); } catch (x) { } show(near(e.clientX)); });
+    sc.addEventListener('pointermove', function (e) { if (drag || e.pointerType === 'mouse') show(near(e.clientX)); });
+    var done = function () { drag = false; };   /* a finger's reading stays until you tap elsewhere */
+    sc.addEventListener('pointerup', done); sc.addEventListener('pointercancel', done);
+    sc.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !drag && document.activeElement !== sc) show(last); });
+    sc.addEventListener('blur', function () { show(last); });
+    sc.addEventListener('keydown', function (e) {
+      var to = { ArrowLeft: cur - 1, ArrowDown: cur - 1, ArrowRight: cur + 1, ArrowUp: cur + 1, Home: 0, End: last, PageUp: cur + 5, PageDown: cur - 5 }[e.key];
+      if (to === undefined) return; e.preventDefault(); e.stopPropagation(); show(Math.max(0, Math.min(last, to)));
+    });
+    var ki = keepAt ? f.vs.map(function (v) { return v.at; }).indexOf(keepAt) : -1;
+    show(ki > -1 ? ki : last);
+    if (S.trendNew) { ring.classList.add('new'); svg.classList.add('fresh'); S.trendNew = false; }
+  }
+  function trendFollow(r) {   /* a reading charted while the trend is open (here or on another device) */
+    var tr = S.trend, sh = $('#anSheet'); if (!tr || tr.rec !== r.id) return;
+    if (!sh || !$('.an-trendbox', sh)) { S.trend = null; return; }
+    var g = trendSig(r, tr.k); if (g === tr.sig) return;
+    var f = trendFacts(r, tr.k), old = (tr.sig.split(':')[1] || 0) * 1, sc = $('.an-scrub', sh), fo = !!sc && document.activeElement === sc, keepAt = fo ? tr.selAt : null;
+    $('.an-trendbox', sh).innerHTML = trendBox(r, tr.k);
+    S.trendNew = !!(f && f.t1 > old);
+    trendFill(r, tr.k, keepAt);
+    if (fo && $('.an-scrub', sh)) $('.an-scrub', sh).focus({ preventScroll: true });
+    if (f && f.t1 > old) srSay('New reading: ' + f.last + ' ' + f.u + ' at ' + fmtTime(f.t1));
+  }
   function openTrend(r, k, fromEl) {
-    var go = function () { openSheet({ title: VNAME[k][0], body: trendSum(r, k) + '<div class="an-trendwrap">' + trendSVG(r, k) + '</div>', anchor: null }); var w = $('#anSheet'); if (w) w.classList.add('vtin');
-      var tw = $('#anSheet .an-trendwrap'); if (tw && tw.clientWidth) tw.innerHTML = trendSVG(r, k, tw.clientWidth); };   /* PVX-N433 */
+    var go = function () { openSheet({ title: VNAME[k][0], body: trendPick(r, k) + '<div class="an-trendbox">' + trendBox(r, k) + '</div>', anchor: null }); var w = $('#anSheet'); if (w) w.classList.add('vtin', 'an-tsheet');
+      trendFill(r, k);
+      bindChips(w, function (name, v) { if (name !== 'trendk' || !VNAME[v]) return; var rr = recOf(r.id) || r; $('#anShT').textContent = VNAME[v][0]; $('#anSheet .an-trendbox').innerHTML = trendBox(rr, v); trendFill(rr, v); setTimeout(function () { w.dirty = false; }, 0); }); };   /* choosing a vital isn't a change to discard */
     var spark = fromEl && $('.an-spark', fromEl);
     if (spark) morph(spark, go, '#anSheet .an-trend'); else go();
   }
@@ -924,10 +1003,10 @@
       if (!rec && S.mode === 'server' && !S.loaded) { root.innerHTML = '<div class="an-loading an-skelrec" role="status"><span class="an-vh">Loading the record…</span><div class="sk-h"><i></i><i></i></div><div class="sk-chips"><i></i><i></i><i></i><i></i></div><div class="sk-tools"><i></i><i></i><i></i></div><div class="sk-body"><div class="sk-chart"><i></i><i></i><i></i><i></i><i></i></div><div class="sk-now"><i></i><i></i><i></i><i></i></div></div></div>' + waitNote(); return; }   /* PVX-N436 */
       if (!rec) { root.innerHTML = '<div class="an-gate"><h1>Record not found</h1><p>It may still be loading, or it was opened from another hospital.</p><a class="an-btn primary" href="#">All records</a></div>'; return; }
       var wasSkel = !!$('.an-skelrec', root), fresh = S.shownRec !== rec.id; S.shownRec = rec.id;
-      root.innerHTML = recordHTML(rec); bindRecord(rec);
+      root.innerHTML = recordHTML(rec); bindRecord(rec); trendFollow(rec);   /* PVX-N441 */
       if (fresh || wasSkel) { root.classList.remove('an-enter'); void root.offsetWidth; root.classList.add('an-enter'); clearTimeout(S.enterT); S.enterT = setTimeout(function () { root.classList.remove('an-enter'); if (window.anesiaBar) window.anesiaBar.update(); }, 1100); }
       var c2 = $('.an-chart'); if (c2) { c2.scrollLeft = lastScroll; c2.addEventListener('scroll', function () { if (!stickRaf) stickRaf = requestAnimationFrame(stickLabels); }, { passive: true }); stickLabels(); }
-    } else { S.shownRec = null; root.innerHTML = listHTML(); bindList(); bindWait(); }
+    } else { S.shownRec = null; root.innerHTML = listHTML(); bindList(); bindWait(); listArrive(); }   /* PVX-N442 */
     Object.keys(S.keep).forEach(function (id) { var el = document.getElementById(id); if (el && S.keep[id]) { el.value = S.keep[id].v; el.classList.toggle('filled', !!S.keep[id].filled); } });
     if (tbOpen && $('[data-vtimebox]', root)) $('[data-vtimebox]', root).hidden = false;
     if (S.fresh && $('.fresh', root)) { var fz = S.fresh; setTimeout(function () { if (S.fresh === fz) S.fresh = null; }, 700); }
@@ -1164,7 +1243,17 @@
     var recs = allIds().map(recOf).filter(Boolean);
     var F = { active: function (r) { return r.status === 'planned' || r.status === 'active'; }, ended: function (r) { return r.status === 'ended'; }, signed: function (r) { return r.status === 'signed'; } };
     var counts = { active: recs.filter(F.active).length, ended: recs.filter(F.ended).length, signed: recs.filter(F.signed).length };
-    var shown = recs.filter(F[S.filter]).sort(function (a, b) { return (b.start || b.created_at) - (a.start || a.created_at); });
+    /* PVX-N440 · Searching: a search field scoped to the tab, once the list is long enough to need one */
+    var q = String(S.find || '').trim().toLowerCase(), words = q ? q.split(/\s+/) : [];
+    var hay = function (r) { var p = r.patient || {}, t = r.team || {}; return [p.name, p.species, p.breed, r.procedure, t.resident, t.supervisor, r.start ? fmtDate(r.start) : fmtDate(r.created_at)].filter(Boolean).join(' ').toLowerCase(); };
+    var match = function (r) { if (!words.length) return true; var h = hay(r); return words.every(function (w) { return h.indexOf(w) > -1; }); };
+    var TABN = { active: 'In progress', ended: 'To sign', signed: 'Signed' }, SCOPE = { active: 'records in progress', ended: 'records to sign', signed: 'signed records' }[S.filter];
+    var findOn = recs.length >= 7 || !!q;
+    var shown = recs.filter(F[S.filter]).filter(match).sort(function (a, b) { return (b.start || b.created_at) - (a.start || a.created_at); });
+    var findHTML = findOn ? '<div class="an-find" role="search">' + icon('search') + '<input type="search" class="an-in" id="anFind" placeholder="Search ' + SCOPE + '" aria-label="Search ' + SCOPE + '" aria-keyshortcuts="/" value="' + esc(S.find || '') + '" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></div>' : '';
+    var noneHTML = '';
+    if (q && !shown.length) { var elsewhere = ['active', 'ended', 'signed'].filter(function (k) { return k !== S.filter; }).map(function (k) { return [k, recs.filter(F[k]).filter(match).length]; }).filter(function (x) { return x[1]; });
+      noneHTML = '<div class="an-empty" role="status"><b>No ' + SCOPE + ' match “' + esc(String(S.find).trim()) + '”</b>' + (elsewhere.length ? '<span class="an-findin">Found in ' + elsewhere.map(function (x) { return '<button type="button" class="an-btn plain strong" data-f2="' + x[0] + '">' + TABN[x[0]] + ' · ' + x[1] + '</button>'; }).join(' ') + '</span>' : 'The search looks at the patient’s name, species and breed, the procedure, the team and the date.') + '</div>'; }
     var tab = function (k, l) { return '<button type="button" role="radio" data-f="' + k + '" aria-checked="' + (S.filter === k) + '" tabindex="' + (S.filter === k ? 0 : -1) + '">' + l + (counts[k] ? ' · ' + counts[k] : '') + '</button>'; };
     var cards = shown.map(function (r) {
       var w = A.weightAt(r, now()), p = r.patient;
@@ -1177,15 +1266,22 @@
     return '<header class="an-lhead"><div><h1>Anesia</h1><p>Anesthesia records for training. They are not part of the medical record.</p></div>' +
       (S.denied ? '' : '<button type="button" class="an-btn primary" id="anNew" title="Start a record for the patient you’re about to anesthetize (' + kt('N') + ')" aria-keyshortcuts="Alt+N">' + icon('plus') + 'New training record</button>') + '</header>' +
       (S.mode === 'local' ? '<div class="an-banner info"><span><b>Preview.</b> Records are saved on this device only.</span></div>' : '') +
-      '<div class="an-seg" role="radiogroup" aria-label="Show records" data-rove="radio">' + tab('active', 'In progress') + tab('ended', 'To sign') + tab('signed', 'Signed') + '</div>' +
+      '<div class="an-seg" role="radiogroup" aria-label="Show records" data-rove="radio">' + tab('active', 'In progress') + tab('ended', 'To sign') + tab('signed', 'Signed') + '</div>' + findHTML +
       (S.mode === 'server' && S.denied && !S.loaded ? waitNote() : S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true" aria-label="Loading records">' + [1, 2, 3].map(function () { return '<li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li>'; }).join('') + '</ul><p class="an-vh" role="status">Loading records…</p>' + waitNote()
-        : shown.length ? '<ul class="an-list">' + cards + '</ul>' : '<div class="an-empty"><b>' + empty[0] + '</b>' + empty[1] + '</div>') +
+        : shown.length ? '<ul class="an-list">' + cards + '</ul>' + (q ? '<p class="an-vh" role="status">' + shown.length + (shown.length === 1 ? ' record' : ' records') + ' found</p>' : '') : noneHTML || '<div class="an-empty"><b>' + empty[0] + '</b>' + empty[1] + '</div>') +
       '<p class="an-save an-vh" id="anSave"></p><p class="an-vh" role="status" id="anSaveLive"></p>';
   }
   function cap(s) { s = String(s || ''); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
   function bindList() {
     if (!$('[data-f]') && !$('#anNew')) return;
     $$('[data-f]').forEach(function (b) { b.onclick = function () { S.filter = b.getAttribute('data-f'); lsSet('filter', S.filter); render(); var t = $('[data-f="' + S.filter + '"]'); if (t) t.focus(); }; });
+    /* PVX-N440 · the search field: filters as you type, Esc clears it; a match in another tab is one tap away */
+    var fi = $('#anFind');
+    if (fi) {
+      fi.oninput = function () { var pos = fi.selectionStart; S.find = fi.value; render(); var g = $('#anFind'); if (g) { g.focus(); try { g.setSelectionRange(pos, pos); } catch (x) { } } };
+      fi.onkeydown = function (e) { if (e.key === 'Escape' && fi.value) { e.preventDefault(); e.stopPropagation(); S.find = ''; render(); var g = $('#anFind'); if (g) g.focus(); } };
+    }
+    $$('[data-f2]').forEach(function (b) { b.onclick = function () { S.filter = b.getAttribute('data-f2'); lsSet('filter', S.filter); render(); var g = $('#anFind'); if (g) g.focus(); }; });
     $$('[data-open]').forEach(function (b) { b.onclick = function (e) { if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button > 0)) return;   /* n211: a modified click opens the record in its own window */
       if (e) e.preventDefault(); var id = b.getAttribute('data-open'); morph(b, function () { location.hash = 'r=' + id; route(); S.skipHash = 'r=' + id; }, '.an-id'); }; });
     var nb0 = $('#anNew'); if (nb0) nb0.onclick = function () { patientSheet(null); };   /* PVX-N436 */
@@ -1407,7 +1503,7 @@
     function infBar(inf, d) {
       var end = inf.end || (live ? t : inf.start + colMs), segs = A.segments(inf, end);
       var labs = segs.map(function (s) { var pr = A.rate({ rate: s.rate, unit: inf.unit, weightKg: A.weightAt(r, s.from), conc: d.conc }); return '<span class="an-seglab" style="left:' + (X(s.from) - X(inf.start)) + 'px;max-width:' + Math.max(0, X(s.to) - X(s.from)) + 'px">' + sig(s.rate) + ' ' + esc(inf.unit) + (pr.ok && pr.mLPerH !== null && inf.unit !== 'mL/h' ? ' · ' + sig(pr.mLPerH) + ' mL/h' : '') + '</span>'; }).join('');
-      return '<button type="button" class="an-bar c-' + drugClass(d) + (inf.void ? ' void' : '') + (!inf.end && live ? ' run' : '') + (S.fresh === inf.id ? ' fresh' : '') + '" data-inf="' + inf.id + '" style="left:' + X(inf.start) + 'px;width:' + Math.max(6, X(end) - X(inf.start)) + 'px" aria-label="' + esc(d.name) + ' infusion from ' + fmtTime(inf.start) + (inf.end ? ' to ' + fmtTime(inf.end) : ', running') + '">' + labs + '</button>';
+      return '<button type="button" class="an-bar c-' + drugClass(d) + (inf.void ? ' void' : '') + (!inf.end && live ? ' run' : '') + (S.fresh === inf.id ? ' fresh' : '') + '" data-inf="' + inf.id + '" style="left:' + X(inf.start) + 'px;width:' + Math.max(6, X(end) - X(inf.start)) + 'px" aria-label="' + esc(d.name) + ' infusion from ' + fmtTime(inf.start) + (inf.end ? ' to ' + fmtTime(inf.end) : ', running') + (inf.void ? ', struck through' : '') + '">' + labs + '</button>';
     }
 
     /* gases */
@@ -1422,7 +1518,7 @@
         var labs = rn.segs.map(function (s) { return '<span class="an-seglab" style="left:' + (X(s.from) - X(rn.from)) + 'px;max-width:' + Math.max(0, X(s.to) - X(s.from)) + 'px">' + sig(s.g.value) + (a === 'o2' ? ' L/min' : ' %') + '</span>'; }).join('');
         return '<button type="button" class="an-bar gas-' + a + (live && !r.end && rn.to === end ? ' run' : '') + '" data-gas="' + a + '" style="left:' + X(rn.from) + 'px;width:' + Math.max(4, X(rn.to) - X(rn.from)) + 'px" aria-label="' + AGENT[a].name + ' from ' + fmtTime(rn.from) + '">' + labs + '</button>';
       }).join('');
-      r.gases.filter(function (g) { return g.agent === a && g.void; }).forEach(function (g) { bars += '<button type="button" class="an-mk void" data-entry="gas:' + g.id + '" style="left:' + X(g.at) + 'px">' + sig(g.value) + '</button>'; });
+      r.gases.filter(function (g) { return g.agent === a && g.void; }).forEach(function (g) { bars += '<button type="button" class="an-mk void" data-entry="gas:' + g.id + '" style="left:' + X(g.at) + 'px" aria-label="' + esc(AGENT[a].name + ' ' + sig(g.value) + (a === 'o2' ? ' L/min' : ' %') + ' at ' + fmtTime(g.at) + ', struck through') + '">' + sig(g.value) + '</button>'; });   /* PVX-N441: it was read as a bare number */
       row('<b class="an-key g-' + a + '">' + AGENT[a].name + '</b><span>' + AGENT[a].unit + '</span>', bars);
     });
 
@@ -1433,14 +1529,14 @@
     devs.forEach(function (d) {
       var end = d.end || (live ? t : d.at + colMs);
       row('<b>' + esc(devShort(d)) + '</b><span>' + esc([d.size, d.cuff, d.site].filter(Boolean).join(' · ') || A.DEVICES[d.kind]) + '</span>',
-        '<button type="button" class="an-bar dev' + (d.void ? ' void' : '') + (!d.end && live ? ' run' : '') + (S.fresh === d.id ? ' fresh' : '') + '" data-dev="' + d.id + '" style="left:' + X(d.at) + 'px;width:' + Math.max(6, X(end) - X(d.at)) + 'px" aria-label="' + esc(A.DEVICES[d.kind] + ' ' + (d.size || '') + ' placed ' + fmtTime(d.at) + (d.end ? ', removed ' + fmtTime(d.end) : ', in place')) + '"><span class="an-seglab" style="left:0">' + esc(d.end ? 'In ' + fmtTime(d.at) + ' – out ' + fmtTime(d.end) : 'Placed ' + fmtTime(d.at)) + '</span></button>');
+        '<button type="button" class="an-bar dev' + (d.void ? ' void' : '') + (!d.end && live ? ' run' : '') + (S.fresh === d.id ? ' fresh' : '') + '" data-dev="' + d.id + '" style="left:' + X(d.at) + 'px;width:' + Math.max(6, X(end) - X(d.at)) + 'px" aria-label="' + esc(A.DEVICES[d.kind] + ' ' + (d.size || '') + ' placed ' + fmtTime(d.at) + (d.end ? ', removed ' + fmtTime(d.end) : ', in place') + (d.void ? ', struck through' : '')) + '"><span class="an-seglab" style="left:0">' + esc(d.end ? 'In ' + fmtTime(d.at) + ' – out ' + fmtTime(d.end) : 'Placed ' + fmtTime(d.at)) + '</span></button>');
     });
     if (vents.length || vvoid.length) {
       var vend = r.end || (live ? t : (vents.length ? vents[vents.length - 1].at + colMs : t));
       row('<b>Ventilation</b><span>' + esc(vents.length ? A.VENT[vents[vents.length - 1].mode] : '—') + '</span>', vents.map(function (v, i) {
         var to2 = i + 1 < vents.length ? vents[i + 1].at : vend;
         return '<button type="button" class="an-bar vent' + (S.fresh === v.id ? ' fresh' : '') + '" data-entry="vent:' + v.id + '" style="left:' + X(v.at) + 'px;width:' + Math.max(6, X(to2) - X(v.at)) + 'px" aria-label="' + esc(A.VENT[v.mode] + ' from ' + fmtTime(v.at)) + '"><span class="an-seglab" style="left:0;max-width:' + Math.max(0, X(to2) - X(v.at)) + 'px">' + esc([A.VENT[v.mode]].concat(ventBits(v).map(function (b) { return b[2]; })).join(' · ')) + '</span></button>';
-      }).join('') + vvoid.map(function (v) { return '<button type="button" class="an-mk void" data-entry="vent:' + v.id + '" style="left:' + X(v.at) + 'px">' + esc(A.VENT[v.mode]) + '</button>'; }).join(''));
+      }).join('') + vvoid.map(function (v) { return '<button type="button" class="an-mk void" data-entry="vent:' + v.id + '" style="left:' + X(v.at) + 'px" aria-label="' + esc('Ventilation, ' + A.VENT[v.mode] + ' at ' + fmtTime(v.at) + ', struck through') + '">' + esc(A.VENT[v.mode]) + '</button>'; }).join(''));   /* PVX-N441 */
     }
 
     /* fluids */
@@ -1452,7 +1548,7 @@
     fluidIds.forEach(function (id) { var d = A.drug(r, id) || {}; row('<b>' + dot(d) + esc(d.name) + '</b><span>Fluid</span>', r.infusions.filter(function (i) { return i.drugId === id; }).map(function (i) { return infBar(i, d); }).join('')); });
 
     if (outs.length) { var OL = lanes(outs, 96), otwo = OL.some(function (l) { return l === 1; }), ob = A.balance(r, r.end && r.end < t ? r.end : t);
-      row('<b>Output</b><span>' + sig(ob.outTotal) + ' mL out · net ' + (ob.net >= 0 ? '+' : '−') + sig(Math.abs(ob.net)) + ' mL</span>', outs.map(function (o, i) { return '<button type="button" class="an-mk out k-' + o.kind + (otwo ? (OL[i] ? ' l2' : ' l1') : '') + (o.void ? ' void' : '') + (S.fresh === o.id ? ' fresh' : '') + '" data-entry="output:' + o.id + '" style="left:' + X(o.at) + 'px" aria-label="' + esc(A.OUTPUTS[o.kind] + ' ' + sig(o.mL) + ' mL at ' + fmtTime(o.at)) + '">' + esc((o.kind === 'ebl' ? 'Blood ' : o.kind === 'urine' ? 'Urine ' : '') + sig(o.mL) + ' mL') + '</button>'; }).join(''), '', otwo ? '3.75rem' : ''); }
+      row('<b>Output</b><span>' + sig(ob.outTotal) + ' mL out · net ' + (ob.net >= 0 ? '+' : '−') + sig(Math.abs(ob.net)) + ' mL</span>', outs.map(function (o, i) { return '<button type="button" class="an-mk out k-' + o.kind + (otwo ? (OL[i] ? ' l2' : ' l1') : '') + (o.void ? ' void' : '') + (S.fresh === o.id ? ' fresh' : '') + '" data-entry="output:' + o.id + '" style="left:' + X(o.at) + 'px" aria-label="' + esc(A.OUTPUTS[o.kind] + ' ' + sig(o.mL) + ' mL at ' + fmtTime(o.at) + (o.void ? ', struck through' : '')) + '">' + esc((o.kind === 'ebl' ? 'Blood ' : o.kind === 'urine' ? 'Urine ' : '') + sig(o.mL) + ' mL') + '</button>'; }).join(''), '', otwo ? '3.75rem' : ''); }
 
     /* drugs: one row per drug — its infusion bar with the boluses above it */
     if (drugIds.length) row('Drugs', '', 'grp');
@@ -1461,7 +1557,7 @@
       var d = A.drug(r, id) || {}, ds = r.doses.filter(function (x) { return x.drugId === id; }).sort(function (a, b) { return a.at - b.at; });
       var infs = r.infusions.filter(function (i) { return i.drugId === id; }), both = infs.length && ds.length;
       var L = lanes(ds, 76), two = !both && L.some(function (l) { return l === 1; });
-      var mk = ds.map(function (x, i) { return '<button type="button" class="an-mk c-' + drugClass(d) + (two ? (L[i] ? ' l2' : ' l1') : '') + (x.void ? ' void' : '') + (S.fresh === x.id ? ' fresh' : '') + (x.noWeight ? ' nw' : '') + '" data-entry="dose:' + x.id + '" style="left:' + X(x.at) + 'px" aria-label="' + esc(d.name) + ' ' + amt(x.mg) + ' ' + esc(x.route) + ' at ' + fmtTime(x.at) + (x.void ? ', struck through' : '') + '">' + amt(x.mg) + '</button>'; }).join('');
+      var mk = ds.map(function (x, i) { return '<button type="button" class="an-mk c-' + drugClass(d) + (two ? (L[i] ? ' l2' : ' l1') : '') + (x.void ? ' void' : '') + (S.fresh === x.id ? ' fresh' : '') + (x.noWeight ? ' nw' : '') + '" data-entry="dose:' + x.id + '" style="left:' + X(x.at) + 'px" aria-label="' + esc([d.name, amt(x.mg), x.route].filter(Boolean).join(' ')) + ' at ' + fmtTime(x.at) + (x.void ? ', struck through' : '') + '">' + amt(x.mg) + '</button>'; }).join('');
       var sub = [conc(d.conc), classLabel(d)].concat(infs.some(function (i) { return !i.end && !i.void; }) ? ['Running'] : []).filter(Boolean).join(' · ');
       row('<b>' + dot(d) + esc(d.name) + '</b><span>' + esc(sub) + '</span>', infs.map(function (i) { return infBar(i, d); }).join('') + mk, both ? 'both' : '', both ? '4.5rem' : two ? '3.75rem' : '');
     });
@@ -1471,7 +1567,7 @@
     if (evs.length) {
       row('Events', '', 'grp');
       var EL = lanes(evs, 110), etwo = EL.some(function (l) { return l === 1; });
-      row('<b>Events</b><span>' + evs.length + ' recorded</span>', evs.map(function (e, i) { return '<button type="button" class="an-mk ev' + (etwo ? (EL[i] ? ' l2' : ' l1') : '') + (e.void ? ' void' : '') + (S.fresh === e.id ? ' fresh' : '') + '" data-entry="event:' + e.id + '" style="left:' + X(e.at) + 'px" aria-label="' + esc(A.EVENTS[e.kind]) + ' at ' + fmtTime(e.at) + '">' + esc(A.EVENTS[e.kind]) + '</button>'; }).join(''), '', etwo ? '3.75rem' : '');
+      row('<b>Events</b><span>' + evs.length + ' recorded</span>', evs.map(function (e, i) { return '<button type="button" class="an-mk ev' + (etwo ? (EL[i] ? ' l2' : ' l1') : '') + (e.void ? ' void' : '') + (S.fresh === e.id ? ' fresh' : '') + '" data-entry="event:' + e.id + '" style="left:' + X(e.at) + 'px" aria-label="' + esc(A.EVENTS[e.kind] + ' at ' + fmtTime(e.at) + (e.note ? ': ' + e.note : '') + (e.void ? ', struck through' : '')) + '"' + (e.note ? ' title="' + esc(A.EVENTS[e.kind] + ' · ' + e.note) + '"' : '') + '>' + esc(A.EVENTS[e.kind]) + '</button>'; }).join(''), '', etwo ? '3.75rem' : '');
     }
 
     /* vitals graph + monitor rows (blood pressure on one row) */
@@ -1495,8 +1591,10 @@
       if (v.hr !== undefined) svg += '<circle' + nw + ' cx="' + x + '" cy="' + Y(v.hr) + '" r="4" fill="var(--an-hr)"/>';
     });
     svg += '</svg>';
+    var tks = TKEYS.filter(function (k) { return !!trendFacts(r, k); });   /* PVX-N441 */
     var axis = '<div class="an-legend"><span class="an-units">bpm · mmHg</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><circle cx="7" cy="7" r="4" fill="var(--an-hr)"/></svg>HR</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><path d="M2 4L7 11L12 4" fill="none" stroke="var(--an-bp)" stroke-width="2"/></svg>SAP</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><line x1="1" y1="7" x2="13" y2="7" stroke="var(--an-bp)" stroke-width="2"/><circle cx="7" cy="7" r="3" fill="var(--an-bp)"/></svg>MAP</span><span><svg aria-hidden="true" viewBox="0 0 14 14"><path d="M2 10L7 3L12 10" fill="none" stroke="var(--an-bp)" stroke-width="2"/></svg>DAP</span></div>' +
-      '<div class="an-axis" aria-hidden="true">' + [40, 80, 120, 160, 200].map(function (g) { return '<i style="top:' + Y(g) + 'px">' + g + '</i>'; }).join('') + '</div>';
+      '<div class="an-axis" aria-hidden="true">' + [40, 80, 120, 160, 200].map(function (g) { return '<i style="top:' + Y(g) + 'px">' + g + '</i>'; }).join('') + '</div>' +
+      (tks.length ? '<button type="button" class="an-btn plain sm an-trendsbtn" id="anTrends" data-trends="' + tks[0] + '" title="Show how each vital has changed">' + icon('trend') + '<span>Trends</span></button>' : '');   /* PVX-N441 */
     rows.push('<div class="an-row"><div class="an-lab" style="justify-content:flex-start;padding-top:.75rem">' + axis + '</div><div class="an-trk an-grid-bg" ' + css.replace('style="', 'style="min-height:' + GH + 'px;') + '>' + svg + (vs.length ? '' : '<span class="an-empty-t">Vitals appear here. <button type="button" class="an-btn plain sm" data-act="vitals"' + (r.status === 'signed' ? ' disabled' : '') + '>Enter vitals</button></span>') + '</div></div>');
     MON.forEach(function (m) {
       var k = m[0];
@@ -1512,7 +1610,7 @@
       var k = m[0], ev = r.vitals.filter(function (v) { return v[k] !== undefined; }); if (!ev.length) return;
       var ECGS = { sinus: 'Sinus', stach: 'S-tach', sbrady: 'S-brady', sarr: 'SA', avb: 'AVB', vpc: 'VPCs', afib: 'AF', other: 'Other' };
       var cells = ev.map(function (v) { var txt = k === 'ecg' ? ECGS[v.ecg] : sig(v[k]), aria = m[1] + ' ' + (k === 'ecg' ? A.ECG[v.ecg] : v[k] + ' ' + m[2]);
-        return '<button type="button" class="an-mon' + (k === 'ecg' ? ' txt' : '') + (v.void ? ' void' : '') + (S.fresh === v.id ? ' fresh' : '') + '" data-entry="vitals:' + v.id + '" style="left:' + X(v.at) + 'px" aria-label="' + esc(aria) + ' at ' + fmtTime(v.at) + '">' + esc(txt) + '</button>'; }).join('');
+        return '<button type="button" class="an-mon' + (k === 'ecg' ? ' txt' : '') + (v.void ? ' void' : '') + (S.fresh === v.id ? ' fresh' : '') + '" data-entry="vitals:' + v.id + '" style="left:' + X(v.at) + 'px" aria-label="' + esc(aria) + ' at ' + fmtTime(v.at) + (v.void ? ', struck through' : '') + '">' + esc(txt) + '</button>'; }).join('');
       rows.push('<div class="an-row"><div class="an-lab"><b class="an-key v-more" role="heading" aria-level="4">' + m[1] + '</b><span>' + m[2] + '</span></div><div class="an-trk an-grid-bg" ' + css.replace('style="', 'style="min-height:2.75rem;') + '>' + cells + '</div></div>');
     });
     var ov = '';
@@ -1543,6 +1641,7 @@
   }
 
   function bindRecord(r) {
+    var tb = $('#anTrends'); if (tb) tb.onclick = function () { openTrend(r, tb.getAttribute('data-trends')); };   /* PVX-N441 */
     var id = r.id;
     var on = function (sel, fn) { var el = $(sel); if (el) el.onclick = fn; };
     on('#anStart', function () { needConfirm(r, function (r2) { timeSheet(r2, 'Start anesthesia', 'Start', function (t) { change(id, { type: 'start', at: t }); }); }); });
@@ -1747,6 +1846,7 @@
       '<form class="an-sb" novalidate>' + o.body + '<p class="formerr" role="alert" id="anShErr" data-err></p><button type="submit" hidden></button></form></div>';
     if (pop) wrap.classList.add('pop');
     document.body.appendChild(wrap);
+    $$('textarea.an-ta', wrap).forEach(function (t) { if (t.value) taGrow(t); });   /* PVX-N441 */
     $$('.an,#pvxTopnav,#anToast').forEach(function (el) { el.setAttribute('inert', ''); });
     if (pop) { var ar = o.anchor.getBoundingClientRect(), sh = $('.an-sheet', wrap), sw = Math.min(400, window.innerWidth - 32), sx = Math.min(Math.max(16, ar.left + ar.width / 2 - sw / 2), window.innerWidth - sw - 16);
       sh.style.width = sw + 'px'; sh.style.left = sx + 'px'; var below = window.innerHeight - ar.bottom > 320; sh.style.top = (below ? ar.bottom + 10 : Math.max(16, ar.top - 10 - Math.min(sh.offsetHeight, 420))) + 'px';
@@ -2508,9 +2608,10 @@
   function offerUndo(msg, redo) {
     var el = $('#anToast'); if (!el) return; clearTimeout(S.toastT); S.toastLeft = 0; S.toastPaused = false; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');   /* PVX-N429 */
     var ue = S.undoStack[S.undoStack.length - 1], left = !redo && ue ? Math.max(0, Math.round(A.UNDO_MS - (now() - ue.ts))) : 0;
-    el.innerHTML = '<span class="an-tok" aria-hidden="true">' + icon('checkd', { scale: 's' }) + '</span><span>' + esc(msg) + '</span><button type="button" class="an-tbtn' + (left ? ' ring' : '') + '" id="anUndo" title="' + (redo ? 'Make the change again' : 'Take back the last change') + ' (' + (redo ? (window.PvxKeys && PvxKeys.mac ? '⇧⌘Z' : 'Ctrl+Shift+Z') : kt('Z', 1)) + ')"' + (left ? ' style="--an-ud:' + A.UNDO_MS + 'ms;--an-ue:-' + (A.UNDO_MS - left) + 'ms"' : '') + '>' + (redo ? 'Redo' : 'Undo') + '</button><button type="button" class="an-tx" id="anToastX" aria-label="Dismiss" title="Dismiss">' + icon('close') + '</button>';
+    el.innerHTML = '<span class="an-tok" aria-hidden="true">' + icon('checkd', { scale: 's' }) + '</span><span>' + esc(msg) + '</span><button type="button" class="an-tbtn' + (left ? ' ring' : '') + '" id="anUndo" title="' + (redo ? 'Make the change again' : 'Take back the last change') + ' (' + (redo ? (window.PvxKeys && PvxKeys.mac ? '⇧⌘Z' : 'Ctrl+Shift+Z') : kt('Z', 1)) + ')"' + (left ? ' style="--an-ud:' + A.UNDO_MS + 'ms;--an-ue:-' + (A.UNDO_MS - left) + 'ms"' : '') + '>' + (redo ? 'Redo' : 'Undo') + '</button>' + (redo && liveUndo().length ? '<button type="button" class="an-tbtn" id="anUndoMore" aria-label="Undo ' + esc(liveUndo()[liveUndo().length - 1].label) + '" title="Take back: ' + esc(liveUndo()[liveUndo().length - 1].label) + ' (' + kt('Z', 1) + ')">Undo</button>' : '') + '<button type="button" class="an-tx" id="anToastX" aria-label="Dismiss" title="Dismiss">' + icon('close') + '</button>';
     showToast(el);
     $('#anUndo').onclick = function () { if (redo) redoLast(); else undoLast(); };
+    var um = $('#anUndoMore'); if (um) um.onclick = function () { undoLast(); };   /* PVX-N440 · Undo and redo: undo again, not only Redo */
     $('#anToastX').onclick = function () { el.hidden = true; };
     var ub = $('#anUndo'); if (ub && left) { clearTimeout(S.undoRingT); S.undoRingT = setTimeout(function () { if (ub.isConnected) ub.classList.add('spent'); }, left); }
     swipeAway(el);
@@ -2528,7 +2629,7 @@
   }
   function undoLast() {
     var e = liveUndo().pop(); var el = $('#anToast');
-    if (!e) { toast('Nothing to undo — changes can be undone for 2 minutes.'); return; }
+    if (!e) { toast('Nothing to undo. Changes can be undone for 2 minutes; to correct an older entry, open it on the chart and strike it through.'); return; }   /* PVX-N440 */
     try { change(e.rid, e.uop); } catch (x) { toast(x.message, { error: true }); return; }
     if (e.kind === 'weight') { S.pumpNotice = null; render(); }
     S.redoStack.push(e); scrollChartTo(e.t);
@@ -2543,6 +2644,7 @@
     var a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
     if ($('#anSheet')) { if (e.key === 'Escape' && !$('#anSheet').contains(document.activeElement)) { e.preventDefault(); var xb = $('#anSheet [data-x]'); if (xb) xb.click(); } return; }   /* n172: Esc before focus has moved into a new sheet */
     if (!typing && !S.cur && e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyN') { var nb = $('#anNew'); if (nb && !nb.disabled) { e.preventDefault(); nb.click(); } return; }   /* PVX-N435 · File management: ⌥N, New */
+    if (!typing && !S.cur && e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) { var fq = $('#anFind'); if (fq) { e.preventDefault(); fq.focus(); fq.select(); } return; }   /* PVX-N440 */
     if (typing || !S.cur) return;
     if (e.key === 'Escape' && XP && !e.defaultPrevented) { e.preventDefault(); setExpanded(false); return; }   /* an open sheet takes Esc first */
     if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyF' && window.innerWidth > 600) { e.preventDefault(); setExpanded(!XP); return; }
