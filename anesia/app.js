@@ -1428,7 +1428,7 @@
     var vs = liveVitals(r);
     return '<form class="an-vform' + (S.opening === 'vform' ? ' opening' : '') + '" id="anVForm" data-keep novalidate aria-label="New vitals"><div class="an-vgrid">' +
       VF.map(function (f) { return '<label class="an-vf" for="nv_' + f[0] + '"><span>' + f[1] + ' <i>' + f[2] + '</i></span><input class="an-in an-tnum" id="nv_' + f[0] + '" name="' + f[0] + '" inputmode="decimal" autocomplete="off" aria-describedby="nve_' + f[0] + '" enterkeyhint="' + (f[0] === 'temp' ? 'done' : 'next') + '"' + (f[0] === 'map' ? ' placeholder="Auto"' : '') + '><em class="err" id="nve_' + f[0] + '" data-ferr="' + f[0] + '"></em></label>'; }).join('') +
-      '</div><button type="button" class="an-btn plain sm an-vmore" data-vmore aria-expanded="' + (S.vMore ? 'true' : 'false') + '" aria-controls="anVMore">' + (S.vMore ? 'Fewer monitors' : 'More monitors') + '</button>' +
+      '</div><button type="button" class="an-btn plain sm an-vmore an-disc" data-vmore aria-expanded="' + (S.vMore ? 'true' : 'false') + '" aria-controls="anVMore"><span class="an-disc-l"><span class="an-disc-t">More monitors</span><span class="an-disc-s" data-vmsum></span></span></button>'   /* PVX-N443: a disclosure triangle */ +
       '<div class="an-vgrid an-vgrid2" id="anVMore"' + (S.vMore ? '' : ' hidden') + '>' + VF2.map(function (f) { return '<label class="an-vf" for="nv_' + f[0] + '"><span>' + f[1] + ' <i>' + f[2] + '</i></span><input class="an-in an-tnum" id="nv_' + f[0] + '" name="' + f[0] + '" inputmode="decimal" autocomplete="off" aria-describedby="nve_' + f[0] + '" enterkeyhint="next"><em class="err" id="nve_' + f[0] + '" data-ferr="' + f[0] + '"></em></label>'; }).join('') +
       '<label class="an-vf an-vecg" for="nv_ecg"><span>ECG <i>rhythm</i></span><select class="an-sel" id="nv_ecg" name="ecg"><option value="">—</option>' + Object.keys(A.ECG).map(function (k) { return '<option value="' + k + '">' + esc(A.ECG[k]) + '</option>'; }).join('') + '</select><em class="err" id="nve_ecg" data-ferr="ecg"></em></label></div>' +
       '<div class="an-vwhen"><span data-when>At ' + (S.vTime ? fmtTime(S.vTime) : 'now') + '</span><button type="button" class="an-btn plain sm" data-vtime aria-expanded="false" aria-controls="nv_timebox">Change time</button></div>' +
@@ -1443,7 +1443,12 @@
     inputs.forEach(function (inp) { inp.addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; var vis = inputs.filter(function (x) { return !x.closest('[hidden]'); }), i = vis.indexOf(inp); if (i > -1 && i < vis.length - 1) { e.preventDefault(); vis[i + 1].focus(); } }); });
     var drop = function () { morph($('#anVForm'), function () { S.vOpen = null; S.keep = {}; S.vTime = null; dDel('draft:' + r.id); render(); }, '.an-tiles'); var b = $('[data-act=vitals]'); if (b) b.focus(); };
     var ecgSel = $('#nv_ecg', f), typed = function () { return inputs.some(function (i) { return i.value.trim() !== ''; }) || !!(ecgSel && ecgSel.value); };
-    var vm = $('[data-vmore]', f); if (vm) vm.onclick = function () { S.vMore = !S.vMore; var box = $('#anVMore'); box.hidden = !S.vMore; vm.setAttribute('aria-expanded', String(S.vMore)); vm.textContent = S.vMore ? 'Fewer monitors' : 'More monitors'; if (S.vMore) $('#nv_fio2').focus(); };
+    var vm = $('[data-vmore]', f); if (vm) vm.onclick = function () { S.vMore = !S.vMore; var box = $('#anVMore'); box.hidden = !S.vMore; vm.setAttribute('aria-expanded', String(S.vMore)); vmSum(); if (S.vMore) $('#nv_fio2').focus(); };
+    /* PVX-N443 · HIG Disclosure controls: closed, it says what it holds (a hidden value is still saved) */
+    function vmSum() { var sEl = vm && $('[data-vmsum]', vm); if (!sEl) return; var parts = [];
+      if (!S.vMore) { VF2.forEach(function (x) { var el = $('#nv_' + x[0], f); if (el && el.value.trim()) parts.push(x[1] + ' ' + el.value.trim() + (x[2] === '%' ? ' %' : x[2] === 'of 4' ? ' of 4' : '')); }); if (ecgSel && ecgSel.value) parts.push('ECG ' + A.ECG[ecgSel.value]); }
+      sEl.textContent = parts.length ? ' · ' + parts.join(' · ') : ''; }
+    setTimeout(vmSum, 0);
     var askDrop = function () { if (!typed()) return drop(); var d = $('[data-vdiscard]', f); d.hidden = false; $('[data-vkeep]', f).focus(); };
     $('[data-vcancel]', f).onclick = askDrop;
     $('[data-vkeep]', f).onclick = function () { $('[data-vdiscard]', f).hidden = true; inputs[0].focus(); };
