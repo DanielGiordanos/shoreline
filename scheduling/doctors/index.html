@@ -6150,5 +6150,249 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
   window.addEventListener('online',function(){ saveState('Saved'); }); window.addEventListener('offline',function(){ saveState('Offline','bad'); });
 })();
 </script>
+<style id="pvx-day-panel-css">
+/* the day panel beside the month calendar: a header with the date, the shifts as rows, actions at the bottom; can be hidden */
+.month-layout{position:relative}
+#monthAgenda{position:sticky;top:var(--pvx-agenda-top,150px);padding:0;overflow:hidden;background:var(--surface-0);border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+#monthAgenda>*{margin-left:16px;margin-right:16px}
+#monthAgenda .pvx-ag-head{display:flex;align-items:flex-start;gap:8px;margin:0;padding:14px 12px 12px 16px;border-bottom:1px solid var(--border-subtle)}
+#monthAgenda .pvx-ag-title{flex:1;min-width:0}
+#monthAgenda .pvx-ag-title small{display:block;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary)}
+#monthAgenda .pvx-ag-title h2{margin:2px 0 0;font-size:1.25rem;line-height:1.2}
+#monthAgenda .pvx-ag-x{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;border:0;background:transparent;color:var(--text-secondary);cursor:pointer;font-size:1.1rem;line-height:1}
+#monthAgenda .pvx-ag-x:hover{background:var(--surface-1);color:var(--text-primary)}
+#monthAgenda .pvx-ag-x:focus-visible,.pvx-ag-show:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#monthAgenda .pvx-ag-head+*{margin-top:12px}
+#monthAgenda .shift-line{margin:0 16px 6px;padding:8px 10px;border-radius:10px;font-size:.8rem}
+#monthAgenda p{margin-top:0;margin-bottom:8px}
+#monthAgenda h3{font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text-secondary);margin:14px 16px 4px}
+#monthAgenda .pvx-ag-foot{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;padding:12px 16px 14px;border-top:1px solid var(--border-subtle)}
+#monthAgenda .pvx-ag-foot .btn{margin:0;flex:1 1 auto;justify-content:center}
+#monthAgenda .pvx-ag-foot .pvx-ag-details{flex-basis:100%;background:transparent;border-color:var(--border-subtle)}
+#monthAgenda .pvx-ag-foot [data-ds]{display:contents}
+.month-layout.pvx-agenda-off{grid-template-columns:minmax(0,1fr)}
+.month-layout.pvx-agenda-off #monthAgenda{display:none}
+.pvx-ag-show{display:none;position:absolute;top:-38px;right:0;z-index:2;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-subtle);background:var(--surface-1);color:var(--text-secondary);font:inherit;font-size:.75rem;font-weight:600;cursor:pointer}
+.pvx-ag-show:hover{color:var(--text-primary)}
+.month-layout.pvx-agenda-off .pvx-ag-show{display:inline-flex}
+@media(max-width:760px){#monthAgenda{position:static}}
+#monthAgenda .band-key{display:block;font-size:.8rem;padding:4px 0;color:var(--text-primary)}
+#monthAgenda .pvx-ag-foot .pvx-ag-details{color:var(--text-secondary);text-decoration:underline;text-underline-offset:3px}
+#monthAgenda .pvx-ag-foot .pvx-ag-details:hover{color:var(--text-primary)}
+@media print{.pvx-ag-show{display:none!important}}
+</style>
+<script id="pvx-day-panel">
+/* the day panel beside the month calendar (Daniel, Nov 27 2026): tidier, and it can be hidden. Hidden stays hidden in this browser. */
+(function(){
+  if(typeof selectCalendarDate!=='function') return;
+  var KEY='pvx-doc-day-panel';
+  function off(){ try{ return localStorage.getItem(KEY)==='off'; }catch(e){ return false; } }
+  function layout(){ return document.querySelector('.month-layout'); }
+  function apply(){
+    var l=layout(); if(!l) return;
+    l.classList.toggle('pvx-agenda-off',off());
+    if(!l.querySelector('.pvx-ag-show')){
+      var b=document.createElement('button'); b.type='button'; b.className='pvx-ag-show'; b.textContent='Show day panel';
+      b.setAttribute('aria-label','Show the selected day beside the calendar');
+      b.onclick=function(){ set(false); var a=document.getElementById('monthAgenda'); var x=a&&a.querySelector('.pvx-ag-x'); if(x) x.focus(); };
+      l.prepend(b);
+    }
+    var nav=document.querySelector('.tab-wrap'), top=150;
+    if(nav&&getComputedStyle(nav).position==='sticky') top=Math.round((parseFloat(getComputedStyle(nav).top)||0)+nav.offsetHeight+12);
+    l.style.setProperty('--pvx-agenda-top',Math.max(90,Math.min(top,220))+'px');
+  }
+  function set(hide){ try{ hide?localStorage.setItem(KEY,'off'):localStorage.removeItem(KEY); }catch(e){} apply();
+    if(hide){ var s=document.querySelector('.pvx-ag-show'); if(s) s.focus(); } }
+  window.PVXDayPanel={hide:function(){set(true);},show:function(){set(false);}};
+  function tidy(date){
+    var a=document.getElementById('monthAgenda'); if(!a||a.hidden) return;
+    var h=a.querySelector(':scope>h2'); if(!h) return;
+    var d=new Date(date+'T12:00:00');
+    var head=document.createElement('div'); head.className='pvx-ag-head';
+    var t=document.createElement('div'); t.className='pvx-ag-title';
+    var s=document.createElement('small'); s.textContent=d.toLocaleDateString(undefined,{weekday:'long'});
+    var h2=document.createElement('h2'); h2.textContent=d.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});
+    t.append(s,h2);
+    var x=document.createElement('button'); x.type='button'; x.className='pvx-ag-x'; x.innerHTML='&times;';
+    x.setAttribute('aria-label','Hide day panel'); x.title='Hide day panel'; x.onclick=function(){ set(true); };
+    head.append(t,x); h.replaceWith(head);
+    var foot=document.createElement('div'); foot.className='pvx-ag-foot';
+    var ds=a.querySelector(':scope>[data-ds]'); if(ds){ ds.classList.remove('ops-actions'); ds.removeAttribute('style'); foot.append(ds); }
+    a.querySelectorAll(':scope>button.btn').forEach(function(b){ b.classList.add('pvx-ag-details'); b.textContent='Open day details'; foot.append(b); });
+    if(foot.childElementCount) a.append(foot);
+  }
+  var sel=selectCalendarDate;
+  selectCalendarDate=function(date){ var r=sel.apply(this,arguments); try{ apply(); tidy(date); }catch(e){} return r; };
+})();
+</script>
+<style id="pvx-cal-design-css">
+/* Calendar design pass (Daniel, Nov 27 2026): a coverage strip in every day, a color for each doctor, open shifts as slots,
+   quiet week rows, and calmer details. */
+.month-layout #calGrid .cal-cell[data-date]{position:relative}
+.month-layout #calGrid .date-markers{display:none}
+/* 1 · the 24-hour strip */
+.pvx-strip{position:relative;height:26px;margin:6px 6px 8px;border-radius:5px;background:color-mix(in srgb,var(--text-secondary) 10%,transparent);overflow:hidden}
+.pvx-strip .tk{position:absolute;top:0;bottom:0;width:1px;background:color-mix(in srgb,var(--text-secondary) 22%,transparent)}
+.pvx-strip .ln{position:absolute;left:1px;right:1px;border-radius:3px;background:color-mix(in srgb,var(--text-secondary) 7%,transparent)}
+.pvx-strip .sg{position:absolute;border-radius:3px;background:var(--c);opacity:.9}
+.pvx-strip .sg.op{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--coral) 55%,transparent) 0 3px,transparent 3px 6px);box-shadow:inset 0 0 0 1px var(--coral);opacity:1}
+.pvx-strip .gp{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--coral) 22%,transparent);box-shadow:inset 0 -2px 0 var(--coral)}
+.pvx-strip-key{display:flex;justify-content:space-between;margin:-6px 6px 6px;font-size:.55rem;color:var(--text-secondary);opacity:0;transition:opacity .15s}
+.cal-cell:hover .pvx-strip-key,.cal-cell[aria-pressed=true] .pvx-strip-key{opacity:.8}
+/* 2 · a color for each doctor */
+.pvx-rows{padding:0 5px 5px;text-align:left;display:grid;gap:3px}
+.pvx-row{display:flex;align-items:center;gap:5px;min-width:0;padding:3px 5px 3px 3px;border-radius:8px;background:color-mix(in srgb,var(--c) 12%,transparent);font-size:.7rem;line-height:1.2}
+.pvx-row .av{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--c);color:#fff;font-size:.55rem;font-weight:700;letter-spacing:.02em;font-style:normal}
+.pvx-row b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary);font-weight:600}
+.pvx-row small{margin-left:auto;flex:none;color:var(--text-secondary);font-size:.58rem;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.pvx-more{font-size:.62rem;color:var(--text-secondary);padding-left:4px}
+.pvx-extra{display:flex;align-items:center;gap:3px;padding:1px 2px}
+.pvx-extra .av{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--c);color:#fff;font-size:.55rem;font-weight:700;font-style:normal}
+.pvx-extra .av.op{background:transparent;border:1px dashed var(--coral);color:var(--coral);font-size:.75rem}
+#monthAgenda .shift-line[style*="--c"]{box-shadow:inset 3px 0 0 var(--c)}
+/* × to remove a shift (schedulers) */
+.pvx-rm{display:none;flex:none;width:16px;height:16px;margin-left:2px;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--text-secondary) 22%,transparent);color:var(--text-primary);font:inherit;font-size:.75rem;line-height:16px;text-align:center;cursor:pointer}
+.pvx-rm:hover{background:var(--coral);color:#fff}
+.pvx-row:hover .pvx-rm{display:inline-block;margin-left:auto}
+.pvx-row.pvx-open:hover .pvx-rm{margin-left:3px}
+.pvx-row:hover small{display:none}
+/* 3 · open shifts as empty slots */
+.pvx-row.pvx-open{background:transparent;border:1px dashed color-mix(in srgb,var(--coral) 75%,transparent);padding:2px 4px 2px 3px}
+.pvx-row.pvx-open .av{background:transparent;border:1px dashed var(--coral);color:var(--coral);font-size:.8rem}
+.pvx-row.pvx-open b{color:var(--bad-text,var(--coral));flex:none}
+.pvx-fill{display:none;margin-left:auto;flex:none;border:0;border-radius:999px;padding:2px 8px;background:var(--coral);color:#fff;font:inherit;font-size:.6rem;font-weight:700;cursor:pointer}
+.cal-cell:hover .pvx-open .pvx-fill,.pvx-open:focus-within .pvx-fill{display:inline-block}
+.cal-cell:hover .pvx-open .pvx-fill+small{display:none}
+.pvx-row.pvx-open:hover .pvx-fill{margin-left:auto}
+/* 4 · quiet week rows: only what's wrong stands out */
+.month-layout #calGrid .week-sum{transition:opacity .2s}
+.month-layout #calGrid .week-sum .wk-item.pvx-dim{opacity:.45}
+.month-layout #calGrid .week-sum .wk-item.pvx-hot b{color:var(--coral)}
+.month-layout #calGrid .week-sum.pvx-wk-ok{opacity:.55}
+.month-layout #calGrid .week-sum.pvx-wk-ok:hover{opacity:1}
+.pvx-wk-badge{font-size:.68rem;font-weight:700;border-radius:999px;padding:1px 8px}
+.pvx-wk-ok .pvx-wk-badge{color:#1a9e6e;background:color-mix(in srgb,#1a9e6e 14%,transparent)}
+.pvx-wk-bad .pvx-wk-badge{color:var(--coral);background:color-mix(in srgb,var(--coral) 14%,transparent)}
+/* 5 · calmer details */
+.month-layout #calGrid .cal-cell.wknd{background:color-mix(in srgb,var(--text-secondary) 5%,transparent);border-radius:12px}
+.month-layout #calGrid .dnote.holiday{display:block;max-width:none;margin:0 6px 2px;padding:2px 6px;border-radius:6px;font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;text-align:center;background:linear-gradient(90deg,color-mix(in srgb,var(--coral) 22%,transparent),color-mix(in srgb,#E8A830 22%,transparent));color:var(--text-primary)}
+.month-layout .today .date-disc{box-shadow:inset 0 0 0 2px var(--accent),0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
+.month-layout .today .dnum{position:relative}
+.month-layout .today .dnum::after{content:'Today';position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-size:.52rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.month-layout .today .pvx-strip{margin-top:12px}
+@media(max-width:760px){.pvx-rows{padding:0 0 4px;justify-items:center}.pvx-row,.pvx-row.pvx-open{background:transparent;border:0;padding:0}.pvx-row .av{width:20px;height:20px;font-size:.5rem}.pvx-row b,.pvx-row small{display:none}.pvx-extra{justify-content:center;gap:0}.pvx-extra .av{width:16px;height:16px;font-size:.45rem;margin-left:-1px;box-shadow:0 0 0 1.5px var(--surface-0)}.pvx-extra .av:first-child{margin-left:0}.pvx-more{padding:0}.pvx-rows{display:flex;flex-wrap:wrap;justify-content:center;gap:2px}.month-layout .today .dnum::after{display:none}.pvx-strip{height:18px;margin:4px 2px 5px}.pvx-strip-key{display:none}.pvx-fill,.pvx-rm{display:none!important}}
+@media print{.pvx-fill,.pvx-rm{display:none!important}}
+</style>
+<script id="pvx-cal-design">
+/* Calendar design pass (Daniel, Nov 27 2026): draws over the month grid after the engine renders it. */
+(function(){
+  if(typeof App==='undefined'||typeof DAYMAP==='undefined') return;
+  var PAL={kelley:'#2FB3C9',mara:'#A274D6',mike:'#E8644A',shaylan:'#22A877',schiff:'#E0A12A',marissa:'#5B8EDB',amber:'#7C83FF',annie:'#5AA0C8'};
+  var RELIEF_C='#8C96A8';
+  function who(s){ var st=s&&s.name&&staffOf(String(s.name).replace(/\*$/,'')); return st||null; }
+  function color(s){ if(!s||s.open) return 'var(--coral)'; var st=who(s); return st?(PAL[st.id]||st.color||RELIEF_C):RELIEF_C; }
+  function initials(s){ var st=who(s); if(st) return (st.code||st.name.slice(0,2)).slice(0,2);
+    var n=String(s.name||'').trim(), full=(typeof fullName==='function'&&fullName(n))||n, p=String(full).split(/\s+/);
+    return ((p[0]||'')[0]||'')+((p.length>1?p[p.length-1]:p[0]||'')[p.length>1?0:1]||''); }
+  function clock(t){ var m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(t||''); if(!m) return String(t||''); return m[1]+(m[2]!=='00'?':'+m[2]:'')+m[3][0].toLowerCase(); }
+  function hrs(min){ var h=Math.floor(min/60)%24, mm=min%60, ap=h<12?'a':'p'; h=h%12||12; return h+(mm?':'+String(mm).padStart(2,'0'):'')+ap; }
+  var byId={}; function shift(id){ if(!byId[id]||byId[id].id!==id){ byId={}; SHIFTS.forEach(function(s){ byId[s.id]=s; }); } return byId[id]; }
+  var esc2=function(t){ return String(t).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+  function strip(date,visible){
+    var d0=rosterMinute(date,'12:00 AM'), d1=d0+1440, segs=[];
+    var vis={}; visible.forEach(function(s){ vis[s.id]=1; });
+    var prev=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+    SHIFTS.forEach(function(s){
+      if(s.date===date){ if(!vis[s.id]) return; }
+      else if(s.date!==prev||!rosterFilter(s,App.filter)) return;
+      var iv=shiftInterval(s); if(!(iv[0]<d1&&d0<iv[1])) return;
+      segs.push({a:Math.max(iv[0],d0)-d0,b:Math.min(iv[1],d1)-d0,s:s});
+    });
+    /* four fixed lanes, top to bottom: 7a–5p, 8a–8p, 12p–12a, 7p–7a (Daniel, Nov 27 2026). Two doctors on one shift split its lane. */
+    function laneOf(g){ var st=g.s.start, en=g.s.end;
+      if(g.s.date!==date) return 3;
+      if(/^8:00 AM$/.test(st)&&/^8:00 PM$/.test(en)) return 1;
+      if(g.s.type==='night') return 3; if(g.s.type==='swing') return 2; return 0; }
+    var L=[[],[],[],[]]; segs.forEach(function(g){ L[laneOf(g)].push(g); });
+    var pad=2, gap=1.5, lh=(26-pad*2-gap*3)/4;
+    var draw=[];
+    L.forEach(function(list,li){
+      list.sort(function(x,y){ return x.a-y.a||y.b-x.b; });
+      var sub=[]; list.forEach(function(g){ for(var i=0;i<sub.length;i++){ if(sub[i]<=g.a){ g.k=i; sub[i]=g.b; return; } } g.k=sub.length; sub.push(g.b); });
+      var n=Math.max(1,sub.length), sh=(lh-(n-1))/n;
+      list.forEach(function(g){ draw.push({g:g,top:pad+li*(lh+gap)+g.k*(sh+1),h:sh}); });
+    });
+    var gaps=(erDay(date).gaps||[]).map(function(g){ return {a:Math.max(g.a,d0)-d0,b:Math.min(g.b,d1)-d0}; }).filter(function(g){ return g.b>g.a; });
+    var html='<div class="tk" style="left:25%"></div><div class="tk" style="left:50%"></div><div class="tk" style="left:75%"></div>';
+    gaps.forEach(function(g){ html+='<div class="gp" style="left:'+(g.a/14.4)+'%;width:'+((g.b-g.a)/14.4)+'%"></div>'; });
+    var lanes='';
+    for(var li=0;li<4;li++) lanes+='<div class="ln" style="top:'+((pad+li*(lh+gap))/0.26)+'%;height:'+(lh/0.26)+'%"></div>';
+    html=lanes+html;
+    draw.forEach(function(d){ var g=d.g;
+      html+='<div class="sg'+(g.s.open?' op':'')+'" style="--c:'+color(g.s)+';left:calc('+(g.a/14.4)+'% + 1px);width:calc('+((g.b-g.a)/14.4)+'% - 2px);top:'+(d.top/0.26)+'%;height:'+(d.h/0.26)+'%"></div>'; });
+    var miss=gaps.reduce(function(t,g){ return t+(g.b-g.a); },0);
+    var title=miss?('ER gap: '+gaps.map(function(g){ return hrs(g.a)+'–'+hrs(g.b); }).join(', ')+' · '+Math.round((1440-miss)/60*10)/10+' of 24 h covered'):'ER covered all 24 hours';
+    return '<div class="pvx-strip" title="'+esc2(title)+'">'+html+'</div><div class="pvx-strip-key" aria-hidden="true"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div>';
+  }
+  /* a small × on each shift for Kelley and Management: some days need only two or three doctors (Daniel, Nov 27 2026).
+     It opens the usual remove sheet, so nothing is deleted until Apply, and the change goes in the history. */
+  function rm(s){ return App.isAdmin()?'<button type="button" class="pvx-rm" tabindex="-1" title="Remove this shift from the day" aria-label="Remove '+esc2(s.open?'open shift':String(s.name))+' '+esc2(clock(s.start)+'–'+clock(s.end))+'" onclick="event.stopPropagation();PVXRemoveShift('+s.id+')">&times;</button>':''; }
+  window.PVXRemoveShift=function(id){ if(window.DS&&DS.remove) DS.remove(id); else Coverage.remove(id); };
+  function rows(list){
+    var admin=App.isAdmin();
+    list.sort(function(a,b){ return (shiftInterval(a)[0]-shiftInterval(b)[0])||(Number(Boolean(a.open))-Number(Boolean(b.open))); });
+    var out=list.map(function(s){
+      var t=clock(s.start)+'–'+clock(s.end);
+      if(s.open) return '<div class="pvx-row pvx-open" title="Open shift · '+esc2(t)+'"><i class="av">+</i><b>Open</b>'
+        +(admin?'<button type="button" class="pvx-fill" tabindex="-1" onclick="event.stopPropagation();App.openSlot('+s.id+',this)">Fill</button>':'')+'<small>'+esc2(t)+'</small>'+rm(s)+'</div>';
+      var nm=String(s.name).replace(/\*$/,'').trim().split(/\s+/).pop();
+      return '<div class="pvx-row" style="--c:'+color(s)+'" title="'+esc2(((typeof fullName==='function'&&fullName(s.name))||s.name)+' · '+t)+'"><i class="av">'+esc2(initials(s))+'</i><b>'+esc2(nm)+'</b><small>'+esc2(t)+'</small>'+rm(s)+'</div>';
+    }).join('');
+    return '<div class="pvx-rows">'+out+'</div>';
+  }
+  function weeks(grid){
+    grid.querySelectorAll('.week-sum').forEach(function(w){
+      var bad=0;
+      w.querySelectorAll('.wk-item').forEach(function(it){
+        var t=it.textContent, v=(it.querySelector('b')||{}).textContent||'', hot=false;
+        if(/ER coverage/.test(t)) hot=parseFloat(v)<100;
+        else if(/ER gaps/.test(t)) hot=parseFloat(v)>0;
+        else if(/Checks passed/.test(t)){ var p=v.split('/'); hot=+p[0]<+p[1]; }
+        else if(/^\s*Open/.test(t)) hot=parseFloat(v)>0;
+        it.classList.toggle('pvx-hot',hot); it.classList.toggle('pvx-dim',!hot); if(hot) bad++;
+      });
+      w.classList.toggle('pvx-wk-ok',!bad); w.classList.toggle('pvx-wk-bad',!!bad);
+      var lab=w.querySelector('.wk-label');
+      if(lab&&!w.querySelector('.pvx-wk-badge')) lab.insertAdjacentHTML('afterend','<span class="pvx-wk-badge">'+(bad?'Needs attention':'All covered')+'</span>');
+    });
+  }
+  function paint(){
+    var grid=document.getElementById('calGrid'); if(!grid||grid.hidden) return;
+    grid.querySelectorAll('.cal-cell[data-date]').forEach(function(cell){
+      if(cell.querySelector('.pvx-strip')) return;
+      var date=cell.dataset.date, tpl=cell.querySelector('template'); if(!tpl) return;
+      var list=[].map.call(tpl.content.querySelectorAll('[data-sid]'),function(el){ return shift(+el.dataset.sid); }).filter(Boolean);
+      var old=cell.querySelector('.date-shifts'); if(old) old.outerHTML=rows(list.slice());
+      var mk=cell.querySelector('.date-markers'); if(mk) mk.insertAdjacentHTML('afterend',strip(date,list));
+    });
+    weeks(grid);
+  }
+  function tint(){
+    var a=document.getElementById('monthAgenda'); if(!a) return;
+    a.querySelectorAll('.shift-line[data-sid]').forEach(function(el){ var s=shift(+el.dataset.sid); if(s&&!s.open) el.style.setProperty('--c',color(s)); });
+  }
+  var rs=App.renderSchedule;
+  App.renderSchedule=function(){ var r=rs.apply(this,arguments); try{ paint(); tint(); }catch(e){ console.warn('calendar design',e); } return r; };
+  var sel=selectCalendarDate;
+  selectCalendarDate=function(){ var r=sel.apply(this,arguments); try{ tint(); }catch(e){} return r; };
+  var nav=App.navMonth;
+  App.navMonth=function(dir){ var r=nav.apply(this,arguments);
+    try{ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){ var g=document.getElementById('calGrid');
+      if(g&&!g.hidden&&g.animate) g.animate([{opacity:0,transform:'translateX('+(dir*36)+'px)'},{opacity:1,transform:'none'}],{duration:280,easing:'cubic-bezier(.2,.8,.2,1)'}); } }catch(e){}
+    return r; };
+  try{ paint(); tint(); }catch(e){}
+})();
+</script>
 </body>
 </html>
