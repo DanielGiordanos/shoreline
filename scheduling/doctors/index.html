@@ -6150,5 +6150,80 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
   window.addEventListener('online',function(){ saveState('Saved'); }); window.addEventListener('offline',function(){ saveState('Offline','bad'); });
 })();
 </script>
+<style id="pvx-day-panel-css">
+/* the day panel beside the month calendar: a header with the date, the shifts as rows, actions at the bottom; can be hidden */
+.month-layout{position:relative}
+#monthAgenda{position:sticky;top:var(--pvx-agenda-top,150px);padding:0;overflow:hidden;background:var(--surface-0);border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+#monthAgenda>*{margin-left:16px;margin-right:16px}
+#monthAgenda .pvx-ag-head{display:flex;align-items:flex-start;gap:8px;margin:0;padding:14px 12px 12px 16px;border-bottom:1px solid var(--border-subtle)}
+#monthAgenda .pvx-ag-title{flex:1;min-width:0}
+#monthAgenda .pvx-ag-title small{display:block;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary)}
+#monthAgenda .pvx-ag-title h2{margin:2px 0 0;font-size:1.25rem;line-height:1.2}
+#monthAgenda .pvx-ag-x{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;border:0;background:transparent;color:var(--text-secondary);cursor:pointer;font-size:1.1rem;line-height:1}
+#monthAgenda .pvx-ag-x:hover{background:var(--surface-1);color:var(--text-primary)}
+#monthAgenda .pvx-ag-x:focus-visible,.pvx-ag-show:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#monthAgenda .pvx-ag-head+*{margin-top:12px}
+#monthAgenda .shift-line{margin:0 16px 6px;padding:8px 10px;border-radius:10px;font-size:.8rem}
+#monthAgenda p{margin-top:0;margin-bottom:8px}
+#monthAgenda h3{font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text-secondary);margin:14px 16px 4px}
+#monthAgenda .pvx-ag-foot{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;padding:12px 16px 14px;border-top:1px solid var(--border-subtle)}
+#monthAgenda .pvx-ag-foot .btn{margin:0;flex:1 1 auto;justify-content:center}
+#monthAgenda .pvx-ag-foot .pvx-ag-details{flex-basis:100%;background:transparent;border-color:var(--border-subtle)}
+#monthAgenda .pvx-ag-foot [data-ds]{display:contents}
+.month-layout.pvx-agenda-off{grid-template-columns:minmax(0,1fr)}
+.month-layout.pvx-agenda-off #monthAgenda{display:none}
+.pvx-ag-show{display:none;position:absolute;top:-38px;right:0;z-index:2;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border-subtle);background:var(--surface-1);color:var(--text-secondary);font:inherit;font-size:.75rem;font-weight:600;cursor:pointer}
+.pvx-ag-show:hover{color:var(--text-primary)}
+.month-layout.pvx-agenda-off .pvx-ag-show{display:inline-flex}
+@media(max-width:760px){#monthAgenda{position:static}}
+#monthAgenda .band-key{display:block;font-size:.8rem;padding:4px 0;color:var(--text-primary)}
+#monthAgenda .pvx-ag-foot .pvx-ag-details{color:var(--text-secondary);text-decoration:underline;text-underline-offset:3px}
+#monthAgenda .pvx-ag-foot .pvx-ag-details:hover{color:var(--text-primary)}
+@media print{.pvx-ag-show{display:none!important}}
+</style>
+<script id="pvx-day-panel">
+/* the day panel beside the month calendar (Daniel, Nov 27 2026): tidier, and it can be hidden. Hidden stays hidden in this browser. */
+(function(){
+  if(typeof selectCalendarDate!=='function') return;
+  var KEY='pvx-doc-day-panel';
+  function off(){ try{ return localStorage.getItem(KEY)==='off'; }catch(e){ return false; } }
+  function layout(){ return document.querySelector('.month-layout'); }
+  function apply(){
+    var l=layout(); if(!l) return;
+    l.classList.toggle('pvx-agenda-off',off());
+    if(!l.querySelector('.pvx-ag-show')){
+      var b=document.createElement('button'); b.type='button'; b.className='pvx-ag-show'; b.textContent='Show day panel';
+      b.setAttribute('aria-label','Show the selected day beside the calendar');
+      b.onclick=function(){ set(false); var a=document.getElementById('monthAgenda'); var x=a&&a.querySelector('.pvx-ag-x'); if(x) x.focus(); };
+      l.prepend(b);
+    }
+    var nav=document.querySelector('.tab-wrap'), top=150;
+    if(nav&&getComputedStyle(nav).position==='sticky') top=Math.round((parseFloat(getComputedStyle(nav).top)||0)+nav.offsetHeight+12);
+    l.style.setProperty('--pvx-agenda-top',Math.max(90,Math.min(top,220))+'px');
+  }
+  function set(hide){ try{ hide?localStorage.setItem(KEY,'off'):localStorage.removeItem(KEY); }catch(e){} apply();
+    if(hide){ var s=document.querySelector('.pvx-ag-show'); if(s) s.focus(); } }
+  window.PVXDayPanel={hide:function(){set(true);},show:function(){set(false);}};
+  function tidy(date){
+    var a=document.getElementById('monthAgenda'); if(!a||a.hidden) return;
+    var h=a.querySelector(':scope>h2'); if(!h) return;
+    var d=new Date(date+'T12:00:00');
+    var head=document.createElement('div'); head.className='pvx-ag-head';
+    var t=document.createElement('div'); t.className='pvx-ag-title';
+    var s=document.createElement('small'); s.textContent=d.toLocaleDateString(undefined,{weekday:'long'});
+    var h2=document.createElement('h2'); h2.textContent=d.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'});
+    t.append(s,h2);
+    var x=document.createElement('button'); x.type='button'; x.className='pvx-ag-x'; x.innerHTML='&times;';
+    x.setAttribute('aria-label','Hide day panel'); x.title='Hide day panel'; x.onclick=function(){ set(true); };
+    head.append(t,x); h.replaceWith(head);
+    var foot=document.createElement('div'); foot.className='pvx-ag-foot';
+    var ds=a.querySelector(':scope>[data-ds]'); if(ds){ ds.classList.remove('ops-actions'); ds.removeAttribute('style'); foot.append(ds); }
+    a.querySelectorAll(':scope>button.btn').forEach(function(b){ b.classList.add('pvx-ag-details'); b.textContent='Open day details'; foot.append(b); });
+    if(foot.childElementCount) a.append(foot);
+  }
+  var sel=selectCalendarDate;
+  selectCalendarDate=function(date){ var r=sel.apply(this,arguments); try{ apply(); tidy(date); }catch(e){} return r; };
+})();
+</script>
 </body>
 </html>
