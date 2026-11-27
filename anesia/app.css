@@ -1857,3 +1857,27 @@ textarea.an-ta{min-height:5.5rem}
 @media (prefers-reduced-motion:reduce){.an-disc::before{transition:none}}
 /* PVX-N443 · HIG Labels: a row label's second line keeps its last word (", Running") on a narrow screen */
 .an-lab span{-webkit-line-clamp:3}
+
+/* PVX-N444 · HIG Lists and tables: column headings (Mac), the row you came back from, a chevron on stacked rows */
+.an-lcols{display:none}
+.an-sortnote{display:flex;align-items:center;flex-wrap:wrap;gap:.25rem .75rem;margin:0 0 .5rem;color:var(--an-ink-2);font-size:.875rem}
+@media (min-width:1180px){
+  .an-lcols{display:grid;grid-template-columns:minmax(14rem,1.25fr) minmax(10rem,1fr) minmax(10rem,1.15fr) minmax(15rem,1.25fr);column-gap:1.5rem;padding:0 1.25rem;border:1px solid var(--an-line);border-bottom:0;border-radius:var(--an-r-l) var(--an-r-l) 0 0;background:var(--an-surface)}
+  .an-lcols+.an-list{border-top-left-radius:0;border-top-right-radius:0}
+  .an-lcols+.an-sortnote{display:none}
+  .an-lcols+.an-sortnote+.an-list{border-top-left-radius:0;border-top-right-radius:0}
+  .an-lcol{appearance:none;-webkit-appearance:none;background:none;border:0;margin:0 -.5rem;padding:.625rem .5rem .5rem;min-height:36px;display:flex;align-items:center;gap:.375rem;font:inherit;font-size:.8125rem;font-weight:600;color:var(--an-ink-2);text-align:left;cursor:pointer;border-radius:0}
+  .an-lcol:last-child{justify-content:flex-end;text-align:right}
+  .an-lcol:hover{color:var(--an-ink)}
+  .an-lcol.on{color:var(--an-ink)}
+  .an-lcol:focus-visible{outline:2px solid var(--an-accent);outline-offset:-2px;border-radius:6px}
+  .an-sarr{width:.375rem;height:.375rem;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(2px) rotate(-135deg);flex:0 0 auto}
+  .an-sarr.dn{transform:translateY(-2px) rotate(45deg)}
+}
+@media (max-width:1179.98px){
+  .an-list .an-card{position:relative;padding-right:2.75rem}
+  .an-list .an-card::after{content:"";position:absolute;right:1.25rem;top:50%;width:.5rem;height:.5rem;border-right:2px solid var(--an-ink-3);border-top:2px solid var(--an-ink-3);transform:translateY(-50%) rotate(45deg)}
+}
+.an-list>li.an-was .an-card{animation:an-was 1.4s ease-out both;animation-delay:var(--an-was-d,0ms)}
+@keyframes an-was{0%,35%{background:var(--an-accent-soft)}to{background:transparent}}
+@media (prefers-contrast:more){.an-lcols{border-color:var(--an-line-2)}}
