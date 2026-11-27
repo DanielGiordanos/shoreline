@@ -6320,7 +6320,7 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
       var nm=String(s.name).replace(/\*$/,'').trim().split(/\s+/).pop();
       return '<div class="pvx-row" style="--c:'+color(s)+'" title="'+esc2(((typeof fullName==='function'&&fullName(s.name))||s.name)+' · '+t)+'"><i class="av">'+esc2(initials(s))+'</i><b>'+esc2(nm)+'</b><small>'+esc2(t)+'</small></div>';
     }).join('');
-    if(list.length>2) out+='<div class="pvx-more">+'+(list.length-2)+'<span class="w"> more</span></div>';
+    if(list.length>2) out+='<div class="pvx-more">+'+(list.length-2)+'<span class="w">&nbsp;more</span></div>';
     return '<div class="pvx-rows" aria-hidden="true">'+out+'</div>';
   }
   function weeks(grid){
