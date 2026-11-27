@@ -6250,13 +6250,20 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
 .pvx-extra .av{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--c);color:#fff;font-size:.55rem;font-weight:700;font-style:normal}
 .pvx-extra .av.op{background:transparent;border:1px dashed var(--coral);color:var(--coral);font-size:.75rem}
 #monthAgenda .shift-line[style*="--c"]{box-shadow:inset 3px 0 0 var(--c)}
+/* × to remove a shift (schedulers) */
+.pvx-rm{display:none;flex:none;width:16px;height:16px;margin-left:2px;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--text-secondary) 22%,transparent);color:var(--text-primary);font:inherit;font-size:.75rem;line-height:16px;text-align:center;cursor:pointer}
+.pvx-rm:hover{background:var(--coral);color:#fff}
+.pvx-row:hover .pvx-rm{display:inline-block;margin-left:auto}
+.pvx-row.pvx-open:hover .pvx-rm{margin-left:3px}
+.pvx-row:hover small{display:none}
 /* 3 · open shifts as empty slots */
 .pvx-row.pvx-open{background:transparent;border:1px dashed color-mix(in srgb,var(--coral) 75%,transparent);padding:2px 4px 2px 3px}
 .pvx-row.pvx-open .av{background:transparent;border:1px dashed var(--coral);color:var(--coral);font-size:.8rem}
-.pvx-row.pvx-open b{color:var(--bad-text,var(--coral))}
+.pvx-row.pvx-open b{color:var(--bad-text,var(--coral));flex:none}
 .pvx-fill{display:none;margin-left:auto;flex:none;border:0;border-radius:999px;padding:2px 8px;background:var(--coral);color:#fff;font:inherit;font-size:.6rem;font-weight:700;cursor:pointer}
 .cal-cell:hover .pvx-open .pvx-fill,.pvx-open:focus-within .pvx-fill{display:inline-block}
 .cal-cell:hover .pvx-open .pvx-fill+small{display:none}
+.pvx-row.pvx-open:hover .pvx-fill{margin-left:auto}
 /* 4 · quiet week rows: only what's wrong stands out */
 .month-layout #calGrid .week-sum{transition:opacity .2s}
 .month-layout #calGrid .week-sum .wk-item.pvx-dim{opacity:.45}
@@ -6273,8 +6280,8 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
 .month-layout .today .dnum{position:relative}
 .month-layout .today .dnum::after{content:'Today';position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-size:.52rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .month-layout .today .pvx-strip{margin-top:12px}
-@media(max-width:760px){.pvx-rows{padding:0 0 4px;justify-items:center}.pvx-row,.pvx-row.pvx-open{background:transparent;border:0;padding:0}.pvx-row .av{width:20px;height:20px;font-size:.5rem}.pvx-row b,.pvx-row small{display:none}.pvx-extra{justify-content:center;gap:0}.pvx-extra .av{width:16px;height:16px;font-size:.45rem;margin-left:-1px;box-shadow:0 0 0 1.5px var(--surface-0)}.pvx-extra .av:first-child{margin-left:0}.pvx-more{padding:0}.pvx-rows{display:flex;flex-wrap:wrap;justify-content:center;gap:2px}.month-layout .today .dnum::after{display:none}.pvx-strip{height:18px;margin:4px 2px 5px}.pvx-strip-key{display:none}.pvx-fill{display:none!important}}
-@media print{.pvx-fill{display:none!important}}
+@media(max-width:760px){.pvx-rows{padding:0 0 4px;justify-items:center}.pvx-row,.pvx-row.pvx-open{background:transparent;border:0;padding:0}.pvx-row .av{width:20px;height:20px;font-size:.5rem}.pvx-row b,.pvx-row small{display:none}.pvx-extra{justify-content:center;gap:0}.pvx-extra .av{width:16px;height:16px;font-size:.45rem;margin-left:-1px;box-shadow:0 0 0 1.5px var(--surface-0)}.pvx-extra .av:first-child{margin-left:0}.pvx-more{padding:0}.pvx-rows{display:flex;flex-wrap:wrap;justify-content:center;gap:2px}.month-layout .today .dnum::after{display:none}.pvx-strip{height:18px;margin:4px 2px 5px}.pvx-strip-key{display:none}.pvx-fill,.pvx-rm{display:none!important}}
+@media print{.pvx-fill,.pvx-rm{display:none!important}}
 </style>
 <script id="pvx-cal-design">
 /* Calendar design pass (Daniel, Nov 27 2026): draws over the month grid after the engine renders it. */
@@ -6328,17 +6335,21 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
     var title=miss?('ER gap: '+gaps.map(function(g){ return hrs(g.a)+'–'+hrs(g.b); }).join(', ')+' · '+Math.round((1440-miss)/60*10)/10+' of 24 h covered'):'ER covered all 24 hours';
     return '<div class="pvx-strip" title="'+esc2(title)+'">'+html+'</div><div class="pvx-strip-key" aria-hidden="true"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div>';
   }
+  /* a small × on each shift for Kelley and Management: some days need only two or three doctors (Daniel, Nov 27 2026).
+     It opens the usual remove sheet, so nothing is deleted until Apply, and the change goes in the history. */
+  function rm(s){ return App.isAdmin()?'<button type="button" class="pvx-rm" tabindex="-1" title="Remove this shift from the day" aria-label="Remove '+esc2(s.open?'open shift':String(s.name))+' '+esc2(clock(s.start)+'–'+clock(s.end))+'" onclick="event.stopPropagation();PVXRemoveShift('+s.id+')">&times;</button>':''; }
+  window.PVXRemoveShift=function(id){ if(window.DS&&DS.remove) DS.remove(id); else Coverage.remove(id); };
   function rows(list){
     var admin=App.isAdmin();
     list.sort(function(a,b){ return (shiftInterval(a)[0]-shiftInterval(b)[0])||(Number(Boolean(a.open))-Number(Boolean(b.open))); });
     var out=list.map(function(s){
       var t=clock(s.start)+'–'+clock(s.end);
       if(s.open) return '<div class="pvx-row pvx-open" title="Open shift · '+esc2(t)+'"><i class="av">+</i><b>Open</b>'
-        +(admin?'<button type="button" class="pvx-fill" tabindex="-1" onclick="event.stopPropagation();App.openSlot('+s.id+',this)">Fill</button>':'')+'<small>'+esc2(t)+'</small></div>';
+        +(admin?'<button type="button" class="pvx-fill" tabindex="-1" onclick="event.stopPropagation();App.openSlot('+s.id+',this)">Fill</button>':'')+'<small>'+esc2(t)+'</small>'+rm(s)+'</div>';
       var nm=String(s.name).replace(/\*$/,'').trim().split(/\s+/).pop();
-      return '<div class="pvx-row" style="--c:'+color(s)+'" title="'+esc2(((typeof fullName==='function'&&fullName(s.name))||s.name)+' · '+t)+'"><i class="av">'+esc2(initials(s))+'</i><b>'+esc2(nm)+'</b><small>'+esc2(t)+'</small></div>';
+      return '<div class="pvx-row" style="--c:'+color(s)+'" title="'+esc2(((typeof fullName==='function'&&fullName(s.name))||s.name)+' · '+t)+'"><i class="av">'+esc2(initials(s))+'</i><b>'+esc2(nm)+'</b><small>'+esc2(t)+'</small>'+rm(s)+'</div>';
     }).join('');
-    return '<div class="pvx-rows" aria-hidden="true">'+out+'</div>';
+    return '<div class="pvx-rows">'+out+'</div>';
   }
   function weeks(grid){
     grid.querySelectorAll('.week-sum').forEach(function(w){
