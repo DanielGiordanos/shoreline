@@ -6231,8 +6231,9 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
 .month-layout #calGrid .cal-cell[data-date]{position:relative}
 .month-layout #calGrid .date-markers{display:none}
 /* 1 · the 24-hour strip */
-.pvx-strip{position:relative;height:22px;margin:6px 6px 8px;border-radius:5px;background:color-mix(in srgb,var(--text-secondary) 10%,transparent);overflow:hidden}
+.pvx-strip{position:relative;height:26px;margin:6px 6px 8px;border-radius:5px;background:color-mix(in srgb,var(--text-secondary) 10%,transparent);overflow:hidden}
 .pvx-strip .tk{position:absolute;top:0;bottom:0;width:1px;background:color-mix(in srgb,var(--text-secondary) 22%,transparent)}
+.pvx-strip .ln{position:absolute;left:1px;right:1px;border-radius:3px;background:color-mix(in srgb,var(--text-secondary) 7%,transparent)}
 .pvx-strip .sg{position:absolute;border-radius:3px;background:var(--c);opacity:.9}
 .pvx-strip .sg.op{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--coral) 55%,transparent) 0 3px,transparent 3px 6px);box-shadow:inset 0 0 0 1px var(--coral);opacity:1}
 .pvx-strip .gp{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--coral) 22%,transparent);box-shadow:inset 0 -2px 0 var(--coral)}
@@ -6272,7 +6273,7 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
 .month-layout .today .dnum{position:relative}
 .month-layout .today .dnum::after{content:'Today';position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-size:.52rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .month-layout .today .pvx-strip{margin-top:12px}
-@media(max-width:760px){.pvx-rows{padding:0 0 4px;justify-items:center}.pvx-row,.pvx-row.pvx-open{background:transparent;border:0;padding:0}.pvx-row .av{width:20px;height:20px;font-size:.5rem}.pvx-row b,.pvx-row small{display:none}.pvx-extra{justify-content:center;gap:0}.pvx-extra .av{width:16px;height:16px;font-size:.45rem;margin-left:-1px;box-shadow:0 0 0 1.5px var(--surface-0)}.pvx-extra .av:first-child{margin-left:0}.pvx-more{padding:0}.pvx-rows .pvx-row:nth-child(2){display:none}.month-layout .today .dnum::after{display:none}.pvx-strip{height:10px;margin:4px 2px 5px}.pvx-strip-key{display:none}.pvx-fill{display:none!important}}
+@media(max-width:760px){.pvx-rows{padding:0 0 4px;justify-items:center}.pvx-row,.pvx-row.pvx-open{background:transparent;border:0;padding:0}.pvx-row .av{width:20px;height:20px;font-size:.5rem}.pvx-row b,.pvx-row small{display:none}.pvx-extra{justify-content:center;gap:0}.pvx-extra .av{width:16px;height:16px;font-size:.45rem;margin-left:-1px;box-shadow:0 0 0 1.5px var(--surface-0)}.pvx-extra .av:first-child{margin-left:0}.pvx-more{padding:0}.pvx-rows .pvx-row:nth-child(2){display:none}.month-layout .today .dnum::after{display:none}.pvx-strip{height:18px;margin:4px 2px 5px}.pvx-strip-key{display:none}.pvx-fill{display:none!important}}
 @media print{.pvx-fill{display:none!important}}
 </style>
 <script id="pvx-cal-design">
@@ -6301,21 +6302,35 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
       var iv=shiftInterval(s); if(!(iv[0]<d1&&d0<iv[1])) return;
       segs.push({a:Math.max(iv[0],d0)-d0,b:Math.min(iv[1],d1)-d0,s:s});
     });
-    segs.sort(function(x,y){ return x.a-y.a||y.b-x.b; });
-    var lanes=[]; segs.forEach(function(g){ for(var i=0;i<lanes.length;i++){ if(lanes[i]<=g.a){ g.l=i; lanes[i]=g.b; return; } } g.l=lanes.length; lanes.push(g.b); });
-    var n=Math.max(1,Math.min(lanes.length,4)), pad=2, gap=1.5, h=(22-pad*2-gap*(n-1))/n;
+    /* four fixed lanes, top to bottom: 7a–5p, 8a–8p, 12p–12a, 7p–7a (Daniel, Nov 27 2026). Two doctors on one shift split its lane. */
+    function laneOf(g){ var st=g.s.start, en=g.s.end;
+      if(g.s.date!==date) return 3;
+      if(/^8:00 AM$/.test(st)&&/^8:00 PM$/.test(en)) return 1;
+      if(g.s.type==='night') return 3; if(g.s.type==='swing') return 2; return 0; }
+    var L=[[],[],[],[]]; segs.forEach(function(g){ L[laneOf(g)].push(g); });
+    var pad=2, gap=1.5, lh=(26-pad*2-gap*3)/4;
+    var draw=[];
+    L.forEach(function(list,li){
+      list.sort(function(x,y){ return x.a-y.a||y.b-x.b; });
+      var sub=[]; list.forEach(function(g){ for(var i=0;i<sub.length;i++){ if(sub[i]<=g.a){ g.k=i; sub[i]=g.b; return; } } g.k=sub.length; sub.push(g.b); });
+      var n=Math.max(1,sub.length), sh=(lh-(n-1))/n;
+      list.forEach(function(g){ draw.push({g:g,top:pad+li*(lh+gap)+g.k*(sh+1),h:sh}); });
+    });
     var gaps=(erDay(date).gaps||[]).map(function(g){ return {a:Math.max(g.a,d0)-d0,b:Math.min(g.b,d1)-d0}; }).filter(function(g){ return g.b>g.a; });
     var html='<div class="tk" style="left:25%"></div><div class="tk" style="left:50%"></div><div class="tk" style="left:75%"></div>';
     gaps.forEach(function(g){ html+='<div class="gp" style="left:'+(g.a/14.4)+'%;width:'+((g.b-g.a)/14.4)+'%"></div>'; });
-    segs.forEach(function(g){ if(g.l>=4) return;
-      html+='<div class="sg'+(g.s.open?' op':'')+'" style="--c:'+color(g.s)+';left:calc('+(g.a/14.4)+'% + 1px);width:calc('+((g.b-g.a)/14.4)+'% - 2px);top:'+(pad+g.l*(h+gap))+'px;height:'+h+'px"></div>'; });
+    var lanes='';
+    for(var li=0;li<4;li++) lanes+='<div class="ln" style="top:'+((pad+li*(lh+gap))/0.26)+'%;height:'+(lh/0.26)+'%"></div>';
+    html=lanes+html;
+    draw.forEach(function(d){ var g=d.g;
+      html+='<div class="sg'+(g.s.open?' op':'')+'" style="--c:'+color(g.s)+';left:calc('+(g.a/14.4)+'% + 1px);width:calc('+((g.b-g.a)/14.4)+'% - 2px);top:'+(d.top/0.26)+'%;height:'+(d.h/0.26)+'%"></div>'; });
     var miss=gaps.reduce(function(t,g){ return t+(g.b-g.a); },0);
     var title=miss?('ER gap: '+gaps.map(function(g){ return hrs(g.a)+'–'+hrs(g.b); }).join(', ')+' · '+Math.round((1440-miss)/60*10)/10+' of 24 h covered'):'ER covered all 24 hours';
     return '<div class="pvx-strip" title="'+esc2(title)+'">'+html+'</div><div class="pvx-strip-key" aria-hidden="true"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div>';
   }
   function rows(list){
     var admin=App.isAdmin();
-    list.sort(function(a,b){ return (App.role==='hourly'?-1:1)*(Number(Boolean(b.open))-Number(Boolean(a.open)))||String(a.start).localeCompare(String(b.start),undefined,{numeric:true}); });
+    list.sort(function(a,b){ return (App.role==='hourly'?-1:1)*(Number(Boolean(b.open))-Number(Boolean(a.open)))||(shiftInterval(a)[0]-shiftInterval(b)[0]); });
     var out=list.slice(0,2).map(function(s){
       var t=clock(s.start)+'–'+clock(s.end);
       if(s.open) return '<div class="pvx-row pvx-open" title="Open shift · '+esc2(t)+'"><i class="av">+</i><b>Open</b>'
