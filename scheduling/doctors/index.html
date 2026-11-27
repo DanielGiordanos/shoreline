@@ -6225,5 +6225,146 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
   selectCalendarDate=function(date){ var r=sel.apply(this,arguments); try{ apply(); tidy(date); }catch(e){} return r; };
 })();
 </script>
+<style id="pvx-cal-design-css">
+/* Calendar design pass (Daniel, Nov 27 2026): a coverage strip in every day, a color for each doctor, open shifts as slots,
+   quiet week rows, and calmer details. */
+.month-layout #calGrid .cal-cell[data-date]{position:relative}
+.month-layout #calGrid .date-markers{display:none}
+/* 1 · the 24-hour strip */
+.pvx-strip{position:relative;height:22px;margin:6px 6px 8px;border-radius:5px;background:color-mix(in srgb,var(--text-secondary) 10%,transparent);overflow:hidden}
+.pvx-strip .tk{position:absolute;top:0;bottom:0;width:1px;background:color-mix(in srgb,var(--text-secondary) 22%,transparent)}
+.pvx-strip .sg{position:absolute;border-radius:3px;background:var(--c);opacity:.9}
+.pvx-strip .sg.op{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--coral) 55%,transparent) 0 3px,transparent 3px 6px);box-shadow:inset 0 0 0 1px var(--coral);opacity:1}
+.pvx-strip .gp{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--coral) 22%,transparent);box-shadow:inset 0 -2px 0 var(--coral)}
+.pvx-strip-key{display:flex;justify-content:space-between;margin:-6px 6px 6px;font-size:.55rem;color:var(--text-secondary);opacity:0;transition:opacity .15s}
+.cal-cell:hover .pvx-strip-key,.cal-cell[aria-pressed=true] .pvx-strip-key{opacity:.8}
+/* 2 · a color for each doctor */
+.pvx-rows{padding:0 5px 5px;text-align:left;display:grid;gap:3px}
+.pvx-row{display:flex;align-items:center;gap:6px;min-width:0;padding:3px 5px 3px 3px;border-radius:8px;background:color-mix(in srgb,var(--c) 12%,transparent);font-size:.7rem;line-height:1.2}
+.pvx-row .av{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--c);color:#fff;font-size:.55rem;font-weight:700;letter-spacing:.02em;font-style:normal}
+.pvx-row b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary);font-weight:600}
+.pvx-row small{margin-left:auto;flex:none;color:var(--text-secondary);font-size:.62rem;font-variant-numeric:tabular-nums}
+.pvx-more{font-size:.62rem;color:var(--text-secondary);padding-left:4px}
+#monthAgenda .shift-line[style*="--c"]{box-shadow:inset 3px 0 0 var(--c)}
+/* 3 · open shifts as empty slots */
+.pvx-row.pvx-open{background:transparent;border:1px dashed color-mix(in srgb,var(--coral) 75%,transparent);padding:2px 4px 2px 3px}
+.pvx-row.pvx-open .av{background:transparent;border:1px dashed var(--coral);color:var(--coral);font-size:.8rem}
+.pvx-row.pvx-open b{color:var(--bad-text,var(--coral))}
+.pvx-fill{display:none;margin-left:auto;flex:none;border:0;border-radius:999px;padding:2px 8px;background:var(--coral);color:#fff;font:inherit;font-size:.6rem;font-weight:700;cursor:pointer}
+.cal-cell:hover .pvx-open .pvx-fill,.pvx-open:focus-within .pvx-fill{display:inline-block}
+.cal-cell:hover .pvx-open .pvx-fill+small{display:none}
+/* 4 · quiet week rows: only what's wrong stands out */
+.month-layout #calGrid .week-sum{transition:opacity .2s}
+.month-layout #calGrid .week-sum .wk-item.pvx-dim{opacity:.45}
+.month-layout #calGrid .week-sum .wk-item.pvx-hot b{color:var(--coral)}
+.month-layout #calGrid .week-sum.pvx-wk-ok{opacity:.55}
+.month-layout #calGrid .week-sum.pvx-wk-ok:hover{opacity:1}
+.pvx-wk-badge{font-size:.68rem;font-weight:700;border-radius:999px;padding:1px 8px}
+.pvx-wk-ok .pvx-wk-badge{color:#1a9e6e;background:color-mix(in srgb,#1a9e6e 14%,transparent)}
+.pvx-wk-bad .pvx-wk-badge{color:var(--coral);background:color-mix(in srgb,var(--coral) 14%,transparent)}
+/* 5 · calmer details */
+.month-layout #calGrid .cal-cell.wknd{background:color-mix(in srgb,var(--text-secondary) 5%,transparent);border-radius:12px}
+.month-layout #calGrid .dnote.holiday{display:block;max-width:none;margin:0 6px 2px;padding:2px 6px;border-radius:6px;font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;text-align:center;background:linear-gradient(90deg,color-mix(in srgb,var(--coral) 22%,transparent),color-mix(in srgb,#E8A830 22%,transparent));color:var(--text-primary)}
+.month-layout .today .date-disc{box-shadow:inset 0 0 0 2px var(--accent),0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent)}
+.month-layout .today .dnum{position:relative}
+.month-layout .today .dnum::after{content:'Today';position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-size:.52rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.month-layout .today .pvx-strip{margin-top:12px}
+@media(max-width:760px){.pvx-rows{padding:0 0 4px;justify-items:center}.pvx-row,.pvx-row.pvx-open{background:transparent;border:0;padding:0}.pvx-row .av{width:20px;height:20px;font-size:.5rem}.pvx-row b,.pvx-row small,.pvx-more .w{display:none}.pvx-more{padding:0}.pvx-rows .pvx-row:nth-child(2){display:none}.month-layout .today .dnum::after{display:none}.pvx-strip{height:10px;margin:4px 2px 5px}.pvx-strip-key{display:none}.pvx-fill{display:none!important}}
+@media print{.pvx-fill{display:none!important}}
+</style>
+<script id="pvx-cal-design">
+/* Calendar design pass (Daniel, Nov 27 2026): draws over the month grid after the engine renders it. */
+(function(){
+  if(typeof App==='undefined'||typeof DAYMAP==='undefined') return;
+  var PAL={kelley:'#2FB3C9',mara:'#A274D6',mike:'#E8644A',shaylan:'#22A877',schiff:'#E0A12A',marissa:'#5B8EDB',amber:'#7C83FF',annie:'#5AA0C8'};
+  var RELIEF_C='#8C96A8';
+  function who(s){ var st=s&&s.name&&staffOf(String(s.name).replace(/\*$/,'')); return st||null; }
+  function color(s){ if(!s||s.open) return 'var(--coral)'; var st=who(s); return st?(PAL[st.id]||st.color||RELIEF_C):RELIEF_C; }
+  function initials(s){ var st=who(s); if(st) return (st.code||st.name.slice(0,2)).slice(0,2);
+    var n=String(s.name||'').trim(), full=(typeof fullName==='function'&&fullName(n))||n, p=String(full).split(/\s+/);
+    return ((p[0]||'')[0]||'')+((p.length>1?p[p.length-1]:p[0]||'')[p.length>1?0:1]||''); }
+  function clock(t){ var m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(t||''); if(!m) return String(t||''); return m[1]+(m[2]!=='00'?':'+m[2]:'')+m[3][0].toLowerCase(); }
+  function hrs(min){ var h=Math.floor(min/60)%24, mm=min%60, ap=h<12?'a':'p'; h=h%12||12; return h+(mm?':'+String(mm).padStart(2,'0'):'')+ap; }
+  var byId={}; function shift(id){ if(!byId[id]||byId[id].id!==id){ byId={}; SHIFTS.forEach(function(s){ byId[s.id]=s; }); } return byId[id]; }
+  var esc2=function(t){ return String(t).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+  function strip(date,visible){
+    var d0=rosterMinute(date,'12:00 AM'), d1=d0+1440, segs=[];
+    var vis={}; visible.forEach(function(s){ vis[s.id]=1; });
+    var prev=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+    SHIFTS.forEach(function(s){
+      if(s.date===date){ if(!vis[s.id]) return; }
+      else if(s.date!==prev||!rosterFilter(s,App.filter)) return;
+      var iv=shiftInterval(s); if(!(iv[0]<d1&&d0<iv[1])) return;
+      segs.push({a:Math.max(iv[0],d0)-d0,b:Math.min(iv[1],d1)-d0,s:s});
+    });
+    segs.sort(function(x,y){ return x.a-y.a||y.b-x.b; });
+    var lanes=[]; segs.forEach(function(g){ for(var i=0;i<lanes.length;i++){ if(lanes[i]<=g.a){ g.l=i; lanes[i]=g.b; return; } } g.l=lanes.length; lanes.push(g.b); });
+    var n=Math.max(1,Math.min(lanes.length,4)), pad=2, gap=1.5, h=(22-pad*2-gap*(n-1))/n;
+    var gaps=(erDay(date).gaps||[]).map(function(g){ return {a:Math.max(g.a,d0)-d0,b:Math.min(g.b,d1)-d0}; }).filter(function(g){ return g.b>g.a; });
+    var html='<div class="tk" style="left:25%"></div><div class="tk" style="left:50%"></div><div class="tk" style="left:75%"></div>';
+    gaps.forEach(function(g){ html+='<div class="gp" style="left:'+(g.a/14.4)+'%;width:'+((g.b-g.a)/14.4)+'%"></div>'; });
+    segs.forEach(function(g){ if(g.l>=4) return;
+      html+='<div class="sg'+(g.s.open?' op':'')+'" style="--c:'+color(g.s)+';left:calc('+(g.a/14.4)+'% + 1px);width:calc('+((g.b-g.a)/14.4)+'% - 2px);top:'+(pad+g.l*(h+gap))+'px;height:'+h+'px"></div>'; });
+    var miss=gaps.reduce(function(t,g){ return t+(g.b-g.a); },0);
+    var title=miss?('ER gap: '+gaps.map(function(g){ return hrs(g.a)+'–'+hrs(g.b); }).join(', ')+' · '+Math.round((1440-miss)/60*10)/10+' of 24 h covered'):'ER covered all 24 hours';
+    return '<div class="pvx-strip" title="'+esc2(title)+'">'+html+'</div><div class="pvx-strip-key" aria-hidden="true"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div>';
+  }
+  function rows(list){
+    var admin=App.isAdmin();
+    list.sort(function(a,b){ return (App.role==='hourly'?-1:1)*(Number(Boolean(b.open))-Number(Boolean(a.open)))||String(a.start).localeCompare(String(b.start),undefined,{numeric:true}); });
+    var out=list.slice(0,2).map(function(s){
+      var t=clock(s.start)+'–'+clock(s.end);
+      if(s.open) return '<div class="pvx-row pvx-open" title="Open shift · '+esc2(t)+'"><i class="av">+</i><b>Open</b>'
+        +(admin?'<button type="button" class="pvx-fill" tabindex="-1" onclick="event.stopPropagation();App.openSlot('+s.id+',this)">Fill</button>':'')+'<small>'+esc2(t)+'</small></div>';
+      var nm=String(s.name).replace(/\*$/,'').trim().split(/\s+/).pop();
+      return '<div class="pvx-row" style="--c:'+color(s)+'" title="'+esc2(((typeof fullName==='function'&&fullName(s.name))||s.name)+' · '+t)+'"><i class="av">'+esc2(initials(s))+'</i><b>'+esc2(nm)+'</b><small>'+esc2(t)+'</small></div>';
+    }).join('');
+    if(list.length>2) out+='<div class="pvx-more">+'+(list.length-2)+'<span class="w"> more</span></div>';
+    return '<div class="pvx-rows" aria-hidden="true">'+out+'</div>';
+  }
+  function weeks(grid){
+    grid.querySelectorAll('.week-sum').forEach(function(w){
+      var bad=0;
+      w.querySelectorAll('.wk-item').forEach(function(it){
+        var t=it.textContent, v=(it.querySelector('b')||{}).textContent||'', hot=false;
+        if(/ER coverage/.test(t)) hot=parseFloat(v)<100;
+        else if(/ER gaps/.test(t)) hot=parseFloat(v)>0;
+        else if(/Checks passed/.test(t)){ var p=v.split('/'); hot=+p[0]<+p[1]; }
+        else if(/^\s*Open/.test(t)) hot=parseFloat(v)>0;
+        it.classList.toggle('pvx-hot',hot); it.classList.toggle('pvx-dim',!hot); if(hot) bad++;
+      });
+      w.classList.toggle('pvx-wk-ok',!bad); w.classList.toggle('pvx-wk-bad',!!bad);
+      var lab=w.querySelector('.wk-label');
+      if(lab&&!w.querySelector('.pvx-wk-badge')) lab.insertAdjacentHTML('afterend','<span class="pvx-wk-badge">'+(bad?'Needs attention':'All covered')+'</span>');
+    });
+  }
+  function paint(){
+    var grid=document.getElementById('calGrid'); if(!grid||grid.hidden) return;
+    grid.querySelectorAll('.cal-cell[data-date]').forEach(function(cell){
+      if(cell.querySelector('.pvx-strip')) return;
+      var date=cell.dataset.date, tpl=cell.querySelector('template'); if(!tpl) return;
+      var list=[].map.call(tpl.content.querySelectorAll('[data-sid]'),function(el){ return shift(+el.dataset.sid); }).filter(Boolean);
+      var old=cell.querySelector('.date-shifts'); if(old) old.outerHTML=rows(list.slice());
+      var mk=cell.querySelector('.date-markers'); if(mk) mk.insertAdjacentHTML('afterend',strip(date,list));
+    });
+    weeks(grid);
+  }
+  function tint(){
+    var a=document.getElementById('monthAgenda'); if(!a) return;
+    a.querySelectorAll('.shift-line[data-sid]').forEach(function(el){ var s=shift(+el.dataset.sid); if(s&&!s.open) el.style.setProperty('--c',color(s)); });
+  }
+  var rs=App.renderSchedule;
+  App.renderSchedule=function(){ var r=rs.apply(this,arguments); try{ paint(); tint(); }catch(e){ console.warn('calendar design',e); } return r; };
+  var sel=selectCalendarDate;
+  selectCalendarDate=function(){ var r=sel.apply(this,arguments); try{ tint(); }catch(e){} return r; };
+  var nav=App.navMonth;
+  App.navMonth=function(dir){ var r=nav.apply(this,arguments);
+    try{ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){ var g=document.getElementById('calGrid');
+      if(g&&!g.hidden&&g.animate) g.animate([{opacity:0,transform:'translateX('+(dir*36)+'px)'},{opacity:1,transform:'none'}],{duration:280,easing:'cubic-bezier(.2,.8,.2,1)'}); } }catch(e){}
+    return r; };
+  try{ paint(); tint(); }catch(e){}
+})();
+</script>
 </body>
 </html>
