@@ -6241,10 +6241,10 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
 .cal-cell:hover .pvx-strip-key,.cal-cell[aria-pressed=true] .pvx-strip-key{opacity:.8}
 /* 2 · a color for each doctor */
 .pvx-rows{padding:0 5px 5px;text-align:left;display:grid;gap:3px}
-.pvx-row{display:flex;align-items:center;gap:6px;min-width:0;padding:3px 5px 3px 3px;border-radius:8px;background:color-mix(in srgb,var(--c) 12%,transparent);font-size:.7rem;line-height:1.2}
+.pvx-row{display:flex;align-items:center;gap:5px;min-width:0;padding:3px 5px 3px 3px;border-radius:8px;background:color-mix(in srgb,var(--c) 12%,transparent);font-size:.7rem;line-height:1.2}
 .pvx-row .av{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--c);color:#fff;font-size:.55rem;font-weight:700;letter-spacing:.02em;font-style:normal}
 .pvx-row b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary);font-weight:600}
-.pvx-row small{margin-left:auto;flex:none;color:var(--text-secondary);font-size:.62rem;font-variant-numeric:tabular-nums}
+.pvx-row small{margin-left:auto;flex:none;color:var(--text-secondary);font-size:.58rem;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .pvx-more{font-size:.62rem;color:var(--text-secondary);padding-left:4px}
 .pvx-extra{display:flex;align-items:center;gap:3px;padding:1px 2px}
 .pvx-extra .av{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--c);color:#fff;font-size:.55rem;font-weight:700;font-style:normal}
@@ -6273,7 +6273,7 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
 .month-layout .today .dnum{position:relative}
 .month-layout .today .dnum::after{content:'Today';position:absolute;left:50%;top:100%;transform:translate(-50%,-2px);font-size:.52rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .month-layout .today .pvx-strip{margin-top:12px}
-@media(max-width:760px){.pvx-rows{padding:0 0 4px;justify-items:center}.pvx-row,.pvx-row.pvx-open{background:transparent;border:0;padding:0}.pvx-row .av{width:20px;height:20px;font-size:.5rem}.pvx-row b,.pvx-row small{display:none}.pvx-extra{justify-content:center;gap:0}.pvx-extra .av{width:16px;height:16px;font-size:.45rem;margin-left:-1px;box-shadow:0 0 0 1.5px var(--surface-0)}.pvx-extra .av:first-child{margin-left:0}.pvx-more{padding:0}.pvx-rows .pvx-row:nth-child(2){display:none}.month-layout .today .dnum::after{display:none}.pvx-strip{height:18px;margin:4px 2px 5px}.pvx-strip-key{display:none}.pvx-fill{display:none!important}}
+@media(max-width:760px){.pvx-rows{padding:0 0 4px;justify-items:center}.pvx-row,.pvx-row.pvx-open{background:transparent;border:0;padding:0}.pvx-row .av{width:20px;height:20px;font-size:.5rem}.pvx-row b,.pvx-row small{display:none}.pvx-extra{justify-content:center;gap:0}.pvx-extra .av{width:16px;height:16px;font-size:.45rem;margin-left:-1px;box-shadow:0 0 0 1.5px var(--surface-0)}.pvx-extra .av:first-child{margin-left:0}.pvx-more{padding:0}.pvx-rows{display:flex;flex-wrap:wrap;justify-content:center;gap:2px}.month-layout .today .dnum::after{display:none}.pvx-strip{height:18px;margin:4px 2px 5px}.pvx-strip-key{display:none}.pvx-fill{display:none!important}}
 @media print{.pvx-fill{display:none!important}}
 </style>
 <script id="pvx-cal-design">
@@ -6330,20 +6330,14 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
   }
   function rows(list){
     var admin=App.isAdmin();
-    list.sort(function(a,b){ return (App.role==='hourly'?-1:1)*(Number(Boolean(b.open))-Number(Boolean(a.open)))||(shiftInterval(a)[0]-shiftInterval(b)[0]); });
-    var out=list.slice(0,2).map(function(s){
+    list.sort(function(a,b){ return (shiftInterval(a)[0]-shiftInterval(b)[0])||(Number(Boolean(a.open))-Number(Boolean(b.open))); });
+    var out=list.map(function(s){
       var t=clock(s.start)+'–'+clock(s.end);
       if(s.open) return '<div class="pvx-row pvx-open" title="Open shift · '+esc2(t)+'"><i class="av">+</i><b>Open</b>'
         +(admin?'<button type="button" class="pvx-fill" tabindex="-1" onclick="event.stopPropagation();App.openSlot('+s.id+',this)">Fill</button>':'')+'<small>'+esc2(t)+'</small></div>';
       var nm=String(s.name).replace(/\*$/,'').trim().split(/\s+/).pop();
       return '<div class="pvx-row" style="--c:'+color(s)+'" title="'+esc2(((typeof fullName==='function'&&fullName(s.name))||s.name)+' · '+t)+'"><i class="av">'+esc2(initials(s))+'</i><b>'+esc2(nm)+'</b><small>'+esc2(t)+'</small></div>';
     }).join('');
-    if(list.length>2){
-      var rest=list.slice(2), shown=rest.slice(0,5);
-      out+='<div class="pvx-extra" title="'+esc2(rest.map(function(s){ return (s.open?'Open':((typeof fullName==='function'&&fullName(s.name))||s.name))+' · '+clock(s.start)+'–'+clock(s.end); }).join('\n'))+'">'
-        +shown.map(function(s){ return s.open?'<i class="av op">+</i>':'<i class="av" style="--c:'+color(s)+'">'+esc2(initials(s))+'</i>'; }).join('')
-        +(rest.length>shown.length?'<span class="pvx-more">+'+(rest.length-shown.length)+'</span>':'')+'</div>';
-    }
     return '<div class="pvx-rows" aria-hidden="true">'+out+'</div>';
   }
   function weeks(grid){
