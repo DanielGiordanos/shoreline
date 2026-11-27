@@ -5,6 +5,7 @@
 // Oct 15 2026 (n147) — D-A: On the way rules tightened (tenant + field lists); D-D: sched_months / sched_settings (admin-only writes).
 // Oct 28 2026 (assessment) — SGVP intern reviews: sgvp_review_rounds, sgvp_review_assign, sgvp_reviews (the block marked
 //   "SGVP intern reviews"; nothing else changed).
+// Nov 26 2026 (dsched): Doctor schedule — dsched, dsched_private, dsched_pub (the block marked "dsched"; nothing else changed).
 rules_version = '2';
 // Nov 4 2026 (ro1) — review-only accounts: a staff_members record with role 'reviewer' opens Intern reviews
 //   (sgvp_review_rounds, her own sgvp_review_assign and sgvp_reviews) and its own staff_members record, nothing else.
@@ -743,6 +744,51 @@ match /client_intakes/{docId} {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reopened_at', 'reopened_by'])
           && request.resource.data.reopened_at == request.time
           && request.resource.data.reopened_by == myEmail() );
+      allow delete: if false;
+    }
+
+    // Nov 26 2026 (dsched) — Doctor schedule at /scheduling/doctors/ (Daniel: Firebase, 2027 built in the app).
+    //   dsched/{year}: the working roster (roster, requests as JSON text) with a revision that must go up by one on
+    //   every save. Staff read it. Schedulers write it; other staff may change only the requests (time off, trades).
+    //   dsched_private/{year}: relief rates, budget, bonuses and the change history. Schedulers only.
+    //   dsched_pub/{yyyy-mm}: what was published for a month. Staff read it; schedulers write it. Nothing is deleted.
+    //   Schedulers: owner, admin and management in staff_members, and Kelley Harpin.
+    function dsScheduler() {
+      return staff() && (membership().get('role', '') in ['owner', 'admin', 'management']
+        || request.auth.token.get('email', '').lower() in ['kelley.harpin@vca.com']);
+    }
+    function dsYear(y) { return y.matches('^20[0-9]{2}$'); }
+    match /dsched/{year} {
+      allow read: if staff() && dsYear(year);
+      allow create: if dsScheduler() && dsYear(year)
+        && request.resource.data.keys().hasOnly(['rev', 'roster', 'requests', 'updatedAt', 'updatedBy'])
+        && request.resource.data.rev == 1
+        && request.resource.data.roster is string && request.resource.data.requests is string
+        && request.resource.data.updatedBy == request.auth.token.get('email', '').lower();
+      allow update: if staff() && dsYear(year)
+        && request.resource.data.keys().hasOnly(['rev', 'roster', 'requests', 'updatedAt', 'updatedBy'])
+        && request.resource.data.rev == resource.data.rev + 1
+        && request.resource.data.roster is string && request.resource.data.requests is string
+        && request.resource.data.updatedBy == request.auth.token.get('email', '').lower()
+        && (dsScheduler()
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['requests', 'rev', 'updatedAt', 'updatedBy']));
+      allow delete: if false;
+    }
+    match /dsched_private/{year} {
+      allow read: if dsScheduler() && dsYear(year);
+      allow create, update: if dsScheduler() && dsYear(year)
+        && request.resource.data.keys().hasOnly(['finance', 'audit', 'updatedAt', 'updatedBy'])
+        && request.resource.data.updatedBy == request.auth.token.get('email', '').lower();
+      allow delete: if false;
+    }
+    match /dsched_pub/{month} {
+      allow read: if staff();
+      allow create, update: if dsScheduler()
+        && month.matches('^20[0-9]{2}-(0[1-9]|1[0-2])$')
+        && request.resource.data.keys().hasOnly(['year', 'month', 'shifts', 'version', 'at', 'by'])
+        && request.resource.data.shifts is string
+        && request.resource.data.by == request.auth.token.get('email', '').lower()
+        && (resource == null || request.resource.data.version == resource.data.version + 1);
       allow delete: if false;
     }
 
