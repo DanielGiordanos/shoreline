@@ -5,6 +5,8 @@
 // Oct 15 2026 (n147) — D-A: On the way rules tightened (tenant + field lists); D-D: sched_months / sched_settings (admin-only writes).
 // Oct 28 2026 (assessment) — SGVP intern reviews: sgvp_review_rounds, sgvp_review_assign, sgvp_reviews (the block marked
 //   "SGVP intern reviews"; nothing else changed).
+// Nov 27 2026 — Doctor schedule: doctor_roster, doctor_roster_private, doctor_roster_inbox (the block marked
+//   "Doctor schedule"; nothing else changed).
 rules_version = '2';
 // Nov 4 2026 (ro1) — review-only accounts: a staff_members record with role 'reviewer' opens Intern reviews
 //   (sgvp_review_rounds, her own sgvp_review_assign and sgvp_reviews) and its own staff_members record, nothing else.
@@ -603,6 +605,51 @@ match /client_intakes/{docId} {
         && id == 'announcement'
         && request.resource.data.keys().hasOnly(['text','updatedAt','updatedBy'])
         && request.resource.data.text is string && request.resource.data.text.size() <= 2000;
+    }
+    // Nov 27 2026 — Doctor schedule (scheduling/doctors/): one shared roster per year. All hospital staff read it; Kelley
+    // and Pravix owner / admin / management accounts save it, each save one revision after the last, so two schedulers
+    // can't overwrite each other. Relief rates and budget sit in a separate scheduler-only document. A doctor's request,
+    // trade, give-away or pickup (and a colleague's answer) goes in the inbox: the sender and the colleague it names can
+    // read it, and the scheduler's page checks it, adds it to the roster and removes it.
+    function rosterScheduler() {
+      return staff() && (membership().get('role', '') in ['owner', 'admin', 'management']
+        || request.auth.token.get('email', '').lower() in ['kelley.harpin@vca.com']);
+    }
+    function rosterEmail() { return request.auth.token.get('email', '').lower(); }
+    function rosterSave() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['record', 'base', 'rev', 'updatedAt', 'updatedBy'])
+        && d.record is string && d.record.size() <= 900000
+        && (d.base == null || (d.base is string && d.base.size() <= 300000))
+        && d.rev is int && d.updatedAt == request.time && d.updatedBy == rosterEmail();
+    }
+    match /doctor_roster/{year} {
+      allow read: if staff();
+      allow create: if rosterScheduler() && year.matches('^20[2-9][0-9]$') && rosterSave() && request.resource.data.rev == 1;
+      allow update: if rosterScheduler() && rosterSave() && request.resource.data.rev == resource.data.rev + 1;
+      allow delete: if false;
+    }
+    match /doctor_roster_private/{year} {
+      allow read: if rosterScheduler();
+      allow create, update: if rosterScheduler() && year.matches('^20[2-9][0-9]$')
+        && request.resource.data.keys().hasOnly(['finance', 'updatedAt', 'updatedBy'])
+        && request.resource.data.finance is map
+        && request.resource.data.updatedAt == request.time && request.resource.data.updatedBy == rosterEmail();
+      allow delete: if false;
+    }
+    match /doctor_roster_inbox/{id} {
+      allow read: if rosterScheduler()
+        || (staff() && (resource.data.uid == request.auth.uid || resource.data.to == rosterEmail()));
+      allow create, update: if staff()
+        && (resource == null || resource.data.uid == request.auth.uid)
+        && request.resource.data.keys().hasOnly(['year', 'kind', 'item', 'uid', 'by', 'to', 'at'])
+        && request.resource.data.uid == request.auth.uid && request.resource.data.by == rosterEmail()
+        && request.resource.data.kind in ['request', 'change']
+        && request.resource.data.year is int && request.resource.data.item is map && request.resource.data.item.size() <= 30
+        && (request.resource.data.to == null || (request.resource.data.to is string && request.resource.data.to.size() <= 120))
+        && request.resource.data.at == request.time
+        && id.matches('^20[2-9][0-9]_(request|change)_[0-9]+_' + request.auth.uid + '$');
+      allow delete: if rosterScheduler();
     }
     // Oct 15 (n148, decision #7) — Rounds' Tomorrow list (Rechecks, Drop-offs, OP Ultrasound), shared by everyone on Rounds.
     // One document per item. Staff of this hospital only; the hospital, the list and who created the item never change.

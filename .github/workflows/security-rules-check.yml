@@ -17,6 +17,7 @@ on:
       - 'treatment/owner-access.js'
       - 'sgvp/assessment/index.html'
       - 'sgvp/assessment/reviewer-access.js'
+      - 'scheduling/doctors/index.html'
       - '.github/workflows/security-rules-check.yml'
   pull_request:
     paths:
@@ -66,4 +67,4 @@ jobs:
         run: >
           npx --yes firebase-tools@13.29.1 emulators:exec
           --only firestore --project demo-pravix-security
-          "node security/firestore.rules.test.cjs && node security/sgvp-review-only.test.cjs"
+          "node security/firestore.rules.test.cjs && node security/sgvp-review-only.test.cjs && node security/doctor-schedule.test.cjs"
