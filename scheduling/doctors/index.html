@@ -6394,5 +6394,89 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
   try{ paint(); tint(); }catch(e){}
 })();
 </script>
+<style id="pvx-custom-times-css">
+.pvx-ct-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pvx-ct input[type=time],#genModalOv input#ctStart,#genModalOv input#ctEnd{font-variant-numeric:tabular-nums}
+</style>
+<script id="pvx-custom-times">
+/* Custom shift times (Daniel, Nov 27 2026): Kelley and Management are not locked into the preset shifts.
+   · Add shift has "Custom time…": any start and end, and which kind of shift it counts as.
+   · Any existing shift can have its time changed ("Change time…" in the day sheet).
+   Both go through the usual review sheet, so nothing changes until Apply, and the change is in the history. */
+(function(){
+  if(typeof App==='undefined'||!window.DS||typeof Coverage==='undefined') return;
+  var CUSTOM='__custom';
+  function to12(v){ var m=/^(\d{1,2}):(\d{2})$/.exec(v||''); if(!m) return null; var h=+m[1], ap=h<12?'AM':'PM'; h=h%12||12; return h+':'+m[2]+' '+ap; }
+  function to24(t){ var m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(t||''); if(!m) return ''; var h=(+m[1]%12)+(m[3].toUpperCase()==='PM'?12:0); return String(h).padStart(2,'0')+':'+m[2]; }
+  function mins(v){ var p=v.split(':'); return +p[0]*60+ +p[1]; }
+  function span(a,b){ var d=mins(b)-mins(a); if(d<=0) d+=1440; return d; }
+  function guess(a){ var h=mins(a)/60; return h<11?'day':h<17?'swing':'night'; }
+  function short(v){ var p=v.split(':'), h=+p[0]%12||12; return h+(p[1]!=='00'?':'+p[1]:''); }
+  function label(a,b){ return short(a)+'-'+short(b); }
+  var KIND=[['day','Day'],['swing','Day swing'],['night','Overnight']];
+  function shiftById(id){ return SHIFTS.find(function(s){ return s.id===id; }); }
+  function timeFields(a,b,type){
+    return '<div class="pvx-ct-row">'+field('Starts',inp('ctStart','time',a,'step="900" oninput="PVXTimes.sync()"'))+field('Ends',inp('ctEnd','time',b,'step="900" oninput="PVXTimes.sync()"'))+'</div>'
+      +field('Counts as',sel('ctKind',KIND,type||guess(a)))+'<p class="msub" id="ctSum"></p>';
+  }
+  var T=window.PVXTimes={
+    sync:function(){ var a=val('ctStart'), b=val('ctEnd'), out=$('ctSum'); if(!out) return;
+      if(!a||!b){ out.textContent='Choose a start and end time.'; return; }
+      var d=span(a,b); out.textContent=to12(a)+' – '+to12(b)+(mins(b)<=mins(a)?' (next day)':'')+' · '+(Math.round(d/6)/10)+' h';
+      var k=$('ctKind'); if(k&&!k.dataset.touched) k.value=guess(a); },
+    read:function(){ var a=val('ctStart'), b=val('ctEnd');
+      if(!a||!b){ App.toast('Choose a start and end time.','err'); return null; }
+      var d=span(a,b); if(d>24*60-1||d<15){ App.toast('A shift has to be between 15 minutes and 24 hours.','err'); return null; }
+      return {start:to12(a),end:to12(b),hours:Math.round(d/6)/10,type:val('ctKind'),label:label(a,b)}; }
+  };
+  document.addEventListener('change',function(e){ if(e.target&&e.target.id==='ctKind') e.target.dataset.touched='1';
+    if(e.target&&e.target.id==='dsLabel'){ var box=document.getElementById('ctBox'); if(box) box.hidden=e.target.value!==CUSTOM; if(e.target.value===CUSTOM) T.sync(); } });
+
+  /* Add shift: the presets, plus Custom time… */
+  var add0=DS.addShift;
+  DS.addShift=function(date){
+    add0.apply(this,arguments);
+    var s=document.getElementById('dsLabel'); if(!s||s.querySelector('option[value="'+CUSTOM+'"]')) return;
+    s.insertAdjacentHTML('afterbegin','<option value="'+CUSTOM+'">Custom time… (choose any start and end)</option>');
+    var lab=s.closest('label');
+    lab.insertAdjacentHTML('afterend','<div id="ctBox" class="pvx-ct" hidden>'+timeFields('07:00','17:00','day')+'</div>');
+  };
+  var prev0=DS.addPreview;
+  DS.addPreview=function(date){
+    if(val('dsLabel')!==CUSTOM) return prev0.apply(this,arguments);
+    var e=DAYMAP[date], t=T.read(), name=val('dsName'); if(!e||!t) return;
+    var s={id:Coverage.newId(),date:date,m:e.m,d:e.d,dow:e.dow,label:t.label,type:t.type,start:t.start,end:t.end,hours:t.hours,disp:(TYPE_DISP[t.type]||'Shift')+' · custom',
+      name:name,meta:'',hl:!!name,open:!name,relief:name?isRelief(name):false,holiday:e.holiday};
+    DS.returnTo=date; Coverage.preview([{id:s.id,before:null,after:s}],'Add shift');
+  };
+
+  /* Change time… on an existing shift */
+  DS.retime=function(id){
+    var s=shiftById(id); if(!s||!App.isAdmin()) return;
+    App.dialog('Change time · '+(s.open?'Open shift':fullName(s.name))+' · '+fmtDateFull(s.date),
+      timeFields(to24(s.start),to24(s.end),s.type)+muted('The review shows what changes before anything is saved.')+menuFoot(act('Review','DS.retimePreview('+id+')',true)));
+    var k=$('ctKind'); if(k) k.dataset.touched='1'; T.sync();
+  };
+  DS.retimePreview=function(id){
+    var s=shiftById(id), t=T.read(); if(!s||!t) return;
+    if(t.start===s.start&&t.end===s.end&&t.type===s.type){ App.toast('That is the same time.','info'); return; }
+    var after=Object.assign({},s,{start:t.start,end:t.end,hours:t.hours,type:t.type,label:t.label,disp:(TYPE_DISP[t.type]||'Shift')+' · custom'});
+    delete after.span;
+    DS.returnTo=s.date; Coverage.preview([{id:s.id,before:s,after:after}],'Change shift time');
+  };
+  var day0=App.openDay;
+  App.openDay=function(date){
+    var r=day0.apply(this,arguments);
+    if(!this.isAdmin()) return r;
+    var box=document.getElementById('dayModal'); if(!box) return r;
+    box.querySelectorAll('[data-ds-rm]').forEach(function(b){ var id=(b.getAttribute('onclick').match(/\d+/)||[])[0];
+      if(id&&!b.parentNode.querySelector('[data-ds-time]')) b.insertAdjacentHTML('beforebegin','<button type="button" class="btn btn-ghost btn-sm" data-ds-time onclick="DS.retime('+id+')">Change time…</button>'); });
+    return r;
+  };
+  var commit0=Coverage.commit;
+  Coverage.commit=function(){ var back=this.plan&&this.plan.label==='Change shift time'?DS.returnTo:null; var r=commit0.apply(this,arguments);
+    if(back) DS.backTo={date:back,until:Date.now()+4000}; return r; };
+})();
+</script>
 </body>
 </html>
