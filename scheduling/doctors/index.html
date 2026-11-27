@@ -1597,8 +1597,8 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
     .shared-ribbon [hidden],.shared-ribbon[hidden],.pvx-viewas[hidden]{display:none!important}
     @media print{.shared-ribbon{display:none}}
   </style>
-  <div class="shared-ribbon" id="sharedBar" hidden><strong id="sharedWho"></strong><span id="sharedStatus" role="status" aria-live="polite"></span><a href="/">Published staff schedule</a><a href="/?requests=1">Doctor shift requests</a><a href="/?history=1">Shared change history</a><button id="sharedImport" type="button">Import local draft</button><input id="sharedFile" type="file" accept=".json,application/json" hidden><span id="sharedRecover" hidden><button id="sharedRetry" type="button">Retry save</button><button id="sharedCopy" type="button">Download unsaved draft</button><button id="sharedReload" type="button">Reload editor</button></span></div>
-  <div class="shared-ribbon" id="localSharedEntry" hidden><strong>Local calendar</strong><a href="http://127.0.0.1:8876/">Open shared schedule pilot</a><button type="button" onclick="exportLocalDraft()">Export local draft</button></div>
+  <div class="shared-ribbon" id="sharedBar" hidden><strong id="sharedWho"></strong><span id="sharedStatus" role="status" aria-live="polite"></span><a href="/">Published staff schedule</a><a href="/?requests=1">Doctor shift requests</a><a href="/?history=1">Shared change history</a><button id="sharedImport" type="button">Import offline copy</button><input id="sharedFile" type="file" accept=".json,application/json" hidden><span id="sharedRecover" hidden><button id="sharedRetry" type="button">Retry save</button><button id="sharedCopy" type="button">Download unsaved changes</button><button id="sharedReload" type="button">Reload</button></span></div>
+  <div class="shared-ribbon" id="localSharedEntry" hidden><strong>Offline copy</strong><button type="button" onclick="exportLocalDraft()">Export offline copy</button></div>
   <div class="print-head" id="printHead"></div>
 
   <!-- ═══ DASHBOARD ═══ -->
@@ -1614,7 +1614,7 @@ fromStore();live();window.addEventListener("load",function(){live();setTimeout(l
       </div>
       <div class="filters" id="calFilters"></div>
     </div>
-    <div class="ops-tools"><button type="button" class="fchip" onclick="Live.open()">Next 12 hours</button><button type="button" id="coverageLaunch" class="fchip" onclick="Coverage.open()">Coverage calendar</button><button class="fchip" onclick="Ops.open('call')">Who’s on call?</button><button class="fchip" onclick="Ops.open('views')">Team views</button></div>
+    <div class="ops-tools"><button type="button" class="fchip" onclick="Live.open()">Next 12 hours</button><button type="button" id="coverageLaunch" class="fchip" onclick="Coverage.open()">Coverage calendar</button><button class="fchip" onclick="Ops.open('call')">On duty now</button><button class="fchip" onclick="Ops.open('views')">Team views</button></div>
     <details class="month-summary"><summary>Staffing summary</summary><div class="stat-row" id="schedStats"></div></details>
     <script id="roster-calendar">const civilDate = minute => new Date(minute * 60000).toISOString().slice(0,10);
 const rosterFilter = (s,f) => f==='all'||f===s.type||(f==='open'&&s.open)||(f==='relief'&&s.relief);
@@ -2002,7 +2002,7 @@ function selectCalendarDate(date,interactive=false){
   <div class="search-panel">
     <input id="searchInput" placeholder="Search doctors, dates, shifts, requests, costs…" autocomplete="off">
     <div class="search-results" id="searchResults"></div>
-    <div class="sr-hint"><span><kbd>&#8593;</kbd><kbd>&#8595;</kbd> navigate</span><span><kbd>&#8629;</kbd> open</span><span><kbd>esc</kbd> close</span><span style="margin-left:auto"><kbd>&#8984;K</kbd> or <kbd>/</kbd></span></div>
+    <div class="sr-hint"><span><kbd>&#8593;</kbd><kbd>&#8595;</kbd> Navigate</span><span><kbd>&#8629;</kbd> Open</span><span><kbd>Esc</kbd> Close</span><span style="margin-left:auto"><kbd>&#8984;K</kbd> or <kbd>/</kbd> to search</span></div>
   </div>
 </div>
 
@@ -2015,11 +2015,11 @@ function selectCalendarDate(date,interactive=false){
 <footer class="site-footer">
   <div class="footer-left"><strong>VCA Shoreline Veterinary Referral &amp; Emergency Center</strong><br>
   895 Bridgeport Avenue, Shelton, CT 06484 &nbsp;&middot;&nbsp; Managed by Daniel Giordano</div>
-  <div style="font-size:0.6875rem;color:rgba(255,255,255,0.45);">All schedules subject to change</div>
+  <div style="font-size:0.6875rem;color:rgba(255,255,255,0.45);">All schedules are subject to change.</div>
 </footer>
 <div class="version-bar">
   <div class="vb-left"><svg class="vca-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.2" y="1.8" width="7.6" height="7.6" rx="1.6" transform="rotate(45 12 5.6)" fill="#38BDD2"/><rect x="3.4" y="9.6" width="7.6" height="7.6" rx="1.6" transform="rotate(45 7.2 13.4)" fill="#8B4DB5"/><rect x="13" y="9.6" width="7.6" height="7.6" rx="1.6" transform="rotate(45 16.8 13.4)" fill="#E8644A"/></svg><span class="vb-prog">VCA Shoreline · Staff doctor schedule</span></div>
-  <div class="vb-right"><span class="vb-brand">Schedule · Powered by Pravix</span><span class="vb-div" aria-hidden="true"></span><span class="vb-v">v2.0</span><span class="vb-div" aria-hidden="true"></span><span class="vb-brand">2026</span></div>
+  <div class="vb-right"><span class="vb-brand">Schedule · Powered by Pravix</span><span class="vb-div" aria-hidden="true"></span><span class="vb-brand">2026</span></div>
 </div>
 
 <script id="pvx-sched-year">
@@ -2453,29 +2453,29 @@ const STAFF = [
 ];
 /* Relief & per-diem pool — schedule token → real doctor */
 const RELIEF = [
- {token:'Provost',  full:'Danelle Provost',    role:'Relief / Per-diem'},
- {token:'Roche',    full:'Madison Roche',      role:'Relief / Per-diem'},
- {token:'Fowler',   full:'Tara Fowler',        role:'Relief / Per-diem'},
- {token:'Marko',    full:'Chelsey Marko',      role:'Relief / Per-diem'},
- {token:'Sabo',     full:'Nicole Sabo',        role:'Relief / Per-diem'},
- {token:'Vrana',    full:'Morgan Vrana',       role:'Relief / Per-diem'},
- {token:'Polak',    full:'Klaudia Polak',      role:'Relief / Per-diem'},
- {token:'Sears',    full:'Kassie Sears',       role:'Relief / Per-diem'},
- {token:'Corrado',  full:'Samantha Corrado',   role:'Relief / Per-diem'},
- {token:'Streeter', full:'Elizabeth Streeter', role:'Relief / Per-diem'},
- {token:'Roccisano',full:'Anthony Roccisano',  role:'Relief / Per-diem'},
- {token:'Stone',    full:'Miranda Stone',      role:'Relief / Per-diem'},
- {token:'Colleen',  full:'Colleen Courtney',   role:'Relief / Per-diem'},
- {token:'Harrigan', full:'Chandra Harrigan',   role:'Relief / Per-diem'},
- {token:'Walsh',    full:'Kate Walsh',         role:'Relief / Per-diem'},
- {token:'Toledo',   full:'Vanessa Toledo',     role:'Relief / Per-diem'},
- {token:'Cline',    full:'Kevin Cline',        role:'Relief / Per-diem'},
- {token:'Jacobs',   full:'Hannah Jacobs',      role:'Relief / Per-diem'},
- {token:'Mora',     full:'Emily Mora',         role:'Relief / Per-diem'},
- {token:'Duffy',    full:'James Duffy',        role:'Relief / Per-diem · Visiting'},
- {token:'Jaramillo',full:'Ericka Jaramillo',   role:'Relief / Per-diem'},
- {token:'Stelmach', full:'Hannah Stelmach',    role:'Relief / Per-diem'},
- {token:'Bingham',  full:'Katherine Bingham',  role:'Relief / Per-diem'}
+ {token:'Provost',  full:'Danelle Provost',    role:'Relief and per diem'},
+ {token:'Roche',    full:'Madison Roche',      role:'Relief and per diem'},
+ {token:'Fowler',   full:'Tara Fowler',        role:'Relief and per diem'},
+ {token:'Marko',    full:'Chelsey Marko',      role:'Relief and per diem'},
+ {token:'Sabo',     full:'Nicole Sabo',        role:'Relief and per diem'},
+ {token:'Vrana',    full:'Morgan Vrana',       role:'Relief and per diem'},
+ {token:'Polak',    full:'Klaudia Polak',      role:'Relief and per diem'},
+ {token:'Sears',    full:'Kassie Sears',       role:'Relief and per diem'},
+ {token:'Corrado',  full:'Samantha Corrado',   role:'Relief and per diem'},
+ {token:'Streeter', full:'Elizabeth Streeter', role:'Relief and per diem'},
+ {token:'Roccisano',full:'Anthony Roccisano',  role:'Relief and per diem'},
+ {token:'Stone',    full:'Miranda Stone',      role:'Relief and per diem'},
+ {token:'Colleen',  full:'Colleen Courtney',   role:'Relief and per diem'},
+ {token:'Harrigan', full:'Chandra Harrigan',   role:'Relief and per diem'},
+ {token:'Walsh',    full:'Kate Walsh',         role:'Relief and per diem'},
+ {token:'Toledo',   full:'Vanessa Toledo',     role:'Relief and per diem'},
+ {token:'Cline',    full:'Kevin Cline',        role:'Relief and per diem'},
+ {token:'Jacobs',   full:'Hannah Jacobs',      role:'Relief and per diem'},
+ {token:'Mora',     full:'Emily Mora',         role:'Relief and per diem'},
+ {token:'Duffy',    full:'James Duffy',        role:'Relief and per diem · Visiting'},
+ {token:'Jaramillo',full:'Ericka Jaramillo',   role:'Relief and per diem'},
+ {token:'Stelmach', full:'Hannah Stelmach',    role:'Relief and per diem'},
+ {token:'Bingham',  full:'Katherine Bingham',  role:'Relief and per diem'}
 ];
 const RELIEF_NAMES = RELIEF.map(r=>r.token);
 /* Specialty & leadership — not on the ER rotation, visible in Doctors + search */
@@ -2553,17 +2553,19 @@ function elapsedHours(a,b){return (elapsedMinute(b)-elapsedMinute(a))/60;}
 /* label → shift meta */
 const LABEL_META={
  'DAY':{type:'day',start:'7:00 AM',end:'5:00 PM',hours:10,disp:'Day'},
- '8-8':{type:'day',start:'8:00 AM',end:'8:00 PM',hours:12,disp:'Day 8–8'},
- '12-12':{type:'swing',start:'12:00 PM',end:'12:00 AM',hours:12,disp:'Day swing'},
+ '8-8':{type:'day',start:'8:00 AM',end:'8:00 PM',hours:12,disp:'Day'},
+ '12-12':{type:'swing',start:'12:00 PM',end:'12:00 AM',hours:12,disp:'Swing'},
  '7-7':{type:'night',start:'7:00 PM',end:'7:00 AM',hours:12,disp:'Overnight'},
- '7-7d':{type:'day',start:'7:00 AM',end:'7:00 PM',hours:12,disp:'Day 7–7'},
- '9-6':{type:'day',start:'9:00 AM',end:'6:00 PM',hours:9,disp:'Day 9–6'},
- '10-10':{type:'day',start:'10:00 AM',end:'10:00 PM',hours:12,disp:'Day 10–10'},
- '4-10':{type:'swing',start:'4:00 PM',end:'10:00 PM',hours:6,disp:'Evening 4–10'},
- '7-12':{type:'night',start:'7:00 PM',end:'12:00 AM',hours:5,disp:'Night 7–12'},
- '12-7':{type:'night',start:'12:00 AM',end:'7:00 AM',hours:7,disp:'Night 12–7'}
+ '7-7d':{type:'day',start:'7:00 AM',end:'7:00 PM',hours:12,disp:'Day'},
+ '9-6':{type:'day',start:'9:00 AM',end:'6:00 PM',hours:9,disp:'Day'},
+ '10-10':{type:'day',start:'10:00 AM',end:'10:00 PM',hours:12,disp:'Day'},
+ '4-10':{type:'swing',start:'4:00 PM',end:'10:00 PM',hours:6,disp:'Evening'},
+ '7-12':{type:'night',start:'7:00 PM',end:'12:00 AM',hours:5,disp:'Overnight (first half)'},
+ '12-7':{type:'night',start:'12:00 AM',end:'7:00 AM',hours:7,disp:'Overnight (second half)'}
 };
-const TYPE_DISP={day:'Day',swing:'Day swing',night:'Overnight'};
+/* notes from the source doc such as "AK OFF" read as "Amber Koch · Off" */
+const noteText=n=>{const m=/^([A-Z]{2,3})\s+OFF$/i.exec(String(n).trim());if(!m)return n;const st=STAFF.find(s=>s.code===m[1].toUpperCase()||(s.code||'').slice(0,2)===m[1].toUpperCase());return st?st.name+' · Off':n;};
+const TYPE_DISP={day:'Day',swing:'Swing',night:'Overnight'};
 
 function normName(raw){
  let meta='';let n=raw.trim();
@@ -3054,24 +3056,24 @@ function recommend(sh){
   const st=doctorStats(s.id,sh.m);
   let score=50,reasons=[];
   const prefMap={day:'Day',swing:'Swing',night:'Overnight'};
-  if(s.prefs.includes(prefMap[sh.type])){score+=25;reasons.push(first+' prefers '+TYPE_DISP[sh.type].toLowerCase()+' shifts');}
+  if(s.prefs.includes(prefMap[sh.type])){score+=25;reasons.push('Prefers '+TYPE_DISP[sh.type].toLowerCase()+' shifts');}
   if(sh.type==='night'){score-=st.nights*6;reasons.push(st.nights+' night'+(st.nights===1?'':'s')+' this month');}
   if(wknd){const avg=ROT.reduce((a,x)=>a+doctorStats(x.id,sh.m).weekends,0)/ROT.length;
-   if(st.weekends<avg){score+=12;reasons.push('Below-average weekend load');}else{score-=8;reasons.push(st.weekends+' weekends this month');}}
-  if(st.monthHours<150){score+=10;reasons.push('Monthly roster load ('+st.monthHours+'h scheduled)');}
-  else {score-=15;reasons.push('High hours: '+st.monthHours+'h this month');}
+   if(st.weekends<avg){score+=12;reasons.push('Below-average weekend load');}else{score-=8;reasons.push(st.weekends+' weekend shift'+(st.weekends===1?'':'s')+' this month');}}
+  if(st.monthHours<150){score+=10;reasons.push(st.monthHours+' hours scheduled this month');}
+  else {score-=15;reasons.push('High hours: '+st.monthHours+' hours this month');}
   const run=consecutiveRun(first,sh.date);
   if(run>=5){score-=30;reasons.push('Would work '+run+' consecutive days');}
   const reqOff=REQUESTS.some(r=>r.status==='pending'&&r.doctor===s.id&&overlaps(leaveWindow(r),shiftInterval(sh)));
   if(reqOff){score-=100;reasons.unshift('Pending absence request');}
-  cands.push({kind:'staff',name:s.name,first,score,reasons:['ER rotation · no overlapping assignment',...reasons.slice(0,3)],cost:null});
+  cands.push({kind:'staff',name:s.name,first,score,reasons:['On the ER rotation with no conflicting shift',...reasons.slice(0,3)],cost:null});
  });
  // relief options, cheapest first
  RELIEF_NAMES.forEach(n=>{
   if(blockingReason(n,sh))return;
   const fake={...sh,name:n,relief:true,open:false};
   const c=shiftCost(fake);
-  cands.push({kind:'relief',name:n,first:n,score:20-(c.rate-200)/10,reasons:[ops.approvals.some(p=>p.name===n)?'Site and service approval on file':'Site approval unverified', 'Relief pool · no overlapping roster assignment','Relief · '+money(c.rate)+'/hr → '+money(c.total)+' for this shift'],cost:c});
+  cands.push({kind:'relief',name:n,first:n,score:20-(c.rate-200)/10,reasons:[ops.approvals.some(p=>p.name===n)?'Approved for this location and service':'Not yet approved for this location', 'Relief doctor with no conflicting shift','Relief · '+money(c.rate)+' per hour → '+money(c.total)+' for this shift'],cost:c});
  });
  return cands.sort((a,b)=>b.score-a.score);
 }
@@ -3169,7 +3171,7 @@ const Ops={
    const records=calls.filter(c=>c.service===service),active=records.find(c=>c.a<=now&&now<c.b),next=records.find(c=>c.a>now);
    return row(service,active?active.name+' · through '+intervalText(active.b)+(active.contact?' · '+active.contact:'')+(active.backup?' · Backup: '+active.backup:''):'No coverage entered for this time',next?muted('Next: '+next.name+' · '+intervalText(next.a)):'');
   }).join('');
-  return section('Who’s on call?',body+(App.isAdmin()?act('Add call assignment',"Ops.entry('calls')",true):''))+ (App.isAdmin()?this.entries('calls'): '');
+  return section('On duty now',body+(App.isAdmin()?act('Add call assignment',"Ops.entry('calls')",true):''))+ (App.isAdmin()?this.entries('calls'): '');
  },
  networkPanel(){
   return section('Site and service approvals',muted('Eligibility uses manually entered approvals and commitments. A relief doctor with no approval record is marked unverified.')+act('Add approval',"Ops.entry('approvals')")+this.entries('approvals'))+
@@ -3391,9 +3393,9 @@ const Coverage = {
  clone(s){return s?JSON.parse(JSON.stringify(s)):null;},
  aligned(s,date,id,keep){const e=DAYMAP[date];if(!e)throw Error('Choose a date in the loaded roster.');const offset=rosterMinute(date,'12:00 AM')-rosterMinute(s.date,'12:00 AM');
   const next={...s,id,date,m:e.m,d:e.d,dow:e.dow,holiday:e.holiday,span:shiftInterval(s).map(t=>t+offset)};if(!keep)setOccupant(next,'');return next;},
- copyForm(){const presets=ops.coverageTemplates||[];App.dialog('Copy coverage',field('Template',sel('cxTemplate',[['','Current roster'],...presets.map((t,i)=>[String(i),t.name])],'','Coverage.pickTemplate()'))+field('Source date',inp('cxSource','date',this.day))+field('Copy',sel('cxLength',[[1,'One day'],[7,'Seven days']],7))+field('Destination start',inp('cxDest','date',this.date(this.day,7)))+field('Assignments',sel('cxNames',[[0,'Coverage only'],[1,'Coverage and staff']],0))+act('Save named template','Coverage.saveTemplateForm()')+menuFoot(act('Preview copy','Coverage.copyPreview()',true)));},
+ copyForm(){const presets=ops.coverageTemplates||[];App.dialog('Copy coverage',field('Template',sel('cxTemplate',[['','Current roster'],...presets.map((t,i)=>[String(i),t.name])],'','Coverage.pickTemplate()'))+field('Source date',inp('cxSource','date',this.day))+field('Copy',sel('cxLength',[[1,'One day'],[7,'Seven days']],7))+field('Destination start',inp('cxDest','date',this.date(this.day,7)))+field('Assignments',sel('cxNames',[[0,'Coverage only'],[1,'Coverage and staff']],0))+act('Save named template','Coverage.saveTemplateForm()')+menuFoot(act('Review copy','Coverage.copyPreview()',true)));},
  pickTemplate(){const k=val('cxTemplate'),t=k===''?null:ops.coverageTemplates?.[Number(k)];$('cxSource').disabled=!!t;$('cxLength').disabled=!!t;if(t){$('cxSource').value=t.source;$('cxLength').value=t.length;}},
- saveTemplateForm(){const source=val('cxSource'),length=+val('cxLength');if(!DAYMAP[source]||!DAYMAP[this.date(source,length-1)])return App.toast('Choose a complete roster interval.','err');this.templateSource={source,length};App.dialog('Save named template',muted(fmtDate(source)+' · '+length+' day(s)')+field('Template name',inp('cxTName','text','','maxlength="80"'))+menuFoot(act('Save template','Coverage.saveTemplate()',true)));},
+ saveTemplateForm(){const source=val('cxSource'),length=+val('cxLength');if(!DAYMAP[source]||!DAYMAP[this.date(source,length-1)])return App.toast('Choose a complete roster interval.','err');this.templateSource={source,length};App.dialog('Save named template',muted(fmtDate(source)+' · '+length+' day'+(length===1?'':'s'))+field('Template name',inp('cxTName','text','','maxlength="80"'))+menuFoot(act('Save template','Coverage.saveTemplate()',true)));},
  saveTemplate(){if(!App.isAdmin())return;withRoster(()=>{const name=val('cxTName');if(!name)throw Error('Enter a template name.');const {source,length}=this.templateSource,days=Array.from({length},(_,i)=>DAYMAP[this.date(source,i)].shifts.map(s=>({...this.clone(s),span:shiftInterval(s)})));ops.coverageTemplates??=[];ops.coverageTemplates.push({name,source,length,days});opSave();this.copyForm();});},
  copyPreview(){const src=val('cxSource'),dest=val('cxDest'),length=+val('cxLength'),keep=val('cxNames')==='1';if(!DAYMAP[src]||!DAYMAP[dest])return App.toast('Choose source and destination dates in the loaded roster.','err');
   const selected=val('cxTemplate'),template=selected===''?null:ops.coverageTemplates?.[Number(selected)];let id=this.newId(),changes=[],skipped=0;const used=new Set();
@@ -3484,7 +3486,7 @@ const Coverage = {
  commit(){if(!App.isAdmin()||!this.plan)return;const p=this.plan;
   withRoster(()=>{const errors=this.inspect(p.changes);if(errors.length)throw Error(errors[0]);this.applyStructure(p.changes);ops.structure??={};ops.removed??={};
    for(const c of p.changes){ops.structure[c.id]=this.clone(c.after);if(c.after)delete ops.removed[c.id];else ops.removed[c.id]=this.clone(c.before);opEvent(c.after||c.before,p.label,c.after?.name||'');}
-   ops.reverse=p.changes.map(c=>({id:c.id,before:this.clone(c.after),after:this.clone(c.before)}));AUDIT.unshift({at:new Date().toISOString(),kind:'edit',who:App.role==='mgmt'?'Management':'Scheduler',text:esc(p.label)+' · '+p.changes.length+' shift(s)',reason:'',approval:''});App.invalidateChanges();this.plan=null;opSave();if(p.assignId)App.openAssign(p.assignId);
+   ops.reverse=p.changes.map(c=>({id:c.id,before:this.clone(c.after),after:this.clone(c.before)}));AUDIT.unshift({at:new Date().toISOString(),kind:'edit',who:App.role==='mgmt'?'Management':'Scheduler',text:esc(p.label)+' · '+p.changes.length+' shift'+(p.changes.length===1?'':'s'),reason:'',approval:''});App.invalidateChanges();this.plan=null;opSave();if(p.assignId)App.openAssign(p.assignId);
    if(p.label==='Swap assignments'){
     const items=p.changes.map(c=>({shift:c.after,from:fullName(c.before.name)||'Open',to:fullName(c.after.name)||'Open'}));
     App.dialog('Assignments swapped',tradeOwners(items,true)+menuFoot(''));crossfadeTrade($('genModal'));
@@ -3493,7 +3495,7 @@ const Coverage = {
  },
  history(){const removed=Object.values(ops.removed||{});App.dialog('History & recovery',(ops.reverse?.length?act('Preview undo',"Coverage.preview(ops.reverse,'Undo last coverage edit')"):'')+removed.map(s=>row(shiftCaption(s),fullName(s.name)||'Open',act('Review restore','Coverage.restore('+s.id+')'))).join('')+(!removed.length?muted('No deleted coverage shifts.'):'')+menuFoot(act('All schedule history',"App.closeModals();App.go('history')")));},
  restore(id){const s=ops.removed?.[id];if(s)this.preview([{id,before:null,after:s}],'Restore shift');},
- publication(){const m=App.month,rows=SHIFTS.filter(s=>s.m===m);const people=[...new Set(rows.filter(s=>!s.open).map(s=>fullName(s.name)))];App.dialog('Review publication',muted(monthMetrics(m).er.missing+' uncovered independent ER hours')+muted(MONTHS[m]+' · '+rows.length+' shifts · '+rows.filter(s=>s.open).length+' open')+row('Staff on this roster',people.join(', '))+muted(window.sharedRosterBoot?'Staff will see this revision on the shared schedule. Later edits stay in the draft.':'Publishing this month updates the doctor calendar and published team views in this file.')+menuFoot(MONTH_STATUS[m]==='published'?muted('This month is published.'):act('Publish month','App.closeModals();App.publish()',true)));},
+ publication(){const m=App.month,rows=SHIFTS.filter(s=>s.m===m);const people=[...new Set(rows.filter(s=>!s.open).map(s=>fullName(s.name)))];App.dialog('Review publication',muted(monthMetrics(m).er.missing+' uncovered independent ER hours')+muted(MONTHS[m]+' · '+rows.length+' shift'+(rows.length===1?'':'s')+' · '+rows.filter(s=>s.open).length+' open')+row('Staff on this roster',people.join(', '))+muted(window.sharedRosterBoot?'Staff will see this revision on the shared schedule. Later edits stay in the draft.':'Publishing this month updates the doctor calendar and published team views in this file.')+menuFoot(MONTH_STATUS[m]==='published'?muted('This month is published.'):act('Publish month','App.closeModals();App.publish()',true)));},
 };
 
 /* Operating coverage, staffing repairs, handoff and local demand review. Times use the
@@ -3669,7 +3671,7 @@ const Live = {
  monday(date){return Coverage.monday(date);},
  trainingView(d){const start=this.monday(this.year+'-07-01'),weeks=Array.from({length:13},(_,k)=>Coverage.date(start,(this.week+k)*7)),program=d.program.filter(p=>p.start===start);
  let grid='<div class="lc-scroll"><table class="lc-year"><tr><th>Intern / week</th>'+weeks.map(x=>'<th>'+fmtDate(x)+'</th>').join('')+'</tr>'+program.map(p=>'<tr><th>'+esc(p.name)+'</th>'+weeks.map(date=>{const s=d.blocks.find(b=>b.pid===p.id&&b.date===date);return '<td>'+this.btn((s?.locked?'◆ ':'')+(s?.type||'ER'), 'blockForm',p.id,date)+'</td>';}).join('')+'</tr>').join('')+'</table></div>';
- return '<div class="lc-tools">'+field('Program starts in July',inp('lcYear','number',this.year,'min="2020" max="2099" onchange="Live.programYear(+this.value)"'))+field('Weeks',sel('lcQuarter',[0,13,26,39].map((w,i)=>[w,'Quarter '+(i+1)]),this.week,"Live.set('week',Number(this.value))"))+this.btn('Enroll intern','enrollForm')+this.btn('Add rotation seat','seatForm')+this.btn('Plan missing rotations','planRotations')+this.btn('Rebalance unlocked weeks','rebalance')+'</div>'+grid+section('Completion by intern',program.map(p=>{const have=d.blocks.filter(x=>x.pid===p.id);return row(p.name,p.requirements.map(k=>k+': '+(have.some(s=>s.type===k&&s.completed)?'completed':have.some(s=>s.type===k)?'scheduled':'needed')).join(' · '));}).join('')||muted('Enroll an intern, then enter available rotation seats and named supervisors. Unassigned weeks are baseline ER rotation planning only.'))+section('Confirmed seats',(d.seats||[]).filter(s=>s.date>=start&&s.date<Coverage.date(start,364)).sort((a,b)=>a.date.localeCompare(b.date)).map(s=>row(s.type+' · '+fmtDate(s.date),s.site+' · '+s.mentor+' · '+s.count+' seat(s)')).join('')||muted('No verified seats entered for this program year.'));},
+ return '<div class="lc-tools">'+field('Program starts in July',inp('lcYear','number',this.year,'min="2020" max="2099" onchange="Live.programYear(+this.value)"'))+field('Weeks',sel('lcQuarter',[0,13,26,39].map((w,i)=>[w,'Quarter '+(i+1)]),this.week,"Live.set('week',Number(this.value))"))+this.btn('Enroll intern','enrollForm')+this.btn('Add rotation seat','seatForm')+this.btn('Plan missing rotations','planRotations')+this.btn('Rebalance unlocked weeks','rebalance')+'</div>'+grid+section('Completion by intern',program.map(p=>{const have=d.blocks.filter(x=>x.pid===p.id);return row(p.name,p.requirements.map(k=>k+': '+(have.some(s=>s.type===k&&s.completed)?'completed':have.some(s=>s.type===k)?'scheduled':'needed')).join(' · '));}).join('')||muted('Enroll an intern, then enter available rotation seats and named supervisors. Unassigned weeks are baseline ER rotation planning only.'))+section('Confirmed seats',(d.seats||[]).filter(s=>s.date>=start&&s.date<Coverage.date(start,364)).sort((a,b)=>a.date.localeCompare(b.date)).map(s=>row(s.type+' · '+fmtDate(s.date),s.site+' · '+s.mentor+' · '+s.count+' seat'+(s.count===1?'':'s'))).join('')||muted('No verified seats entered for this program year.'));},
  programYear(year){if(Number.isInteger(year)&&year>=2020&&year<=2099){this.year=year;this.week=0;this.render();}},
  enrollForm(){this.form('Enroll intern',field('Name',this.input('name','text','', 'list="lcInterns"'))+'<datalist id="lcInterns">'+INTERNS.map(n=>'<option value="'+esc(n)+'">').join('')+'</datalist>'+field('Required rotations · comma separated',this.input('req','text','Specialty, GP, Elective')),'Live.enroll()');},
  enroll(){this.change('Intern enrolled',d=>{this.admin();const name=this.val('name'),requirements=[...new Set(this.val('req').split(',').map(x=>x.trim()).filter(Boolean))],start=this.monday(this.year+'-07-01');this.check(name&&requirements.length&&!d.program.some(p=>p.name===name&&p.start===start),'Enter a unique intern and required rotations.');d.program.push({id:this.uid(),name,requirements,start,weeks:52});});},
@@ -3700,7 +3702,7 @@ const Live = {
  App.dialog('Rebalance unlocked weeks',muted('Pinned, completed and leave weeks stay fixed. An existing requirement keeps its seat unless it can be rescheduled.')+
  add.map(b=>{const old=remove.find(x=>x.pid===b.pid&&x.type===b.type);return row(getName(b.pid)+' · '+b.type,(old?fmtDate(old.date)+' → ':'New block · ')+fmtDate(b.date));}).join('')+
  tasks.filter(t=>!best.some(b=>b.pid===t.p.id&&b.type===t.type)).map(t=>muted(getName(t.p.id)+' · '+t.type+' still needs a compatible seat')).join('')+
- muted(visited>35000?'Search limit reached. Showing the best plan found.':add.length?bestMoves+' existing block(s) moved.':'No changes improve this plan.')+menuFoot(add.length?this.btn('Apply proposed blocks','applyRotations'):''));},
+ muted(visited>35000?'Search limit reached. Showing the best plan found.':add.length?bestMoves+' existing block'+(bestMoves===1?'':'s')+' moved.':'No changes improve this plan.')+menuFoot(add.length?this.btn('Apply proposed blocks','applyRotations'):''));},
  applyRotations(){this.change('Rotation plan applied',d=>{this.admin();this.check(this.rotationDraft&&this.rotationDraft.revision===d.revision,'Inputs changed. Generate the plan again.');const remove=this.rotationDraft.remove||[];d.blocks=d.blocks.filter(b=>!remove.some(x=>x.pid===b.pid&&x.seat===b.seat&&x.date===b.date)).concat(this.rotationDraft.best);this.rotationDraft=null;});},
  metrics:['ER arrivals','Treatments due','OR starts','Occupied ICU beds'],metric:'ER arrivals',
  forecastView(d){const metric=this.metric,h=Math.floor(this.time()/60)*60,all=d.observations.filter(x=>x.site===this.site&&x.metric===metric),forecast=this.predict(all,h);const rows=this.backtest(all),score=method=>rows.reduce((sum,x)=>sum+Math.abs(x[method]-x.value),0)/rows.length;
@@ -3851,7 +3853,7 @@ const StaffingDashboard = {
   return '<section class="sd-card"><div class="sd-heading"><div><h2>Monthly roster</h2><p>'+esc(localSite)+' · Doctor schedule</p></div>'+sel('sdMonth',MONTHS.slice(1).map((name,i)=>[i+1,name+' '+ROSTER_YEAR]),m,'App.setPeriod(iso(Number(this.value),1));App.renderDashboard()').replace('<select ','<select aria-label="Roster month" ')+'</div><div class="sd-measures"><div><small>Independent ER coverage</small><strong>'+monthMetrics(m).cov+'%</strong><p>'+monthMetrics(m).er.missing+' uncovered hours</p></div><div><small>Days passing roster checks</small><strong>'+(days.length-issues.length)+' / '+days.length+'</strong>'+
    (issues.length?'<details><summary>'+issues.length+' affected dates</summary><div class="sd-dates">'+this.dateButtons(issues.map(d=>d.iso))+'</div></details>':'<p>All evaluated dates pass</p>')+'</div><div><small>Assigned weekend shifts</small><strong>'+Math.min(...counts)+'–'+Math.max(...counts)+'</strong><details><summary>By rotating doctor</summary>'+wk.map(s=>'<p>'+esc(s.name)+' · '+s.n+'</p>').join('')+'<p>Contracted weekend shares unavailable.</p></details></div>'+
    (App.canSeeCosts()?'<div><small>Scheduled relief cost</small><strong>'+money(fin.total)+'</strong><button class="sd-link" onclick="App.go(\'costs\')">Of '+money(FIN.budget)+' monthly budget</button></div>':'')+
-   '</div><div class="sd-facts">'+(open?act(open+' open shifts','App.showOpenShifts()'):'<span>No open shifts</span>')+act(requests.length+' pending time-off requests',"App.go('requests')")+'</div><div class="sd-publish"><strong>'+esc(pub?'Published':failures.length?'Publication blocked':'Ready to publish')+'</strong>'+
+   '</div><div class="sd-facts">'+(open?act(open+' open shifts','App.showOpenShifts()'):'<span>No open shifts</span>')+act(requests.length+' pending time-off requests',"App.go('requests')")+'</div><div class="sd-publish"><strong>'+esc(pub?'Published':failures.length?'Not ready to publish':'Ready to publish')+'</strong>'+
    failures.map(v=>'<div><span>'+esc(v.label==='Every overnight covered'?'Overnight coverage needs review':v.label==='PTO conflicts resolved'?'Approved absence overlaps a shift':v.label)+'</span><div class="sd-dates">'+this.dateButtons(v.dates||[],v.label==='Every overnight covered'?'Overnight coverage needs review':v.label==='PTO conflicts resolved'?'Approved absence overlaps a shift':v.label)+'</div></div>').join('')+
    (pub||failures.length?'':act('Review publication','Coverage.publication()',true))+'</div></section>';
  },
@@ -3945,7 +3947,7 @@ const App={
   this.closeModals();
   this.costLayer.on=false;
   this.renderAll();
-  this.toast(r==='hourly'?'Hourly staff preview':r==='doctor'?('Viewing as '+STAFF.find(s=>s.id===this.doctor).name):r==='mgmt'?'Management view — costs visible':'Kelley’s scheduler view','info');
+  this.toast(r==='hourly'?'Front desk view':r==='doctor'?('Viewing as '+STAFF.find(s=>s.id===this.doctor).name):r==='mgmt'?'Management view (includes costs)':'Scheduler view','info');
  },
  setDoctor(id){this.doctor=id;this.renderAll();},
  toggleDark(){this.dark=!document.body.classList.contains('dark');document.body.classList.toggle('dark',this.dark);},
@@ -4071,7 +4073,7 @@ const App={
  reviewPriorities(){
   const m=this.month;
   const conflicts=Object.values(DAYMAP).filter(e=>e.iso>=currentDay&&e.m<=m+1&&dayIssues(e).some(x=>/No overnight|No day doctor/.test(x)));
-  if(conflicts.length){this.jumpToDate(conflicts[0].iso);this.toast('L.U.N.A. flagged the most urgent gap — '+fmtDate(conflicts[0].iso),'info');return;}
+  if(conflicts.length){this.jumpToDate(conflicts[0].iso);this.toast('Most urgent coverage gap: '+fmtDate(conflicts[0].iso),'info');return;}
   if(REQUESTS.some(r=>r.status==='pending')){this.go('requests');return;}
   const up=SHIFTS.find(s=>s.open&&s.date>=currentDay);
   if(up){this.month=up.m;this.setFilter('open');this.go('schedule');return;}
@@ -4180,11 +4182,11 @@ const App={
  publish(){
   if(!this.isAdmin()||this.year!==ROSTER_YEAR)return;
   const blockers=monthValidation(this.month).filter(v=>v.fail);
-  if(blockers.length){this.dialog('Publication blocked',blockers.map(v=>section(v.label,StaffingDashboard.dateButtons(v.dates||[],v.label==='Every overnight covered'?'Overnight coverage needs review':v.label==='PTO conflicts resolved'?'Approved absence overlaps a shift':v.label))).join(''));return;}
+  if(blockers.length){this.dialog('Not ready to publish',blockers.map(v=>section(v.label,StaffingDashboard.dateButtons(v.dates||[],v.label==='Every overnight covered'?'Overnight coverage needs review':v.label==='PTO conflicts resolved'?'Approved absence overlaps a shift':v.label))).join(''));return;}
   if(window.sharedRosterBoot)return SharedSchedule.publish(iso(this.month,1,this.year).slice(0,7));
   SHIFTS.filter(s=>s.m===this.month).forEach(s=>opEvent(s,'Published · '+(fullName(s.name)||'Open')));MONTH_STATUS[this.month]='published';
   AUDIT.unshift({at:new Date().toISOString(),who:this.role==='mgmt'?'Management':'Kelley Harpin',kind:'publish',text:'Published <b>'+MONTHS[this.month]+' '+ROSTER_YEAR+'</b> schedule',reason:'',approval:''});
-  saveRoster();this.toast('Schedule published in this local roster');
+  saveRoster();this.toast('Schedule published.');
   this.renderAll();
  },
  setPeriod(date){this.year=Number(date.slice(0,4));this.month=Number(date.slice(5,7));},
@@ -4248,7 +4250,7 @@ const App={
   const m=this.month;const pub=MONTH_STATUS[m]==='published';
   $('monthTitle').innerHTML=`${MONTHS[m]} <span class="yr">${ROSTER_YEAR}</span><span class="draft-tag ${pub?'pub':'draft'}">${pub?'Published':'Draft'}</span>`;
   // filters
-  const F=[['all','All'],['day','Day'],['swing','Day swing'],['night','Overnight'],['relief','Relief only'],['open','Open shifts']];
+  const F=[['all','All'],['day','Day'],['swing','Swing'],['night','Overnight'],['relief','Relief only'],['open','Open shifts']];
   let fh=F.map(([k,l])=>`<button class="fchip ${this.filter===k?'active':''}" onclick="App.setFilter('${k}')">${l}</button>`).join('');
   if(this.rosterLayout==='calendar')fh+=`<button class="fchip ${this.heatmap?'active':''}" data-heat aria-pressed="${this.heatmap}" onclick="App.toggleHeat()">Coverage heat map</button>`;
   if(this.canSeeCosts()){
@@ -4334,11 +4336,11 @@ const App={
     return `<div class="date-shift ${s.open?'date-open':''}" title="${esc([time,s.open?'Open shift':s.name].filter(Boolean).join(' · '))}"><b>${esc(shortName)}</b><small>${esc(time)}</small></div>`;
    }).join('');
    const more=(limit,cls)=>previews.length>limit?`<div class="date-more ${cls}">+${previews.length-limit} more</div>`:'';
-   cells+=`<div class="cal-cell ${wknd?'wknd':''} ${today?'today':''} ${heatCls}" data-date="${dISO}" aria-label="${dISO}, ${visibleCount} visible shifts${iss.length?', coverage needs review':''}${reliefCount?', includes relief':''}" ${today?'aria-current="date"':''} onclick="selectCalendarDate.call(App,'${dISO}',true)">
+   cells+=`<div class="cal-cell ${wknd?'wknd':''} ${today?'today':''} ${heatCls}" data-date="${dISO}" aria-label="${fmtDateFull(dISO)}, ${visibleCount} shift${visibleCount===1?'':'s'}${iss.length?', coverage needs review':''}${reliefCount?', includes relief':''}" ${today?'aria-current="date"':''} onclick="selectCalendarDate.call(App,'${dISO}',true)">
     <div class="dnum"><span class="date-disc"><i class="selection-fill" aria-hidden="true"></i><span>${d}</span></span></div>
     <div class="date-markers" aria-hidden="true">${visibleCount?'<i class="scheduled"></i>':''}${reliefCount?'<i class="relief"></i>':''}${iss.length?'<i class="gap"></i>':''}</div>
     ${e.holiday?`<div class="dnote holiday">${esc(e.holiday)}</div>`:''}
-    ${e.note?`<div class="dnote" title="${esc(e.note)}">${esc(e.note)}</div>`:''}
+    ${e.note?`<div class="dnote" title="${esc(noteText(e.note))}">${esc(noteText(e.note))}</div>`:''}
     <div class="date-shifts" aria-hidden="true">${previewRows}${more(2,'date-more-wide')}${more(1,'date-more-narrow')}</div>
     <template>${lines}</template>${strip}</div>`;
    weekDays.push(e);
@@ -4362,9 +4364,9 @@ const App={
   $('calLegend').hidden=this.rosterLayout!=='calendar';
   $('calLegend').innerHTML=`
    <span><span class="sw" style="background:var(--day-bg);border-color:var(--day-bdr)"></span>Day</span>
-   <span><span class="sw" style="background:var(--swing-bg);border-color:var(--swing-bdr)"></span>Day swing</span>
+   <span><span class="sw" style="background:var(--swing-bg);border-color:var(--swing-bdr)"></span>Swing</span>
    <span><span class="sw" style="background:var(--night-bg)"></span>Overnight</span>
-   <span><span class="sw" style="background:var(--bad-bg);border:1.5px dashed var(--coral)"></span>Open / conflict</span>
+   <span><span class="sw" style="background:var(--bad-bg);border:1.5px dashed var(--coral)"></span>Unassigned or unavailable</span>
    <span><span class="relief-dot"></span> Relief doctor</span>
    ${this.heatmap?`<span style="width:100%;height:0;margin:0"></span><span style="font-weight:800;color:var(--text-secondary)">Coverage heat map:</span>
      <span><span class="sw" style="background:rgba(72,184,136,.5)"></span>Fully staffed</span>
@@ -4373,7 +4375,7 @@ const App={
      <span><span class="sw" style="background:rgba(232,120,60,.6)"></span>Needs review</span>
      <span><span class="sw" style="background:rgba(224,80,60,.6)"></span>Critical</span>
      <span><span class="sw" style="background:rgba(139,75,181,.5)"></span>Holiday</span>`:''}
-   <span class="no-print" style="margin-left:auto">Click any day to manage · Press <kbd>/</kbd> or <kbd>&#8984;K</kbd> to search</span>`;
+   <span class="no-print" style="margin-left:auto">Select a day to view or edit it. Press <kbd>/</kbd> or <kbd>&#8984;K</kbd> to search.</span>`;
  },
 
  hover(ev,sid){
@@ -4389,7 +4391,7 @@ const App={
   if(st)rows+=`<div class="hc-row"><span>Vacation</span><b>${vac?fmtDate(vac.from)+'–'+fmtDate(vac.to):st.vacation+' days left'}</b></div>
    <div class="hc-row"><span>Phone</span><b>${st.phone}</b></div>`;
   if(s.relief&&this.canSeeCosts()){const c=shiftCost(s);
-   rows+=`<div class="hc-row"><span>Rate</span><b>${money(c.rate)}/hr${c.override?' (override)':''}</b></div>
+   rows+=`<div class="hc-row"><span>Rate</span><b>${money(c.rate)} per hour${c.override?' (override)':''}</b></div>
    <div class="hc-row"><span>Shift cost</span><b>${money(c.total)}${c.bonus?' incl. '+money(c.bonus)+' bonus':''}</b></div>`;}
   hc.innerHTML=`<div class="hc-name">${esc(fullName(s.name))}</div><div class="hc-role">${esc(roleOf(s.name))}${s.relief?' · Relief':''}</div>${rows}`;
   const r=ev.target.getBoundingClientRect();
@@ -4419,7 +4421,7 @@ const App={
    if(this.role==='doctor'&&s.open)right=`<button class="btn btn-primary btn-sm" onclick="App.openSlot(${s.id})">View opening</button>`;
    if(this.role==='doctor'&&staffOf(s.name)?.id===this.doctor&&s.date>=currentDay)right=`<button class="btn btn-ghost btn-sm" onclick="App.requestMenu(${s.id})">Request</button>`;
    let costLine='';
-   if(s.relief&&!s.open&&this.canSeeCosts()){const c=shiftCost(s);costLine=`<div style="font-size:0.6875rem;color:var(--text-muted);font-weight:700;margin-top:2px">${money(c.rate)}/hr · ${s.hours}h → <b style="color:var(--cyan-deep)">${money(c.total)}</b>${c.bonus?' (incl. '+money(c.bonus)+' bonus)':''}${c.override?' · override rate':''}</div>`;}
+   if(s.relief&&!s.open&&this.canSeeCosts()){const c=shiftCost(s);costLine=`<div style="font-size:0.6875rem;color:var(--text-muted);font-weight:700;margin-top:2px">${money(c.rate)} per hour · ${s.hours} hours → <b style="color:var(--cyan-deep)">${money(c.total)}</b>${c.bonus?' (incl. '+money(c.bonus)+' bonus)':''}${c.override?' · override rate':''}</div>`;}
    sh+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle)">
     <span class="pill ${cls}" style="min-width:96px;justify-content:center">${s.disp}</span>
     <div style="flex:1"><div style="font-weight:800;font-size:0.875rem">${s.open?'<span style="color:var(--red-ink)">Open</span>':esc(s.name)+(s.relief?' <span class="relief-dot"></span>':'')}</div>
@@ -4427,7 +4429,7 @@ const App={
     <div class="ops-actions">${right}${Ops.shiftTools(s)}</div></div>`;
   });
   $('dayModal').innerHTML=`<h2>${fmtDateFull(dISO)}${e.holiday?' <span class="pill bad" style="vertical-align:middle">'+esc(e.holiday)+'</span>':''}</h2>
-   <div class="msub">${e.note?esc(e.note)+' · ':''}${iss.length?'<span style="color:var(--red-ink);font-weight:700">'+iss.join(' · ')+'</span>':'Fully covered'}</div>
+   <div class="msub">${e.note?esc(noteText(e.note))+' · ':''}${iss.length?'<span style="color:var(--red-ink);font-weight:700">'+iss.join(' · ')+'</span>':'Fully covered'}</div>
    ${sh}
    <div class="modal-foot"><button class="btn btn-ghost" onclick="App.closeModals()">Close</button></div>`;
   $('dayModalOv').classList.add('show');
@@ -4449,7 +4451,7 @@ const App={
    <div class="avatar" style="width:30px;height:30px;font-size:0.6875rem;background:${r.kind==='relief'?'#5A6B85':staffOf(r.name)?staffOf(r.name).color:'#5A6B85'}">${i+1}</div>
    <div style="flex:1"><div>${esc(fullName(r.name))} ${r.kind==='relief'?'<span class="relief-dot"></span>':''}</div>
    <div class="sr-sub">${r.reasons.map(esc).join(' · ')}</div></div>
-   ${r.kind==='staff'&&this.canSeeCosts()?'<small>Staff pay unavailable · $0 relief</small>':''}
+   ${r.kind==='staff'&&this.canSeeCosts()?'<small>Staff doctor · No relief cost</small>':''}
    ${r.cost&&this.canSeeCosts()?`<b style="font-size:0.75rem;color:var(--cyan-deep)">${money(r.cost.total)}</b>`:''}</div>`).join('');
   const candidate=pick?staffOf(pick)?.sched||pick:null;
   let addedBonus=0;
@@ -4487,7 +4489,7 @@ const App={
    <div class="impact ${pct>=FIN.critPct?'bad':pct>=FIN.warnPct?'warn':'ok'}">
     <b>Cost impact.</b> Incremental relief cost: ${money(delta)} for ${MONTHS[s.m]}.<br>
     ${MONTHS[s.m]} budget ${money(FIN.budget)} · Committed ${money(fin.total)} → <b>${money(newSpend)}</b> · Remaining <b>${money(remaining)}</b>
-    ${needsApproval?'<br><b>Bonus over '+money(FIN.thresholds.bonusApprove)+' — management approval required.</b>':''}
+    ${needsApproval?'<br><b>Bonus over '+money(FIN.thresholds.bonusApprove)+'. Management approval is required.</b>':''}
    </div>`;
   }
   // impact for staff pick
@@ -4495,19 +4497,19 @@ const App={
   if(pick&&!isRelief(pick)){
    const run=consecutiveRun(staffOf(pick)?staffOf(pick).sched:pick,s.date);
    const st=doctorStats(pick,s.m);
-   staffImpact=`<div class="impact ${run>6?'warn':'ok'}"><b>Impact preview.</b> ${esc(pick)} → ${st.monthHours+s.hours}h in ${MONTHS[s.m]}, ${run} consecutive days${(s.dow===0||s.dow===6)?', '+(st.weekends+1)+' weekend shifts':''}${s.type==='night'?', '+(st.nights+1)+' nights':''}.</div>`;
+   staffImpact=`<div class="impact ${run>6?'warn':'ok'}"><b>Impact preview.</b> ${esc(fullName(pick))} → ${st.monthHours+s.hours} hours in ${MONTHS[s.m]}, ${run} consecutive days${(s.dow===0||s.dow===6)?', '+(st.weekends+1)+' weekend shifts':''}${s.type==='night'?', '+(st.nights+1)+' nights':''}.</div>`;
   }
   if(pick&&staffImpact)staffImpact+='<div class="msub">Incremental relief spending · '+money(-(shiftCost(s)?.total||0))+'. Staff wages and premiums are unavailable.</div>';
   const top=recs[0];
   const lunaSay=top?`<div class="luna-say"><div class="pred-chip"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Recommended</div>
-   <div style="margin-top:6px"><b>${esc(fullName(top.name))}</b> for this ${s.disp.toLowerCase()} — ${top.reasons.map(esc).join(', ').toLowerCase()}${top.cost&&this.canSeeCosts()?`. Projected cost <b>${money(top.cost.total)}</b>`:'. No added relief cost'}.</div></div>`:'';
-  $('genModal').innerHTML=`<h2>${s.open?'Assign':'Replace'} — ${s.disp}</h2>
-   <div class="msub">${fmtDateFull(s.date)} · ${s.start}–${s.end} · ${s.hours}h${s.name?' · currently '+esc(s.name):''}</div>
-   <div class="impact"><b>Coverage impact</b><br>ER · ${esc(TYPE_DISP[s.type])} · ${s.start}–${s.end}. ${s.open?'Filling this position adds one assigned doctor.':'Replacing this doctor preserves one assigned position.'} Checks use this roster, approved absences and entered hospital commitments. Unrecorded external shifts are unknown.</div>
+   <div style="margin-top:6px"><b>${esc(fullName(top.name))}</b> is suggested for this ${s.disp.toLowerCase()} shift. ${top.reasons.map(esc).join('. ')}${top.cost&&this.canSeeCosts()?`. Projected cost <b>${money(top.cost.total)}</b>`:'. No added relief cost'}.</div></div>`:'';
+  $('genModal').innerHTML=`<h2>${s.open?'Assign':'Replace'}: ${s.disp} shift</h2>
+   <div class="msub">${fmtDateFull(s.date)} · ${s.start}–${s.end} · ${s.hours} hours${s.name?' · currently assigned to '+esc(fullName(s.name)):''}</div>
+   <div class="impact"><b>Coverage impact</b><br>ER · ${esc(TYPE_DISP[s.type])} · ${s.start}–${s.end}. ${s.open?'Filling this position adds one assigned doctor.':'Replacing this doctor preserves one assigned position.'} Checked against this schedule and approved time off.</div>
    ${Ops.shiftTools(s)}
    ${personOptions().some(n=>blockingReason(n,s))?'<details><summary>Unavailable candidates</summary>'+personOptions().filter(n=>blockingReason(n,s)).map(n=>row(fullName(n),blockingReason(n,s))).join('')+'</details>':''}
    ${lunaSay}
-   <div style="font-size:0.6875rem;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Ranked options</div>
+   <div style="font-size:0.6875rem;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Suggested doctors</div>
    <div style="max-height:250px;overflow-y:auto;border:1px solid var(--border-subtle);border-radius:12px;padding:4px;margin-bottom:12px">${list||'<p class="msub">No rostered candidate is available for this interval.</p>'}</div>
     ${candidate?comparisonTimeline([reassignment(s,candidate)],addedBonus):''}${costHtml}${staffImpact}${pick?Coverage.warnings([{id:s.id,before:s,after:{...s,open:false,name:staffOf(pick)?.sched||pick,relief:isRelief(staffOf(pick)?.sched||pick)}}]).map(w=>muted('Review · '+w)).join(''):''}
    <div class="modal-foot">
@@ -4744,10 +4746,10 @@ const App={
   const m=this.month;
   const initials=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   const secTitle=(t,extra)=>`<h3 style="font-size:0.9375rem;font-weight:800;margin:28px 0 14px">${t}${extra||''}</h3>`;
-  let html=`<div class="page-head"><div><div class="page-title">Doctors</div><div class="page-sub">Profiles, preferences, and fairness at a glance — the system remembers so Kelley doesn’t have to.</div></div></div>`;
+  let html=`<div class="page-head"><div><div class="page-title">Doctors</div><div class="page-sub">Doctor profiles, preferences and workload.</div></div></div>`;
   html+=secTitle('Staff doctors')+'<div class="doc-grid">'+STAFF.map((s,i)=>{
    const st=doctorStats(s.id,m);
-   const tag=s.rotation===false?'<span class="pill neutral" style="font-size:0.6875rem">Not on the '+ROSTER_YEAR+' rotation</span>':`<span class="pill neutral" style="font-size:0.6875rem">${st.monthShifts} shifts · ${MONTHS[m].slice(0,3)}</span>`;
+   const tag=s.rotation===false?'<span class="pill neutral" style="font-size:0.6875rem">Not on the '+ROSTER_YEAR+' rotation</span>':`<span class="pill neutral" style="font-size:0.6875rem">${st.monthShifts} shift${st.monthShifts===1?'':'s'} · ${MONTHS[m].slice(0,3)}</span>`;
    return `<div class="doc-card" style="animation-delay:${Math.min(i*0.02,0.15)}s" onclick="App.openProfile('${s.id}')">
     <div class="avatar" style="background:${s.color}">${esc(initials(s.name))}</div>
     <div style="flex:1"><div class="dc-name">${esc(s.name)}</div><div class="dc-sub">${s.role} · ${s.code}</div>
@@ -4759,7 +4761,7 @@ const App={
     <div class="avatar" style="background:#2E6F96">${esc(initials(s.name))}</div>
     <div style="flex:1"><div class="dc-name">${esc(s.name)}</div><div class="dc-sub">${s.role}</div>
     <div style="display:flex;gap:5px;margin-top:8px"><span class="pill neutral" style="font-size:0.6875rem">Not on ER rotation</span></div></div></div>`).join('')+'</div>';
-  html+=secTitle('Relief &amp; per-diem pool',' <span class="relief-dot" style="margin-left:4px"></span>')+'<div class="doc-grid">'+
+  html+=secTitle('Relief and per diem',' <span class="relief-dot" style="margin-left:4px"></span>')+'<div class="doc-grid">'+
    RELIEF.map((r,i)=>{
     const yr=SHIFTS.filter(s=>s.name===r.token&&!s.open).length;
     const mmS=SHIFTS.filter(s=>s.name===r.token&&s.m===m&&!s.open);
@@ -4767,7 +4769,7 @@ const App={
     if(this.canSeeCosts()&&mmS.length){const t=mmS.reduce((a,s)=>a+shiftCost(s).total,0);cost=`<span class="pill warn" style="font-size:0.6875rem">${money(t)} · ${MONTHS[m].slice(0,3)}</span>`;}
     return `<div class="doc-card" style="animation-delay:${Math.min(i*0.02,0.2)}s" onclick="App.openProfile('${esc(r.token)}')">
     <div class="avatar" style="background:#5A6B85">${esc(initials(r.full))}</div>
-    <div style="flex:1"><div class="dc-name">${esc(r.full)}</div><div class="dc-sub">${r.role} · ${yr} shifts in ${ROSTER_YEAR}</div>
+    <div style="flex:1"><div class="dc-name">${esc(r.full)}</div><div class="dc-sub">${r.role} · ${yr} shift${yr===1?'':'s'} in ${ROSTER_YEAR}</div>
     <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap"><span class="pill neutral" style="font-size:0.6875rem">${mmS.length} in ${MONTHS[m].slice(0,3)}</span>${cost}</div></div></div>`;
    }).join('')+'</div>';
   html+=secTitle('SGVP interns')+'<div class="doc-grid">'+INTERNS.map((n,i)=>`
@@ -4853,7 +4855,7 @@ const App={
 
   // ── HEADER ──
   let statusCls,statusTxt;
-  if(spec||(!st&&!rel)){statusCls='off';statusTxt=spec?'Not on ER rotation':'Mentored relief eligible';}
+  if(spec||(!st&&!rel)){statusCls='off';statusTxt=spec?'Not on ER rotation':'Eligible for supervised relief shifts';}
   else if(onPTO){statusCls='away';statusTxt='On approved time off';}
   else if(working){statusCls='on';statusTxt='On shift today';}
   else{statusCls='on';statusTxt='Available today';}
@@ -4922,11 +4924,11 @@ const App={
     const rt=rateTable(currentDay);
     html+=sec('Compensation',
      row('Rate source', ov?'Per-doctor override':'Hospital rate table')+
-     row('Current rate', money2(relRate)+'/hr')+
+     row('Current rate', money2(relRate)+' per hour')+
      row('YTD relief cost', money(ytd.cost))+
      row('Shifts · hours', ytd.count+' · '+ytd.hours+' h')+
      row('Bonuses', ytd.bonuses?money(ytd.bonuses):'—')+
-     row('Active override', ov?money(ov.rate)+'/hr ('+ov.applies.map(a=>a[0].toUpperCase()+a.slice(1)).join(', ')+')':'None')+
+     row('Active override', ov?money(ov.rate)+' per hour ('+ov.applies.map(a=>a[0].toUpperCase()+a.slice(1)).join(', ')+')':'None')+
      `<div style="margin-top:12px"><button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="App.closeInspector();App.openRateModal('${esc(tok)}')">Update hourly rate</button></div>`);
    }
    // Contact
@@ -5037,12 +5039,12 @@ const App={
   html+=`<div class="card"><h3><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>${MONTHS[m]} budget<span class="spacer"></span><span class="pill ${level}">${Math.round(pct)}% committed</span></h3>
    <div class="meter"><div class="fill" style="width:${Math.min(100,pct)}%;background:${pct>=FIN.critPct?'var(--coral)':pct>=FIN.warnPct?'var(--amber)':'var(--green)'}"></div>
    <div class="mark" style="left:${FIN.warnPct}%"></div><div class="mark" style="left:${FIN.critPct}%"></div></div>
-   <div style="display:flex;justify-content:space-between;font-size:0.6875rem;color:var(--text-muted);font-weight:600;margin-top:6px"><span>0</span><span>warn ${FIN.warnPct}%</span><span>critical ${FIN.critPct}% · ${money(FIN.budget)}</span></div>
+   <div style="display:flex;justify-content:space-between;font-size:0.6875rem;color:var(--text-muted);font-weight:600;margin-top:6px"><span>0</span><span>Warning at ${FIN.warnPct}%</span><span>Critical at ${FIN.critPct}% · ${money(FIN.budget)}</span></div>
    <div class="mini-stats" style="margin-top:14px;grid-template-columns:repeat(4,1fr)">
     <div class="mini-stat"><div class="v">${money(FIN.budget)}</div><div class="l">Monthly budget</div></div>
     <div class="mini-stat"><div class="v" style="color:${remaining<0?'var(--coral)':'inherit'}">${money(remaining)}</div><div class="l">Remaining</div></div>
-    <div class="mini-stat"><div class="v">${money(fin.avg)}</div><div class="l">Avg cost / shift</div></div>
-    <div class="mini-stat"><div class="v">${fin.topWeek?'Wk '+fin.topWeek+' · '+money(fin.byWeek[fin.topWeek]):'—'}</div><div class="l">Highest-cost week</div></div>
+    <div class="mini-stat"><div class="v">${money(fin.avg)}</div><div class="l">Average cost per shift</div></div>
+    <div class="mini-stat"><div class="v">${fin.topWeek?'Week '+fin.topWeek+' · '+money(fin.byWeek[fin.topWeek]):'—'}</div><div class="l">Highest-cost week</div></div>
    </div>`;
   if(pct>=FIN.warnPct){
    const nightN=fin.byType.night.n,holN=fin.byType.holiday.n;
@@ -5056,17 +5058,17 @@ const App={
   const typeCard=(k,label,pillCls)=>T[k].n?`<div class="mini-stat" style="text-align:left;padding:15px 16px">
     <span class="pill ${pillCls}" style="font-size:0.6875rem">${label}</span>
     <div class="v" style="margin-top:9px" data-cnt="${T[k].b+T[k].x}" data-fmt="money">${money(T[k].b+T[k].x)}</div>
-    <div class="l" style="text-transform:none;letter-spacing:0;font-size:0.6875rem;margin-top:4px">${T[k].n} shifts · ${T[k].h}h · ${money(T[k].b)} base${T[k].x?' + '+money(T[k].x)+' bonus':''}</div></div>`:'';
+    <div class="l" style="text-transform:none;letter-spacing:0;font-size:0.6875rem;margin-top:4px">${T[k].n} shift${T[k].n===1?'':'s'} · ${T[k].h} hours · ${money(T[k].b)} base${T[k].x?' + '+money(T[k].x)+' bonus':''}</div></div>`:'';
   html+=`<div class="card"><h3>By shift type<span class="spacer"></span><span class="pill neutral">${money(fin.base)} base + ${money(fin.bonus)} bonus = ${money(fin.total)}</span></h3>
    <div class="mini-stats" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
-   ${typeCard('day','Day','day')}${typeCard('swing','Day swing','swing')}${typeCard('night','Overnight','night')}${typeCard('holiday','Holiday','bad')}</div>
+   ${typeCard('day','Day','day')}${typeCard('swing','Swing','swing')}${typeCard('night','Overnight','night')}${typeCard('holiday','Holiday','bad')}</div>
    <div style="font-size:0.6875rem;color:var(--text-muted);margin-top:12px;font-weight:600">Base compensation, bonuses, and total cost are always kept separate for auditability.</div></div>`;
   const docs=Object.entries(fin.byDoc).sort((a,b)=>(b[1].base+b[1].bonus)-(a[1].base+a[1].bonus));
-  html+=`<div class="card"><h3>Relief doctors — ${MONTHS[m]}<span class="spacer"></span><span class="pill neutral">${docs.length} doctors</span></h3>
+  html+=`<div class="card"><h3>Relief doctors · ${MONTHS[m]}<span class="spacer"></span><span class="pill neutral">${docs.length} doctors</span></h3>
    <div class="relief-grid">${docs.map(([n,d],i)=>`<div class="rcard" style="animation-delay:${Math.min(i*0.025,0.2)}s" onclick="App.openDrawer('${esc(n)}')">
     <div class="rc-name">${esc(fullName(n))}</div><div class="rc-sub">${d.n} shift${d.n===1?'':'s'} · ${d.h} hours</div>
     <div class="rc-total" data-cnt="${d.base+d.bonus}" data-fmt="money">${money(d.base+d.bonus)}</div>
-    <div class="rc-row"><span>Average rate</span><b>${money2(d.base/d.h)}/hr</b></div>
+    <div class="rc-row"><span>Average rate</span><b>${money2(d.base/d.h)} per hour</b></div>
     <div class="rc-row"><span>Bonuses</span><b>${d.bonus?money(d.bonus):'—'}</b></div>
    </div>`).join('')}</div></div>`;
   const pending=FIN.bonuses.filter(b=>b.status==='pending'&&b.date.startsWith(iso(m,1).slice(0,7)));
@@ -5078,18 +5080,18 @@ const App={
   // approval rules + audit + reports
   html+=`<div class="grid-2"><div class="card"><h3>Approval rules</h3><table class="tbl"><thead><tr><th>Action</th><th>Approval</th></tr></thead><tbody>
    <tr><td>Use standard rate</td><td><span class="pill ok">No approval</span></td></tr>
-   <tr><td>Bonus up to ${money(FIN.thresholds.bonusApprove)}</td><td><span class="pill day">Kelley may approve</span></td></tr>
-   <tr><td>Rate increase up to ${FIN.thresholds.ratePctApprove}%</td><td><span class="pill day">Kelley may approve</span></td></tr>
+   <tr><td>Bonus up to ${money(FIN.thresholds.bonusApprove)}</td><td><span class="pill day">Scheduler approval</span></td></tr>
+   <tr><td>Rate increase up to ${FIN.thresholds.ratePctApprove}%</td><td><span class="pill day">Scheduler approval</span></td></tr>
    <tr><td>Bonus over ${money(FIN.thresholds.bonusApprove)}</td><td><span class="pill warn">Management approval</span></td></tr>
    <tr><td>Rate increase over ${FIN.thresholds.ratePctApprove}%</td><td><span class="pill warn">Management approval</span></td></tr>
    <tr><td>Holiday override above ${money(FIN.thresholds.holidayCap)}/hour</td><td><span class="pill warn">Management approval</span></td></tr>
    <tr><td>Monthly budget exceeded</td><td><span class="pill bad">Management approval</span></td></tr></tbody></table>
    <div style="font-size:0.6875rem;color:var(--text-muted);margin-top:10px;font-weight:600">Change the thresholds in Settings, under Approval rules.</div></div>`;
-  html+=`<div class="card"><h3>Compensation audit<span class="spacer"></span><span class="pill neutral">immutable</span></h3>
+  html+=`<div class="card"><h3>Compensation audit<span class="spacer"></span><span class="pill neutral">Cannot be edited</span></h3>
    ${AUDIT.filter(a=>a.kind==='money').slice(0,6).map(a=>this.auditRow(a)).join('')||'<div style="font-size:0.8125rem;color:var(--text-muted)">No compensation changes yet.</div>'}</div></div>`;
   // reports
   const reports=[['expense','Monthly relief expense report'],['comp','Relief doctor compensation detail'],['bonus','Bonus report'],['override','Rate override report'],['variance','Budget variance report'],['holiday','Holiday relief report'],['payroll','Scheduled relief pay estimate']];
-  html+=`<div class="card"><h3><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>One-Click Reports</h3>
+  html+=`<div class="card"><h3><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reports</h3>
    <div style="display:flex;gap:8px;flex-wrap:wrap">${reports.map(([k,l])=>`<button class="btn btn-ghost btn-sm" onclick="App.exportReport('${k}')">${l}</button>`).join('')}</div>
    <div style="font-size:0.6875rem;color:var(--text-muted);margin-top:10px;font-weight:600">Exports download as Excel-compatible CSV. Use Print for board-ready PDF.</div></div>`;
   $('view-costs').innerHTML=html;
@@ -5131,7 +5133,7 @@ const App={
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=name+'.csv';a.click();
-  this.toast('Report exported — open in Excel or Numbers');
+  this.toast('Report exported. It opens in Excel or Numbers.');
  },
 
  /* ── SETTINGS ── */
@@ -5166,7 +5168,7 @@ const App={
    <div class="card"><h3>Approval rules</h3>
     <div class="grid-2" style="gap:12px">
     <div class="field"><label>Bonus needing mgmt approval ($)</label><input type="number" id="stBonusT" value="${FIN.thresholds.bonusApprove}"></div>
-    <div class="field"><label>Rate increase Kelley may approve (%)</label><input type="number" id="stRateT" value="${FIN.thresholds.ratePctApprove}"></div></div>
+    <div class="field"><label>Rate increase the scheduler may approve (%)</label><input type="number" id="stRateT" value="${FIN.thresholds.ratePctApprove}"></div></div>
     <div class="field"><label>Holiday override cap ($/hour)</label><input type="number" id="stHolT" value="${FIN.thresholds.holidayCap}"></div>
     <button class="btn btn-primary" onclick="App.saveThresholds()">Save rules</button></div>
   </div></div>`;
@@ -5180,7 +5182,7 @@ const App={
   const nr={day:+$('stDay').value,swing:+$('stSwing').value,overnight:+$('stNight').value,holiday:+$('stHol').value,effective:eff,reason,by:this.role==='mgmt'?'Management':'Kelley Harpin'};
   FIN.rates.push(nr);
   AUDIT.unshift({at:new Date().toISOString(),who:nr.by,kind:'money',text:'Updated <b>default relief rates</b>',prev:'',next:'Day '+money(nr.day)+' · Swing '+money(nr.swing)+' · Overnight '+money(nr.overnight)+' · Holiday '+money(nr.holiday),effective:fmtDate(eff)+' forward',reason,approval:''});
-  this.toast('Default rates saved — effective '+fmtDate(eff)+' forward');
+  this.toast('Default rates saved, effective '+fmtDate(eff)+'.');
   saveRoster();this.renderAll();
  },
  saveBudget(){
@@ -5196,7 +5198,7 @@ const App={
 
  /* ── HISTORY ── */
  renderHistory(){
-  let html=`<div class="page-head"><div><div class="page-title">History</div><div class="page-sub">Every edit, every approval, every dollar — nothing disappears, nothing is editable.</div></div></div>`;
+  let html=`<div class="page-head"><div><div class="page-title">History</div><div class="page-sub">A permanent record of every edit, approval and compensation change.</div></div></div>`;
   html+='<div class="card">'+(AUDIT.length?AUDIT.map(a=>this.auditRow(a)).join(''):'<div style="font-size:0.8125rem;color:var(--text-muted);padding:8px 0">No history yet. Edits, approvals, and compensation changes will be logged here as they happen.</div>')+'</div>';
   $('view-history').innerHTML=html;
  },
@@ -5224,7 +5226,7 @@ const App={
     const dt=parseISO(x.date);const pub=MONTH_STATUS[x.m]==='published';
     return `<div class="my-shift ${x.date===currentDay?'today-hl':''}">
      <div class="date-block"><div class="dow">${DOWS[dt.getDay()]}</div><div class="dn">${dt.getDate()}</div></div>
-     <div class="ms-type"><div class="ms-lab">${x.disp}${x.holiday?' · '+esc(x.holiday):''}</div><div class="ms-time">${x.start}–${x.end} · ${x.hours}h · ${MONTHS[x.m]}${pub?'':' · <span style="color:var(--amber-ink)">draft — may change</span>'}</div></div>
+     <div class="ms-type"><div class="ms-lab">${x.disp}${x.holiday?' · '+esc(x.holiday):''}</div><div class="ms-time">${x.start}–${x.end} · ${x.hours} hours · ${MONTHS[x.m]}${pub?'':' · <span style="color:var(--amber-ink)">Draft, subject to change</span>'}</div></div>
      <span class="pill ${x.type==='night'?'night':x.type==='swing'?'swing':'day'}">${TYPE_DISP[x.type]}</span><button class="btn btn-ghost btn-sm" onclick="App.requestMenu(${x.id})">Request</button></div>`;
    }).join('')||'<div style="font-size:0.8125rem;color:var(--text-muted)">No upcoming shifts on the published schedule.</div>')+'</div></div>';
   html+=`<div class="card" style="text-align:center;padding:16px"><span style="font-size:0.75rem;color:var(--text-muted);font-weight:600">Calendar subscriptions and exports include published shifts only.</span></div>`;
@@ -5299,7 +5301,7 @@ const App={
    }
    // finance
    if(this.canSeeCosts()){
-    if('bonus'.includes(q))FIN.bonuses.filter(b=>!b._skip).slice(0,5).forEach(b=>out.push(R('Bonuses',IC.money,esc(fullName(b.doctor))+' — '+fmtDate(b.date),(b.type==='flat'?money(b.amount):b.type==='hourly'?money(b.amount)+'/hr':b.amount+'%')+' · '+esc(b.reason),`App.closeSearch();App.openDrawer('${esc(b.doctor)}')`)));
+    if('bonus'.includes(q))FIN.bonuses.filter(b=>!b._skip).slice(0,5).forEach(b=>out.push(R('Bonuses',IC.money,esc(fullName(b.doctor))+' — '+fmtDate(b.date),(b.type==='flat'?money(b.amount):b.type==='hourly'?money(b.amount)+' per hour':b.amount+'%')+' · '+esc(b.reason),`App.closeSearch();App.openDrawer('${esc(b.doctor)}')`)));
     if('rate'.includes(q)||'override'.includes(q)){FIN.overrides.forEach(o=>out.push(R('Rate overrides',IC.money,esc(fullName(o.doctor))+' — '+money(o.rate)+'/hr',o.applies.join(', ')+' · '+esc(o.reason),`App.closeSearch();App.openDrawer('${esc(o.doctor)}')`)));
      out.push(R('Settings',IC.gear,'Relief rates','Settings → Relief Rates',`App.closeSearch();App.go('settings')`));}
     if('budget'.includes(q)||'cost'.includes(q)||'spend'.includes(q)||'relief'.includes(q))out.push(R('Relief costs',IC.money,'Relief costs — '+MONTHS[m],money(monthFinance(m).total)+' committed of '+money(FIN.budget),`App.closeSearch();App.go('costs')`));
@@ -5358,7 +5360,7 @@ for(const method of ['decide','advanceChange','queueChange','submitReq','saveAss
   return typeof navigator!=='undefined'&&navigator.locks?navigator.locks.request(rosterStorage,run):run();
  };
 }
-document.addEventListener('DOMContentLoaded',()=>{App.init();if(hasCompanion())syncCompanion().catch(()=>App.toast('Local links could not sync','info'));setInterval(()=>{if(!document.hidden&&App.view==='dashboard'&&!Live.demo&&!StaffingDashboard.panelOpen&&!document.querySelector('.modal-overlay.show,#lunaOverlay.show,#inspOv.show,#searchOv.show')&&!$('view-dashboard').contains(document.activeElement)&&!$('view-dashboard').querySelector('details[open]'))App.renderDashboard();if(!document.hidden&&App.view==='live'&&!Live.demo&&Live.at===null&&['boards','timeline'].includes(Live.page)&&!$('genModalOv').classList.contains('show')&&!$('view-live').contains(document.activeElement))Live.render();if(!document.hidden&&App.view==='operations'&&Ops.panel==='call'&&Ops.asOf===null&&!$('genModalOv').classList.contains('show')&&!$('view-operations').contains(document.activeElement))Ops.render()},60000);});
+document.addEventListener('DOMContentLoaded',()=>{App.init();if(hasCompanion())syncCompanion().catch(()=>App.toast('Linked apps could not be updated.','info'));setInterval(()=>{if(!document.hidden&&App.view==='dashboard'&&!Live.demo&&!StaffingDashboard.panelOpen&&!document.querySelector('.modal-overlay.show,#lunaOverlay.show,#inspOv.show,#searchOv.show')&&!$('view-dashboard').contains(document.activeElement)&&!$('view-dashboard').querySelector('details[open]'))App.renderDashboard();if(!document.hidden&&App.view==='live'&&!Live.demo&&Live.at===null&&['boards','timeline'].includes(Live.page)&&!$('genModalOv').classList.contains('show')&&!$('view-live').contains(document.activeElement))Live.render();if(!document.hidden&&App.view==='operations'&&Ops.panel==='call'&&Ops.asOf===null&&!$('genModalOv').classList.contains('show')&&!$('view-operations').contains(document.activeElement))Ops.render()},60000);});
 window.addEventListener('click',e=>{
  if(e.target.classList&&e.target.classList.contains('modal-overlay'))App.closeModals();
  if(e.target.id==='searchOv')App.closeSearch();
@@ -5810,7 +5812,7 @@ scheduleDutyTick();document.addEventListener('visibilitychange',tickDuty);
     v.classList.toggle('unpub',hide);
     if(hide){
       if(!note){ note=document.createElement('div'); note.id='pubNote'; note.setAttribute('role','status'); v.querySelector('.cal-toolbar').after(note); }
-      note.innerHTML='<b>'+MONTHS[this.month]+' '+this.year+' isn’t published yet.</b> The scheduler is still working on it. Published months show here.';
+      note.innerHTML='<b>'+MONTHS[this.month]+' '+this.year+' has not been published.</b> Published schedules appear here.';
     } else if(note) note.remove();
   };
 
@@ -5822,8 +5824,8 @@ scheduleDutyTick();document.addEventListener('visibilitychange',tickDuty);
     rec0(sh).forEach(function(c){
       if(c.kind!=='relief'){ good.push(c); return; }
       var rest=c.reasons.filter(function(r){ return !/^Site/.test(r); });
-      if(approved(c.name,sh)){ c.reasons=['Site approval on file'].concat(rest); good.push(c); }
-      else { c.unverified=true; c.reasons=['No site approval on file for '+fmtDate(sh.date)].concat(rest); later.push(c); }
+      if(approved(c.name,sh)){ c.reasons=['Approved for this location'].concat(rest); good.push(c); }
+      else { c.unverified=true; c.reasons=['Not yet approved for this location on '+fmtDate(sh.date)].concat(rest); later.push(c); }
     });
     return good.concat(later);
   };
@@ -5834,7 +5836,7 @@ scheduleDutyTick();document.addEventListener('visibilitychange',tickDuty);
     var recs=recommend(s), first=recs.findIndex(function(r){ return r.unverified; });
     var modal=document.getElementById('genModal');
     if(first===0){ var say=modal.querySelector('.luna-say'); if(say) say.innerHTML='<div style="font-weight:600">No doctor with a site approval on file is free for this shift.</div><div style="margin-top:6px">Choose from the list below, or add an approval in Relief costs › Rates and budget.</div>'; }
-    if(first>-1){ var items=modal.querySelectorAll('.sr-item[onclick^="App.pickAssign"]'); if(items[first]&&!modal.querySelector('.pvx-unverified')) items[first].insertAdjacentHTML('beforebegin','<div class="sr-group pvx-unverified">No site approval on file</div>'); }
+    if(first>-1){ var items=modal.querySelectorAll('.sr-item[onclick^="App.pickAssign"]'); if(items[first]&&!modal.querySelector('.pvx-unverified')) items[first].insertAdjacentHTML('beforebegin','<div class="sr-group pvx-unverified">Not yet approved for this location</div>'); }
   };
   var rg0=App.renderSettings;
   App.renderSettings=function(){
@@ -5945,8 +5947,8 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
   var DS=window.DS={
     addShift:function(date){
       if(!App.isAdmin()) return; var e=DAYMAP[date]; if(!e) return App.toast('Choose a day in the '+Y+' schedule.','info');
-      var opts=PRESETS.map(function(k){ var m=LABEL_META[k]; return [k,m.disp+' · '+m.start+'–'+m.end+' · '+m.hours+' h']; });
-      var people=[['','Open — no doctor yet']].concat(personOptions().map(function(n){ return [n,fullName(n)+(isRelief(n)?' · relief':'')]; }));
+      var opts=PRESETS.map(function(k){ var m=LABEL_META[k]; return [k,m.disp+' · '+m.start+'–'+m.end+' · '+m.hours+' hours']; });
+      var people=[['','Unassigned']].concat(personOptions().map(function(n){ return [n,fullName(n)+(isRelief(n)?' · relief':'')]; }));
       App.dialog('Add shift · '+fmtDateFull(date),field('Shift',sel('dsLabel',opts,'12-12'))+field('Doctor',sel('dsName',people,''))+
         muted('Checks run before anything changes: overlapping shifts and approved time off are flagged.')+menuFoot(act('Review','DS.addPreview(\''+date+'\')',true)));
     },
@@ -6392,6 +6394,90 @@ html.pvx-cloud #localSharedEntry,html.pvx-cloud .pvx-viewas,html.pvx-cloud #docS
       if(g&&!g.hidden&&g.animate) g.animate([{opacity:0,transform:'translateX('+(dir*36)+'px)'},{opacity:1,transform:'none'}],{duration:280,easing:'cubic-bezier(.2,.8,.2,1)'}); } }catch(e){}
     return r; };
   try{ paint(); tint(); }catch(e){}
+})();
+</script>
+<style id="pvx-custom-times-css">
+.pvx-ct-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pvx-ct input[type=time],#genModalOv input#ctStart,#genModalOv input#ctEnd{font-variant-numeric:tabular-nums}
+</style>
+<script id="pvx-custom-times">
+/* Custom shift times (Daniel, Nov 27 2026): Kelley and Management are not locked into the preset shifts.
+   · Add shift has "Custom time…": any start and end, and which kind of shift it counts as.
+   · Any existing shift can have its time changed ("Change time…" in the day sheet).
+   Both go through the usual review sheet, so nothing changes until Apply, and the change is in the history. */
+(function(){
+  if(typeof App==='undefined'||!window.DS||typeof Coverage==='undefined') return;
+  var CUSTOM='__custom';
+  function to12(v){ var m=/^(\d{1,2}):(\d{2})$/.exec(v||''); if(!m) return null; var h=+m[1], ap=h<12?'AM':'PM'; h=h%12||12; return h+':'+m[2]+' '+ap; }
+  function to24(t){ var m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(t||''); if(!m) return ''; var h=(+m[1]%12)+(m[3].toUpperCase()==='PM'?12:0); return String(h).padStart(2,'0')+':'+m[2]; }
+  function mins(v){ var p=v.split(':'); return +p[0]*60+ +p[1]; }
+  function span(a,b){ var d=mins(b)-mins(a); if(d<=0) d+=1440; return d; }
+  function guess(a){ var h=mins(a)/60; return h<11?'day':h<17?'swing':'night'; }
+  function short(v){ var p=v.split(':'), h=+p[0]%12||12; return h+(p[1]!=='00'?':'+p[1]:''); }
+  function label(a,b){ return short(a)+'-'+short(b); }
+  var KIND=[['day','Day'],['swing','Swing'],['night','Overnight']];
+  function shiftById(id){ return SHIFTS.find(function(s){ return s.id===id; }); }
+  function timeFields(a,b,type){
+    return '<div class="pvx-ct-row">'+field('Start time',inp('ctStart','time',a,'step="900" oninput="PVXTimes.sync()"'))+field('End time',inp('ctEnd','time',b,'step="900" oninput="PVXTimes.sync()"'))+'</div>'
+      +field('Shift type',sel('ctKind',KIND,type||guess(a)))+'<p class="msub" id="ctSum"></p>';
+  }
+  var T=window.PVXTimes={
+    sync:function(){ var a=val('ctStart'), b=val('ctEnd'), out=$('ctSum'); if(!out) return;
+      if(!a||!b){ out.textContent='Enter a start time and an end time.'; return; }
+      var d=span(a,b); out.textContent=to12(a)+' – '+to12(b)+(mins(b)<=mins(a)?' (ends the following day)':'')+' · '+(Math.round(d/6)/10)+' hours';
+      var k=$('ctKind'); if(k&&!k.dataset.touched) k.value=guess(a); },
+    read:function(){ var a=val('ctStart'), b=val('ctEnd');
+      if(!a||!b){ App.toast('Enter a start time and an end time.','err'); return null; }
+      var d=span(a,b); if(d>24*60-1||d<15){ App.toast('Shift length must be between 15 minutes and 24 hours.','err'); return null; }
+      return {start:to12(a),end:to12(b),hours:Math.round(d/6)/10,type:val('ctKind'),label:label(a,b)}; }
+  };
+  document.addEventListener('change',function(e){ if(e.target&&e.target.id==='ctKind') e.target.dataset.touched='1';
+    if(e.target&&e.target.id==='dsLabel'){ var box=document.getElementById('ctBox'); if(box) box.hidden=e.target.value!==CUSTOM; if(e.target.value===CUSTOM) T.sync(); } });
+
+  /* Add shift: the presets, plus Custom time… */
+  var add0=DS.addShift;
+  DS.addShift=function(date){
+    add0.apply(this,arguments);
+    var s=document.getElementById('dsLabel'); if(!s||s.querySelector('option[value="'+CUSTOM+'"]')) return;
+    s.insertAdjacentHTML('afterbegin','<option value="'+CUSTOM+'">Custom shift</option>');
+    var lab=s.closest('label');
+    lab.insertAdjacentHTML('afterend','<div id="ctBox" class="pvx-ct" hidden>'+timeFields('07:00','17:00','day')+'</div>');
+  };
+  var prev0=DS.addPreview;
+  DS.addPreview=function(date){
+    if(val('dsLabel')!==CUSTOM) return prev0.apply(this,arguments);
+    var e=DAYMAP[date], t=T.read(), name=val('dsName'); if(!e||!t) return;
+    var s={id:Coverage.newId(),date:date,m:e.m,d:e.d,dow:e.dow,label:t.label,type:t.type,start:t.start,end:t.end,hours:t.hours,disp:(TYPE_DISP[t.type]||'Shift')+' · Custom',
+      name:name,meta:'',hl:!!name,open:!name,relief:name?isRelief(name):false,holiday:e.holiday};
+    DS.returnTo=date; Coverage.preview([{id:s.id,before:null,after:s}],'Add shift');
+  };
+
+  /* Change time… on an existing shift */
+  DS.retime=function(id){
+    var s=shiftById(id); if(!s||!App.isAdmin()) return;
+    App.dialog('Edit shift hours · '+(s.open?'Open shift':fullName(s.name))+' · '+fmtDateFull(s.date),
+      timeFields(to24(s.start),to24(s.end),s.type)+muted('Changes are reviewed before they are saved.')+menuFoot(act('Review','DS.retimePreview('+id+')',true)));
+    var k=$('ctKind'); if(k) k.dataset.touched='1'; T.sync();
+  };
+  DS.retimePreview=function(id){
+    var s=shiftById(id), t=T.read(); if(!s||!t) return;
+    if(t.start===s.start&&t.end===s.end&&t.type===s.type){ App.toast('The shift already has these hours.','info'); return; }
+    var after=Object.assign({},s,{start:t.start,end:t.end,hours:t.hours,type:t.type,label:t.label,disp:(TYPE_DISP[t.type]||'Shift')+' · Custom'});
+    delete after.span;
+    DS.returnTo=s.date; Coverage.preview([{id:s.id,before:s,after:after}],'Edit shift hours');
+  };
+  var day0=App.openDay;
+  App.openDay=function(date){
+    var r=day0.apply(this,arguments);
+    if(!this.isAdmin()) return r;
+    var box=document.getElementById('dayModal'); if(!box) return r;
+    box.querySelectorAll('[data-ds-rm]').forEach(function(b){ var id=(b.getAttribute('onclick').match(/\d+/)||[])[0];
+      if(id&&!b.parentNode.querySelector('[data-ds-time]')) b.insertAdjacentHTML('beforebegin','<button type="button" class="btn btn-ghost btn-sm" data-ds-time onclick="DS.retime('+id+')">Edit hours</button>'); });
+    return r;
+  };
+  var commit0=Coverage.commit;
+  Coverage.commit=function(){ var back=this.plan&&this.plan.label==='Edit shift hours'?DS.returnTo:null; var r=commit0.apply(this,arguments);
+    if(back) DS.backTo={date:back,until:Date.now()+4000}; return r; };
 })();
 </script>
 </body>
