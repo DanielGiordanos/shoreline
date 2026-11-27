@@ -1881,3 +1881,9 @@ textarea.an-ta{min-height:5.5rem}
 .an-list>li.an-was .an-card{animation:an-was 1.4s ease-out both;animation-delay:var(--an-was-d,0ms)}
 @keyframes an-was{0%,35%{background:var(--an-accent-soft)}to{background:transparent}}
 @media (prefers-contrast:more){.an-lcols{border-color:var(--an-line-2)}}
+
+/* PVX-N446 · HIG Buttons: 44 pt on touch for the chart's bars (an invisible hit area) and the list's column headings */
+@media (pointer:coarse){
+  .an-chart .an-bar::before{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+  .an-lcol{min-height:44px}
+}

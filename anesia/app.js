@@ -727,7 +727,7 @@
     return [
       { title: 'Records (on the list)', items: [{ keys: ['alt', 'N'], label: 'New training record' }, { keys: ['/'], label: 'Search the records (once there are 7 or more)' }] },   /* PVX-N440 */
       { title: 'Charting (in a record)', items: tools.map(function (t) { return { keys: ['alt', t[0]], label: t[1] }; }).concat([{ keys: ['T'], label: 'Show the trend of the focused vital' }]) },
-      { title: 'View', items: [{ keys: ['alt', 'F'], label: 'Expand or exit expanded view' }, { keys: ['esc'], label: 'Exit expanded view, or close the sheet' }] },
+      { title: 'View', items: [{ keys: ['alt', 'F'], label: 'Expand or exit expanded view' }, { keys: ['alt', 'T'], label: 'Show or hide totals and history' }, { keys: ['esc'], label: 'Exit expanded view, or close the sheet' }] },
       { title: 'Edit', items: [{ keys: ['mod', 'Z'], label: 'Undo the last change (within 2 minutes)' }, { keys: ['shift', 'mod', 'Z'], label: 'Redo' }] },
       { title: 'Help', items: [{ keys: ['?'], label: 'Show keyboard shortcuts' }] }
     ];
@@ -974,7 +974,9 @@
       } else if (inf) {
         var f = (r.infusions || []).filter(function (y) { return y.id === inf; })[0]; if (!f) return null;
         var dn = (A.drug(r, f.drugId) || {}).name || 'Infusion'; by = f.by || '';
-        items = [{ label: 'Show details', act: function () { infusionDetail(r, inf); } },
+        var runs = !f.end && !f.void && !signed;   /* PVX-N446 · HIG Context menus: the likeliest commands first */
+        items = [runs ? { label: 'Change rate…', act: function () { infusionDetail(r, inf); } } : { label: 'Show details', act: function () { infusionDetail(r, inf); } },
+          runs && { label: 'Stop…', act: function () { timeSheet(r, 'Stop ' + dn + (A.drug(r, f.drugId) && A.drug(r, f.drugId).kind === 'fluid' ? '' : ' infusion'), 'Stop', function (tt) { change(r.id, { type: 'stop', infusionId: f.id, at: tt }); }); } },
           !f.void && !signed && { label: 'Strike through…', danger: true, act: function () { voidSheet(r, 'infusion', f.id, dn + ' infusion'); } }];
       } else if (gas) {
         if (signed) return null;
@@ -1234,7 +1236,7 @@
     var cards = recs.map(function (r) { var w = A.weightAt(r, now());
       return '<li><a class="an-card" href="#r=' + esc(r.id) + '" data-open="' + esc(r.id) + '"><span class="t"><b>' + esc(r.procedure || 'Anesthesia') + '</b>' + statusPill(r) + '</span><span class="s">' + esc(r.start ? fmtDate(r.start) + ' · ' + fmtTime(r.start) + (r.end ? '–' + fmtTime(r.end) : '') : 'Created ' + fmtDate(r.created_at)) + (w ? ' · ' + sig(w) + ' kg' : '') + '</span><span class="m">' + esc(r.team.resident || '') + (r.team.supervisor ? ' · ' + esc(r.team.supervisor) : '') + '</span></a></li>'; }).join('');
     return '<header class="an-lhead an-shead"><div><h2>Anesthesia</h2><p>' + (recs.length ? recs.length + (recs.length === 1 ? ' record' : ' records') + ' for ' + esc(nm) : 'No anesthesia record for ' + esc(nm) + ' yet') + '</p></div>' +
-      '<button type="button" class="an-btn primary" id="anNew" title="Start charting anesthesia for this patient (' + kt('N') + ')" aria-keyshortcuts="Alt+N">' + icon('plus') + 'Start anesthesia record</button></header>' +
+      '<button type="button" class="an-btn primary" id="anNew" title="Start charting anesthesia for this patient (' + kt('N') + ')" aria-keyshortcuts="Alt+N">' + icon('plus') + 'Start anesthesia record…</button></header>' +
       (S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true"><li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li></ul>'
         : recs.length ? '<ul class="an-list">' + cards + '</ul>' : '<div class="an-empty"><b>Ready when ' + esc(nm) + ' goes under</b>Start a record and the patient’s name, weight, code status and allergies come from this treatment sheet.</div>') +
       '<p class="an-save an-vh" id="anSave"></p><p class="an-vh" role="status" id="anSaveLive"></p>';
@@ -1265,7 +1267,7 @@
     }).join('');
     var empty = { active: ['No training records in progress', 'Start a training record for the patient you are about to anesthetize.'], ended: ['Nothing waiting to be signed', 'Ended records appear here until they are signed.'], signed: ['No signed records yet', 'Signed records stay here, read-only.'] }[S.filter];
     return '<header class="an-lhead"><div><h1>Anesia</h1><p>Anesthesia records for training. They are not part of the medical record.</p></div>' +
-      (S.denied ? '' : '<button type="button" class="an-btn primary" id="anNew" title="Start a record for the patient you’re about to anesthetize (' + kt('N') + ')" aria-keyshortcuts="Alt+N">' + icon('plus') + 'New training record</button>') + '</header>' +
+      (S.denied ? '' : '<button type="button" class="an-btn primary" id="anNew" title="Start a record for the patient you’re about to anesthetize (' + kt('N') + ')" aria-keyshortcuts="Alt+N">' + icon('plus') + 'New training record…</button>') + '</header>' +
       (S.mode === 'local' ? '<div class="an-banner info"><span><b>Preview.</b> Records are saved on this device only.</span></div>' : '') +
       '<div class="an-seg" role="radiogroup" aria-label="Show records" data-rove="radio">' + tab('active', 'In progress') + tab('ended', 'To sign') + tab('signed', 'Signed') + '</div>' + findHTML +
       (S.mode === 'server' && S.denied && !S.loaded ? waitNote() : S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true" aria-label="Loading records">' + [1, 2, 3].map(function () { return '<li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li>'; }).join('') + '</ul><p class="an-vh" role="status">Loading records…</p>' + waitNote()
@@ -1335,17 +1337,18 @@
       : r.status === 'signed' ? 'Signed' : r.status === 'ended' ? 'Ended' : 'Planned';
     return '<b>' + nm + '</b><span class="an-tbt-s"> · ' + esc(st) + '</span>';
   }
+  /* PVX-N446 · HIG Buttons: a push button that opens a sheet asking for more ends in "…" (toolbar items don't) */
   function recordHTML(r) {
     var t = now(), w = A.weightAt(r, t), p = r.patient, signed = r.status === 'signed', live = r.status === 'active';
     var lw = lastWeighed(r), due = vitalsDue(r, t), insp = inspectorOpen();
     var clock = live ? '<div class="an-clock"><b>' + dur(t - r.start) + '</b><span>Anesthesia time</span></div>'
       : A.inRecovery(r) ? '<div class="an-clock"><b>' + dur(t - r.recovery.start) + '</b><span>Recovery time</span></div>'
       : r.start && r.end ? '<div class="an-clock"><b>' + dur(r.end - r.start) + '</b><span>' + fmtTime(r.start) + '–' + fmtTime(r.end) + '</span></div>' : '';
-    var main = r.status === 'planned' ? '<button type="button" class="an-btn primary an-dc" id="anStart">Start anesthesia</button>'
-      : live ? '<button type="button" class="an-btn an-dc" id="anEnd">' + icon('stop') + 'End anesthesia</button>'
-      : A.inRecovery(r) ? '<button type="button" class="an-btn an-dc" id="anREnd">' + icon('stop') + 'End recovery</button>'
+    var main = r.status === 'planned' ? '<button type="button" class="an-btn primary an-dc" id="anStart">Start anesthesia…</button>'
+      : live ? '<button type="button" class="an-btn an-dc" id="anEnd">' + icon('stop') + 'End anesthesia…</button>'
+      : A.inRecovery(r) ? '<button type="button" class="an-btn an-dc" id="anREnd">' + icon('stop') + 'End recovery…</button>'
       : r.status === 'ended' ? '<button type="button" class="an-btn primary an-dc" id="anSign">' + icon('check') + 'Sign record</button>'
-      : '<button type="button" class="an-btn an-dc" id="anAdd">' + icon('compose') + 'Add addendum</button>';
+      : '<button type="button" class="an-btn an-dc" id="anAdd">' + icon('compose') + 'Add addendum…</button>';
     var facts = [cap(p.species), p.breed, p.sex, p.age].filter(Boolean).map(esc).join(' · '), conf = A.isConfirmed(r);
     var head = '<header class="an-rhead"><a class="an-back" href="#">' + icon('back', { scale: 'l' }) + (SHEET ? 'Anesthesia' : 'Records') + '</a>' +
       '<div class="an-id"><h1>' + esc(p.name || 'Unnamed training patient') + statusPill(r) + kindPill(r, true) + confirmChip(r) + presenceChip(r) + '</h1>' +
@@ -1354,11 +1357,11 @@
       (w ? '<b>' + sig(w) + '<span> kg</span></b><small>' + (lw ? (lw.method === 'estimated' ? 'Estimated ' : 'Weighed ') + fmtTime(lw.at) : '') + '</small>' : '<b>' + icon('scale', { slash: true, scale: 's' }) + 'No weight</b><small>Add weight</small>') + '</button>' +
       '<div class="an-ract"><span class="an-save" id="anSave" aria-hidden="true"></span>' + clock + main +
       '<button type="button" class="an-btn icon" id="anExpand" aria-pressed="' + XP + '" aria-label="' + (XP ? 'Exit expanded view' : 'Expand record') + '" title="' + (XP ? 'Return to the usual view (' + kt('F') + ' or Esc)' : 'Fill the window with the record (' + kt('F') + ')') + '" aria-keyshortcuts="Alt+F"><span class="ic-out">' + icon('expand') + '</span><span class="ic-in">' + icon('collapse') + '</span></button>' +
-      '<button type="button" class="an-btn icon" id="anShare" aria-label="Share link to this record" title="' + (S.mode !== 'server' ? 'Copy a link to this Preview record' : (navigator.share ? 'Share' : 'Copy') + ' a link that opens this record for signed-in staff') + '">' + icon('share') + '</button>' +
+      '<button type="button" class="an-btn icon" id="anShare" aria-label="' + (S.mode !== 'server' || !navigator.share ? 'Copy link to this record' : 'Share link to this record') + '" title="' + (S.mode !== 'server' ? 'Copy a link to this Preview record' : (navigator.share ? 'Share' : 'Copy') + ' a link that opens this record for signed-in staff') + '">' + icon('share') + '</button>' +
       (r.status === 'ended' || r.status === 'signed' ? '<button type="button" class="an-btn icon" id="anPrint" aria-label="Print record" title="Print this record (' + kt('P', 1) + ')">' + icon('print') + '</button>' : '') + '</div>' + summaryHTML(r) + '</header><p class="an-vh" role="status" id="anSaveLive"></p>';
     var banners = '';
     if (!conf && !signed) banners += '<div class="an-confirm" role="alert"><span class="ic" aria-hidden="true">' + icon('idcheck') + '</span><span><b>Confirm the patient</b>Check the name, weight and procedure against the cage card before you chart.</span><button type="button" class="an-btn danger" id="anConfirmB">Confirm patient</button></div>';
-    if (!w && !signed) banners += '<div class="an-banner"><span><b>No weight on file.</b> Per-kg doses can’t be calculated and per-kg infusions can’t start. Doses given now are typed in mg and confirmed.</span><button type="button" class="an-btn tinted" data-act="weight">Add weight</button></div>';
+    if (!w && !signed) banners += '<div class="an-banner"><span><b>No weight on file.</b> Per-kg doses can’t be calculated and per-kg infusions can’t start. Doses given now are typed in mg and confirmed.</span><button type="button" class="an-btn tinted" data-act="weight">Add weight…</button></div>';
     if (S.pumpNotice && S.pumpNotice.id === r.id && S.pumpNotice.items.length) banners += '<div class="an-banner info" role="alert"><span><b>Weight changed — set the pumps.</b> ' + S.pumpNotice.items.map(function (x) { return esc(x.name) + ' ' + (x.from === null ? '—' : sig(x.from)) + ' → <b>' + (x.to === null ? '—' : sig(x.to)) + ' mL/h</b>'; }).join(' · ') + '</span><button type="button" class="an-btn tinted" id="anPumpsSet">Mark pumps set</button></div>';
     /* n196: the Tips banner became single-feature tips at the foot of the chart (tipHTML) */
     var ps = signed ? playing('sign:' + r.id, 1100) : null;
@@ -1378,7 +1381,7 @@
       '<span class="sp"><span class="an-tbt" aria-hidden="true" title="Back to the top of the record">' + compactTitle(r, t) + '</span></span><div class="an-seg an-zoomseg" role="radiogroup" aria-label="Minutes per column" data-rove="radio">' +
       [5, 10, 15].map(function (m) { return '<button type="button" role="radio" data-zoom="' + m + '" aria-checked="' + (S.colMin === m) + '" tabindex="' + (S.colMin === m ? 0 : -1) + '" aria-label="' + m + ' minutes per column">' + m + ' min</button>'; }).join('') + '</div>' +
       '<button type="button" class="an-btn an-dc an-zoompop" id="anZoomPop" aria-haspopup="menu" aria-label="Minutes per column: ' + S.colMin + '" title="Change how many minutes each column covers">' + S.colMin + ' min<span class="an-chev" aria-hidden="true"></span></button>' +   /* n208: the zoom when space is short */
-      '<button type="button" class="an-btn an-dc" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" title="' + (insp ? 'Hide' : 'Show') + ' totals and the record’s history">' + icon('sidebar') + '<span class="t">Totals</span></button>' +
+      '<button type="button" class="an-btn an-dc" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" aria-keyshortcuts="Alt+T" title="' + (insp ? 'Hide' : 'Show') + ' totals and the record’s history (' + kt('T') + ')">'   /* PVX-N445: ⌥T */ + icon('sidebar') + '<span class="t">Totals</span></button>' +
       '<button type="button" class="an-btn an-dc an-emb" id="anEmer" aria-haspopup="dialog" aria-label="Emergency drugs" title="Show emergency drugs calculated for this patient">' + icon('emer') + '<span class="t">Emergency</span></button></div>';   /* n208: set apart at the trailing edge */
     var ptitle = '<div class="an-ptitle" aria-hidden="true" title="Back to the top of the record">' + compactTitle(r, t) + '</div>';   /* n208: iPhone */
     return head + banners + ptitle + tools + '<div class="an-body' + (insp ? ' insp' : '') + (ps !== null ? ' settle' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + tipHTML(r, signed, conf) + (conf ? (playing('conf:' + r.id, 900) !== null ? '<div class="an-wm gone" aria-hidden="true" style="animation-delay:-' + playing('conf:' + r.id, 900) + 'ms"><span>Confirm correct patient</span></div>' : '') : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
@@ -2685,6 +2688,7 @@
     if (typing || !S.cur) return;
     if (e.key === 'Escape' && XP && !e.defaultPrevented) { e.preventDefault(); setExpanded(false); return; }   /* an open sheet takes Esc first */
     if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyF' && window.innerWidth > 600) { e.preventDefault(); setExpanded(!XP); return; }
+    if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyT') { var ib = $('#anInsp'); if (ib) { e.preventDefault(); ib.click(); } return; }   /* PVX-N445 · HIG Split views: a hidden pane has a keyboard shortcut too */
     if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) redoLast(); else undoLast(); return; }
     /* shortcuts for the frequent actions (shown in each button's tooltip) */
     if (e.altKey && !e.metaKey && !e.ctrlKey) {
