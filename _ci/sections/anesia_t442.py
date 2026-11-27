@@ -6,7 +6,8 @@ from helpers import *
 from anesia_t440 import list_page
 
 ROWS = "[...document.querySelectorAll('.an-list .an-card')].map(a=>{const r=a.getBoundingClientRect(),s=[...a.children].map(c=>Math.round(c.getBoundingClientRect().left));return {l:Math.round(r.left),t:Math.round(r.top),b:Math.round(r.bottom),w:Math.round(r.width),h:Math.round(r.height),cols:s}})"
-LISTW = "(()=>{const l=document.querySelector('.an-list'),cs=getComputedStyle(l),a=getComputedStyle(document.querySelector('.an-list .an-card'));return {w:Math.round(l.getBoundingClientRect().width),r:parseFloat(cs.borderTopLeftRadius),cbg:a.backgroundColor,cr:parseFloat(a.borderTopLeftRadius)}})()"
+# n444: the radius is read at the bottom: on a Mac the column headings now carry the top corners
+LISTW = "(()=>{const l=document.querySelector('.an-list'),cs=getComputedStyle(l),a=getComputedStyle(document.querySelector('.an-list .an-card'));return {w:Math.round(l.getBoundingClientRect().width),r:parseFloat(cs.borderBottomLeftRadius),cbg:a.backgroundColor,cr:parseFloat(a.borderTopLeftRadius)}})()"
 
 
 @section(id='a442', title='n442 · Anesia · Web views, Boxes, Collections: the records are one list (columns on a Mac, stacked rows when narrower), a record that arrives shows itself, and the chart’s tip is a line, not a box in a box',

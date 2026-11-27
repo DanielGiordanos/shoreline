@@ -715,6 +715,7 @@
     else if (!m) lastSet(null);   /* back to Records on purpose */
     if (m && !EMBED) lastSet(m[1]);
     if (S.skipHash !== undefined) { var sk = S.skipHash; S.skipHash = undefined; if (sk === h) return; }   /* a morph already rendered this route */
+    if (!m && S.cur) S.was = { id: S.cur, at: Date.now() };   /* PVX-N444: the list marks the record you came back from */
     S.cur = m ? m[1] : null; if (!S.cur || S.cur !== presRec) stopPresence(); render();
     if (S.openNew && !S.cur) { S.openNew = false; setTimeout(function () { var nb = $('#anNew'); if (nb && !nb.disabled) nb.click(); }, 0); }
     if (S.cur) setTimeout(scrollToNow, 0);
@@ -1249,7 +1250,7 @@
     var match = function (r) { if (!words.length) return true; var h = hay(r); return words.every(function (w) { return h.indexOf(w) > -1; }); };
     var TABN = { active: 'In progress', ended: 'To sign', signed: 'Signed' }, SCOPE = { active: 'records in progress', ended: 'records to sign', signed: 'signed records' }[S.filter];
     var findOn = recs.length >= 7 || !!q;
-    var shown = recs.filter(F[S.filter]).filter(match).sort(function (a, b) { return (b.start || b.created_at) - (a.start || a.created_at); });
+    var shown = recs.filter(F[S.filter]).filter(match).sort(listSort);   /* PVX-N444: the sort the column headings set */
     var findHTML = findOn ? '<div class="an-find" role="search">' + icon('search') + '<input type="search" class="an-in" id="anFind" placeholder="Search ' + SCOPE + '" aria-label="Search ' + SCOPE + '" aria-keyshortcuts="/" value="' + esc(S.find || '') + '" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></div>' : '';
     var noneHTML = '';
     if (q && !shown.length) { var elsewhere = ['active', 'ended', 'signed'].filter(function (k) { return k !== S.filter; }).map(function (k) { return [k, recs.filter(F[k]).filter(match).length]; }).filter(function (x) { return x[1]; });
@@ -1268,10 +1269,31 @@
       (S.mode === 'local' ? '<div class="an-banner info"><span><b>Preview.</b> Records are saved on this device only.</span></div>' : '') +
       '<div class="an-seg" role="radiogroup" aria-label="Show records" data-rove="radio">' + tab('active', 'In progress') + tab('ended', 'To sign') + tab('signed', 'Signed') + '</div>' + findHTML +
       (S.mode === 'server' && S.denied && !S.loaded ? waitNote() : S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true" aria-label="Loading records">' + [1, 2, 3].map(function () { return '<li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li>'; }).join('') + '</ul><p class="an-vh" role="status">Loading records…</p>' + waitNote()
-        : shown.length ? '<ul class="an-list">' + cards + '</ul>' + (q ? '<p class="an-vh" role="status">' + shown.length + (shown.length === 1 ? ' record' : ' records') + ' found</p>' : '') : noneHTML || '<div class="an-empty"><b>' + empty[0] + '</b>' + empty[1] + '</div>') +
+        : shown.length ? sortHead(shown.length) + '<ul class="an-list">' + cards + '</ul>' + (q ? '<p class="an-vh" role="status">' + shown.length + (shown.length === 1 ? ' record' : ' records') + ' found</p>' : '') : noneHTML || '<div class="an-empty"><b>' + empty[0] + '</b>' + empty[1] + '</div>') +
       '<p class="an-save an-vh" id="anSave"></p><p class="an-vh" role="status" id="anSaveLive"></p>';
   }
   function cap(s) { s = String(s || ''); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+  /* PVX-N444 · HIG Lists and tables: column headings that say what each column is, and sort the list (again reverses it) */
+  var SORTS = { name: ['Patient', 'patient', function (r) { return (r.patient && r.patient.name) || ''; }], kind: ['Animal', 'animal', function (r) { var p = r.patient || {}; return [p.species, p.breed].filter(Boolean).join(' '); }],
+    proc: ['Procedure', 'procedure', function (r) { return r.procedure || ''; }], date: ['Date', 'date', function (r) { return r.start || r.created_at || 0; }] };
+  function sortNow() { if (!S.sort) { var v = lsGet('sort'); S.sort = v && SORTS[v.k] && (v.d === 1 || v.d === -1) ? v : { k: 'date', d: -1 }; } return S.sort; }
+  function sortWords(k, d) { return k === 'date' ? (d < 0 ? 'newest first' : 'oldest first') : (d > 0 ? 'A to Z' : 'Z to A'); }
+  function listSort(a, b) {
+    var s = sortNow(), f = SORTS[s.k][2], x = f(a), y = f(b), dt = (b.start || b.created_at || 0) - (a.start || a.created_at || 0);
+    if (s.k === 'date') return (x - y) * s.d || 0;
+    if (!x !== !y) return x ? -1 : 1;   /* an empty value goes last either way */
+    return String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: 'base' }) * s.d || dt;
+  }
+  function sortHead(n) {
+    var s = sortNow(), plain = s.k === 'date' && s.d < 0;
+    var head = '<div class="an-lcols" role="group" aria-label="Sort records">' + ['name', 'kind', 'proc', 'date'].map(function (k) {
+      var on = s.k === k;
+      return '<button type="button" class="an-lcol' + (on ? ' on' : '') + '" data-sort="' + k + '" aria-pressed="' + on + '" title="' + (on ? 'Sorted ' + sortWords(k, s.d) + '. Click to reverse.' : 'Sort by ' + SORTS[k][1]) + '">' + SORTS[k][0] +
+        (on ? '<span class="an-vh">, sorted ' + sortWords(k, s.d) + '</span><span class="an-sarr' + (s.d < 0 ? ' dn' : '') + '" aria-hidden="true"></span>' : '') + '</button>';
+    }).join('') + '</div>';
+    var note = plain || n < 2 ? '' : '<p class="an-sortnote">Sorted by ' + SORTS[s.k][1] + ', ' + sortWords(s.k, s.d) + '<button type="button" class="an-btn plain sm" data-sort0>Sort by date</button></p>';
+    return head + note;
+  }
   function bindList() {
     if (!$('[data-f]') && !$('#anNew')) return;
     $$('[data-f]').forEach(function (b) { b.onclick = function () { S.filter = b.getAttribute('data-f'); lsSet('filter', S.filter); render(); var t = $('[data-f="' + S.filter + '"]'); if (t) t.focus(); }; });
@@ -1285,6 +1307,16 @@
     $$('[data-open]').forEach(function (b) { b.onclick = function (e) { if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button > 0)) return;   /* n211: a modified click opens the record in its own window */
       if (e) e.preventDefault(); var id = b.getAttribute('data-open'); morph(b, function () { location.hash = 'r=' + id; route(); S.skipHash = 'r=' + id; }, '.an-id'); }; });
     var nb0 = $('#anNew'); if (nb0) nb0.onclick = function () { patientSheet(null); };   /* PVX-N436 */
+    /* PVX-N444 · HIG Lists and tables */
+    $$('[data-sort]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-sort'), s = sortNow();
+      S.sort = s.k === k ? { k: k, d: -s.d } : { k: k, d: k === 'date' ? -1 : 1 }; lsSet('sort', S.sort); render(); var g = $('[data-sort="' + k + '"]'); if (g) g.focus();
+      srSay('Sorted by ' + SORTS[k][1] + ', ' + sortWords(k, S.sort.d)); }; });
+    var s0 = $('[data-sort0]'); if (s0) s0.onclick = function () { S.sort = { k: 'date', d: -1 }; lsSet('sort', S.sort); render(); var l = $('.an-list .an-card'); if (l) l.focus(); srSay('Sorted by date, newest first'); };
+    if (S.was) { var age = Date.now() - S.was.at, wa = $('[data-open="' + S.was.id + '"]');
+      if (age > 1400) S.was = null;
+      else if (wa) { var wl = wa.parentElement; wl.classList.add('an-was'); wl.style.setProperty('--an-was-d', -age + 'ms');
+        if (!S.was.focused || document.activeElement === document.body) { S.was.focused = true; try { wa.focus({ preventScroll: true }); } catch (x) { wa.focus(); }
+          var rc = wa.getBoundingClientRect(); if (rc.top < 0 || rc.bottom > innerHeight) wa.scrollIntoView({ block: 'center' }); } } }
   }
 
   /* ----- record (n152: iPad-first; a Now column; the weight beside the name; one row per drug; empty groups hidden) ----- */
