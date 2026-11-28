@@ -32,13 +32,27 @@
       "name": "New training record",
       "short_name": "New record",
       "description": "Start an anesthesia record for a training patient",
-      "url": "/anesia/#new"
+      "url": "/anesia/#new",
+      "icons": [
+        {
+          "src": "/assets/img/sc-or-add.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "All records",
       "short_name": "Records",
       "description": "Show anesthesia records",
-      "url": "/anesia/"
+      "url": "/anesia/",
+      "icons": [
+        {
+          "src": "/assets/img/sc-flow-patients.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

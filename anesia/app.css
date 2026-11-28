@@ -1887,3 +1887,10 @@ textarea.an-ta{min-height:5.5rem}
   .an-chart .an-bar::before{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
   .an-lcol{min-height:44px}
 }
+
+/* PVX-N450 · HIG Search fields: "Also in To sign · 1" under the results */
+.an-also{justify-content:flex-start;margin:.75rem 0 0;color:var(--an-ink-3);font-size:.9375rem}
+
+/* PVX-N451 · HIG Alerts: "Discard your changes?" is modal; the sheet behind it dims */
+.an-asking .an-sheet > [inert]{opacity:.4;transition:opacity .15s}
+@media (prefers-reduced-motion:reduce){.an-asking .an-sheet > [inert]{transition:none}}

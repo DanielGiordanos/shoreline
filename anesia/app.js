@@ -616,7 +616,7 @@
     var apply = function () {
       XP = on; document.documentElement.classList.toggle('an-expanded', on);
       var b = document.getElementById('anExpand');
-      if (b) { b.classList.remove('rep'); void b.offsetWidth; b.classList.add('rep'); setTimeout(function () { b.classList.remove('rep'); }, 450); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Exit expanded view' : 'Expand record'); b.title = on ? 'Exit expanded view (⌥F or Esc)' : 'Expand (⌥F)'; }
+      if (b) { b.classList.remove('rep'); void b.offsetWidth; b.classList.add('rep'); setTimeout(function () { b.classList.remove('rep'); }, 450); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Exit expanded view' : 'Expand record'); b.title = on ? 'Return to the usual view (' + kt('F') + ' or Esc)' : 'Fill the window with the record (' + kt('F') + ')';   /* PVX-N449 */ }
     };
     if (EMBED) { if (!fromHost) try { parent.postMessage({ anesia: 'expand', on: on }, location.origin); } catch (e) { } apply(); return; }   /* the sheet animates the frame */
     if (document.startViewTransition && !fromHost && !auto) { try { var vtx = document.startViewTransition(apply); /* PVX-N431 */ vtx.ready.catch(function () { }); vtx.finished.catch(function () { }); return; } catch (e) { } }
@@ -726,7 +726,7 @@
     var tools = [['V', 'Vitals now'], ['D', 'Give drug'], ['I', 'Infusion'], ['G', 'Gas'], ['E', 'Event'], ['O', 'Output'], ['A', 'Airway']];
     return [
       { title: 'Records (on the list)', items: [{ keys: ['alt', 'N'], label: 'New training record' }, { keys: ['/'], label: 'Search the records (once there are 7 or more)' }] },   /* PVX-N440 */
-      { title: 'Charting (in a record)', items: tools.map(function (t) { return { keys: ['alt', t[0]], label: t[1] }; }).concat([{ keys: ['T'], label: 'Show the trend of the focused vital' }]) },
+      { title: 'Charting (in a record)', items: tools.map(function (t) { return { keys: ['alt', t[0]], label: t[1] }; }).concat([{ keys: ['alt', 'R'], label: 'Emergency drugs' }, { keys: ['T'], label: 'Show the trend of the focused vital' }]) },   /* PVX-N449: ⌥R */
       { title: 'View', items: [{ keys: ['alt', 'F'], label: 'Expand or exit expanded view' }, { keys: ['alt', 'T'], label: 'Show or hide totals and history' }, { keys: ['esc'], label: 'Exit expanded view, or close the sheet' }] },
       { title: 'Edit', items: [{ keys: ['mod', 'Z'], label: 'Undo the last change (within 2 minutes)' }, { keys: ['shift', 'mod', 'Z'], label: 'Redo' }] },
       { title: 'Help', items: [{ keys: ['?'], label: 'Show keyboard shortcuts' }] }
@@ -988,7 +988,19 @@
 
   /* ---------------- render ---------------- */
   var lastScroll = 0;
-  function render(soft) {
+  /* PVX-N449 · HIG Toolbars (Titles): the window's title names what's on screen, not the app (the suite's rule, n284 and n412) */
+  var BASE_T = document.title;
+  function winTitle() {
+    if (EMBED) return;
+    var t = BASE_T, r;
+    if (S.ready && !S.gate && !(S.denied && !S.loaded)) {
+      if (!S.cur) t = 'Records';
+      else if ((r = recOf(S.cur))) t = 'Anesthesia record';   /* never the patient's name: shared computers keep titles in their history (n432) */
+    }
+    if (document.title !== t) document.title = t;
+  }
+  function render(soft) { renderIn(soft); winTitle(); }
+  function renderIn(soft) {
     var root = $('#anApp'); if (!root) return;
     if (!S.ready) { root.innerHTML = '<div class="an-loading an-skelrec" role="status"><span class="an-vh">Loading…</span><div class="sk-h"><i></i><i></i></div><div class="sk-chips"><i></i><i></i><i></i><i></i></div><div class="sk-tools"><i></i><i></i><i></i></div><div class="sk-body"><div class="sk-chart"><i></i><i></i><i></i><i></i><i></i></div><div class="sk-now"><i></i><i></i><i></i><i></i></div></div></div>'; return; }
     if (S.gate) { root.innerHTML = gateHTML(); bindGate(); if (EMBED) $$('.an-gate a').forEach(function (x) { x.target = '_top'; }); return; }
@@ -1253,6 +1265,10 @@
     var TABN = { active: 'In progress', ended: 'To sign', signed: 'Signed' }, SCOPE = { active: 'records in progress', ended: 'records to sign', signed: 'signed records' }[S.filter];
     var findOn = recs.length >= 7 || !!q;
     var shown = recs.filter(F[S.filter]).filter(match).sort(listSort);   /* PVX-N444: the sort the column headings set */
+    /* PVX-N450 · HIG Search fields: the most relevant first (the patient's name has every word), and matches in the other tabs are named */
+    var nameHit = function (r) { var n = String((r.patient && r.patient.name) || '').toLowerCase(); return words.every(function (w) { return n.indexOf(w) > -1; }) ? 1 : 0; };
+    if (words.length) shown.sort(function (a, b) { return nameHit(b) - nameHit(a) || listSort(a, b); });
+    var alsoIn = q && shown.length ? ['active', 'ended', 'signed'].filter(function (k) { return k !== S.filter; }).map(function (k) { return [k, recs.filter(F[k]).filter(match).length]; }).filter(function (x) { return x[1]; }) : [];
     var findHTML = findOn ? '<div class="an-find" role="search">' + icon('search') + '<input type="search" class="an-in" id="anFind" placeholder="Search ' + SCOPE + '" aria-label="Search ' + SCOPE + '" aria-keyshortcuts="/" value="' + esc(S.find || '') + '" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></div>' : '';
     var noneHTML = '';
     if (q && !shown.length) { var elsewhere = ['active', 'ended', 'signed'].filter(function (k) { return k !== S.filter; }).map(function (k) { return [k, recs.filter(F[k]).filter(match).length]; }).filter(function (x) { return x[1]; });
@@ -1271,7 +1287,9 @@
       (S.mode === 'local' ? '<div class="an-banner info"><span><b>Preview.</b> Records are saved on this device only.</span></div>' : '') +
       '<div class="an-seg" role="radiogroup" aria-label="Show records" data-rove="radio">' + tab('active', 'In progress') + tab('ended', 'To sign') + tab('signed', 'Signed') + '</div>' + findHTML +
       (S.mode === 'server' && S.denied && !S.loaded ? waitNote() : S.mode === 'server' && !S.loaded ? '<ul class="an-list" aria-busy="true" aria-label="Loading records">' + [1, 2, 3].map(function () { return '<li><div class="an-skel" aria-hidden="true"><i></i><i></i><i></i></div></li>'; }).join('') + '</ul><p class="an-vh" role="status">Loading records…</p>' + waitNote()
-        : shown.length ? sortHead(shown.length) + '<ul class="an-list">' + cards + '</ul>' + (q ? '<p class="an-vh" role="status">' + shown.length + (shown.length === 1 ? ' record' : ' records') + ' found</p>' : '') : noneHTML || '<div class="an-empty"><b>' + empty[0] + '</b>' + empty[1] + '</div>') +
+        : shown.length ? sortHead(shown.length) + '<ul class="an-list">' + cards + '</ul>' +
+          (alsoIn.length ? '<p class="an-findin an-also">Also in ' + alsoIn.map(function (x) { return '<button type="button" class="an-btn plain strong" data-f2="' + x[0] + '">' + TABN[x[0]] + ' · ' + x[1] + '</button>'; }).join(' ') + '</p>' : '') +
+          (q ? '<p class="an-vh" role="status">' + shown.length + (shown.length === 1 ? ' record' : ' records') + ' found' + alsoIn.map(function (x) { return ', ' + x[1] + ' in ' + TABN[x[0]]; }).join('') + '</p>' : '') : noneHTML || '<div class="an-empty"><b>' + empty[0] + '</b>' + empty[1] + '</div>') +
       '<p class="an-save an-vh" id="anSave"></p><p class="an-vh" role="status" id="anSaveLive"></p>';
   }
   function cap(s) { s = String(s || ''); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
@@ -1377,12 +1395,12 @@
       '<button type="button" class="an-btn" data-act="event"' + dis + ' aria-label="Event" title="Chart a moment such as induction or intubation, or a note (' + kt('E') + ')" aria-keyshortcuts="Alt+E">' + icon('flag') + '<span class="t">Event</span></button>' +
       '<button type="button" class="an-btn" data-act="output"' + dis + ' aria-label="Output" title="Chart blood loss, urine or other output (' + kt('O') + ')" aria-keyshortcuts="Alt+O">' + icon('output') + '<span class="t">Output</span></button>' +
       '<button type="button" class="an-btn" data-act="airway"' + dis + ' aria-label="Airway" title="Chart a tube, line or catheter, or the ventilation (' + kt('A') + ')" aria-keyshortcuts="Alt+A">' + icon('airway') + '<span class="t">Airway</span></button></div>' +
-      '<button type="button" class="an-btn an-pmore" id="anMore" aria-haspopup="menu" aria-label="More charting tools" title="Show the other charting tools">' + icon('more') + '</button>' +   /* n204: phones */
+      '<button type="button" class="an-btn an-pmore" id="anMore" aria-haspopup="menu" aria-expanded="false" aria-label="More charting tools" title="Show the other charting tools">' + icon('more') + '</button>' +   /* n204: phones */
       '<span class="sp"><span class="an-tbt" aria-hidden="true" title="Back to the top of the record">' + compactTitle(r, t) + '</span></span><div class="an-seg an-zoomseg" role="radiogroup" aria-label="Minutes per column" data-rove="radio">' +
       [5, 10, 15].map(function (m) { return '<button type="button" role="radio" data-zoom="' + m + '" aria-checked="' + (S.colMin === m) + '" tabindex="' + (S.colMin === m ? 0 : -1) + '" aria-label="' + m + ' minutes per column">' + m + ' min</button>'; }).join('') + '</div>' +
-      '<button type="button" class="an-btn an-dc an-zoompop" id="anZoomPop" aria-haspopup="menu" aria-label="Minutes per column: ' + S.colMin + '" title="Change how many minutes each column covers">' + S.colMin + ' min<span class="an-chev" aria-hidden="true"></span></button>' +   /* n208: the zoom when space is short */
+      '<button type="button" class="an-btn an-dc an-zoompop" id="anZoomPop" aria-haspopup="menu" aria-expanded="false" aria-label="Minutes per column: ' + S.colMin + '" title="Change how many minutes each column covers">' + S.colMin + ' min<span class="an-chev" aria-hidden="true"></span></button>' +   /* n208: the zoom when space is short */
       '<button type="button" class="an-btn an-dc" id="anInsp" aria-pressed="' + insp + '" aria-controls="anInspector" aria-label="Totals and history" aria-keyshortcuts="Alt+T" title="' + (insp ? 'Hide' : 'Show') + ' totals and the record’s history (' + kt('T') + ')">'   /* PVX-N445: ⌥T */ + icon('sidebar') + '<span class="t">Totals</span></button>' +
-      '<button type="button" class="an-btn an-dc an-emb" id="anEmer" aria-haspopup="dialog" aria-label="Emergency drugs" title="Show emergency drugs calculated for this patient">' + icon('emer') + '<span class="t">Emergency</span></button></div>';   /* n208: set apart at the trailing edge */
+      '<button type="button" class="an-btn an-dc an-emb" id="anEmer" aria-haspopup="dialog" aria-label="Emergency drugs" aria-keyshortcuts="Alt+R" title="Show emergency drugs calculated for this patient (' + kt('R') + ')">' + icon('emer') + '<span class="t">Emergency</span></button></div>';   /* n208: set apart at the trailing edge */
     var ptitle = '<div class="an-ptitle" aria-hidden="true" title="Back to the top of the record">' + compactTitle(r, t) + '</div>';   /* n208: iPhone */
     return head + banners + ptitle + tools + '<div class="an-body' + (insp ? ' insp' : '') + (ps !== null ? ' settle' : '') + '"' + (ps !== null ? ' style="--an-d:-' + ps + 'ms"' : '') + '><section class="an-panel an-chartp' + (conf ? '' : ' unconf') + '" aria-label="Anesthesia chart">' + chartHTML(r) + tipHTML(r, signed, conf) + (conf ? (playing('conf:' + r.id, 900) !== null ? '<div class="an-wm gone" aria-hidden="true" style="animation-delay:-' + playing('conf:' + r.id, 900) + 'ms"><span>Confirm correct patient</span></div>' : '') : '<div class="an-wm" aria-hidden="true"><span>Confirm correct patient</span></div>') + '</section>' +
       nowHTML(r) + (insp ? '<aside class="an-side' + (S.opening === 'side' ? ' opening' : '') + '" id="anInspector" aria-label="Totals and history">' + sideHTML(r) + '</aside>' : '<aside class="an-side an-print-only" aria-hidden="true">' + sideHTML(r).replace(/ id="an[A-Za-z]+"/g, '') + '</aside>') + '</div>';
@@ -1704,7 +1722,7 @@
     on('#anPumpsSet', function () { S.pumpNotice = null; render(); });
     on('#anEmer', function () { emergencySheet(r); });
     on('#anMore', function () { moreMenu($('#anMore')); });   /* n204 */
-    on('#anZoomPop', function () { var b = $('#anZoomPop'); if (window.PvxCtx) PvxCtx.open({ anchor: b, label: 'Minutes per column', items: [5, 10, 15].map(function (m) { return { label: m + ' min', checked: S.colMin === m, act: function () { var z = $('.an-tools [data-zoom="' + m + '"]'); if (z) z.click(); } }; }) }); });   /* n208 */
+    on('#anZoomPop', function () { var b = $('#anZoomPop'); if (window.PvxCtx) menuOpen(b, { anchor: b, label: 'Minutes per column', items: [5, 10, 15].map(function (m) { return { label: m + ' min', checked: S.colMin === m, act: function () { var z = $('.an-tools [data-zoom="' + m + '"]'); if (z) z.click(); } }; }) }); });   /* n208 */
     on('#anInsp', function () {
       S.inspector = !inspectorOpen(); lsSet('inspector', S.inspector); S.opening = S.inspector ? 'side' : null; render(); S.opening = null;
       var side = $('#anInspector');
@@ -1882,15 +1900,25 @@
     var pop = o.anchor && window.innerWidth >= 900;   /* on wide screens, details open as a popover beside what was tapped */
     wrap.innerHTML = '<div class="an-sheet" role="dialog" aria-modal="true" aria-labelledby="anShT"><div class="an-grab" aria-hidden="true"></div><div class="an-sh"><button type="button" class="an-btn plain l" data-x>Cancel</button><h2 id="anShT">' + esc(o.title) + '</h2>' +
       (o.primary ? '<button type="button" class="an-btn ' + (o.danger ? 'destr' : o.quiet ? 'plain strong' : 'primary') + ' r" data-ok>' + esc(o.primary) + '</button>' : '<span></span>') + '</div>' +
-      '<div class="an-discard" data-discard hidden role="alertdialog" aria-labelledby="anDiscT" aria-describedby="anDiscS"><b id="anDiscT">Discard your changes?</b><span id="anDiscS">What you typed in this sheet will be lost.</span><div><button type="button" class="an-btn" data-keep>Keep editing</button><button type="button" class="an-btn destr" data-drop>Discard</button></div></div>' +
+      '<div class="an-discard" data-discard hidden role="alertdialog" aria-modal="true" aria-labelledby="anDiscT" aria-describedby="anDiscS"><b id="anDiscT">Discard your changes?</b><span id="anDiscS">What you typed in this sheet will be lost.</span><div><button type="button" class="an-btn" data-keep>Keep editing</button><button type="button" class="an-btn destr" data-drop>Discard</button></div></div>' +
       '<form class="an-sb" novalidate>' + o.body + '<p class="formerr" role="alert" id="anShErr" data-err></p><button type="submit" hidden></button></form></div>';
     if (pop) wrap.classList.add('pop');
     document.body.appendChild(wrap);
     $$('textarea.an-ta', wrap).forEach(function (t) { if (t.value) taGrow(t); });   /* PVX-N441 */
     $$('.an,#pvxTopnav,#anToast').forEach(function (el) { el.setAttribute('inert', ''); });
     if (pop) { var ar = o.anchor.getBoundingClientRect(), sh = $('.an-sheet', wrap), sw = Math.min(400, window.innerWidth - 32), sx = Math.min(Math.max(16, ar.left + ar.width / 2 - sw / 2), window.innerWidth - sw - 16);
-      sh.style.width = sw + 'px'; sh.style.left = sx + 'px'; var below = window.innerHeight - ar.bottom > 320; sh.style.top = (below ? ar.bottom + 10 : Math.max(16, ar.top - 10 - Math.min(sh.offsetHeight, 420))) + 'px';
-      sh.style.transformOrigin = Math.round(ar.left + ar.width / 2 - sx) + 'px ' + (below ? -10 : sh.offsetHeight + 10) + 'px'; wrap.classList.add('morph'); }
+      sh.style.width = sw + 'px'; sh.style.left = sx + 'px';
+      /* PVX-N452 · HIG Popovers: never over what was clicked - below if it fits, above if it fits, else beside it; else the larger side, scrolling inside */
+      var ph = sh.offsetHeight, VH = window.innerHeight, VW = window.innerWidth, dn = VH - ar.bottom - 26, up = ar.top - 26, ptop, ox = ar.left + ar.width / 2 - sx, oy;
+      if (ph <= dn) { ptop = ar.bottom + 10; oy = -10; }
+      else if (ph <= up) { ptop = ar.top - 10 - ph; oy = ph + 10; }
+      else {
+        var rt = VW - ar.right - 26 >= sw, lt = ar.left - 26 >= sw;
+        if (rt || lt) { sx = rt ? ar.right + 10 : ar.left - 10 - sw; sh.style.left = sx + 'px'; ptop = Math.min(Math.max(16, ar.top + ar.height / 2 - ph / 2), VH - ph - 16); ox = rt ? -10 : sw + 10; oy = ar.top + ar.height / 2 - ptop; }
+        else if (dn >= up) { ptop = ar.bottom + 10; sh.style.maxHeight = dn + 'px'; oy = -10; }
+        else { ptop = 16; sh.style.maxHeight = up + 'px'; oy = up + 10; }
+      }
+      sh.style.top = ptop + 'px'; sh.style.transformOrigin = Math.round(ox) + 'px ' + Math.round(oy) + 'px'; wrap.classList.add('morph'); }
     else if (sheetPrev && sheetPrev.getBoundingClientRect && window.innerWidth > 600) {   /* n159: the sheet grows out of the button that opened it */
       var shm = $('.an-sheet', wrap), br = sheetPrev.getBoundingClientRect(), mr = shm.getBoundingClientRect();
       if (br.width) { shm.style.transformOrigin = Math.round(br.left + br.width / 2 - mr.left) + 'px ' + Math.round(br.top + br.height / 2 - mr.top) + 'px'; wrap.classList.add('morph', 'big'); } }
@@ -1914,22 +1942,38 @@
     form.addEventListener('change', function () { wrap.dirty = true; });
     form.addEventListener('click', function (e) { if (e.target.closest('.an-chip,[data-step]')) wrap.dirty = true; });
     var disc = $('[data-discard]', wrap);
+    /* PVX-N451 · HIG Alerts: while it asks, the alert is modal - the rest of the sheet is inert (and dimmed), so Tab and taps stay on its two buttons */
+    function discOn(on) { disc.hidden = !on; $$('.an-sheet > .an-sh, .an-sheet > form', wrap).forEach(function (el) { if (on) el.setAttribute('inert', ''); else el.removeAttribute('inert'); }); wrap.classList.toggle('an-asking', on); }
     function requestClose() {
       if (!wrap.dirty) return closeSheet();
-      disc.hidden = false; $('[data-keep]', wrap).focus();
+      discOn(true); $('[data-keep]', wrap).focus();
     }
-    $('[data-keep]', wrap).onclick = function () { disc.hidden = true; var f0 = $('input:not([type=hidden]),select,textarea', form); if (f0) f0.focus(); };
+    $('[data-keep]', wrap).onclick = function () { discOn(false); var f0 = $('input:not([type=hidden]),select,textarea', form); if (f0) f0.focus(); };
     $('[data-drop]', wrap).onclick = function () { wrap.dirty = false; closeSheet(); };
     /* PVX-N437 · Modality: handing over to another sheet asks first, as closing does, if something was typed */
     wrap.leave = function (next, label) {
       if (!wrap.dirty) { closeSheet(true); next(); return; }
       var db = $('[data-drop]', wrap), kb = $('[data-keep]', wrap), t0 = db.textContent, k0 = kb.onclick, d0 = db.onclick;
-      db.textContent = label || 'Discard and continue'; disc.hidden = false; kb.focus();
+      db.textContent = label || 'Discard and continue'; discOn(true); kb.focus();
       db.onclick = function () { wrap.dirty = false; closeSheet(true); next(); };
       kb.onclick = function () { db.textContent = t0; db.onclick = d0; kb.onclick = k0; k0(); };
     };
     $('[data-x]', wrap).onclick = requestClose;
-    wrap.addEventListener('mousedown', function (e) { if (e.target === wrap) requestClose(); });
+    wrap.addEventListener('mousedown', function (e) {
+      if (e.target !== wrap) return;
+      /* PVX-N452 · HIG Popovers: with nothing typed, one click outside a popover closes it and also does what it pointed at (another mark opens at once) */
+      if (pop && !wrap.dirty && e.button === 0) {
+        var x0 = e.clientX, y0 = e.clientY; closeSheet(true);
+        document.addEventListener('mouseup', function up(ev) {
+          document.removeEventListener('mouseup', up, true);
+          if (Math.abs(ev.clientX - x0) > 6 || Math.abs(ev.clientY - y0) > 6) return;
+          var t = document.elementFromPoint(ev.clientX, ev.clientY), hit = t && t.closest && t.closest('#anApp button:not([disabled]), #anApp [role=button], #anApp a[href]');
+          if (hit) hit.click(); else if (sheetPrev && document.body.contains(sheetPrev)) try { sheetPrev.focus({ preventScroll: true }); } catch (x) { }
+        }, true);
+        return;
+      }
+      requestClose();
+    });
     /* phones: drag the sheet down by its top to close it */
     (function () {
       var sh = $('.an-sheet', wrap), y0 = null, dy = 0, ly = 0, lt = 0, v = 0, zone = [$('.an-grab', wrap), $('.an-sh', wrap)];
@@ -1952,9 +1996,9 @@
       });
     })();
     wrap.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { e.preventDefault(); if (!disc.hidden) { disc.hidden = true; $('[data-keep]', wrap).click(); } else requestClose(); }
+      if (e.key === 'Escape') { e.preventDefault(); if (!disc.hidden) { $('[data-keep]', wrap).click(); } else requestClose(); }
       if (e.key === 'Tab') {
-        var f = $$('button:not([disabled]):not([hidden]),input:not([disabled]),select,textarea,a[href]', wrap).filter(function (x) { return x.offsetParent !== null; });
+        var f = $$('button:not([disabled]):not([hidden]),input:not([disabled]),select,textarea,a[href]', wrap).filter(function (x) { return x.offsetParent !== null && !x.closest('[inert]'); });   /* PVX-N451 */
         if (!f.length) return; var i = f.indexOf(document.activeElement);
         if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
       }
@@ -2456,14 +2500,20 @@
     var xb = $('#anSheet [data-x]'); if (xb) asClose(xb);
   }
   /* n204: phones keep four tools on the bar; More holds the rest (the hidden buttons do the work, so nothing is duplicated) */
+  /* PVX-N448 · HIG Pop-up and Pull-down buttons: a menu button says whether its menu is open (expanded / collapsed) */
+  function menuOpen(btn, o) {
+    var prev = o.onClose;
+    o.onClose = function () { btn.setAttribute('aria-expanded', 'false'); if (prev) prev(); };
+    var m = PvxCtx.open(o); btn.setAttribute('aria-expanded', m ? 'true' : 'false'); return m;
+  }
   function moreMenu(btn) {
     if (!window.PvxCtx) return;
     function it(sel, label) { var b = $(sel); return b ? { label: label, disabled: !!b.disabled, act: function () { b.click(); } } : null; }   /* n207: dimmed, not hidden */
-    PvxCtx.open({ anchor: btn, label: 'More charting tools', items: [
+    menuOpen(btn, { anchor: btn, label: 'More charting tools', items: [
       it('.an-tools [data-act=infusion]', 'Infusion…'), it('.an-tools [data-act=gas]', 'Gas…'), it('.an-tools [data-act=output]', 'Output…'), it('.an-tools [data-act=airway]', 'Airway…'),
       { sep: 1 },
       { label: 'Minutes per column', sub: [5, 10, 15].map(function (m) { return { label: m + ' min', checked: S.colMin === m, act: function () { var z = $('.an-tools [data-zoom="' + m + '"]'); if (z) z.click(); } }; }) },
-      it('#anInsp', 'Totals and history')] });
+      it('#anInsp', (inspectorOpen() ? 'Hide' : 'Show') + ' totals and history')] });   /* PVX-N447 · HIG Menus: a toggled item says what it will do */
   }
   function voidSheet(r, list, id, what) {
     openSheet({
@@ -2694,6 +2744,7 @@
     if (e.altKey && !e.metaKey && !e.ctrlKey) {
       var map = { KeyV: 'vitals', KeyD: 'dose', KeyI: 'infusion', KeyG: 'gas', KeyE: 'event', KeyO: 'output', KeyA: 'airway' }, act = map[e.code];
       if (act) { var b = $('[data-act="' + act + '"]'); if (b && !b.disabled) { e.preventDefault(); lsSet('tip:kb', 1); b.click(); } }   /* n196: the shortcut tip has done its job */
+      if (e.code === 'KeyR') { var eb = $('#anEmer'); if (eb && !eb.disabled) { e.preventDefault(); eb.click(); } }   /* PVX-N449 · HIG Toolbars: every toolbar item is a command too */
     }
   });
 
