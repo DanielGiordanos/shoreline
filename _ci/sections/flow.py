@@ -1195,14 +1195,14 @@ async def s_n207(br):
     ctx, pg, errs = await new_page(br)
     await pg.goto(URL + '#r=an_train1'); await pg.wait_for_selector('.an-chart'); await pg.wait_for_timeout(600)
     a1 = await pg.evaluate("""[...document.querySelectorAll('#anApp [aria-keyshortcuts^="Alt+"]')].map(b=>b.getAttribute('aria-keyshortcuts'))""")
-    ok('n207: Anesia tools announce their shortcuts (Alt+F, Alt+V, Alt+D, Alt+I, Alt+G, Alt+E, Alt+O, Alt+A)', sorted(x for x in a1 if x != 'Alt+T') == sorted(['Alt+F', 'Alt+V', 'Alt+D', 'Alt+I', 'Alt+G', 'Alt+E', 'Alt+O', 'Alt+A']) and a1.count('Alt+T') <= 1, a1)   # n445: Totals' ⌥T
+    ok('n207: Anesia tools announce their shortcuts (Alt+F, Alt+V, Alt+D, Alt+I, Alt+G, Alt+E, Alt+O, Alt+A)', sorted(x for x in a1 if x not in ('Alt+T', 'Alt+R')) == sorted(['Alt+F', 'Alt+V', 'Alt+D', 'Alt+I', 'Alt+G', 'Alt+E', 'Alt+O', 'Alt+A']) and a1.count('Alt+T') <= 1 and a1.count('Alt+R') <= 1, a1)   # n445: Totals' ⌥T; n449: Emergency's ⌥R
     await pg.evaluate("document.activeElement&&document.activeElement.blur();0")
     await pg.keyboard.press('Shift+Slash'); await pg.wait_for_timeout(300)
     a2 = await pg.evaluate("""(()=>{const x=document.querySelector('.pvx-ks');return x&&{groups:[...x.querySelectorAll('h3')].map(h=>h.textContent),n:x.querySelectorAll('dt').length}})()""")
     await shot(pg, 'n207-anesia-shortcuts')
     await pg.keyboard.press('Alt+KeyV'); await pg.wait_for_timeout(300)
     a3 = await pg.evaluate("!!document.getElementById('anVForm')")
-    ok('n207: ? in Anesia lists Charting, View, Edit and Help; ⌥V waits while the sheet is open', a2 and a2['groups'][-4:] == ['Charting (in a record)', 'View', 'Edit', 'Help'] and a2['groups'][:-4] in ([], ['Records (on the list)']) and a2['n'] - 2 * len(a2['groups'][:-4]) in (13, 14) and not a3, [a2, a3])   # n440: a Records group first; n445: ⌥T in View
+    ok('n207: ? in Anesia lists Charting, View, Edit and Help; ⌥V waits while the sheet is open', a2 and a2['groups'][-4:] == ['Charting (in a record)', 'View', 'Edit', 'Help'] and a2['groups'][:-4] in ([], ['Records (on the list)']) and a2['n'] - 2 * len(a2['groups'][:-4]) in (13, 14, 15) and not a3, [a2, a3])   # n440: a Records group first; n445: ⌥T in View; n449: ⌥R in Charting
     await pg.click('.pvx-ks-x'); await pg.wait_for_timeout(250)
     a4 = await pg.evaluate("!!document.querySelector('.pvx-ks')")
     ok('n207: ✕ Close closes the sheet (n211)', not a4, a4)
