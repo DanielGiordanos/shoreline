@@ -53,7 +53,8 @@ async def s_a432(br):
     bad = {k: [f for f in v if f[1] != 'off'] for k, v in F.items() if any(f[1] != 'off' for f in v)}
     ok('Privacy · no field in Anesia’s sheets offers what was typed before on this computer (breed, age, procedure, resident, supervisor and the event note did); every one says autocomplete=off',
        not bad and sum(len(v) for v in F.values()) >= 15 and len(F) >= 6, bad or {k: len(v) for k, v in F.items()})
-    ok('…and the tab’s title never names the patient (“Anesia · Pravix”), and the address carries only the record’s id',
-       await pg.evaluate("document.title") == 'Anesia · Pravix' and await pg.evaluate("/^#r=[A-Za-z0-9_-]+$/.test(location.hash)"))
+    ok('…and the tab’s title never names the patient, and the address carries only the record’s id',
+       await pg.evaluate("document.title") in ('Anesia · Pravix', 'Anesthesia record') and  # n449: the record's own title, still without the patient
+       await pg.evaluate("/^#r=[A-Za-z0-9_-]+$/.test(location.hash)"))
     errs += list(e); await ctx.close()
     ok('no page errors', not errs, errs)

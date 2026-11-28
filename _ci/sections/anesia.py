@@ -1130,7 +1130,7 @@ async def s_n204(br):
     await pg.click('#anMore'); await pg.wait_for_timeout(350)
     m1 = await pg.evaluate("""(()=>{const x=document.querySelector('.pvx-cx:not(.out)');if(!x) return null;return {sheet:x.classList.contains('sheet'),labels:[...x.querySelectorAll('.pvx-cx-list button .l')].map(l=>l.textContent),cancel:!!x.querySelector('.pvx-cx-cancel')}})()""")
     await shot(pg, 'n204-phone-more')
-    ok('n204: More opens the rest as an action sheet: Infusion…, Gas…, Output…, Airway…, Minutes per column ›, Totals and history', m1 and m1['sheet'] and m1['cancel'] and m1['labels'] == ['Infusion…', 'Gas…', 'Output…', 'Airway…', 'Minutes per column', 'Totals and history'], m1)
+    ok('n204: More opens the rest as an action sheet: Infusion…, Gas…, Output…, Airway…, Minutes per column ›, Totals and history', m1 and m1['sheet'] and m1['cancel'] and m1['labels'][:5] == ['Infusion…', 'Gas…', 'Output…', 'Airway…', 'Minutes per column'] and m1['labels'][5:] in (['Totals and history'], ['Show totals and history']), m1)   # n447: the toggled item says Show or Hide
     await pg.evaluate("[...document.querySelectorAll('.pvx-cx-list button')].find(b=>/Minutes per column/.test(b.textContent)).click();0"); await pg.wait_for_timeout(200)
     z1 = await pg.evaluate("[...document.querySelectorAll('.pvx-cx-list button[role=menuitemradio]')].map(b=>[b.querySelector('.l').textContent,b.getAttribute('aria-checked')])")
     await pg.evaluate("[...document.querySelectorAll('.pvx-cx-list button')].find(b=>b.textContent.trim()==='10 min').click();0"); await pg.wait_for_timeout(400)
